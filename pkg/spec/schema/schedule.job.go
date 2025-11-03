@@ -1,0 +1,164 @@
+package schema
+
+// TypeScheduleJob represents the type of scheduled job
+type TypeScheduleJob string
+
+const (
+	// TypeScheduleJobOneShot represents a one-time job
+	TypeScheduleJobOneShot TypeScheduleJob = "OneShot"
+
+	// TypeScheduleJobRecurring represents a recurring job
+	TypeScheduleJobRecurring TypeScheduleJob = "Recurring"
+)
+
+// RecurrenceType represents the recurrence pattern of a scheduled job
+type RecurrenceType string
+
+const (
+	RecurrenceTypeHourly  RecurrenceType = "Hourly"
+	RecurrenceTypeDaily   RecurrenceType = "Daily"
+	RecurrenceTypeWeekly  RecurrenceType = "Weekly"
+	RecurrenceTypeMonthly RecurrenceType = "Monthly"
+	RecurrenceTypeCustom  RecurrenceType = "Custom"
+)
+
+// DeactiveReasonDto represents the reason why a job was deactivated
+type DeactiveReasonDto string
+
+const (
+	DeactiveReasonNone            DeactiveReasonDto = "None"
+	DeactiveReasonManual          DeactiveReasonDto = "Manual"
+	DeactiveReasonResourceDeleted DeactiveReasonDto = "ResourceDeleted"
+)
+
+// ScheduleJobStep represents a step that will be executed as part of the scheduled job
+type ScheduleJobStep struct {
+	// Name Descriptive name of the step (nullable)
+	// For more information, check the documentation.
+	Name *string `json:"name,omitempty"`
+
+	// ResourceUri URI of the resource on which the action will be performed
+	ResourceUri string `json:"resourceUri"`
+
+	// ActionUri URI of the action to execute on the resource
+	// For more information, check the documentation.
+	ActionUri string `json:"actionUri"`
+
+	// HttpVerb HTTP verb to be used for the action (e.g., GET, POST, PUT, DELETE)
+	// For more information, check the documentation.
+	HttpVerb string `json:"httpVerb"`
+
+	// Body Optional HTTP request body to send with the action (nullable)
+	// For more information, check the documentation.
+	Body *string `json:"body,omitempty"`
+}
+
+// ScheduleJobStepResponse represents a step in the response with additional fields
+type ScheduleJobStepResponse struct {
+	// Name Descriptive name of the step (nullable)
+	Name *string `json:"name,omitempty"`
+
+	// ResourceUri URI of the resource (nullable)
+	ResourceUri *string `json:"resourceUri,omitempty"`
+
+	// ActionUri URI of the action (nullable)
+	ActionUri *string `json:"actionUri,omitempty"`
+
+	// ActionName Name of the action (nullable)
+	ActionName *string `json:"actionName,omitempty"`
+
+	// Typology Type of the resource (nullable)
+	Typology *string `json:"typology,omitempty"`
+
+	// TypologyName Name of the typology (nullable)
+	TypologyName *string `json:"typologyName,omitempty"`
+
+	// HttpVerb HTTP verb (nullable)
+	HttpVerb *string `json:"httpVerb,omitempty"`
+
+	// Body HTTP request body (nullable)
+	Body *string `json:"body,omitempty"`
+}
+
+// ScheduleJobPropertiesRequest contains properties required to configure and schedule a job
+type ScheduleJobPropertiesRequest struct {
+	// Enabled Defines whether the job is enabled. Default is true.
+	Enabled bool `json:"enabled,omitempty"`
+
+	// ScheduleJobType Type of scheduled job
+	// For more information, check the documentation.
+	// Possible values: OneShot, Recurring
+	ScheduleJobType TypeScheduleJob `json:"scheduleJobType"`
+
+	// ScheduleAt Date and time when the job should run (nullable)
+	// Required only for "OneShot" jobs.
+	// For more information, check the documentation.
+	ScheduleAt *string `json:"scheduleAt,omitempty"`
+
+	// ExecuteUntil End date until which the job can run (nullable)
+	// Required only for "Recurring" jobs.
+	// For more information, check the documentation.
+	ExecuteUntil *string `json:"executeUntil,omitempty"`
+
+	// Cron CRON expression that defines the recurrence of the job (nullable)
+	// For more information, check the documentation.
+	Cron *string `json:"cron,omitempty"`
+
+	// Steps Steps that will be executed as part of the scheduled job (nullable)
+	Steps []ScheduleJobStep `json:"steps,omitempty"`
+}
+
+// ScheduleJobPropertiesResponse contains the response properties of a scheduled job
+type ScheduleJobPropertiesResponse struct {
+	// Enabled Defines whether the job is enabled
+	Enabled bool `json:"enabled,omitempty"`
+
+	// ScheduleJobType Type of scheduled job
+	// Possible values: OneShot, Recurring
+	ScheduleJobType TypeScheduleJob `json:"scheduleJobType,omitempty"`
+
+	// ScheduleAt Date and time when the job should run (nullable)
+	ScheduleAt *string `json:"scheduleAt,omitempty"`
+
+	// ExecuteUntil End date until which the job can run (nullable)
+	ExecuteUntil *string `json:"executeUntil,omitempty"`
+
+	// Cron CRON expression that defines the recurrence of the job (nullable)
+	Cron *string `json:"cron,omitempty"`
+
+	// Recurrency Recurrence pattern of the job (nullable)
+	// Possible values: Hourly, Daily, Weekly, Monthly, Custom
+	Recurrency *RecurrenceType `json:"recurrency,omitempty"`
+
+	// Steps Steps that will be executed as part of the scheduled job (nullable)
+	Steps []ScheduleJobStepResponse `json:"steps,omitempty"`
+
+	// NextExecution Date and time of the next scheduled execution (nullable)
+	NextExecution *string `json:"nextExecution,omitempty"`
+
+	// DeactiveReason Reason why the job was deactivated (nullable)
+	// Possible values: None, Manual, ResourceDeleted
+	DeactiveReason *DeactiveReasonDto `json:"deactiveReason,omitempty"`
+}
+
+type ScheduleJobRequest struct {
+	// Metadata of the scheduled job
+	Metadata ResourceMetadataRequest `json:"metadata"`
+
+	// Properties of the scheduled job (nullable object)
+	Properties ScheduleJobPropertiesRequest `json:"properties"`
+}
+
+type ScheduleJobResponse struct {
+	// Metadata of the scheduled job
+	Metadata ResourceMetadataResponse `json:"metadata"`
+	// Properties of the scheduled job (nullable object)
+	Properties ScheduleJobPropertiesResponse `json:"properties"`
+
+	Status ResourceStatus `json:"status,omitempty"`
+}
+
+type ScheduleJobList struct {
+	ListResponse
+	Values []ScheduleJobResponse `json:"values"`
+}

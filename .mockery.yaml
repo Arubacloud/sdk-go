@@ -1,0 +1,9 @@
+with-expecter: true
+dir: "mock/{{.PackagePath}}"
+mockname: "{{.InterfaceName}}"
+outpkg: "{{.PackageName}}"
+filename: "{{.InterfaceName}}.go"
+packages:
+  github.com/Arubacloud/sdk-go/pkg/client:
+    interfaces:
+      ClientInterface:
