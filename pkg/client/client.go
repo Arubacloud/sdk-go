@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 )
@@ -62,31 +63,6 @@ type Client struct {
 	config       *Config
 	ctx          context.Context
 	tokenManager *TokenManager
-
-	// Compute APIs
-	CloudServer schema.CloudServerAPI
-	KaaS        schema.KaaSAPI
-
-	// Network APIs
-	Vpc        schema.VpcAPI
-	Subnet     schema.SubnetAPI
-	VpcPeering schema.VpcPeeringAPI
-	VpcRoute   schema.VpcRouteAPI
-	VpnTunnel  schema.VpnTunnelAPI
-	ElasticIp  schema.ElasticIpAPI
-
-	// Security APIs
-	SecurityGroup schema.SecurityGroupAPI
-
-	// Storage APIs
-	BlockStorage schema.BlockStorageAPI
-	Snapshot     schema.SnapshotAPI
-
-	// Database APIs
-	DBaaS schema.DBaaSAPI
-
-	// Schedule APIs
-	ScheduleJob schema.ScheduleJobAPI
 }
 
 // NewClient creates a new SDK client with the given configuration
@@ -154,6 +130,51 @@ func (c *Client) HTTPClient() *http.Client {
 // GetToken returns the current valid JWT token, refreshing if necessary
 func (c *Client) GetToken(ctx context.Context) (string, error) {
 	return c.tokenManager.GetToken(ctx)
+}
+
+// DoRequest performs an HTTP request with automatic authentication token injection
+func (c *Client) DoRequest(ctx context.Context, method, path string, body io.Reader, queryParams map[string]string, headers map[string]string) (*http.Response, error) {
+	// Build full URL
+	url := c.config.BaseURL + path
+
+	// Create request
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Add query parameters
+	if len(queryParams) > 0 {
+		q := req.URL.Query()
+		for key, value := range queryParams {
+			q.Add(key, value)
+		}
+		req.URL.RawQuery = q.Encode()
+	}
+
+	// Set content type for requests with body
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	// Add additional headers before authentication headers
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+
+	// Use RequestEditorFn to add authentication and custom headers from config
+	editorFn := c.RequestEditorFn()
+	if err := editorFn(ctx, req); err != nil {
+		return nil, fmt.Errorf("failed to prepare request: %w", err)
+	}
+
+	// Execute request
+	resp, err := c.config.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+
+	return resp, nil
 }
 
 // RequestEditorFn returns a function that adds the Bearer token to requests

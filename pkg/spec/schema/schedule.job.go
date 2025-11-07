@@ -1,17 +1,17 @@
 package schema
 
-// TypeScheduleJob represents the type of scheduled job
-type TypeScheduleJob string
+// TypeJob represents the type of job
+type TypeJob string
 
 const (
-	// TypeScheduleJobOneShot represents a one-time job
-	TypeScheduleJobOneShot TypeScheduleJob = "OneShot"
+	// TypeJobOneShot represents a one-time job
+	TypeJobOneShot TypeJob = "OneShot"
 
-	// TypeScheduleJobRecurring represents a recurring job
-	TypeScheduleJobRecurring TypeScheduleJob = "Recurring"
+	// TypeJobRecurring represents a recurring job
+	TypeJobRecurring TypeJob = "Recurring"
 )
 
-// RecurrenceType represents the recurrence pattern of a scheduled job
+// RecurrenceType represents the recurrence pattern of a job
 type RecurrenceType string
 
 const (
@@ -31,8 +31,8 @@ const (
 	DeactiveReasonResourceDeleted DeactiveReasonDto = "ResourceDeleted"
 )
 
-// ScheduleJobStep represents a step that will be executed as part of the scheduled job
-type ScheduleJobStep struct {
+// JobStep represents a step that will be executed as part of the job
+type JobStep struct {
 	// Name Descriptive name of the step (nullable)
 	// For more information, check the documentation.
 	Name *string `json:"name,omitempty"`
@@ -53,8 +53,8 @@ type ScheduleJobStep struct {
 	Body *string `json:"body,omitempty"`
 }
 
-// ScheduleJobStepResponse represents a step in the response with additional fields
-type ScheduleJobStepResponse struct {
+// JobStepResponse represents a step in the response with additional fields
+type JobStepResponse struct {
 	// Name Descriptive name of the step (nullable)
 	Name *string `json:"name,omitempty"`
 
@@ -80,15 +80,15 @@ type ScheduleJobStepResponse struct {
 	Body *string `json:"body,omitempty"`
 }
 
-// ScheduleJobPropertiesRequest contains properties required to configure and schedule a job
-type ScheduleJobPropertiesRequest struct {
+// JobPropertiesRequest contains properties required to configure and schedule a job
+type JobPropertiesRequest struct {
 	// Enabled Defines whether the job is enabled. Default is true.
 	Enabled bool `json:"enabled,omitempty"`
 
-	// ScheduleJobType Type of scheduled job
+	// JobType Type of job
 	// For more information, check the documentation.
 	// Possible values: OneShot, Recurring
-	ScheduleJobType TypeScheduleJob `json:"scheduleJobType"`
+	JobType TypeJob `json:"scheduleJobType"`
 
 	// ScheduleAt Date and time when the job should run (nullable)
 	// Required only for "OneShot" jobs.
@@ -104,18 +104,18 @@ type ScheduleJobPropertiesRequest struct {
 	// For more information, check the documentation.
 	Cron *string `json:"cron,omitempty"`
 
-	// Steps Steps that will be executed as part of the scheduled job (nullable)
-	Steps []ScheduleJobStep `json:"steps,omitempty"`
+	// Steps Steps that will be executed as part of the job (nullable)
+	Steps []JobStep `json:"steps,omitempty"`
 }
 
-// ScheduleJobPropertiesResponse contains the response properties of a scheduled job
-type ScheduleJobPropertiesResponse struct {
+// JobPropertiesResponse contains the response properties of a job
+type JobPropertiesResponse struct {
 	// Enabled Defines whether the job is enabled
 	Enabled bool `json:"enabled,omitempty"`
 
-	// ScheduleJobType Type of scheduled job
+	// JobType Type of job
 	// Possible values: OneShot, Recurring
-	ScheduleJobType TypeScheduleJob `json:"scheduleJobType,omitempty"`
+	JobType TypeJob `json:"scheduleJobType,omitempty"`
 
 	// ScheduleAt Date and time when the job should run (nullable)
 	ScheduleAt *string `json:"scheduleAt,omitempty"`
@@ -130,8 +130,8 @@ type ScheduleJobPropertiesResponse struct {
 	// Possible values: Hourly, Daily, Weekly, Monthly, Custom
 	Recurrency *RecurrenceType `json:"recurrency,omitempty"`
 
-	// Steps Steps that will be executed as part of the scheduled job (nullable)
-	Steps []ScheduleJobStepResponse `json:"steps,omitempty"`
+	// Steps Steps that will be executed as part of the job (nullable)
+	Steps []JobStepResponse `json:"steps,omitempty"`
 
 	// NextExecution Date and time of the next scheduled execution (nullable)
 	NextExecution *string `json:"nextExecution,omitempty"`
@@ -141,24 +141,29 @@ type ScheduleJobPropertiesResponse struct {
 	DeactiveReason *DeactiveReasonDto `json:"deactiveReason,omitempty"`
 }
 
-type ScheduleJobRequest struct {
-	// Metadata of the scheduled job
+// JobRequest represents a job creation/update request
+type JobRequest struct {
+	// Metadata of the job
 	Metadata ResourceMetadataRequest `json:"metadata"`
 
-	// Properties of the scheduled job (nullable object)
-	Properties ScheduleJobPropertiesRequest `json:"properties"`
+	// Properties of the job (nullable object)
+	Properties JobPropertiesRequest `json:"properties"`
 }
 
-type ScheduleJobResponse struct {
-	// Metadata of the scheduled job
+// JobResponse represents a job response
+type JobResponse struct {
+	// Metadata of the job
 	Metadata ResourceMetadataResponse `json:"metadata"`
-	// Properties of the scheduled job (nullable object)
-	Properties ScheduleJobPropertiesResponse `json:"properties"`
 
+	// Properties of the job (nullable object)
+	Properties JobPropertiesResponse `json:"properties"`
+
+	// Status of the job
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type ScheduleJobList struct {
+// JobList represents a list of jobs
+type JobList struct {
 	ListResponse
-	Values []ScheduleJobResponse `json:"values"`
+	Values []JobResponse `json:"values"`
 }
