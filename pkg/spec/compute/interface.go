@@ -15,4 +15,10 @@ type CloudServerAPI interface {
 	DeleteCloudServer(ctx context.Context, projectId string, cloudServerId string, params *schema.RequestParameters) (*http.Response, error)
 }
 
-// Additional interfaces for other compute resources can be defined here
+// KeyPairAPI defines the interface for KeyPair operations
+type KeyPairAPI interface {
+	ListKeyPairs(ctx context.Context, project string, params *schema.RequestParameters) (*http.Response, error)
+	GetKeyPair(ctx context.Context, project string, keyPairId string, params *schema.RequestParameters) (*http.Response, error)
+	CreateOrUpdateKeyPair(ctx context.Context, project string, body schema.KeyPairRequest, params *schema.RequestParameters) (*http.Response, error)
+	DeleteKeyPair(ctx context.Context, projectId string, keyPairId string, params *schema.RequestParameters) (*http.Response, error)
+}
