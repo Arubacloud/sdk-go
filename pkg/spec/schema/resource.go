@@ -1,5 +1,7 @@
 package schema
 
+import "time"
+
 // Resource Metadata Request
 type ResourceMetadataRequest struct {
 	Name string   `json:"name"`
@@ -46,9 +48,9 @@ type ResourceMetadataResponse struct {
 	ProjectResponseMetadata *ProjectResponseMetadata  `json:"project,omitempty"`
 	Tags                    []string                  `json:"tags,omitempty"`
 	Category                *CategoryResponseMetadata `json:"category,omitempty"`
-	CreationDate            *string                   `json:"creationDate,omitempty"`
+	CreationDate            *time.Time                `json:"creationDate,omitempty"`
 	CreatedBy               *string                   `json:"createdBy,omitempty"`
-	UpdateDate              *string                   `json:"updateDate,omitempty"`
+	UpdateDate              *time.Time                `json:"updateDate,omitempty"`
 	UpdatedBy               *string                   `json:"updatedBy,omitempty"`
 	Version                 *string                   `json:"version,omitempty"`
 	CreatedUser             *string                   `json:"createdUser,omitempty"`
@@ -57,8 +59,8 @@ type ResourceMetadataResponse struct {
 
 // Status
 type PreviousStatus struct {
-	State        *string `json:"state,omitempty"`
-	CreationDate *string `json:"creationDate,omitempty"`
+	State        *string    `json:"state,omitempty"`
+	CreationDate *time.Time `json:"creationDate,omitempty"`
 }
 
 type DisableStatusInfo struct {
@@ -68,7 +70,7 @@ type DisableStatusInfo struct {
 
 type ResourceStatus struct {
 	State             *string            `json:"state,omitempty"`
-	CreationDate      *string            `json:"creationDate,omitempty"`
+	CreationDate      *time.Time         `json:"creationDate,omitempty"`
 	DisableStatusInfo *DisableStatusInfo `json:"disableStatusInfo,omitempty"`
 	PreviousStatus    *PreviousStatus    `json:"previousStatus,omitempty"`
 	FailureReason     *string            `json:"failureReason,omitempty"`
