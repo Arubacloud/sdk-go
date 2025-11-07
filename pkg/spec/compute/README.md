@@ -9,8 +9,6 @@ The `compute` package provides Go client interfaces for managing Aruba Cloud com
 - [Usage Examples](#usage-examples)
   - [Cloud Server Management](#cloud-server-management)
   - [Key Pair Management](#key-pair-management)
-- [API Reference](#api-reference)
-- [Error Handling](#error-handling)
 
 ## Installation
 

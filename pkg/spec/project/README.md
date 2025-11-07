@@ -7,7 +7,6 @@ The `project` package provides Go client interfaces for managing Aruba Cloud pro
 - [Installation](#installation)
 - [Available Services](#available-services)
 - [Usage Examples](#usage-examples)
-- [API Reference](#api-reference)
 
 ## Installation
 

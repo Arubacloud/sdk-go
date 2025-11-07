@@ -1,6 +1,6 @@
-# Security Package
+# Audit Package
 
-The `security` package provides Go client interfaces for managing Aruba Cloud security services, including KMS (Key Management Service) for encryption key management.
+The `audit` package provides Go client interfaces for accessing Aruba Cloud audit logs and event tracking.
 
 ## Table of Contents
 
@@ -16,13 +16,11 @@ go get github.com/Arubacloud/sdk-go
 
 ## Available Services
 
-### KMSAPI
+### EventAPI
 
-Manage KMS encryption keys with full CRUD operations:
-- List all KMS keys in a project
-- Get details of a specific KMS key
-- Create or update a KMS key
-- Delete a KMS key
+Retrieve audit events with read operations:
+- List all audit events for a project
+- Get details of a specific audit event
 
 ## Usage Examples
 
@@ -37,7 +35,7 @@ import (
     "log"
 
     "github.com/Arubacloud/sdk-go/pkg/client"
-    "github.com/Arubacloud/sdk-go/pkg/spec/security"
+    "github.com/Arubacloud/sdk-go/pkg/spec/audit"
     "github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
@@ -49,23 +47,24 @@ func main() {
     projectID := "my-project-id"
     
     // Initialize API interface
-    var kmsAPI security.KMSAPI = security.NewKMSService(c)
+    var eventAPI audit.EventAPI = audit.NewEventService(c)
 }
 ```
 
-### KMS Key Management
+### Event Management
 
-#### List KMS Keys
+#### List Audit Events
 
 ```go
-resp, err := kmsAPI.ListKMSKeys(ctx, projectID, nil)
+resp, err := eventAPI.ListEvents(ctx, projectID, nil)
 if err != nil {
-    log.Fatalf("Failed to list KMS keys: %v", err)
+    log.Fatalf("Failed to list audit events: %v", err)
 }
 defer resp.Body.Close()
 
 if resp.StatusCode == 200 {
-    fmt.Println("KMS keys retrieved successfully")
+    fmt.Println("Audit events retrieved successfully")
 }
 ```
+
 

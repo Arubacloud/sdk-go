@@ -7,7 +7,6 @@ The `schedule` package provides Go client interfaces for managing Aruba Cloud sc
 - [Installation](#installation)
 - [Available Services](#available-services)
 - [Usage Examples](#usage-examples)
-- [API Reference](#api-reference)
 
 ## Installation
 
