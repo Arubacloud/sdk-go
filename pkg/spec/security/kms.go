@@ -28,8 +28,8 @@ func NewKmsKeyService(client *client.Client) *KmsKeyService {
 func (s *KmsKeyService) ListKMSKeys(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.KmsList], error) {
 	s.client.Logger().Debugf("Listing KMS keys for project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(KMSKeysPath, project)
@@ -75,11 +75,8 @@ func (s *KmsKeyService) ListKMSKeys(ctx context.Context, project string, params 
 func (s *KmsKeyService) GetKMSKey(ctx context.Context, project string, kmsKeyId string, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error) {
 	s.client.Logger().Debugf("Getting KMS key: %s in project: %s", kmsKeyId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if kmsKeyId == "" {
-		return nil, fmt.Errorf("KMS key ID cannot be empty")
+	if err := validateProjectAndResource(project, kmsKeyId, "KMS key ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(KmsKeyPath, project, kmsKeyId)
@@ -125,8 +122,8 @@ func (s *KmsKeyService) GetKMSKey(ctx context.Context, project string, kmsKeyId 
 func (s *KmsKeyService) CreateKMSKey(ctx context.Context, project string, body schema.KmsRequest, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error) {
 	s.client.Logger().Debugf("Creating KMS key in project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(KMSKeysPath, project)
@@ -177,11 +174,8 @@ func (s *KmsKeyService) CreateKMSKey(ctx context.Context, project string, body s
 func (s *KmsKeyService) UpdateKMSKey(ctx context.Context, project string, kmsKeyId string, body schema.KmsRequest, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error) {
 	s.client.Logger().Debugf("Updating KMS key: %s in project: %s", kmsKeyId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if kmsKeyId == "" {
-		return nil, fmt.Errorf("KMS key ID cannot be empty")
+	if err := validateProjectAndResource(project, kmsKeyId, "KMS key ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(KmsKeyPath, project, kmsKeyId)
@@ -232,11 +226,8 @@ func (s *KmsKeyService) UpdateKMSKey(ctx context.Context, project string, kmsKey
 func (s *KmsKeyService) DeleteKMSKey(ctx context.Context, projectId string, kmsKeyId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting KMS key: %s in project: %s", kmsKeyId, projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
-	}
-	if kmsKeyId == "" {
-		return nil, fmt.Errorf("KMS key ID cannot be empty")
+	if err := validateProjectAndResource(projectId, kmsKeyId, "KMS key ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(KmsKeyPath, projectId, kmsKeyId)

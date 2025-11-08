@@ -28,8 +28,8 @@ func NewCloudServerService(client *client.Client) *CloudServerService {
 func (s *CloudServerService) ListCloudServers(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.CloudServerList], error) {
 	s.client.Logger().Debugf("Listing cloud servers for project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(CloudServersPath, project)
@@ -78,11 +78,8 @@ func (s *CloudServerService) ListCloudServers(ctx context.Context, project strin
 func (s *CloudServerService) GetCloudServer(ctx context.Context, project string, cloudServerId string, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error) {
 	s.client.Logger().Debugf("Getting cloud server: %s in project: %s", cloudServerId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if cloudServerId == "" {
-		return nil, fmt.Errorf("cloud server ID cannot be empty")
+	if err := validateProjectAndResource(project, cloudServerId, "cloud server ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(CloudServerPath, project, cloudServerId)
@@ -131,8 +128,8 @@ func (s *CloudServerService) GetCloudServer(ctx context.Context, project string,
 func (s *CloudServerService) CreateCloudServer(ctx context.Context, project string, body schema.CloudServerRequest, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error) {
 	s.client.Logger().Debugf("Creating cloud server in project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(CloudServersPath, project)
@@ -187,11 +184,8 @@ func (s *CloudServerService) CreateCloudServer(ctx context.Context, project stri
 func (s *CloudServerService) UpdateCloudServer(ctx context.Context, project string, cloudServerId string, body schema.CloudServerRequest, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error) {
 	s.client.Logger().Debugf("Updating cloud server: %s in project: %s", cloudServerId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if cloudServerId == "" {
-		return nil, fmt.Errorf("cloud server ID cannot be empty")
+	if err := validateProjectAndResource(project, cloudServerId, "cloud server ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(CloudServerPath, project, cloudServerId)
@@ -246,11 +240,8 @@ func (s *CloudServerService) UpdateCloudServer(ctx context.Context, project stri
 func (s *CloudServerService) DeleteCloudServer(ctx context.Context, projectId string, cloudServerId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting cloud server: %s in project: %s", cloudServerId, projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
-	}
-	if cloudServerId == "" {
-		return nil, fmt.Errorf("cloud server ID cannot be empty")
+	if err := validateProjectAndResource(projectId, cloudServerId, "cloud server ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(CloudServerPath, projectId, cloudServerId)

@@ -28,11 +28,8 @@ func NewUserService(client *client.Client) *UserService {
 func (s *UserService) ListUsers(ctx context.Context, project string, dbaasId string, params *schema.RequestParameters) (*schema.Response[schema.UserList], error) {
 	s.client.Logger().Debugf("Listing users for DBaaS: %s in project: %s", dbaasId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if dbaasId == "" {
-		return nil, fmt.Errorf("DBaaS ID cannot be empty")
+	if err := validateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(UsersPath, project, dbaasId)
@@ -81,14 +78,8 @@ func (s *UserService) ListUsers(ctx context.Context, project string, dbaasId str
 func (s *UserService) GetUser(ctx context.Context, project string, dbaasId string, userId string, params *schema.RequestParameters) (*schema.Response[schema.UserResponse], error) {
 	s.client.Logger().Debugf("Getting user: %s from DBaaS: %s in project: %s", userId, dbaasId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if dbaasId == "" {
-		return nil, fmt.Errorf("DBaaS ID cannot be empty")
-	}
-	if userId == "" {
-		return nil, fmt.Errorf("user ID cannot be empty")
+	if err := validateDBaaSResource(project, dbaasId, userId, "user ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(UserItemPath, project, dbaasId, userId)
@@ -137,11 +128,8 @@ func (s *UserService) GetUser(ctx context.Context, project string, dbaasId strin
 func (s *UserService) CreateUser(ctx context.Context, project string, dbaasId string, body schema.UserRequest, params *schema.RequestParameters) (*schema.Response[schema.UserResponse], error) {
 	s.client.Logger().Debugf("Creating user in DBaaS: %s in project: %s", dbaasId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if dbaasId == "" {
-		return nil, fmt.Errorf("DBaaS ID cannot be empty")
+	if err := validateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(UsersPath, project, dbaasId)
@@ -196,14 +184,8 @@ func (s *UserService) CreateUser(ctx context.Context, project string, dbaasId st
 func (s *UserService) UpdateUser(ctx context.Context, project string, dbaasId string, userId string, body schema.UserRequest, params *schema.RequestParameters) (*schema.Response[schema.UserResponse], error) {
 	s.client.Logger().Debugf("Updating user: %s in DBaaS: %s in project: %s", userId, dbaasId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if dbaasId == "" {
-		return nil, fmt.Errorf("DBaaS ID cannot be empty")
-	}
-	if userId == "" {
-		return nil, fmt.Errorf("user ID cannot be empty")
+	if err := validateDBaaSResource(project, dbaasId, userId, "user ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(UserItemPath, project, dbaasId, userId)
@@ -258,14 +240,8 @@ func (s *UserService) UpdateUser(ctx context.Context, project string, dbaasId st
 func (s *UserService) DeleteUser(ctx context.Context, projectId string, dbaasId string, userId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting user: %s from DBaaS: %s in project: %s", userId, dbaasId, projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
-	}
-	if dbaasId == "" {
-		return nil, fmt.Errorf("DBaaS ID cannot be empty")
-	}
-	if userId == "" {
-		return nil, fmt.Errorf("user ID cannot be empty")
+	if err := validateDBaaSResource(projectId, dbaasId, userId, "user ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(UserItemPath, projectId, dbaasId, userId)

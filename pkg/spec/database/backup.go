@@ -27,8 +27,8 @@ func NewBackupService(client *client.Client) *BackupService {
 func (s *BackupService) ListBackups(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.BackupList], error) {
 	s.client.Logger().Debugf("Listing backups for project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(BackupsPath, project)
@@ -77,11 +77,8 @@ func (s *BackupService) ListBackups(ctx context.Context, project string, params 
 func (s *BackupService) GetBackup(ctx context.Context, project string, backupId string, params *schema.RequestParameters) (*schema.Response[schema.BackupResponse], error) {
 	s.client.Logger().Debugf("Getting backup: %s in project: %s", backupId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if backupId == "" {
-		return nil, fmt.Errorf("backup ID cannot be empty")
+	if err := validateProjectAndResource(project, backupId, "backup ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(BackupPath, project, backupId)
@@ -130,8 +127,8 @@ func (s *BackupService) GetBackup(ctx context.Context, project string, backupId 
 func (s *BackupService) CreateBackup(ctx context.Context, project string, body schema.BackupRequest, params *schema.RequestParameters) (*schema.Response[schema.BackupResponse], error) {
 	s.client.Logger().Debugf("Creating backup in project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(BackupsPath, project)
@@ -180,11 +177,8 @@ func (s *BackupService) CreateBackup(ctx context.Context, project string, body s
 func (s *BackupService) DeleteBackup(ctx context.Context, projectId string, backupId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting backup: %s in project: %s", backupId, projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
-	}
-	if backupId == "" {
-		return nil, fmt.Errorf("backup ID cannot be empty")
+	if err := validateProjectAndResource(projectId, backupId, "backup ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(BackupPath, projectId, backupId)

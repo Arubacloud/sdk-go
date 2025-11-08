@@ -28,8 +28,8 @@ func NewElasticIPService(client *client.Client) *ElasticIPService {
 func (s *ElasticIPService) ListElasticIPs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.ElasticList], error) {
 	s.client.Logger().Debugf("Listing elastic IPs for project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(ElasticIPsPath, project)
@@ -78,11 +78,8 @@ func (s *ElasticIPService) ListElasticIPs(ctx context.Context, project string, p
 func (s *ElasticIPService) GetElasticIP(ctx context.Context, project string, elasticIPId string, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error) {
 	s.client.Logger().Debugf("Getting elastic IP: %s in project: %s", elasticIPId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if elasticIPId == "" {
-		return nil, fmt.Errorf("elastic IP ID cannot be empty")
+	if err := validateProjectAndResource(project, elasticIPId, "elastic IP ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(ElasticIPPath, project, elasticIPId)
@@ -131,8 +128,8 @@ func (s *ElasticIPService) GetElasticIP(ctx context.Context, project string, ela
 func (s *ElasticIPService) CreateElasticIP(ctx context.Context, project string, body schema.ElasticIpRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error) {
 	s.client.Logger().Debugf("Creating elastic IP in project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(ElasticIPsPath, project)
@@ -187,11 +184,8 @@ func (s *ElasticIPService) CreateElasticIP(ctx context.Context, project string, 
 func (s *ElasticIPService) UpdateElasticIP(ctx context.Context, project string, elasticIPId string, body schema.ElasticIpRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error) {
 	s.client.Logger().Debugf("Updating elastic IP: %s in project: %s", elasticIPId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if elasticIPId == "" {
-		return nil, fmt.Errorf("elastic IP ID cannot be empty")
+	if err := validateProjectAndResource(project, elasticIPId, "elastic IP ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(ElasticIPPath, project, elasticIPId)
@@ -246,11 +240,8 @@ func (s *ElasticIPService) UpdateElasticIP(ctx context.Context, project string, 
 func (s *ElasticIPService) DeleteElasticIP(ctx context.Context, projectId string, elasticIPId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting elastic IP: %s in project: %s", elasticIPId, projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
-	}
-	if elasticIPId == "" {
-		return nil, fmt.Errorf("elastic IP ID cannot be empty")
+	if err := validateProjectAndResource(projectId, elasticIPId, "elastic IP ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(ElasticIPPath, projectId, elasticIPId)

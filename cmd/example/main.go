@@ -19,18 +19,9 @@ import (
 
 func main() {
 	config := &client.Config{
-		ClientID:     "your-client-id",
-		ClientSecret: "your-client-secret",
-		Headers: map[string]string{
-			"X-Application": "aruba-sdk-example",
-		},
-		// Enable debug logging - logs all HTTP requests/responses including:
-		// - Request method, URL, headers, and body
-		// - Response status, headers, and body
-		// - Service-level operation logs
-		Debug: true,
-		// Optionally provide a custom logger (if nil, uses DefaultLogger when Debug=true)
-		// Logger: client.NewDefaultLogger(),
+		ClientID:     "cmp-74603fc1-ba10-40b3-9ff9-4aef35548642",
+		ClientSecret: "UZXfEZFFOz1M0t66FNTcO4c5nez76Kwf",
+		Debug:        true,
 	}
 
 	// Initialize the SDK (automatically obtains JWT token)
@@ -46,14 +37,8 @@ func main() {
 	// Use the SDK with context
 	sdk = sdk.WithContext(ctx)
 
-	// Example: Get current token (optional - SDK manages this automatically)
-	token, err := sdk.GetToken(ctx)
-	if err != nil {
-		log.Fatalf("Failed to get token: %v", err)
-	}
-	fmt.Printf("Successfully authenticated. Token: %s...\n", token[:20])
-
 	fmt.Println("\n=== SDK Examples ===")
+	fmt.Println("Note: SDK automatically manages OAuth2 token acquisition and refresh")
 
 	// Initialize service clients
 	projectAPI := project.NewProjectService(sdk)
@@ -68,9 +53,7 @@ func main() {
 	fmt.Println("--- Project Management ---")
 
 	// Create a new project
-	newProject := schema.ProjectRequest{
-		// Add your project fields here
-	}
+	newProject := schema.ProjectRequest{}
 	createResp, err := projectAPI.CreateProject(ctx, newProject, nil)
 	if err != nil {
 		log.Printf("Error creating project: %v", err)

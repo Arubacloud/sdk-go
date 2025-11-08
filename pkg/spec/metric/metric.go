@@ -27,8 +27,8 @@ func NewMetricService(client *client.Client) *MetricService {
 func (s *MetricService) ListMetrics(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.MetricListResponse], error) {
 	s.client.Logger().Debugf("Listing metrics for project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(MetricsPath, project)

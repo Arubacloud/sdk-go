@@ -28,8 +28,8 @@ func NewKeyPairService(client *client.Client) *KeyPairService {
 func (s *KeyPairService) ListKeyPairs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.KeyPairListResponse], error) {
 	s.client.Logger().Debugf("Listing key pairs for project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(KeyPairsPath, project)
@@ -78,11 +78,8 @@ func (s *KeyPairService) ListKeyPairs(ctx context.Context, project string, param
 func (s *KeyPairService) GetKeyPair(ctx context.Context, project string, keyPairId string, params *schema.RequestParameters) (*schema.Response[schema.KeyPairResponse], error) {
 	s.client.Logger().Debugf("Getting key pair: %s in project: %s", keyPairId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if keyPairId == "" {
-		return nil, fmt.Errorf("key pair ID cannot be empty")
+	if err := validateProjectAndResource(project, keyPairId, "key pair ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(KeyPairPath, project, keyPairId)
@@ -131,8 +128,8 @@ func (s *KeyPairService) GetKeyPair(ctx context.Context, project string, keyPair
 func (s *KeyPairService) CreateKeyPair(ctx context.Context, project string, body schema.KeyPairRequest, params *schema.RequestParameters) (*schema.Response[schema.KeyPairResponse], error) {
 	s.client.Logger().Debugf("Creating key pair in project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(KeyPairsPath, project)
@@ -187,11 +184,8 @@ func (s *KeyPairService) CreateKeyPair(ctx context.Context, project string, body
 func (s *KeyPairService) DeleteKeyPair(ctx context.Context, projectId string, keyPairId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting key pair: %s in project: %s", keyPairId, projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
-	}
-	if keyPairId == "" {
-		return nil, fmt.Errorf("key pair ID cannot be empty")
+	if err := validateProjectAndResource(projectId, keyPairId, "key pair ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(KeyPairPath, projectId, keyPairId)

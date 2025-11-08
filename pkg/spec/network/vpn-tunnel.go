@@ -28,8 +28,8 @@ func NewVpnTunnelService(client *client.Client) *VpnTunnelService {
 func (s *VpnTunnelService) ListVpnTunnels(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelList], error) {
 	s.client.Logger().Debugf("Listing VPN tunnels for project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(VpnTunnelsPath, project)
@@ -75,11 +75,8 @@ func (s *VpnTunnelService) ListVpnTunnels(ctx context.Context, project string, p
 func (s *VpnTunnelService) GetVpnTunnel(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
 	s.client.Logger().Debugf("Getting VPN tunnel: %s in project: %s", vpnTunnelId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if vpnTunnelId == "" {
-		return nil, fmt.Errorf("VPN tunnel ID cannot be empty")
+	if err := validateProjectAndResource(project, vpnTunnelId, "VPN tunnel ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(VpnTunnelPath, project, vpnTunnelId)
@@ -125,8 +122,8 @@ func (s *VpnTunnelService) GetVpnTunnel(ctx context.Context, project string, vpn
 func (s *VpnTunnelService) CreateVpnTunnel(ctx context.Context, project string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
 	s.client.Logger().Debugf("Creating VPN tunnel in project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(VpnTunnelsPath, project)
@@ -177,11 +174,8 @@ func (s *VpnTunnelService) CreateVpnTunnel(ctx context.Context, project string, 
 func (s *VpnTunnelService) UpdateVpnTunnel(ctx context.Context, project string, vpnTunnelId string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
 	s.client.Logger().Debugf("Updating VPN tunnel: %s in project: %s", vpnTunnelId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if vpnTunnelId == "" {
-		return nil, fmt.Errorf("VPN tunnel ID cannot be empty")
+	if err := validateProjectAndResource(project, vpnTunnelId, "VPN tunnel ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(VpnTunnelPath, project, vpnTunnelId)
@@ -232,11 +226,8 @@ func (s *VpnTunnelService) UpdateVpnTunnel(ctx context.Context, project string, 
 func (s *VpnTunnelService) DeleteVpnTunnel(ctx context.Context, projectId string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting VPN tunnel: %s in project: %s", vpnTunnelId, projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
-	}
-	if vpnTunnelId == "" {
-		return nil, fmt.Errorf("VPN tunnel ID cannot be empty")
+	if err := validateProjectAndResource(projectId, vpnTunnelId, "VPN tunnel ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(VpnTunnelPath, projectId, vpnTunnelId)

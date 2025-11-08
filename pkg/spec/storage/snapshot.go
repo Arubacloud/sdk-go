@@ -27,8 +27,8 @@ func NewSnapshotService(client *client.Client) *SnapshotService {
 func (s *SnapshotService) ListSnapshots(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.SnapshotList], error) {
 	s.client.Logger().Debugf("Listing snapshots for project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(SnapshotsPath, project)
@@ -74,11 +74,8 @@ func (s *SnapshotService) ListSnapshots(ctx context.Context, project string, par
 func (s *SnapshotService) GetSnapshot(ctx context.Context, project string, snapshotId string, params *schema.RequestParameters) (*schema.Response[schema.SnapshotResponse], error) {
 	s.client.Logger().Debugf("Getting snapshot: %s in project: %s", snapshotId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if snapshotId == "" {
-		return nil, fmt.Errorf("snapshot ID cannot be empty")
+	if err := validateProjectAndResource(project, snapshotId, "snapshot ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(SnapshotPath, project, snapshotId)
@@ -124,8 +121,8 @@ func (s *SnapshotService) GetSnapshot(ctx context.Context, project string, snaps
 func (s *SnapshotService) CreateSnapshot(ctx context.Context, project string, body schema.SnapshotRequest, params *schema.RequestParameters) (*schema.Response[schema.SnapshotResponse], error) {
 	s.client.Logger().Debugf("Creating snapshot in project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(SnapshotsPath, project)
@@ -171,11 +168,8 @@ func (s *SnapshotService) CreateSnapshot(ctx context.Context, project string, bo
 func (s *SnapshotService) DeleteSnapshot(ctx context.Context, project string, snapshotId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting snapshot: %s in project: %s", snapshotId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if snapshotId == "" {
-		return nil, fmt.Errorf("snapshot ID cannot be empty")
+	if err := validateProjectAndResource(project, snapshotId, "snapshot ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(SnapshotPath, project, snapshotId)

@@ -25,8 +25,8 @@ func NewLoadBalancerService(client *client.Client) *LoadBalancerService {
 
 // ListLoadBalancers retrieves all load balancers for a project
 func (s *LoadBalancerService) ListLoadBalancers(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.LoadBalancerList], error) {
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(LoadBalancersPath, project)
@@ -73,11 +73,8 @@ func (s *LoadBalancerService) ListLoadBalancers(ctx context.Context, project str
 
 // GetLoadBalancer retrieves a specific load balancer by ID
 func (s *LoadBalancerService) GetLoadBalancer(ctx context.Context, project string, loadBalancerId string, params *schema.RequestParameters) (*schema.Response[schema.LoadBalancerResponse], error) {
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if loadBalancerId == "" {
-		return nil, fmt.Errorf("load balancer ID cannot be empty")
+	if err := validateProjectAndResource(project, loadBalancerId, "load balancer ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(LoadBalancerPath, project, loadBalancerId)

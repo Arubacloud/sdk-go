@@ -71,8 +71,8 @@ func (s *ProjectService) ListProjects(ctx context.Context, params *schema.Reques
 func (s *ProjectService) GetProject(ctx context.Context, projectId string, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
 	s.client.Logger().Debugf("Getting project: %s", projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
+	if err := validateProjectID(projectId); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(ProjectPath, projectId)
@@ -116,58 +116,24 @@ func (s *ProjectService) GetProject(ctx context.Context, projectId string, param
 
 // CreateProject creates a new project
 func (s *ProjectService) CreateProject(ctx context.Context, body schema.ProjectRequest, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
-	s.client.Logger().Debugf("Creating project")
+	s.client.Logger().Debug("Creating project")
 
-	path := ProjectsPath
-
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
-	}
-
-	bodyBytes, err := json.Marshal(body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request body: %w", err)
-	}
-
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
-	if err != nil {
-		return nil, err
-	}
-	defer httpResp.Body.Close()
-
-	respBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[schema.ProjectResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      respBytes,
-	}
-
-	if response.IsSuccess() {
-		var data schema.ProjectResponse
-		if err := json.Unmarshal(respBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return request.ExecuteWithBody[schema.ProjectResponse](
+		ctx,
+		s.client,
+		http.MethodPost,
+		projectPath(),
+		body,
+		params,
+	)
 }
 
 // UpdateProject updates an existing project
 func (s *ProjectService) UpdateProject(ctx context.Context, projectId string, body schema.ProjectRequest, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
 	s.client.Logger().Debugf("Updating project: %s", projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
+	if err := validateProjectID(projectId); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(ProjectPath, projectId)
@@ -218,8 +184,8 @@ func (s *ProjectService) UpdateProject(ctx context.Context, projectId string, bo
 func (s *ProjectService) DeleteProject(ctx context.Context, projectId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting project: %s", projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
+	if err := validateProjectID(projectId); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(ProjectPath, projectId)

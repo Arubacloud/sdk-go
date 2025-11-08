@@ -28,14 +28,8 @@ func NewSecurityGroupRuleService(client *client.Client) *SecurityGroupRuleServic
 func (s *SecurityGroupRuleService) ListSecurityGroupRules(ctx context.Context, project string, vpcId string, securityGroupId string, params *schema.RequestParameters) (*schema.Response[schema.SecurityRuleList], error) {
 	s.client.Logger().Debugf("Listing security group rules for security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
-	}
-	if securityGroupId == "" {
-		return nil, fmt.Errorf("security group ID cannot be empty")
+	if err := validateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(SecurityGroupRulesPath, project, vpcId, securityGroupId)
@@ -81,17 +75,8 @@ func (s *SecurityGroupRuleService) ListSecurityGroupRules(ctx context.Context, p
 func (s *SecurityGroupRuleService) GetSecurityGroupRule(ctx context.Context, project string, vpcId string, securityGroupId string, securityGroupRuleId string, params *schema.RequestParameters) (*schema.Response[schema.SecurityRuleResponse], error) {
 	s.client.Logger().Debugf("Getting security group rule: %s from security group: %s in VPC: %s in project: %s", securityGroupRuleId, securityGroupId, vpcId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
-	}
-	if securityGroupId == "" {
-		return nil, fmt.Errorf("security group ID cannot be empty")
-	}
-	if securityGroupRuleId == "" {
-		return nil, fmt.Errorf("security group rule ID cannot be empty")
+	if err := validateSecurityGroupRule(project, vpcId, securityGroupId, securityGroupRuleId); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(SecurityGroupRulePath, project, vpcId, securityGroupId, securityGroupRuleId)
@@ -137,14 +122,8 @@ func (s *SecurityGroupRuleService) GetSecurityGroupRule(ctx context.Context, pro
 func (s *SecurityGroupRuleService) CreateSecurityGroupRule(ctx context.Context, project string, vpcId string, securityGroupId string, body schema.SecurityRuleRequest, params *schema.RequestParameters) (*schema.Response[schema.SecurityRuleResponse], error) {
 	s.client.Logger().Debugf("Creating security group rule in security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
-	}
-	if securityGroupId == "" {
-		return nil, fmt.Errorf("security group ID cannot be empty")
+	if err := validateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(SecurityGroupRulesPath, project, vpcId, securityGroupId)
@@ -195,17 +174,8 @@ func (s *SecurityGroupRuleService) CreateSecurityGroupRule(ctx context.Context, 
 func (s *SecurityGroupRuleService) UpdateSecurityGroupRule(ctx context.Context, project string, vpcId string, securityGroupId string, securityGroupRuleId string, body schema.SecurityRuleRequest, params *schema.RequestParameters) (*schema.Response[schema.SecurityRuleResponse], error) {
 	s.client.Logger().Debugf("Updating security group rule: %s in security group: %s in VPC: %s in project: %s", securityGroupRuleId, securityGroupId, vpcId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
-	}
-	if securityGroupId == "" {
-		return nil, fmt.Errorf("security group ID cannot be empty")
-	}
-	if securityGroupRuleId == "" {
-		return nil, fmt.Errorf("security group rule ID cannot be empty")
+	if err := validateSecurityGroupRule(project, vpcId, securityGroupId, securityGroupRuleId); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(SecurityGroupRulePath, project, vpcId, securityGroupId, securityGroupRuleId)
@@ -256,17 +226,8 @@ func (s *SecurityGroupRuleService) UpdateSecurityGroupRule(ctx context.Context, 
 func (s *SecurityGroupRuleService) DeleteSecurityGroupRule(ctx context.Context, projectId string, vpcId string, securityGroupId string, securityGroupRuleId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting security group rule: %s from security group: %s in VPC: %s in project: %s", securityGroupRuleId, securityGroupId, vpcId, projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
-	}
-	if securityGroupId == "" {
-		return nil, fmt.Errorf("security group ID cannot be empty")
-	}
-	if securityGroupRuleId == "" {
-		return nil, fmt.Errorf("security group rule ID cannot be empty")
+	if err := validateSecurityGroupRule(projectId, vpcId, securityGroupId, securityGroupRuleId); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(SecurityGroupRulePath, projectId, vpcId, securityGroupId, securityGroupRuleId)

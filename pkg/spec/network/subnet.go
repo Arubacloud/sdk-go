@@ -28,11 +28,8 @@ func NewSubnetService(client *client.Client) *SubnetService {
 func (s *SubnetService) ListSubnets(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.SubnetList], error) {
 	s.client.Logger().Debugf("Listing subnets for VPC: %s in project: %s", vpcId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
+	if err := validateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(SubnetsPath, project, vpcId)
@@ -78,14 +75,8 @@ func (s *SubnetService) ListSubnets(ctx context.Context, project string, vpcId s
 func (s *SubnetService) GetSubnet(ctx context.Context, project string, vpcId string, subnetId string, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
 	s.client.Logger().Debugf("Getting subnet: %s from VPC: %s in project: %s", subnetId, vpcId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
-	}
-	if subnetId == "" {
-		return nil, fmt.Errorf("subnet ID cannot be empty")
+	if err := validateVPCResource(project, vpcId, subnetId, "subnet ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(SubnetPath, project, vpcId, subnetId)
@@ -131,11 +122,8 @@ func (s *SubnetService) GetSubnet(ctx context.Context, project string, vpcId str
 func (s *SubnetService) CreateSubnet(ctx context.Context, project string, vpcId string, body schema.SubnetRequest, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
 	s.client.Logger().Debugf("Creating subnet in VPC: %s in project: %s", vpcId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
+	if err := validateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(SubnetsPath, project, vpcId)
@@ -186,14 +174,8 @@ func (s *SubnetService) CreateSubnet(ctx context.Context, project string, vpcId 
 func (s *SubnetService) UpdateSubnet(ctx context.Context, project string, vpcId string, subnetId string, body schema.SubnetRequest, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
 	s.client.Logger().Debugf("Updating subnet: %s in VPC: %s in project: %s", subnetId, vpcId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
-	}
-	if subnetId == "" {
-		return nil, fmt.Errorf("subnet ID cannot be empty")
+	if err := validateVPCResource(project, vpcId, subnetId, "subnet ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(SubnetPath, project, vpcId, subnetId)
@@ -244,14 +226,8 @@ func (s *SubnetService) UpdateSubnet(ctx context.Context, project string, vpcId 
 func (s *SubnetService) DeleteSubnet(ctx context.Context, projectId string, vpcId string, subnetId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting subnet: %s from VPC: %s in project: %s", subnetId, vpcId, projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
-	}
-	if subnetId == "" {
-		return nil, fmt.Errorf("subnet ID cannot be empty")
+	if err := validateVPCResource(projectId, vpcId, subnetId, "subnet ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(SubnetPath, projectId, vpcId, subnetId)

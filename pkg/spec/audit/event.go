@@ -27,8 +27,8 @@ func NewEventService(client *client.Client) *EventService {
 func (s *EventService) ListEvents(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.AuditEventListResponse], error) {
 	s.client.Logger().Debugf("Listing audit events for project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(EventsPath, project)

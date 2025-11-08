@@ -28,8 +28,8 @@ func NewVPCService(client *client.Client) *VPCService {
 func (s *VPCService) ListVPCs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VpcList], error) {
 	s.client.Logger().Debugf("Listing VPCs for project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(VPCsPath, project)
@@ -75,11 +75,8 @@ func (s *VPCService) ListVPCs(ctx context.Context, project string, params *schem
 func (s *VPCService) GetVPC(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
 	s.client.Logger().Debugf("Getting VPC: %s in project: %s", vpcId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
+	if err := validateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(VPCNetworkPath, project, vpcId)
@@ -125,8 +122,8 @@ func (s *VPCService) GetVPC(ctx context.Context, project string, vpcId string, p
 func (s *VPCService) CreateVPC(ctx context.Context, project string, body schema.VpcRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
 	s.client.Logger().Debugf("Creating VPC in project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(VPCsPath, project)
@@ -177,11 +174,8 @@ func (s *VPCService) CreateVPC(ctx context.Context, project string, body schema.
 func (s *VPCService) UpdateVPC(ctx context.Context, project string, vpcId string, body schema.VpcRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
 	s.client.Logger().Debugf("Updating VPC: %s in project: %s", vpcId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
+	if err := validateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(VPCNetworkPath, project, vpcId)
@@ -232,11 +226,8 @@ func (s *VPCService) UpdateVPC(ctx context.Context, project string, vpcId string
 func (s *VPCService) DeleteVPC(ctx context.Context, projectId string, vpcId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting VPC: %s in project: %s", vpcId, projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
+	if err := validateProjectAndResource(projectId, vpcId, "VPC ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(VPCNetworkPath, projectId, vpcId)

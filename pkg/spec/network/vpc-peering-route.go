@@ -28,14 +28,8 @@ func NewVpcPeeringRouteService(client *client.Client) *VpcPeeringRouteService {
 func (s *VpcPeeringRouteService) ListVpcPeeringRoutes(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteList], error) {
 	s.client.Logger().Debugf("Listing VPC peering routes for VPC peering: %s in VPC: %s in project: %s", vpcPeeringId, vpcId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
-	}
-	if vpcPeeringId == "" {
-		return nil, fmt.Errorf("VPC peering ID cannot be empty")
+	if err := validateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(VpcPeeringRoutesPath, project, vpcId, vpcPeeringId)
@@ -81,17 +75,8 @@ func (s *VpcPeeringRouteService) ListVpcPeeringRoutes(ctx context.Context, proje
 func (s *VpcPeeringRouteService) GetVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error) {
 	s.client.Logger().Debugf("Getting VPC peering route: %s from VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteId, vpcPeeringId, vpcId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
-	}
-	if vpcPeeringId == "" {
-		return nil, fmt.Errorf("VPC peering ID cannot be empty")
-	}
-	if vpcPeeringRouteId == "" {
-		return nil, fmt.Errorf("VPC peering route ID cannot be empty")
+	if err := validateVPCPeeringRoute(project, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(VpcPeeringRoutePath, project, vpcId, vpcPeeringId, vpcPeeringRouteId)
@@ -137,14 +122,8 @@ func (s *VpcPeeringRouteService) GetVpcPeeringRoute(ctx context.Context, project
 func (s *VpcPeeringRouteService) CreateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VpcPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error) {
 	s.client.Logger().Debugf("Creating VPC peering route in VPC peering: %s in VPC: %s in project: %s", vpcPeeringId, vpcId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
-	}
-	if vpcPeeringId == "" {
-		return nil, fmt.Errorf("VPC peering ID cannot be empty")
+	if err := validateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(VpcPeeringRoutesPath, project, vpcId, vpcPeeringId)
@@ -195,17 +174,8 @@ func (s *VpcPeeringRouteService) CreateVpcPeeringRoute(ctx context.Context, proj
 func (s *VpcPeeringRouteService) UpdateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, body schema.VpcPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error) {
 	s.client.Logger().Debugf("Updating VPC peering route: %s in VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteId, vpcPeeringId, vpcId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
-	}
-	if vpcPeeringId == "" {
-		return nil, fmt.Errorf("VPC peering ID cannot be empty")
-	}
-	if vpcPeeringRouteId == "" {
-		return nil, fmt.Errorf("VPC peering route ID cannot be empty")
+	if err := validateVPCPeeringRoute(project, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(VpcPeeringRoutePath, project, vpcId, vpcPeeringId, vpcPeeringRouteId)
@@ -256,17 +226,8 @@ func (s *VpcPeeringRouteService) UpdateVpcPeeringRoute(ctx context.Context, proj
 func (s *VpcPeeringRouteService) DeleteVpcPeeringRoute(ctx context.Context, projectId string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting VPC peering route: %s from VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteId, vpcPeeringId, vpcId, projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
-	}
-	if vpcId == "" {
-		return nil, fmt.Errorf("VPC ID cannot be empty")
-	}
-	if vpcPeeringId == "" {
-		return nil, fmt.Errorf("VPC peering ID cannot be empty")
-	}
-	if vpcPeeringRouteId == "" {
-		return nil, fmt.Errorf("VPC peering route ID cannot be empty")
+	if err := validateVPCPeeringRoute(projectId, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(VpcPeeringRoutePath, projectId, vpcId, vpcPeeringId, vpcPeeringRouteId)

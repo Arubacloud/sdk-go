@@ -28,14 +28,8 @@ func NewGrantService(client *client.Client) *GrantService {
 func (s *GrantService) ListGrants(ctx context.Context, project string, dbaasId string, databaseId string, params *schema.RequestParameters) (*schema.Response[schema.GrantList], error) {
 	s.client.Logger().Debugf("Listing grants for database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if dbaasId == "" {
-		return nil, fmt.Errorf("DBaaS ID cannot be empty")
-	}
-	if databaseId == "" {
-		return nil, fmt.Errorf("database ID cannot be empty")
+	if err := validateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(GrantsPath, project, dbaasId, databaseId)
@@ -82,19 +76,10 @@ func (s *GrantService) ListGrants(ctx context.Context, project string, dbaasId s
 
 // GetGrant retrieves a specific grant by ID
 func (s *GrantService) GetGrant(ctx context.Context, project string, dbaasId string, databaseId string, grantId string, params *schema.RequestParameters) (*schema.Response[schema.GrantResponse], error) {
-	s.client.Logger().Debugf("Getting grant: %s for database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, project)
+	s.client.Logger().Debugf("Getting grant: %s from database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if dbaasId == "" {
-		return nil, fmt.Errorf("DBaaS ID cannot be empty")
-	}
-	if databaseId == "" {
-		return nil, fmt.Errorf("database ID cannot be empty")
-	}
-	if grantId == "" {
-		return nil, fmt.Errorf("grant ID cannot be empty")
+	if err := validateDatabaseGrant(project, dbaasId, databaseId, grantId); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(GrantItemPath, project, dbaasId, databaseId, grantId)
@@ -141,16 +126,10 @@ func (s *GrantService) GetGrant(ctx context.Context, project string, dbaasId str
 
 // CreateGrant creates a new grant for a database
 func (s *GrantService) CreateGrant(ctx context.Context, project string, dbaasId string, databaseId string, body schema.GrantRequest, params *schema.RequestParameters) (*schema.Response[schema.GrantResponse], error) {
-	s.client.Logger().Debugf("Creating grant for database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, project)
+	s.client.Logger().Debugf("Creating grant in database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if dbaasId == "" {
-		return nil, fmt.Errorf("DBaaS ID cannot be empty")
-	}
-	if databaseId == "" {
-		return nil, fmt.Errorf("database ID cannot be empty")
+	if err := validateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(GrantsPath, project, dbaasId, databaseId)
@@ -203,19 +182,10 @@ func (s *GrantService) CreateGrant(ctx context.Context, project string, dbaasId 
 
 // UpdateGrant updates an existing grant
 func (s *GrantService) UpdateGrant(ctx context.Context, project string, dbaasId string, databaseId string, grantId string, body schema.GrantRequest, params *schema.RequestParameters) (*schema.Response[schema.GrantResponse], error) {
-	s.client.Logger().Debugf("Updating grant: %s for database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, project)
+	s.client.Logger().Debugf("Updating grant: %s in database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if dbaasId == "" {
-		return nil, fmt.Errorf("DBaaS ID cannot be empty")
-	}
-	if databaseId == "" {
-		return nil, fmt.Errorf("database ID cannot be empty")
-	}
-	if grantId == "" {
-		return nil, fmt.Errorf("grant ID cannot be empty")
+	if err := validateDatabaseGrant(project, dbaasId, databaseId, grantId); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(GrantItemPath, project, dbaasId, databaseId, grantId)
@@ -268,19 +238,10 @@ func (s *GrantService) UpdateGrant(ctx context.Context, project string, dbaasId 
 
 // DeleteGrant deletes a grant by ID
 func (s *GrantService) DeleteGrant(ctx context.Context, projectId string, dbaasId string, databaseId string, grantId string, params *schema.RequestParameters) (*schema.Response[any], error) {
-	s.client.Logger().Debugf("Deleting grant: %s for database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, projectId)
+	s.client.Logger().Debugf("Deleting grant: %s from database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
-	}
-	if dbaasId == "" {
-		return nil, fmt.Errorf("DBaaS ID cannot be empty")
-	}
-	if databaseId == "" {
-		return nil, fmt.Errorf("database ID cannot be empty")
-	}
-	if grantId == "" {
-		return nil, fmt.Errorf("grant ID cannot be empty")
+	if err := validateDatabaseGrant(projectId, dbaasId, databaseId, grantId); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(GrantItemPath, projectId, dbaasId, databaseId, grantId)

@@ -27,8 +27,8 @@ func NewBlockStorageService(client *client.Client) *BlockStorageService {
 func (s *BlockStorageService) ListBlockStorageVolumes(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.BlockStorageList], error) {
 	s.client.Logger().Debugf("Listing block storage volumes for project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(BlockStorageVolumesPath, project)
@@ -74,11 +74,8 @@ func (s *BlockStorageService) ListBlockStorageVolumes(ctx context.Context, proje
 func (s *BlockStorageService) GetBlockStorageVolume(ctx context.Context, project string, volumeId string, params *schema.RequestParameters) (*schema.Response[schema.BlockStorageResponse], error) {
 	s.client.Logger().Debugf("Getting block storage volume: %s in project: %s", volumeId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if volumeId == "" {
-		return nil, fmt.Errorf("block storage ID cannot be empty")
+	if err := validateProjectAndResource(project, volumeId, "block storage ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(BlockStoragePath, project, volumeId)
@@ -124,8 +121,8 @@ func (s *BlockStorageService) GetBlockStorageVolume(ctx context.Context, project
 func (s *BlockStorageService) CreateBlockStorageVolume(ctx context.Context, project string, body schema.BlockStorageRequest, params *schema.RequestParameters) (*schema.Response[schema.BlockStorageResponse], error) {
 	s.client.Logger().Debugf("Creating block storage volume in project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(BlockStorageVolumesPath, project)
@@ -171,11 +168,8 @@ func (s *BlockStorageService) CreateBlockStorageVolume(ctx context.Context, proj
 func (s *BlockStorageService) DeleteBlockStorageVolume(ctx context.Context, project string, volumeId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting block storage volume: %s in project: %s", volumeId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if volumeId == "" {
-		return nil, fmt.Errorf("block storage ID cannot be empty")
+	if err := validateProjectAndResource(project, volumeId, "block storage ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(BlockStoragePath, project, volumeId)

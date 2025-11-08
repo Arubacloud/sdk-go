@@ -28,8 +28,8 @@ func NewDBaaSService(client *client.Client) *DBaaSService {
 func (s *DBaaSService) ListDBaaS(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.DBaaSList], error) {
 	s.client.Logger().Debugf("Listing DBaaS instances for project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(DBaaSPath, project)
@@ -78,11 +78,8 @@ func (s *DBaaSService) ListDBaaS(ctx context.Context, project string, params *sc
 func (s *DBaaSService) GetDBaaS(ctx context.Context, project string, dbaasId string, params *schema.RequestParameters) (*schema.Response[schema.DBaaSResponse], error) {
 	s.client.Logger().Debugf("Getting DBaaS instance: %s in project: %s", dbaasId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if dbaasId == "" {
-		return nil, fmt.Errorf("DBaaS ID cannot be empty")
+	if err := validateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(DBaaSItemPath, project, dbaasId)
@@ -131,8 +128,8 @@ func (s *DBaaSService) GetDBaaS(ctx context.Context, project string, dbaasId str
 func (s *DBaaSService) CreateDBaaS(ctx context.Context, project string, body schema.DBaaSRequest, params *schema.RequestParameters) (*schema.Response[schema.DBaaSResponse], error) {
 	s.client.Logger().Debugf("Creating DBaaS instance in project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(DBaaSPath, project)
@@ -187,11 +184,8 @@ func (s *DBaaSService) CreateDBaaS(ctx context.Context, project string, body sch
 func (s *DBaaSService) UpdateDBaaS(ctx context.Context, project string, databaseId string, body schema.DBaaSRequest, params *schema.RequestParameters) (*schema.Response[schema.DBaaSResponse], error) {
 	s.client.Logger().Debugf("Updating DBaaS instance: %s in project: %s", databaseId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if databaseId == "" {
-		return nil, fmt.Errorf("database ID cannot be empty")
+	if err := validateProjectAndResource(project, databaseId, "DBaaS ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(DBaaSItemPath, project, databaseId)
@@ -246,11 +240,8 @@ func (s *DBaaSService) UpdateDBaaS(ctx context.Context, project string, database
 func (s *DBaaSService) DeleteDBaaS(ctx context.Context, projectId string, dbaasId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting DBaaS instance: %s in project: %s", dbaasId, projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
-	}
-	if dbaasId == "" {
-		return nil, fmt.Errorf("DBaaS ID cannot be empty")
+	if err := validateProjectAndResource(projectId, dbaasId, "DBaaS ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(DBaaSItemPath, projectId, dbaasId)

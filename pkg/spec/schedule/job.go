@@ -28,8 +28,8 @@ func NewJobService(client *client.Client) *JobService {
 func (s *JobService) ListScheduleJobs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.JobList], error) {
 	s.client.Logger().Debugf("Listing schedule jobs for project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(ScheduleJobsPath, project)
@@ -75,11 +75,8 @@ func (s *JobService) ListScheduleJobs(ctx context.Context, project string, param
 func (s *JobService) GetScheduleJob(ctx context.Context, project string, scheduleJobId string, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
 	s.client.Logger().Debugf("Getting schedule job: %s in project: %s", scheduleJobId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if scheduleJobId == "" {
-		return nil, fmt.Errorf("job ID cannot be empty")
+	if err := validateProjectAndResource(project, scheduleJobId, "job ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(JobPath, project, scheduleJobId)
@@ -125,8 +122,8 @@ func (s *JobService) GetScheduleJob(ctx context.Context, project string, schedul
 func (s *JobService) CreateScheduleJob(ctx context.Context, project string, body schema.JobRequest, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
 	s.client.Logger().Debugf("Creating schedule job in project: %s", project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
+	if err := validateProject(project); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(ScheduleJobsPath, project)
@@ -177,11 +174,8 @@ func (s *JobService) CreateScheduleJob(ctx context.Context, project string, body
 func (s *JobService) UpdateScheduleJob(ctx context.Context, project string, scheduleJobId string, body schema.JobRequest, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
 	s.client.Logger().Debugf("Updating schedule job: %s in project: %s", scheduleJobId, project)
 
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if scheduleJobId == "" {
-		return nil, fmt.Errorf("job ID cannot be empty")
+	if err := validateProjectAndResource(project, scheduleJobId, "job ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(JobPath, project, scheduleJobId)
@@ -232,11 +226,8 @@ func (s *JobService) UpdateScheduleJob(ctx context.Context, project string, sche
 func (s *JobService) DeleteScheduleJob(ctx context.Context, projectId string, scheduleJobId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting schedule job: %s in project: %s", scheduleJobId, projectId)
 
-	if projectId == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
-	}
-	if scheduleJobId == "" {
-		return nil, fmt.Errorf("job ID cannot be empty")
+	if err := validateProjectAndResource(projectId, scheduleJobId, "job ID"); err != nil {
+		return nil, err
 	}
 
 	path := fmt.Sprintf(JobPath, projectId, scheduleJobId)
