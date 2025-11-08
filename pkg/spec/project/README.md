@@ -61,10 +61,16 @@ resp, err := projectAPI.ListProjects(ctx, nil)
 if err != nil {
     log.Fatalf("Failed to list projects: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Projects retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d projects\n", len(resp.Data.Values))
+    for _, project := range resp.Data.Values {
+        fmt.Printf("Project: %s\n", project.Metadata.Name)
+    }
 }
+
+// Access HTTP metadata
+fmt.Printf("Status Code: %d\n", resp.StatusCode)
 ```
 

@@ -67,10 +67,13 @@ resp, err := metricAPI.ListMetrics(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list metrics: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Metrics retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d metrics\n", len(resp.Data.Values))
+    for _, metric := range resp.Data.Values {
+        fmt.Printf("Metric: %s\n", metric.Metadata.Name)
+    }
 }
 ```
 
@@ -83,9 +86,12 @@ resp, err := alertAPI.ListAlerts(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list alerts: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Alerts retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d alerts\n", len(resp.Data.Values))
+    for _, alert := range resp.Data.Values {
+        fmt.Printf("Alert: %s - State: %s\n", alert.Metadata.Name, alert.Properties.State)
+    }
 }
 ```

@@ -88,3 +88,9 @@ type AuditEvent struct {
 	TypologyId    *string                `json:"typologyId,omitempty"`
 	Title         *string                `json:"title,omitempty"`
 }
+
+// AuditEventListResponse represents a paginated list of audit events
+type AuditEventListResponse struct {
+	ListResponse
+	Values []AuditEvent `json:"values"`
+}

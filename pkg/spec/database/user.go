@@ -2,7 +2,9 @@ package database
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/Arubacloud/sdk-go/pkg/client"
@@ -22,12 +24,15 @@ func NewUserService(client *client.Client) *UserService {
 }
 
 // ListUsers retrieves all users for a project
-func (s *UserService) ListUsers(ctx context.Context, project string, params *schema.RequestParameters) (*http.Response, error) {
+func (s *UserService) ListUsers(ctx context.Context, project string, dbaasId string, params *schema.RequestParameters) (*schema.Response[schema.UserList], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
+	if dbaasId == "" {
+		return nil, fmt.Errorf("DBaaS ID cannot be empty")
+	}
 
-	path := fmt.Sprintf(UsersPath, project)
+	path := fmt.Sprintf(UsersPath, project, dbaasId)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -37,19 +42,51 @@ func (s *UserService) ListUsers(ctx context.Context, project string, params *sch
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	// Read the response body
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Create the response wrapper
+	response := &schema.Response[schema.UserList]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	// Parse the response body if successful
+	if response.IsSuccess() {
+		var data schema.UserList
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
 // GetUser retrieves a specific user by ID
-func (s *UserService) GetUser(ctx context.Context, project string, userId string, params *schema.RequestParameters) (*http.Response, error) {
+func (s *UserService) GetUser(ctx context.Context, project string, dbaasId string, userId string, params *schema.RequestParameters) (*schema.Response[schema.UserResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
+	}
+	if dbaasId == "" {
+		return nil, fmt.Errorf("DBaaS ID cannot be empty")
 	}
 	if userId == "" {
 		return nil, fmt.Errorf("user ID cannot be empty")
 	}
 
-	path := fmt.Sprintf(UserItemPath, project, userId)
+	path := fmt.Sprintf(UserItemPath, project, dbaasId, userId)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -59,16 +96,48 @@ func (s *UserService) GetUser(ctx context.Context, project string, userId string
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	// Read the response body
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Create the response wrapper
+	response := &schema.Response[schema.UserResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	// Parse the response body if successful
+	if response.IsSuccess() {
+		var data schema.UserResponse
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
 // CreateOrUpdateUser creates or updates a user
-func (s *UserService) CreateOrUpdateUser(ctx context.Context, project string, body schema.UserRequest, params *schema.RequestParameters) (*http.Response, error) {
+func (s *UserService) CreateOrUpdateUser(ctx context.Context, project string, dbaasId string, body schema.UserRequest, params *schema.RequestParameters) (*schema.Response[schema.UserResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
+	if dbaasId == "" {
+		return nil, fmt.Errorf("DBaaS ID cannot be empty")
+	}
 
-	path := fmt.Sprintf(UsersPath, project)
+	path := fmt.Sprintf(UsersPath, project, dbaasId)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -78,19 +147,51 @@ func (s *UserService) CreateOrUpdateUser(ctx context.Context, project string, bo
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodPut, path, body, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	// Read the response body
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Create the response wrapper
+	response := &schema.Response[schema.UserResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	// Parse the response body if successful
+	if response.IsSuccess() {
+		var data schema.UserResponse
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
 // DeleteUser deletes a user by ID
-func (s *UserService) DeleteUser(ctx context.Context, projectId string, userId string, params *schema.RequestParameters) (*http.Response, error) {
+func (s *UserService) DeleteUser(ctx context.Context, projectId string, dbaasId string, userId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
+	}
+	if dbaasId == "" {
+		return nil, fmt.Errorf("DBaaS ID cannot be empty")
 	}
 	if userId == "" {
 		return nil, fmt.Errorf("user ID cannot be empty")
 	}
 
-	path := fmt.Sprintf(UserItemPath, projectId, userId)
+	path := fmt.Sprintf(UserItemPath, projectId, dbaasId, userId)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -100,5 +201,34 @@ func (s *UserService) DeleteUser(ctx context.Context, projectId string, userId s
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	// Read the response body
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Create the response wrapper
+	response := &schema.Response[any]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	// For DELETE operations, we typically don't parse the body unless there's content
+	if response.IsSuccess() && len(bodyBytes) > 0 {
+		var data any
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }

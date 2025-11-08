@@ -27,12 +27,12 @@ const (
 	LoadBalancerPath  = "/projects/%s/providers/Aruba.Network/loadbalancers/%s"
 
 	// VPC Peering Connection paths
-	VpcPeeringsPath = "/projects/%s/providers/Aruba.Network/vpcpeeringconnections"
-	VpcPeeringPath  = "/projects/%s/providers/Aruba.Network/vpcpeeringconnections/%s"
+	VpcPeeringsPath = "/projects/%s/providers/Aruba.Network/vpcs/%s/vpcPeerings"
+	VpcPeeringPath  = "/projects/%s/providers/Aruba.Network/vpcs/%s/vpcPeerings/%s"
 
 	// VPC Peering Route paths
-	VpcPeeringRoutesPath = "/projects/%s/providers/Aruba.Network/vpcpeeringconnections/%s/routes"
-	VpcPeeringRoutePath  = "/projects/%s/providers/Aruba.Network/vpcpeeringconnections/%s/routes/%s"
+	VpcPeeringRoutesPath = "/projects/%s/providers/Aruba.Network/vpcs/%s/vpcPeerings/%s/routes"
+	VpcPeeringRoutePath  = "/projects/%s/providers/Aruba.Network/vpcs/%s/vpcPeerings/%s/routes/%s"
 
 	// VPN Tunnel paths
 	VpnTunnelsPath = "/projects/%s/providers/Aruba.Network/vpntunnels"

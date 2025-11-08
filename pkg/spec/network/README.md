@@ -93,10 +93,13 @@ resp, err := vpcAPI.ListVPCs(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list VPCs: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("VPCs retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d VPCs\n", len(resp.Data.Values))
+    for _, vpc := range resp.Data.Values {
+        fmt.Printf("VPC: %s - CIDR: %s\n", vpc.Metadata.Name, vpc.Properties.Cidr)
+    }
 }
 ```
 
@@ -110,10 +113,10 @@ resp, err := subnetAPI.ListSubnets(ctx, projectID, vpcID, nil)
 if err != nil {
     log.Fatalf("Failed to list subnets: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Subnets retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d subnets\n", len(resp.Data.Values))
 }
 ```
 
@@ -127,10 +130,10 @@ resp, err := securityGroupAPI.ListSecurityGroups(ctx, projectID, vpcID, nil)
 if err != nil {
     log.Fatalf("Failed to list security groups: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Security groups retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d security groups\n", len(resp.Data.Values))
 }
 ```
 
@@ -145,10 +148,10 @@ resp, err := securityGroupRuleAPI.ListSecurityGroupRules(ctx, projectID, vpcID, 
 if err != nil {
     log.Fatalf("Failed to list security group rules: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Security group rules retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d security group rules\n", len(resp.Data.Values))
 }
 ```
 
@@ -161,10 +164,10 @@ resp, err := elasticIPAPI.ListElasticIPs(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list elastic IPs: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Elastic IPs retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d elastic IPs\n", len(resp.Data.Values))
 }
 ```
 
@@ -177,10 +180,10 @@ resp, err := loadBalancerAPI.ListLoadBalancers(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list load balancers: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Load balancers retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d load balancers\n", len(resp.Data.Values))
 }
 ```
 
@@ -194,10 +197,10 @@ resp, err := vpcPeeringAPI.ListVpcPeerings(ctx, projectID, vpcID, nil)
 if err != nil {
     log.Fatalf("Failed to list VPC peerings: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("VPC peerings retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d VPC peerings\n", len(resp.Data.Values))
 }
 ```
 
@@ -212,10 +215,10 @@ resp, err := vpcPeeringRouteAPI.ListVpcPeeringRoutes(ctx, projectID, vpcID, vpcP
 if err != nil {
     log.Fatalf("Failed to list VPC peering routes: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("VPC peering routes retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d VPC peering routes\n", len(resp.Data.Values))
 }
 ```
 
@@ -228,10 +231,10 @@ resp, err := vpnTunnelAPI.ListVpnTunnels(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list VPN tunnels: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("VPN tunnels retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d VPN tunnels\n", len(resp.Data.Values))
 }
 ```
 
@@ -245,10 +248,10 @@ resp, err := vpnRouteAPI.ListVpnRoutes(ctx, projectID, vpnTunnelID, nil)
 if err != nil {
     log.Fatalf("Failed to list VPN routes: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("VPN routes retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d VPN routes\n", len(resp.Data.Values))
 }
 ```
 

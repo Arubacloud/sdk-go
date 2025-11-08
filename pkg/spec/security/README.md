@@ -49,7 +49,7 @@ func main() {
     projectID := "my-project-id"
     
     // Initialize API interface
-    var kmsAPI security.KMSAPI = security.NewKMSService(c)
+    var kmsAPI security.KMSAPI = security.NewKmsKeyService(c)
 }
 ```
 
@@ -62,10 +62,13 @@ resp, err := kmsAPI.ListKMSKeys(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list KMS keys: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("KMS keys retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d KMS keys\n", len(resp.Data.Values))
+    for _, key := range resp.Data.Values {
+        fmt.Printf("Key: %s - Status: %s\n", key.Metadata.Name, key.Status.State)
+    }
 }
 ```
 

@@ -16,7 +16,7 @@ go get github.com/Arubacloud/sdk-go
 
 ## Available Services
 
-### JobAPI
+### ScheduleJobAPI
 
 Manage scheduled jobs with full CRUD operations:
 - List all scheduled jobs in a project
@@ -48,8 +48,30 @@ func main() {
     ctx := context.Background()
     projectID := "my-project-id"
     
-    // Initialize API interface
-    var jobAPI schedule.JobAPI = schedule.NewJobService(c)
+        // Initialize API interface
+    var jobAPI schedule.ScheduleJobAPI = schedule.NewJobService(c)
+}
+```
+
+### Job Management
+
+#### List Scheduled Jobs
+
+```go
+resp, err := jobAPI.ListScheduleJobs(ctx, projectID, nil)
+if err != nil {
+    log.Fatalf("Failed to list jobs: %v", err)
+}
+
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d scheduled jobs\n", len(resp.Data.Values))
+    for _, job := range resp.Data.Values {
+        fmt.Printf("Job: %s - Type: %s\n", job.Metadata.Name, job.Properties.JobType)
+    }
+}
+```
+
 }
 ```
 

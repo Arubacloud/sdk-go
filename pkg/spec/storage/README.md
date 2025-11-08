@@ -71,10 +71,13 @@ resp, err := blockStorageAPI.ListBlockStorageVolumes(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list block storage volumes: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Block storage volumes retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d block storage volumes\n", len(resp.Data.Values))
+    for _, volume := range resp.Data.Values {
+        fmt.Printf("Volume: %s - Size: %dGB\n", volume.Metadata.Name, volume.Properties.SizeGb)
+    }
 }
 ```
 
@@ -87,9 +90,12 @@ resp, err := snapshotAPI.ListSnapshots(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list snapshots: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Snapshots retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d snapshots\n", len(resp.Data.Values))
+    for _, snapshot := range resp.Data.Values {
+        fmt.Printf("Snapshot: %s\n", snapshot.Metadata.Name)
+    }
 }
 ```

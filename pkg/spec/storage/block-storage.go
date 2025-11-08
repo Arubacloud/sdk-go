@@ -2,7 +2,9 @@ package storage
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/Arubacloud/sdk-go/pkg/client"
@@ -21,8 +23,8 @@ func NewBlockStorageService(client *client.Client) *BlockStorageService {
 	}
 }
 
-// ListBlockStorages retrieves all block storages for a project
-func (s *BlockStorageService) ListBlockStorages(ctx context.Context, project string, params *schema.RequestParameters) (*http.Response, error) {
+// ListBlockStorageVolumes retrieves all block storage volumes for a project
+func (s *BlockStorageService) ListBlockStorageVolumes(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.BlockStorageList], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -37,19 +39,45 @@ func (s *BlockStorageService) ListBlockStorages(ctx context.Context, project str
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.BlockStorageList]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.BlockStorageList
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
-// GetBlockStorage retrieves a specific block storage by ID
-func (s *BlockStorageService) GetBlockStorage(ctx context.Context, project string, blockStorageId string, params *schema.RequestParameters) (*http.Response, error) {
+// GetBlockStorageVolume retrieves a specific block storage volume by ID
+func (s *BlockStorageService) GetBlockStorageVolume(ctx context.Context, project string, volumeId string, params *schema.RequestParameters) (*schema.Response[schema.BlockStorageResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
-	if blockStorageId == "" {
+	if volumeId == "" {
 		return nil, fmt.Errorf("block storage ID cannot be empty")
 	}
 
-	path := fmt.Sprintf(BlockStoragePath, project, blockStorageId)
+	path := fmt.Sprintf(BlockStoragePath, project, volumeId)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -59,11 +87,37 @@ func (s *BlockStorageService) GetBlockStorage(ctx context.Context, project strin
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.BlockStorageResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.BlockStorageResponse
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
-// CreateOrUpdateBlockStorage creates or updates a block storage
-func (s *BlockStorageService) CreateOrUpdateBlockStorage(ctx context.Context, project string, body schema.BlockStorageRequest, params *schema.RequestParameters) (*http.Response, error) {
+// CreateBlockStorageVolume creates a block storage volume
+func (s *BlockStorageService) CreateBlockStorageVolume(ctx context.Context, project string, body schema.BlockStorageRequest, params *schema.RequestParameters) (*schema.Response[schema.BlockStorageResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -78,19 +132,45 @@ func (s *BlockStorageService) CreateOrUpdateBlockStorage(ctx context.Context, pr
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodPut, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.BlockStorageResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.BlockStorageResponse
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
-// DeleteBlockStorage deletes a block storage by ID
-func (s *BlockStorageService) DeleteBlockStorage(ctx context.Context, projectId string, blockStorageId string, params *schema.RequestParameters) (*http.Response, error) {
-	if projectId == "" {
+// DeleteBlockStorageVolume deletes a block storage volume by ID
+func (s *BlockStorageService) DeleteBlockStorageVolume(ctx context.Context, project string, volumeId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+	if project == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}
-	if blockStorageId == "" {
+	if volumeId == "" {
 		return nil, fmt.Errorf("block storage ID cannot be empty")
 	}
 
-	path := fmt.Sprintf(BlockStoragePath, projectId, blockStorageId)
+	path := fmt.Sprintf(BlockStoragePath, project, volumeId)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -100,5 +180,31 @@ func (s *BlockStorageService) DeleteBlockStorage(ctx context.Context, projectId 
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[any]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	if response.IsSuccess() && len(bodyBytes) > 0 {
+		var data any
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }

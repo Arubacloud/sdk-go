@@ -13,10 +13,16 @@ type MetricData struct {
 }
 
 // Metric represents a metric response
-type Metric struct {
+type MetricResponse struct {
 	ReferenceId   string           `json:"referenceId,omitempty"`
 	Name          string           `json:"name,omitempty"`
 	ReferenceName string           `json:"referenceName,omitempty"`
 	Metadata      []MetricMetadata `json:"metadata,omitempty"`
 	Data          []MetricData     `json:"data,omitempty"`
+}
+
+// MetricList represents a list of metrics
+type MetricListResponse struct {
+	ListResponse
+	Values []MetricResponse `json:"values"`
 }

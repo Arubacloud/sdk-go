@@ -2,7 +2,9 @@ package compute
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/Arubacloud/sdk-go/pkg/client"
@@ -22,7 +24,7 @@ func NewKeyPairService(client *client.Client) *KeyPairService {
 }
 
 // ListKeyPairs retrieves all key pairs for a project
-func (s *KeyPairService) ListKeyPairs(ctx context.Context, project string, params *schema.RequestParameters) (*http.Response, error) {
+func (s *KeyPairService) ListKeyPairs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.KeyPairListResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -37,11 +39,40 @@ func (s *KeyPairService) ListKeyPairs(ctx context.Context, project string, param
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	// Read the response body
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Create the response wrapper
+	response := &schema.Response[schema.KeyPairListResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	// Parse the response body if successful
+	if response.IsSuccess() {
+		var data schema.KeyPairListResponse
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
 // GetKeyPair retrieves a specific key pair by ID
-func (s *KeyPairService) GetKeyPair(ctx context.Context, project string, keyPairId string, params *schema.RequestParameters) (*http.Response, error) {
+func (s *KeyPairService) GetKeyPair(ctx context.Context, project string, keyPairId string, params *schema.RequestParameters) (*schema.Response[schema.KeyPairResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -59,11 +90,40 @@ func (s *KeyPairService) GetKeyPair(ctx context.Context, project string, keyPair
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	// Read the response body
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Create the response wrapper
+	response := &schema.Response[schema.KeyPairResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	// Parse the response body if successful
+	if response.IsSuccess() {
+		var data schema.KeyPairResponse
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
 // CreateOrUpdateKeyPair creates or updates a key pair
-func (s *KeyPairService) CreateOrUpdateKeyPair(ctx context.Context, project string, body schema.KeyPairRequest, params *schema.RequestParameters) (*http.Response, error) {
+func (s *KeyPairService) CreateOrUpdateKeyPair(ctx context.Context, project string, body schema.KeyPairRequest, params *schema.RequestParameters) (*schema.Response[schema.KeyPairResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -78,11 +138,40 @@ func (s *KeyPairService) CreateOrUpdateKeyPair(ctx context.Context, project stri
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodPut, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	// Read the response body
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Create the response wrapper
+	response := &schema.Response[schema.KeyPairResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	// Parse the response body if successful
+	if response.IsSuccess() {
+		var data schema.KeyPairResponse
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
 // DeleteKeyPair deletes a key pair by ID
-func (s *KeyPairService) DeleteKeyPair(ctx context.Context, projectId string, keyPairId string, params *schema.RequestParameters) (*http.Response, error) {
+func (s *KeyPairService) DeleteKeyPair(ctx context.Context, projectId string, keyPairId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}
@@ -100,5 +189,34 @@ func (s *KeyPairService) DeleteKeyPair(ctx context.Context, projectId string, ke
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	// Read the response body
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Create the response wrapper
+	response := &schema.Response[any]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	// For DELETE operations, we typically don't parse the body unless there's content
+	if response.IsSuccess() && len(bodyBytes) > 0 {
+		var data any
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }

@@ -2,7 +2,9 @@ package network
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/Arubacloud/sdk-go/pkg/client"
@@ -22,7 +24,7 @@ func NewSecurityGroupRuleService(client *client.Client) *SecurityGroupRuleServic
 }
 
 // ListSecurityGroupRules retrieves all security group rules for a security group
-func (s *SecurityGroupRuleService) ListSecurityGroupRules(ctx context.Context, project string, vpcId string, securityGroupId string, params *schema.RequestParameters) (*http.Response, error) {
+func (s *SecurityGroupRuleService) ListSecurityGroupRules(ctx context.Context, project string, vpcId string, securityGroupId string, params *schema.RequestParameters) (*schema.Response[schema.SecurityRuleList], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -43,11 +45,37 @@ func (s *SecurityGroupRuleService) ListSecurityGroupRules(ctx context.Context, p
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.SecurityRuleList]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.SecurityRuleList
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
 // GetSecurityGroupRule retrieves a specific security group rule by ID
-func (s *SecurityGroupRuleService) GetSecurityGroupRule(ctx context.Context, project string, vpcId string, securityGroupId string, securityGroupRuleId string, params *schema.RequestParameters) (*http.Response, error) {
+func (s *SecurityGroupRuleService) GetSecurityGroupRule(ctx context.Context, project string, vpcId string, securityGroupId string, securityGroupRuleId string, params *schema.RequestParameters) (*schema.Response[schema.SecurityRuleResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -71,11 +99,37 @@ func (s *SecurityGroupRuleService) GetSecurityGroupRule(ctx context.Context, pro
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.SecurityRuleResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.SecurityRuleResponse
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
 // CreateOrUpdateSecurityGroupRule creates or updates a security group rule
-func (s *SecurityGroupRuleService) CreateOrUpdateSecurityGroupRule(ctx context.Context, project string, vpcId string, securityGroupId string, body schema.SecurityRuleRequest, params *schema.RequestParameters) (*http.Response, error) {
+func (s *SecurityGroupRuleService) CreateOrUpdateSecurityGroupRule(ctx context.Context, project string, vpcId string, securityGroupId string, body schema.SecurityRuleRequest, params *schema.RequestParameters) (*schema.Response[schema.SecurityRuleResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -96,11 +150,37 @@ func (s *SecurityGroupRuleService) CreateOrUpdateSecurityGroupRule(ctx context.C
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodPut, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.SecurityRuleResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.SecurityRuleResponse
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
 // DeleteSecurityGroupRule deletes a security group rule by ID
-func (s *SecurityGroupRuleService) DeleteSecurityGroupRule(ctx context.Context, projectId string, vpcId string, securityGroupId string, securityGroupRuleId string, params *schema.RequestParameters) (*http.Response, error) {
+func (s *SecurityGroupRuleService) DeleteSecurityGroupRule(ctx context.Context, projectId string, vpcId string, securityGroupId string, securityGroupRuleId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}
@@ -124,5 +204,31 @@ func (s *SecurityGroupRuleService) DeleteSecurityGroupRule(ctx context.Context, 
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[any]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	if response.IsSuccess() && len(bodyBytes) > 0 {
+		var data any
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }

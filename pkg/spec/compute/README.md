@@ -80,11 +80,17 @@ resp, err := cloudServerAPI.ListCloudServers(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list cloud servers: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Cloud servers retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d cloud servers\n", len(resp.Data.Values))
+    for _, server := range resp.Data.Values {
+        fmt.Printf("Server: %s - Status: %s\n", server.Metadata.Name, server.Status.State)
+    }
 }
+
+// Access HTTP metadata
+fmt.Printf("Status Code: %d\n", resp.StatusCode)
 ```
 
 ### Key Pair Management
@@ -103,10 +109,13 @@ resp, err := keyPairAPI.ListKeyPairs(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list key pairs: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Key pairs retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d key pairs\n", len(resp.Data.Values))
+    for _, keypair := range resp.Data.Values {
+        fmt.Printf("KeyPair: %s\n", keypair.Metadata.Name)
+    }
 }
 ```
 

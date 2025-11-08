@@ -2,27 +2,29 @@ package network
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// VPCNetworkService implements the VPCNetworkAPI interface
-type VPCNetworkService struct {
+// VPCService implements the VpcAPI interface
+type VPCService struct {
 	client *client.Client
 }
 
-// NewVPCNetworkService creates a new VPCNetworkService
-func NewVPCNetworkService(client *client.Client) *VPCNetworkService {
-	return &VPCNetworkService{
+// NewVPCService creates a new VPCService
+func NewVPCService(client *client.Client) *VPCService {
+	return &VPCService{
 		client: client,
 	}
 }
 
-// ListVPCNetworks retrieves all VPC networks for a project
-func (s *VPCNetworkService) ListVPCNetworks(ctx context.Context, project string, params *schema.RequestParameters) (*http.Response, error) {
+// ListVPCs retrieves all VPCs for a project
+func (s *VPCService) ListVPCs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VpcList], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -37,19 +39,45 @@ func (s *VPCNetworkService) ListVPCNetworks(ctx context.Context, project string,
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.VpcList]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.VpcList
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
-// GetVPCNetwork retrieves a specific VPC network by ID
-func (s *VPCNetworkService) GetVPCNetwork(ctx context.Context, project string, vpcNetworkId string, params *schema.RequestParameters) (*http.Response, error) {
+// GetVPC retrieves a specific VPC by ID
+func (s *VPCService) GetVPC(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
-	if vpcNetworkId == "" {
-		return nil, fmt.Errorf("VPC network ID cannot be empty")
+	if vpcId == "" {
+		return nil, fmt.Errorf("VPC ID cannot be empty")
 	}
 
-	path := fmt.Sprintf(VPCNetworkPath, project, vpcNetworkId)
+	path := fmt.Sprintf(VPCNetworkPath, project, vpcId)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -59,11 +87,37 @@ func (s *VPCNetworkService) GetVPCNetwork(ctx context.Context, project string, v
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.VpcResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.VpcResponse
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
-// CreateOrUpdateVPCNetwork creates or updates a VPC network
-func (s *VPCNetworkService) CreateOrUpdateVPCNetwork(ctx context.Context, project string, body schema.VPCNetworkRequest, params *schema.RequestParameters) (*http.Response, error) {
+// CreateOrUpdateVPC creates or updates a VPC
+func (s *VPCService) CreateOrUpdateVPC(ctx context.Context, project string, body schema.VpcRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -78,19 +132,45 @@ func (s *VPCNetworkService) CreateOrUpdateVPCNetwork(ctx context.Context, projec
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodPut, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.VpcResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.VpcResponse
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
-// DeleteVPCNetwork deletes a VPC network by ID
-func (s *VPCNetworkService) DeleteVPCNetwork(ctx context.Context, projectId string, vpcNetworkId string, params *schema.RequestParameters) (*http.Response, error) {
+// DeleteVPC deletes a VPC by ID
+func (s *VPCService) DeleteVPC(ctx context.Context, projectId string, vpcId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}
-	if vpcNetworkId == "" {
-		return nil, fmt.Errorf("VPC network ID cannot be empty")
+	if vpcId == "" {
+		return nil, fmt.Errorf("VPC ID cannot be empty")
 	}
 
-	path := fmt.Sprintf(VPCNetworkPath, projectId, vpcNetworkId)
+	path := fmt.Sprintf(VPCNetworkPath, projectId, vpcId)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -100,5 +180,31 @@ func (s *VPCNetworkService) DeleteVPCNetwork(ctx context.Context, projectId stri
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[any]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	if response.IsSuccess() && len(bodyBytes) > 0 {
+		var data any
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }

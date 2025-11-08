@@ -2,7 +2,9 @@ package network
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/Arubacloud/sdk-go/pkg/client"
@@ -22,7 +24,7 @@ func NewVpnTunnelService(client *client.Client) *VpnTunnelService {
 }
 
 // ListVpnTunnels retrieves all VPN tunnels for a project
-func (s *VpnTunnelService) ListVpnTunnels(ctx context.Context, project string, params *schema.RequestParameters) (*http.Response, error) {
+func (s *VpnTunnelService) ListVpnTunnels(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelList], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -37,11 +39,37 @@ func (s *VpnTunnelService) ListVpnTunnels(ctx context.Context, project string, p
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.VpnTunnelList]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.VpnTunnelList
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
 // GetVpnTunnel retrieves a specific VPN tunnel by ID
-func (s *VpnTunnelService) GetVpnTunnel(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*http.Response, error) {
+func (s *VpnTunnelService) GetVpnTunnel(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -59,11 +87,37 @@ func (s *VpnTunnelService) GetVpnTunnel(ctx context.Context, project string, vpn
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.VpnTunnelResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.VpnTunnelResponse
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
 // CreateOrUpdateVpnTunnel creates or updates a VPN tunnel
-func (s *VpnTunnelService) CreateOrUpdateVpnTunnel(ctx context.Context, project string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*http.Response, error) {
+func (s *VpnTunnelService) CreateOrUpdateVpnTunnel(ctx context.Context, project string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -78,11 +132,37 @@ func (s *VpnTunnelService) CreateOrUpdateVpnTunnel(ctx context.Context, project 
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodPut, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.VpnTunnelResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.VpnTunnelResponse
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
 // DeleteVpnTunnel deletes a VPN tunnel by ID
-func (s *VpnTunnelService) DeleteVpnTunnel(ctx context.Context, projectId string, vpnTunnelId string, params *schema.RequestParameters) (*http.Response, error) {
+func (s *VpnTunnelService) DeleteVpnTunnel(ctx context.Context, projectId string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}
@@ -100,5 +180,31 @@ func (s *VpnTunnelService) DeleteVpnTunnel(ctx context.Context, projectId string
 		headers = params.ToHeaders()
 	}
 
-	return s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[any]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      bodyBytes,
+	}
+
+	if response.IsSuccess() && len(bodyBytes) > 0 {
+		var data any
+		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }

@@ -60,11 +60,18 @@ resp, err := eventAPI.ListEvents(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list audit events: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Audit events retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d audit events\n", len(resp.Data.Values))
+    for _, event := range resp.Data.Values {
+        fmt.Printf("Event: %s - %s\n", event.Metadata.Name, event.Properties.EventType)
+    }
 }
+
+// Access HTTP metadata
+fmt.Printf("Status Code: %d\n", resp.StatusCode)
+fmt.Printf("Content-Type: %s\n", resp.Headers.Get("Content-Type"))
 ```
 
 

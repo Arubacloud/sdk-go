@@ -57,7 +57,8 @@ type AlertResponse struct {
 	Actions              []AlertAction         `json:"actions,omitempty"`
 }
 
+// AlertsListResponse represents a list of alerts
 type AlertsListResponse struct {
-	Total  int64           `json:"total,omitempty"`
-	Alerts []AlertResponse `json:"alerts,omitempty"`
+	ListResponse
+	Values []AlertResponse `json:"values"`
 }

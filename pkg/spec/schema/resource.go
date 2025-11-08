@@ -1,6 +1,9 @@
 package schema
 
-import "time"
+import (
+	"net/http"
+	"time"
+)
 
 // Resource Metadata Request
 type ResourceMetadataRequest struct {
@@ -111,4 +114,32 @@ type ListResponse struct {
 
 	// Last link to last page
 	Last string `json:"last"`
+}
+
+// Response wraps an HTTP response with parsed data
+type Response[T any] struct {
+	// Data contains the parsed response body
+	Data *T
+
+	// HTTPResponse is the underlying HTTP response
+	HTTPResponse *http.Response
+
+	// StatusCode is the HTTP status code
+	StatusCode int
+
+	// Headers contains the response headers
+	Headers http.Header
+
+	// RawBody contains the raw response body (if requested)
+	RawBody []byte
+}
+
+// IsSuccess returns true if the status code is 2xx
+func (r *Response[T]) IsSuccess() bool {
+	return r.StatusCode >= 200 && r.StatusCode < 300
+}
+
+// IsError returns true if the status code is 4xx or 5xx
+func (r *Response[T]) IsError() bool {
+	return r.StatusCode >= 400
 }

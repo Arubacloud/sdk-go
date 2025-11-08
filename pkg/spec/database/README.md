@@ -99,10 +99,13 @@ resp, err := dbaasAPI.ListDBaaS(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list databases: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Databases retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d DBaaS instances\n", len(resp.Data.Values))
+    for _, dbaas := range resp.Data.Values {
+        fmt.Printf("DBaaS: %s - Engine: %s\n", dbaas.Metadata.Name, dbaas.Properties.Engine)
+    }
 }
 ```
 
@@ -116,10 +119,10 @@ resp, err := databaseAPI.ListDatabases(ctx, projectID, dbaasID, nil)
 if err != nil {
     log.Fatalf("Failed to list databases: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Databases retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d databases\n", len(resp.Data.Values))
 }
 ```
 
@@ -128,14 +131,15 @@ if resp.StatusCode == 200 {
 #### List Users
 
 ```go
-resp, err := userAPI.ListUsers(ctx, projectID, nil)
+dbaasID := "dbaas-123"
+resp, err := userAPI.ListUsers(ctx, projectID, dbaasID, nil)
 if err != nil {
     log.Fatalf("Failed to list users: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Users retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d users\n", len(resp.Data.Values))
 }
 ```
 
@@ -150,10 +154,10 @@ resp, err := grantAPI.ListGrants(ctx, projectID, dbaasID, databaseID, nil)
 if err != nil {
     log.Fatalf("Failed to list grants: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Grants retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d grants\n", len(resp.Data.Values))
 }
 ```
 
@@ -166,10 +170,10 @@ resp, err := backupAPI.ListBackups(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list backups: %v", err)
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Backups retrieved successfully")
+// Access response data
+if resp.IsSuccess() {
+    fmt.Printf("Found %d backups\n", len(resp.Data.Values))
 }
 ```
 
