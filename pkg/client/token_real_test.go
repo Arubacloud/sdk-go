@@ -61,7 +61,6 @@ func TestTokenManager_GetRemainingTime(t *testing.T) {
 		"test-client-id",
 		"test-client-secret",
 		nil,
-		0,
 	)
 
 	// Before getting token
@@ -95,7 +94,6 @@ func TestTokenManager_GetTokenInfo(t *testing.T) {
 		"test-client-id",
 		"test-client-secret",
 		nil,
-		0,
 	)
 
 	ctx := testContext()

@@ -25,6 +25,8 @@ func NewBackupService(client *client.Client) *BackupService {
 
 // ListBackups retrieves all backups for a project
 func (s *BackupService) ListBackups(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.BackupList], error) {
+	s.client.Logger().Debugf("Listing backups for project: %s", project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -73,6 +75,8 @@ func (s *BackupService) ListBackups(ctx context.Context, project string, params 
 
 // GetBackup retrieves a specific backup by ID
 func (s *BackupService) GetBackup(ctx context.Context, project string, backupId string, params *schema.RequestParameters) (*schema.Response[schema.BackupResponse], error) {
+	s.client.Logger().Debugf("Getting backup: %s in project: %s", backupId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -124,6 +128,8 @@ func (s *BackupService) GetBackup(ctx context.Context, project string, backupId 
 
 // CreateBackup creates a new backup
 func (s *BackupService) CreateBackup(ctx context.Context, project string, body schema.BackupRequest, params *schema.RequestParameters) (*schema.Response[schema.BackupResponse], error) {
+	s.client.Logger().Debugf("Creating backup in project: %s", project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -172,6 +178,8 @@ func (s *BackupService) CreateBackup(ctx context.Context, project string, body s
 
 // DeleteBackup deletes a backup by ID
 func (s *BackupService) DeleteBackup(ctx context.Context, projectId string, backupId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+	s.client.Logger().Debugf("Deleting backup: %s in project: %s", backupId, projectId)
+
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}

@@ -26,6 +26,8 @@ func NewVpnTunnelService(client *client.Client) *VpnTunnelService {
 
 // ListVpnTunnels retrieves all VPN tunnels for a project
 func (s *VpnTunnelService) ListVpnTunnels(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelList], error) {
+	s.client.Logger().Debugf("Listing VPN tunnels for project: %s", project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -71,6 +73,8 @@ func (s *VpnTunnelService) ListVpnTunnels(ctx context.Context, project string, p
 
 // GetVpnTunnel retrieves a specific VPN tunnel by ID
 func (s *VpnTunnelService) GetVpnTunnel(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
+	s.client.Logger().Debugf("Getting VPN tunnel: %s in project: %s", vpnTunnelId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -119,6 +123,8 @@ func (s *VpnTunnelService) GetVpnTunnel(ctx context.Context, project string, vpn
 
 // CreateVpnTunnel creates a new VPN tunnel
 func (s *VpnTunnelService) CreateVpnTunnel(ctx context.Context, project string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
+	s.client.Logger().Debugf("Creating VPN tunnel in project: %s", project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -169,6 +175,8 @@ func (s *VpnTunnelService) CreateVpnTunnel(ctx context.Context, project string, 
 
 // UpdateVpnTunnel updates an existing VPN tunnel
 func (s *VpnTunnelService) UpdateVpnTunnel(ctx context.Context, project string, vpnTunnelId string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
+	s.client.Logger().Debugf("Updating VPN tunnel: %s in project: %s", vpnTunnelId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -222,6 +230,8 @@ func (s *VpnTunnelService) UpdateVpnTunnel(ctx context.Context, project string, 
 
 // DeleteVpnTunnel deletes a VPN tunnel by ID
 func (s *VpnTunnelService) DeleteVpnTunnel(ctx context.Context, projectId string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+	s.client.Logger().Debugf("Deleting VPN tunnel: %s in project: %s", vpnTunnelId, projectId)
+
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}

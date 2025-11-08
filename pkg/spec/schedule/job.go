@@ -24,13 +24,15 @@ func NewJobService(client *client.Client) *JobService {
 	}
 }
 
-// ListScheduleJobs retrieves all scheduled jobs for a project
+// ListScheduleJobs retrieves all schedule jobs for a project
 func (s *JobService) ListScheduleJobs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.JobList], error) {
+	s.client.Logger().Debugf("Listing schedule jobs for project: %s", project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
 
-	path := fmt.Sprintf(JobsPath, project)
+	path := fmt.Sprintf(ScheduleJobsPath, project)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -69,8 +71,10 @@ func (s *JobService) ListScheduleJobs(ctx context.Context, project string, param
 	return response, nil
 }
 
-// GetScheduleJob retrieves a specific scheduled job by ID
+// GetScheduleJob retrieves a specific schedule job by ID
 func (s *JobService) GetScheduleJob(ctx context.Context, project string, scheduleJobId string, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
+	s.client.Logger().Debugf("Getting schedule job: %s in project: %s", scheduleJobId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -117,13 +121,15 @@ func (s *JobService) GetScheduleJob(ctx context.Context, project string, schedul
 	return response, nil
 }
 
-// CreateScheduleJob creates a new scheduled job
+// CreateScheduleJob creates a new schedule job
 func (s *JobService) CreateScheduleJob(ctx context.Context, project string, body schema.JobRequest, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
+	s.client.Logger().Debugf("Creating schedule job in project: %s", project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
 
-	path := fmt.Sprintf(JobsPath, project)
+	path := fmt.Sprintf(ScheduleJobsPath, project)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -167,8 +173,10 @@ func (s *JobService) CreateScheduleJob(ctx context.Context, project string, body
 	return response, nil
 }
 
-// UpdateScheduleJob updates an existing scheduled job
+// UpdateScheduleJob updates an existing schedule job
 func (s *JobService) UpdateScheduleJob(ctx context.Context, project string, scheduleJobId string, body schema.JobRequest, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
+	s.client.Logger().Debugf("Updating schedule job: %s in project: %s", scheduleJobId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -220,8 +228,10 @@ func (s *JobService) UpdateScheduleJob(ctx context.Context, project string, sche
 	return response, nil
 }
 
-// DeleteScheduleJob deletes a scheduled job by ID
+// DeleteScheduleJob deletes a schedule job by ID
 func (s *JobService) DeleteScheduleJob(ctx context.Context, projectId string, scheduleJobId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+	s.client.Logger().Debugf("Deleting schedule job: %s in project: %s", scheduleJobId, projectId)
+
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}

@@ -26,6 +26,8 @@ func NewDatabaseService(client *client.Client) *DatabaseService {
 
 // ListDatabases retrieves all databases for a DBaaS instance
 func (s *DatabaseService) ListDatabases(ctx context.Context, project string, dbaasId string, params *schema.RequestParameters) (*schema.Response[schema.DatabaseList], error) {
+	s.client.Logger().Debugf("Listing databases for DBaaS: %s in project: %s", dbaasId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -77,6 +79,8 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, project string, dba
 
 // GetDatabase retrieves a specific database by ID
 func (s *DatabaseService) GetDatabase(ctx context.Context, project string, dbaasId string, databaseId string, params *schema.RequestParameters) (*schema.Response[schema.DatabaseResponse], error) {
+	s.client.Logger().Debugf("Getting database: %s from DBaaS: %s in project: %s", databaseId, dbaasId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -131,6 +135,8 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, project string, dbaas
 
 // CreateDatabase creates a new database
 func (s *DatabaseService) CreateDatabase(ctx context.Context, project string, dbaasId string, body schema.DatabaseRequest, params *schema.RequestParameters) (*schema.Response[schema.DatabaseResponse], error) {
+	s.client.Logger().Debugf("Creating database in DBaaS: %s in project: %s", dbaasId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -188,6 +194,8 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, project string, db
 
 // UpdateDatabase updates an existing database
 func (s *DatabaseService) UpdateDatabase(ctx context.Context, project string, dbaasId string, databaseId string, body schema.DatabaseRequest, params *schema.RequestParameters) (*schema.Response[schema.DatabaseResponse], error) {
+	s.client.Logger().Debugf("Updating database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -248,6 +256,8 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, project string, db
 
 // DeleteDatabase deletes a database by ID
 func (s *DatabaseService) DeleteDatabase(ctx context.Context, projectId string, dbaasId string, databaseId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+	s.client.Logger().Debugf("Deleting database: %s from DBaaS: %s in project: %s", databaseId, dbaasId, projectId)
+
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}

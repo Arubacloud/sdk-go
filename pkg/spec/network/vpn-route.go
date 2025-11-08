@@ -26,6 +26,8 @@ func NewVpnRouteService(client *client.Client) *VpnRouteService {
 
 // ListVpnRoutes retrieves all VPN routes for a VPN tunnel
 func (s *VpnRouteService) ListVpnRoutes(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VpnRouteList], error) {
+	s.client.Logger().Debugf("Listing VPN routes for VPN tunnel: %s in project: %s", vpnTunnelId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -74,6 +76,8 @@ func (s *VpnRouteService) ListVpnRoutes(ctx context.Context, project string, vpn
 
 // GetVpnRoute retrieves a specific VPN route by ID
 func (s *VpnRouteService) GetVpnRoute(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, params *schema.RequestParameters) (*schema.Response[schema.VpnRouteResponse], error) {
+	s.client.Logger().Debugf("Getting VPN route: %s from VPN tunnel: %s in project: %s", vpnRouteId, vpnTunnelId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -123,8 +127,10 @@ func (s *VpnRouteService) GetVpnRoute(ctx context.Context, project string, vpnTu
 	return response, nil
 }
 
-// CreateVpnRoute creates a new VPN route
+// CreateVpnRoute creates a new VPN route in a VPN tunnel
 func (s *VpnRouteService) CreateVpnRoute(ctx context.Context, project string, vpnTunnelId string, body schema.VpnRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnRouteResponse], error) {
+	s.client.Logger().Debugf("Creating VPN route in VPN tunnel: %s in project: %s", vpnTunnelId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -178,6 +184,8 @@ func (s *VpnRouteService) CreateVpnRoute(ctx context.Context, project string, vp
 
 // UpdateVpnRoute updates an existing VPN route
 func (s *VpnRouteService) UpdateVpnRoute(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, body schema.VpnRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnRouteResponse], error) {
+	s.client.Logger().Debugf("Updating VPN route: %s in VPN tunnel: %s in project: %s", vpnRouteId, vpnTunnelId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -234,6 +242,8 @@ func (s *VpnRouteService) UpdateVpnRoute(ctx context.Context, project string, vp
 
 // DeleteVpnRoute deletes a VPN route by ID
 func (s *VpnRouteService) DeleteVpnRoute(ctx context.Context, projectId string, vpnTunnelId string, vpnRouteId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+	s.client.Logger().Debugf("Deleting VPN route: %s from VPN tunnel: %s in project: %s", vpnRouteId, vpnTunnelId, projectId)
+
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}

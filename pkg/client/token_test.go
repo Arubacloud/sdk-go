@@ -56,7 +56,6 @@ func TestTokenManager_GetToken(t *testing.T) {
 		"test-client-id",
 		"test-client-secret",
 		http.DefaultClient,
-		5*time.Minute,
 	)
 
 	ctx := testContext()
@@ -82,7 +81,7 @@ func TestTokenManager_GetToken(t *testing.T) {
 	}
 }
 
-func TestTokenManager_RefreshToken(t *testing.T) {
+func TestTokenManager_ObtainToken(t *testing.T) {
 	callCount := 0
 
 	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -104,13 +103,12 @@ func TestTokenManager_RefreshToken(t *testing.T) {
 		"test-client-id",
 		"test-client-secret",
 		http.DefaultClient,
-		5*time.Minute,
 	)
 
 	ctx := testContext()
 
-	if err := tm.RefreshToken(ctx); err != nil {
-		t.Fatalf("RefreshToken() error = %v", err)
+	if err := tm.ObtainToken(ctx); err != nil {
+		t.Fatalf("ObtainToken() error = %v", err)
 	}
 
 	if callCount != 1 {
@@ -118,7 +116,7 @@ func TestTokenManager_RefreshToken(t *testing.T) {
 	}
 
 	if !tm.IsTokenValid() {
-		t.Error("Token should be valid after refresh")
+		t.Error("Token should be valid after obtaining")
 	}
 }
 
@@ -141,13 +139,12 @@ func TestTokenManager_TokenExpiration(t *testing.T) {
 		"test-client-id",
 		"test-client-secret",
 		http.DefaultClient,
-		1*time.Millisecond, // Minimal refresh buffer for testing
 	)
 
 	ctx := testContext()
 
-	if err := tm.RefreshToken(ctx); err != nil {
-		t.Fatalf("RefreshToken() error = %v", err)
+	if err := tm.ObtainToken(ctx); err != nil {
+		t.Fatalf("ObtainToken() error = %v", err)
 	}
 
 	// Small delay to ensure token is set
@@ -156,18 +153,15 @@ func TestTokenManager_TokenExpiration(t *testing.T) {
 	// Check token details
 	token, expiresAt, isValid := tm.GetTokenInfo()
 	now := time.Now()
-	timeWithBuffer := now.Add(tm.tokenRefreshBuffer)
-	beforeCheck := timeWithBuffer.Before(expiresAt)
+	beforeCheck := now.Before(expiresAt)
 	t.Logf("Token: %s", token)
 	t.Logf("ExpiresAt: %v", expiresAt)
 	t.Logf("Now: %v", now)
-	t.Logf("Buffer: %v", tm.tokenRefreshBuffer)
-	t.Logf("Now+Buffer: %v", timeWithBuffer)
-	t.Logf("(Now+Buffer).Before(ExpiresAt): %v", beforeCheck)
+	t.Logf("Now.Before(ExpiresAt): %v", beforeCheck)
 	t.Logf("IsValid from method: %v", isValid)
 
 	if !isValid {
-		t.Errorf("Token should be valid immediately after refresh")
+		t.Errorf("Token should be valid immediately after obtaining")
 	}
 
 	// Wait for token to expire
@@ -191,7 +185,6 @@ func TestTokenManager_ErrorHandling(t *testing.T) {
 		"invalid-client-id",
 		"invalid-client-secret",
 		http.DefaultClient,
-		5*time.Minute,
 	)
 
 	ctx := testContext()

@@ -26,6 +26,8 @@ func NewDBaaSService(client *client.Client) *DBaaSService {
 
 // ListDBaaS retrieves all DBaaS instances for a project
 func (s *DBaaSService) ListDBaaS(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.DBaaSList], error) {
+	s.client.Logger().Debugf("Listing DBaaS instances for project: %s", project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -74,6 +76,8 @@ func (s *DBaaSService) ListDBaaS(ctx context.Context, project string, params *sc
 
 // GetDBaaS retrieves a specific DBaaS instance by ID
 func (s *DBaaSService) GetDBaaS(ctx context.Context, project string, dbaasId string, params *schema.RequestParameters) (*schema.Response[schema.DBaaSResponse], error) {
+	s.client.Logger().Debugf("Getting DBaaS instance: %s in project: %s", dbaasId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -125,6 +129,8 @@ func (s *DBaaSService) GetDBaaS(ctx context.Context, project string, dbaasId str
 
 // CreateDBaaS creates a new DBaaS instance
 func (s *DBaaSService) CreateDBaaS(ctx context.Context, project string, body schema.DBaaSRequest, params *schema.RequestParameters) (*schema.Response[schema.DBaaSResponse], error) {
+	s.client.Logger().Debugf("Creating DBaaS instance in project: %s", project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -179,6 +185,8 @@ func (s *DBaaSService) CreateDBaaS(ctx context.Context, project string, body sch
 
 // UpdateDBaaS updates an existing DBaaS instance
 func (s *DBaaSService) UpdateDBaaS(ctx context.Context, project string, databaseId string, body schema.DBaaSRequest, params *schema.RequestParameters) (*schema.Response[schema.DBaaSResponse], error) {
+	s.client.Logger().Debugf("Updating DBaaS instance: %s in project: %s", databaseId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -236,6 +244,8 @@ func (s *DBaaSService) UpdateDBaaS(ctx context.Context, project string, database
 
 // DeleteDBaaS deletes a DBaaS instance by ID
 func (s *DBaaSService) DeleteDBaaS(ctx context.Context, projectId string, dbaasId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+	s.client.Logger().Debugf("Deleting DBaaS instance: %s in project: %s", dbaasId, projectId)
+
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}

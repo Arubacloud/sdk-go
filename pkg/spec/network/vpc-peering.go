@@ -26,6 +26,8 @@ func NewVpcPeeringService(client *client.Client) *VpcPeeringService {
 
 // ListVpcPeerings retrieves all VPC peerings for a VPC
 func (s *VpcPeeringService) ListVpcPeerings(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringList], error) {
+	s.client.Logger().Debugf("Listing VPC peerings for VPC: %s in project: %s", vpcId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -74,6 +76,8 @@ func (s *VpcPeeringService) ListVpcPeerings(ctx context.Context, project string,
 
 // GetVpcPeering retrieves a specific VPC peering by ID
 func (s *VpcPeeringService) GetVpcPeering(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringResponse], error) {
+	s.client.Logger().Debugf("Getting VPC peering: %s from VPC: %s in project: %s", vpcPeeringId, vpcId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -125,6 +129,8 @@ func (s *VpcPeeringService) GetVpcPeering(ctx context.Context, project string, v
 
 // CreateVpcPeering creates a new VPC peering
 func (s *VpcPeeringService) CreateVpcPeering(ctx context.Context, project string, vpcId string, body schema.VpcPeeringRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringResponse], error) {
+	s.client.Logger().Debugf("Creating VPC peering in VPC: %s in project: %s", vpcId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -178,6 +184,8 @@ func (s *VpcPeeringService) CreateVpcPeering(ctx context.Context, project string
 
 // UpdateVpcPeering updates an existing VPC peering
 func (s *VpcPeeringService) UpdateVpcPeering(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VpcPeeringRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringResponse], error) {
+	s.client.Logger().Debugf("Updating VPC peering: %s in VPC: %s in project: %s", vpcPeeringId, vpcId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -234,6 +242,8 @@ func (s *VpcPeeringService) UpdateVpcPeering(ctx context.Context, project string
 
 // DeleteVpcPeering deletes a VPC peering by ID
 func (s *VpcPeeringService) DeleteVpcPeering(ctx context.Context, projectId string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+	s.client.Logger().Debugf("Deleting VPC peering: %s from VPC: %s in project: %s", vpcPeeringId, vpcId, projectId)
+
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}

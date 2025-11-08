@@ -26,6 +26,8 @@ func NewProjectService(client *client.Client) *ProjectService {
 
 // ListProjects retrieves all projects
 func (s *ProjectService) ListProjects(ctx context.Context, params *schema.RequestParameters) (*schema.Response[schema.ProjectList], error) {
+	s.client.Logger().Debugf("Listing projects")
+
 	path := ProjectsPath
 
 	var queryParams map[string]string
@@ -67,6 +69,8 @@ func (s *ProjectService) ListProjects(ctx context.Context, params *schema.Reques
 
 // GetProject retrieves a specific project by ID
 func (s *ProjectService) GetProject(ctx context.Context, projectId string, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
+	s.client.Logger().Debugf("Getting project: %s", projectId)
+
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}
@@ -112,6 +116,8 @@ func (s *ProjectService) GetProject(ctx context.Context, projectId string, param
 
 // CreateProject creates a new project
 func (s *ProjectService) CreateProject(ctx context.Context, body schema.ProjectRequest, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
+	s.client.Logger().Debugf("Creating project")
+
 	path := ProjectsPath
 
 	var queryParams map[string]string
@@ -158,6 +164,8 @@ func (s *ProjectService) CreateProject(ctx context.Context, body schema.ProjectR
 
 // UpdateProject updates an existing project
 func (s *ProjectService) UpdateProject(ctx context.Context, projectId string, body schema.ProjectRequest, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
+	s.client.Logger().Debugf("Updating project: %s", projectId)
+
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}
@@ -208,6 +216,8 @@ func (s *ProjectService) UpdateProject(ctx context.Context, projectId string, bo
 
 // DeleteProject deletes a project by ID
 func (s *ProjectService) DeleteProject(ctx context.Context, projectId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+	s.client.Logger().Debugf("Deleting project: %s", projectId)
+
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}

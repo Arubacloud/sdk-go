@@ -53,17 +53,18 @@ func TestNewClient(t *testing.T) {
 				ClientSecret:   "test-client-secret",
 				HTTPClient:     http.DefaultClient,
 			},
-			wantErr: true,
+			wantErr: false, // BaseURL now defaults to DefaultBaseURL
 		},
 		{
 			name: "missing token issuer URL",
 			config: &Config{
-				BaseURL:      "https://api.example.com",
-				ClientID:     "test-client-id",
-				ClientSecret: "test-client-secret",
-				HTTPClient:   http.DefaultClient,
+				BaseURL:        "https://api.example.com",
+				TokenIssuerURL: tokenServer.URL, // Provide mock server to avoid hitting real production URL
+				ClientID:       "test-client-id",
+				ClientSecret:   "test-client-secret",
+				HTTPClient:     http.DefaultClient,
 			},
-			wantErr: true,
+			wantErr: false, // TokenIssuerURL now defaults to DefaultTokenIssuerURL if empty
 		},
 		{
 			name: "missing client ID",

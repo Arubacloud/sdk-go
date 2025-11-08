@@ -23,26 +23,19 @@ type TokenResponse struct {
 	NotBeforePolicy  int    `json:"not-before-policy,omitempty"`
 }
 
-// TokenManager handles OAuth2 token acquisition and refresh
+// TokenManager handles OAuth2 token acquisition
 //
 // Thread Safety:
 // - Uses sync.RWMutex to protect accessToken and expiresAt
 // - Multiple goroutines can read token simultaneously (RLock)
-// - Only one goroutine can refresh at a time (Lock)
-// - Prevents "thundering herd" - multiple goroutines won't duplicate refresh
-//
-// Example scenario with 3 goroutines all seeing expired token:
-//
-//	G1: Acquires write lock, refreshes token (HTTP request ~200ms)
-//	G2: Waits for lock, then sees G1's fresh token, returns immediately
-//	G3: Waits for lock, then sees G1's fresh token, returns immediately
-//	Result: Only 1 HTTP request instead of 3!
+// - Only one goroutine can obtain a new token at a time (Lock)
+// - Prevents "thundering herd" - multiple goroutines won't duplicate token requests
+
 type TokenManager struct {
-	tokenIssuerURL     string
-	clientID           string
-	clientSecret       string
-	httpClient         *http.Client
-	tokenRefreshBuffer time.Duration
+	tokenIssuerURL string
+	clientID       string
+	clientSecret   string
+	httpClient     *http.Client
 
 	mu          sync.RWMutex // Protects accessToken and expiresAt for thread safety
 	accessToken string       // Current JWT token (protected by mu)
@@ -55,30 +48,25 @@ func NewTokenManager(
 	clientID string,
 	clientSecret string,
 	httpClient *http.Client,
-	tokenRefreshBuffer time.Duration,
 ) *TokenManager {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
-	if tokenRefreshBuffer == 0 {
-		tokenRefreshBuffer = 5 * time.Minute
-	}
 
 	return &TokenManager{
-		tokenIssuerURL:     tokenIssuerURL,
-		clientID:           clientID,
-		clientSecret:       clientSecret,
-		httpClient:         httpClient,
-		tokenRefreshBuffer: tokenRefreshBuffer,
+		tokenIssuerURL: tokenIssuerURL,
+		clientID:       clientID,
+		clientSecret:   clientSecret,
+		httpClient:     httpClient,
 	}
 }
 
-// GetToken returns a valid access token, refreshing if necessary
+// GetToken returns a valid access token, obtaining a new one if necessary
 //
 // Thread Safety:
 // - Uses RLock for fast, concurrent reads when token is valid
 // - Multiple goroutines can call this simultaneously with no contention
-// - If refresh needed, only one goroutine performs HTTP request
+// - If new token needed, only one goroutine performs HTTP request
 // - Safe to call from multiple goroutines concurrently
 func (tm *TokenManager) GetToken(ctx context.Context) (string, error) {
 	// Fast path: Read token with read lock (allows concurrent access)
@@ -88,17 +76,17 @@ func (tm *TokenManager) GetToken(ctx context.Context) (string, error) {
 	tm.mu.RUnlock()
 
 	// Check if token is still valid (outside lock - uses local copies)
-	if token != "" && time.Now().Add(tm.tokenRefreshBuffer).Before(expiresAt) {
+	if token != "" && time.Now().Before(expiresAt) {
 		return token, nil
 	}
 
-	// Slow path: Token expired/expiring, refresh it
-	// Note: RefreshToken uses write lock, preventing duplicate refreshes
-	if err := tm.RefreshToken(ctx); err != nil {
+	// Slow path: Token expired, obtain a new one
+	// Note: ObtainToken uses write lock, preventing duplicate requests
+	if err := tm.ObtainToken(ctx); err != nil {
 		return "", err
 	}
 
-	// Read the newly refreshed token
+	// Read the newly obtained token
 	tm.mu.RLock()
 	token = tm.accessToken
 	tm.mu.RUnlock()
@@ -106,22 +94,18 @@ func (tm *TokenManager) GetToken(ctx context.Context) (string, error) {
 	return token, nil
 }
 
-// RefreshToken obtains a new access token using client credentials
-//
-// Note: Despite the name, this doesn't use a refresh_token (which doesn't exist
-// in client credentials flow). Instead, it requests a new access token using
-// the same client_id and client_secret credentials.
+// ObtainToken gets a new access token using client credentials
 //
 // Thread Safety:
 // - Acquires exclusive write lock (Lock) before making HTTP request
-// - Blocks all other readers and writers during refresh
+// - Blocks all other readers and writers during token acquisition
 // - This is intentional: prevents multiple simultaneous HTTP requests
 // - If multiple goroutines call this, only first one makes HTTP request
 // - Others wait, then see the fresh token and return
 // - Safe to call from multiple goroutines concurrently
-func (tm *TokenManager) RefreshToken(ctx context.Context) error {
+func (tm *TokenManager) ObtainToken(ctx context.Context) error {
 	// Acquire exclusive write lock
-	// This blocks all other GetToken() calls until refresh completes
+	// This blocks all other GetToken() calls until token acquisition completes
 	// Prevents "thundering herd" problem
 	tm.mu.Lock()
 	defer tm.mu.Unlock() // Ensure unlock even if panic occurs
@@ -190,7 +174,7 @@ func (tm *TokenManager) IsTokenValid() bool {
 		return false
 	}
 
-	return time.Now().Add(tm.tokenRefreshBuffer).Before(tm.expiresAt)
+	return time.Now().Before(tm.expiresAt)
 }
 
 // GetExpiresAt returns when the current token expires
@@ -223,7 +207,7 @@ func (tm *TokenManager) isTokenValidLocked() bool {
 	if tm.accessToken == "" {
 		return false
 	}
-	return time.Now().Add(tm.tokenRefreshBuffer).Before(tm.expiresAt)
+	return time.Now().Before(tm.expiresAt)
 }
 
 // GetRemainingTime returns the time until token expiry

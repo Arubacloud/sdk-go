@@ -25,11 +25,13 @@ func NewBlockStorageService(client *client.Client) *BlockStorageService {
 
 // ListBlockStorageVolumes retrieves all block storage volumes for a project
 func (s *BlockStorageService) ListBlockStorageVolumes(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.BlockStorageList], error) {
+	s.client.Logger().Debugf("Listing block storage volumes for project: %s", project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
 
-	path := fmt.Sprintf(BlockStoragesPath, project)
+	path := fmt.Sprintf(BlockStorageVolumesPath, project)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -70,6 +72,8 @@ func (s *BlockStorageService) ListBlockStorageVolumes(ctx context.Context, proje
 
 // GetBlockStorageVolume retrieves a specific block storage volume by ID
 func (s *BlockStorageService) GetBlockStorageVolume(ctx context.Context, project string, volumeId string, params *schema.RequestParameters) (*schema.Response[schema.BlockStorageResponse], error) {
+	s.client.Logger().Debugf("Getting block storage volume: %s in project: %s", volumeId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -116,13 +120,15 @@ func (s *BlockStorageService) GetBlockStorageVolume(ctx context.Context, project
 	return response, nil
 }
 
-// CreateBlockStorageVolume creates a block storage volume
+// CreateBlockStorageVolume creates a new block storage volume
 func (s *BlockStorageService) CreateBlockStorageVolume(ctx context.Context, project string, body schema.BlockStorageRequest, params *schema.RequestParameters) (*schema.Response[schema.BlockStorageResponse], error) {
+	s.client.Logger().Debugf("Creating block storage volume in project: %s", project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
 
-	path := fmt.Sprintf(BlockStoragesPath, project)
+	path := fmt.Sprintf(BlockStorageVolumesPath, project)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -163,8 +169,10 @@ func (s *BlockStorageService) CreateBlockStorageVolume(ctx context.Context, proj
 
 // DeleteBlockStorageVolume deletes a block storage volume by ID
 func (s *BlockStorageService) DeleteBlockStorageVolume(ctx context.Context, project string, volumeId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+	s.client.Logger().Debugf("Deleting block storage volume: %s in project: %s", volumeId, project)
+
 	if project == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
+		return nil, fmt.Errorf("project cannot be empty")
 	}
 	if volumeId == "" {
 		return nil, fmt.Errorf("block storage ID cannot be empty")

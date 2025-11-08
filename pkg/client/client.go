@@ -1,12 +1,68 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
-	"time"
+	"os"
 )
+
+// Logger is the interface for logging within the SDK
+type Logger interface {
+	// Debugf logs a debug message with formatting
+	Debugf(format string, args ...interface{})
+	// Infof logs an info message with formatting
+	Infof(format string, args ...interface{})
+	// Warnf logs a warning message with formatting
+	Warnf(format string, args ...interface{})
+	// Errorf logs an error message with formatting
+	Errorf(format string, args ...interface{})
+}
+
+// DefaultLogger is a simple logger implementation using standard log package
+type DefaultLogger struct {
+	debug *log.Logger
+	info  *log.Logger
+	warn  *log.Logger
+	err   *log.Logger
+}
+
+// NewDefaultLogger creates a new default logger
+func NewDefaultLogger() *DefaultLogger {
+	return &DefaultLogger{
+		debug: log.New(os.Stdout, "[DEBUG] ", log.LstdFlags),
+		info:  log.New(os.Stdout, "[INFO] ", log.LstdFlags),
+		warn:  log.New(os.Stdout, "[WARN] ", log.LstdFlags),
+		err:   log.New(os.Stderr, "[ERROR] ", log.LstdFlags),
+	}
+}
+
+func (l *DefaultLogger) Debugf(format string, args ...interface{}) {
+	l.debug.Printf(format, args...)
+}
+
+func (l *DefaultLogger) Infof(format string, args ...interface{}) {
+	l.info.Printf(format, args...)
+}
+
+func (l *DefaultLogger) Warnf(format string, args ...interface{}) {
+	l.warn.Printf(format, args...)
+}
+
+func (l *DefaultLogger) Errorf(format string, args ...interface{}) {
+	l.err.Printf(format, args...)
+}
+
+// NoOpLogger is a logger that does nothing
+type NoOpLogger struct{}
+
+func (l *NoOpLogger) Debugf(format string, args ...interface{}) {}
+func (l *NoOpLogger) Infof(format string, args ...interface{})  {}
+func (l *NoOpLogger) Warnf(format string, args ...interface{})  {}
+func (l *NoOpLogger) Errorf(format string, args ...interface{}) {}
 
 // Config holds the configuration for the SDK client
 type Config struct {
@@ -22,38 +78,38 @@ type Config struct {
 	ClientSecret string
 	// Headers are additional headers to include in all requests
 	Headers map[string]string
-	// TokenRefreshBuffer is the time before expiry to refresh the token (default: 5 minutes)
-	TokenRefreshBuffer time.Duration
+	// Logger is the logger to use for debug/info messages. If nil, no logging is performed.
+	Logger Logger
+	// Debug enables debug logging when set to true
+	Debug bool
 }
 
 // DefaultConfig returns a default configuration
 func DefaultConfig() *Config {
 	return &Config{
-		HTTPClient:         http.DefaultClient,
-		Headers:            make(map[string]string),
-		TokenRefreshBuffer: 5 * time.Minute,
+		HTTPClient:     http.DefaultClient,
+		Headers:        make(map[string]string),
+		BaseURL:        DefaultBaseURL,
+		TokenIssuerURL: DefaultTokenIssuerURL,
 	}
 }
 
 // Validate checks if the configuration is valid
 func (c *Config) Validate() error {
 	if c.BaseURL == "" {
-		return fmt.Errorf("BaseURL is required")
+		c.BaseURL = DefaultBaseURL
 	}
 	if c.HTTPClient == nil {
 		return fmt.Errorf("HTTPClient is required")
 	}
 	if c.TokenIssuerURL == "" {
-		return fmt.Errorf("TokenIssuerURL is required for authentication")
+		c.TokenIssuerURL = DefaultTokenIssuerURL
 	}
 	if c.ClientID == "" {
 		return fmt.Errorf("ClientID is required for authentication")
 	}
 	if c.ClientSecret == "" {
 		return fmt.Errorf("ClientSecret is required for authentication")
-	}
-	if c.TokenRefreshBuffer == 0 {
-		c.TokenRefreshBuffer = 5 * time.Minute
 	}
 	return nil
 }
@@ -63,6 +119,7 @@ type Client struct {
 	config       *Config
 	ctx          context.Context
 	tokenManager *TokenManager
+	logger       Logger
 }
 
 // NewClient creates a new SDK client with the given configuration
@@ -75,25 +132,46 @@ func NewClient(config *Config) (*Client, error) {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
+	// Setup logger
+	var logger Logger
+	if config.Debug {
+		if config.Logger != nil {
+			logger = config.Logger
+		} else {
+			logger = NewDefaultLogger()
+		}
+	} else {
+		if config.Logger != nil {
+			logger = config.Logger
+		} else {
+			logger = &NoOpLogger{}
+		}
+	}
+
 	// Initialize token manager
 	tokenManager := NewTokenManager(
 		config.TokenIssuerURL,
 		config.ClientID,
 		config.ClientSecret,
 		config.HTTPClient,
-		config.TokenRefreshBuffer,
 	)
 
 	client := &Client{
 		config:       config,
 		ctx:          context.Background(),
 		tokenManager: tokenManager,
+		logger:       logger,
 	}
 
-	// Fetch initial token
-	if err := tokenManager.RefreshToken(client.ctx); err != nil {
+	logger.Debugf("Initializing SDK client with base URL: %s", config.BaseURL)
+
+	// Obtain initial token
+	if err := tokenManager.ObtainToken(client.ctx); err != nil {
+		logger.Errorf("Failed to obtain initial token: %v", err)
 		return nil, fmt.Errorf("failed to obtain initial token: %w", err)
 	}
+
+	logger.Debugf("Successfully obtained initial token")
 
 	// Initialize all API clients - these will be created in respective packages
 	// For example: client.CloudServer = compute.NewCloudServerClient(client)
@@ -127,6 +205,11 @@ func (c *Client) HTTPClient() *http.Client {
 	return c.config.HTTPClient
 }
 
+// Logger returns the client logger
+func (c *Client) Logger() Logger {
+	return c.logger
+}
+
 // GetToken returns the current valid JWT token, refreshing if necessary
 func (c *Client) GetToken(ctx context.Context) (string, error) {
 	return c.tokenManager.GetToken(ctx)
@@ -137,9 +220,26 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body io.Rea
 	// Build full URL
 	url := c.config.BaseURL + path
 
+	c.logger.Debugf("Making %s request to %s", method, url)
+
+	// Read body for logging if present
+	var bodyBytes []byte
+	if body != nil {
+		var err error
+		bodyBytes, err = io.ReadAll(body)
+		if err != nil {
+			c.logger.Errorf("Failed to read request body: %v", err)
+			return nil, fmt.Errorf("failed to read request body: %w", err)
+		}
+		c.logger.Debugf("Request body: %s", string(bodyBytes))
+		// Recreate reader for actual request
+		body = bytes.NewReader(bodyBytes)
+	}
+
 	// Create request
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
+		c.logger.Errorf("Failed to create request: %v", err)
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
@@ -150,10 +250,11 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body io.Rea
 			q.Add(key, value)
 		}
 		req.URL.RawQuery = q.Encode()
+		c.logger.Debugf("Added query parameters: %v", queryParams)
 	}
 
 	// Set content type for requests with body
-	if body != nil {
+	if bodyBytes != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
 
@@ -162,16 +263,49 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body io.Rea
 		req.Header.Set(k, v)
 	}
 
+	// Log request headers (before auth)
+	c.logger.Debugf("Request headers (pre-auth): %v", headers)
+
 	// Use RequestEditorFn to add authentication and custom headers from config
 	editorFn := c.RequestEditorFn()
 	if err := editorFn(ctx, req); err != nil {
+		c.logger.Errorf("Failed to prepare request: %v", err)
 		return nil, fmt.Errorf("failed to prepare request: %w", err)
 	}
+
+	// Log all headers after auth (excluding Authorization token for security)
+	sanitizedHeaders := make(map[string]string)
+	for key, values := range req.Header {
+		if key == "Authorization" {
+			sanitizedHeaders[key] = "Bearer [REDACTED]"
+		} else {
+			sanitizedHeaders[key] = values[0]
+		}
+	}
+	c.logger.Debugf("Request headers (final): %v", sanitizedHeaders)
 
 	// Execute request
 	resp, err := c.config.HTTPClient.Do(req)
 	if err != nil {
+		c.logger.Errorf("Request failed: %v", err)
 		return nil, fmt.Errorf("request failed: %w", err)
+	}
+
+	c.logger.Debugf("Received response with status: %d %s", resp.StatusCode, resp.Status)
+
+	// Log response headers
+	c.logger.Debugf("Response headers: %v", resp.Header)
+
+	// Log response body (for debugging)
+	if resp.Body != nil {
+		respBodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			c.logger.Warnf("Failed to read response body for logging: %v", err)
+		} else {
+			c.logger.Debugf("Response body: %s", string(respBodyBytes))
+			// Recreate the response body so it can be read by the caller
+			resp.Body = io.NopCloser(bytes.NewReader(respBodyBytes))
+		}
 	}
 
 	return resp, nil

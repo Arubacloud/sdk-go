@@ -507,6 +507,61 @@ if resp.IsSuccess() {
 }
 ```
 
+## Debug Logging
+
+The SDK supports comprehensive debug logging for troubleshooting API interactions. When enabled, it logs:
+
+- **Service Operations**: High-level operations with resource identifiers
+- **HTTP Requests**: Method, URL, headers (with token redaction), query parameters, and request body
+- **HTTP Responses**: Status code, headers, and response body
+
+### Enable Debug Logging
+
+```go
+config := &client.Config{
+    ClientID:     "your-client-id",
+    ClientSecret: "your-client-secret",
+    Debug:        true,  // Enable debug logging to stdout/stderr
+}
+
+sdk, err := client.NewClient(config)
+```
+
+### Custom Logger
+
+You can provide a custom logger implementing the `Logger` interface:
+
+```go
+type Logger interface {
+    Debugf(format string, args ...interface{})
+    Infof(format string, args ...interface{})
+    Warnf(format string, args ...interface{})
+    Errorf(format string, args ...interface{})
+}
+
+// Use custom logger
+config := &client.Config{
+    ClientID:     "your-client-id",
+    ClientSecret: "your-client-secret",
+    Logger:       myCustomLogger,  // Your logger implementation
+}
+```
+
+### Example Debug Output
+
+```
+[DEBUG] Initializing SDK client
+[DEBUG] Successfully obtained initial token
+[DEBUG] Listing cloud servers for project: my-project
+[DEBUG] Making GET request to https://api.arubacloud.com/v1/projects/my-project/cloudservers
+[DEBUG] Added query parameters: map[limit:10]
+[DEBUG] Request headers (pre-auth): map[]
+[DEBUG] Request headers (final): map[Authorization:Bearer [REDACTED] Content-Type:application/json X-Application:aruba-sdk-example]
+[DEBUG] Received response with status: 200 OK
+[DEBUG] Response headers: map[Content-Type:[application/json] X-Request-Id:[abc-123]]
+[DEBUG] Response body: {"values":[...],"metadata":{...}}
+```
+
 ## Error Handling
 
 All API methods return a generic `Response[T]` wrapper and `error`. The response includes both parsed data and HTTP metadata:

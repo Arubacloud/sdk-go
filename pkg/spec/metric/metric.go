@@ -25,6 +25,8 @@ func NewMetricService(client *client.Client) *MetricService {
 
 // ListMetrics retrieves all metrics for a project
 func (s *MetricService) ListMetrics(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.MetricListResponse], error) {
+	s.client.Logger().Debugf("Listing metrics for project: %s", project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}

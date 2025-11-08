@@ -25,6 +25,8 @@ func NewAlertService(client *client.Client) *AlertService {
 
 // ListAlerts retrieves all alerts for a project
 func (s *AlertService) ListAlerts(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.AlertsListResponse], error) {
+	s.client.Logger().Debugf("Listing alerts for project: %s", project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}

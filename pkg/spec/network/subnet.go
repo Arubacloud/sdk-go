@@ -26,6 +26,8 @@ func NewSubnetService(client *client.Client) *SubnetService {
 
 // ListSubnets retrieves all subnets for a VPC
 func (s *SubnetService) ListSubnets(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.SubnetList], error) {
+	s.client.Logger().Debugf("Listing subnets for VPC: %s in project: %s", vpcId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -74,6 +76,8 @@ func (s *SubnetService) ListSubnets(ctx context.Context, project string, vpcId s
 
 // GetSubnet retrieves a specific subnet by ID
 func (s *SubnetService) GetSubnet(ctx context.Context, project string, vpcId string, subnetId string, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
+	s.client.Logger().Debugf("Getting subnet: %s from VPC: %s in project: %s", subnetId, vpcId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -123,8 +127,10 @@ func (s *SubnetService) GetSubnet(ctx context.Context, project string, vpcId str
 	return response, nil
 }
 
-// CreateSubnet creates a new subnet
+// CreateSubnet creates a new subnet in a VPC
 func (s *SubnetService) CreateSubnet(ctx context.Context, project string, vpcId string, body schema.SubnetRequest, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
+	s.client.Logger().Debugf("Creating subnet in VPC: %s in project: %s", vpcId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -178,6 +184,8 @@ func (s *SubnetService) CreateSubnet(ctx context.Context, project string, vpcId 
 
 // UpdateSubnet updates an existing subnet
 func (s *SubnetService) UpdateSubnet(ctx context.Context, project string, vpcId string, subnetId string, body schema.SubnetRequest, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
+	s.client.Logger().Debugf("Updating subnet: %s in VPC: %s in project: %s", subnetId, vpcId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -234,6 +242,8 @@ func (s *SubnetService) UpdateSubnet(ctx context.Context, project string, vpcId 
 
 // DeleteSubnet deletes a subnet by ID
 func (s *SubnetService) DeleteSubnet(ctx context.Context, projectId string, vpcId string, subnetId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+	s.client.Logger().Debugf("Deleting subnet: %s from VPC: %s in project: %s", subnetId, vpcId, projectId)
+
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}

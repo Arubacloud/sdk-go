@@ -26,6 +26,8 @@ func NewKeyPairService(client *client.Client) *KeyPairService {
 
 // ListKeyPairs retrieves all key pairs for a project
 func (s *KeyPairService) ListKeyPairs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.KeyPairListResponse], error) {
+	s.client.Logger().Debugf("Listing key pairs for project: %s", project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -74,6 +76,8 @@ func (s *KeyPairService) ListKeyPairs(ctx context.Context, project string, param
 
 // GetKeyPair retrieves a specific key pair by ID
 func (s *KeyPairService) GetKeyPair(ctx context.Context, project string, keyPairId string, params *schema.RequestParameters) (*schema.Response[schema.KeyPairResponse], error) {
+	s.client.Logger().Debugf("Getting key pair: %s in project: %s", keyPairId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -125,6 +129,8 @@ func (s *KeyPairService) GetKeyPair(ctx context.Context, project string, keyPair
 
 // CreateKeyPair creates a new key pair
 func (s *KeyPairService) CreateKeyPair(ctx context.Context, project string, body schema.KeyPairRequest, params *schema.RequestParameters) (*schema.Response[schema.KeyPairResponse], error) {
+	s.client.Logger().Debugf("Creating key pair in project: %s", project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -179,6 +185,8 @@ func (s *KeyPairService) CreateKeyPair(ctx context.Context, project string, body
 
 // DeleteKeyPair deletes a key pair by ID
 func (s *KeyPairService) DeleteKeyPair(ctx context.Context, projectId string, keyPairId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+	s.client.Logger().Debugf("Deleting key pair: %s in project: %s", keyPairId, projectId)
+
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}

@@ -25,6 +25,8 @@ func NewSnapshotService(client *client.Client) *SnapshotService {
 
 // ListSnapshots retrieves all snapshots for a project
 func (s *SnapshotService) ListSnapshots(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.SnapshotList], error) {
+	s.client.Logger().Debugf("Listing snapshots for project: %s", project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -70,6 +72,8 @@ func (s *SnapshotService) ListSnapshots(ctx context.Context, project string, par
 
 // GetSnapshot retrieves a specific snapshot by ID
 func (s *SnapshotService) GetSnapshot(ctx context.Context, project string, snapshotId string, params *schema.RequestParameters) (*schema.Response[schema.SnapshotResponse], error) {
+	s.client.Logger().Debugf("Getting snapshot: %s in project: %s", snapshotId, project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -116,8 +120,10 @@ func (s *SnapshotService) GetSnapshot(ctx context.Context, project string, snaps
 	return response, nil
 }
 
-// CreateSnapshot creates a snapshot
+// CreateSnapshot creates a new snapshot
 func (s *SnapshotService) CreateSnapshot(ctx context.Context, project string, body schema.SnapshotRequest, params *schema.RequestParameters) (*schema.Response[schema.SnapshotResponse], error) {
+	s.client.Logger().Debugf("Creating snapshot in project: %s", project)
+
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -163,8 +169,10 @@ func (s *SnapshotService) CreateSnapshot(ctx context.Context, project string, bo
 
 // DeleteSnapshot deletes a snapshot by ID
 func (s *SnapshotService) DeleteSnapshot(ctx context.Context, project string, snapshotId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+	s.client.Logger().Debugf("Deleting snapshot: %s in project: %s", snapshotId, project)
+
 	if project == "" {
-		return nil, fmt.Errorf("project ID cannot be empty")
+		return nil, fmt.Errorf("project cannot be empty")
 	}
 	if snapshotId == "" {
 		return nil, fmt.Errorf("snapshot ID cannot be empty")
