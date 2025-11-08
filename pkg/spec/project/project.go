@@ -1,4 +1,4 @@
-package security
+package project
 
 import (
 	"bytes"
@@ -12,25 +12,21 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// KmsKeyService implements the KMSAPI interface
-type KmsKeyService struct {
+// ProjectService implements the ProjectAPI interface
+type ProjectService struct {
 	client *client.Client
 }
 
-// NewKmsKeyService creates a new KmsKeyService
-func NewKmsKeyService(client *client.Client) *KmsKeyService {
-	return &KmsKeyService{
+// NewProjectService creates a new ProjectService
+func NewProjectService(client *client.Client) *ProjectService {
+	return &ProjectService{
 		client: client,
 	}
 }
 
-// ListKMSKeys retrieves all KMS keys for a project
-func (s *KmsKeyService) ListKMSKeys(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.KmsList], error) {
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-
-	path := fmt.Sprintf(KmsKeysPath, project)
+// ListProjects retrieves all projects
+func (s *ProjectService) ListProjects(ctx context.Context, params *schema.RequestParameters) (*schema.Response[schema.ProjectList], error) {
+	path := ProjectsPath
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -51,7 +47,7 @@ func (s *KmsKeyService) ListKMSKeys(ctx context.Context, project string, params 
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.KmsList]{
+	response := &schema.Response[schema.ProjectList]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -59,7 +55,7 @@ func (s *KmsKeyService) ListKMSKeys(ctx context.Context, project string, params 
 	}
 
 	if response.IsSuccess() {
-		var data schema.KmsList
+		var data schema.ProjectList
 		if err := json.Unmarshal(bodyBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
@@ -69,16 +65,13 @@ func (s *KmsKeyService) ListKMSKeys(ctx context.Context, project string, params 
 	return response, nil
 }
 
-// GetKMSKey retrieves a specific KMS key by ID
-func (s *KmsKeyService) GetKMSKey(ctx context.Context, project string, kmsKeyId string, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error) {
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if kmsKeyId == "" {
-		return nil, fmt.Errorf("KMS key ID cannot be empty")
+// GetProject retrieves a specific project by ID
+func (s *ProjectService) GetProject(ctx context.Context, projectId string, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
+	if projectId == "" {
+		return nil, fmt.Errorf("project ID cannot be empty")
 	}
 
-	path := fmt.Sprintf(KmsKeyPath, project, kmsKeyId)
+	path := fmt.Sprintf(ProjectPath, projectId)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -99,7 +92,7 @@ func (s *KmsKeyService) GetKMSKey(ctx context.Context, project string, kmsKeyId 
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.KmsResponse]{
+	response := &schema.Response[schema.ProjectResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -107,7 +100,7 @@ func (s *KmsKeyService) GetKMSKey(ctx context.Context, project string, kmsKeyId 
 	}
 
 	if response.IsSuccess() {
-		var data schema.KmsResponse
+		var data schema.ProjectResponse
 		if err := json.Unmarshal(bodyBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
@@ -117,13 +110,9 @@ func (s *KmsKeyService) GetKMSKey(ctx context.Context, project string, kmsKeyId 
 	return response, nil
 }
 
-// CreateKMSKey creates a new KMS key
-func (s *KmsKeyService) CreateKMSKey(ctx context.Context, project string, body schema.KmsRequest, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error) {
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-
-	path := fmt.Sprintf(KmsKeysPath, project)
+// CreateProject creates a new project
+func (s *ProjectService) CreateProject(ctx context.Context, body schema.ProjectRequest, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
+	path := ProjectsPath
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -149,7 +138,7 @@ func (s *KmsKeyService) CreateKMSKey(ctx context.Context, project string, body s
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.KmsResponse]{
+	response := &schema.Response[schema.ProjectResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -157,7 +146,7 @@ func (s *KmsKeyService) CreateKMSKey(ctx context.Context, project string, body s
 	}
 
 	if response.IsSuccess() {
-		var data schema.KmsResponse
+		var data schema.ProjectResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
@@ -167,16 +156,13 @@ func (s *KmsKeyService) CreateKMSKey(ctx context.Context, project string, body s
 	return response, nil
 }
 
-// UpdateKMSKey updates an existing KMS key
-func (s *KmsKeyService) UpdateKMSKey(ctx context.Context, project string, kmsKeyId string, body schema.KmsRequest, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error) {
-	if project == "" {
-		return nil, fmt.Errorf("project cannot be empty")
-	}
-	if kmsKeyId == "" {
-		return nil, fmt.Errorf("KMS key ID cannot be empty")
+// UpdateProject updates an existing project
+func (s *ProjectService) UpdateProject(ctx context.Context, projectId string, body schema.ProjectRequest, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
+	if projectId == "" {
+		return nil, fmt.Errorf("project ID cannot be empty")
 	}
 
-	path := fmt.Sprintf(KmsKeyPath, project, kmsKeyId)
+	path := fmt.Sprintf(ProjectPath, projectId)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -202,7 +188,7 @@ func (s *KmsKeyService) UpdateKMSKey(ctx context.Context, project string, kmsKey
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.KmsResponse]{
+	response := &schema.Response[schema.ProjectResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -210,7 +196,7 @@ func (s *KmsKeyService) UpdateKMSKey(ctx context.Context, project string, kmsKey
 	}
 
 	if response.IsSuccess() {
-		var data schema.KmsResponse
+		var data schema.ProjectResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
@@ -220,16 +206,13 @@ func (s *KmsKeyService) UpdateKMSKey(ctx context.Context, project string, kmsKey
 	return response, nil
 }
 
-// DeleteKMSKey deletes a KMS key by ID
-func (s *KmsKeyService) DeleteKMSKey(ctx context.Context, projectId string, kmsKeyId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+// DeleteProject deletes a project by ID
+func (s *ProjectService) DeleteProject(ctx context.Context, projectId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	if projectId == "" {
 		return nil, fmt.Errorf("project ID cannot be empty")
 	}
-	if kmsKeyId == "" {
-		return nil, fmt.Errorf("KMS key ID cannot be empty")
-	}
 
-	path := fmt.Sprintf(KmsKeyPath, projectId, kmsKeyId)
+	path := fmt.Sprintf(ProjectPath, projectId)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -255,14 +238,6 @@ func (s *KmsKeyService) DeleteKMSKey(ctx context.Context, projectId string, kmsK
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
 		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() && len(bodyBytes) > 0 {
-		var data any
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
 	}
 
 	return response, nil

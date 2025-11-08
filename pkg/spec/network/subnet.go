@@ -1,6 +1,7 @@
 package network
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -122,8 +123,8 @@ func (s *SubnetService) GetSubnet(ctx context.Context, project string, vpcId str
 	return response, nil
 }
 
-// CreateOrUpdateSubnet creates or updates a subnet
-func (s *SubnetService) CreateOrUpdateSubnet(ctx context.Context, project string, vpcId string, body schema.SubnetRequest, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
+// CreateSubnet creates a new subnet
+func (s *SubnetService) CreateSubnet(ctx context.Context, project string, vpcId string, body schema.SubnetRequest, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -141,13 +142,18 @@ func (s *SubnetService) CreateOrUpdateSubnet(ctx context.Context, project string
 		headers = params.ToHeaders()
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, nil, queryParams, headers)
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
+	respBytes, err := io.ReadAll(httpResp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
@@ -156,12 +162,68 @@ func (s *SubnetService) CreateOrUpdateSubnet(ctx context.Context, project string
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
+		RawBody:      respBytes,
 	}
 
 	if response.IsSuccess() {
 		var data schema.SubnetResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+		if err := json.Unmarshal(respBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
+}
+
+// UpdateSubnet updates an existing subnet
+func (s *SubnetService) UpdateSubnet(ctx context.Context, project string, vpcId string, subnetId string, body schema.SubnetRequest, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
+	if project == "" {
+		return nil, fmt.Errorf("project cannot be empty")
+	}
+	if vpcId == "" {
+		return nil, fmt.Errorf("VPC ID cannot be empty")
+	}
+	if subnetId == "" {
+		return nil, fmt.Errorf("subnet ID cannot be empty")
+	}
+
+	path := fmt.Sprintf(SubnetPath, project, vpcId, subnetId)
+
+	var queryParams map[string]string
+	var headers map[string]string
+
+	if params != nil {
+		queryParams = params.ToQueryParams()
+		headers = params.ToHeaders()
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	respBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.SubnetResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      respBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.SubnetResponse
+		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data

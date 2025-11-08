@@ -6,7 +6,7 @@ A Go SDK for interacting with Aruba Cloud REST APIs. This SDK provides a clean, 
 
 This SDK follows a microservices architecture where each resource type has its own API client. The SDK provides:
 
-- **Type-safe API clients** with HTTP-level operations (returns `*http.Response`)
+- **Type-safe API clients** with generic `Response[T]` wrapper (parsed data + HTTP metadata)
 - **Domain-specific interfaces** for each resource type
 - **Unified client** that aggregates all resource providers
 - **Automatic JWT authentication** via OAuth2 client credentials flow
@@ -17,37 +17,97 @@ This SDK follows a microservices architecture where each resource type has its o
 
 ```
 sdk-go/
+├── cmd/
+│   └── example/             # Example usage
+│       ├── main.go
+│       └── README.md
 ├── pkg/
 │   ├── client/              # Main SDK client
 │   │   ├── client.go        # Client with all API providers
-│   │   └── token.go         # OAuth2 token manager
-│   ├── spec/
-│   │   ├── schema/          # Shared types and interfaces
-│   │   │   ├── api.go       # API interfaces (VpcAPI, SubnetAPI, etc.)
-│   │   │   ├── types.go     # Common types and request/response structs
-│   │   │   └── common.go    # Common parameters and enums
-│   │   ├── compute/         # Compute service implementations
-│   │   │   ├── cloudserver.go # CloudServer API client
-│   │   │   └── kaas.go        # Kubernetes API client
-│   │   ├── network/         # Network service implementations
-│   │   │   ├── vpc.go
-│   │   │   ├── subnet.go
-│   │   │   ├── elasticip.go
-│   │   │   ├── vpcpeering.go
-│   │   │   ├── vpcroute.go
-│   │   │   └── vpntunnel.go
-│   │   ├── security/        # Security service implementations
-│   │   │   └── securitygroup.go
-│   │   ├── storage/         # Storage service implementations
-│   │   │   ├── blockstorage.go
-│   │   │   └── snapshot.go
-│   │   ├── database/        # Database service implementations
-│   │   │   └── dbaas.go
-│   │   └── schedule/        # Schedule service implementations
-│   │       └── schedulejob.go
-├── examples/                # Usage examples
+│   │   ├── client_test.go
+│   │   ├── error.go         # Error handling
+│   │   ├── middleware.go    # Request middleware
+│   │   ├── params.go        # Parameter helpers
+│   │   ├── providers.go     # Service providers
+│   │   ├── token.go         # OAuth2 token manager
+│   │   └── token_test.go
+│   └── spec/
+│       ├── schema/          # Shared types and schemas
+│       │   ├── resource.go  # Generic Response[T] wrapper
+│       │   ├── parameters.go # Common parameters
+│       │   ├── error.go     # Error types
+│       │   └── *.go         # Resource schemas
+│       ├── audit/           # Audit service
+│       │   ├── interface.go
+│       │   ├── event.go
+│       │   ├── path.go
+│       │   └── README.md
+│       ├── compute/         # Compute service
+│       │   ├── interface.go
+│       │   ├── cloudserver.go
+│       │   ├── keypair.go
+│       │   ├── path.go
+│       │   └── README.md
+│       ├── database/        # Database service
+│       │   ├── interface.go
+│       │   ├── dbaas.go
+│       │   ├── database.go
+│       │   ├── user.go
+│       │   ├── grant.go
+│       │   ├── backup.go
+│       │   ├── path.go
+│       │   └── README.md
+│       ├── metric/          # Metrics service
+│       │   ├── interface.go
+│       │   ├── metric.go
+│       │   ├── alert.go
+│       │   ├── path.go
+│       │   └── README.md
+│       ├── network/         # Network service
+│       │   ├── interface.go
+│       │   ├── vpc.go
+│       │   ├── subnet.go
+│       │   ├── elastic-ip.go
+│       │   ├── load-balancer.go
+│       │   ├── security-group.go
+│       │   ├── security-group-rule.go
+│       │   ├── vpc-peering.go
+│       │   ├── vpc-peering-route.go
+│       │   ├── vpn-tunnel.go
+│       │   ├── vpn-route.go
+│       │   ├── path.go
+│       │   └── README.md
+│       ├── project/         # Project service
+│       │   ├── interface.go
+│       │   ├── path.go
+│       │   └── README.md
+│       ├── schedule/        # Schedule service
+│       │   ├── interface.go
+│       │   ├── job.go
+│       │   ├── path.go
+│       │   └── README.md
+│       ├── security/        # Security service
+│       │   ├── interface.go
+│       │   ├── kms.go
+│       │   ├── path.go
+│       │   └── README.md
+│       └── storage/         # Storage service
+│           ├── interface.go
+│           ├── block-storage.go
+│           ├── snapshot.go
+│           ├── path.go
+│           └── README.md
+├── tools/                   # Build tools
+│   ├── go.mod
+│   └── tools.go
 ├── go.mod
-└── README.md
+├── Makefile
+├── README.md
+├── DEVELOPMENT.md
+├── FILTERS.md               # Filtering documentation
+├── OAUTH2.md                # OAuth2 documentation
+├── QUICKREF.md              # Quick reference
+└── SDK_READY.md
 ```
 
 ## Installation
@@ -109,15 +169,17 @@ func listCloudServers(ctx context.Context, sdk *client.Client) {
     if err != nil {
         log.Fatal(err)
     }
-    defer resp.Body.Close()
     
-    // Parse response
-    var result schema.CloudServerListResponse
-    if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-        log.Fatal(err)
+    // Check response status
+    if !resp.IsSuccess() {
+        log.Fatalf("Failed to list cloud servers: %d", resp.StatusCode)
     }
     
-    fmt.Printf("Found %d cloud servers\n", len(result.Items))
+    // Access parsed data
+    fmt.Printf("Found %d cloud servers\n", len(resp.Data.Values))
+    for _, server := range resp.Data.Values {
+        fmt.Printf("- %s (%s)\n", server.Metadata.Name, server.Status.Phase)
+    }
 }
 
 func createCloudServer(ctx context.Context, sdk *client.Client) {
@@ -140,10 +202,9 @@ func createCloudServer(ctx context.Context, sdk *client.Client) {
     if err != nil {
         log.Fatal(err)
     }
-    defer resp.Body.Close()
     
-    if resp.StatusCode == 200 || resp.StatusCode == 201 {
-        fmt.Println("Cloud server created successfully")
+    if resp.IsSuccess() {
+        fmt.Printf("Cloud server created: %s\n", resp.Data.Metadata.Name)
     }
 }
 
@@ -172,7 +233,12 @@ func manageVPCs(ctx context.Context, sdk *client.Client) {
     if err != nil {
         log.Fatal(err)
     }
-    defer resp.Body.Close()
+    
+    if resp.IsSuccess() {
+        for _, vpc := range resp.Data.Values {
+            fmt.Printf("VPC: %s - %s\n", vpc.Metadata.Name, vpc.Spec.CidrBlock)
+        }
+    }
     
     // Create a VPC
     vpcReq := schema.VpcRequest{
@@ -191,7 +257,10 @@ func manageVPCs(ctx context.Context, sdk *client.Client) {
     if err != nil {
         log.Fatal(err)
     }
-    defer resp.Body.Close()
+    
+    if resp.IsSuccess() {
+        fmt.Printf("VPC created: %s\n", resp.Data.Metadata.Name)
+    }
 }
 
 func ptrLabel(s string) *schema.LabelSelector {
@@ -222,7 +291,11 @@ func manageStorage(ctx context.Context, sdk *client.Client) {
     if err != nil {
         log.Fatal(err)
     }
-    defer resp.Body.Close()
+    
+    if resp.IsSuccess() {
+        fmt.Printf("Block storage created: %s (Size: %dGB)\n", 
+            resp.Data.Metadata.Name, resp.Data.Spec.SizeGB)
+    }
     
     // Create snapshot
     snapshotReq := schema.SnapshotRequest{
@@ -241,7 +314,10 @@ func manageStorage(ctx context.Context, sdk *client.Client) {
     if err != nil {
         log.Fatal(err)
     }
-    defer resp.Body.Close()
+    
+    if resp.IsSuccess() {
+        fmt.Printf("Snapshot created: %s\n", resp.Data.Metadata.Name)
+    }
 }
 ```
 
@@ -249,7 +325,6 @@ func manageStorage(ctx context.Context, sdk *client.Client) {
 
 ### Compute
 - **CloudServer** - Virtual machine management
-- **KaaS** - Kubernetes cluster management
 
 ### Network
 - **Vpc** - Virtual Private Cloud
@@ -334,6 +409,10 @@ resp, err := sdk.CloudServer.GetCloudServer(
     "my-server",
     customEditor, // pass request editor
 )
+
+if resp.IsSuccess() {
+    fmt.Printf("Server: %s\n", resp.Data.Metadata.Name)
+}
 ```
 
 ### Conditional Requests
@@ -363,11 +442,74 @@ params := &schema.ListParams{
 }
 
 resp, err := sdk.Vpc.ListVpcs(ctx, "my-project", params)
+if resp.IsSuccess() {
+    for _, vpc := range resp.Data.Values {
+        fmt.Printf("VPC: %s (Deleted: %v)\n", vpc.Metadata.Name, vpc.Metadata.DeletionTimestamp != nil)
+    }
+}
+```
+
+### Filtering by Labels
+
+```go
+// Filter resources by labels
+labelSelector := schema.LabelSelector("environment=prod,tier=frontend")
+params := &schema.ListParams{
+    Labels: &labelSelector,
+}
+
+resp, err := sdk.CloudServer.ListCloudServers(ctx, "my-project", params)
+if resp.IsSuccess() {
+    for _, server := range resp.Data.Values {
+        fmt.Printf("Server: %s - Labels: %v\n", 
+            server.Metadata.Name, 
+            server.Metadata.Labels)
+    }
+}
+```
+
+### Filtering by Field Selectors
+
+```go
+// Filter by field values
+fieldSelector := schema.FieldSelector("status.phase=Running")
+params := &schema.ListParams{
+    Fields: &fieldSelector,
+}
+
+resp, err := sdk.CloudServer.ListCloudServers(ctx, "my-project", params)
+if resp.IsSuccess() {
+    fmt.Printf("Found %d running servers\n", len(resp.Data.Values))
+}
+```
+
+### Pagination
+
+```go
+// Paginate through results
+limit := schema.LimitParam(50)
+params := &schema.ListParams{
+    Limit: &limit,
+}
+
+resp, err := sdk.Vpc.ListVpcs(ctx, "my-project", params)
+if resp.IsSuccess() {
+    fmt.Printf("Page 1: %d VPCs\n", len(resp.Data.Values))
+    
+    // Get next page using continuation token
+    if resp.Data.Metadata.Continue != nil {
+        params.Continue = resp.Data.Metadata.Continue
+        resp, err = sdk.Vpc.ListVpcs(ctx, "my-project", params)
+        if resp.IsSuccess() {
+            fmt.Printf("Page 2: %d VPCs\n", len(resp.Data.Values))
+        }
+    }
+}
 ```
 
 ## Error Handling
 
-All API methods return `*http.Response` and `error`. You should check both:
+All API methods return a generic `Response[T]` wrapper and `error`. The response includes both parsed data and HTTP metadata:
 
 ```go
 resp, err := sdk.CloudServer.GetCloudServer(ctx, "my-project", "my-server")
@@ -375,39 +517,53 @@ if err != nil {
     log.Printf("Request failed: %v", err)
     return err
 }
-defer resp.Body.Close()
 
-if resp.StatusCode != http.StatusOK {
-    body, _ := io.ReadAll(resp.Body)
-    log.Printf("API error: %d - %s", resp.StatusCode, string(body))
+// Check status using helper methods
+if resp.IsError() {
+    log.Printf("API error: %d - %s", resp.StatusCode, string(resp.RawBody))
     return fmt.Errorf("unexpected status: %d", resp.StatusCode)
 }
 
-// Parse success response
-var result schema.CloudServerResponse
-if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-    return err
+if resp.IsSuccess() {
+    // Access parsed data directly
+    fmt.Printf("Server: %s (Status: %s)\n", 
+        resp.Data.Metadata.Name, 
+        resp.Data.Status.Phase)
+    
+    // Access HTTP metadata if needed
+    fmt.Printf("Response headers: %v\n", resp.Headers)
 }
 ```
 
+### Response[T] Structure
+
+The `Response[T]` type provides:
+- `Data *T` - Parsed JSON response data
+- `HTTPResponse *http.Response` - Full HTTP response
+- `StatusCode int` - HTTP status code
+- `Headers http.Header` - Response headers
+- `RawBody []byte` - Raw response body
+- `IsSuccess() bool` - Returns true for 2xx status codes
+- `IsError() bool` - Returns true for 4xx/5xx status codes
+
 ## API Interface Pattern
 
-All resource clients follow the same pattern:
+All resource clients follow the same pattern and return `Response[T]`:
 
 ```go
 type ResourceAPI interface {
     // List resources with pagination and filtering
-    List{Resource}(ctx, project, params, ...editors) (*http.Response, error)
+    List{Resource}(ctx, project, params, ...editors) (*schema.Response[schema.{Resource}ListResponse], error)
     
     // Get a single resource by name
-    Get{Resource}(ctx, project, name, ...editors) (*http.Response, error)
+    Get{Resource}(ctx, project, name, ...editors) (*schema.Response[schema.{Resource}Response], error)
     
     // Create or update a resource (upsert)
-    CreateOrUpdate{Resource}(ctx, project, name, params, body, ...editors) (*http.Response, error)
-    CreateOrUpdate{Resource}WithBody(ctx, project, name, params, contentType, body, ...editors) (*http.Response, error)
+    CreateOrUpdate{Resource}(ctx, project, name, params, body, ...editors) (*schema.Response[schema.{Resource}Response], error)
+    CreateOrUpdate{Resource}WithBody(ctx, project, name, params, contentType, body, ...editors) (*schema.Response[schema.{Resource}Response], error)
     
     // Delete a resource
-    Delete{Resource}(ctx, project, name, params, ...editors) (*http.Response, error)
+    Delete{Resource}(ctx, project, name, params, ...editors) (*schema.Response[any], error)
 }
 ```
 
@@ -434,19 +590,29 @@ resp, err := sdk.CloudServer.GetCloudServer(ctx, "my-project", "my-server")
 
 ## Best Practices
 
-1. **Always close response bodies**:
+1. **Check response status using helper methods**:
    ```go
    resp, err := sdk.CloudServer.GetCloudServer(ctx, project, name)
    if err != nil {
        return err
    }
-   defer resp.Body.Close()
+   
+   if resp.IsSuccess() {
+       // Access parsed data
+       fmt.Println(resp.Data.Metadata.Name)
+   }
    ```
 
-2. **Check HTTP status codes**:
+2. **Access both parsed data and HTTP metadata**:
    ```go
-   if resp.StatusCode != http.StatusOK {
-       // Handle error
+   if resp.IsSuccess() {
+       // Use parsed data
+       for _, item := range resp.Data.Values {
+           fmt.Println(item.Metadata.Name)
+       }
+       
+       // Access HTTP details if needed
+       fmt.Printf("Status: %d, Headers: %v\n", resp.StatusCode, resp.Headers)
    }
    ```
 

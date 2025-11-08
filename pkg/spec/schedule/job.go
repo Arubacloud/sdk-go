@@ -1,6 +1,7 @@
 package schedule
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -116,8 +117,8 @@ func (s *JobService) GetScheduleJob(ctx context.Context, project string, schedul
 	return response, nil
 }
 
-// CreateOrUpdateScheduleJob creates or updates a scheduled job
-func (s *JobService) CreateOrUpdateScheduleJob(ctx context.Context, project string, body schema.JobRequest, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
+// CreateScheduleJob creates a new scheduled job
+func (s *JobService) CreateScheduleJob(ctx context.Context, project string, body schema.JobRequest, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -132,13 +133,18 @@ func (s *JobService) CreateOrUpdateScheduleJob(ctx context.Context, project stri
 		headers = params.ToHeaders()
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, nil, queryParams, headers)
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
+	respBytes, err := io.ReadAll(httpResp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
@@ -147,12 +153,65 @@ func (s *JobService) CreateOrUpdateScheduleJob(ctx context.Context, project stri
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
+		RawBody:      respBytes,
 	}
 
 	if response.IsSuccess() {
 		var data schema.JobResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+		if err := json.Unmarshal(respBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
+}
+
+// UpdateScheduleJob updates an existing scheduled job
+func (s *JobService) UpdateScheduleJob(ctx context.Context, project string, scheduleJobId string, body schema.JobRequest, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
+	if project == "" {
+		return nil, fmt.Errorf("project cannot be empty")
+	}
+	if scheduleJobId == "" {
+		return nil, fmt.Errorf("job ID cannot be empty")
+	}
+
+	path := fmt.Sprintf(JobPath, project, scheduleJobId)
+
+	var queryParams map[string]string
+	var headers map[string]string
+
+	if params != nil {
+		queryParams = params.ToQueryParams()
+		headers = params.ToHeaders()
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	respBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.JobResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      respBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.JobResponse
+		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data

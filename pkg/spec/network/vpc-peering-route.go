@@ -1,6 +1,7 @@
 package network
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -128,8 +129,8 @@ func (s *VpcPeeringRouteService) GetVpcPeeringRoute(ctx context.Context, project
 	return response, nil
 }
 
-// CreateOrUpdateVpcPeeringRoute creates or updates a VPC peering route
-func (s *VpcPeeringRouteService) CreateOrUpdateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VpcPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error) {
+// CreateVpcPeeringRoute creates a new VPC peering route
+func (s *VpcPeeringRouteService) CreateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VpcPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -150,13 +151,18 @@ func (s *VpcPeeringRouteService) CreateOrUpdateVpcPeeringRoute(ctx context.Conte
 		headers = params.ToHeaders()
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, nil, queryParams, headers)
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
+	respBytes, err := io.ReadAll(httpResp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
@@ -165,12 +171,71 @@ func (s *VpcPeeringRouteService) CreateOrUpdateVpcPeeringRoute(ctx context.Conte
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
+		RawBody:      respBytes,
 	}
 
 	if response.IsSuccess() {
 		var data schema.VpcPeeringRouteResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+		if err := json.Unmarshal(respBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
+}
+
+// UpdateVpcPeeringRoute updates an existing VPC peering route
+func (s *VpcPeeringRouteService) UpdateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, body schema.VpcPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error) {
+	if project == "" {
+		return nil, fmt.Errorf("project cannot be empty")
+	}
+	if vpcId == "" {
+		return nil, fmt.Errorf("VPC ID cannot be empty")
+	}
+	if vpcPeeringId == "" {
+		return nil, fmt.Errorf("VPC peering ID cannot be empty")
+	}
+	if vpcPeeringRouteId == "" {
+		return nil, fmt.Errorf("VPC peering route ID cannot be empty")
+	}
+
+	path := fmt.Sprintf(VpcPeeringRoutePath, project, vpcId, vpcPeeringId, vpcPeeringRouteId)
+
+	var queryParams map[string]string
+	var headers map[string]string
+
+	if params != nil {
+		queryParams = params.ToQueryParams()
+		headers = params.ToHeaders()
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	respBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.VpcPeeringRouteResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      respBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.VpcPeeringRouteResponse
+		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data

@@ -1,6 +1,7 @@
 package network
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -122,8 +123,8 @@ func (s *VpcPeeringService) GetVpcPeering(ctx context.Context, project string, v
 	return response, nil
 }
 
-// CreateOrUpdateVpcPeering creates or updates a VPC peering
-func (s *VpcPeeringService) CreateOrUpdateVpcPeering(ctx context.Context, project string, vpcId string, body schema.VpcPeeringRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringResponse], error) {
+// CreateVpcPeering creates a new VPC peering
+func (s *VpcPeeringService) CreateVpcPeering(ctx context.Context, project string, vpcId string, body schema.VpcPeeringRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringResponse], error) {
 	if project == "" {
 		return nil, fmt.Errorf("project cannot be empty")
 	}
@@ -141,13 +142,18 @@ func (s *VpcPeeringService) CreateOrUpdateVpcPeering(ctx context.Context, projec
 		headers = params.ToHeaders()
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, nil, queryParams, headers)
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
+	respBytes, err := io.ReadAll(httpResp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
@@ -156,12 +162,68 @@ func (s *VpcPeeringService) CreateOrUpdateVpcPeering(ctx context.Context, projec
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
+		RawBody:      respBytes,
 	}
 
 	if response.IsSuccess() {
 		var data schema.VpcPeeringResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
+		if err := json.Unmarshal(respBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
+}
+
+// UpdateVpcPeering updates an existing VPC peering
+func (s *VpcPeeringService) UpdateVpcPeering(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VpcPeeringRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringResponse], error) {
+	if project == "" {
+		return nil, fmt.Errorf("project cannot be empty")
+	}
+	if vpcId == "" {
+		return nil, fmt.Errorf("VPC ID cannot be empty")
+	}
+	if vpcPeeringId == "" {
+		return nil, fmt.Errorf("VPC peering ID cannot be empty")
+	}
+
+	path := fmt.Sprintf(VpcPeeringPath, project, vpcId, vpcPeeringId)
+
+	var queryParams map[string]string
+	var headers map[string]string
+
+	if params != nil {
+		queryParams = params.ToQueryParams()
+		headers = params.ToHeaders()
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	respBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.VpcPeeringResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      respBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.VpcPeeringResponse
+		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
