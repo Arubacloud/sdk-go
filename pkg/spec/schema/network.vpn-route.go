@@ -23,7 +23,7 @@ type VpnRoutePropertiesResponse struct {
 
 type VpnRouteRequest struct {
 	// Metadata of the VPC Route
-	Metadata ResourceMetadataRequest `json:"metadata"`
+	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 
 	// Spec contains the VPC Route specification
 	Properties VpnRoutePropertiesRequest `json:"properties"`

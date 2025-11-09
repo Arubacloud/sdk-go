@@ -28,7 +28,7 @@ type VpcPropertiesResponse struct {
 
 type VpcRequest struct {
 	// Metadata of the VPC
-	Metadata ResourceMetadataRequest `json:"metadata"`
+	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 
 	// Spec contains the VPC specification
 	Properties VpcPropertiesRequest `json:"properties"`

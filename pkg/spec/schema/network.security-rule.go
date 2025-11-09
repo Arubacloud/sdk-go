@@ -69,7 +69,7 @@ type SecurityRulePropertiesResponse struct {
 }
 
 type SecurityRuleRequest struct {
-	Metadata ResourceMetadataRequest `json:"metadata"`
+	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 	// Properties of the security rule (nullable object)
 	Properties SecurityRulePropertiesRequest `json:"properties"`
 }

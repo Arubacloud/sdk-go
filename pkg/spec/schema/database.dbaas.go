@@ -188,7 +188,7 @@ type DBaaSPropertiesResponse struct {
 
 type DBaaSRequest struct {
 	// Metadata of the DBaaS instance
-	Metadata ResourceMetadataRequest `json:"metadata"`
+	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 
 	// Spec contains the DBaaS instance specification
 	Properties DBaaSPropertiesRequest `json:"spec"`

@@ -12,7 +12,7 @@ type VpcPeeringPropertiesResponse struct {
 
 type VpcPeeringRequest struct {
 	// Metadata of the VPC Peering
-	Metadata ResourceMetadataRequest `json:"metadata"`
+	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 
 	// Spec contains the VPC Peering specification
 	Properties VpcPeeringPropertiesRequest `json:"properties"`

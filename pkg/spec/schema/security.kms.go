@@ -8,8 +8,8 @@ type KmsPropertiesResponse struct {
 	BillingPeriod BillingPeriodResource `json:"billingPeriod"`
 }
 type KmsRequest struct {
-	Metadata   ResourceMetadataRequest `json:"metadata"`
-	Properties KmsPropertiesRequest    `json:"properties"`
+	Metadata   RegionalResourceMetadataRequest `json:"metadata"`
+	Properties KmsPropertiesRequest            `json:"properties"`
 }
 
 type KmsResponse struct {

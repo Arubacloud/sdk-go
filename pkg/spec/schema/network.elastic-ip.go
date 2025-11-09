@@ -12,8 +12,8 @@ type ElasticIpPropertiesResponse struct {
 }
 
 type ElasticIpRequest struct {
-	Metadata   ResourceMetadataRequest    `json:"metadata"`
-	Properties ElasticIpPropertiesRequest `json:"properties"`
+	Metadata   RegionalResourceMetadataRequest `json:"metadata"`
+	Properties ElasticIpPropertiesRequest      `json:"properties"`
 }
 
 type ElasticIpResponse struct {

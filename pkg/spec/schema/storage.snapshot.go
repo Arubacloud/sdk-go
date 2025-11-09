@@ -39,7 +39,7 @@ type SnapshotPropertiesResponse struct {
 
 type SnapshotRequest struct {
 	// Metadata of the Snapshot
-	Metadata ResourceMetadataRequest `json:"metadata"`
+	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 
 	// Spec contains the Snapshot specification
 	Properties SnapshotPropertiesRequest `json:"properties"`

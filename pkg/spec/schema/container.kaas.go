@@ -149,8 +149,8 @@ type KaaSPropertiesResponse struct {
 }
 
 type KaaSRequest struct {
-	Metadata   ResourceMetadataRequest `json:"metadata"`
-	Properties KaaSPropertiesRequest   `json:"properties"`
+	Metadata   RegionalResourceMetadataRequest `json:"metadata"`
+	Properties KaaSPropertiesRequest           `json:"properties"`
 }
 
 type KaaSResponse struct {

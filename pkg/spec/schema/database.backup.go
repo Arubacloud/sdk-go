@@ -29,8 +29,8 @@ type BackupPropertiesResponse struct {
 }
 
 type BackupRequest struct {
-	Metadata   ResourceMetadataRequest `json:"metadata"`
-	Properties BackupPropertiesRequest `json:"properties"`
+	Metadata   RegionalResourceMetadataRequest `json:"metadata"`
+	Properties BackupPropertiesRequest         `json:"properties"`
 }
 
 type BackupResponse struct {

@@ -32,7 +32,7 @@ func (s *VPCService) ListVPCs(ctx context.Context, project string, params *schem
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VPCsPath, project)
+	path := fmt.Sprintf(VPCNetworksPath, project)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -126,7 +126,7 @@ func (s *VPCService) CreateVPC(ctx context.Context, project string, body schema.
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VPCsPath, project)
+	path := fmt.Sprintf(VPCNetworksPath, project)
 
 	var queryParams map[string]string
 	var headers map[string]string

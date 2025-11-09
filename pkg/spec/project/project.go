@@ -116,16 +116,50 @@ func (s *ProjectService) GetProject(ctx context.Context, projectId string, param
 
 // CreateProject creates a new project
 func (s *ProjectService) CreateProject(ctx context.Context, body schema.ProjectRequest, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
-	s.client.Logger().Debug("Creating project")
+	s.client.Logger().Debugf("Creating project")
 
-	return request.ExecuteWithBody[schema.ProjectResponse](
-		ctx,
-		s.client,
-		http.MethodPost,
-		projectPath(),
-		body,
-		params,
-	)
+	path := ProjectsPath
+
+	var queryParams map[string]string
+	var headers map[string]string
+
+	if params != nil {
+		queryParams = params.ToQueryParams()
+		headers = params.ToHeaders()
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	respBytes, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	response := &schema.Response[schema.ProjectResponse]{
+		HTTPResponse: httpResp,
+		StatusCode:   httpResp.StatusCode,
+		Headers:      httpResp.Header,
+		RawBody:      respBytes,
+	}
+
+	if response.IsSuccess() {
+		var data schema.ProjectResponse
+		if err := json.Unmarshal(respBytes, &data); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %w", err)
+		}
+		response.Data = &data
+	}
+
+	return response, nil
 }
 
 // UpdateProject updates an existing project

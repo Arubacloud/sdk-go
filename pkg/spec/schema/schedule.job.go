@@ -144,7 +144,7 @@ type JobPropertiesResponse struct {
 // JobRequest represents a job creation/update request
 type JobRequest struct {
 	// Metadata of the job
-	Metadata ResourceMetadataRequest `json:"metadata"`
+	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 
 	// Properties of the job (nullable object)
 	Properties JobPropertiesRequest `json:"properties"`

@@ -53,7 +53,7 @@ type BlockStoragePropertiesResponse struct {
 
 type BlockStorageRequest struct {
 	// Metadata of the Block Storage
-	Metadata ResourceMetadataRequest `json:"metadata"`
+	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 
 	// Spec contains the Block Storage specification
 	Properties BlockStoragePropertiesRequest `json:"properties"`

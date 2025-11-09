@@ -67,8 +67,8 @@ type CloudServerRequest struct {
 }
 
 type CloudServerResponse struct {
-	Metadata   ResourceMetadataResponse    `json:"metadata"`
-	Properties CloudServerPropertiesResult `json:"properties"`
+	Metadata   RegionalResourceMetadataRequest `json:"metadata"`
+	Properties CloudServerPropertiesResult     `json:"properties"`
 
 	Status ResourceStatus `json:"status,omitempty"`
 }

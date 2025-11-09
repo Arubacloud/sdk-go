@@ -31,7 +31,7 @@ func (s *BlockStorageService) ListBlockStorageVolumes(ctx context.Context, proje
 		return nil, err
 	}
 
-	path := fmt.Sprintf(BlockStorageVolumesPath, project)
+	path := fmt.Sprintf(BlockStoragesPath, project)
 
 	var queryParams map[string]string
 	var headers map[string]string
@@ -125,7 +125,7 @@ func (s *BlockStorageService) CreateBlockStorageVolume(ctx context.Context, proj
 		return nil, err
 	}
 
-	path := fmt.Sprintf(BlockStorageVolumesPath, project)
+	path := fmt.Sprintf(BlockStoragesPath, project)
 
 	var queryParams map[string]string
 	var headers map[string]string

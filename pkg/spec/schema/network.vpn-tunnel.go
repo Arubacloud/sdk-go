@@ -122,7 +122,7 @@ type VpnTunnelPropertiesResponse struct {
 
 type VpnTunnelRequest struct {
 	// Metadata of the VPN Tunnel
-	Metadata ResourceMetadataRequest `json:"metadata"`
+	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 
 	// Spec contains the VPN Tunnel specification
 	Properties VpnTunnelPropertiesRequest `json:"properties"`

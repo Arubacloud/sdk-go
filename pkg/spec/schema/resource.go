@@ -11,6 +11,12 @@ type ResourceMetadataRequest struct {
 	Tags []string `json:"tags,omitempty"`
 }
 
+// Regional Resource Metadata Request
+type RegionalResourceMetadataRequest struct {
+	ResourceMetadataRequest
+	Location LocationRequest `json:"location"`
+}
+
 type LocationRequest struct {
 	Value string `json:"value"`
 }

@@ -28,7 +28,7 @@ type SubnetPropertiesResponse struct {
 
 type SubnetRequest struct {
 	// Metadata of the Subnet
-	Metadata ResourceMetadataRequest `json:"metadata"`
+	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 
 	// Spec contains the Subnet specification
 	Properties SubnetPropertiesRequest `json:"properties"`
