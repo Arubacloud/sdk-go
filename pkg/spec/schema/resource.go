@@ -124,8 +124,11 @@ type ListResponse struct {
 
 // Response wraps an HTTP response with parsed data
 type Response[T any] struct {
-	// Data contains the parsed response body
+	// Data contains the parsed response body (for 2xx responses)
 	Data *T
+
+	// Error contains the parsed error response (for 4xx/5xx responses)
+	Error *ErrorResponse
 
 	// HTTPResponse is the underlying HTTP response
 	HTTPResponse *http.Response

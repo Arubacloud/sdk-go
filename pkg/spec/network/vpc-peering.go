@@ -28,7 +28,7 @@ func NewVpcPeeringService(client *client.Client) *VpcPeeringService {
 func (s *VpcPeeringService) ListVpcPeerings(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringList], error) {
 	s.client.Logger().Debugf("Listing VPC peerings for VPC: %s in project: %s", vpcId, project)
 
-	if err := validateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
@@ -48,34 +48,14 @@ func (s *VpcPeeringService) ListVpcPeerings(ctx context.Context, project string,
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[schema.VpcPeeringList]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() {
-		var data schema.VpcPeeringList
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.VpcPeeringList](httpResp)
 }
 
 // GetVpcPeering retrieves a specific VPC peering by ID
 func (s *VpcPeeringService) GetVpcPeering(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringResponse], error) {
 	s.client.Logger().Debugf("Getting VPC peering: %s from VPC: %s in project: %s", vpcPeeringId, vpcId, project)
 
-	if err := validateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
+	if err := schema.ValidateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
 		return nil, err
 	}
 
@@ -95,34 +75,14 @@ func (s *VpcPeeringService) GetVpcPeering(ctx context.Context, project string, v
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[schema.VpcPeeringResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() {
-		var data schema.VpcPeeringResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.VpcPeeringResponse](httpResp)
 }
 
 // CreateVpcPeering creates a new VPC peering
 func (s *VpcPeeringService) CreateVpcPeering(ctx context.Context, project string, vpcId string, body schema.VpcPeeringRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringResponse], error) {
 	s.client.Logger().Debugf("Creating VPC peering in VPC: %s in project: %s", vpcId, project)
 
-	if err := validateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
@@ -165,6 +125,11 @@ func (s *VpcPeeringService) CreateVpcPeering(ctx context.Context, project string
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -174,7 +139,7 @@ func (s *VpcPeeringService) CreateVpcPeering(ctx context.Context, project string
 func (s *VpcPeeringService) UpdateVpcPeering(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VpcPeeringRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringResponse], error) {
 	s.client.Logger().Debugf("Updating VPC peering: %s in VPC: %s in project: %s", vpcPeeringId, vpcId, project)
 
-	if err := validateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
+	if err := schema.ValidateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
 		return nil, err
 	}
 
@@ -217,6 +182,11 @@ func (s *VpcPeeringService) UpdateVpcPeering(ctx context.Context, project string
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -226,7 +196,7 @@ func (s *VpcPeeringService) UpdateVpcPeering(ctx context.Context, project string
 func (s *VpcPeeringService) DeleteVpcPeering(ctx context.Context, projectId string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting VPC peering: %s from VPC: %s in project: %s", vpcPeeringId, vpcId, projectId)
 
-	if err := validateVPCResource(projectId, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
+	if err := schema.ValidateVPCResource(projectId, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
 		return nil, err
 	}
 
@@ -246,25 +216,5 @@ func (s *VpcPeeringService) DeleteVpcPeering(ctx context.Context, projectId stri
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[any]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() && len(bodyBytes) > 0 {
-		var data any
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[any](httpResp)
 }

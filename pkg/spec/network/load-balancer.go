@@ -2,9 +2,7 @@ package network
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/Arubacloud/sdk-go/pkg/client"
@@ -25,7 +23,7 @@ func NewLoadBalancerService(client *client.Client) *LoadBalancerService {
 
 // ListLoadBalancers retrieves all load balancers for a project
 func (s *LoadBalancerService) ListLoadBalancers(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.LoadBalancerList], error) {
-	if err := validateProject(project); err != nil {
+	if err := schema.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
@@ -45,35 +43,12 @@ func (s *LoadBalancerService) ListLoadBalancers(ctx context.Context, project str
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[schema.LoadBalancerList]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// Parse the response body if successful
-	if response.IsSuccess() {
-		var data schema.LoadBalancerList
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.LoadBalancerList](httpResp)
 }
 
 // GetLoadBalancer retrieves a specific load balancer by ID
 func (s *LoadBalancerService) GetLoadBalancer(ctx context.Context, project string, loadBalancerId string, params *schema.RequestParameters) (*schema.Response[schema.LoadBalancerResponse], error) {
-	if err := validateProjectAndResource(project, loadBalancerId, "load balancer ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, loadBalancerId, "load balancer ID"); err != nil {
 		return nil, err
 	}
 
@@ -93,28 +68,5 @@ func (s *LoadBalancerService) GetLoadBalancer(ctx context.Context, project strin
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[schema.LoadBalancerResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// Parse the response body if successful
-	if response.IsSuccess() {
-		var data schema.LoadBalancerResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.LoadBalancerResponse](httpResp)
 }

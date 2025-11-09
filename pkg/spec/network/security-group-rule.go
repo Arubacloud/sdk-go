@@ -28,7 +28,7 @@ func NewSecurityGroupRuleService(client *client.Client) *SecurityGroupRuleServic
 func (s *SecurityGroupRuleService) ListSecurityGroupRules(ctx context.Context, project string, vpcId string, securityGroupId string, params *schema.RequestParameters) (*schema.Response[schema.SecurityRuleList], error) {
 	s.client.Logger().Debugf("Listing security group rules for security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, project)
 
-	if err := validateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
+	if err := schema.ValidateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
 		return nil, err
 	}
 
@@ -48,34 +48,14 @@ func (s *SecurityGroupRuleService) ListSecurityGroupRules(ctx context.Context, p
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[schema.SecurityRuleList]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() {
-		var data schema.SecurityRuleList
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.SecurityRuleList](httpResp)
 }
 
 // GetSecurityGroupRule retrieves a specific security group rule by ID
 func (s *SecurityGroupRuleService) GetSecurityGroupRule(ctx context.Context, project string, vpcId string, securityGroupId string, securityGroupRuleId string, params *schema.RequestParameters) (*schema.Response[schema.SecurityRuleResponse], error) {
 	s.client.Logger().Debugf("Getting security group rule: %s from security group: %s in VPC: %s in project: %s", securityGroupRuleId, securityGroupId, vpcId, project)
 
-	if err := validateSecurityGroupRule(project, vpcId, securityGroupId, securityGroupRuleId); err != nil {
+	if err := schema.ValidateSecurityGroupRule(project, vpcId, securityGroupId, securityGroupRuleId); err != nil {
 		return nil, err
 	}
 
@@ -95,34 +75,14 @@ func (s *SecurityGroupRuleService) GetSecurityGroupRule(ctx context.Context, pro
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[schema.SecurityRuleResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() {
-		var data schema.SecurityRuleResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.SecurityRuleResponse](httpResp)
 }
 
 // CreateSecurityGroupRule creates a new security group rule
 func (s *SecurityGroupRuleService) CreateSecurityGroupRule(ctx context.Context, project string, vpcId string, securityGroupId string, body schema.SecurityRuleRequest, params *schema.RequestParameters) (*schema.Response[schema.SecurityRuleResponse], error) {
 	s.client.Logger().Debugf("Creating security group rule in security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, project)
 
-	if err := validateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
+	if err := schema.ValidateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
 		return nil, err
 	}
 
@@ -165,6 +125,11 @@ func (s *SecurityGroupRuleService) CreateSecurityGroupRule(ctx context.Context, 
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -174,7 +139,7 @@ func (s *SecurityGroupRuleService) CreateSecurityGroupRule(ctx context.Context, 
 func (s *SecurityGroupRuleService) UpdateSecurityGroupRule(ctx context.Context, project string, vpcId string, securityGroupId string, securityGroupRuleId string, body schema.SecurityRuleRequest, params *schema.RequestParameters) (*schema.Response[schema.SecurityRuleResponse], error) {
 	s.client.Logger().Debugf("Updating security group rule: %s in security group: %s in VPC: %s in project: %s", securityGroupRuleId, securityGroupId, vpcId, project)
 
-	if err := validateSecurityGroupRule(project, vpcId, securityGroupId, securityGroupRuleId); err != nil {
+	if err := schema.ValidateSecurityGroupRule(project, vpcId, securityGroupId, securityGroupRuleId); err != nil {
 		return nil, err
 	}
 
@@ -217,6 +182,11 @@ func (s *SecurityGroupRuleService) UpdateSecurityGroupRule(ctx context.Context, 
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -226,7 +196,7 @@ func (s *SecurityGroupRuleService) UpdateSecurityGroupRule(ctx context.Context, 
 func (s *SecurityGroupRuleService) DeleteSecurityGroupRule(ctx context.Context, projectId string, vpcId string, securityGroupId string, securityGroupRuleId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting security group rule: %s from security group: %s in VPC: %s in project: %s", securityGroupRuleId, securityGroupId, vpcId, projectId)
 
-	if err := validateSecurityGroupRule(projectId, vpcId, securityGroupId, securityGroupRuleId); err != nil {
+	if err := schema.ValidateSecurityGroupRule(projectId, vpcId, securityGroupId, securityGroupRuleId); err != nil {
 		return nil, err
 	}
 
@@ -246,25 +216,5 @@ func (s *SecurityGroupRuleService) DeleteSecurityGroupRule(ctx context.Context, 
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[any]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() && len(bodyBytes) > 0 {
-		var data any
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[any](httpResp)
 }

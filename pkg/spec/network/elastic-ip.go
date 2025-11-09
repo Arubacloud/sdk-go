@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/Arubacloud/sdk-go/pkg/client"
@@ -28,7 +27,7 @@ func NewElasticIPService(client *client.Client) *ElasticIPService {
 func (s *ElasticIPService) ListElasticIPs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.ElasticList], error) {
 	s.client.Logger().Debugf("Listing elastic IPs for project: %s", project)
 
-	if err := validateProject(project); err != nil {
+	if err := schema.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
@@ -48,37 +47,14 @@ func (s *ElasticIPService) ListElasticIPs(ctx context.Context, project string, p
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[schema.ElasticList]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// Parse the response body if successful
-	if response.IsSuccess() {
-		var data schema.ElasticList
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.ElasticList](httpResp)
 }
 
 // GetElasticIP retrieves a specific elastic IP by ID
 func (s *ElasticIPService) GetElasticIP(ctx context.Context, project string, elasticIPId string, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error) {
 	s.client.Logger().Debugf("Getting elastic IP: %s in project: %s", elasticIPId, project)
 
-	if err := validateProjectAndResource(project, elasticIPId, "elastic IP ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, elasticIPId, "elastic IP ID"); err != nil {
 		return nil, err
 	}
 
@@ -98,37 +74,14 @@ func (s *ElasticIPService) GetElasticIP(ctx context.Context, project string, ela
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[schema.ElasticIpResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// Parse the response body if successful
-	if response.IsSuccess() {
-		var data schema.ElasticIpResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.ElasticIpResponse](httpResp)
 }
 
 // CreateElasticIP creates a new elastic IP
 func (s *ElasticIPService) CreateElasticIP(ctx context.Context, project string, body schema.ElasticIpRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error) {
 	s.client.Logger().Debugf("Creating elastic IP in project: %s", project)
 
-	if err := validateProject(project); err != nil {
+	if err := schema.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
@@ -154,37 +107,14 @@ func (s *ElasticIPService) CreateElasticIP(ctx context.Context, project string, 
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	respBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[schema.ElasticIpResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      respBytes,
-	}
-
-	// Parse the response body if successful
-	if response.IsSuccess() {
-		var data schema.ElasticIpResponse
-		if err := json.Unmarshal(respBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.ElasticIpResponse](httpResp)
 }
 
 // UpdateElasticIP updates an existing elastic IP
 func (s *ElasticIPService) UpdateElasticIP(ctx context.Context, project string, elasticIPId string, body schema.ElasticIpRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error) {
 	s.client.Logger().Debugf("Updating elastic IP: %s in project: %s", elasticIPId, project)
 
-	if err := validateProjectAndResource(project, elasticIPId, "elastic IP ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, elasticIPId, "elastic IP ID"); err != nil {
 		return nil, err
 	}
 
@@ -210,37 +140,14 @@ func (s *ElasticIPService) UpdateElasticIP(ctx context.Context, project string, 
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	respBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[schema.ElasticIpResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      respBytes,
-	}
-
-	// Parse the response body if successful
-	if response.IsSuccess() {
-		var data schema.ElasticIpResponse
-		if err := json.Unmarshal(respBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.ElasticIpResponse](httpResp)
 }
 
 // DeleteElasticIP deletes an elastic IP by ID
 func (s *ElasticIPService) DeleteElasticIP(ctx context.Context, projectId string, elasticIPId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting elastic IP: %s in project: %s", elasticIPId, projectId)
 
-	if err := validateProjectAndResource(projectId, elasticIPId, "elastic IP ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(projectId, elasticIPId, "elastic IP ID"); err != nil {
 		return nil, err
 	}
 
@@ -260,28 +167,5 @@ func (s *ElasticIPService) DeleteElasticIP(ctx context.Context, projectId string
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[any]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// For DELETE operations, we typically don't parse the body unless there's content
-	if response.IsSuccess() && len(bodyBytes) > 0 {
-		var data any
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[any](httpResp)
 }

@@ -28,7 +28,7 @@ func NewDatabaseService(client *client.Client) *DatabaseService {
 func (s *DatabaseService) ListDatabases(ctx context.Context, project string, dbaasId string, params *schema.RequestParameters) (*schema.Response[schema.DatabaseList], error) {
 	s.client.Logger().Debugf("Listing databases for DBaaS: %s in project: %s", dbaasId, project)
 
-	if err := validateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
@@ -48,37 +48,14 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, project string, dba
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[schema.DatabaseList]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// Parse the response body if successful
-	if response.IsSuccess() {
-		var data schema.DatabaseList
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.DatabaseList](httpResp)
 }
 
 // GetDatabase retrieves a specific database by ID
 func (s *DatabaseService) GetDatabase(ctx context.Context, project string, dbaasId string, databaseId string, params *schema.RequestParameters) (*schema.Response[schema.DatabaseResponse], error) {
 	s.client.Logger().Debugf("Getting database: %s from DBaaS: %s in project: %s", databaseId, dbaasId, project)
 
-	if err := validateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
+	if err := schema.ValidateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
 		return nil, err
 	}
 
@@ -98,37 +75,14 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, project string, dbaas
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[schema.DatabaseResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// Parse the response body if successful
-	if response.IsSuccess() {
-		var data schema.DatabaseResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.DatabaseResponse](httpResp)
 }
 
 // CreateDatabase creates a new database
 func (s *DatabaseService) CreateDatabase(ctx context.Context, project string, dbaasId string, body schema.DatabaseRequest, params *schema.RequestParameters) (*schema.Response[schema.DatabaseResponse], error) {
 	s.client.Logger().Debugf("Creating database in DBaaS: %s in project: %s", dbaasId, project)
 
-	if err := validateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
@@ -175,6 +129,11 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, project string, db
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -184,7 +143,7 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, project string, db
 func (s *DatabaseService) UpdateDatabase(ctx context.Context, project string, dbaasId string, databaseId string, body schema.DatabaseRequest, params *schema.RequestParameters) (*schema.Response[schema.DatabaseResponse], error) {
 	s.client.Logger().Debugf("Updating database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, project)
 
-	if err := validateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
+	if err := schema.ValidateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
 		return nil, err
 	}
 
@@ -231,6 +190,11 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, project string, db
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -240,7 +204,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, project string, db
 func (s *DatabaseService) DeleteDatabase(ctx context.Context, projectId string, dbaasId string, databaseId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting database: %s from DBaaS: %s in project: %s", databaseId, dbaasId, projectId)
 
-	if err := validateDBaaSResource(projectId, dbaasId, databaseId, "database ID"); err != nil {
+	if err := schema.ValidateDBaaSResource(projectId, dbaasId, databaseId, "database ID"); err != nil {
 		return nil, err
 	}
 
@@ -260,28 +224,5 @@ func (s *DatabaseService) DeleteDatabase(ctx context.Context, projectId string, 
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[any]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// For DELETE operations, we typically don't parse the body unless there's content
-	if response.IsSuccess() && len(bodyBytes) > 0 {
-		var data any
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[any](httpResp)
 }

@@ -28,7 +28,7 @@ func NewKeyPairService(client *client.Client) *KeyPairService {
 func (s *KeyPairService) ListKeyPairs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.KeyPairListResponse], error) {
 	s.client.Logger().Debugf("Listing key pairs for project: %s", project)
 
-	if err := validateProject(project); err != nil {
+	if err := schema.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
@@ -48,37 +48,14 @@ func (s *KeyPairService) ListKeyPairs(ctx context.Context, project string, param
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[schema.KeyPairListResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// Parse the response body if successful
-	if response.IsSuccess() {
-		var data schema.KeyPairListResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.KeyPairListResponse](httpResp)
 }
 
 // GetKeyPair retrieves a specific key pair by ID
 func (s *KeyPairService) GetKeyPair(ctx context.Context, project string, keyPairId string, params *schema.RequestParameters) (*schema.Response[schema.KeyPairResponse], error) {
 	s.client.Logger().Debugf("Getting key pair: %s in project: %s", keyPairId, project)
 
-	if err := validateProjectAndResource(project, keyPairId, "key pair ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, keyPairId, "key pair ID"); err != nil {
 		return nil, err
 	}
 
@@ -98,37 +75,14 @@ func (s *KeyPairService) GetKeyPair(ctx context.Context, project string, keyPair
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[schema.KeyPairResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// Parse the response body if successful
-	if response.IsSuccess() {
-		var data schema.KeyPairResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.KeyPairResponse](httpResp)
 }
 
 // CreateKeyPair creates a new key pair
 func (s *KeyPairService) CreateKeyPair(ctx context.Context, project string, body schema.KeyPairRequest, params *schema.RequestParameters) (*schema.Response[schema.KeyPairResponse], error) {
 	s.client.Logger().Debugf("Creating key pair in project: %s", project)
 
-	if err := validateProject(project); err != nil {
+	if err := schema.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
@@ -175,6 +129,11 @@ func (s *KeyPairService) CreateKeyPair(ctx context.Context, project string, body
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -184,7 +143,7 @@ func (s *KeyPairService) CreateKeyPair(ctx context.Context, project string, body
 func (s *KeyPairService) DeleteKeyPair(ctx context.Context, projectId string, keyPairId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting key pair: %s in project: %s", keyPairId, projectId)
 
-	if err := validateProjectAndResource(projectId, keyPairId, "key pair ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(projectId, keyPairId, "key pair ID"); err != nil {
 		return nil, err
 	}
 
@@ -204,28 +163,5 @@ func (s *KeyPairService) DeleteKeyPair(ctx context.Context, projectId string, ke
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[any]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// For DELETE operations, we typically don't parse the body unless there's content
-	if response.IsSuccess() && len(bodyBytes) > 0 {
-		var data any
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[any](httpResp)
 }

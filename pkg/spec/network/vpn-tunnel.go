@@ -28,7 +28,7 @@ func NewVpnTunnelService(client *client.Client) *VpnTunnelService {
 func (s *VpnTunnelService) ListVpnTunnels(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelList], error) {
 	s.client.Logger().Debugf("Listing VPN tunnels for project: %s", project)
 
-	if err := validateProject(project); err != nil {
+	if err := schema.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
@@ -48,34 +48,14 @@ func (s *VpnTunnelService) ListVpnTunnels(ctx context.Context, project string, p
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[schema.VpnTunnelList]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() {
-		var data schema.VpnTunnelList
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.VpnTunnelList](httpResp)
 }
 
 // GetVpnTunnel retrieves a specific VPN tunnel by ID
 func (s *VpnTunnelService) GetVpnTunnel(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
 	s.client.Logger().Debugf("Getting VPN tunnel: %s in project: %s", vpnTunnelId, project)
 
-	if err := validateProjectAndResource(project, vpnTunnelId, "VPN tunnel ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, vpnTunnelId, "VPN tunnel ID"); err != nil {
 		return nil, err
 	}
 
@@ -95,34 +75,14 @@ func (s *VpnTunnelService) GetVpnTunnel(ctx context.Context, project string, vpn
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[schema.VpnTunnelResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() {
-		var data schema.VpnTunnelResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.VpnTunnelResponse](httpResp)
 }
 
 // CreateVpnTunnel creates a new VPN tunnel
 func (s *VpnTunnelService) CreateVpnTunnel(ctx context.Context, project string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
 	s.client.Logger().Debugf("Creating VPN tunnel in project: %s", project)
 
-	if err := validateProject(project); err != nil {
+	if err := schema.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
@@ -165,6 +125,11 @@ func (s *VpnTunnelService) CreateVpnTunnel(ctx context.Context, project string, 
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -174,7 +139,7 @@ func (s *VpnTunnelService) CreateVpnTunnel(ctx context.Context, project string, 
 func (s *VpnTunnelService) UpdateVpnTunnel(ctx context.Context, project string, vpnTunnelId string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
 	s.client.Logger().Debugf("Updating VPN tunnel: %s in project: %s", vpnTunnelId, project)
 
-	if err := validateProjectAndResource(project, vpnTunnelId, "VPN tunnel ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, vpnTunnelId, "VPN tunnel ID"); err != nil {
 		return nil, err
 	}
 
@@ -217,6 +182,11 @@ func (s *VpnTunnelService) UpdateVpnTunnel(ctx context.Context, project string, 
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -226,7 +196,7 @@ func (s *VpnTunnelService) UpdateVpnTunnel(ctx context.Context, project string, 
 func (s *VpnTunnelService) DeleteVpnTunnel(ctx context.Context, projectId string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting VPN tunnel: %s in project: %s", vpnTunnelId, projectId)
 
-	if err := validateProjectAndResource(projectId, vpnTunnelId, "VPN tunnel ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(projectId, vpnTunnelId, "VPN tunnel ID"); err != nil {
 		return nil, err
 	}
 
@@ -246,25 +216,5 @@ func (s *VpnTunnelService) DeleteVpnTunnel(ctx context.Context, projectId string
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[any]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() && len(bodyBytes) > 0 {
-		var data any
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[any](httpResp)
 }

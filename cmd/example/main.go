@@ -1,26 +1,44 @@
 package main
 
+// This example demonstrates how to use the Aruba Cloud SDK with proper error handling.
+//
+// Response handling pattern:
+//   - response.IsSuccess() (2xx): Access response.Data (typed success response)
+//   - response.IsError() (4xx/5xx): Access response.Error (ErrorResponse with Title, Detail, etc.)
+//   - response.RawBody: Always available for debugging/logging
+//
+// Example usage:
+//   resp, err := api.CreateResource(ctx, ...)
+//   if err != nil {
+//       // Network or SDK error
+//       log.Printf("Error: %v", err)
+//   } else if resp.IsSuccess() {
+//       // Success - use resp.Data
+//       fmt.Printf("Created: %s\n", *resp.Data.Metadata.Name)
+//   } else if resp.IsError() && resp.Error != nil {
+//       // API error - use resp.Error
+//       log.Printf("API Error: %s - %s", *resp.Error.Title, *resp.Error.Detail)
+//   }
+
 import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/Arubacloud/sdk-go/pkg/client"
-	"github.com/Arubacloud/sdk-go/pkg/spec/compute"
-	"github.com/Arubacloud/sdk-go/pkg/spec/database"
 	"github.com/Arubacloud/sdk-go/pkg/spec/network"
 	"github.com/Arubacloud/sdk-go/pkg/spec/project"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schedule"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
-	"github.com/Arubacloud/sdk-go/pkg/spec/security"
 	"github.com/Arubacloud/sdk-go/pkg/spec/storage"
 )
 
 func main() {
 	config := &client.Config{
-		ClientID:     "cmp-74603fc1-ba10-40b3-9ff9-4aef35548642",
-		ClientSecret: "UZXfEZFFOz1M0t66FNTcO4c5nez76Kwf",
+		ClientID:     "client-id",
+		ClientSecret: "client-secret",
+		HTTPClient:   &http.Client{Timeout: 30 * time.Second},
 		Debug:        true,
 	}
 
@@ -38,163 +56,180 @@ func main() {
 	sdk = sdk.WithContext(ctx)
 
 	fmt.Println("\n=== SDK Examples ===")
-	fmt.Println("Note: SDK automatically manages OAuth2 token acquisition and refresh")
 
 	// Initialize service clients
 	projectAPI := project.NewProjectService(sdk)
-	computeAPI := compute.NewCloudServerService(sdk)
-	networkAPI := network.NewVPCService(sdk)
-	databaseAPI := database.NewDBaaSService(sdk)
-	scheduleAPI := schedule.NewJobService(sdk)
-	securityAPI := security.NewKmsKeyService(sdk)
+	elasticIPAPI := network.NewElasticIPService(sdk)
+	vpcAPI := network.NewVPCService(sdk)
 	storageAPI := storage.NewBlockStorageService(sdk)
 
 	// Example: Project Management
 	fmt.Println("--- Project Management ---")
 
 	// Create a new project
-	newProject := schema.ProjectRequest{}
-	createResp, err := projectAPI.CreateProject(ctx, newProject, nil)
+	projectReq := schema.ProjectRequest{
+		Metadata: schema.ResourceMetadataRequest{
+			Name: "my-project",
+			Tags: []string{"production", "arubacloud-sdk"},
+		},
+		Properties: schema.ProjectPropertiesRequest{
+			Description: stringPtr("My production project"),
+			Default:     false,
+		},
+	}
+
+	createResp, err := projectAPI.CreateProject(ctx, projectReq, nil)
 	if err != nil {
-		log.Printf("Error creating project: %v", err)
-	} else if createResp.IsSuccess() {
-		fmt.Printf("✓ Created project: %+v\n", createResp.Data)
-
-		// Update the project
-		updateResp, err := projectAPI.UpdateProject(ctx, "project-id", newProject, nil)
-		if err != nil {
-			log.Printf("Error updating project: %v", err)
-		} else if updateResp.IsSuccess() {
-			fmt.Printf("✓ Updated project: %+v\n", updateResp.Data)
-		}
+		log.Fatalf("Error creating project: %v", err)
 	}
 
-	// Example: Compute - Cloud Server
-	fmt.Println("\n--- Compute: Cloud Server ---")
-	projectID := "your-project-id"
-
-	// Create a cloud server
-	serverReq := schema.CloudServerRequest{
-		// Add your cloud server fields here
+	if !createResp.IsSuccess() {
+		log.Fatalf("Failed to create project, status code: %d", createResp.StatusCode)
 	}
-	serverResp, err := computeAPI.CreateCloudServer(ctx, projectID, serverReq, nil)
+
+	projectID := *createResp.Data.Metadata.Id
+	fmt.Printf("✓ Created project with ID: %s\n", projectID)
+
+	// Update the project
+	updateResp, err := projectAPI.UpdateProject(ctx, projectID, projectReq, nil)
 	if err != nil {
-		log.Printf("Error creating cloud server: %v", err)
-	} else if serverResp.IsSuccess() {
-		fmt.Printf("✓ Created cloud server: %+v\n", serverResp.Data)
-
-		// Update the cloud server
-		serverUpdateResp, err := computeAPI.UpdateCloudServer(ctx, projectID, "server-id", serverReq, nil)
-		if err != nil {
-			log.Printf("Error updating cloud server: %v", err)
-		} else if serverUpdateResp.IsSuccess() {
-			fmt.Printf("✓ Updated cloud server: %+v\n", serverUpdateResp.Data)
-		}
+		log.Printf("Error updating project: %v", err)
+	} else if updateResp.IsSuccess() {
+		fmt.Printf("✓ Updated project: %s\n", *updateResp.Data.Metadata.Name)
 	}
 
-	// Example: Network - VPC
+	// Example: Create Elastic IP
+	fmt.Println("\n--- Network: Elastic IP ---")
+
+	elasticIPReq := schema.ElasticIpRequest{
+		Metadata: schema.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+				Name: "my-elastic-ip",
+				Tags: []string{"network", "public"},
+			},
+			Location: schema.LocationRequest{
+				Value: "ITBG-Bergamo",
+			},
+		},
+		Properties: schema.ElasticIpPropertiesRequest{
+			BillingPlan: schema.BillingPeriodResource{
+				BillingPeriod: "Hour",
+			},
+		},
+	}
+
+	elasticIPResp, err := elasticIPAPI.CreateElasticIP(ctx, projectID, elasticIPReq, nil)
+	if err != nil {
+		log.Printf("Error creating Elastic IP: %v", err)
+	} else if elasticIPResp.IsSuccess() {
+		fmt.Printf("✓ Created Elastic IP: %s (ObjectId: %s)\n",
+			*elasticIPResp.Data.Metadata.Name, *elasticIPResp.Data.Metadata.Id)
+	} else if elasticIPResp.IsError() && elasticIPResp.Error != nil {
+		log.Printf("Failed to create Elastic IP - Status: %d, Error: %s, Detail: %s",
+			elasticIPResp.StatusCode,
+			stringValue(elasticIPResp.Error.Title),
+			stringValue(elasticIPResp.Error.Detail))
+	}
+
+	// Example: Create Block Storage
+	fmt.Println("\n--- Storage: Block Storage ---")
+
+	blockStorageReq := schema.BlockStorageRequest{
+		Metadata: schema.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+				Name: "my-block-storage",
+				Tags: []string{"storage", "data"},
+			},
+			Location: schema.LocationRequest{
+				Value: "ITBG-Bergamo",
+			},
+		},
+		Properties: schema.BlockStoragePropertiesRequest{
+			SizeGB: 10,
+			Type:   schema.BlockStorageTypeStandard,
+			Zone:   "ITBG-1",
+			BillingPeriod: schema.BillingPeriodResource{
+				BillingPeriod: "Hour",
+			},
+		},
+	}
+
+	blockStorageResp, err := storageAPI.CreateBlockStorageVolume(ctx, projectID, blockStorageReq, nil)
+	if err != nil {
+		log.Printf("Error creating block storage: %v", err)
+	} else if blockStorageResp.IsSuccess() {
+		fmt.Printf("✓ Created block storage: %s (%d GB, %s)\n",
+			*blockStorageResp.Data.Metadata.Name,
+			blockStorageResp.Data.Properties.SizeGB,
+			blockStorageResp.Data.Properties.Type)
+	} else if blockStorageResp.IsError() && blockStorageResp.Error != nil {
+		log.Printf("Failed to create block storage - Status: %d, Error: %s, Detail: %s",
+			blockStorageResp.StatusCode,
+			stringValue(blockStorageResp.Error.Title),
+			stringValue(blockStorageResp.Error.Detail))
+	}
+
+	// Example: Create VPC
 	fmt.Println("\n--- Network: VPC ---")
 
-	// Create a VPC
 	vpcReq := schema.VpcRequest{
-		// Add your VPC fields here
+		Metadata: schema.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+				Name: "my-vpc",
+				Tags: []string{"network", "infrastructure"},
+			},
+			Location: schema.LocationRequest{
+				Value: "ITBG-Bergamo",
+			},
+		},
+		Properties: schema.VpcPropertiesRequest{
+			Properties: &schema.VpcProperties{
+				Default: boolPtr(false),
+				Preset:  boolPtr(true),
+			},
+		},
 	}
-	vpcResp, err := networkAPI.CreateVPC(ctx, projectID, vpcReq, nil)
+
+	vpcResp, err := vpcAPI.CreateVPC(ctx, projectID, vpcReq, nil)
 	if err != nil {
 		log.Printf("Error creating VPC: %v", err)
 	} else if vpcResp.IsSuccess() {
-		fmt.Printf("✓ Created VPC: %+v\n", vpcResp.Data)
-
-		// Update the VPC
-		vpcUpdateResp, err := networkAPI.UpdateVPC(ctx, projectID, "vpc-id", vpcReq, nil)
-		if err != nil {
-			log.Printf("Error updating VPC: %v", err)
-		} else if vpcUpdateResp.IsSuccess() {
-			fmt.Printf("✓ Updated VPC: %+v\n", vpcUpdateResp.Data)
-		}
+		fmt.Printf("✓ Created VPC: %s (Default: %t)\n",
+			*vpcResp.Data.Metadata.Name,
+			vpcResp.Data.Properties.Default)
+	} else if vpcResp.IsError() && vpcResp.Error != nil {
+		log.Printf("Failed to create VPC - Status: %d, Error: %s, Detail: %s",
+			vpcResp.StatusCode,
+			stringValue(vpcResp.Error.Title),
+			stringValue(vpcResp.Error.Detail))
 	}
 
-	// Example: Database - DBaaS
-	fmt.Println("\n--- Database: DBaaS ---")
-
-	// Create a DBaaS instance
-	dbaasReq := schema.DBaaSRequest{
-		// Add your DBaaS fields here
+	fmt.Println("\n=== SDK Example Complete ===")
+	fmt.Println("Successfully created project:")
+	fmt.Println("- Project ID:", projectID)
+	if elasticIPResp != nil && elasticIPResp.IsSuccess() {
+		fmt.Println("- Elastic IP:", *elasticIPResp.Data.Metadata.Id)
 	}
-	dbaasResp, err := databaseAPI.CreateDBaaS(ctx, projectID, dbaasReq, nil)
-	if err != nil {
-		log.Printf("Error creating DBaaS: %v", err)
-	} else if dbaasResp.IsSuccess() {
-		fmt.Printf("✓ Created DBaaS: %+v\n", dbaasResp.Data)
-
-		// Update the DBaaS instance
-		dbaasUpdateResp, err := databaseAPI.UpdateDBaaS(ctx, projectID, "dbaas-id", dbaasReq, nil)
-		if err != nil {
-			log.Printf("Error updating DBaaS: %v", err)
-		} else if dbaasUpdateResp.IsSuccess() {
-			fmt.Printf("✓ Updated DBaaS: %+v\n", dbaasUpdateResp.Data)
-		}
+	if blockStorageResp != nil && blockStorageResp.IsSuccess() {
+		fmt.Println("- Block Storage (100 GB):", *blockStorageResp.Data.Metadata.Id)
 	}
-
-	// Example: Schedule - Job
-	fmt.Println("\n--- Schedule: Job ---")
-
-	// Create a scheduled job
-	jobReq := schema.JobRequest{
-		// Add your job fields here
+	if vpcResp != nil && vpcResp.IsSuccess() {
+		fmt.Println("- VPC:", *vpcResp.Data.Metadata.Id)
 	}
-	jobResp, err := scheduleAPI.CreateScheduleJob(ctx, projectID, jobReq, nil)
-	if err != nil {
-		log.Printf("Error creating job: %v", err)
-	} else if jobResp.IsSuccess() {
-		fmt.Printf("✓ Created job: %+v\n", jobResp.Data)
+}
 
-		// Update the job
-		jobUpdateResp, err := scheduleAPI.UpdateScheduleJob(ctx, projectID, "job-id", jobReq, nil)
-		if err != nil {
-			log.Printf("Error updating job: %v", err)
-		} else if jobUpdateResp.IsSuccess() {
-			fmt.Printf("✓ Updated job: %+v\n", jobUpdateResp.Data)
-		}
+// Helper for pointer types
+func stringPtr(s string) *string {
+	return &s
+}
+
+func boolPtr(b bool) *bool {
+	return &b
+}
+
+func stringValue(s *string) string {
+	if s == nil {
+		return ""
 	}
-
-	// Example: Security - KMS Key
-	fmt.Println("\n--- Security: KMS Key ---")
-
-	// Create a KMS key
-	kmsReq := schema.KmsRequest{
-		// Add your KMS key fields here
-	}
-	kmsResp, err := securityAPI.CreateKMSKey(ctx, projectID, kmsReq, nil)
-	if err != nil {
-		log.Printf("Error creating KMS key: %v", err)
-	} else if kmsResp.IsSuccess() {
-		fmt.Printf("✓ Created KMS key: %+v\n", kmsResp.Data)
-
-		// Update the KMS key
-		kmsUpdateResp, err := securityAPI.UpdateKMSKey(ctx, projectID, "kms-key-id", kmsReq, nil)
-		if err != nil {
-			log.Printf("Error updating KMS key: %v", err)
-		} else if kmsUpdateResp.IsSuccess() {
-			fmt.Printf("✓ Updated KMS key: %+v\n", kmsUpdateResp.Data)
-		}
-	}
-
-	// Example: Storage - Block Storage (Create only, no update)
-	fmt.Println("\n--- Storage: Block Storage ---")
-
-	// Create block storage
-	storageReq := schema.BlockStorageRequest{
-		// Add your storage fields here
-	}
-	storageResp, err := storageAPI.CreateBlockStorageVolume(ctx, projectID, storageReq, nil)
-	if err != nil {
-		log.Printf("Error creating block storage: %v", err)
-	} else if storageResp.IsSuccess() {
-		fmt.Printf("✓ Created block storage: %+v\n", storageResp.Data)
-	}
-
-	fmt.Println("\n=== SDK Examples Complete ===")
-	fmt.Println("\nNote: All Create operations use POST to collection paths.")
-	fmt.Println("All Update operations use PUT to item paths with resource IDs.")
+	return *s
 }

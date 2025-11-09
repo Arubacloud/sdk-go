@@ -28,7 +28,7 @@ func NewGrantService(client *client.Client) *GrantService {
 func (s *GrantService) ListGrants(ctx context.Context, project string, dbaasId string, databaseId string, params *schema.RequestParameters) (*schema.Response[schema.GrantList], error) {
 	s.client.Logger().Debugf("Listing grants for database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, project)
 
-	if err := validateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
+	if err := schema.ValidateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
 		return nil, err
 	}
 
@@ -48,37 +48,14 @@ func (s *GrantService) ListGrants(ctx context.Context, project string, dbaasId s
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[schema.GrantList]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// Parse the response body if successful
-	if response.IsSuccess() {
-		var data schema.GrantList
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.GrantList](httpResp)
 }
 
 // GetGrant retrieves a specific grant by ID
 func (s *GrantService) GetGrant(ctx context.Context, project string, dbaasId string, databaseId string, grantId string, params *schema.RequestParameters) (*schema.Response[schema.GrantResponse], error) {
 	s.client.Logger().Debugf("Getting grant: %s from database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, project)
 
-	if err := validateDatabaseGrant(project, dbaasId, databaseId, grantId); err != nil {
+	if err := schema.ValidateDatabaseGrant(project, dbaasId, databaseId, grantId); err != nil {
 		return nil, err
 	}
 
@@ -98,37 +75,14 @@ func (s *GrantService) GetGrant(ctx context.Context, project string, dbaasId str
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[schema.GrantResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// Parse the response body if successful
-	if response.IsSuccess() {
-		var data schema.GrantResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.GrantResponse](httpResp)
 }
 
 // CreateGrant creates a new grant for a database
 func (s *GrantService) CreateGrant(ctx context.Context, project string, dbaasId string, databaseId string, body schema.GrantRequest, params *schema.RequestParameters) (*schema.Response[schema.GrantResponse], error) {
 	s.client.Logger().Debugf("Creating grant in database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, project)
 
-	if err := validateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
+	if err := schema.ValidateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
 		return nil, err
 	}
 
@@ -175,6 +129,11 @@ func (s *GrantService) CreateGrant(ctx context.Context, project string, dbaasId 
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -184,7 +143,7 @@ func (s *GrantService) CreateGrant(ctx context.Context, project string, dbaasId 
 func (s *GrantService) UpdateGrant(ctx context.Context, project string, dbaasId string, databaseId string, grantId string, body schema.GrantRequest, params *schema.RequestParameters) (*schema.Response[schema.GrantResponse], error) {
 	s.client.Logger().Debugf("Updating grant: %s in database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, project)
 
-	if err := validateDatabaseGrant(project, dbaasId, databaseId, grantId); err != nil {
+	if err := schema.ValidateDatabaseGrant(project, dbaasId, databaseId, grantId); err != nil {
 		return nil, err
 	}
 
@@ -231,6 +190,11 @@ func (s *GrantService) UpdateGrant(ctx context.Context, project string, dbaasId 
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -240,7 +204,7 @@ func (s *GrantService) UpdateGrant(ctx context.Context, project string, dbaasId 
 func (s *GrantService) DeleteGrant(ctx context.Context, projectId string, dbaasId string, databaseId string, grantId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting grant: %s from database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, projectId)
 
-	if err := validateDatabaseGrant(projectId, dbaasId, databaseId, grantId); err != nil {
+	if err := schema.ValidateDatabaseGrant(projectId, dbaasId, databaseId, grantId); err != nil {
 		return nil, err
 	}
 
@@ -260,28 +224,5 @@ func (s *GrantService) DeleteGrant(ctx context.Context, projectId string, dbaasI
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[any]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// For DELETE operations, we typically don't parse the body unless there's content
-	if response.IsSuccess() && len(bodyBytes) > 0 {
-		var data any
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[any](httpResp)
 }

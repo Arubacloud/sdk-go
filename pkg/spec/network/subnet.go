@@ -28,7 +28,7 @@ func NewSubnetService(client *client.Client) *SubnetService {
 func (s *SubnetService) ListSubnets(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.SubnetList], error) {
 	s.client.Logger().Debugf("Listing subnets for VPC: %s in project: %s", vpcId, project)
 
-	if err := validateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
@@ -48,34 +48,14 @@ func (s *SubnetService) ListSubnets(ctx context.Context, project string, vpcId s
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[schema.SubnetList]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() {
-		var data schema.SubnetList
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.SubnetList](httpResp)
 }
 
 // GetSubnet retrieves a specific subnet by ID
 func (s *SubnetService) GetSubnet(ctx context.Context, project string, vpcId string, subnetId string, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
 	s.client.Logger().Debugf("Getting subnet: %s from VPC: %s in project: %s", subnetId, vpcId, project)
 
-	if err := validateVPCResource(project, vpcId, subnetId, "subnet ID"); err != nil {
+	if err := schema.ValidateVPCResource(project, vpcId, subnetId, "subnet ID"); err != nil {
 		return nil, err
 	}
 
@@ -95,34 +75,14 @@ func (s *SubnetService) GetSubnet(ctx context.Context, project string, vpcId str
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[schema.SubnetResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() {
-		var data schema.SubnetResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.SubnetResponse](httpResp)
 }
 
 // CreateSubnet creates a new subnet in a VPC
 func (s *SubnetService) CreateSubnet(ctx context.Context, project string, vpcId string, body schema.SubnetRequest, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
 	s.client.Logger().Debugf("Creating subnet in VPC: %s in project: %s", vpcId, project)
 
-	if err := validateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
@@ -165,6 +125,11 @@ func (s *SubnetService) CreateSubnet(ctx context.Context, project string, vpcId 
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -174,7 +139,7 @@ func (s *SubnetService) CreateSubnet(ctx context.Context, project string, vpcId 
 func (s *SubnetService) UpdateSubnet(ctx context.Context, project string, vpcId string, subnetId string, body schema.SubnetRequest, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
 	s.client.Logger().Debugf("Updating subnet: %s in VPC: %s in project: %s", subnetId, vpcId, project)
 
-	if err := validateVPCResource(project, vpcId, subnetId, "subnet ID"); err != nil {
+	if err := schema.ValidateVPCResource(project, vpcId, subnetId, "subnet ID"); err != nil {
 		return nil, err
 	}
 
@@ -217,6 +182,11 @@ func (s *SubnetService) UpdateSubnet(ctx context.Context, project string, vpcId 
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -226,7 +196,7 @@ func (s *SubnetService) UpdateSubnet(ctx context.Context, project string, vpcId 
 func (s *SubnetService) DeleteSubnet(ctx context.Context, projectId string, vpcId string, subnetId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting subnet: %s from VPC: %s in project: %s", subnetId, vpcId, projectId)
 
-	if err := validateVPCResource(projectId, vpcId, subnetId, "subnet ID"); err != nil {
+	if err := schema.ValidateVPCResource(projectId, vpcId, subnetId, "subnet ID"); err != nil {
 		return nil, err
 	}
 
@@ -246,25 +216,5 @@ func (s *SubnetService) DeleteSubnet(ctx context.Context, projectId string, vpcI
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[any]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() && len(bodyBytes) > 0 {
-		var data any
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[any](httpResp)
 }

@@ -28,7 +28,7 @@ func NewDBaaSService(client *client.Client) *DBaaSService {
 func (s *DBaaSService) ListDBaaS(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.DBaaSList], error) {
 	s.client.Logger().Debugf("Listing DBaaS instances for project: %s", project)
 
-	if err := validateProject(project); err != nil {
+	if err := schema.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
@@ -48,37 +48,14 @@ func (s *DBaaSService) ListDBaaS(ctx context.Context, project string, params *sc
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[schema.DBaaSList]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// Parse the response body if successful
-	if response.IsSuccess() {
-		var data schema.DBaaSList
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.DBaaSList](httpResp)
 }
 
 // GetDBaaS retrieves a specific DBaaS instance by ID
 func (s *DBaaSService) GetDBaaS(ctx context.Context, project string, dbaasId string, params *schema.RequestParameters) (*schema.Response[schema.DBaaSResponse], error) {
 	s.client.Logger().Debugf("Getting DBaaS instance: %s in project: %s", dbaasId, project)
 
-	if err := validateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
@@ -98,37 +75,14 @@ func (s *DBaaSService) GetDBaaS(ctx context.Context, project string, dbaasId str
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[schema.DBaaSResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// Parse the response body if successful
-	if response.IsSuccess() {
-		var data schema.DBaaSResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.DBaaSResponse](httpResp)
 }
 
 // CreateDBaaS creates a new DBaaS instance
 func (s *DBaaSService) CreateDBaaS(ctx context.Context, project string, body schema.DBaaSRequest, params *schema.RequestParameters) (*schema.Response[schema.DBaaSResponse], error) {
 	s.client.Logger().Debugf("Creating DBaaS instance in project: %s", project)
 
-	if err := validateProject(project); err != nil {
+	if err := schema.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
@@ -175,6 +129,11 @@ func (s *DBaaSService) CreateDBaaS(ctx context.Context, project string, body sch
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -184,7 +143,7 @@ func (s *DBaaSService) CreateDBaaS(ctx context.Context, project string, body sch
 func (s *DBaaSService) UpdateDBaaS(ctx context.Context, project string, databaseId string, body schema.DBaaSRequest, params *schema.RequestParameters) (*schema.Response[schema.DBaaSResponse], error) {
 	s.client.Logger().Debugf("Updating DBaaS instance: %s in project: %s", databaseId, project)
 
-	if err := validateProjectAndResource(project, databaseId, "DBaaS ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, databaseId, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
@@ -231,6 +190,11 @@ func (s *DBaaSService) UpdateDBaaS(ctx context.Context, project string, database
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -240,7 +204,7 @@ func (s *DBaaSService) UpdateDBaaS(ctx context.Context, project string, database
 func (s *DBaaSService) DeleteDBaaS(ctx context.Context, projectId string, dbaasId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting DBaaS instance: %s in project: %s", dbaasId, projectId)
 
-	if err := validateProjectAndResource(projectId, dbaasId, "DBaaS ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(projectId, dbaasId, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
@@ -260,28 +224,5 @@ func (s *DBaaSService) DeleteDBaaS(ctx context.Context, projectId string, dbaasI
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[any]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// For DELETE operations, we typically don't parse the body unless there's content
-	if response.IsSuccess() && len(bodyBytes) > 0 {
-		var data any
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[any](httpResp)
 }

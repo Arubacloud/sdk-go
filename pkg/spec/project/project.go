@@ -44,34 +44,14 @@ func (s *ProjectService) ListProjects(ctx context.Context, params *schema.Reques
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[schema.ProjectList]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() {
-		var data schema.ProjectList
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.ProjectList](httpResp)
 }
 
 // GetProject retrieves a specific project by ID
 func (s *ProjectService) GetProject(ctx context.Context, projectId string, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
 	s.client.Logger().Debugf("Getting project: %s", projectId)
 
-	if err := validateProjectID(projectId); err != nil {
+	if err := schema.ValidateProject(projectId); err != nil {
 		return nil, err
 	}
 
@@ -91,27 +71,7 @@ func (s *ProjectService) GetProject(ctx context.Context, projectId string, param
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[schema.ProjectResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() {
-		var data schema.ProjectResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.ProjectResponse](httpResp)
 }
 
 // CreateProject creates a new project
@@ -157,6 +117,11 @@ func (s *ProjectService) CreateProject(ctx context.Context, body schema.ProjectR
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -166,7 +131,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, body schema.ProjectR
 func (s *ProjectService) UpdateProject(ctx context.Context, projectId string, body schema.ProjectRequest, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
 	s.client.Logger().Debugf("Updating project: %s", projectId)
 
-	if err := validateProjectID(projectId); err != nil {
+	if err := schema.ValidateProject(projectId); err != nil {
 		return nil, err
 	}
 
@@ -209,6 +174,11 @@ func (s *ProjectService) UpdateProject(ctx context.Context, projectId string, bo
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -218,7 +188,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, projectId string, bo
 func (s *ProjectService) DeleteProject(ctx context.Context, projectId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting project: %s", projectId)
 
-	if err := validateProjectID(projectId); err != nil {
+	if err := schema.ValidateProject(projectId); err != nil {
 		return nil, err
 	}
 

@@ -28,7 +28,7 @@ func NewCloudServerService(client *client.Client) *CloudServerService {
 func (s *CloudServerService) ListCloudServers(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.CloudServerList], error) {
 	s.client.Logger().Debugf("Listing cloud servers for project: %s", project)
 
-	if err := validateProject(project); err != nil {
+	if err := schema.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
@@ -48,37 +48,14 @@ func (s *CloudServerService) ListCloudServers(ctx context.Context, project strin
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[schema.CloudServerList]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// Parse the response body if successful
-	if response.IsSuccess() {
-		var data schema.CloudServerList
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.CloudServerList](httpResp)
 }
 
 // GetCloudServer retrieves a specific cloud server by ID
 func (s *CloudServerService) GetCloudServer(ctx context.Context, project string, cloudServerId string, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error) {
 	s.client.Logger().Debugf("Getting cloud server: %s in project: %s", cloudServerId, project)
 
-	if err := validateProjectAndResource(project, cloudServerId, "cloud server ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, cloudServerId, "cloud server ID"); err != nil {
 		return nil, err
 	}
 
@@ -98,37 +75,14 @@ func (s *CloudServerService) GetCloudServer(ctx context.Context, project string,
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[schema.CloudServerResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// Parse the response body if successful
-	if response.IsSuccess() {
-		var data schema.CloudServerResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.CloudServerResponse](httpResp)
 }
 
 // CreateCloudServer creates a new cloud server
 func (s *CloudServerService) CreateCloudServer(ctx context.Context, project string, body schema.CloudServerRequest, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error) {
 	s.client.Logger().Debugf("Creating cloud server in project: %s", project)
 
-	if err := validateProject(project); err != nil {
+	if err := schema.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
@@ -175,6 +129,11 @@ func (s *CloudServerService) CreateCloudServer(ctx context.Context, project stri
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -184,7 +143,7 @@ func (s *CloudServerService) CreateCloudServer(ctx context.Context, project stri
 func (s *CloudServerService) UpdateCloudServer(ctx context.Context, project string, cloudServerId string, body schema.CloudServerRequest, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error) {
 	s.client.Logger().Debugf("Updating cloud server: %s in project: %s", cloudServerId, project)
 
-	if err := validateProjectAndResource(project, cloudServerId, "cloud server ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, cloudServerId, "cloud server ID"); err != nil {
 		return nil, err
 	}
 
@@ -231,6 +190,11 @@ func (s *CloudServerService) UpdateCloudServer(ctx context.Context, project stri
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -240,7 +204,7 @@ func (s *CloudServerService) UpdateCloudServer(ctx context.Context, project stri
 func (s *CloudServerService) DeleteCloudServer(ctx context.Context, projectId string, cloudServerId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting cloud server: %s in project: %s", cloudServerId, projectId)
 
-	if err := validateProjectAndResource(projectId, cloudServerId, "cloud server ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(projectId, cloudServerId, "cloud server ID"); err != nil {
 		return nil, err
 	}
 
@@ -260,28 +224,5 @@ func (s *CloudServerService) DeleteCloudServer(ctx context.Context, projectId st
 	}
 	defer httpResp.Body.Close()
 
-	// Read the response body
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Create the response wrapper
-	response := &schema.Response[any]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	// For DELETE operations, we typically don't parse the body unless there's content
-	if response.IsSuccess() && len(bodyBytes) > 0 {
-		var data any
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[any](httpResp)
 }

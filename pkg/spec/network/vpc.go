@@ -28,7 +28,7 @@ func NewVPCService(client *client.Client) *VPCService {
 func (s *VPCService) ListVPCs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VpcList], error) {
 	s.client.Logger().Debugf("Listing VPCs for project: %s", project)
 
-	if err := validateProject(project); err != nil {
+	if err := schema.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
@@ -48,34 +48,14 @@ func (s *VPCService) ListVPCs(ctx context.Context, project string, params *schem
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[schema.VpcList]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() {
-		var data schema.VpcList
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.VpcList](httpResp)
 }
 
 // GetVPC retrieves a specific VPC by ID
 func (s *VPCService) GetVPC(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
 	s.client.Logger().Debugf("Getting VPC: %s in project: %s", vpcId, project)
 
-	if err := validateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
@@ -95,34 +75,14 @@ func (s *VPCService) GetVPC(ctx context.Context, project string, vpcId string, p
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[schema.VpcResponse]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() {
-		var data schema.VpcResponse
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[schema.VpcResponse](httpResp)
 }
 
 // CreateVPC creates a new VPC
 func (s *VPCService) CreateVPC(ctx context.Context, project string, body schema.VpcRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
 	s.client.Logger().Debugf("Creating VPC in project: %s", project)
 
-	if err := validateProject(project); err != nil {
+	if err := schema.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
@@ -165,6 +125,11 @@ func (s *VPCService) CreateVPC(ctx context.Context, project string, body schema.
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -174,7 +139,7 @@ func (s *VPCService) CreateVPC(ctx context.Context, project string, body schema.
 func (s *VPCService) UpdateVPC(ctx context.Context, project string, vpcId string, body schema.VpcRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
 	s.client.Logger().Debugf("Updating VPC: %s in project: %s", vpcId, project)
 
-	if err := validateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
@@ -217,6 +182,11 @@ func (s *VPCService) UpdateVPC(ctx context.Context, project string, vpcId string
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+	} else if response.IsError() && len(respBytes) > 0 {
+		var errorResp schema.ErrorResponse
+		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
 	}
 
 	return response, nil
@@ -226,7 +196,7 @@ func (s *VPCService) UpdateVPC(ctx context.Context, project string, vpcId string
 func (s *VPCService) DeleteVPC(ctx context.Context, projectId string, vpcId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting VPC: %s in project: %s", vpcId, projectId)
 
-	if err := validateProjectAndResource(projectId, vpcId, "VPC ID"); err != nil {
+	if err := schema.ValidateProjectAndResource(projectId, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
@@ -246,25 +216,5 @@ func (s *VPCService) DeleteVPC(ctx context.Context, projectId string, vpcId stri
 	}
 	defer httpResp.Body.Close()
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	response := &schema.Response[any]{
-		HTTPResponse: httpResp,
-		StatusCode:   httpResp.StatusCode,
-		Headers:      httpResp.Header,
-		RawBody:      bodyBytes,
-	}
-
-	if response.IsSuccess() && len(bodyBytes) > 0 {
-		var data any
-		if err := json.Unmarshal(bodyBytes, &data); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		response.Data = &data
-	}
-
-	return response, nil
+	return schema.ParseResponseBody[any](httpResp)
 }
