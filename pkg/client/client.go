@@ -254,7 +254,7 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body io.Rea
 	}
 
 	// Set content type for requests with body
-	if bodyBytes != nil {
+	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
 

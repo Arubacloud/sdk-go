@@ -1,7 +1,9 @@
 package database
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -93,7 +95,13 @@ func (s *BackupService) CreateBackup(ctx context.Context, project string, body s
 		headers = params.ToHeaders()
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, nil, queryParams, headers)
+	// Marshal the request body to JSON
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

@@ -11,10 +11,10 @@ const (
 type BlockStoragePropertiesRequest struct {
 
 	// SizeGB Size of the block storage in GB
-	SizeGB int `json:"sizeGB"`
+	SizeGB int `json:"sizeGb"`
 
 	// BillingPeriod of the block storage
-	BillingPeriod BillingPeriodResource `json:"billingPeriod"`
+	BillingPeriod string `json:"billingPeriod"`
 
 	//Zone where blockstorage will be created
 	Zone string `json:"dataCenter"`
@@ -33,10 +33,10 @@ type BlockStoragePropertiesResponse struct {
 	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
 
 	// SizeGB Size of the block storage in GB
-	SizeGB int `json:"sizeGB"`
+	SizeGB int `json:"sizeGb"`
 
 	// BillingPeriod Billing plan of the block storage
-	BillingPeriod BillingPeriodResource `json:"billingPeriod"`
+	BillingPeriod string `json:"billingPeriod"`
 
 	//Zone where blockstorage will be created
 	Zone string `json:"dataCenter"`

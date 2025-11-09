@@ -20,7 +20,7 @@ type SecurityGroupRequest struct {
 
 type SecurityGroupResponse struct {
 	// Metadata of the Security Group
-	Metadata RegionalResourceMetadataRequest `json:"metadata"`
+	Metadata ResourceMetadataResponse `json:"metadata"`
 	// Spec contains the Security Group specification
 	Properties SecurityGroupPropertiesResponse `json:"properties"`
 

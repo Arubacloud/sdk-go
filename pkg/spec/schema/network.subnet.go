@@ -1,20 +1,36 @@
 package schema
 
-// SubnetProperties contains the properties of a Subnet
-type SubnetProperties struct {
-	// Default indicates if the subnet must be a default subnet. Only one default subnet for region is admissible.
-	// Default value: true
-	Default *bool `json:"default,omitempty"`
+// SubnetType represents the type of subnet
+type SubnetType string
 
-	// Preset indicates if a subnet and a securityGroup with default configuration will be created automatically within the subnet
-	// Default value: false
-	Preset *bool `json:"preset,omitempty"`
+const (
+	SubnetTypeBasic    SubnetType = "Basic"
+	SubnetTypeAdvanced SubnetType = "Advanced"
+)
+
+// SubnetNetwork contains the network configuration
+type SubnetNetwork struct {
+	Address string `json:"address"`
+}
+
+// SubnetDHCP contains the DHCP configuration
+type SubnetDHCP struct {
+	Enabled bool `json:"enabled"`
 }
 
 // SubnetPropertiesRequest contains the specification for creating a Subnet
 type SubnetPropertiesRequest struct {
-	// Properties of the subnet (nullable object)
-	Properties SubnetProperties `json:"properties"`
+	// Type of subnet (Basic or Advanced)
+	Type SubnetType `json:"type,omitempty"`
+
+	// Default indicates if the subnet must be a default subnet
+	Default bool `json:"default,omitempty"`
+
+	// Network configuration
+	Network *SubnetNetwork `json:"network,omitempty"`
+
+	// DHCP configuration
+	DHCP *SubnetDHCP `json:"dhcp,omitempty"`
 }
 
 // SubnetPropertiesResponse contains the specification returned for a Subnet
@@ -22,8 +38,17 @@ type SubnetPropertiesResponse struct {
 	// LinkedResources array of resources linked to the Subnet (nullable)
 	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
 
+	// Type of subnet
+	Type SubnetType `json:"type,omitempty"`
+
 	// Default indicates if the subnet is the default one within the region
 	Default bool `json:"default,omitempty"`
+
+	// Network configuration
+	Network *SubnetNetwork `json:"network,omitempty"`
+
+	// DHCP configuration
+	DHCP *SubnetDHCP `json:"dhcp,omitempty"`
 }
 
 type SubnetRequest struct {
