@@ -91,6 +91,11 @@ sdk-go/
 │       │   ├── kms.go
 │       │   ├── path.go
 │       │   └── README.md
+│       ├── container/       # Container service
+│       │   ├── interface.go
+│       │   ├── kaas.go
+│       │   ├── path.go
+│       │   └── README.md
 │       └── storage/         # Storage service
 │           ├── interface.go
 │           ├── block-storage.go
@@ -1004,17 +1009,124 @@ if err != nil {
 
 ## Complete Example
 
-See [cmd/example/main.go](cmd/example/main.go) for a comprehensive example that demonstrates:
+The example in [cmd/example/main.go](cmd/example/main.go) demonstrates a **modular approach** for creating cloud infrastructure. The code is organized into focused, reusable functions rather than one monolithic main function.
 
-- Project creation and management
-- Network infrastructure setup (VPC, Subnet, Security Groups, Elastic IP)
-- Storage management (Block Storage, Snapshots)
-- Compute resources (SSH Key Pairs, Cloud Servers)
-- Resource state polling
-- Proper error handling with `Response[T]`
-- Context management with timeouts
+### Structure
 
-The example creates a complete infrastructure stack with proper resource dependencies and state management.
+The example follows a clean architecture pattern:
+
+```go
+// main.go structure (882 lines)
+
+// 1. Simple orchestration function (28 lines)
+func main() {
+    config := &client.Config{...}
+    sdk, err := client.NewClient(config)
+    ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+    defer cancel()
+    
+    sdk = sdk.WithContext(ctx)
+    resources := createAllResources(ctx, sdk)
+    printResourceSummary(resources)
+}
+
+// 2. Type-safe resource collection
+type ResourceCollection struct {
+    ProjectID          string
+    ElasticIPResp      *schema.Response[schema.ElasticIpResponse]
+    BlockStorageResp   *schema.Response[schema.BlockStorageResponse]
+    SnapshotResp       *schema.Response[schema.SnapshotResponse]
+    VPCResp            *schema.Response[schema.VpcResponse]
+    SubnetResp         *schema.Response[schema.SubnetResponse]
+    SecurityGroupResp  *schema.Response[schema.SecurityGroupResponse]
+    SecurityRuleResp   *schema.Response[schema.SecurityRuleResponse]
+    KeyPairResp        *schema.Response[schema.KeyPairResponse]
+    DBaaSResp          *schema.Response[schema.DBaaSResponse]
+    KaaSResp           *schema.Response[schema.KaaSResponse]
+    CloudServerResp    *schema.Response[schema.CloudServerResponse]
+}
+
+// 3. Orchestration function (creates 12 resources in dependency order)
+func createAllResources(ctx context.Context, sdk *client.Client) ResourceCollection {
+    // Creates resources 1-12 in correct dependency order
+}
+
+// 4. Individual resource creation functions (11 functions)
+func createProject(ctx context.Context, sdk *client.Client) string
+func createElasticIP(ctx context.Context, sdk *client.Client, projectID string) *schema.Response[...]
+func createBlockStorage(ctx context.Context, sdk *client.Client, projectID string) *schema.Response[...]
+// ... and 8 more
+```
+
+### What the Example Demonstrates
+
+The example creates a complete infrastructure stack including:
+
+1. **Project Management** - Create and update projects
+2. **Network Infrastructure** 
+   - Elastic IP allocation
+   - VPC creation with polling
+   - Subnet configuration (192.168.1.0/25)
+   - Security Group setup with polling
+   - Security Rule (SSH access on port 22)
+3. **Storage Management**
+   - Block Storage volume (20GB, bootable with Ubuntu 24.04)
+   - Snapshot creation from volume
+4. **Database Service (DBaaS)**
+   - MySQL 8.0 cluster
+   - Autoscaling enabled (20% threshold, 10GB steps)
+   - VPC/Subnet integration
+   - State polling until Active
+5. **Kubernetes Service (KaaS)**
+   - Kubernetes 1.28 cluster
+   - 3-node pool (t2.2c2r instances)
+   - High Availability enabled
+   - VPC/SecurityGroup integration
+   - State polling until Active
+6. **Compute Resources**
+   - SSH Key Pair registration
+   - Cloud Server creation (commented - can be enabled)
+
+### Key Features Demonstrated
+
+- **Modular Design**: Each resource type has its own creation function (30-100 lines each)
+- **Clear Dependencies**: Resources created in numbered order (1-12) respecting dependencies
+- **Resource State Polling**: Automatic polling for VPC, SecurityGroup, BlockStorage, DBaaS, and KaaS
+- **Error Handling**: Consistent `Response[T]` checking across all functions
+- **Type Safety**: `ResourceCollection` struct provides compile-time safety
+- **Clean Output**: Dedicated `printResourceSummary()` function for results
+- **Context Management**: 30-minute timeout for entire operation chain
+- **Reusability**: Each function is standalone and can be used independently
+
+### Usage Patterns
+
+**Run the complete example:**
+```bash
+cd cmd/example
+go run main.go
+```
+
+**Use individual functions in your code:**
+```go
+// Create only VPC infrastructure
+projectID := createProject(ctx, sdk)
+elasticIPResp := createElasticIP(ctx, sdk, projectID)
+vpcResp := createVPC(ctx, sdk, projectID)
+subnetResp := createSubnet(ctx, sdk, projectID, vpcResp)
+
+// Or create database service
+dbaasResp := createDBaaS(ctx, sdk, projectID, vpcResp, subnetResp, sgResp)
+
+// Or create Kubernetes cluster
+kaasResp := createKaaS(ctx, sdk, projectID, vpcResp, subnetResp, sgResp)
+```
+
+The modular approach makes it easy to:
+- Understand resource dependencies
+- Test individual resource creation
+- Reuse functions in your own applications
+- Modify specific resource configurations
+- Debug issues in isolated functions
 
 ## Best Practices
 
