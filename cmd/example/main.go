@@ -64,42 +64,38 @@ type ResourceCollection struct {
 func createAllResources(ctx context.Context, sdk *sdkgo.Client) *ResourceCollection {
 	resources := &ResourceCollection{}
 
-	// Configuration for resource polling
-	maxAttempts := 30
-	pollInterval := 5 * time.Second
-
 	// 1. Create Project
 	resources.ProjectID = createProject(ctx, sdk)
 
 	// 2. Create Elastic IP
 	resources.ElasticIPResp = createElasticIP(ctx, sdk, resources.ProjectID)
 
-	// 3. Create Block Storage and wait for it to be ready
-	resources.BlockStorageResp = createBlockStorage(ctx, sdk, resources.ProjectID, maxAttempts, pollInterval)
+	// 3. Create Block Storage (SDK handles waiting for it to be ready)
+	resources.BlockStorageResp = createBlockStorage(ctx, sdk, resources.ProjectID)
 
-	// 4. Create Snapshot from Block Storage
+	// 4. Create Snapshot from Block Storage (SDK waits for BlockStorage to be ready)
 	resources.SnapshotResp = createSnapshot(ctx, sdk, resources.ProjectID, resources.BlockStorageResp)
 
-	// 5. Create VPC and wait for it to be active
-	resources.VPCResp = createVPC(ctx, sdk, resources.ProjectID, maxAttempts, pollInterval)
+	// 5. Create VPC (SDK handles waiting for it to be active)
+	resources.VPCResp = createVPC(ctx, sdk, resources.ProjectID)
 
-	// 6. Create Subnet in VPC
+	// 6. Create Subnet in VPC (SDK waits for VPC to be active)
 	resources.SubnetResp = createSubnet(ctx, sdk, resources.ProjectID, resources.VPCResp)
 
-	// 7. Create Security Group and wait for it to be active
-	resources.SecurityGroupResp = createSecurityGroup(ctx, sdk, resources.ProjectID, resources.VPCResp, maxAttempts, pollInterval)
+	// 7. Create Security Group (SDK waits for VPC to be active)
+	resources.SecurityGroupResp = createSecurityGroup(ctx, sdk, resources.ProjectID, resources.VPCResp)
 
-	// 8. Create Security Group Rule
+	// 8. Create Security Group Rule (SDK waits for SecurityGroup to be active)
 	resources.SecurityRuleResp = createSecurityGroupRule(ctx, sdk, resources.ProjectID, resources.VPCResp, resources.SecurityGroupResp)
 
 	// 9. Create SSH Key Pair
 	resources.KeyPairResp = createKeyPair(ctx, sdk, resources.ProjectID)
 
 	// 10. Create DBaaS
-	resources.DBaaSResp = createDBaaS(ctx, sdk, resources.ProjectID, resources.VPCResp, resources.SubnetResp, resources.SecurityGroupResp, maxAttempts, pollInterval)
+	resources.DBaaSResp = createDBaaS(ctx, sdk, resources.ProjectID, resources.VPCResp, resources.SubnetResp, resources.SecurityGroupResp)
 
 	// 11. Create KaaS
-	resources.KaaSResp = createKaaS(ctx, sdk, resources.ProjectID, resources.VPCResp, resources.SubnetResp, resources.SecurityGroupResp, maxAttempts, pollInterval)
+	resources.KaaSResp = createKaaS(ctx, sdk, resources.ProjectID, resources.VPCResp, resources.SubnetResp, resources.SecurityGroupResp)
 
 	// 12. Create Cloud Server (commented out)
 	// resources.CloudServerResp = createCloudServer(ctx, sdk, resources)
@@ -182,8 +178,9 @@ func createElasticIP(ctx context.Context, sdk *sdkgo.Client, projectID string) *
 	return elasticIPResp
 }
 
-// createBlockStorage creates a block storage volume and waits for it to be ready
-func createBlockStorage(ctx context.Context, sdk *sdkgo.Client, projectID string, maxAttempts int, pollInterval time.Duration) *schema.Response[schema.BlockStorageResponse] {
+// createBlockStorage creates a block storage volume
+// The SDK automatically waits for it to become Active or NotUsed
+func createBlockStorage(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema.Response[schema.BlockStorageResponse] {
 	fmt.Println("--- Block Storage ---")
 
 	blockStorageReq := schema.BlockStorageRequest{
@@ -221,36 +218,6 @@ func createBlockStorage(ctx context.Context, sdk *sdkgo.Client, projectID string
 			blockStorageResp.Data.Properties.Type)
 	} else {
 		fmt.Println("Warning: blockStorageResp.Data is nil")
-	}
-
-	// Wait for Block Storage to become active
-	fmt.Println("\n⏳ Waiting for Block Storage to become active...")
-	blockStorageID := *blockStorageResp.Data.Metadata.Id
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		time.Sleep(pollInterval)
-
-		getBlockStorageResp, err := sdk.Storage.GetBlockStorageVolume(ctx, projectID, blockStorageID, nil)
-		if err != nil {
-			log.Printf("Error checking Block Storage status: %v", err)
-			continue
-		}
-
-		if getBlockStorageResp.Data != nil && getBlockStorageResp.Data.Status.State != nil {
-			state := *getBlockStorageResp.Data.Status.State
-			fmt.Printf("  Block Storage state: %s (attempt %d/%d)\n", state, attempt, maxAttempts)
-
-			// Block storage can be "Active" (attached) or "NotUsed" (unattached but ready)
-			if state == "Active" || state == "NotUsed" {
-				fmt.Printf("✓ Block Storage is now ready (state: %s)\n", state)
-				break
-			} else if state == "Failed" || state == "Error" {
-				log.Fatalf("Block Storage creation failed with state: %s", state)
-			}
-		}
-
-		if attempt == maxAttempts {
-			log.Fatalf("Timeout waiting for Block Storage to become ready")
-		}
 	}
 
 	return blockStorageResp
@@ -300,8 +267,9 @@ func createSnapshot(ctx context.Context, sdk *sdkgo.Client, projectID string, bl
 	return snapshotResp
 }
 
-// createVPC creates a VPC and waits for it to be active
-func createVPC(ctx context.Context, sdk *sdkgo.Client, projectID string, maxAttempts int, pollInterval time.Duration) *schema.Response[schema.VpcResponse] {
+// createVPC creates a VPC
+// The SDK automatically waits for it to become Active for dependent operations
+func createVPC(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema.Response[schema.VpcResponse] {
 	fmt.Println("--- VPC ---")
 
 	vpcReq := schema.VpcRequest{
@@ -340,35 +308,6 @@ func createVPC(ctx context.Context, sdk *sdkgo.Client, projectID string, maxAtte
 			vpcResp.Data.Properties.Default)
 	} else {
 		fmt.Println("Warning: vpcResp.Data or vpcResp.Data.Metadata.Name is nil")
-	}
-
-	// Wait for VPC to become active
-	fmt.Println("\n⏳ Waiting for VPC to become active...")
-	vpcID := *vpcResp.Data.Metadata.Id
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		time.Sleep(pollInterval)
-
-		getVPCResp, err := sdk.Network.GetVPC(ctx, projectID, vpcID, nil)
-		if err != nil {
-			log.Printf("Error checking VPC status: %v", err)
-			continue
-		}
-
-		if getVPCResp.Data != nil && getVPCResp.Data.Status.State != nil {
-			state := *getVPCResp.Data.Status.State
-			fmt.Printf("  VPC state: %s (attempt %d/%d)\n", state, attempt, maxAttempts)
-
-			if state == "Active" {
-				fmt.Println("✓ VPC is now active")
-				break
-			} else if state == "Failed" || state == "Error" {
-				log.Fatalf("VPC creation failed with state: %s", state)
-			}
-		}
-
-		if attempt == maxAttempts {
-			log.Fatalf("Timeout waiting for VPC to become active")
-		}
 	}
 
 	return vpcResp
@@ -420,8 +359,9 @@ func createSubnet(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcR
 	return subnetResp
 }
 
-// createSecurityGroup creates a security group and waits for it to be active
-func createSecurityGroup(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], maxAttempts int, pollInterval time.Duration) *schema.Response[schema.SecurityGroupResponse] {
+// createSecurityGroup creates a security group
+// The SDK automatically waits for the VPC to become Active before creating the group
+func createSecurityGroup(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse]) *schema.Response[schema.SecurityGroupResponse] {
 	fmt.Println("\n--- Network: Security Group ---")
 
 	vpcID := *vpcResp.Data.Metadata.Id
@@ -450,35 +390,6 @@ func createSecurityGroup(ctx context.Context, sdk *sdkgo.Client, projectID strin
 
 	if sgResp.Data != nil && sgResp.Data.Metadata.Name != nil {
 		fmt.Printf("✓ Created Security Group: %s\n", *sgResp.Data.Metadata.Name)
-
-		// Wait for Security Group to become active
-		fmt.Println("\n⏳ Waiting for Security Group to become active...")
-		sgID := *sgResp.Data.Metadata.Id
-		for attempt := 1; attempt <= maxAttempts; attempt++ {
-			time.Sleep(pollInterval)
-
-			getSGResp, err := sdk.Network.GetSecurityGroup(ctx, projectID, vpcID, sgID, nil)
-			if err != nil {
-				log.Printf("Error checking Security Group status: %v", err)
-				continue
-			}
-
-			if getSGResp.Data != nil && getSGResp.Data.Status.State != nil {
-				state := *getSGResp.Data.Status.State
-				fmt.Printf("  Security Group state: %s (attempt %d/%d)\n", state, attempt, maxAttempts)
-
-				if state == "Active" {
-					fmt.Println("✓ Security Group is now active")
-					break
-				} else if state == "Failed" || state == "Error" {
-					log.Fatalf("Security Group creation failed with state: %s", state)
-				}
-			}
-
-			if attempt == maxAttempts {
-				log.Fatalf("Timeout waiting for Security Group to become active")
-			}
-		}
 	}
 
 	return sgResp
@@ -569,7 +480,7 @@ func createKeyPair(ctx context.Context, sdk *sdkgo.Client, projectID string) *sc
 }
 
 // createDBaaS creates a DBaaS instance
-func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse], maxAttempts int, pollInterval time.Duration) *schema.Response[schema.DBaaSResponse] {
+func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.DBaaSResponse] {
 	fmt.Println("--- DBaaS ---")
 
 	// Only create DBaaS if VPC, Subnet, and Security Group are available
@@ -635,43 +546,13 @@ func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRe
 			stringValue(dbaasResp.Data.Properties.Engine.Type),
 			stringValue(dbaasResp.Data.Properties.Flavor.Name),
 			int32Value(dbaasResp.Data.Properties.Storage.SizeGb))
-
-		// Wait for DBaaS to become active
-		fmt.Println("\n⏳ Waiting for DBaaS to become active...")
-		dbaasID := *dbaasResp.Data.Metadata.Id
-		for attempt := 1; attempt <= maxAttempts; attempt++ {
-			time.Sleep(pollInterval)
-
-			getDBaaSResp, err := sdk.Database.GetDBaaS(ctx, projectID, dbaasID, nil)
-			if err != nil {
-				log.Printf("Error checking DBaaS status: %v", err)
-				continue
-			}
-
-			if getDBaaSResp.Data != nil && getDBaaSResp.Data.Status.State != nil {
-				state := *getDBaaSResp.Data.Status.State
-				fmt.Printf("  DBaaS state: %s (attempt %d/%d)\n", state, attempt, maxAttempts)
-
-				if state == "Active" {
-					fmt.Println("✓ DBaaS is now active")
-					break
-				} else if state == "Failed" || state == "Error" {
-					log.Printf("Warning: DBaaS creation failed with state: %s", state)
-					break
-				}
-			}
-
-			if attempt == maxAttempts {
-				log.Printf("Timeout waiting for DBaaS to become active (may still be provisioning)")
-			}
-		}
 	}
 
 	return dbaasResp
 }
 
 // createKaaS creates a KaaS cluster
-func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse], maxAttempts int, pollInterval time.Duration) *schema.Response[schema.KaaSResponse] {
+func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.KaaSResponse] {
 	fmt.Println("--- KaaS (Kubernetes) ---")
 
 	// Only create KaaS if VPC, Subnet, and Security Group are available
@@ -743,36 +624,6 @@ func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRes
 			kaasResp.Data.Properties.KubernetesVersion.Value,
 			len(kaasResp.Data.Properties.NodePools),
 			kaasResp.Data.Properties.Ha)
-
-		// Wait for KaaS to become active
-		fmt.Println("\n⏳ Waiting for KaaS cluster to become active...")
-		kaasID := *kaasResp.Data.Metadata.Id
-		for attempt := 1; attempt <= maxAttempts; attempt++ {
-			time.Sleep(pollInterval)
-
-			getKaaSResp, err := sdk.Container.GetKaaS(ctx, projectID, kaasID, nil)
-			if err != nil {
-				log.Printf("Error checking KaaS status: %v", err)
-				continue
-			}
-
-			if getKaaSResp.Data != nil && getKaaSResp.Data.Status.State != nil {
-				state := *getKaaSResp.Data.Status.State
-				fmt.Printf("  KaaS cluster state: %s (attempt %d/%d)\n", state, attempt, maxAttempts)
-
-				if state == "Active" {
-					fmt.Println("✓ KaaS cluster is now active")
-					break
-				} else if state == "Failed" || state == "Error" {
-					log.Printf("Warning: KaaS cluster creation failed with state: %s", state)
-					break
-				}
-			}
-
-			if attempt == maxAttempts {
-				log.Printf("Timeout waiting for KaaS cluster to become active (may still be provisioning)")
-			}
-		}
 	}
 
 	return kaasResp

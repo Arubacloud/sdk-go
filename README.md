@@ -271,11 +271,8 @@ func createNetworkInfrastructure(ctx context.Context, sdk *sdkgo.Client, project
     }
     fmt.Printf("✓ Created VPC: %s\n", *vpcResp.Data.Metadata.Name)
     
-    // Wait for VPC to become active
-    vpcID := *vpcResp.Data.Metadata.Id
-    waitForResourceActive(ctx, networkService, projectID, vpcID, "VPC")
-    
     // Create Subnet
+    // Note: The SDK automatically waits for the VPC to become Active before creating the subnet
     subnetReq := schema.SubnetRequest{
         Metadata: schema.RegionalResourceMetadataRequest{
             ResourceMetadataRequest: schema.ResourceMetadataRequest{
@@ -323,10 +320,9 @@ func createNetworkInfrastructure(ctx context.Context, sdk *sdkgo.Client, project
     }
     fmt.Printf("✓ Created Security Group: %s\n", *sgResp.Data.Metadata.Name)
     
-    sgID := *sgResp.Data.Metadata.Id
-    waitForResourceActive(ctx, networkService, projectID, vpcID, sgID, "SecurityGroup")
-    
     // Create Security Group Rule (allow SSH)
+    // Note: The SDK automatically waits for the SecurityGroup to become Active before creating the rule
+    sgID := *sgResp.Data.Metadata.Id
     ruleReq := schema.SecurityRuleRequest{
         Metadata: schema.RegionalResourceMetadataRequest{
             ResourceMetadataRequest: schema.ResourceMetadataRequest{
@@ -360,26 +356,38 @@ func createNetworkInfrastructure(ctx context.Context, sdk *sdkgo.Client, project
 func boolPtr(b bool) *bool {
     return &b
 }
+```
 
-func waitForResourceActive(ctx context.Context, api interface{}, projectID, resourceID, resourceType string) {
-    maxAttempts := 30
-    pollInterval := 5 * time.Second
-    
-    fmt.Printf("⏳ Waiting for %s to become active...\n", resourceType)
-    for attempt := 1; attempt <= maxAttempts; attempt++ {
-        time.Sleep(pollInterval)
-        
-        // Check resource status based on type
-        // Implementation depends on resource type
-        fmt.Printf("  %s state check (attempt %d/%d)\n", resourceType, attempt, maxAttempts)
-        
-        // Break when active
-        if attempt == maxAttempts {
-            log.Fatalf("Timeout waiting for %s to become active", resourceType)
-        }
-    }
-    fmt.Printf("✓ %s is now active\n", resourceType)
-}
+### Automatic Resource State Polling
+
+The SDK automatically handles resource state dependencies for you. When creating resources that depend on other resources, the SDK waits for the parent resource to become Active before proceeding:
+
+**Automatic Polling Behavior:**
+- `CreateSubnet()` - Waits for VPC to be Active
+- `CreateSecurityGroup()` - Waits for VPC to be Active  
+- `CreateSecurityGroupRule()` - Waits for SecurityGroup to be Active
+- `CreateSnapshot()` - Waits for BlockStorage to be Active/NotUsed
+
+**Configuration:**
+- Default: 30 attempts with 5-second intervals (2.5 minutes max wait)
+- Configurable via `client.PollingConfig` if needed
+- Proper context cancellation support
+- Debug logging shows polling progress
+
+**Example - No manual polling needed:**
+
+```go
+// Create VPC
+vpcResp, err := sdk.Network.CreateVPC(ctx, projectID, vpcReq, nil)
+
+// Create Subnet - SDK automatically waits for VPC to be Active
+subnetResp, err := sdk.Network.CreateSubnet(ctx, projectID, vpcID, subnetReq, nil)
+
+// Create Security Group - SDK automatically waits for VPC to be Active
+sgResp, err := sdk.Network.CreateSecurityGroup(ctx, projectID, vpcID, sgReq, nil)
+
+// Create Rule - SDK automatically waits for Security Group to be Active
+ruleResp, err := sdk.Network.CreateSecurityGroupRule(ctx, projectID, vpcID, sgID, ruleReq, nil)
 ```
 
 ### Working with Block Storage
@@ -421,40 +429,8 @@ func manageStorage(ctx context.Context, sdk *sdkgo.Client, projectID string) {
         blockStorageResp.Data.Properties.SizeGB,
         blockStorageResp.Data.Properties.Type)
     
-    // Wait for block storage to become ready (Active or NotUsed state)
-    blockStorageID := *blockStorageResp.Data.Metadata.Id
-    maxAttempts := 30
-    pollInterval := 5 * time.Second
-    
-    fmt.Println("⏳ Waiting for Block Storage to become active...")
-    for attempt := 1; attempt <= maxAttempts; attempt++ {
-        time.Sleep(pollInterval)
-        
-        getBlockStorageResp, err := sdk.Storage.GetBlockStorageVolume(ctx, projectID, blockStorageID, nil)
-        if err != nil {
-            log.Printf("Error checking Block Storage status: %v", err)
-            continue
-        }
-        
-        if getBlockStorageResp.Data != nil && getBlockStorageResp.Data.Status.State != nil {
-            state := *getBlockStorageResp.Data.Status.State
-            fmt.Printf("  Block Storage state: %s (attempt %d/%d)\n", state, attempt, maxAttempts)
-            
-            // Block storage can be "Active" (attached) or "NotUsed" (unattached but ready)
-            if state == "Active" || state == "NotUsed" {
-                fmt.Printf("✓ Block Storage is now ready (state: %s)\n", state)
-                break
-            } else if state == "Failed" || state == "Error" {
-                log.Fatalf("Block Storage creation failed with state: %s", state)
-            }
-        }
-        
-        if attempt == maxAttempts {
-            log.Fatalf("Timeout waiting for Block Storage to become ready")
-        }
-    }
-    
     // Create snapshot from block storage
+    // Note: The SDK automatically waits for BlockStorage to be Active/NotUsed before creating the snapshot
     snapshotReq := schema.SnapshotRequest{
         Metadata: schema.RegionalResourceMetadataRequest{
             ResourceMetadataRequest: schema.ResourceMetadataRequest{
@@ -922,54 +898,67 @@ resp, err := sdk.Network.GetVPC(ctx, projectID, vpcID, nil)
 
 ## Resource State Polling
 
-Many resources require time to become active after creation. Use polling to wait for resources to reach the desired state:
+The SDK automatically handles resource state dependencies. When creating resources that depend on parent resources being Active, the SDK polls internally until the parent is ready.
+
+### Automatic Polling
+
+No manual polling code needed! The SDK handles these dependencies automatically:
 
 ```go
-func waitForResourceActive(ctx context.Context, getFunc func() (*schema.Response[ResourceResponse], error), 
-    resourceType string) error {
-    
-    maxAttempts := 30
-    pollInterval := 5 * time.Second
-    
-    fmt.Printf("⏳ Waiting for %s to become active...\n", resourceType)
-    
-    for attempt := 1; attempt <= maxAttempts; attempt++ {
-        time.Sleep(pollInterval)
-        
-        resp, err := getFunc()
-        if err != nil {
-            log.Printf("Error checking %s status: %v", resourceType, err)
-            continue
-        }
-        
-        if resp.Data != nil && resp.Data.Status.State != nil {
-            state := *resp.Data.Status.State
-            fmt.Printf("  %s state: %s (attempt %d/%d)\n", resourceType, state, attempt, maxAttempts)
-            
-            switch state {
-            case "Active":
-                fmt.Printf("✓ %s is now active\n", resourceType)
-                return nil
-            case "Failed", "Error":
-                return fmt.Errorf("%s creation failed with state: %s", resourceType, state)
-            }
-        }
-        
-        if attempt == maxAttempts {
-            return fmt.Errorf("timeout waiting for %s to become active", resourceType)
-        }
-    }
-    
-    return nil
+// Create VPC
+vpcResp, err := sdk.Network.CreateVPC(ctx, projectID, vpcReq, nil)
+
+// Create Subnet - SDK automatically waits for VPC to be Active
+subnetResp, err := sdk.Network.CreateSubnet(ctx, projectID, vpcID, subnetReq, nil)
+
+// Create Security Group - SDK automatically waits for VPC to be Active  
+sgResp, err := sdk.Network.CreateSecurityGroup(ctx, projectID, vpcID, sgReq, nil)
+
+// Create Rule - SDK automatically waits for SecurityGroup to be Active
+ruleResp, err := sdk.Network.CreateSecurityGroupRule(ctx, projectID, vpcID, sgID, ruleReq, nil)
+
+// Create Snapshot - SDK automatically waits for BlockStorage to be Active/NotUsed
+snapshotResp, err := sdk.Storage.CreateSnapshot(ctx, projectID, snapshotReq, nil)
+```
+
+### Operations with Automatic Polling
+
+| Operation | Waits For | Success States |
+|-----------|-----------|----------------|
+| `CreateSubnet()` | VPC | Active |
+| `CreateSecurityGroup()` | VPC | Active |
+| `CreateSecurityGroupRule()` | SecurityGroup | Active |
+| `CreateSnapshot()` | BlockStorage | Active, NotUsed |
+
+### Polling Configuration
+
+Default configuration:
+- **Max Attempts**: 30
+- **Poll Interval**: 5 seconds  
+- **Max Wait Time**: 2.5 minutes per resource
+- **Context Support**: Respects context cancellation
+
+### Debug Logging
+
+Enable debug logging to see polling progress:
+
+```go
+config := &client.Config{
+    ClientID:     "your-client-id",
+    ClientSecret: "your-client-secret",
+    Debug:        true, // Shows polling progress
 }
 
-// Example usage: Wait for VPC to become active
-err := waitForResourceActive(ctx, func() (*schema.Response[schema.VpcResponse], error) {
-    return sdk.Network.GetVPC(ctx, projectID, vpcID, nil)
-}, "VPC")
-if err != nil {
-    log.Fatalf("Failed to wait for VPC: %v", err)
-}
+sdk, err := sdkgo.NewClient(config)
+```
+
+Output example:
+```
+Waiting for VPC 'vpc-123' to become active...
+VPC 'vpc-123' state: Provisioning (attempt 1/30)
+VPC 'vpc-123' state: Provisioning (attempt 2/30)
+VPC 'vpc-123' state: Active (attempt 3/30)
+VPC 'vpc-123' is now Active
 ```
 
 ## Complete Example
@@ -981,9 +970,9 @@ The example in [cmd/example/main.go](cmd/example/main.go) demonstrates a **modul
 The example follows a clean architecture pattern:
 
 ```go
-// main.go structure (882 lines)
+// main.go structure
 
-// 1. Simple orchestration function (28 lines)
+// 1. Simple orchestration function
 func main() {
     config := &client.Config{...}
     sdk, err := sdkgo.NewClient(config)
@@ -1119,20 +1108,21 @@ The modular approach makes it easy to:
    sdk = sdk.WithContext(ctx)
    ```
 
-3. **Poll for resource state after creation**:
+3. **Automatic resource state polling**:
    ```go
-   // Many resources need time to become active
-   // Use polling with reasonable intervals (e.g., 5 seconds)
-   // Set appropriate max attempts (e.g., 30 attempts = 150 seconds)
-   for attempt := 1; attempt <= 30; attempt++ {
-       time.Sleep(5 * time.Second)
-       resp, err := api.GetResource(ctx, projectID, resourceID, nil)
-       if err == nil && resp.Data.Status.State != nil {
-           if *resp.Data.Status.State == "Active" {
-               break
-           }
-       }
-   }
+   // The SDK automatically handles resource dependencies
+   // No manual polling needed!
+   
+   vpcResp, err := sdk.Network.CreateVPC(ctx, projectID, vpcReq, nil)
+   
+   // SDK waits for VPC to be Active before proceeding
+   subnetResp, err := sdk.Network.CreateSubnet(ctx, projectID, vpcID, subnetReq, nil)
+   
+   // SDK waits for SecurityGroup to be Active before proceeding
+   ruleResp, err := sdk.Network.CreateSecurityGroupRule(ctx, projectID, vpcID, sgID, ruleReq, nil)
+   
+   // Automatic polling for: Subnet, SecurityGroup, SecurityGroupRule, Snapshot creation
+   // Default: 30 attempts × 5 seconds = 2.5 minutes max wait per resource
    ```
 
 4. **All services are immediately available**:
@@ -1177,18 +1167,29 @@ The modular approach makes it easy to:
    config := &client.Config{
        ClientID:     "your-client-id",
        ClientSecret: "your-client-secret",
-       Debug:        true, // Enable to see HTTP requests/responses
+       Debug:        true, // Enable to see HTTP requests/responses and polling progress
    }
    ```
 
-8. **Respect resource dependencies**:
+8. **Resource dependencies are handled automatically**:
    ```go
-   // Create resources in the correct order:
-   // 1. Project
-   // 2. VPC (wait for Active)
-   // 3. Subnet (requires VPC to be Active)
-   // 4. Security Group (wait for Active)
-   // 5. Cloud Server (requires VPC, Subnet, Security Group)
+   // The SDK automatically waits for parent resources to be Active
+   // Simply create resources in logical order:
+   
+   // 1. Create Project
+   projectID := createProject(ctx, sdk)
+   
+   // 2. Create VPC
+   vpcResp, _ := sdk.Network.CreateVPC(ctx, projectID, vpcReq, nil)
+   
+   // 3. Create Subnet (SDK waits for VPC automatically)
+   subnetResp, _ := sdk.Network.CreateSubnet(ctx, projectID, vpcID, subnetReq, nil)
+   
+   // 4. Create Security Group (SDK waits for VPC automatically)
+   sgResp, _ := sdk.Network.CreateSecurityGroup(ctx, projectID, vpcID, sgReq, nil)
+   
+   // 5. Create Security Rule (SDK waits for SecurityGroup automatically)
+   ruleResp, _ := sdk.Network.CreateSecurityGroupRule(ctx, projectID, vpcID, sgID, ruleReq, nil)
    ```
 
 ## Contributing

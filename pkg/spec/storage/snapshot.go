@@ -6,9 +6,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
+
+// extractVolumeIDFromURI extracts the volume ID from a volume URI
+// URI format: /projects/{project}/providers/Aruba.Storage/blockstorages/{volumeId}
+func extractVolumeIDFromURI(uri string) (string, error) {
+	parts := strings.Split(uri, "/")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid URI format: %s", uri)
+	}
+	// The volume ID is the last part of the URI
+	volumeID := parts[len(parts)-1]
+	if volumeID == "" {
+		return "", fmt.Errorf("could not extract volume ID from URI: %s", uri)
+	}
+	return volumeID, nil
+}
 
 // ListSnapshots retrieves all snapshots for a project
 func (s *Service) ListSnapshots(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.SnapshotList], error) {
@@ -65,11 +81,25 @@ func (s *Service) GetSnapshot(ctx context.Context, project string, snapshotId st
 }
 
 // CreateSnapshot creates a new snapshot
+// The SDK automatically waits for the source BlockStorage volume to become Active or NotUsed before creating the snapshot
 func (s *Service) CreateSnapshot(ctx context.Context, project string, body schema.SnapshotRequest, params *schema.RequestParameters) (*schema.Response[schema.SnapshotResponse], error) {
 	s.client.Logger().Debugf("Creating snapshot in project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
 		return nil, err
+	}
+
+	// Extract volume ID from the Volume URI if present
+	if body.Properties.Volume.Uri != "" {
+		// Parse URI to get volume ID: /projects/{project}/providers/Aruba.Storage/blockstorages/{volumeId}
+		volumeID, err := extractVolumeIDFromURI(body.Properties.Volume.Uri)
+		if err == nil && volumeID != "" {
+			// Wait for BlockStorage to become Active or NotUsed before creating snapshot
+			err := s.waitForBlockStorageActive(ctx, project, volumeID)
+			if err != nil {
+				return nil, fmt.Errorf("failed waiting for BlockStorage to become ready: %w", err)
+			}
+		}
 	}
 
 	path := fmt.Sprintf(SnapshotsPath, project)

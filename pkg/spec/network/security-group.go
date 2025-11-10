@@ -66,11 +66,18 @@ func (s *Service) GetSecurityGroup(ctx context.Context, project string, vpcId st
 }
 
 // CreateSecurityGroup creates a new security group in a VPC
+// The SDK automatically waits for the VPC to become Active before creating the security group
 func (s *Service) CreateSecurityGroup(ctx context.Context, project string, vpcId string, body schema.SecurityGroupRequest, params *schema.RequestParameters) (*schema.Response[schema.SecurityGroupResponse], error) {
 	s.client.Logger().Debugf("Creating security group in VPC: %s in project: %s", vpcId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
+	}
+
+	// Wait for VPC to become Active before creating security group
+	err := s.waitForVPCActive(ctx, project, vpcId)
+	if err != nil {
+		return nil, fmt.Errorf("failed waiting for VPC to become active: %w", err)
 	}
 
 	path := fmt.Sprintf(SecurityGroupsPath, project, vpcId)

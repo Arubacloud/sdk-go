@@ -66,11 +66,18 @@ func (s *Service) GetSecurityGroupRule(ctx context.Context, project string, vpcI
 }
 
 // CreateSecurityGroupRule creates a new security group rule
+// The SDK automatically waits for the SecurityGroup to become Active before creating the rule
 func (s *Service) CreateSecurityGroupRule(ctx context.Context, project string, vpcId string, securityGroupId string, body schema.SecurityRuleRequest, params *schema.RequestParameters) (*schema.Response[schema.SecurityRuleResponse], error) {
 	s.client.Logger().Debugf("Creating security group rule in security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, project)
 
 	if err := schema.ValidateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
 		return nil, err
+	}
+
+	// Wait for SecurityGroup to become Active before creating rule
+	err := s.waitForSecurityGroupActive(ctx, project, vpcId, securityGroupId)
+	if err != nil {
+		return nil, fmt.Errorf("failed waiting for SecurityGroup to become active: %w", err)
 	}
 
 	path := fmt.Sprintf(SecurityGroupRulesPath, project, vpcId, securityGroupId)
