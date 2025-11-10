@@ -8,24 +8,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// CloudServerService implements the CloudServerAPI interface
-type CloudServerService struct {
-	client *client.Client
-}
-
-// NewCloudServerService creates a new CloudServerService
-func NewCloudServerService(client *client.Client) *CloudServerService {
-	return &CloudServerService{
-		client: client,
-	}
-}
-
 // ListCloudServers retrieves all cloud servers for a project
-func (s *CloudServerService) ListCloudServers(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.CloudServerList], error) {
+func (s *Service) ListCloudServers(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.CloudServerList], error) {
 	s.client.Logger().Debugf("Listing cloud servers for project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -52,7 +39,7 @@ func (s *CloudServerService) ListCloudServers(ctx context.Context, project strin
 }
 
 // GetCloudServer retrieves a specific cloud server by ID
-func (s *CloudServerService) GetCloudServer(ctx context.Context, project string, cloudServerId string, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error) {
+func (s *Service) GetCloudServer(ctx context.Context, project string, cloudServerId string, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error) {
 	s.client.Logger().Debugf("Getting cloud server: %s in project: %s", cloudServerId, project)
 
 	if err := schema.ValidateProjectAndResource(project, cloudServerId, "cloud server ID"); err != nil {
@@ -79,7 +66,7 @@ func (s *CloudServerService) GetCloudServer(ctx context.Context, project string,
 }
 
 // CreateCloudServer creates a new cloud server
-func (s *CloudServerService) CreateCloudServer(ctx context.Context, project string, body schema.CloudServerRequest, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error) {
+func (s *Service) CreateCloudServer(ctx context.Context, project string, body schema.CloudServerRequest, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error) {
 	s.client.Logger().Debugf("Creating cloud server in project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -140,7 +127,7 @@ func (s *CloudServerService) CreateCloudServer(ctx context.Context, project stri
 }
 
 // UpdateCloudServer updates an existing cloud server
-func (s *CloudServerService) UpdateCloudServer(ctx context.Context, project string, cloudServerId string, body schema.CloudServerRequest, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error) {
+func (s *Service) UpdateCloudServer(ctx context.Context, project string, cloudServerId string, body schema.CloudServerRequest, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error) {
 	s.client.Logger().Debugf("Updating cloud server: %s in project: %s", cloudServerId, project)
 
 	if err := schema.ValidateProjectAndResource(project, cloudServerId, "cloud server ID"); err != nil {
@@ -201,7 +188,7 @@ func (s *CloudServerService) UpdateCloudServer(ctx context.Context, project stri
 }
 
 // DeleteCloudServer deletes a cloud server by ID
-func (s *CloudServerService) DeleteCloudServer(ctx context.Context, projectId string, cloudServerId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteCloudServer(ctx context.Context, projectId string, cloudServerId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting cloud server: %s in project: %s", cloudServerId, projectId)
 
 	if err := schema.ValidateProjectAndResource(projectId, cloudServerId, "cloud server ID"); err != nil {

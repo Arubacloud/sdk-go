@@ -8,24 +8,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// UserService implements the UserAPI interface
-type UserService struct {
-	client *client.Client
-}
-
-// NewUserService creates a new UserService
-func NewUserService(client *client.Client) *UserService {
-	return &UserService{
-		client: client,
-	}
-}
-
 // ListUsers retrieves all users for a DBaaS instance
-func (s *UserService) ListUsers(ctx context.Context, project string, dbaasId string, params *schema.RequestParameters) (*schema.Response[schema.UserList], error) {
+func (s *Service) ListUsers(ctx context.Context, project string, dbaasId string, params *schema.RequestParameters) (*schema.Response[schema.UserList], error) {
 	s.client.Logger().Debugf("Listing users for DBaaS: %s in project: %s", dbaasId, project)
 
 	if err := schema.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
@@ -52,7 +39,7 @@ func (s *UserService) ListUsers(ctx context.Context, project string, dbaasId str
 }
 
 // GetUser retrieves a specific user by ID
-func (s *UserService) GetUser(ctx context.Context, project string, dbaasId string, userId string, params *schema.RequestParameters) (*schema.Response[schema.UserResponse], error) {
+func (s *Service) GetUser(ctx context.Context, project string, dbaasId string, userId string, params *schema.RequestParameters) (*schema.Response[schema.UserResponse], error) {
 	s.client.Logger().Debugf("Getting user: %s from DBaaS: %s in project: %s", userId, dbaasId, project)
 
 	if err := schema.ValidateDBaaSResource(project, dbaasId, userId, "user ID"); err != nil {
@@ -79,7 +66,7 @@ func (s *UserService) GetUser(ctx context.Context, project string, dbaasId strin
 }
 
 // CreateUser creates a new user in a DBaaS instance
-func (s *UserService) CreateUser(ctx context.Context, project string, dbaasId string, body schema.UserRequest, params *schema.RequestParameters) (*schema.Response[schema.UserResponse], error) {
+func (s *Service) CreateUser(ctx context.Context, project string, dbaasId string, body schema.UserRequest, params *schema.RequestParameters) (*schema.Response[schema.UserResponse], error) {
 	s.client.Logger().Debugf("Creating user in DBaaS: %s in project: %s", dbaasId, project)
 
 	if err := schema.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
@@ -140,7 +127,7 @@ func (s *UserService) CreateUser(ctx context.Context, project string, dbaasId st
 }
 
 // UpdateUser updates an existing user
-func (s *UserService) UpdateUser(ctx context.Context, project string, dbaasId string, userId string, body schema.UserRequest, params *schema.RequestParameters) (*schema.Response[schema.UserResponse], error) {
+func (s *Service) UpdateUser(ctx context.Context, project string, dbaasId string, userId string, body schema.UserRequest, params *schema.RequestParameters) (*schema.Response[schema.UserResponse], error) {
 	s.client.Logger().Debugf("Updating user: %s in DBaaS: %s in project: %s", userId, dbaasId, project)
 
 	if err := schema.ValidateDBaaSResource(project, dbaasId, userId, "user ID"); err != nil {
@@ -201,7 +188,7 @@ func (s *UserService) UpdateUser(ctx context.Context, project string, dbaasId st
 }
 
 // DeleteUser deletes a user by ID
-func (s *UserService) DeleteUser(ctx context.Context, projectId string, dbaasId string, userId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteUser(ctx context.Context, projectId string, dbaasId string, userId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting user: %s from DBaaS: %s in project: %s", userId, dbaasId, projectId)
 
 	if err := schema.ValidateDBaaSResource(projectId, dbaasId, userId, "user ID"); err != nil {

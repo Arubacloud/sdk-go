@@ -18,25 +18,26 @@ go get github.com/Arubacloud/sdk-go
 
 ## Available Services
 
-### CloudServerAPI
+### ComputeAPI
 
-Manage cloud server instances with full CRUD operations:
+The unified `ComputeAPI` interface provides all compute-related operations:
+
+**Cloud Server Operations:**
 - List all cloud servers in a project
 - Get details of a specific cloud server
-- Create or update a cloud server
+- Create a new cloud server
+- Update an existing cloud server
 - Delete a cloud server
 
-### KeyPairAPI
-
-Manage SSH key pairs for secure server access:
+**Key Pair Operations:**
 - List all key pairs in a project
 - Get details of a specific key pair
-- Create or update a key pair
+- Create a new key pair
 - Delete a key pair
 
 ## Usage Examples
 
-### Initialize the Client
+### Initialize the Service
 
 ```go
 package main
@@ -45,6 +46,8 @@ import (
     "context"
     "fmt"
     "log"
+    "net/http"
+    "time"
 
     "github.com/Arubacloud/sdk-go/pkg/client"
     "github.com/Arubacloud/sdk-go/pkg/spec/compute"
@@ -52,19 +55,25 @@ import (
 )
 
 func main() {
-    // Create a new client
-    c := client.NewClient("https://api.arubacloud.com", "your-api-key")
+    // Create SDK client
+    config := &client.Config{
+        ClientID:     "your-client-id",
+        ClientSecret: "your-client-secret",
+        HTTPClient:   &http.Client{Timeout: 30 * time.Second},
+    }
+    
+    sdk, err := client.NewClient(config)
+    if err != nil {
+        log.Fatalf("Failed to create client: %v", err)
+    }
+    
+    // Create unified compute service
+    computeService := compute.NewService(sdk)
     
     ctx := context.Background()
     projectID := "my-project-id"
     
-    // Use the API interfaces
-    var cloudServerAPI compute.CloudServerAPI
-    var keyPairAPI compute.KeyPairAPI
-    
-    // Initialize services
-    cloudServerAPI = compute.NewCloudServerService(c)
-    keyPairAPI = compute.NewKeyPairService(c)
+    // Now use computeService for all compute operations
 }
 ```
 
@@ -73,19 +82,21 @@ func main() {
 #### List Cloud Servers
 
 ```go
-// Using the CloudServerAPI interface
-var cloudServerAPI compute.CloudServerAPI = compute.NewCloudServerService(c)
+// Use the unified service for all operations
+computeService := compute.NewService(sdk)
 
-resp, err := cloudServerAPI.ListCloudServers(ctx, projectID, nil)
+resp, err := computeService.ListCloudServers(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list cloud servers: %v", err)
 }
 
-// Access response data
+// Check response status
 if resp.IsSuccess() {
     fmt.Printf("Found %d cloud servers\n", len(resp.Data.Values))
     for _, server := range resp.Data.Values {
-        fmt.Printf("Server: %s - Status: %s\n", server.Metadata.Name, server.Status.State)
+        fmt.Printf("Server: %s - Status: %s\n", 
+            *server.Metadata.Name, 
+            *server.Status.State)
     }
 }
 
@@ -93,24 +104,42 @@ if resp.IsSuccess() {
 fmt.Printf("Status Code: %d\n", resp.StatusCode)
 ```
 
-### Key Pair Management
-
-#### Using the KeyPairAPI Interface
+#### Create Cloud Server
 
 ```go
-// Initialize the KeyPairAPI interface
-var keyPairAPI compute.KeyPairAPI = compute.NewKeyPairService(c)
+serverReq := schema.CloudServerRequest{
+    Metadata: schema.ResourceMetadataRequest{
+        Name: "my-server",
+        Tags: []string{"production", "web"},
+    },
+    Properties: schema.CloudServerPropertiesRequest{
+        // Server configuration
+        BillingPeriod: "Hour",
+        // ... other properties
+    },
+}
+
+createResp, err := computeService.CreateCloudServer(ctx, projectID, serverReq, nil)
+if err != nil {
+    log.Fatalf("Failed to create server: %v", err)
+}
+
+if createResp.IsSuccess() {
+    fmt.Printf("Created server: %s\n", *createResp.Data.Metadata.Id)
+}
 ```
+
+### Key Pair Management
 
 #### List Key Pairs
 
 ```go
-resp, err := keyPairAPI.ListKeyPairs(ctx, projectID, nil)
+// Same service instance for all compute operations
+resp, err := computeService.ListKeyPairs(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list key pairs: %v", err)
 }
 
-// Access response data
 if resp.IsSuccess() {
     fmt.Printf("Found %d key pairs\n", len(resp.Data.Values))
     for _, keypair := range resp.Data.Values {
@@ -119,3 +148,43 @@ if resp.IsSuccess() {
 }
 ```
 
+#### Create Key Pair
+
+```go
+keyPairReq := schema.KeyPairRequest{
+    Metadata: schema.ResourceMetadataRequest{
+        Name: "my-ssh-key",
+    },
+    Properties: schema.KeyPairPropertiesRequest{
+        Value: "ssh-rsa AAAAB3NzaC1yc2E...",
+    },
+}
+
+createResp, err := computeService.CreateKeyPair(ctx, projectID, keyPairReq, nil)
+if err != nil {
+    log.Fatalf("Failed to create key pair: %v", err)
+}
+
+if createResp.IsSuccess() {
+    fmt.Printf("Created key pair: %s\n", createResp.Data.Metadata.Name)
+}
+```
+
+## Interface Definition
+
+```go
+type ComputeAPI interface {
+    // CloudServer operations
+    ListCloudServers(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.CloudServerList], error)
+    GetCloudServer(ctx context.Context, project string, cloudServerId string, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error)
+    CreateCloudServer(ctx context.Context, project string, body schema.CloudServerRequest, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error)
+    UpdateCloudServer(ctx context.Context, project string, cloudServerId string, body schema.CloudServerRequest, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error)
+    DeleteCloudServer(ctx context.Context, projectId string, cloudServerId string, params *schema.RequestParameters) (*schema.Response[any], error)
+
+    // KeyPair operations
+    ListKeyPairs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.KeyPairListResponse], error)
+    GetKeyPair(ctx context.Context, project string, keyPairId string, params *schema.RequestParameters) (*schema.Response[schema.KeyPairResponse], error)
+    CreateKeyPair(ctx context.Context, project string, body schema.KeyPairRequest, params *schema.RequestParameters) (*schema.Response[schema.KeyPairResponse], error)
+    DeleteKeyPair(ctx context.Context, projectId string, keyPairId string, params *schema.RequestParameters) (*schema.Response[any], error)
+}
+```

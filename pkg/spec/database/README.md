@@ -1,13 +1,6 @@
 # Database Package
 
-The `database` package provides Go client interfaces for managing Aruba Cloud database services (DBaaS - Database as a Service), including databases, users, grants, and backups.
-
-## Table of Contents
-
-- [Installation](#installation)
-- [Available Services](#available-services)
-- [Usage Examples](#usage-examples)
-- [API Reference](#api-reference)
+The `database` package provides Go client interfaces for managing Aruba Cloud database services (DBaaS), including MySQL and PostgreSQL clusters, databases, users, grants, and backups.
 
 ## Installation
 
@@ -17,49 +10,19 @@ go get github.com/Arubacloud/sdk-go
 
 ## Available Services
 
-### DBaaSAPI
-
-Manage database instances with full CRUD operations:
-- List all database instances in a project
-- Get details of a specific database instance
-- Create or update a database instance
-- Delete a database instance
-
 ### DatabaseAPI
 
-Manage databases within a DBaaS instance:
-- List all databases in a DBaaS instance
-- Get details of a specific database
-- Create or update a database
-- Delete a database
+The unified `DatabaseAPI` interface provides all database-related operations:
 
-### UserAPI
-
-Manage database users:
-- List all users in a project
-- Get details of a specific user
-- Create or update a user
-- Delete a user
-
-### GrantAPI
-
-Manage database permissions/grants:
-- List all grants for a database
-- Get details of a specific grant
-- Create or update a grant
-- Delete a grant
-
-### BackupAPI
-
-Manage database backups:
-- List all backups in a project
-- Get details of a specific backup
-- Create a backup
-- Delete a backup
+**DBaaS Operations** - Manage database clusters (MySQL/PostgreSQL)  
+**Database Operations** - Manage databases within clusters  
+**User Operations** - Manage database users  
+**Grant Operations** - Manage user permissions  
+**Backup Operations** - Manage database backups  
 
 ## Usage Examples
 
-### Initialize the Client
+### Initialize the Service
 
 ```go
 package main
@@ -68,6 +31,8 @@ import (
     "context"
     "fmt"
     "log"
+    "net/http"
+    "time"
 
     "github.com/Arubacloud/sdk-go/pkg/client"
     "github.com/Arubacloud/sdk-go/pkg/spec/database"
@@ -75,115 +40,69 @@ import (
 )
 
 func main() {
-    // Create a new client
-    c := client.NewClient("https://api.arubacloud.com", "your-api-key")
+    // Create SDK client
+    config := &client.Config{
+        ClientID:     "your-client-id",
+        ClientSecret: "your-client-secret",
+        HTTPClient:   &http.Client{Timeout: 30 * time.Second},
+    }
+    
+    sdk, err := client.NewClient(config)
+    if err != nil {
+        log.Fatalf("Failed to create client: %v", err)
+    }
+    
+    // Create unified database service
+    databaseService := database.NewService(sdk)
     
     ctx := context.Background()
     projectID := "my-project-id"
     
-    // Initialize API interfaces
-    var dbaasAPI database.DBaaSAPI = database.NewDBaaSService(c)
-    var databaseAPI database.DatabaseAPI = database.NewDatabaseService(c)
-    var userAPI database.UserAPI = database.NewUserService(c)
-    var grantAPI database.GrantAPI = database.NewGrantService(c)
-    var backupAPI database.BackupAPI = database.NewBackupService(c)
+    // Now use databaseService for all database operations
 }
 ```
 
-### DBaaS Management
-
-#### List DBaaS Instances
+### List DBaaS
 
 ```go
-resp, err := dbaasAPI.ListDBaaS(ctx, projectID, nil)
+// Use the unified service
+databaseService := database.NewService(sdk)
+
+resp, err := databaseService.ListDBaaS(ctx, projectID, nil)
 if err != nil {
-    log.Fatalf("Failed to list databases: %v", err)
+    log.Fatalf("Failed to list: %v", err)
 }
 
-// Access response data
 if resp.IsSuccess() {
-    fmt.Printf("Found %d DBaaS instances\n", len(resp.Data.Values))
-    for _, dbaas := range resp.Data.Values {
-        fmt.Printf("DBaaS: %s - Engine: %s\n", dbaas.Metadata.Name, dbaas.Properties.Engine)
-    }
+    fmt.Printf("Found %d items\n", len(resp.Data.Values))
 }
 ```
 
-### Database Management
-
-#### List Databases
+### Create DBaaS
 
 ```go
-dbaasID := "dbaas-123"
-resp, err := databaseAPI.ListDatabases(ctx, projectID, dbaasID, nil)
+dbaasReq := schema.DBaaSRequest{
+    Metadata: schema.RegionalResourceMetadataRequest{
+        ResourceMetadataRequest: schema.ResourceMetadataRequest{
+            Name: "my-database",
+        },
+        Location: schema.LocationRequest{
+            Value: "ITBG-Bergamo",
+        },
+    },
+    Properties: schema.DBaaSPropertiesRequest{
+        Engine:  "MySQL",
+        Version: "8.0",
+        // ... other properties
+    },
+}
+
+createResp, err := databaseService.CreateDBaaS(ctx, projectID, dbaasReq, nil)
 if err != nil {
-    log.Fatalf("Failed to list databases: %v", err)
+    log.Fatalf("Failed to create: %v", err)
 }
 
-// Access response data
-if resp.IsSuccess() {
-    fmt.Printf("Found %d databases\n", len(resp.Data.Values))
+if createResp.IsSuccess() {
+    fmt.Printf("Created: %s\n", *createResp.Data.Metadata.Id)
 }
-```
-
-### User Management
-
-#### List Users
-
-```go
-dbaasID := "dbaas-123"
-resp, err := userAPI.ListUsers(ctx, projectID, dbaasID, nil)
-if err != nil {
-    log.Fatalf("Failed to list users: %v", err)
-}
-
-// Access response data
-if resp.IsSuccess() {
-    fmt.Printf("Found %d users\n", len(resp.Data.Values))
-}
-```
-
-### Grant Management
-
-#### List Grants
-
-```go
-dbaasID := "dbaas-123"
-databaseID := "db-456"
-resp, err := grantAPI.ListGrants(ctx, projectID, dbaasID, databaseID, nil)
-if err != nil {
-    log.Fatalf("Failed to list grants: %v", err)
-}
-
-// Access response data
-if resp.IsSuccess() {
-    fmt.Printf("Found %d grants\n", len(resp.Data.Values))
-}
-```
-
-### Backup Management
-
-#### List Backups
-
-```go
-resp, err := backupAPI.ListBackups(ctx, projectID, nil)
-if err != nil {
-    log.Fatalf("Failed to list backups: %v", err)
-}
-
-// Access response data
-if resp.IsSuccess() {
-    fmt.Printf("Found %d backups\n", len(resp.Data.Values))
-}
-```
-
-## Resource Hierarchy
-
-```
-Project
-└── DBaaS Instance
-    ├── Database
-    │   └── Grant
-    └── User
-└── Backup
 ```

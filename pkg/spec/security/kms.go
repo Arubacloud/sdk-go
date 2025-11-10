@@ -8,24 +8,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// KmsKeyService implements the KMSAPI interface
-type KmsKeyService struct {
-	client *client.Client
-}
-
-// NewKmsKeyService creates a new KmsKeyService
-func NewKmsKeyService(client *client.Client) *KmsKeyService {
-	return &KmsKeyService{
-		client: client,
-	}
-}
-
 // ListKMSKeys retrieves all KMS keys for a project
-func (s *KmsKeyService) ListKMSKeys(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.KmsList], error) {
+func (s *Service) ListKMSKeys(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.KmsList], error) {
 	s.client.Logger().Debugf("Listing KMS keys for project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -52,7 +39,7 @@ func (s *KmsKeyService) ListKMSKeys(ctx context.Context, project string, params 
 }
 
 // GetKMSKey retrieves a specific KMS key by ID
-func (s *KmsKeyService) GetKMSKey(ctx context.Context, project string, kmsKeyId string, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error) {
+func (s *Service) GetKMSKey(ctx context.Context, project string, kmsKeyId string, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error) {
 	s.client.Logger().Debugf("Getting KMS key: %s in project: %s", kmsKeyId, project)
 
 	if err := schema.ValidateProjectAndResource(project, kmsKeyId, "KMS key ID"); err != nil {
@@ -79,7 +66,7 @@ func (s *KmsKeyService) GetKMSKey(ctx context.Context, project string, kmsKeyId 
 }
 
 // CreateKMSKey creates a new KMS key
-func (s *KmsKeyService) CreateKMSKey(ctx context.Context, project string, body schema.KmsRequest, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error) {
+func (s *Service) CreateKMSKey(ctx context.Context, project string, body schema.KmsRequest, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error) {
 	s.client.Logger().Debugf("Creating KMS key in project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -136,7 +123,7 @@ func (s *KmsKeyService) CreateKMSKey(ctx context.Context, project string, body s
 }
 
 // UpdateKMSKey updates an existing KMS key
-func (s *KmsKeyService) UpdateKMSKey(ctx context.Context, project string, kmsKeyId string, body schema.KmsRequest, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error) {
+func (s *Service) UpdateKMSKey(ctx context.Context, project string, kmsKeyId string, body schema.KmsRequest, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error) {
 	s.client.Logger().Debugf("Updating KMS key: %s in project: %s", kmsKeyId, project)
 
 	if err := schema.ValidateProjectAndResource(project, kmsKeyId, "KMS key ID"); err != nil {
@@ -193,7 +180,7 @@ func (s *KmsKeyService) UpdateKMSKey(ctx context.Context, project string, kmsKey
 }
 
 // DeleteKMSKey deletes a KMS key by ID
-func (s *KmsKeyService) DeleteKMSKey(ctx context.Context, projectId string, kmsKeyId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteKMSKey(ctx context.Context, projectId string, kmsKeyId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting KMS key: %s in project: %s", kmsKeyId, projectId)
 
 	if err := schema.ValidateProjectAndResource(projectId, kmsKeyId, "KMS key ID"); err != nil {

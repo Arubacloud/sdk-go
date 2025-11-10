@@ -8,24 +8,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// VpcPeeringRouteService implements the VpcPeeringRouteAPI interface
-type VpcPeeringRouteService struct {
-	client *client.Client
-}
-
-// NewVpcPeeringRouteService creates a new VpcPeeringRouteService
-func NewVpcPeeringRouteService(client *client.Client) *VpcPeeringRouteService {
-	return &VpcPeeringRouteService{
-		client: client,
-	}
-}
-
 // ListVpcPeeringRoutes retrieves all VPC peering routes for a VPC peering connection
-func (s *VpcPeeringRouteService) ListVpcPeeringRoutes(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteList], error) {
+func (s *Service) ListVpcPeeringRoutes(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteList], error) {
 	s.client.Logger().Debugf("Listing VPC peering routes for VPC peering: %s in VPC: %s in project: %s", vpcPeeringId, vpcId, project)
 
 	if err := schema.ValidateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
@@ -52,7 +39,7 @@ func (s *VpcPeeringRouteService) ListVpcPeeringRoutes(ctx context.Context, proje
 }
 
 // GetVpcPeeringRoute retrieves a specific VPC peering route by ID
-func (s *VpcPeeringRouteService) GetVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error) {
+func (s *Service) GetVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error) {
 	s.client.Logger().Debugf("Getting VPC peering route: %s from VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteId, vpcPeeringId, vpcId, project)
 
 	if err := schema.ValidateVPCPeeringRoute(project, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {
@@ -79,7 +66,7 @@ func (s *VpcPeeringRouteService) GetVpcPeeringRoute(ctx context.Context, project
 }
 
 // CreateVpcPeeringRoute creates a new VPC peering route
-func (s *VpcPeeringRouteService) CreateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VpcPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error) {
+func (s *Service) CreateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VpcPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error) {
 	s.client.Logger().Debugf("Creating VPC peering route in VPC peering: %s in VPC: %s in project: %s", vpcPeeringId, vpcId, project)
 
 	if err := schema.ValidateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
@@ -136,7 +123,7 @@ func (s *VpcPeeringRouteService) CreateVpcPeeringRoute(ctx context.Context, proj
 }
 
 // UpdateVpcPeeringRoute updates an existing VPC peering route
-func (s *VpcPeeringRouteService) UpdateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, body schema.VpcPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error) {
+func (s *Service) UpdateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, body schema.VpcPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error) {
 	s.client.Logger().Debugf("Updating VPC peering route: %s in VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteId, vpcPeeringId, vpcId, project)
 
 	if err := schema.ValidateVPCPeeringRoute(project, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {
@@ -193,7 +180,7 @@ func (s *VpcPeeringRouteService) UpdateVpcPeeringRoute(ctx context.Context, proj
 }
 
 // DeleteVpcPeeringRoute deletes a VPC peering route by ID
-func (s *VpcPeeringRouteService) DeleteVpcPeeringRoute(ctx context.Context, projectId string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteVpcPeeringRoute(ctx context.Context, projectId string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting VPC peering route: %s from VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteId, vpcPeeringId, vpcId, projectId)
 
 	if err := schema.ValidateVPCPeeringRoute(projectId, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {

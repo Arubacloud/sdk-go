@@ -8,24 +8,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// JobService implements the ScheduleJobAPI interface
-type JobService struct {
-	client *client.Client
-}
-
-// NewJobService creates a new JobService
-func NewJobService(client *client.Client) *JobService {
-	return &JobService{
-		client: client,
-	}
-}
-
 // ListScheduleJobs retrieves all schedule jobs for a project
-func (s *JobService) ListScheduleJobs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.JobList], error) {
+func (s *Service) ListScheduleJobs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.JobList], error) {
 	s.client.Logger().Debugf("Listing schedule jobs for project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -52,7 +39,7 @@ func (s *JobService) ListScheduleJobs(ctx context.Context, project string, param
 }
 
 // GetScheduleJob retrieves a specific schedule job by ID
-func (s *JobService) GetScheduleJob(ctx context.Context, project string, scheduleJobId string, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
+func (s *Service) GetScheduleJob(ctx context.Context, project string, scheduleJobId string, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
 	s.client.Logger().Debugf("Getting schedule job: %s in project: %s", scheduleJobId, project)
 
 	if err := schema.ValidateProjectAndResource(project, scheduleJobId, "job ID"); err != nil {
@@ -79,7 +66,7 @@ func (s *JobService) GetScheduleJob(ctx context.Context, project string, schedul
 }
 
 // CreateScheduleJob creates a new schedule job
-func (s *JobService) CreateScheduleJob(ctx context.Context, project string, body schema.JobRequest, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
+func (s *Service) CreateScheduleJob(ctx context.Context, project string, body schema.JobRequest, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
 	s.client.Logger().Debugf("Creating schedule job in project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -136,7 +123,7 @@ func (s *JobService) CreateScheduleJob(ctx context.Context, project string, body
 }
 
 // UpdateScheduleJob updates an existing schedule job
-func (s *JobService) UpdateScheduleJob(ctx context.Context, project string, scheduleJobId string, body schema.JobRequest, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
+func (s *Service) UpdateScheduleJob(ctx context.Context, project string, scheduleJobId string, body schema.JobRequest, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
 	s.client.Logger().Debugf("Updating schedule job: %s in project: %s", scheduleJobId, project)
 
 	if err := schema.ValidateProjectAndResource(project, scheduleJobId, "job ID"); err != nil {
@@ -193,7 +180,7 @@ func (s *JobService) UpdateScheduleJob(ctx context.Context, project string, sche
 }
 
 // DeleteScheduleJob deletes a schedule job by ID
-func (s *JobService) DeleteScheduleJob(ctx context.Context, projectId string, scheduleJobId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteScheduleJob(ctx context.Context, projectId string, scheduleJobId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting schedule job: %s in project: %s", scheduleJobId, projectId)
 
 	if err := schema.ValidateProjectAndResource(projectId, scheduleJobId, "job ID"); err != nil {

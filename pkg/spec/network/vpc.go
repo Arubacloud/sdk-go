@@ -8,24 +8,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// VPCService implements the VpcAPI interface
-type VPCService struct {
-	client *client.Client
-}
-
-// NewVPCService creates a new VPCService
-func NewVPCService(client *client.Client) *VPCService {
-	return &VPCService{
-		client: client,
-	}
-}
-
 // ListVPCs retrieves all VPCs for a project
-func (s *VPCService) ListVPCs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VpcList], error) {
+func (s *Service) ListVPCs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VpcList], error) {
 	s.client.Logger().Debugf("Listing VPCs for project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -52,7 +39,7 @@ func (s *VPCService) ListVPCs(ctx context.Context, project string, params *schem
 }
 
 // GetVPC retrieves a specific VPC by ID
-func (s *VPCService) GetVPC(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
+func (s *Service) GetVPC(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
 	s.client.Logger().Debugf("Getting VPC: %s in project: %s", vpcId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
@@ -79,7 +66,7 @@ func (s *VPCService) GetVPC(ctx context.Context, project string, vpcId string, p
 }
 
 // CreateVPC creates a new VPC
-func (s *VPCService) CreateVPC(ctx context.Context, project string, body schema.VpcRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
+func (s *Service) CreateVPC(ctx context.Context, project string, body schema.VpcRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
 	s.client.Logger().Debugf("Creating VPC in project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -136,7 +123,7 @@ func (s *VPCService) CreateVPC(ctx context.Context, project string, body schema.
 }
 
 // UpdateVPC updates an existing VPC
-func (s *VPCService) UpdateVPC(ctx context.Context, project string, vpcId string, body schema.VpcRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
+func (s *Service) UpdateVPC(ctx context.Context, project string, vpcId string, body schema.VpcRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
 	s.client.Logger().Debugf("Updating VPC: %s in project: %s", vpcId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
@@ -193,7 +180,7 @@ func (s *VPCService) UpdateVPC(ctx context.Context, project string, vpcId string
 }
 
 // DeleteVPC deletes a VPC by ID
-func (s *VPCService) DeleteVPC(ctx context.Context, projectId string, vpcId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteVPC(ctx context.Context, projectId string, vpcId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting VPC: %s in project: %s", vpcId, projectId)
 
 	if err := schema.ValidateProjectAndResource(projectId, vpcId, "VPC ID"); err != nil {

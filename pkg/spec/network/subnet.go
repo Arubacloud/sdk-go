@@ -8,24 +8,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// SubnetService implements the SubnetAPI interface
-type SubnetService struct {
-	client *client.Client
-}
-
-// NewSubnetService creates a new SubnetService
-func NewSubnetService(client *client.Client) *SubnetService {
-	return &SubnetService{
-		client: client,
-	}
-}
-
 // ListSubnets retrieves all subnets for a VPC
-func (s *SubnetService) ListSubnets(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.SubnetList], error) {
+func (s *Service) ListSubnets(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.SubnetList], error) {
 	s.client.Logger().Debugf("Listing subnets for VPC: %s in project: %s", vpcId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
@@ -52,7 +39,7 @@ func (s *SubnetService) ListSubnets(ctx context.Context, project string, vpcId s
 }
 
 // GetSubnet retrieves a specific subnet by ID
-func (s *SubnetService) GetSubnet(ctx context.Context, project string, vpcId string, subnetId string, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
+func (s *Service) GetSubnet(ctx context.Context, project string, vpcId string, subnetId string, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
 	s.client.Logger().Debugf("Getting subnet: %s from VPC: %s in project: %s", subnetId, vpcId, project)
 
 	if err := schema.ValidateVPCResource(project, vpcId, subnetId, "subnet ID"); err != nil {
@@ -79,7 +66,7 @@ func (s *SubnetService) GetSubnet(ctx context.Context, project string, vpcId str
 }
 
 // CreateSubnet creates a new subnet in a VPC
-func (s *SubnetService) CreateSubnet(ctx context.Context, project string, vpcId string, body schema.SubnetRequest, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
+func (s *Service) CreateSubnet(ctx context.Context, project string, vpcId string, body schema.SubnetRequest, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
 	s.client.Logger().Debugf("Creating subnet in VPC: %s in project: %s", vpcId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
@@ -136,7 +123,7 @@ func (s *SubnetService) CreateSubnet(ctx context.Context, project string, vpcId 
 }
 
 // UpdateSubnet updates an existing subnet
-func (s *SubnetService) UpdateSubnet(ctx context.Context, project string, vpcId string, subnetId string, body schema.SubnetRequest, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
+func (s *Service) UpdateSubnet(ctx context.Context, project string, vpcId string, subnetId string, body schema.SubnetRequest, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
 	s.client.Logger().Debugf("Updating subnet: %s in VPC: %s in project: %s", subnetId, vpcId, project)
 
 	if err := schema.ValidateVPCResource(project, vpcId, subnetId, "subnet ID"); err != nil {
@@ -193,7 +180,7 @@ func (s *SubnetService) UpdateSubnet(ctx context.Context, project string, vpcId 
 }
 
 // DeleteSubnet deletes a subnet by ID
-func (s *SubnetService) DeleteSubnet(ctx context.Context, projectId string, vpcId string, subnetId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteSubnet(ctx context.Context, projectId string, vpcId string, subnetId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting subnet: %s from VPC: %s in project: %s", subnetId, vpcId, projectId)
 
 	if err := schema.ValidateVPCResource(projectId, vpcId, subnetId, "subnet ID"); err != nil {

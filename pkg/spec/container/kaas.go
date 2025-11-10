@@ -8,24 +8,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// KaaSService implements the KaaSAPI interface
-type KaaSService struct {
-	client *client.Client
-}
-
-// NewKaaSService creates a new KaaSService
-func NewKaaSService(client *client.Client) *KaaSService {
-	return &KaaSService{
-		client: client,
-	}
-}
-
 // ListKaaS retrieves all KaaS clusters for a project
-func (s *KaaSService) ListKaaS(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.KaaSList], error) {
+func (s *Service) ListKaaS(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.KaaSList], error) {
 	s.client.Logger().Debugf("Listing KaaS clusters for project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -52,7 +39,7 @@ func (s *KaaSService) ListKaaS(ctx context.Context, project string, params *sche
 }
 
 // GetKaaS retrieves a specific KaaS cluster by ID
-func (s *KaaSService) GetKaaS(ctx context.Context, project string, kaasId string, params *schema.RequestParameters) (*schema.Response[schema.KaaSResponse], error) {
+func (s *Service) GetKaaS(ctx context.Context, project string, kaasId string, params *schema.RequestParameters) (*schema.Response[schema.KaaSResponse], error) {
 	s.client.Logger().Debugf("Getting KaaS cluster: %s in project: %s", kaasId, project)
 
 	if err := schema.ValidateProjectAndResource(project, kaasId, "KaaS ID"); err != nil {
@@ -79,7 +66,7 @@ func (s *KaaSService) GetKaaS(ctx context.Context, project string, kaasId string
 }
 
 // CreateKaaS creates a new KaaS cluster
-func (s *KaaSService) CreateKaaS(ctx context.Context, project string, body schema.KaaSRequest, params *schema.RequestParameters) (*schema.Response[schema.KaaSResponse], error) {
+func (s *Service) CreateKaaS(ctx context.Context, project string, body schema.KaaSRequest, params *schema.RequestParameters) (*schema.Response[schema.KaaSResponse], error) {
 	s.client.Logger().Debugf("Creating KaaS cluster in project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -140,7 +127,7 @@ func (s *KaaSService) CreateKaaS(ctx context.Context, project string, body schem
 }
 
 // UpdateKaaS updates an existing KaaS cluster
-func (s *KaaSService) UpdateKaaS(ctx context.Context, project string, kaasId string, body schema.KaaSRequest, params *schema.RequestParameters) (*schema.Response[schema.KaaSResponse], error) {
+func (s *Service) UpdateKaaS(ctx context.Context, project string, kaasId string, body schema.KaaSRequest, params *schema.RequestParameters) (*schema.Response[schema.KaaSResponse], error) {
 	s.client.Logger().Debugf("Updating KaaS cluster: %s in project: %s", kaasId, project)
 
 	if err := schema.ValidateProjectAndResource(project, kaasId, "KaaS ID"); err != nil {
@@ -201,7 +188,7 @@ func (s *KaaSService) UpdateKaaS(ctx context.Context, project string, kaasId str
 }
 
 // DeleteKaaS deletes a KaaS cluster by ID
-func (s *KaaSService) DeleteKaaS(ctx context.Context, projectId string, kaasId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteKaaS(ctx context.Context, projectId string, kaasId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting KaaS cluster: %s in project: %s", kaasId, projectId)
 
 	if err := schema.ValidateProjectAndResource(projectId, kaasId, "KaaS ID"); err != nil {

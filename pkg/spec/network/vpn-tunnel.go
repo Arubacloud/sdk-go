@@ -8,24 +8,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// VpnTunnelService implements the VpnTunnelAPI interface
-type VpnTunnelService struct {
-	client *client.Client
-}
-
-// NewVpnTunnelService creates a new VpnTunnelService
-func NewVpnTunnelService(client *client.Client) *VpnTunnelService {
-	return &VpnTunnelService{
-		client: client,
-	}
-}
-
 // ListVpnTunnels retrieves all VPN tunnels for a project
-func (s *VpnTunnelService) ListVpnTunnels(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelList], error) {
+func (s *Service) ListVpnTunnels(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelList], error) {
 	s.client.Logger().Debugf("Listing VPN tunnels for project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -52,7 +39,7 @@ func (s *VpnTunnelService) ListVpnTunnels(ctx context.Context, project string, p
 }
 
 // GetVpnTunnel retrieves a specific VPN tunnel by ID
-func (s *VpnTunnelService) GetVpnTunnel(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
+func (s *Service) GetVpnTunnel(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
 	s.client.Logger().Debugf("Getting VPN tunnel: %s in project: %s", vpnTunnelId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpnTunnelId, "VPN tunnel ID"); err != nil {
@@ -79,7 +66,7 @@ func (s *VpnTunnelService) GetVpnTunnel(ctx context.Context, project string, vpn
 }
 
 // CreateVpnTunnel creates a new VPN tunnel
-func (s *VpnTunnelService) CreateVpnTunnel(ctx context.Context, project string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
+func (s *Service) CreateVpnTunnel(ctx context.Context, project string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
 	s.client.Logger().Debugf("Creating VPN tunnel in project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -136,7 +123,7 @@ func (s *VpnTunnelService) CreateVpnTunnel(ctx context.Context, project string, 
 }
 
 // UpdateVpnTunnel updates an existing VPN tunnel
-func (s *VpnTunnelService) UpdateVpnTunnel(ctx context.Context, project string, vpnTunnelId string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
+func (s *Service) UpdateVpnTunnel(ctx context.Context, project string, vpnTunnelId string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
 	s.client.Logger().Debugf("Updating VPN tunnel: %s in project: %s", vpnTunnelId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpnTunnelId, "VPN tunnel ID"); err != nil {
@@ -193,7 +180,7 @@ func (s *VpnTunnelService) UpdateVpnTunnel(ctx context.Context, project string, 
 }
 
 // DeleteVpnTunnel deletes a VPN tunnel by ID
-func (s *VpnTunnelService) DeleteVpnTunnel(ctx context.Context, projectId string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteVpnTunnel(ctx context.Context, projectId string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting VPN tunnel: %s in project: %s", vpnTunnelId, projectId)
 
 	if err := schema.ValidateProjectAndResource(projectId, vpnTunnelId, "VPN tunnel ID"); err != nil {

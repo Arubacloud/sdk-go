@@ -8,24 +8,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// DatabaseService implements the DatabaseAPI interface
-type DatabaseService struct {
-	client *client.Client
-}
-
-// NewDatabaseService creates a new DatabaseService
-func NewDatabaseService(client *client.Client) *DatabaseService {
-	return &DatabaseService{
-		client: client,
-	}
-}
-
 // ListDatabases retrieves all databases for a DBaaS instance
-func (s *DatabaseService) ListDatabases(ctx context.Context, project string, dbaasId string, params *schema.RequestParameters) (*schema.Response[schema.DatabaseList], error) {
+func (s *Service) ListDatabases(ctx context.Context, project string, dbaasId string, params *schema.RequestParameters) (*schema.Response[schema.DatabaseList], error) {
 	s.client.Logger().Debugf("Listing databases for DBaaS: %s in project: %s", dbaasId, project)
 
 	if err := schema.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
@@ -52,7 +39,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, project string, dba
 }
 
 // GetDatabase retrieves a specific database by ID
-func (s *DatabaseService) GetDatabase(ctx context.Context, project string, dbaasId string, databaseId string, params *schema.RequestParameters) (*schema.Response[schema.DatabaseResponse], error) {
+func (s *Service) GetDatabase(ctx context.Context, project string, dbaasId string, databaseId string, params *schema.RequestParameters) (*schema.Response[schema.DatabaseResponse], error) {
 	s.client.Logger().Debugf("Getting database: %s from DBaaS: %s in project: %s", databaseId, dbaasId, project)
 
 	if err := schema.ValidateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
@@ -79,7 +66,7 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, project string, dbaas
 }
 
 // CreateDatabase creates a new database
-func (s *DatabaseService) CreateDatabase(ctx context.Context, project string, dbaasId string, body schema.DatabaseRequest, params *schema.RequestParameters) (*schema.Response[schema.DatabaseResponse], error) {
+func (s *Service) CreateDatabase(ctx context.Context, project string, dbaasId string, body schema.DatabaseRequest, params *schema.RequestParameters) (*schema.Response[schema.DatabaseResponse], error) {
 	s.client.Logger().Debugf("Creating database in DBaaS: %s in project: %s", dbaasId, project)
 
 	if err := schema.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
@@ -140,7 +127,7 @@ func (s *DatabaseService) CreateDatabase(ctx context.Context, project string, db
 }
 
 // UpdateDatabase updates an existing database
-func (s *DatabaseService) UpdateDatabase(ctx context.Context, project string, dbaasId string, databaseId string, body schema.DatabaseRequest, params *schema.RequestParameters) (*schema.Response[schema.DatabaseResponse], error) {
+func (s *Service) UpdateDatabase(ctx context.Context, project string, dbaasId string, databaseId string, body schema.DatabaseRequest, params *schema.RequestParameters) (*schema.Response[schema.DatabaseResponse], error) {
 	s.client.Logger().Debugf("Updating database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, project)
 
 	if err := schema.ValidateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
@@ -201,7 +188,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, project string, db
 }
 
 // DeleteDatabase deletes a database by ID
-func (s *DatabaseService) DeleteDatabase(ctx context.Context, projectId string, dbaasId string, databaseId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteDatabase(ctx context.Context, projectId string, dbaasId string, databaseId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting database: %s from DBaaS: %s in project: %s", databaseId, dbaasId, projectId)
 
 	if err := schema.ValidateDBaaSResource(projectId, dbaasId, databaseId, "database ID"); err != nil {

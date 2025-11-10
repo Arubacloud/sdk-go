@@ -5,24 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// EventService implements the EventAPI interface
-type EventService struct {
-	client *client.Client
-}
-
-// NewEventService creates a new EventService
-func NewEventService(client *client.Client) *EventService {
-	return &EventService{
-		client: client,
-	}
-}
-
 // ListEvents retrieves all audit events for a project
-func (s *EventService) ListEvents(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.AuditEventListResponse], error) {
+func (s *Service) ListEvents(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.AuditEventListResponse], error) {
 	s.client.Logger().Debugf("Listing audit events for project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {

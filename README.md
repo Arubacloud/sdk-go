@@ -150,7 +150,7 @@ func main() {
     }
     
     // Initialize the SDK client (automatically obtains JWT token)
-    sdk, err := client.NewClient(config)
+    sdk, err := sdkgo.NewClient(config)
     if err != nil {
         log.Fatalf("Failed to create SDK client: %v", err)
     }
@@ -159,21 +159,15 @@ func main() {
     ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
     defer cancel()
     
-    // Use the SDK with context
-    sdk = sdk.WithContext(ctx)
-    
-    // Initialize service clients
-    projectAPI := project.NewProjectService(sdk)
-    
-    // Use the service
-    createProject(ctx, projectAPI)
+    // Services are available directly from the SDK client!
+    createProject(ctx, sdk)
 }
 ```
 
 ### Working with Projects
 
 ```go
-func createProject(ctx context.Context, projectAPI *project.ProjectService) {
+func createProject(ctx context.Context, sdk *sdkgo.Client) {
     // Create a new project
     projectReq := schema.ProjectRequest{
         Metadata: schema.ResourceMetadataRequest{
@@ -186,7 +180,7 @@ func createProject(ctx context.Context, projectAPI *project.ProjectService) {
         },
     }
     
-    resp, err := projectAPI.CreateProject(ctx, projectReq, nil)
+    resp, err := sdk.Project.CreateProject(ctx, projectReq, nil)
     if err != nil {
         log.Fatalf("Error creating project: %v", err)
     }
@@ -202,7 +196,7 @@ func createProject(ctx context.Context, projectAPI *project.ProjectService) {
     
     // Update the project
     projectReq.Properties.Description = stringPtr("Updated description")
-    updateResp, err := projectAPI.UpdateProject(ctx, projectID, projectReq, nil)
+    updateResp, err := sdk.Project.UpdateProject(ctx, projectID, projectReq, nil)
     if err != nil {
         log.Fatalf("Error updating project: %v", err)
     }
@@ -227,14 +221,8 @@ func stringValue(s *string) string {
 ### Working with Network Resources
 
 ```go
-import (
-    "github.com/Arubacloud/sdk-go/pkg/spec/network"
-)
-
-func createNetworkInfrastructure(ctx context.Context, sdk *client.Client, projectID string) {
+func createNetworkInfrastructure(ctx context.Context, sdk *sdkgo.Client, projectID string) {
     // Create Elastic IP
-    elasticIPAPI := network.NewElasticIPService(sdk)
-    
     elasticIPReq := schema.ElasticIpRequest{
         Metadata: schema.RegionalResourceMetadataRequest{
             ResourceMetadataRequest: schema.ResourceMetadataRequest{
@@ -252,15 +240,13 @@ func createNetworkInfrastructure(ctx context.Context, sdk *client.Client, projec
         },
     }
     
-    elasticIPResp, err := elasticIPAPI.CreateElasticIP(ctx, projectID, elasticIPReq, nil)
+    elasticIPResp, err := sdk.Network.CreateElasticIP(ctx, projectID, elasticIPReq, nil)
     if err != nil || !elasticIPResp.IsSuccess() {
         log.Fatalf("Failed to create Elastic IP: %v", err)
     }
     fmt.Printf("✓ Created Elastic IP: %s\n", *elasticIPResp.Data.Metadata.Name)
     
     // Create VPC
-    vpcAPI := network.NewVPCService(sdk)
-    
     vpcReq := schema.VpcRequest{
         Metadata: schema.RegionalResourceMetadataRequest{
             ResourceMetadataRequest: schema.ResourceMetadataRequest{
@@ -279,7 +265,7 @@ func createNetworkInfrastructure(ctx context.Context, sdk *client.Client, projec
         },
     }
     
-    vpcResp, err := vpcAPI.CreateVPC(ctx, projectID, vpcReq, nil)
+    vpcResp, err := sdk.Network.CreateVPC(ctx, projectID, vpcReq, nil)
     if err != nil || vpcResp.IsError() {
         log.Fatalf("Failed to create VPC: %v", err)
     }
@@ -287,11 +273,9 @@ func createNetworkInfrastructure(ctx context.Context, sdk *client.Client, projec
     
     // Wait for VPC to become active
     vpcID := *vpcResp.Data.Metadata.Id
-    waitForResourceActive(ctx, vpcAPI, projectID, vpcID, "VPC")
+    waitForResourceActive(ctx, networkService, projectID, vpcID, "VPC")
     
     // Create Subnet
-    subnetAPI := network.NewSubnetService(sdk)
-    
     subnetReq := schema.SubnetRequest{
         Metadata: schema.RegionalResourceMetadataRequest{
             ResourceMetadataRequest: schema.ResourceMetadataRequest{
@@ -314,7 +298,7 @@ func createNetworkInfrastructure(ctx context.Context, sdk *client.Client, projec
         },
     }
     
-    subnetResp, err := subnetAPI.CreateSubnet(ctx, projectID, vpcID, subnetReq, nil)
+    subnetResp, err := sdk.Network.CreateSubnet(ctx, projectID, vpcID, subnetReq, nil)
     if err != nil || subnetResp.IsError() {
         log.Fatalf("Failed to create subnet: %v", err)
     }
@@ -323,8 +307,6 @@ func createNetworkInfrastructure(ctx context.Context, sdk *client.Client, projec
         subnetResp.Data.Properties.Network.Address)
     
     // Create Security Group
-    securityGroupAPI := network.NewSecurityGroupService(sdk)
-    
     sgReq := schema.SecurityGroupRequest{
         Metadata: schema.ResourceMetadataRequest{
             Name: "my-security-group",
@@ -335,18 +317,16 @@ func createNetworkInfrastructure(ctx context.Context, sdk *client.Client, projec
         },
     }
     
-    sgResp, err := securityGroupAPI.CreateSecurityGroup(ctx, projectID, vpcID, sgReq, nil)
+    sgResp, err := sdk.Network.CreateSecurityGroup(ctx, projectID, vpcID, sgReq, nil)
     if err != nil || sgResp.IsError() {
         log.Fatalf("Failed to create security group: %v", err)
     }
     fmt.Printf("✓ Created Security Group: %s\n", *sgResp.Data.Metadata.Name)
     
     sgID := *sgResp.Data.Metadata.Id
-    waitForResourceActive(ctx, securityGroupAPI, projectID, vpcID, sgID, "SecurityGroup")
+    waitForResourceActive(ctx, networkService, projectID, vpcID, sgID, "SecurityGroup")
     
     // Create Security Group Rule (allow SSH)
-    securityRuleAPI := network.NewSecurityGroupRuleService(sdk)
-    
     ruleReq := schema.SecurityRuleRequest{
         Metadata: schema.RegionalResourceMetadataRequest{
             ResourceMetadataRequest: schema.ResourceMetadataRequest{
@@ -368,7 +348,7 @@ func createNetworkInfrastructure(ctx context.Context, sdk *client.Client, projec
         },
     }
     
-    ruleResp, err := securityRuleAPI.CreateSecurityGroupRule(ctx, projectID, vpcID, sgID, ruleReq, nil)
+    ruleResp, err := sdk.Network.CreateSecurityGroupRule(ctx, projectID, vpcID, sgID, ruleReq, nil)
     if err != nil || ruleResp.IsError() {
         log.Fatalf("Failed to create security rule: %v", err)
     }
@@ -409,9 +389,7 @@ import (
     "github.com/Arubacloud/sdk-go/pkg/spec/storage"
 )
 
-func manageStorage(ctx context.Context, sdk *client.Client, projectID string) {
-    storageAPI := storage.NewBlockStorageService(sdk)
-    
+func manageStorage(ctx context.Context, sdk *sdkgo.Client, projectID string) {
     // Create block storage volume (bootable with Ubuntu image)
     blockStorageReq := schema.BlockStorageRequest{
         Metadata: schema.RegionalResourceMetadataRequest{
@@ -433,7 +411,7 @@ func manageStorage(ctx context.Context, sdk *client.Client, projectID string) {
         },
     }
     
-    blockStorageResp, err := storageAPI.CreateBlockStorageVolume(ctx, projectID, blockStorageReq, nil)
+    blockStorageResp, err := sdk.Storage.CreateBlockStorageVolume(ctx, projectID, blockStorageReq, nil)
     if err != nil || !blockStorageResp.IsSuccess() {
         log.Fatalf("Failed to create block storage: %v", err)
     }
@@ -452,7 +430,7 @@ func manageStorage(ctx context.Context, sdk *client.Client, projectID string) {
     for attempt := 1; attempt <= maxAttempts; attempt++ {
         time.Sleep(pollInterval)
         
-        getBlockStorageResp, err := storageAPI.GetBlockStorageVolume(ctx, projectID, blockStorageID, nil)
+        getBlockStorageResp, err := sdk.Storage.GetBlockStorageVolume(ctx, projectID, blockStorageID, nil)
         if err != nil {
             log.Printf("Error checking Block Storage status: %v", err)
             continue
@@ -477,8 +455,6 @@ func manageStorage(ctx context.Context, sdk *client.Client, projectID string) {
     }
     
     // Create snapshot from block storage
-    snapshotAPI := storage.NewSnapshotService(sdk)
-    
     snapshotReq := schema.SnapshotRequest{
         Metadata: schema.RegionalResourceMetadataRequest{
             ResourceMetadataRequest: schema.ResourceMetadataRequest{
@@ -497,7 +473,7 @@ func manageStorage(ctx context.Context, sdk *client.Client, projectID string) {
         },
     }
     
-    snapshotResp, err := snapshotAPI.CreateSnapshot(ctx, projectID, snapshotReq, nil)
+    snapshotResp, err := sdk.Storage.CreateSnapshot(ctx, projectID, snapshotReq, nil)
     if err != nil || !snapshotResp.IsSuccess() {
         log.Fatalf("Failed to create snapshot: %v", err)
     }
@@ -511,17 +487,13 @@ func manageStorage(ctx context.Context, sdk *client.Client, projectID string) {
 ### Working with Compute Resources
 
 ```go
-import (
-    "github.com/Arubacloud/sdk-go/pkg/spec/compute"
-)
-
-func createCloudServer(ctx context.Context, sdk *client.Client, projectID string, 
+```go
+func createCloudServer(ctx context.Context, sdk *sdkgo.Client, projectID string, 
     vpcResp *schema.Response[schema.VpcResponse],
     elasticIPResp *schema.Response[schema.ElasticIpResponse],
     blockStorageResp *schema.Response[schema.BlockStorageResponse]) {
     
     // Create SSH Key Pair
-    keyPairAPI := compute.NewKeyPairService(sdk)
     
     sshPublicKey := "ssh-rsa AAAAB3NzaC1yc2EAAAAB... your-public-key"
     
@@ -535,15 +507,13 @@ func createCloudServer(ctx context.Context, sdk *client.Client, projectID string
         },
     }
     
-    keyPairResp, err := keyPairAPI.CreateKeyPair(ctx, projectID, keyPairReq, nil)
+    keyPairResp, err := sdk.Compute.CreateKeyPair(ctx, projectID, keyPairReq, nil)
     if err != nil || !keyPairResp.IsSuccess() {
         log.Fatalf("Failed to create SSH key pair: %v", err)
     }
     fmt.Printf("✓ Created SSH Key Pair: %s\n", keyPairResp.Data.Metadata.Name)
     
     // Create Cloud Server using all resources
-    cloudServerAPI := compute.NewCloudServerService(sdk)
-    
     // Construct KeyPair URI
     keyPairUri := "/projects/" + projectID + "/providers/Aruba.Compute/keypairs/" + keyPairResp.Data.Metadata.Name
     
@@ -571,7 +541,7 @@ func createCloudServer(ctx context.Context, sdk *client.Client, projectID string
         },
     }
     
-    cloudServerResp, err := cloudServerAPI.CreateCloudServer(ctx, projectID, cloudServerReq, nil)
+    cloudServerResp, err := sdk.Compute.CreateCloudServer(ctx, projectID, cloudServerReq, nil)
     if err != nil || !cloudServerResp.IsSuccess() {
         log.Fatalf("Failed to create cloud server: %v", err)
     }
@@ -698,20 +668,22 @@ if resp.IsSuccess() {
 }
 ```
 
-### Service-Level Initialization
+### Direct Service Access
 
-Each resource type has its own service client that must be initialized separately:
+The SDK provides direct access to all services through the client:
 
 ```go
-// Initialize service clients as needed
-projectAPI := project.NewProjectService(sdk)
-vpcAPI := network.NewVPCService(sdk)
-storageAPI := storage.NewBlockStorageService(sdk)
-computeAPI := compute.NewCloudServerService(sdk)
+// Initialize the SDK client
+sdk, err := sdkgo.NewClient(config)
+if err != nil {
+    log.Fatal(err)
+}
 
-// Use the service clients
-projectResp, err := projectAPI.GetProject(ctx, "my-project", nil)
-vpcResp, err := vpcAPI.GetVPC(ctx, "my-project", "my-vpc", nil)
+// All services are immediately available
+projectResp, err := sdk.Project.GetProject(ctx, "my-project", nil)
+vpcResp, err := sdk.Network.GetVPC(ctx, "my-project", "my-vpc", nil)
+subnetResp, err := sdk.Network.CreateSubnet(ctx, projectID, vpcID, subnetReq, nil)
+volumeResp, err := sdk.Storage.CreateBlockStorageVolume(ctx, projectID, volumeReq, nil)
 ```
 
 ## Debug Logging
@@ -917,14 +889,14 @@ All methods accept optional request editors as variadic parameters:
 
 ```go
 // Without request editor
-resp, err := projectAPI.GetProject(ctx, projectID, nil)
+resp, err := sdk.Project.GetProject(ctx, projectID, nil)
 
 // With request editor
 customEditor := func(ctx context.Context, req *http.Request) error {
     req.Header.Set("X-Request-ID", "12345")
     return nil
 }
-resp, err := projectAPI.GetProject(ctx, projectID, customEditor)
+resp, err := sdk.Project.GetProject(ctx, projectID, customEditor)
 ```
 
 ## Context Support
@@ -936,7 +908,7 @@ All operations support context for cancellation and timeouts:
 ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 defer cancel()
 
-resp, err := projectAPI.GetProject(ctx, "my-project", nil)
+resp, err := sdk.Project.GetProject(ctx, "my-project", nil)
 
 // With cancellation
 ctx, cancel := context.WithCancel(context.Background())
@@ -945,14 +917,7 @@ go func() {
     cancel() // Cancel after 5 seconds
 }()
 
-resp, err := vpcAPI.GetVPC(ctx, projectID, vpcID, nil)
-
-// Context propagation with SDK
-ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-defer cancel()
-
-// Apply context to SDK client - all operations will use this context
-sdk = sdk.WithContext(ctx)
+resp, err := sdk.Network.GetVPC(ctx, projectID, vpcID, nil)
 ```
 
 ## Resource State Polling
@@ -1000,7 +965,7 @@ func waitForResourceActive(ctx context.Context, getFunc func() (*schema.Response
 
 // Example usage: Wait for VPC to become active
 err := waitForResourceActive(ctx, func() (*schema.Response[schema.VpcResponse], error) {
-    return vpcAPI.GetVPC(ctx, projectID, vpcID, nil)
+    return sdk.Network.GetVPC(ctx, projectID, vpcID, nil)
 }, "VPC")
 if err != nil {
     log.Fatalf("Failed to wait for VPC: %v", err)
@@ -1021,11 +986,10 @@ The example follows a clean architecture pattern:
 // 1. Simple orchestration function (28 lines)
 func main() {
     config := &client.Config{...}
-    sdk, err := client.NewClient(config)
+    sdk, err := sdkgo.NewClient(config)
     ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
     defer cancel()
     
-    sdk = sdk.WithContext(ctx)
     resources := createAllResources(ctx, sdk)
     printResourceSummary(resources)
 }
@@ -1047,14 +1011,14 @@ type ResourceCollection struct {
 }
 
 // 3. Orchestration function (creates 12 resources in dependency order)
-func createAllResources(ctx context.Context, sdk *client.Client) ResourceCollection {
+func createAllResources(ctx context.Context, sdk *sdkgo.Client) ResourceCollection {
     // Creates resources 1-12 in correct dependency order
 }
 
 // 4. Individual resource creation functions (11 functions)
-func createProject(ctx context.Context, sdk *client.Client) string
-func createElasticIP(ctx context.Context, sdk *client.Client, projectID string) *schema.Response[...]
-func createBlockStorage(ctx context.Context, sdk *client.Client, projectID string) *schema.Response[...]
+func createProject(ctx context.Context, sdk *sdkgo.Client) string
+func createElasticIP(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema.Response[...]
+func createBlockStorage(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema.Response[...]
 // ... and 8 more
 ```
 
@@ -1171,18 +1135,16 @@ The modular approach makes it easy to:
    }
    ```
 
-4. **Initialize service clients once and reuse**:
+4. **All services are immediately available**:
    ```go
    // Create SDK client once
-   sdk, err := client.NewClient(config)
+   sdk, err := sdkgo.NewClient(config)
    
-   // Initialize service clients once
-   projectAPI := project.NewProjectService(sdk)
-   vpcAPI := network.NewVPCService(sdk)
-   
-   // Reuse for all operations
-   resp1, err := projectAPI.GetProject(ctx, "project1", nil)
-   resp2, err := projectAPI.GetProject(ctx, "project2", nil)
+   // Services are ready to use immediately
+   resp1, err := sdk.Project.GetProject(ctx, "project1", nil)
+   resp2, err := sdk.Project.GetProject(ctx, "project2", nil)
+   vpcResp, err := sdk.Network.GetVPC(ctx, projectID, vpcID, nil)
+   subnetResp, err := sdk.Network.CreateSubnet(ctx, projectID, vpcID, subnetReq, nil)
    ```
 
 5. **Handle errors from RFC 7807 error responses**:

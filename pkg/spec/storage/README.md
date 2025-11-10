@@ -2,12 +2,6 @@
 
 The `storage` package provides Go client interfaces for managing Aruba Cloud storage services, including block storage volumes and snapshots.
 
-## Table of Contents
-
-- [Installation](#installation)
-- [Available Services](#available-services)
-- [Usage Examples](#usage-examples)
-
 ## Installation
 
 ```bash
@@ -16,25 +10,16 @@ go get github.com/Arubacloud/sdk-go
 
 ## Available Services
 
-### BlockStorageAPI
+### StorageAPI
 
-Manage block storage volumes with full CRUD operations:
-- List all block storage volumes in a project
-- Get details of a specific volume
-- Create a block storage volume
-- Delete a block storage volume
+The unified `StorageAPI` interface provides all storage-related operations:
 
-### SnapshotAPI
-
-Manage storage snapshots with full CRUD operations:
-- List all snapshots in a project
-- Get details of a specific snapshot
-- Create a snapshot
-- Delete a snapshot
+**Block Storage Operations** - Manage block storage volumes  
+**Snapshot Operations** - Manage volume snapshots  
 
 ## Usage Examples
 
-### Initialize the Client
+### Initialize the Service
 
 ```go
 package main
@@ -43,6 +28,8 @@ import (
     "context"
     "fmt"
     "log"
+    "net/http"
+    "time"
 
     "github.com/Arubacloud/sdk-go/pkg/client"
     "github.com/Arubacloud/sdk-go/pkg/spec/storage"
@@ -50,52 +37,68 @@ import (
 )
 
 func main() {
-    // Create a new client
-    c := client.NewClient("https://api.arubacloud.com", "your-api-key")
+    // Create SDK client
+    config := &client.Config{
+        ClientID:     "your-client-id",
+        ClientSecret: "your-client-secret",
+        HTTPClient:   &http.Client{Timeout: 30 * time.Second},
+    }
+    
+    sdk, err := client.NewClient(config)
+    if err != nil {
+        log.Fatalf("Failed to create client: %v", err)
+    }
+    
+    // Create unified storage service
+    storageService := storage.NewService(sdk)
     
     ctx := context.Background()
     projectID := "my-project-id"
     
-    // Initialize API interfaces
-    var blockStorageAPI storage.BlockStorageAPI = storage.NewBlockStorageService(c)
-    var snapshotAPI storage.SnapshotAPI = storage.NewSnapshotService(c)
+    // Now use storageService for all storage operations
 }
 ```
 
-### Block Storage Management
-
-#### List Block Storage Volumes
+### List BlockStorage
 
 ```go
-resp, err := blockStorageAPI.ListBlockStorageVolumes(ctx, projectID, nil)
+// Use the unified service
+storageService := storage.NewService(sdk)
+
+resp, err := storageService.ListBlockStorageVolumes(ctx, projectID, nil)
 if err != nil {
-    log.Fatalf("Failed to list block storage volumes: %v", err)
+    log.Fatalf("Failed to list: %v", err)
 }
 
-// Access response data
 if resp.IsSuccess() {
-    fmt.Printf("Found %d block storage volumes\n", len(resp.Data.Values))
-    for _, volume := range resp.Data.Values {
-        fmt.Printf("Volume: %s - Size: %dGB\n", volume.Metadata.Name, volume.Properties.SizeGb)
-    }
+    fmt.Printf("Found %d items\n", len(resp.Data.Values))
 }
 ```
 
-### Snapshot Management
-
-#### List Snapshots
+### Create BlockStorage
 
 ```go
-resp, err := snapshotAPI.ListSnapshots(ctx, projectID, nil)
-if err != nil {
-    log.Fatalf("Failed to list snapshots: %v", err)
+volumeReq := schema.BlockStorageRequest{
+    Metadata: schema.RegionalResourceMetadataRequest{
+        ResourceMetadataRequest: schema.ResourceMetadataRequest{
+            Name: "my-volume",
+        },
+        Location: schema.LocationRequest{
+            Value: "ITBG-Bergamo",
+        },
+    },
+    Properties: schema.BlockStoragePropertiesRequest{
+        SizeGB: 20,
+        Type:   schema.BlockStorageTypeStandard,
+    },
 }
 
-// Access response data
-if resp.IsSuccess() {
-    fmt.Printf("Found %d snapshots\n", len(resp.Data.Values))
-    for _, snapshot := range resp.Data.Values {
-        fmt.Printf("Snapshot: %s\n", snapshot.Metadata.Name)
-    }
+createResp, err := storageService.CreateBlockStorageVolume(ctx, projectID, volumeReq, nil)
+if err != nil {
+    log.Fatalf("Failed to create: %v", err)
+}
+
+if createResp.IsSuccess() {
+    fmt.Printf("Created: %s\n", *createResp.Data.Metadata.Id)
 }
 ```

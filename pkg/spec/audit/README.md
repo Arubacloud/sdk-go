@@ -1,12 +1,6 @@
 # Audit Package
 
-The `audit` package provides Go client interfaces for accessing Aruba Cloud audit logs and event tracking.
-
-## Table of Contents
-
-- [Installation](#installation)
-- [Available Services](#available-services)
-- [Usage Examples](#usage-examples)
+The `audit` package provides Go client interfaces for managing Aruba Cloud audit services, including audit event tracking.
 
 ## Installation
 
@@ -16,15 +10,15 @@ go get github.com/Arubacloud/sdk-go
 
 ## Available Services
 
-### EventAPI
+### AuditAPI
 
-Retrieve audit events with read operations:
-- List all audit events for a project
-- Get details of a specific audit event
+The unified `AuditAPI` interface provides all audit-related operations:
+
+**Event Operations** - View audit events  
 
 ## Usage Examples
 
-### Initialize the Client
+### Initialize the Service
 
 ```go
 package main
@@ -33,6 +27,8 @@ import (
     "context"
     "fmt"
     "log"
+    "net/http"
+    "time"
 
     "github.com/Arubacloud/sdk-go/pkg/client"
     "github.com/Arubacloud/sdk-go/pkg/spec/audit"
@@ -40,38 +36,40 @@ import (
 )
 
 func main() {
-    // Create a new client
-    c := client.NewClient("https://api.arubacloud.com", "your-api-key")
+    // Create SDK client
+    config := &client.Config{
+        ClientID:     "your-client-id",
+        ClientSecret: "your-client-secret",
+        HTTPClient:   &http.Client{Timeout: 30 * time.Second},
+    }
+    
+    sdk, err := client.NewClient(config)
+    if err != nil {
+        log.Fatalf("Failed to create client: %v", err)
+    }
+    
+    // Create unified audit service
+    auditService := audit.NewService(sdk)
     
     ctx := context.Background()
     projectID := "my-project-id"
     
-    // Initialize API interface
-    var eventAPI audit.EventAPI = audit.NewEventService(c)
+    // Now use auditService for all audit operations
 }
 ```
 
-### Event Management
-
-#### List Audit Events
+### List Audit Events
 
 ```go
-resp, err := eventAPI.ListEvents(ctx, projectID, nil)
+// Use the unified service
+auditService := audit.NewService(sdk)
+
+resp, err := auditService.ListEvents(ctx, projectID, nil)
 if err != nil {
-    log.Fatalf("Failed to list audit events: %v", err)
+    log.Fatalf("Failed to list: %v", err)
 }
 
-// Access response data
 if resp.IsSuccess() {
-    fmt.Printf("Found %d audit events\n", len(resp.Data.Values))
-    for _, event := range resp.Data.Values {
-        fmt.Printf("Event: %s - %s\n", event.Metadata.Name, event.Properties.EventType)
-    }
+    fmt.Printf("Found %d items\n", len(resp.Data.Values))
 }
-
-// Access HTTP metadata
-fmt.Printf("Status Code: %d\n", resp.StatusCode)
-fmt.Printf("Content-Type: %s\n", resp.Headers.Get("Content-Type"))
 ```
-
-

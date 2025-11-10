@@ -1,12 +1,6 @@
 # Metric Package
 
-The `metric` package provides Go client interfaces for managing Aruba Cloud monitoring and alerting services, including metrics and alerts.
-
-## Table of Contents
-
-- [Installation](#installation)
-- [Available Services](#available-services)
-- [Usage Examples](#usage-examples)
+The `metric` package provides Go client interfaces for managing Aruba Cloud monitoring services, including metrics and alerts.
 
 ## Installation
 
@@ -18,19 +12,14 @@ go get github.com/Arubacloud/sdk-go
 
 ### MetricAPI
 
-Retrieve monitoring metrics with read operations:
-- List all metrics for a project
-- Get details of a specific metric
+The unified `MetricAPI` interface provides all metric-related operations:
 
-### AlertAPI
-
-Retrieve monitoring alerts with read operations:
-- List all alerts for a project
-- Get details of a specific alert
+**Metric Operations** - View metrics  
+**Alert Operations** - View alerts  
 
 ## Usage Examples
 
-### Initialize the Client
+### Initialize the Service
 
 ```go
 package main
@@ -39,6 +28,8 @@ import (
     "context"
     "fmt"
     "log"
+    "net/http"
+    "time"
 
     "github.com/Arubacloud/sdk-go/pkg/client"
     "github.com/Arubacloud/sdk-go/pkg/spec/metric"
@@ -46,52 +37,40 @@ import (
 )
 
 func main() {
-    // Create a new client
-    c := client.NewClient("https://api.arubacloud.com", "your-api-key")
+    // Create SDK client
+    config := &client.Config{
+        ClientID:     "your-client-id",
+        ClientSecret: "your-client-secret",
+        HTTPClient:   &http.Client{Timeout: 30 * time.Second},
+    }
+    
+    sdk, err := client.NewClient(config)
+    if err != nil {
+        log.Fatalf("Failed to create client: %v", err)
+    }
+    
+    // Create unified metric service
+    metricService := metric.NewService(sdk)
     
     ctx := context.Background()
     projectID := "my-project-id"
     
-    // Initialize API interfaces
-    var metricAPI metric.MetricAPI = metric.NewMetricService(c)
-    var alertAPI metric.AlertAPI = metric.NewAlertService(c)
+    // Now use metricService for all metric operations
 }
 ```
 
-### Metric Management
-
-#### List Metrics
+### List Metrics
 
 ```go
-resp, err := metricAPI.ListMetrics(ctx, projectID, nil)
+// Use the unified service
+metricService := metric.NewService(sdk)
+
+resp, err := metricService.ListMetrics(ctx, projectID, nil)
 if err != nil {
-    log.Fatalf("Failed to list metrics: %v", err)
+    log.Fatalf("Failed to list: %v", err)
 }
 
-// Access response data
 if resp.IsSuccess() {
-    fmt.Printf("Found %d metrics\n", len(resp.Data.Values))
-    for _, metric := range resp.Data.Values {
-        fmt.Printf("Metric: %s\n", metric.Metadata.Name)
-    }
-}
-```
-
-### Alert Management
-
-#### List Alerts
-
-```go
-resp, err := alertAPI.ListAlerts(ctx, projectID, nil)
-if err != nil {
-    log.Fatalf("Failed to list alerts: %v", err)
-}
-
-// Access response data
-if resp.IsSuccess() {
-    fmt.Printf("Found %d alerts\n", len(resp.Data.Values))
-    for _, alert := range resp.Data.Values {
-        fmt.Printf("Alert: %s - State: %s\n", alert.Metadata.Name, alert.Properties.State)
-    }
+    fmt.Printf("Found %d items\n", len(resp.Data.Values))
 }
 ```

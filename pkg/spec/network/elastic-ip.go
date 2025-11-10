@@ -7,24 +7,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// ElasticIPService implements the ElasticIPAPI interface
-type ElasticIPService struct {
-	client *client.Client
-}
-
-// NewElasticIPService creates a new ElasticIPService
-func NewElasticIPService(client *client.Client) *ElasticIPService {
-	return &ElasticIPService{
-		client: client,
-	}
-}
-
 // ListElasticIPs retrieves all elastic IPs for a project
-func (s *ElasticIPService) ListElasticIPs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.ElasticList], error) {
+func (s *Service) ListElasticIPs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.ElasticList], error) {
 	s.client.Logger().Debugf("Listing elastic IPs for project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -51,7 +38,7 @@ func (s *ElasticIPService) ListElasticIPs(ctx context.Context, project string, p
 }
 
 // GetElasticIP retrieves a specific elastic IP by ID
-func (s *ElasticIPService) GetElasticIP(ctx context.Context, project string, elasticIPId string, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error) {
+func (s *Service) GetElasticIP(ctx context.Context, project string, elasticIPId string, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error) {
 	s.client.Logger().Debugf("Getting elastic IP: %s in project: %s", elasticIPId, project)
 
 	if err := schema.ValidateProjectAndResource(project, elasticIPId, "elastic IP ID"); err != nil {
@@ -78,7 +65,7 @@ func (s *ElasticIPService) GetElasticIP(ctx context.Context, project string, ela
 }
 
 // CreateElasticIP creates a new elastic IP
-func (s *ElasticIPService) CreateElasticIP(ctx context.Context, project string, body schema.ElasticIpRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error) {
+func (s *Service) CreateElasticIP(ctx context.Context, project string, body schema.ElasticIpRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error) {
 	s.client.Logger().Debugf("Creating elastic IP in project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -111,7 +98,7 @@ func (s *ElasticIPService) CreateElasticIP(ctx context.Context, project string, 
 }
 
 // UpdateElasticIP updates an existing elastic IP
-func (s *ElasticIPService) UpdateElasticIP(ctx context.Context, project string, elasticIPId string, body schema.ElasticIpRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error) {
+func (s *Service) UpdateElasticIP(ctx context.Context, project string, elasticIPId string, body schema.ElasticIpRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error) {
 	s.client.Logger().Debugf("Updating elastic IP: %s in project: %s", elasticIPId, project)
 
 	if err := schema.ValidateProjectAndResource(project, elasticIPId, "elastic IP ID"); err != nil {
@@ -144,7 +131,7 @@ func (s *ElasticIPService) UpdateElasticIP(ctx context.Context, project string, 
 }
 
 // DeleteElasticIP deletes an elastic IP by ID
-func (s *ElasticIPService) DeleteElasticIP(ctx context.Context, projectId string, elasticIPId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteElasticIP(ctx context.Context, projectId string, elasticIPId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting elastic IP: %s in project: %s", elasticIPId, projectId)
 
 	if err := schema.ValidateProjectAndResource(projectId, elasticIPId, "elastic IP ID"); err != nil {

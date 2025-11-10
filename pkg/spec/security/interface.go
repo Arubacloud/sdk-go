@@ -6,8 +6,9 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// KMSAPI defines the interface for managing KMS keys.
-type KMSAPI interface {
+// SecurityAPI defines the unified interface for all Security operations
+type SecurityAPI interface {
+	// KMS operations
 	ListKMSKeys(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.KmsList], error)
 	GetKMSKey(ctx context.Context, project string, kmsKeyId string, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error)
 	CreateKMSKey(ctx context.Context, project string, body schema.KmsRequest, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error)

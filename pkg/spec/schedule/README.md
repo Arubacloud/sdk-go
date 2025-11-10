@@ -1,12 +1,6 @@
 # Schedule Package
 
-The `schedule` package provides Go client interfaces for managing Aruba Cloud scheduled jobs and automation tasks.
-
-## Table of Contents
-
-- [Installation](#installation)
-- [Available Services](#available-services)
-- [Usage Examples](#usage-examples)
+The `schedule` package provides Go client interfaces for managing Aruba Cloud scheduled jobs.
 
 ## Installation
 
@@ -16,17 +10,15 @@ go get github.com/Arubacloud/sdk-go
 
 ## Available Services
 
-### ScheduleJobAPI
+### ScheduleAPI
 
-Manage scheduled jobs with full CRUD operations:
-- List all scheduled jobs in a project
-- Get details of a specific job
-- Create or update a job
-- Delete a job
+The unified `ScheduleAPI` interface provides all schedule-related operations:
+
+**Job Operations** - Manage scheduled jobs  
 
 ## Usage Examples
 
-### Initialize the Client
+### Initialize the Service
 
 ```go
 package main
@@ -35,6 +27,8 @@ import (
     "context"
     "fmt"
     "log"
+    "net/http"
+    "time"
 
     "github.com/Arubacloud/sdk-go/pkg/client"
     "github.com/Arubacloud/sdk-go/pkg/spec/schedule"
@@ -42,51 +36,62 @@ import (
 )
 
 func main() {
-    // Create a new client
-    c := client.NewClient("https://api.arubacloud.com", "your-api-key")
+    // Create SDK client
+    config := &client.Config{
+        ClientID:     "your-client-id",
+        ClientSecret: "your-client-secret",
+        HTTPClient:   &http.Client{Timeout: 30 * time.Second},
+    }
+    
+    sdk, err := client.NewClient(config)
+    if err != nil {
+        log.Fatalf("Failed to create client: %v", err)
+    }
+    
+    // Create unified schedule service
+    scheduleService := schedule.NewService(sdk)
     
     ctx := context.Background()
     projectID := "my-project-id"
     
-        // Initialize API interface
-    var jobAPI schedule.ScheduleJobAPI = schedule.NewJobService(c)
+    // Now use scheduleService for all schedule operations
 }
 ```
 
-### Job Management
-
-#### List Scheduled Jobs
+### List Job
 
 ```go
-resp, err := jobAPI.ListScheduleJobs(ctx, projectID, nil)
+// Use the unified service
+scheduleService := schedule.NewService(sdk)
+
+resp, err := scheduleService.ListJobs(ctx, projectID, nil)
 if err != nil {
-    log.Fatalf("Failed to list jobs: %v", err)
+    log.Fatalf("Failed to list: %v", err)
 }
 
-// Access response data
 if resp.IsSuccess() {
-    fmt.Printf("Found %d scheduled jobs\n", len(resp.Data.Values))
-    for _, job := range resp.Data.Values {
-        fmt.Printf("Job: %s - Type: %s\n", job.Metadata.Name, job.Properties.JobType)
-    }
+    fmt.Printf("Found %d items\n", len(resp.Data.Values))
 }
 ```
 
-}
-```
-
-### Job Management
-
-#### List Scheduled Jobs
+### Create Job
 
 ```go
-resp, err := jobAPI.ListJobs(ctx, projectID, nil)
-if err != nil {
-    log.Fatalf("Failed to list jobs: %v", err)
+jobReq := schema.JobRequest{
+    Metadata: schema.ResourceMetadataRequest{
+        Name: "my-scheduled-job",
+    },
+    Properties: schema.JobPropertiesRequest{
+        // ... job properties
+    },
 }
-defer resp.Body.Close()
 
-if resp.StatusCode == 200 {
-    fmt.Println("Jobs retrieved successfully")
+createResp, err := scheduleService.CreateJob(ctx, projectID, jobReq, nil)
+if err != nil {
+    log.Fatalf("Failed to create: %v", err)
+}
+
+if createResp.IsSuccess() {
+    fmt.Printf("Created: %s\n", *createResp.Data.Metadata.Id)
 }
 ```

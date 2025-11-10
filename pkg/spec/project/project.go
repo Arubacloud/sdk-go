@@ -8,24 +8,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// ProjectService implements the ProjectAPI interface
-type ProjectService struct {
-	client *client.Client
-}
-
-// NewProjectService creates a new ProjectService
-func NewProjectService(client *client.Client) *ProjectService {
-	return &ProjectService{
-		client: client,
-	}
-}
-
 // ListProjects retrieves all projects
-func (s *ProjectService) ListProjects(ctx context.Context, params *schema.RequestParameters) (*schema.Response[schema.ProjectList], error) {
+func (s *Service) ListProjects(ctx context.Context, params *schema.RequestParameters) (*schema.Response[schema.ProjectList], error) {
 	s.client.Logger().Debugf("Listing projects")
 
 	path := ProjectsPath
@@ -48,7 +35,7 @@ func (s *ProjectService) ListProjects(ctx context.Context, params *schema.Reques
 }
 
 // GetProject retrieves a specific project by ID
-func (s *ProjectService) GetProject(ctx context.Context, projectId string, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
+func (s *Service) GetProject(ctx context.Context, projectId string, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
 	s.client.Logger().Debugf("Getting project: %s", projectId)
 
 	if err := schema.ValidateProject(projectId); err != nil {
@@ -75,7 +62,7 @@ func (s *ProjectService) GetProject(ctx context.Context, projectId string, param
 }
 
 // CreateProject creates a new project
-func (s *ProjectService) CreateProject(ctx context.Context, body schema.ProjectRequest, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
+func (s *Service) CreateProject(ctx context.Context, body schema.ProjectRequest, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
 	s.client.Logger().Debugf("Creating project")
 
 	path := ProjectsPath
@@ -128,7 +115,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, body schema.ProjectR
 }
 
 // UpdateProject updates an existing project
-func (s *ProjectService) UpdateProject(ctx context.Context, projectId string, body schema.ProjectRequest, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
+func (s *Service) UpdateProject(ctx context.Context, projectId string, body schema.ProjectRequest, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
 	s.client.Logger().Debugf("Updating project: %s", projectId)
 
 	if err := schema.ValidateProject(projectId); err != nil {
@@ -185,7 +172,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, projectId string, bo
 }
 
 // DeleteProject deletes a project by ID
-func (s *ProjectService) DeleteProject(ctx context.Context, projectId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteProject(ctx context.Context, projectId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting project: %s", projectId)
 
 	if err := schema.ValidateProject(projectId); err != nil {

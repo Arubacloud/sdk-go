@@ -35,11 +35,11 @@ type CloudServerFlavorResponse struct {
 }
 
 type CloudServerNetworkInterfaceDetails struct {
-	Subnet *string `json:"subnet, omitempty"`
+	Subnet *string `json:"subnet,omitempty"`
 
-	MacAddress *string `json:"macAddress, omitempty"`
+	MacAddress *string `json:"macAddress,omitempty"`
 
-	IPs []string `json:"ips, omitempty"`
+	IPs []string `json:"ips,omitempty"`
 }
 
 type CloudServerPropertiesResult struct {

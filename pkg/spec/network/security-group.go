@@ -8,24 +8,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// SecurityGroupService implements the SecurityGroupAPI interface
-type SecurityGroupService struct {
-	client *client.Client
-}
-
-// NewSecurityGroupService creates a new SecurityGroupService
-func NewSecurityGroupService(client *client.Client) *SecurityGroupService {
-	return &SecurityGroupService{
-		client: client,
-	}
-}
-
 // ListSecurityGroups retrieves all security groups for a VPC
-func (s *SecurityGroupService) ListSecurityGroups(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.SecurityGroupList], error) {
+func (s *Service) ListSecurityGroups(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.SecurityGroupList], error) {
 	s.client.Logger().Debugf("Listing security groups for VPC: %s in project: %s", vpcId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
@@ -52,7 +39,7 @@ func (s *SecurityGroupService) ListSecurityGroups(ctx context.Context, project s
 }
 
 // GetSecurityGroup retrieves a specific security group by ID
-func (s *SecurityGroupService) GetSecurityGroup(ctx context.Context, project string, vpcId string, securityGroupId string, params *schema.RequestParameters) (*schema.Response[schema.SecurityGroupResponse], error) {
+func (s *Service) GetSecurityGroup(ctx context.Context, project string, vpcId string, securityGroupId string, params *schema.RequestParameters) (*schema.Response[schema.SecurityGroupResponse], error) {
 	s.client.Logger().Debugf("Getting security group: %s from VPC: %s in project: %s", securityGroupId, vpcId, project)
 
 	if err := schema.ValidateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
@@ -79,7 +66,7 @@ func (s *SecurityGroupService) GetSecurityGroup(ctx context.Context, project str
 }
 
 // CreateSecurityGroup creates a new security group in a VPC
-func (s *SecurityGroupService) CreateSecurityGroup(ctx context.Context, project string, vpcId string, body schema.SecurityGroupRequest, params *schema.RequestParameters) (*schema.Response[schema.SecurityGroupResponse], error) {
+func (s *Service) CreateSecurityGroup(ctx context.Context, project string, vpcId string, body schema.SecurityGroupRequest, params *schema.RequestParameters) (*schema.Response[schema.SecurityGroupResponse], error) {
 	s.client.Logger().Debugf("Creating security group in VPC: %s in project: %s", vpcId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
@@ -136,7 +123,7 @@ func (s *SecurityGroupService) CreateSecurityGroup(ctx context.Context, project 
 }
 
 // UpdateSecurityGroup updates an existing security group
-func (s *SecurityGroupService) UpdateSecurityGroup(ctx context.Context, project string, vpcId string, securityGroupId string, body schema.SecurityGroupRequest, params *schema.RequestParameters) (*schema.Response[schema.SecurityGroupResponse], error) {
+func (s *Service) UpdateSecurityGroup(ctx context.Context, project string, vpcId string, securityGroupId string, body schema.SecurityGroupRequest, params *schema.RequestParameters) (*schema.Response[schema.SecurityGroupResponse], error) {
 	s.client.Logger().Debugf("Updating security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, project)
 
 	if err := schema.ValidateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
@@ -193,7 +180,7 @@ func (s *SecurityGroupService) UpdateSecurityGroup(ctx context.Context, project 
 }
 
 // DeleteSecurityGroup deletes a security group by ID
-func (s *SecurityGroupService) DeleteSecurityGroup(ctx context.Context, projectId string, vpcId string, securityGroupId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteSecurityGroup(ctx context.Context, projectId string, vpcId string, securityGroupId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting security group: %s from VPC: %s in project: %s", securityGroupId, vpcId, projectId)
 
 	if err := schema.ValidateVPCResource(projectId, vpcId, securityGroupId, "security group ID"); err != nil {

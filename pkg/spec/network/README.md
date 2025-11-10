@@ -16,39 +16,24 @@ go get github.com/Arubacloud/sdk-go
 
 ## Available Services
 
-### VpcAPI
-Manage Virtual Private Clouds (VPCs)
+### NetworkAPI
 
-### SubnetAPI
-Manage subnets within VPCs
+The unified `NetworkAPI` interface provides all network-related operations:
 
-### SecurityGroupAPI
-Manage security groups for network access control
-
-### SecurityGroupRuleAPI
-Manage security group rules
-
-### ElasticIPAPI
-Manage elastic IP addresses
-
-### LoadBalancerAPI
-Manage load balancers (read-only)
-
-### VpcPeeringAPI
-Manage VPC peering connections
-
-### VpcPeeringRouteAPI
-Manage routes for VPC peering connections
-
-### VpnTunnelAPI
-Manage VPN tunnels
-
-### VpnRouteAPI
-Manage VPN routes
+**VPC Operations** - Manage Virtual Private Clouds  
+**Subnet Operations** - Manage subnets within VPCs  
+**Security Group Operations** - Manage security groups for network access control  
+**Security Group Rule Operations** - Manage security group rules  
+**Elastic IP Operations** - Manage elastic IP addresses  
+**Load Balancer Operations** - View load balancers (read-only)  
+**VPC Peering Operations** - Manage VPC peering connections  
+**VPC Peering Route Operations** - Manage routes for VPC peering connections  
+**VPN Tunnel Operations** - Manage VPN tunnels  
+**VPN Route Operations** - Manage VPN routes  
 
 ## Usage Examples
 
-### Initialize the Client
+### Initialize the Service
 
 ```go
 package main
@@ -57,6 +42,8 @@ import (
     "context"
     "fmt"
     "log"
+    "net/http"
+    "time"
 
     "github.com/Arubacloud/sdk-go/pkg/client"
     "github.com/Arubacloud/sdk-go/pkg/spec/network"
@@ -64,23 +51,25 @@ import (
 )
 
 func main() {
-    // Create a new client
-    c := client.NewClient("https://api.arubacloud.com", "your-api-key")
+    // Create SDK client
+    config := &client.Config{
+        ClientID:     "your-client-id",
+        ClientSecret: "your-client-secret",
+        HTTPClient:   &http.Client{Timeout: 30 * time.Second},
+    }
+    
+    sdk, err := client.NewClient(config)
+    if err != nil {
+        log.Fatalf("Failed to create client: %v", err)
+    }
+    
+    // Create unified network service
+    networkService := network.NewService(sdk)
     
     ctx := context.Background()
     projectID := "my-project-id"
     
-    // Initialize API interfaces
-    var vpcAPI network.VpcAPI = network.NewVPCService(c)
-    var subnetAPI network.SubnetAPI = network.NewSubnetService(c)
-    var securityGroupAPI network.SecurityGroupAPI = network.NewSecurityGroupService(c)
-    var securityGroupRuleAPI network.SecurityGroupRuleAPI = network.NewSecurityGroupRuleService(c)
-    var elasticIPAPI network.ElasticIPAPI = network.NewElasticIPService(c)
-    var loadBalancerAPI network.LoadBalancerAPI = network.NewLoadBalancerService(c)
-    var vpcPeeringAPI network.VpcPeeringAPI = network.NewVpcPeeringService(c)
-    var vpcPeeringRouteAPI network.VpcPeeringRouteAPI = network.NewVpcPeeringRouteService(c)
-    var vpnTunnelAPI network.VpnTunnelAPI = network.NewVpnTunnelService(c)
-    var vpnRouteAPI network.VpnRouteAPI = network.NewVpnRouteService(c)
+    // Now use networkService for all network operations
 }
 ```
 
@@ -89,17 +78,55 @@ func main() {
 #### List VPCs
 
 ```go
-resp, err := vpcAPI.ListVPCs(ctx, projectID, nil)
+// Use the unified service for all network operations
+networkService := network.NewService(sdk)
+
+resp, err := networkService.ListVPCs(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list VPCs: %v", err)
 }
 
-// Access response data
+// Check response status
 if resp.IsSuccess() {
     fmt.Printf("Found %d VPCs\n", len(resp.Data.Values))
     for _, vpc := range resp.Data.Values {
-        fmt.Printf("VPC: %s - CIDR: %s\n", vpc.Metadata.Name, vpc.Properties.Cidr)
+        fmt.Printf("VPC: %s - CIDR: %s\n", 
+            *vpc.Metadata.Name, 
+            vpc.Properties.Cidr)
     }
+}
+    }
+}
+```
+
+#### Create VPC
+
+```go
+vpcReq := schema.VpcRequest{
+    Metadata: schema.RegionalResourceMetadataRequest{
+        ResourceMetadataRequest: schema.ResourceMetadataRequest{
+            Name: "my-vpc",
+            Tags: []string{"production"},
+        },
+        Location: schema.LocationRequest{
+            Value: "ITBG-Bergamo",
+        },
+    },
+    Properties: schema.VpcPropertiesRequest{
+        Properties: &schema.VpcProperties{
+            Default: boolPtr(false),
+            Preset:  boolPtr(true),
+        },
+    },
+}
+
+createResp, err := networkService.CreateVPC(ctx, projectID, vpcReq, nil)
+if err != nil {
+    log.Fatalf("Failed to create VPC: %v", err)
+}
+
+if createResp.IsSuccess() {
+    fmt.Printf("Created VPC: %s\n", *createResp.Data.Metadata.Id)
 }
 ```
 
@@ -109,15 +136,38 @@ if resp.IsSuccess() {
 
 ```go
 vpcID := "vpc-123"
-resp, err := subnetAPI.ListSubnets(ctx, projectID, vpcID, nil)
+resp, err := networkService.ListSubnets(ctx, projectID, vpcID, nil)
 if err != nil {
     log.Fatalf("Failed to list subnets: %v", err)
 }
 
-// Access response data
 if resp.IsSuccess() {
     fmt.Printf("Found %d subnets\n", len(resp.Data.Values))
 }
+```
+
+#### Create Subnet
+
+```go
+subnetReq := schema.SubnetRequest{
+    Metadata: schema.RegionalResourceMetadataRequest{
+        ResourceMetadataRequest: schema.ResourceMetadataRequest{
+            Name: "my-subnet",
+        },
+        Location: schema.LocationRequest{
+            Value: "ITBG-Bergamo",
+        },
+    },
+    Properties: schema.SubnetPropertiesRequest{
+        Type:    schema.SubnetTypeAdvanced,
+        Default: true,
+        Network: &schema.SubnetNetwork{
+            Address: "192.168.1.0/25",
+        },
+    },
+}
+
+createResp, err := networkService.CreateSubnet(ctx, projectID, vpcID, subnetReq, nil)
 ```
 
 ### Security Group Management
@@ -126,12 +176,11 @@ if resp.IsSuccess() {
 
 ```go
 vpcID := "vpc-123"
-resp, err := securityGroupAPI.ListSecurityGroups(ctx, projectID, vpcID, nil)
+resp, err := networkService.ListSecurityGroups(ctx, projectID, vpcID, nil)
 if err != nil {
     log.Fatalf("Failed to list security groups: %v", err)
 }
 
-// Access response data
 if resp.IsSuccess() {
     fmt.Printf("Found %d security groups\n", len(resp.Data.Values))
 }
@@ -139,20 +188,33 @@ if resp.IsSuccess() {
 
 ### Security Group Rule Management
 
-#### List Security Group Rules
+#### Create Security Group Rule
 
 ```go
 vpcID := "vpc-123"
 securityGroupID := "sg-456"
-resp, err := securityGroupRuleAPI.ListSecurityGroupRules(ctx, projectID, vpcID, securityGroupID, nil)
-if err != nil {
-    log.Fatalf("Failed to list security group rules: %v", err)
+
+ruleReq := schema.SecurityRuleRequest{
+    Metadata: schema.RegionalResourceMetadataRequest{
+        ResourceMetadataRequest: schema.ResourceMetadataRequest{
+            Name: "allow-ssh",
+        },
+        Location: schema.LocationRequest{
+            Value: "ITBG-Bergamo",
+        },
+    },
+    Properties: schema.SecurityRulePropertiesRequest{
+        Direction: schema.RuleDirectionIngress,
+        Protocol:  "TCP",
+        Port:      "22",
+        Target: &schema.RuleTarget{
+            Kind:  schema.EndpointTypeIP,
+            Value: "0.0.0.0/0",
+        },
+    },
 }
 
-// Access response data
-if resp.IsSuccess() {
-    fmt.Printf("Found %d security group rules\n", len(resp.Data.Values))
-}
+resp, err := networkService.CreateSecurityGroupRule(ctx, projectID, vpcID, securityGroupID, ruleReq, nil)
 ```
 
 ### Elastic IP Management
@@ -160,49 +222,30 @@ if resp.IsSuccess() {
 #### List Elastic IPs
 
 ```go
-resp, err := elasticIPAPI.ListElasticIPs(ctx, projectID, nil)
+resp, err := networkService.ListElasticIPs(ctx, projectID, nil)
 if err != nil {
     log.Fatalf("Failed to list elastic IPs: %v", err)
 }
 
-// Access response data
 if resp.IsSuccess() {
     fmt.Printf("Found %d elastic IPs\n", len(resp.Data.Values))
 }
 ```
 
-### Load Balancer Management
+### All Operations Available
 
-#### List Load Balancers
+The unified `NetworkAPI` service provides access to all network operations:
 
-```go
-resp, err := loadBalancerAPI.ListLoadBalancers(ctx, projectID, nil)
-if err != nil {
-    log.Fatalf("Failed to list load balancers: %v", err)
-}
-
-// Access response data
-if resp.IsSuccess() {
-    fmt.Printf("Found %d load balancers\n", len(resp.Data.Values))
-}
-```
-
-### VPC Peering Management
-
-#### List VPC Peerings
-
-```go
-vpcID := "vpc-123"
-resp, err := vpcPeeringAPI.ListVpcPeerings(ctx, projectID, vpcID, nil)
-if err != nil {
-    log.Fatalf("Failed to list VPC peerings: %v", err)
-}
-
-// Access response data
-if resp.IsSuccess() {
-    fmt.Printf("Found %d VPC peerings\n", len(resp.Data.Values))
-}
-```
+- **VPC**: Create, Get, Update, Delete, List
+- **Subnet**: Create, Get, Update, Delete, List  
+- **SecurityGroup**: Create, Get, Update, Delete, List
+- **SecurityGroupRule**: Create, Get, Update, Delete, List
+- **ElasticIP**: Create, Get, Update, Delete, List
+- **LoadBalancer**: Get, List
+- **VpcPeering**: Create, Get, Update, Delete, List
+- **VpcPeeringRoute**: Create, Get, Update, Delete, List
+- **VpnTunnel**: Create, Get, Update, Delete, List
+- **VpnRoute**: Create, Get, Update, Delete, List
 
 ### VPC Peering Route Management
 

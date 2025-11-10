@@ -6,7 +6,7 @@ type ProjectPropertiesRequest struct {
 	Description *string `json:"description,omitempty"`
 
 	//Indicates if it's the default project
-	Default bool `json:"default`
+	Default bool `json:"default"`
 }
 
 type ProjectPropertiesResponse struct {
@@ -15,7 +15,7 @@ type ProjectPropertiesResponse struct {
 	Description *string `json:"description,omitempty"`
 
 	//Indicates if it's the default project
-	Default bool `json:"default`
+	Default bool `json:"default"`
 
 	ResourcesNumber int `json:"resourcesNumber,omitempty"`
 }

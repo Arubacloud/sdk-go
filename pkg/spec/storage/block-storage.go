@@ -7,24 +7,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// BlockStorageService implements the BlockStorageAPI interface
-type BlockStorageService struct {
-	client *client.Client
-}
-
-// NewBlockStorageService creates a new BlockStorageService
-func NewBlockStorageService(client *client.Client) *BlockStorageService {
-	return &BlockStorageService{
-		client: client,
-	}
-}
-
 // ListBlockStorageVolumes retrieves all block storage volumes for a project
-func (s *BlockStorageService) ListBlockStorageVolumes(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.BlockStorageList], error) {
+func (s *Service) ListBlockStorageVolumes(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.BlockStorageList], error) {
 	s.client.Logger().Debugf("Listing block storage volumes for project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -51,7 +38,7 @@ func (s *BlockStorageService) ListBlockStorageVolumes(ctx context.Context, proje
 }
 
 // GetBlockStorageVolume retrieves a specific block storage volume by ID
-func (s *BlockStorageService) GetBlockStorageVolume(ctx context.Context, project string, volumeId string, params *schema.RequestParameters) (*schema.Response[schema.BlockStorageResponse], error) {
+func (s *Service) GetBlockStorageVolume(ctx context.Context, project string, volumeId string, params *schema.RequestParameters) (*schema.Response[schema.BlockStorageResponse], error) {
 	s.client.Logger().Debugf("Getting block storage volume: %s in project: %s", volumeId, project)
 
 	if err := schema.ValidateProjectAndResource(project, volumeId, "block storage ID"); err != nil {
@@ -78,7 +65,7 @@ func (s *BlockStorageService) GetBlockStorageVolume(ctx context.Context, project
 }
 
 // CreateBlockStorageVolume creates a new block storage volume
-func (s *BlockStorageService) CreateBlockStorageVolume(ctx context.Context, project string, body schema.BlockStorageRequest, params *schema.RequestParameters) (*schema.Response[schema.BlockStorageResponse], error) {
+func (s *Service) CreateBlockStorageVolume(ctx context.Context, project string, body schema.BlockStorageRequest, params *schema.RequestParameters) (*schema.Response[schema.BlockStorageResponse], error) {
 	s.client.Logger().Debugf("Creating block storage volume in project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -111,7 +98,7 @@ func (s *BlockStorageService) CreateBlockStorageVolume(ctx context.Context, proj
 }
 
 // DeleteBlockStorageVolume deletes a block storage volume by ID
-func (s *BlockStorageService) DeleteBlockStorageVolume(ctx context.Context, project string, volumeId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteBlockStorageVolume(ctx context.Context, project string, volumeId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting block storage volume: %s in project: %s", volumeId, project)
 
 	if err := schema.ValidateProjectAndResource(project, volumeId, "block storage ID"); err != nil {

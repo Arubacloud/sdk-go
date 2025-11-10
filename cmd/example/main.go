@@ -8,14 +8,9 @@ import (
 	"os"
 	"time"
 
+	sdkgo "github.com/Arubacloud/sdk-go"
 	"github.com/Arubacloud/sdk-go/pkg/client"
-	"github.com/Arubacloud/sdk-go/pkg/spec/compute"
-	"github.com/Arubacloud/sdk-go/pkg/spec/container"
-	"github.com/Arubacloud/sdk-go/pkg/spec/database"
-	"github.com/Arubacloud/sdk-go/pkg/spec/network"
-	"github.com/Arubacloud/sdk-go/pkg/spec/project"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
-	"github.com/Arubacloud/sdk-go/pkg/spec/storage"
 )
 
 func main() {
@@ -27,7 +22,7 @@ func main() {
 	}
 
 	// Initialize the SDK (automatically obtains JWT token)
-	sdk, err := client.NewClient(config)
+	sdk, err := sdkgo.NewClient(config)
 	if err != nil {
 		log.Fatalf("Failed to create SDK client: %v", err)
 	}
@@ -38,7 +33,7 @@ func main() {
 	defer cancel()
 
 	// Use the SDK with context
-	sdk = sdk.WithContext(ctx)
+	sdk.Client = sdk.Client.WithContext(ctx)
 
 	fmt.Println("\n=== SDK Examples ===")
 
@@ -66,7 +61,7 @@ type ResourceCollection struct {
 }
 
 // createAllResources creates all resources in the correct order
-func createAllResources(ctx context.Context, sdk *client.Client) *ResourceCollection {
+func createAllResources(ctx context.Context, sdk *sdkgo.Client) *ResourceCollection {
 	resources := &ResourceCollection{}
 
 	// Configuration for resource polling
@@ -113,10 +108,8 @@ func createAllResources(ctx context.Context, sdk *client.Client) *ResourceCollec
 }
 
 // createProject creates and updates a project
-func createProject(ctx context.Context, sdk *client.Client) string {
+func createProject(ctx context.Context, sdk *sdkgo.Client) string {
 	fmt.Println("--- Project Management ---")
-
-	projectAPI := project.NewProjectService(sdk)
 
 	projectReq := schema.ProjectRequest{
 		Metadata: schema.ResourceMetadataRequest{
@@ -129,7 +122,7 @@ func createProject(ctx context.Context, sdk *client.Client) string {
 		},
 	}
 
-	createResp, err := projectAPI.CreateProject(ctx, projectReq, nil)
+	createResp, err := sdk.Project.CreateProject(ctx, projectReq, nil)
 	if err != nil {
 		log.Fatalf("Error creating project: %v", err)
 	} else if !createResp.IsSuccess() {
@@ -139,7 +132,7 @@ func createProject(ctx context.Context, sdk *client.Client) string {
 	fmt.Printf("✓ Created project with ID: %s\n", projectID)
 
 	// Update the project
-	updateResp, err := projectAPI.UpdateProject(ctx, projectID, projectReq, nil)
+	updateResp, err := sdk.Project.UpdateProject(ctx, projectID, projectReq, nil)
 	if err != nil {
 		log.Printf("Error updating project: %v", err)
 		os.Exit(1)
@@ -153,10 +146,8 @@ func createProject(ctx context.Context, sdk *client.Client) string {
 }
 
 // createElasticIP creates an Elastic IP
-func createElasticIP(ctx context.Context, sdk *client.Client, projectID string) *schema.Response[schema.ElasticIpResponse] {
-	fmt.Println("\n--- Network: Elastic IP ---")
-
-	elasticIPAPI := network.NewElasticIPService(sdk)
+func createElasticIP(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema.Response[schema.ElasticIpResponse] {
+	fmt.Println("--- Elastic IP ---")
 
 	elasticIPReq := schema.ElasticIpRequest{
 		Metadata: schema.RegionalResourceMetadataRequest{
@@ -175,7 +166,7 @@ func createElasticIP(ctx context.Context, sdk *client.Client, projectID string) 
 		},
 	}
 
-	elasticIPResp, err := elasticIPAPI.CreateElasticIP(ctx, projectID, elasticIPReq, nil)
+	elasticIPResp, err := sdk.Network.CreateElasticIP(ctx, projectID, elasticIPReq, nil)
 	if err != nil {
 		log.Printf("Error creating Elastic IP: %v", err)
 		os.Exit(1)
@@ -192,10 +183,8 @@ func createElasticIP(ctx context.Context, sdk *client.Client, projectID string) 
 }
 
 // createBlockStorage creates a block storage volume and waits for it to be ready
-func createBlockStorage(ctx context.Context, sdk *client.Client, projectID string, maxAttempts int, pollInterval time.Duration) *schema.Response[schema.BlockStorageResponse] {
-	fmt.Println("\n--- Storage: Block Storage ---")
-
-	storageAPI := storage.NewBlockStorageService(sdk)
+func createBlockStorage(ctx context.Context, sdk *sdkgo.Client, projectID string, maxAttempts int, pollInterval time.Duration) *schema.Response[schema.BlockStorageResponse] {
+	fmt.Println("--- Block Storage ---")
 
 	blockStorageReq := schema.BlockStorageRequest{
 		Metadata: schema.RegionalResourceMetadataRequest{
@@ -215,7 +204,7 @@ func createBlockStorage(ctx context.Context, sdk *client.Client, projectID strin
 		},
 	}
 
-	blockStorageResp, err := storageAPI.CreateBlockStorageVolume(ctx, projectID, blockStorageReq, nil)
+	blockStorageResp, err := sdk.Storage.CreateBlockStorageVolume(ctx, projectID, blockStorageReq, nil)
 	if err != nil {
 		log.Printf("Error creating block storage: %v", err)
 		os.Exit(1)
@@ -240,7 +229,7 @@ func createBlockStorage(ctx context.Context, sdk *client.Client, projectID strin
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		time.Sleep(pollInterval)
 
-		getBlockStorageResp, err := storageAPI.GetBlockStorageVolume(ctx, projectID, blockStorageID, nil)
+		getBlockStorageResp, err := sdk.Storage.GetBlockStorageVolume(ctx, projectID, blockStorageID, nil)
 		if err != nil {
 			log.Printf("Error checking Block Storage status: %v", err)
 			continue
@@ -268,10 +257,8 @@ func createBlockStorage(ctx context.Context, sdk *client.Client, projectID strin
 }
 
 // createSnapshot creates a snapshot from block storage
-func createSnapshot(ctx context.Context, sdk *client.Client, projectID string, blockStorageResp *schema.Response[schema.BlockStorageResponse]) *schema.Response[schema.SnapshotResponse] {
-	fmt.Println("\n--- Storage: Snapshot ---")
-
-	snapshotAPI := storage.NewSnapshotService(sdk)
+func createSnapshot(ctx context.Context, sdk *sdkgo.Client, projectID string, blockStorageResp *schema.Response[schema.BlockStorageResponse]) *schema.Response[schema.SnapshotResponse] {
+	fmt.Println("--- Snapshot ---")
 
 	snapshotReq := schema.SnapshotRequest{
 		Metadata: schema.RegionalResourceMetadataRequest{
@@ -291,7 +278,7 @@ func createSnapshot(ctx context.Context, sdk *client.Client, projectID string, b
 		},
 	}
 
-	snapshotResp, err := snapshotAPI.CreateSnapshot(ctx, projectID, snapshotReq, nil)
+	snapshotResp, err := sdk.Storage.CreateSnapshot(ctx, projectID, snapshotReq, nil)
 	if err != nil {
 		log.Printf("Error creating snapshot: %v", err)
 		os.Exit(1)
@@ -314,10 +301,8 @@ func createSnapshot(ctx context.Context, sdk *client.Client, projectID string, b
 }
 
 // createVPC creates a VPC and waits for it to be active
-func createVPC(ctx context.Context, sdk *client.Client, projectID string, maxAttempts int, pollInterval time.Duration) *schema.Response[schema.VpcResponse] {
-	fmt.Println("\n--- Network: VPC ---")
-
-	vpcAPI := network.NewVPCService(sdk)
+func createVPC(ctx context.Context, sdk *sdkgo.Client, projectID string, maxAttempts int, pollInterval time.Duration) *schema.Response[schema.VpcResponse] {
+	fmt.Println("--- VPC ---")
 
 	vpcReq := schema.VpcRequest{
 		Metadata: schema.RegionalResourceMetadataRequest{
@@ -337,7 +322,7 @@ func createVPC(ctx context.Context, sdk *client.Client, projectID string, maxAtt
 		},
 	}
 
-	vpcResp, err := vpcAPI.CreateVPC(ctx, projectID, vpcReq, nil)
+	vpcResp, err := sdk.Network.CreateVPC(ctx, projectID, vpcReq, nil)
 	if err != nil {
 		log.Printf("Error creating VPC: %v", err)
 		os.Exit(1)
@@ -363,7 +348,7 @@ func createVPC(ctx context.Context, sdk *client.Client, projectID string, maxAtt
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		time.Sleep(pollInterval)
 
-		getVPCResp, err := vpcAPI.GetVPC(ctx, projectID, vpcID, nil)
+		getVPCResp, err := sdk.Network.GetVPC(ctx, projectID, vpcID, nil)
 		if err != nil {
 			log.Printf("Error checking VPC status: %v", err)
 			continue
@@ -390,10 +375,9 @@ func createVPC(ctx context.Context, sdk *client.Client, projectID string, maxAtt
 }
 
 // createSubnet creates a subnet in a VPC
-func createSubnet(ctx context.Context, sdk *client.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse]) *schema.Response[schema.SubnetResponse] {
+func createSubnet(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse]) *schema.Response[schema.SubnetResponse] {
 	fmt.Println("\n--- Network: Subnet ---")
 
-	subnetAPI := network.NewSubnetService(sdk)
 	vpcID := *vpcResp.Data.Metadata.Id
 
 	subnetReq := schema.SubnetRequest{
@@ -418,7 +402,7 @@ func createSubnet(ctx context.Context, sdk *client.Client, projectID string, vpc
 		},
 	}
 
-	subnetResp, err := subnetAPI.CreateSubnet(ctx, projectID, vpcID, subnetReq, nil)
+	subnetResp, err := sdk.Network.CreateSubnet(ctx, projectID, vpcID, subnetReq, nil)
 	if err != nil {
 		log.Printf("Error creating subnet: %v", err)
 	} else if subnetResp.IsError() && subnetResp.Error != nil {
@@ -437,10 +421,9 @@ func createSubnet(ctx context.Context, sdk *client.Client, projectID string, vpc
 }
 
 // createSecurityGroup creates a security group and waits for it to be active
-func createSecurityGroup(ctx context.Context, sdk *client.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], maxAttempts int, pollInterval time.Duration) *schema.Response[schema.SecurityGroupResponse] {
+func createSecurityGroup(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], maxAttempts int, pollInterval time.Duration) *schema.Response[schema.SecurityGroupResponse] {
 	fmt.Println("\n--- Network: Security Group ---")
 
-	securityGroupAPI := network.NewSecurityGroupService(sdk)
 	vpcID := *vpcResp.Data.Metadata.Id
 
 	sgReq := schema.SecurityGroupRequest{
@@ -453,7 +436,7 @@ func createSecurityGroup(ctx context.Context, sdk *client.Client, projectID stri
 		},
 	}
 
-	sgResp, err := securityGroupAPI.CreateSecurityGroup(ctx, projectID, vpcID, sgReq, nil)
+	sgResp, err := sdk.Network.CreateSecurityGroup(ctx, projectID, vpcID, sgReq, nil)
 	if err != nil {
 		log.Printf("Error creating security group: %v", err)
 		return nil
@@ -474,7 +457,7 @@ func createSecurityGroup(ctx context.Context, sdk *client.Client, projectID stri
 		for attempt := 1; attempt <= maxAttempts; attempt++ {
 			time.Sleep(pollInterval)
 
-			getSGResp, err := securityGroupAPI.GetSecurityGroup(ctx, projectID, vpcID, sgID, nil)
+			getSGResp, err := sdk.Network.GetSecurityGroup(ctx, projectID, vpcID, sgID, nil)
 			if err != nil {
 				log.Printf("Error checking Security Group status: %v", err)
 				continue
@@ -502,7 +485,7 @@ func createSecurityGroup(ctx context.Context, sdk *client.Client, projectID stri
 }
 
 // createSecurityGroupRule creates a security group rule
-func createSecurityGroupRule(ctx context.Context, sdk *client.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.SecurityRuleResponse] {
+func createSecurityGroupRule(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.SecurityRuleResponse] {
 	if sgResp == nil || sgResp.Data == nil {
 		fmt.Println("⚠ Skipping security rule creation - Security Group not available")
 		return nil
@@ -510,7 +493,6 @@ func createSecurityGroupRule(ctx context.Context, sdk *client.Client, projectID 
 
 	fmt.Println("\n--- Network: Security Group Rule ---")
 
-	securityRuleAPI := network.NewSecurityGroupRuleService(sdk)
 	vpcID := *vpcResp.Data.Metadata.Id
 	sgID := *sgResp.Data.Metadata.Id
 
@@ -535,7 +517,7 @@ func createSecurityGroupRule(ctx context.Context, sdk *client.Client, projectID 
 		},
 	}
 
-	ruleResp, err := securityRuleAPI.CreateSecurityGroupRule(ctx, projectID, vpcID, sgID, ruleReq, nil)
+	ruleResp, err := sdk.Network.CreateSecurityGroupRule(ctx, projectID, vpcID, sgID, ruleReq, nil)
 	if err != nil {
 		log.Printf("Error creating security rule: %v", err)
 	} else if ruleResp.IsError() && ruleResp.Error != nil {
@@ -556,10 +538,8 @@ func createSecurityGroupRule(ctx context.Context, sdk *client.Client, projectID 
 }
 
 // createKeyPair creates an SSH key pair
-func createKeyPair(ctx context.Context, sdk *client.Client, projectID string) *schema.Response[schema.KeyPairResponse] {
-	fmt.Println("\n--- Compute: SSH Key Pair ---")
-
-	keyPairAPI := compute.NewKeyPairService(sdk)
+func createKeyPair(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema.Response[schema.KeyPairResponse] {
+	fmt.Println("--- SSH Key Pair ---")
 
 	sshPublicKey := "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEA2No7At0tgHrcZTL0kGWyLLUqPKfOhD9hGdNV9PbJxhjOGNFxcwdQ9wCXsJ3RQaRHBuGIgVodDurrlqzxFK86yCHMgXT2YLHF0j9P4m9GDiCfOK6msbFb89p5xZExjwD2zK+w68r7iOKZeRB2yrznW5TD3KDemSPIQQIVcyLF+yxft49HWBTI3PVQ4rBVOBJ2PdC9SAOf7CYnptW24CRrC0h85szIdwMA+Kmasfl3YGzk4MxheHrTO8C40aXXpieJ9S2VQA4VJAMRyAboptIK0cKjBYrbt5YkEL0AlyBGPIu6MPYr5K/MHyDunDi9yc7VYRYRR0f46MBOSqMUiGPnMw=="
 
@@ -573,7 +553,7 @@ func createKeyPair(ctx context.Context, sdk *client.Client, projectID string) *s
 		},
 	}
 
-	keyPairResp, err := keyPairAPI.CreateKeyPair(ctx, projectID, keyPairReq, nil)
+	keyPairResp, err := sdk.Compute.CreateKeyPair(ctx, projectID, keyPairReq, nil)
 	if err != nil {
 		log.Printf("Error creating SSH key pair: %v", err)
 	} else if !keyPairResp.IsSuccess() {
@@ -589,10 +569,8 @@ func createKeyPair(ctx context.Context, sdk *client.Client, projectID string) *s
 }
 
 // createDBaaS creates a DBaaS instance
-func createDBaaS(ctx context.Context, sdk *client.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse], maxAttempts int, pollInterval time.Duration) *schema.Response[schema.DBaaSResponse] {
-	fmt.Println("\n--- Database: DBaaS ---")
-
-	dbaasAPI := database.NewDBaaSService(sdk)
+func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse], maxAttempts int, pollInterval time.Duration) *schema.Response[schema.DBaaSResponse] {
+	fmt.Println("--- DBaaS ---")
 
 	// Only create DBaaS if VPC, Subnet, and Security Group are available
 	if vpcResp == nil || vpcResp.Data == nil || vpcResp.Data.Metadata.Uri == nil ||
@@ -639,7 +617,7 @@ func createDBaaS(ctx context.Context, sdk *client.Client, projectID string, vpcR
 		},
 	}
 
-	dbaasResp, err := dbaasAPI.CreateDBaaS(ctx, projectID, dbaasReq, nil)
+	dbaasResp, err := sdk.Database.CreateDBaaS(ctx, projectID, dbaasReq, nil)
 	if err != nil {
 		log.Printf("Error creating DBaaS: %v", err)
 		return nil
@@ -664,7 +642,7 @@ func createDBaaS(ctx context.Context, sdk *client.Client, projectID string, vpcR
 		for attempt := 1; attempt <= maxAttempts; attempt++ {
 			time.Sleep(pollInterval)
 
-			getDBaaSResp, err := dbaasAPI.GetDBaaS(ctx, projectID, dbaasID, nil)
+			getDBaaSResp, err := sdk.Database.GetDBaaS(ctx, projectID, dbaasID, nil)
 			if err != nil {
 				log.Printf("Error checking DBaaS status: %v", err)
 				continue
@@ -693,10 +671,8 @@ func createDBaaS(ctx context.Context, sdk *client.Client, projectID string, vpcR
 }
 
 // createKaaS creates a KaaS cluster
-func createKaaS(ctx context.Context, sdk *client.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse], maxAttempts int, pollInterval time.Duration) *schema.Response[schema.KaaSResponse] {
-	fmt.Println("\n--- Container: KaaS ---")
-
-	kaasAPI := container.NewKaaSService(sdk)
+func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse], maxAttempts int, pollInterval time.Duration) *schema.Response[schema.KaaSResponse] {
+	fmt.Println("--- KaaS (Kubernetes) ---")
 
 	// Only create KaaS if VPC, Subnet, and Security Group are available
 	if vpcResp == nil || vpcResp.Data == nil || vpcResp.Data.Metadata.Uri == nil ||
@@ -749,7 +725,7 @@ func createKaaS(ctx context.Context, sdk *client.Client, projectID string, vpcRe
 		},
 	}
 
-	kaasResp, err := kaasAPI.CreateKaaS(ctx, projectID, kaasReq, nil)
+	kaasResp, err := sdk.Container.CreateKaaS(ctx, projectID, kaasReq, nil)
 	if err != nil {
 		log.Printf("Error creating KaaS cluster: %v", err)
 		return nil
@@ -774,7 +750,7 @@ func createKaaS(ctx context.Context, sdk *client.Client, projectID string, vpcRe
 		for attempt := 1; attempt <= maxAttempts; attempt++ {
 			time.Sleep(pollInterval)
 
-			getKaaSResp, err := kaasAPI.GetKaaS(ctx, projectID, kaasID, nil)
+			getKaaSResp, err := sdk.Container.GetKaaS(ctx, projectID, kaasID, nil)
 			if err != nil {
 				log.Printf("Error checking KaaS status: %v", err)
 				continue

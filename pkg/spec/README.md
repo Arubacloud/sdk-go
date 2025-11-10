@@ -93,6 +93,13 @@ Schedule or on-demand run jobs:
 
 [View Schedule Documentation →](./schedule/README.md)
 
+### [Project](./project/README.md)
+
+Manage project resources:
+- **Projects** - Project management and configuration
+
+[View Project Documentation →](./project/README.md)
+
 
 ## Installation
 
@@ -109,63 +116,62 @@ import (
     "context"
     "log"
 
+    sdkgo "github.com/Arubacloud/sdk-go"
     "github.com/Arubacloud/sdk-go/pkg/client"
-    "github.com/Arubacloud/sdk-go/pkg/spec/compute"
-    "github.com/Arubacloud/sdk-go/pkg/spec/network"
-    "github.com/Arubacloud/sdk-go/pkg/spec/storage"
-    "github.com/Arubacloud/sdk-go/pkg/spec/database"
-    "github.com/Arubacloud/sdk-go/pkg/spec/security"
-    "github.com/Arubacloud/sdk-go/pkg/spec/metric"
-    "github.com/Arubacloud/sdk-go/pkg/spec/audit"
-    "github.com/Arubacloud/sdk-go/pkg/spec/schedule"
 )
 
 func main() {
-    // Initialize the client
-    c := client.NewClient("https://api.arubacloud.com", "your-api-key")
+    // Initialize the SDK client
+    config := &client.Config{
+        ClientID:     "your-client-id",
+        ClientSecret: "your-client-secret",
+        Debug:        false,
+    }
+    
+    sdk, err := sdkgo.NewClient(config)
+    if err != nil {
+        log.Fatalf("Failed to create SDK client: %v", err)
+    }
     
     ctx := context.Background()
     projectID := "my-project-id"
     
-    // Compute services
-    cloudServerApi := compute.NewCloudServerService(c)
-    keyPairApi := compute.NewKeyPairService(c)
+    // All services are immediately available through the SDK client
     
-    // Network services
-    vpcApi := network.NewVPCService(c)
-    subnetApi := network.NewSubnetService(c)
-    elasticIPApi := network.NewElasticIPService(c)
-    
-    // Storage services
-    blockStorageApi := storage.NewBlockStorageService(c)
-    snapshotApi := storage.NewSnapshotService(c)
-    
-    // Database services
-    dbaasApi := database.NewDBaaSService(c)
-    databaseApi := database.NewDatabaseService(c)
-    
-    // Security services
-    kmsApi := security.NewKMSService(c)
-    
-    // Metric services
-    metricApi := metric.NewMetricService(c)
-    alertApi := metric.NewAlertService(c)
-    
-    // Audit services
-    eventApi := audit.NewEventService(c)
-
-    // Schedule services
-    jobApi := schedule.NewJobService(c)
-    
-    // Example: List virtual machines
-    resp, err := cloudServerApi.ListCloudServers(ctx, projectID, nil)
+    // Example: List cloud servers
+    resp, err := sdk.Compute.ListCloudServers(ctx, projectID, nil)
     if err != nil {
         log.Fatalf("Failed to list CloudServers: %v", err)
     }
     defer resp.Body.Close()
+    
+    // Example: List VPCs
+    vpcResp, err := sdk.Network.ListVPCs(ctx, projectID, nil)
+    if err != nil {
+        log.Fatalf("Failed to list VPCs: %v", err)
+    }
+    defer vpcResp.Body.Close()
 }
 ```
 
+### Direct Service Access
+
+All services are immediately available through the SDK client without any additional initialization:
+
+```go
+// Services are pre-initialized and ready to use
+sdk.Compute    // Access compute resources (CloudServers, KeyPairs)
+sdk.Network    // Access network resources (VPCs, Subnets, etc.)
+sdk.Storage    // Access storage resources (Block Storage, Snapshots)
+sdk.Database   // Access database services
+sdk.Security   // Access security services (KMS)
+sdk.Metric     // Access metrics and alerts
+sdk.Audit      // Access audit logs
+sdk.Schedule   // Access scheduled jobs
+sdk.Project    // Access projects
+```
+
+This simplifies initialization and provides a cleaner API. 
 ## Package Structure
 
 ```

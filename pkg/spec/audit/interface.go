@@ -6,6 +6,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-type EventAPI interface {
+// AuditAPI defines the unified interface for all Audit operations
+type AuditAPI interface {
+	// Event operations
 	ListEvents(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.AuditEventListResponse], error)
 }

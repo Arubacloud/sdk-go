@@ -8,24 +8,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// GrantService implements the GrantAPI interface
-type GrantService struct {
-	client *client.Client
-}
-
-// NewGrantService creates a new GrantService
-func NewGrantService(client *client.Client) *GrantService {
-	return &GrantService{
-		client: client,
-	}
-}
-
 // ListGrants retrieves all grants for a database
-func (s *GrantService) ListGrants(ctx context.Context, project string, dbaasId string, databaseId string, params *schema.RequestParameters) (*schema.Response[schema.GrantList], error) {
+func (s *Service) ListGrants(ctx context.Context, project string, dbaasId string, databaseId string, params *schema.RequestParameters) (*schema.Response[schema.GrantList], error) {
 	s.client.Logger().Debugf("Listing grants for database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, project)
 
 	if err := schema.ValidateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
@@ -52,7 +39,7 @@ func (s *GrantService) ListGrants(ctx context.Context, project string, dbaasId s
 }
 
 // GetGrant retrieves a specific grant by ID
-func (s *GrantService) GetGrant(ctx context.Context, project string, dbaasId string, databaseId string, grantId string, params *schema.RequestParameters) (*schema.Response[schema.GrantResponse], error) {
+func (s *Service) GetGrant(ctx context.Context, project string, dbaasId string, databaseId string, grantId string, params *schema.RequestParameters) (*schema.Response[schema.GrantResponse], error) {
 	s.client.Logger().Debugf("Getting grant: %s from database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, project)
 
 	if err := schema.ValidateDatabaseGrant(project, dbaasId, databaseId, grantId); err != nil {
@@ -79,7 +66,7 @@ func (s *GrantService) GetGrant(ctx context.Context, project string, dbaasId str
 }
 
 // CreateGrant creates a new grant for a database
-func (s *GrantService) CreateGrant(ctx context.Context, project string, dbaasId string, databaseId string, body schema.GrantRequest, params *schema.RequestParameters) (*schema.Response[schema.GrantResponse], error) {
+func (s *Service) CreateGrant(ctx context.Context, project string, dbaasId string, databaseId string, body schema.GrantRequest, params *schema.RequestParameters) (*schema.Response[schema.GrantResponse], error) {
 	s.client.Logger().Debugf("Creating grant in database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, project)
 
 	if err := schema.ValidateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
@@ -140,7 +127,7 @@ func (s *GrantService) CreateGrant(ctx context.Context, project string, dbaasId 
 }
 
 // UpdateGrant updates an existing grant
-func (s *GrantService) UpdateGrant(ctx context.Context, project string, dbaasId string, databaseId string, grantId string, body schema.GrantRequest, params *schema.RequestParameters) (*schema.Response[schema.GrantResponse], error) {
+func (s *Service) UpdateGrant(ctx context.Context, project string, dbaasId string, databaseId string, grantId string, body schema.GrantRequest, params *schema.RequestParameters) (*schema.Response[schema.GrantResponse], error) {
 	s.client.Logger().Debugf("Updating grant: %s in database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, project)
 
 	if err := schema.ValidateDatabaseGrant(project, dbaasId, databaseId, grantId); err != nil {
@@ -201,7 +188,7 @@ func (s *GrantService) UpdateGrant(ctx context.Context, project string, dbaasId 
 }
 
 // DeleteGrant deletes a grant by ID
-func (s *GrantService) DeleteGrant(ctx context.Context, projectId string, dbaasId string, databaseId string, grantId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteGrant(ctx context.Context, projectId string, dbaasId string, databaseId string, grantId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting grant: %s from database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, projectId)
 
 	if err := schema.ValidateDatabaseGrant(projectId, dbaasId, databaseId, grantId); err != nil {

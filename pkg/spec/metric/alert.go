@@ -5,24 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// AlertService implements the AlertAPI interface
-type AlertService struct {
-	client *client.Client
-}
-
-// NewAlertService creates a new AlertService
-func NewAlertService(client *client.Client) *AlertService {
-	return &AlertService{
-		client: client,
-	}
-}
-
 // ListAlerts retrieves all alerts for a project
-func (s *AlertService) ListAlerts(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.AlertsListResponse], error) {
+func (s *Service) ListAlerts(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.AlertsListResponse], error) {
 	s.client.Logger().Debugf("Listing alerts for project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {

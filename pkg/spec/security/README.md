@@ -1,12 +1,6 @@
 # Security Package
 
-The `security` package provides Go client interfaces for managing Aruba Cloud security services, including KMS (Key Management Service) for encryption key management.
-
-## Table of Contents
-
-- [Installation](#installation)
-- [Available Services](#available-services)
-- [Usage Examples](#usage-examples)
+The `security` package provides Go client interfaces for managing Aruba Cloud security services, including Key Management Service (KMS).
 
 ## Installation
 
@@ -16,17 +10,15 @@ go get github.com/Arubacloud/sdk-go
 
 ## Available Services
 
-### KMSAPI
+### SecurityAPI
 
-Manage KMS encryption keys with full CRUD operations:
-- List all KMS keys in a project
-- Get details of a specific KMS key
-- Create or update a KMS key
-- Delete a KMS key
+The unified `SecurityAPI` interface provides all security-related operations:
+
+**KMS Operations** - Manage encryption keys  
 
 ## Usage Examples
 
-### Initialize the Client
+### Initialize the Service
 
 ```go
 package main
@@ -35,6 +27,8 @@ import (
     "context"
     "fmt"
     "log"
+    "net/http"
+    "time"
 
     "github.com/Arubacloud/sdk-go/pkg/client"
     "github.com/Arubacloud/sdk-go/pkg/spec/security"
@@ -42,33 +36,62 @@ import (
 )
 
 func main() {
-    // Create a new client
-    c := client.NewClient("https://api.arubacloud.com", "your-api-key")
+    // Create SDK client
+    config := &client.Config{
+        ClientID:     "your-client-id",
+        ClientSecret: "your-client-secret",
+        HTTPClient:   &http.Client{Timeout: 30 * time.Second},
+    }
+    
+    sdk, err := client.NewClient(config)
+    if err != nil {
+        log.Fatalf("Failed to create client: %v", err)
+    }
+    
+    // Create unified security service
+    securityService := security.NewService(sdk)
     
     ctx := context.Background()
     projectID := "my-project-id"
     
-    // Initialize API interface
-    var kmsAPI security.KMSAPI = security.NewKmsKeyService(c)
+    // Now use securityService for all security operations
 }
 ```
 
-### KMS Key Management
-
-#### List KMS Keys
+### List KMS Key
 
 ```go
-resp, err := kmsAPI.ListKMSKeys(ctx, projectID, nil)
+// Use the unified service
+securityService := security.NewService(sdk)
+
+resp, err := securityService.ListKMSKeys(ctx, projectID, nil)
 if err != nil {
-    log.Fatalf("Failed to list KMS keys: %v", err)
+    log.Fatalf("Failed to list: %v", err)
 }
 
-// Access response data
 if resp.IsSuccess() {
-    fmt.Printf("Found %d KMS keys\n", len(resp.Data.Values))
-    for _, key := range resp.Data.Values {
-        fmt.Printf("Key: %s - Status: %s\n", key.Metadata.Name, key.Status.State)
-    }
+    fmt.Printf("Found %d items\n", len(resp.Data.Values))
 }
 ```
 
+### Create KMS Key
+
+```go
+kmsReq := schema.KMSRequest{
+    Metadata: schema.ResourceMetadataRequest{
+        Name: "my-encryption-key",
+    },
+    Properties: schema.KMSPropertiesRequest{
+        // ... key properties
+    },
+}
+
+createResp, err := securityService.CreateKMSKey(ctx, projectID, kmsReq, nil)
+if err != nil {
+    log.Fatalf("Failed to create: %v", err)
+}
+
+if createResp.IsSuccess() {
+    fmt.Printf("Created: %s\n", *createResp.Data.Metadata.Id)
+}
+```

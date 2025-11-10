@@ -120,6 +120,10 @@ type Client struct {
 	ctx          context.Context
 	tokenManager *TokenManager
 	logger       Logger
+
+	// Service interfaces for all API categories - these will be initialized by the services themselves
+	// using a providers pattern to avoid import cycles
+	services map[string]interface{}
 }
 
 // NewClient creates a new SDK client with the given configuration
@@ -161,6 +165,7 @@ func NewClient(config *Config) (*Client, error) {
 		ctx:          context.Background(),
 		tokenManager: tokenManager,
 		logger:       logger,
+		services:     make(map[string]interface{}),
 	}
 
 	logger.Debugf("Initializing SDK client with base URL: %s", config.BaseURL)
@@ -173,10 +178,6 @@ func NewClient(config *Config) (*Client, error) {
 
 	logger.Debugf("Successfully obtained initial token")
 
-	// Initialize all API clients - these will be created in respective packages
-	// For example: client.CloudServer = compute.NewCloudServerClient(client)
-	// TODO: Initialize API clients once implementations are ready
-
 	return client, nil
 }
 
@@ -184,6 +185,7 @@ func NewClient(config *Config) (*Client, error) {
 func (c *Client) WithContext(ctx context.Context) *Client {
 	newClient := *c
 	newClient.ctx = ctx
+	newClient.services = make(map[string]interface{})
 	return &newClient
 }
 

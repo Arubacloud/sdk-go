@@ -2,12 +2,6 @@
 
 The `project` package provides Go client interfaces for managing Aruba Cloud projects.
 
-## Table of Contents
-
-- [Installation](#installation)
-- [Available Services](#available-services)
-- [Usage Examples](#usage-examples)
-
 ## Installation
 
 ```bash
@@ -18,15 +12,13 @@ go get github.com/Arubacloud/sdk-go
 
 ### ProjectAPI
 
-Manage projects with full CRUD operations:
-- List all projects
-- Get details of a specific project
-- Create or update a project
-- Delete a project
+The unified `ProjectAPI` interface provides all project-related operations:
+
+**Project Operations** - Manage projects  
 
 ## Usage Examples
 
-### Initialize the Client
+### Initialize the Service
 
 ```go
 package main
@@ -35,6 +27,8 @@ import (
     "context"
     "fmt"
     "log"
+    "net/http"
+    "time"
 
     "github.com/Arubacloud/sdk-go/pkg/client"
     "github.com/Arubacloud/sdk-go/pkg/spec/project"
@@ -42,35 +36,63 @@ import (
 )
 
 func main() {
-    // Create a new client
-    c := client.NewClient("https://api.arubacloud.com", "your-api-key")
+    // Create SDK client
+    config := &client.Config{
+        ClientID:     "your-client-id",
+        ClientSecret: "your-client-secret",
+        HTTPClient:   &http.Client{Timeout: 30 * time.Second},
+    }
+    
+    sdk, err := client.NewClient(config)
+    if err != nil {
+        log.Fatalf("Failed to create client: %v", err)
+    }
+    
+    // Create unified project service
+    projectService := project.NewService(sdk)
     
     ctx := context.Background()
+    projectID := "my-project-id"
     
-    // Initialize API interface
-    var projectAPI project.ProjectAPI = project.NewProjectService(c)
+    // Now use projectService for all project operations
 }
 ```
 
-### Project Management
-
-#### List Projects
+### List Project
 
 ```go
-resp, err := projectAPI.ListProjects(ctx, nil)
+// Use the unified service
+projectService := project.NewService(sdk)
+
+resp, err := projectService.ListProjects(ctx, projectID, nil)
 if err != nil {
-    log.Fatalf("Failed to list projects: %v", err)
+    log.Fatalf("Failed to list: %v", err)
 }
 
-// Access response data
 if resp.IsSuccess() {
-    fmt.Printf("Found %d projects\n", len(resp.Data.Values))
-    for _, project := range resp.Data.Values {
-        fmt.Printf("Project: %s\n", project.Metadata.Name)
-    }
+    fmt.Printf("Found %d items\n", len(resp.Data.Values))
 }
-
-// Access HTTP metadata
-fmt.Printf("Status Code: %d\n", resp.StatusCode)
 ```
 
+### Create Project
+
+```go
+projectReq := schema.ProjectRequest{
+    Metadata: schema.ResourceMetadataRequest{
+        Name: "my-project",
+        Tags: []string{"production"},
+    },
+    Properties: schema.ProjectPropertiesRequest{
+        Description: stringPtr("My project"),
+    },
+}
+
+createResp, err := projectService.CreateProject(ctx, projectReq, nil)
+if err != nil {
+    log.Fatalf("Failed to create: %v", err)
+}
+
+if createResp.IsSuccess() {
+    fmt.Printf("Created: %s\n", *createResp.Data.Metadata.Id)
+}
+```

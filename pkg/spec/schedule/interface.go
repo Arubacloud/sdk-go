@@ -6,8 +6,9 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// ScheduleJobAPI defines the interface for managing schedule jobs.
-type ScheduleJobAPI interface {
+// ScheduleAPI defines the unified interface for all Schedule operations
+type ScheduleAPI interface {
+	// ScheduleJob operations
 	ListScheduleJobs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.JobList], error)
 	GetScheduleJob(ctx context.Context, project string, scheduleJobId string, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error)
 	CreateScheduleJob(ctx context.Context, project string, body schema.JobRequest, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error)

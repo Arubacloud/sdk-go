@@ -7,24 +7,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
-// BackupService implements the BackupAPI interface
-type BackupService struct {
-	client *client.Client
-}
-
-// NewBackupService creates a new BackupService
-func NewBackupService(client *client.Client) *BackupService {
-	return &BackupService{
-		client: client,
-	}
-}
-
 // ListBackups retrieves all backups for a project
-func (s *BackupService) ListBackups(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.BackupList], error) {
+func (s *Service) ListBackups(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.BackupList], error) {
 	s.client.Logger().Debugf("Listing backups for project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -51,7 +38,7 @@ func (s *BackupService) ListBackups(ctx context.Context, project string, params 
 }
 
 // GetBackup retrieves a specific backup by ID
-func (s *BackupService) GetBackup(ctx context.Context, project string, backupId string, params *schema.RequestParameters) (*schema.Response[schema.BackupResponse], error) {
+func (s *Service) GetBackup(ctx context.Context, project string, backupId string, params *schema.RequestParameters) (*schema.Response[schema.BackupResponse], error) {
 	s.client.Logger().Debugf("Getting backup: %s in project: %s", backupId, project)
 
 	if err := schema.ValidateProjectAndResource(project, backupId, "backup ID"); err != nil {
@@ -78,7 +65,7 @@ func (s *BackupService) GetBackup(ctx context.Context, project string, backupId 
 }
 
 // CreateBackup creates a new backup
-func (s *BackupService) CreateBackup(ctx context.Context, project string, body schema.BackupRequest, params *schema.RequestParameters) (*schema.Response[schema.BackupResponse], error) {
+func (s *Service) CreateBackup(ctx context.Context, project string, body schema.BackupRequest, params *schema.RequestParameters) (*schema.Response[schema.BackupResponse], error) {
 	s.client.Logger().Debugf("Creating backup in project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -111,7 +98,7 @@ func (s *BackupService) CreateBackup(ctx context.Context, project string, body s
 }
 
 // DeleteBackup deletes a backup by ID
-func (s *BackupService) DeleteBackup(ctx context.Context, projectId string, backupId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteBackup(ctx context.Context, projectId string, backupId string, params *schema.RequestParameters) (*schema.Response[any], error) {
 	s.client.Logger().Debugf("Deleting backup: %s in project: %s", backupId, projectId)
 
 	if err := schema.ValidateProjectAndResource(projectId, backupId, "backup ID"); err != nil {
