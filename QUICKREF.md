@@ -114,7 +114,7 @@ sdk-go/
 | **Network** | `pkg/spec/network` | VPC, Subnet, Security Groups, Elastic IPs, Load Balancers, VPN |
 | **Compute** | `pkg/spec/compute` | Cloud Servers, SSH Key Pairs |
 | **Storage** | `pkg/spec/storage` | Block Storage volumes, Snapshots |
-| **Database** | `pkg/spec/database` | DBaaS (MySQL/PostgreSQL), Users, Grants, Backups |
+| **Database** | `pkg/spec/database` | DBaaS (MySQL/MS SQL Server), Users, Grants, Backups |
 | **Container** | `pkg/spec/container` | KaaS (Kubernetes clusters) |
 | **Security** | `pkg/spec/security` | KMS (Key Management Service) |
 | **Metric** | `pkg/spec/metric` | Metrics, Alerts, Monitoring |

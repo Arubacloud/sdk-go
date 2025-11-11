@@ -13,6 +13,11 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
+/*************  ✨ Windsurf Command ⭐  *************/
+// main demonstrates a modular approach for creating cloud infrastructure.
+// The code is organized into focused, reusable functions rather than one monolithic main function.
+// The example shows how to create all resources, poll for their Active state, and then print a summary.
+/*******  916ef78b-f0e3-4a8d-8711-6783ddf0996d  *******/
 func main() {
 	config := &client.Config{
 		ClientID:     "cmp-74603fc1-ba10-40b3-9ff9-4aef35548642",
@@ -480,7 +485,7 @@ func createKeyPair(ctx context.Context, sdk *sdkgo.Client, projectID string) *sc
 			stringValue(keyPairResp.Error.Title),
 			stringValue(keyPairResp.Error.Detail))
 	} else if keyPairResp.Data != nil && *keyPairResp.Data.Metadata.Name != "" {
-		fmt.Printf("✓ Created SSH Key Pair: %s\n", keyPairResp.Data.Metadata.Name)
+		fmt.Printf("✓ Created SSH Key Pair: %s\n", *keyPairResp.Data.Metadata.Name)
 	}
 
 	return keyPairResp
