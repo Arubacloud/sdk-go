@@ -21,13 +21,16 @@ func (s *Service) ListVPCs(ctx context.Context, project string, params *schema.R
 
 	path := fmt.Sprintf(VPCNetworksPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &VpcListAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &VpcListAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -48,13 +51,16 @@ func (s *Service) GetVPC(ctx context.Context, project string, vpcId string, para
 
 	path := fmt.Sprintf(VPCNetworkPath, project, vpcId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &VpcGetAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &VpcGetAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -75,13 +81,16 @@ func (s *Service) CreateVPC(ctx context.Context, project string, body schema.Vpc
 
 	path := fmt.Sprintf(VPCNetworksPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &VpcCreateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &VpcCreateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -132,13 +141,16 @@ func (s *Service) UpdateVPC(ctx context.Context, project string, vpcId string, b
 
 	path := fmt.Sprintf(VPCNetworkPath, project, vpcId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &VpcUpdateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &VpcUpdateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -189,13 +201,16 @@ func (s *Service) DeleteVPC(ctx context.Context, projectId string, vpcId string,
 
 	path := fmt.Sprintf(VPCNetworkPath, projectId, vpcId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &VpcDeleteAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &VpcDeleteAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

@@ -15,8 +15,8 @@ import (
 
 func main() {
 	config := &client.Config{
-		ClientID:     "clientId",
-		ClientSecret: "clientSecret",
+		ClientID:     "cmp-74603fc1-ba10-40b3-9ff9-4aef35548642",
+		ClientSecret: "UZXfEZFFOz1M0t66FNTcO4c5nez76Kwf",
 		HTTPClient:   &http.Client{Timeout: 30 * time.Second},
 		Debug:        true,
 	}

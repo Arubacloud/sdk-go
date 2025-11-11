@@ -21,13 +21,16 @@ func (s *Service) ListKeyPairs(ctx context.Context, project string, params *sche
 
 	path := fmt.Sprintf(KeyPairsPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ComputeKeyPairList,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ComputeKeyPairList
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -48,13 +51,16 @@ func (s *Service) GetKeyPair(ctx context.Context, project string, keyPairId stri
 
 	path := fmt.Sprintf(KeyPairPath, project, keyPairId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ComputeKeyPairGet,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ComputeKeyPairGet
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -75,13 +81,16 @@ func (s *Service) CreateKeyPair(ctx context.Context, project string, body schema
 
 	path := fmt.Sprintf(KeyPairsPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ComputeKeyPairCreate,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ComputeKeyPairCreate
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	// Marshal the request body to JSON
 	bodyBytes, err := json.Marshal(body)
@@ -136,13 +145,16 @@ func (s *Service) DeleteKeyPair(ctx context.Context, projectId string, keyPairId
 
 	path := fmt.Sprintf(KeyPairPath, projectId, keyPairId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ComputeKeyPairDelete,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ComputeKeyPairDelete
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

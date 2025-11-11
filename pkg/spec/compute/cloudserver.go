@@ -21,13 +21,16 @@ func (s *Service) ListCloudServers(ctx context.Context, project string, params *
 
 	path := fmt.Sprintf(CloudServersPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ComputeCloudServerList,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ComputeCloudServerList
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -48,13 +51,16 @@ func (s *Service) GetCloudServer(ctx context.Context, project string, cloudServe
 
 	path := fmt.Sprintf(CloudServerPath, project, cloudServerId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ComputeCloudServerGet,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ComputeCloudServerGet
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -75,13 +81,16 @@ func (s *Service) CreateCloudServer(ctx context.Context, project string, body sc
 
 	path := fmt.Sprintf(CloudServersPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ComputeCloudServerCreate,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ComputeCloudServerCreate
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	// Marshal the request body to JSON
 	bodyBytes, err := json.Marshal(body)
@@ -136,13 +145,16 @@ func (s *Service) UpdateCloudServer(ctx context.Context, project string, cloudSe
 
 	path := fmt.Sprintf(CloudServerPath, project, cloudServerId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ComputeCloudServerUpdate,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ComputeCloudServerUpdate
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	// Marshal the request body to JSON
 	bodyBytes, err := json.Marshal(body)
@@ -197,13 +209,16 @@ func (s *Service) DeleteCloudServer(ctx context.Context, projectId string, cloud
 
 	path := fmt.Sprintf(CloudServerPath, projectId, cloudServerId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ComputeCloudServerDelete,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ComputeCloudServerDelete
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

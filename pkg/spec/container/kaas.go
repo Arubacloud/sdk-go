@@ -21,13 +21,16 @@ func (s *Service) ListKaaS(ctx context.Context, project string, params *schema.R
 
 	path := fmt.Sprintf(KaaSPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ContainerKaaSListVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ContainerKaaSListVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -48,13 +51,16 @@ func (s *Service) GetKaaS(ctx context.Context, project string, kaasId string, pa
 
 	path := fmt.Sprintf(KaaSItemPath, project, kaasId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ContainerKaaSGetVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ContainerKaaSGetVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -75,13 +81,16 @@ func (s *Service) CreateKaaS(ctx context.Context, project string, body schema.Ka
 
 	path := fmt.Sprintf(KaaSPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ContainerKaaSCreateVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ContainerKaaSCreateVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	// Marshal the request body to JSON
 	bodyBytes, err := json.Marshal(body)
@@ -136,13 +145,16 @@ func (s *Service) UpdateKaaS(ctx context.Context, project string, kaasId string,
 
 	path := fmt.Sprintf(KaaSItemPath, project, kaasId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ContainerKaaSUpdateVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ContainerKaaSUpdateVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	// Marshal the request body to JSON
 	bodyBytes, err := json.Marshal(body)
@@ -197,13 +209,16 @@ func (s *Service) DeleteKaaS(ctx context.Context, projectId string, kaasId strin
 
 	path := fmt.Sprintf(KaaSItemPath, projectId, kaasId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ContainerKaaSDeleteVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ContainerKaaSDeleteVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

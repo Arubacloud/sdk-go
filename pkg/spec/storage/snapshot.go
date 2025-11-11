@@ -36,13 +36,16 @@ func (s *Service) ListSnapshots(ctx context.Context, project string, params *sch
 
 	path := fmt.Sprintf(SnapshotsPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SnapshotListAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SnapshotListAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -63,13 +66,16 @@ func (s *Service) GetSnapshot(ctx context.Context, project string, snapshotId st
 
 	path := fmt.Sprintf(SnapshotPath, project, snapshotId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SnapshotGetAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SnapshotGetAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -104,13 +110,16 @@ func (s *Service) CreateSnapshot(ctx context.Context, project string, body schem
 
 	path := fmt.Sprintf(SnapshotsPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SnapshotCreateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SnapshotCreateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	// Marshal the request body to JSON
 	bodyBytes, err := json.Marshal(body)
@@ -137,13 +146,16 @@ func (s *Service) DeleteSnapshot(ctx context.Context, project string, snapshotId
 
 	path := fmt.Sprintf(SnapshotPath, project, snapshotId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SnapshotDeleteAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SnapshotDeleteAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

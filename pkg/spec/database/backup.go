@@ -20,13 +20,16 @@ func (s *Service) ListBackups(ctx context.Context, project string, params *schem
 
 	path := fmt.Sprintf(BackupsPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseBackupListVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseBackupListVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -47,13 +50,16 @@ func (s *Service) GetBackup(ctx context.Context, project string, backupId string
 
 	path := fmt.Sprintf(BackupPath, project, backupId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseBackupGetVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseBackupGetVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -74,13 +80,16 @@ func (s *Service) CreateBackup(ctx context.Context, project string, body schema.
 
 	path := fmt.Sprintf(BackupsPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseBackupCreateVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseBackupCreateVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	// Marshal the request body to JSON
 	bodyBytes, err := json.Marshal(body)
@@ -107,13 +116,16 @@ func (s *Service) DeleteBackup(ctx context.Context, projectId string, backupId s
 
 	path := fmt.Sprintf(BackupPath, projectId, backupId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseBackupDeleteVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseBackupDeleteVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

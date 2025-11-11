@@ -16,13 +16,16 @@ func (s *Service) ListLoadBalancers(ctx context.Context, project string, params 
 
 	path := fmt.Sprintf(LoadBalancersPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &LoadBalancerListAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &LoadBalancerListAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -41,13 +44,16 @@ func (s *Service) GetLoadBalancer(ctx context.Context, project string, loadBalan
 
 	path := fmt.Sprintf(LoadBalancerPath, project, loadBalancerId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &LoadBalancerGetAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &LoadBalancerGetAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {

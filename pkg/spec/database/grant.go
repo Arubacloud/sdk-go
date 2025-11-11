@@ -21,13 +21,16 @@ func (s *Service) ListGrants(ctx context.Context, project string, dbaasId string
 
 	path := fmt.Sprintf(GrantsPath, project, dbaasId, databaseId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseGrantListVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseGrantListVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -48,13 +51,16 @@ func (s *Service) GetGrant(ctx context.Context, project string, dbaasId string, 
 
 	path := fmt.Sprintf(GrantItemPath, project, dbaasId, databaseId, grantId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseGrantGetVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseGrantGetVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -75,13 +81,16 @@ func (s *Service) CreateGrant(ctx context.Context, project string, dbaasId strin
 
 	path := fmt.Sprintf(GrantsPath, project, dbaasId, databaseId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseGrantCreateVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseGrantCreateVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	// Marshal the request body to JSON
 	bodyBytes, err := json.Marshal(body)
@@ -136,13 +145,16 @@ func (s *Service) UpdateGrant(ctx context.Context, project string, dbaasId strin
 
 	path := fmt.Sprintf(GrantItemPath, project, dbaasId, databaseId, grantId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseGrantUpdateVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseGrantUpdateVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	// Marshal the request body to JSON
 	bodyBytes, err := json.Marshal(body)
@@ -197,13 +209,16 @@ func (s *Service) DeleteGrant(ctx context.Context, projectId string, dbaasId str
 
 	path := fmt.Sprintf(GrantItemPath, projectId, dbaasId, databaseId, grantId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseGrantDeleteVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseGrantDeleteVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

@@ -18,13 +18,16 @@ func (s *Service) ListMetrics(ctx context.Context, project string, params *schem
 
 	path := fmt.Sprintf(MetricsPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &MetricListVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &MetricListVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {

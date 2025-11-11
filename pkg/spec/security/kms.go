@@ -21,13 +21,16 @@ func (s *Service) ListKMSKeys(ctx context.Context, project string, params *schem
 
 	path := fmt.Sprintf(KmsKeysPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &KmsListAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &KmsListAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -48,13 +51,16 @@ func (s *Service) GetKMSKey(ctx context.Context, project string, kmsKeyId string
 
 	path := fmt.Sprintf(KmsKeyPath, project, kmsKeyId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &KmsReadAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &KmsReadAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -75,13 +81,16 @@ func (s *Service) CreateKMSKey(ctx context.Context, project string, body schema.
 
 	path := fmt.Sprintf(KmsKeysPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &KmsCreateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &KmsCreateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -132,13 +141,16 @@ func (s *Service) UpdateKMSKey(ctx context.Context, project string, kmsKeyId str
 
 	path := fmt.Sprintf(KmsKeyPath, project, kmsKeyId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &KmsUpdateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &KmsUpdateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -189,13 +201,16 @@ func (s *Service) DeleteKMSKey(ctx context.Context, projectId string, kmsKeyId s
 
 	path := fmt.Sprintf(KmsKeyPath, projectId, kmsKeyId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &KmsDeleteAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &KmsDeleteAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

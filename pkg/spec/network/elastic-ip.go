@@ -20,13 +20,16 @@ func (s *Service) ListElasticIPs(ctx context.Context, project string, params *sc
 
 	path := fmt.Sprintf(ElasticIPsPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ElasticIpListAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ElasticIpListAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -47,13 +50,16 @@ func (s *Service) GetElasticIP(ctx context.Context, project string, elasticIPId 
 
 	path := fmt.Sprintf(ElasticIPPath, project, elasticIPId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ElasticIpGetAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ElasticIpGetAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -74,13 +80,16 @@ func (s *Service) CreateElasticIP(ctx context.Context, project string, body sche
 
 	path := fmt.Sprintf(ElasticIPsPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ElasticIpCreateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ElasticIpCreateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	// Marshal the request body to JSON
 	bodyBytes, err := json.Marshal(body)
@@ -107,13 +116,16 @@ func (s *Service) UpdateElasticIP(ctx context.Context, project string, elasticIP
 
 	path := fmt.Sprintf(ElasticIPPath, project, elasticIPId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ElasticIpUpdateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ElasticIpUpdateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	// Marshal the request body to JSON
 	bodyBytes, err := json.Marshal(body)
@@ -140,13 +152,16 @@ func (s *Service) DeleteElasticIP(ctx context.Context, projectId string, elastic
 
 	path := fmt.Sprintf(ElasticIPPath, projectId, elasticIPId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ElasticIpDeleteAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ElasticIpDeleteAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

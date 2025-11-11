@@ -21,13 +21,16 @@ func (s *Service) ListScheduleJobs(ctx context.Context, project string, params *
 
 	path := fmt.Sprintf(JobsPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ScheduleJobListAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ScheduleJobListAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -48,13 +51,16 @@ func (s *Service) GetScheduleJob(ctx context.Context, project string, scheduleJo
 
 	path := fmt.Sprintf(JobPath, project, scheduleJobId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ScheduleJobGetAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ScheduleJobGetAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -75,13 +81,16 @@ func (s *Service) CreateScheduleJob(ctx context.Context, project string, body sc
 
 	path := fmt.Sprintf(JobsPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ScheduleJobCreateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ScheduleJobCreateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -132,13 +141,16 @@ func (s *Service) UpdateScheduleJob(ctx context.Context, project string, schedul
 
 	path := fmt.Sprintf(JobPath, project, scheduleJobId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ScheduleJobUpdateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ScheduleJobUpdateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -189,13 +201,16 @@ func (s *Service) DeleteScheduleJob(ctx context.Context, projectId string, sched
 
 	path := fmt.Sprintf(JobPath, projectId, scheduleJobId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ScheduleJobDeleteAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ScheduleJobDeleteAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

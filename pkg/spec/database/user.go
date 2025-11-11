@@ -21,13 +21,16 @@ func (s *Service) ListUsers(ctx context.Context, project string, dbaasId string,
 
 	path := fmt.Sprintf(UsersPath, project, dbaasId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseUserListVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseUserListVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -48,13 +51,16 @@ func (s *Service) GetUser(ctx context.Context, project string, dbaasId string, u
 
 	path := fmt.Sprintf(UserItemPath, project, dbaasId, userId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseUserGetVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseUserGetVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -75,13 +81,16 @@ func (s *Service) CreateUser(ctx context.Context, project string, dbaasId string
 
 	path := fmt.Sprintf(UsersPath, project, dbaasId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseUserCreateVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseUserCreateVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	// Marshal the request body to JSON
 	bodyBytes, err := json.Marshal(body)
@@ -136,13 +145,16 @@ func (s *Service) UpdateUser(ctx context.Context, project string, dbaasId string
 
 	path := fmt.Sprintf(UserItemPath, project, dbaasId, userId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseUserUpdateVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseUserUpdateVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	// Marshal the request body to JSON
 	bodyBytes, err := json.Marshal(body)
@@ -197,13 +209,16 @@ func (s *Service) DeleteUser(ctx context.Context, projectId string, dbaasId stri
 
 	path := fmt.Sprintf(UserItemPath, projectId, dbaasId, userId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseUserDeleteVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseUserDeleteVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

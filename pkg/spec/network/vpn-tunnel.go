@@ -21,13 +21,16 @@ func (s *Service) ListVpnTunnels(ctx context.Context, project string, params *sc
 
 	path := fmt.Sprintf(VpnTunnelsPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &VpnTunnelListAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &VpnTunnelListAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -48,13 +51,16 @@ func (s *Service) GetVpnTunnel(ctx context.Context, project string, vpnTunnelId 
 
 	path := fmt.Sprintf(VpnTunnelPath, project, vpnTunnelId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &VpnTunnelGetAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &VpnTunnelGetAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -75,13 +81,16 @@ func (s *Service) CreateVpnTunnel(ctx context.Context, project string, body sche
 
 	path := fmt.Sprintf(VpnTunnelsPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &VpnTunnelCreateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &VpnTunnelCreateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -132,13 +141,16 @@ func (s *Service) UpdateVpnTunnel(ctx context.Context, project string, vpnTunnel
 
 	path := fmt.Sprintf(VpnTunnelPath, project, vpnTunnelId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &VpnTunnelUpdateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &VpnTunnelUpdateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -189,13 +201,16 @@ func (s *Service) DeleteVpnTunnel(ctx context.Context, projectId string, vpnTunn
 
 	path := fmt.Sprintf(VpnTunnelPath, projectId, vpnTunnelId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &VpnTunnelDeleteAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &VpnTunnelDeleteAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

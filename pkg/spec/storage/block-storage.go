@@ -20,13 +20,16 @@ func (s *Service) ListBlockStorageVolumes(ctx context.Context, project string, p
 
 	path := fmt.Sprintf(BlockStoragesPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &BlockStorageListAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &BlockStorageListAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -47,13 +50,16 @@ func (s *Service) GetBlockStorageVolume(ctx context.Context, project string, vol
 
 	path := fmt.Sprintf(BlockStoragePath, project, volumeId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &BlockStorageGetAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &BlockStorageGetAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -74,13 +80,16 @@ func (s *Service) CreateBlockStorageVolume(ctx context.Context, project string, 
 
 	path := fmt.Sprintf(BlockStoragesPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &BlockStorageCreateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &BlockStorageCreateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	// Marshal the request body to JSON
 	bodyBytes, err := json.Marshal(body)
@@ -107,13 +116,16 @@ func (s *Service) DeleteBlockStorageVolume(ctx context.Context, project string, 
 
 	path := fmt.Sprintf(BlockStoragePath, project, volumeId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &BlockStorageDeleteAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &BlockStorageDeleteAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

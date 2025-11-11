@@ -17,13 +17,16 @@ func (s *Service) ListProjects(ctx context.Context, params *schema.RequestParame
 
 	path := ProjectsPath
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ProjectListAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ProjectListAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -44,13 +47,16 @@ func (s *Service) GetProject(ctx context.Context, projectId string, params *sche
 
 	path := fmt.Sprintf(ProjectPath, projectId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ProjectGetAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ProjectGetAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -67,13 +73,16 @@ func (s *Service) CreateProject(ctx context.Context, body schema.ProjectRequest,
 
 	path := ProjectsPath
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ProjectCreateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ProjectCreateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -124,13 +133,16 @@ func (s *Service) UpdateProject(ctx context.Context, projectId string, body sche
 
 	path := fmt.Sprintf(ProjectPath, projectId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ProjectUpdateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ProjectUpdateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -181,13 +193,16 @@ func (s *Service) DeleteProject(ctx context.Context, projectId string, params *s
 
 	path := fmt.Sprintf(ProjectPath, projectId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &ProjectDeleteAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ProjectDeleteAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

@@ -20,14 +20,16 @@ func (s *Service) ListDBaaS(ctx context.Context, project string, params *schema.
 	}
 
 	path := fmt.Sprintf(DBaaSPath, project)
-
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseDBaaSListVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseDBaaSListVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -48,13 +50,16 @@ func (s *Service) GetDBaaS(ctx context.Context, project string, dbaasId string, 
 
 	path := fmt.Sprintf(DBaaSItemPath, project, dbaasId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseDBaaSGetVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseDBaaSGetVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -75,13 +80,16 @@ func (s *Service) CreateDBaaS(ctx context.Context, project string, body schema.D
 
 	path := fmt.Sprintf(DBaaSPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseDBaaSCreateVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseDBaaSCreateVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	// Marshal the request body to JSON
 	bodyBytes, err := json.Marshal(body)
@@ -136,13 +144,16 @@ func (s *Service) UpdateDBaaS(ctx context.Context, project string, databaseId st
 
 	path := fmt.Sprintf(DBaaSItemPath, project, databaseId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseDBaaSUpdateVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseDBaaSUpdateVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	// Marshal the request body to JSON
 	bodyBytes, err := json.Marshal(body)
@@ -197,13 +208,16 @@ func (s *Service) DeleteDBaaS(ctx context.Context, projectId string, dbaasId str
 
 	path := fmt.Sprintf(DBaaSItemPath, projectId, dbaasId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &DatabaseDBaaSDeleteVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &DatabaseDBaaSDeleteVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

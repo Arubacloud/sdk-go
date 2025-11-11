@@ -21,13 +21,16 @@ func (s *Service) ListSecurityGroupRules(ctx context.Context, project string, vp
 
 	path := fmt.Sprintf(SecurityGroupRulesPath, project, vpcId, securityGroupId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SecurityRuleListAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SecurityRuleListAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -48,13 +51,16 @@ func (s *Service) GetSecurityGroupRule(ctx context.Context, project string, vpcI
 
 	path := fmt.Sprintf(SecurityGroupRulePath, project, vpcId, securityGroupId, securityGroupRuleId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SecurityRuleGetAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SecurityRuleGetAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -82,13 +88,16 @@ func (s *Service) CreateSecurityGroupRule(ctx context.Context, project string, v
 
 	path := fmt.Sprintf(SecurityGroupRulesPath, project, vpcId, securityGroupId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SecurityRuleCreateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SecurityRuleCreateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -139,13 +148,16 @@ func (s *Service) UpdateSecurityGroupRule(ctx context.Context, project string, v
 
 	path := fmt.Sprintf(SecurityGroupRulePath, project, vpcId, securityGroupId, securityGroupRuleId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SecurityRuleUpdateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SecurityRuleUpdateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -196,13 +208,16 @@ func (s *Service) DeleteSecurityGroupRule(ctx context.Context, projectId string,
 
 	path := fmt.Sprintf(SecurityGroupRulePath, projectId, vpcId, securityGroupId, securityGroupRuleId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SecurityRuleDeleteAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SecurityRuleDeleteAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

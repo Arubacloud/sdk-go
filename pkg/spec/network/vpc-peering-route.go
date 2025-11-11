@@ -21,13 +21,16 @@ func (s *Service) ListVpcPeeringRoutes(ctx context.Context, project string, vpcI
 
 	path := fmt.Sprintf(VpcPeeringRoutesPath, project, vpcId, vpcPeeringId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &VpcPeeringRouteListAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &VpcPeeringRouteListAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -48,13 +51,16 @@ func (s *Service) GetVpcPeeringRoute(ctx context.Context, project string, vpcId 
 
 	path := fmt.Sprintf(VpcPeeringRoutePath, project, vpcId, vpcPeeringId, vpcPeeringRouteId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &VpcPeeringRouteGetAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &VpcPeeringRouteGetAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -75,13 +81,16 @@ func (s *Service) CreateVpcPeeringRoute(ctx context.Context, project string, vpc
 
 	path := fmt.Sprintf(VpcPeeringRoutesPath, project, vpcId, vpcPeeringId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &VpcPeeringRouteCreateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &VpcPeeringRouteCreateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -132,13 +141,16 @@ func (s *Service) UpdateVpcPeeringRoute(ctx context.Context, project string, vpc
 
 	path := fmt.Sprintf(VpcPeeringRoutePath, project, vpcId, vpcPeeringId, vpcPeeringRouteId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &VpcPeeringRouteUpdateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &VpcPeeringRouteUpdateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -189,13 +201,16 @@ func (s *Service) DeleteVpcPeeringRoute(ctx context.Context, projectId string, v
 
 	path := fmt.Sprintf(VpcPeeringRoutePath, projectId, vpcId, vpcPeeringId, vpcPeeringRouteId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &VpcPeeringRouteDeleteAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &VpcPeeringRouteDeleteAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

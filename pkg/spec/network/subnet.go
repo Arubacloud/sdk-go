@@ -21,13 +21,16 @@ func (s *Service) ListSubnets(ctx context.Context, project string, vpcId string,
 
 	path := fmt.Sprintf(SubnetsPath, project, vpcId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SubnetListAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SubnetListAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -48,13 +51,16 @@ func (s *Service) GetSubnet(ctx context.Context, project string, vpcId string, s
 
 	path := fmt.Sprintf(SubnetPath, project, vpcId, subnetId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SubnetGetAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SubnetGetAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -82,14 +88,16 @@ func (s *Service) CreateSubnet(ctx context.Context, project string, vpcId string
 
 	path := fmt.Sprintf(SubnetsPath, project, vpcId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SubnetCreateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SubnetCreateAPIVersion
 	}
 
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
@@ -139,13 +147,16 @@ func (s *Service) UpdateSubnet(ctx context.Context, project string, vpcId string
 
 	path := fmt.Sprintf(SubnetPath, project, vpcId, subnetId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SubnetUpdateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SubnetUpdateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -196,13 +207,16 @@ func (s *Service) DeleteSubnet(ctx context.Context, projectId string, vpcId stri
 
 	path := fmt.Sprintf(SubnetPath, projectId, vpcId, subnetId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SubnetDeleteAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SubnetDeleteAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {

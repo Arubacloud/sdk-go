@@ -18,13 +18,16 @@ func (s *Service) ListEvents(ctx context.Context, project string, params *schema
 
 	path := fmt.Sprintf(EventsPath, project)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &AuditLogListVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &AuditLogListVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {

@@ -21,13 +21,16 @@ func (s *Service) ListSecurityGroups(ctx context.Context, project string, vpcId 
 
 	path := fmt.Sprintf(SecurityGroupsPath, project, vpcId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SecurityGroupListAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SecurityGroupListAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -48,13 +51,16 @@ func (s *Service) GetSecurityGroup(ctx context.Context, project string, vpcId st
 
 	path := fmt.Sprintf(SecurityGroupPath, project, vpcId, securityGroupId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SecurityGroupGetAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SecurityGroupGetAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
@@ -82,13 +88,16 @@ func (s *Service) CreateSecurityGroup(ctx context.Context, project string, vpcId
 
 	path := fmt.Sprintf(SecurityGroupsPath, project, vpcId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SecurityGroupCreateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SecurityGroupCreateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -139,13 +148,16 @@ func (s *Service) UpdateSecurityGroup(ctx context.Context, project string, vpcId
 
 	path := fmt.Sprintf(SecurityGroupPath, project, vpcId, securityGroupId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SecurityGroupUpdateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SecurityGroupUpdateAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
@@ -196,13 +208,16 @@ func (s *Service) DeleteSecurityGroup(ctx context.Context, projectId string, vpc
 
 	path := fmt.Sprintf(SecurityGroupPath, projectId, vpcId, securityGroupId)
 
-	var queryParams map[string]string
-	var headers map[string]string
-
-	if params != nil {
-		queryParams = params.ToQueryParams()
-		headers = params.ToHeaders()
+	if params == nil {
+		params = &schema.RequestParameters{
+			APIVersion: &SecurityGroupDeleteAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SecurityGroupDeleteAPIVersion
 	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
 
 	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
