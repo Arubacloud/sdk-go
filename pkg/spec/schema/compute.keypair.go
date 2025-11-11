@@ -11,14 +11,14 @@ type KeyPairPropertiesResult struct {
 }
 
 type KeyPairRequest struct {
-	Metadata ResourceMetadataRequest `json:"metadata"`
+	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 
 	Properties KeyPairPropertiesRequest `json:"properties"`
 }
 
 type KeyPairResponse struct {
-	Metadata   RegionalResourceMetadataRequest `json:"metadata"`
-	Properties KeyPairPropertiesResult         `json:"properties"`
+	Metadata   ResourceMetadataResponse `json:"metadata"`
+	Properties KeyPairPropertiesResult  `json:"properties"`
 }
 
 type KeyPairListResponse struct {

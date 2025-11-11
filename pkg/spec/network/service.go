@@ -50,3 +50,19 @@ func (s *Service) waitForSecurityGroupActive(ctx context.Context, projectID, vpc
 
 	return s.client.WaitForResourceState(ctx, "SecurityGroup", sgID, getter, client.DefaultPollingConfig())
 }
+
+// waitForSubnetActive waits for a Subnet to become Active before proceeding
+/*func (s *Service) waitForSubnetActive(ctx context.Context, projectID, vpcID, subnetID string) error {
+	getter := func(ctx context.Context) (string, error) {
+		resp, err := s.GetSubnet(ctx, projectID, vpcID, subnetID, nil)
+		if err != nil {
+			return "", err
+		}
+		if resp.Data == nil || resp.Data.Status.State == nil {
+			return "", fmt.Errorf("subnet state is nil")
+		}
+		return *resp.Data.Status.State, nil
+	}
+
+	return s.client.WaitForResourceState(ctx, "Subnet", subnetID, getter, client.DefaultPollingConfig())
+}*/

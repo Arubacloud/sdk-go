@@ -98,7 +98,7 @@ func createAllResources(ctx context.Context, sdk *sdkgo.Client) *ResourceCollect
 	resources.KaaSResp = createKaaS(ctx, sdk, resources.ProjectID, resources.VPCResp, resources.SubnetResp, resources.SecurityGroupResp)
 
 	// 12. Create Cloud Server (commented out)
-	// resources.CloudServerResp = createCloudServer(ctx, sdk, resources)
+	resources.CloudServerResp = createCloudServer(ctx, sdk, resources)
 
 	return resources
 }
@@ -198,6 +198,8 @@ func createBlockStorage(ctx context.Context, sdk *sdkgo.Client, projectID string
 			Type:          schema.BlockStorageTypeStandard,
 			Zone:          "ITBG-1",
 			BillingPeriod: "Hour",
+			Bootable:      boolPtr(true),
+			Image:         stringPtr("LU22-001"),
 		},
 	}
 
@@ -285,7 +287,7 @@ func createVPC(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema
 		Properties: schema.VpcPropertiesRequest{
 			Properties: &schema.VpcProperties{
 				Default: boolPtr(false),
-				Preset:  boolPtr(true),
+				Preset:  boolPtr(false),
 			},
 		},
 	}
@@ -331,7 +333,7 @@ func createSubnet(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcR
 		},
 		Properties: schema.SubnetPropertiesRequest{
 			Type:    schema.SubnetTypeAdvanced,
-			Default: true,
+			Default: false,
 			Network: &schema.SubnetNetwork{
 				Address: "192.168.1.0/25",
 			},
@@ -455,9 +457,14 @@ func createKeyPair(ctx context.Context, sdk *sdkgo.Client, projectID string) *sc
 	sshPublicKey := "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEA2No7At0tgHrcZTL0kGWyLLUqPKfOhD9hGdNV9PbJxhjOGNFxcwdQ9wCXsJ3RQaRHBuGIgVodDurrlqzxFK86yCHMgXT2YLHF0j9P4m9GDiCfOK6msbFb89p5xZExjwD2zK+w68r7iOKZeRB2yrznW5TD3KDemSPIQQIVcyLF+yxft49HWBTI3PVQ4rBVOBJ2PdC9SAOf7CYnptW24CRrC0h85szIdwMA+Kmasfl3YGzk4MxheHrTO8C40aXXpieJ9S2VQA4VJAMRyAboptIK0cKjBYrbt5YkEL0AlyBGPIu6MPYr5K/MHyDunDi9yc7VYRYRR0f46MBOSqMUiGPnMw=="
 
 	keyPairReq := schema.KeyPairRequest{
-		Metadata: schema.ResourceMetadataRequest{
-			Name: "my-ssh-keypair",
-			Tags: []string{"compute", "access"},
+		Metadata: schema.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+				Name: "allow-ssh",
+				Tags: []string{"ssh-access", "ingress"},
+			},
+			Location: schema.LocationRequest{
+				Value: "ITBG-Bergamo",
+			},
 		},
 		Properties: schema.KeyPairPropertiesRequest{
 			Value: sshPublicKey,
@@ -472,7 +479,7 @@ func createKeyPair(ctx context.Context, sdk *sdkgo.Client, projectID string) *sc
 			keyPairResp.StatusCode,
 			stringValue(keyPairResp.Error.Title),
 			stringValue(keyPairResp.Error.Detail))
-	} else if keyPairResp.Data != nil && keyPairResp.Data.Metadata.Name != "" {
+	} else if keyPairResp.Data != nil && *keyPairResp.Data.Metadata.Name != "" {
 		fmt.Printf("✓ Created SSH Key Pair: %s\n", keyPairResp.Data.Metadata.Name)
 	}
 
@@ -507,7 +514,7 @@ func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRe
 				DataCenter: stringPtr("ITBG-1"),
 			},
 			Flavor: &schema.DBaaSFlavor{
-				Name: stringPtr("small"),
+				Name: stringPtr("DBO2A4"),
 			},
 			Storage: &schema.DBaaSStorage{
 				SizeGb: int32Ptr(20),
@@ -563,6 +570,34 @@ func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRes
 		return nil
 	}
 
+	// Wait for Subnet to become Active before creating KaaS
+	vpcID := *vpcResp.Data.Metadata.Id
+	subnetID := *subnetResp.Data.Metadata.Id
+	fmt.Println("⏳ Waiting for Subnet to become Active before creating KaaS...")
+
+	// Create a simple polling loop to check Subnet state
+	maxAttempts := 30
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		subnetCheckResp, err := sdk.Network.GetSubnet(ctx, projectID, vpcID, subnetID, nil)
+		if err != nil {
+			log.Printf("Error checking Subnet state: %v", err)
+			break
+		}
+
+		if subnetCheckResp.Data != nil && subnetCheckResp.Data.Status.State != nil {
+			state := *subnetCheckResp.Data.Status.State
+			if state == "Active" {
+				fmt.Println("✓ Subnet is now Active")
+				break
+			}
+			if attempt < maxAttempts {
+				time.Sleep(5 * time.Second)
+			} else {
+				fmt.Printf("⚠ Subnet did not become Active after %d attempts (state: %s)\n", maxAttempts, state)
+			}
+		}
+	}
+
 	kaasReq := schema.KaaSRequest{
 		Metadata: schema.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: schema.ResourceMetadataRequest{
@@ -574,28 +609,28 @@ func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRes
 			},
 		},
 		Properties: schema.KaaSPropertiesRequest{
-			Preset: true,
+			Preset: false,
 			Vpc: schema.ReferenceResource{
 				Uri: *vpcResp.Data.Metadata.Uri,
 			},
 			Subnet: schema.ReferenceResource{
 				Uri: *subnetResp.Data.Metadata.Uri,
 			},
-			SecurityGroup: schema.ReferenceResource{
-				Uri: *sgResp.Data.Metadata.Uri,
+			SecurityGroup: schema.SecurityGroupProperties{
+				Name: "sg-name-for-kaas",
 			},
 			NodeCidr: schema.NodeCidrProperties{
 				Name:    "my-node-cidr",
 				Address: "10.100.0.0/16",
 			},
 			KubernetesVersion: schema.KubernetesVersionInfo{
-				Value: "1.28",
+				Value: "1.32.3",
 			},
 			NodePools: []schema.NodePoolProperties{
 				{
 					Name:     "default-pool",
 					Nodes:    3,
-					Instance: "GP.2x4",
+					Instance: "K4A8",
 					Zone:     "ITBG-1",
 				},
 			},
@@ -627,6 +662,97 @@ func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRes
 	}
 
 	return kaasResp
+}
+
+// createCloudServer creates a cloud server instance
+func createCloudServer(ctx context.Context, sdk *sdkgo.Client, resources *ResourceCollection) *schema.Response[schema.CloudServerResponse] {
+	fmt.Println("--- Cloud Server ---")
+
+	// Verify all required resources are available
+	if resources.VPCResp == nil || resources.VPCResp.Data == nil || resources.VPCResp.Data.Metadata.Uri == nil {
+		fmt.Println("⚠ Skipping Cloud Server creation - VPC not available")
+		return nil
+	}
+	if resources.ElasticIPResp == nil || resources.ElasticIPResp.Data == nil || resources.ElasticIPResp.Data.Metadata.Uri == nil {
+		fmt.Println("⚠ Skipping Cloud Server creation - Elastic IP not available")
+		return nil
+	}
+	if resources.BlockStorageResp == nil || resources.BlockStorageResp.Data == nil || resources.BlockStorageResp.Data.Metadata.Uri == nil {
+		fmt.Println("⚠ Skipping Cloud Server creation - Block Storage not available")
+		return nil
+	}
+	if resources.KeyPairResp == nil || resources.KeyPairResp.Data == nil || *resources.KeyPairResp.Data.Metadata.Name == "" {
+		fmt.Println("⚠ Skipping Cloud Server creation - Key Pair not available")
+		return nil
+	}
+	if resources.SubnetResp == nil || resources.SubnetResp.Data == nil || resources.SubnetResp.Data.Metadata.Uri == nil {
+		fmt.Println("⚠ Skipping Cloud Server creation - Subnet not available")
+		return nil
+	}
+	if resources.SecurityGroupResp == nil || resources.SecurityGroupResp.Data == nil || resources.SecurityGroupResp.Data.Metadata.Uri == nil {
+		fmt.Println("⚠ Skipping Cloud Server creation - Security Group not available")
+		return nil
+	}
+
+	cloudServerReq := schema.CloudServerRequest{
+		Metadata: schema.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+				Name: "my-cloudserver",
+				Tags: []string{"virtualmachine", "container"},
+			},
+			Location: schema.LocationRequest{
+				Value: "ITBG-Bergamo",
+			},
+		},
+		Properties: schema.CloudServerPropertiesRequest{
+			Zone:       "ITBG-1",
+			VpcPreset:  false,
+			FlavorName: stringPtr("CSO2A4"),
+			Vpc: schema.ReferenceResource{
+				Uri: *resources.VPCResp.Data.Metadata.Uri,
+			},
+			ElastcIp: schema.ReferenceResource{
+				Uri: *resources.ElasticIPResp.Data.Metadata.Uri,
+			},
+			BootVolume: schema.ReferenceResource{
+				Uri: *resources.BlockStorageResp.Data.Metadata.Uri,
+			},
+			KeyPair: schema.ReferenceResource{
+				Uri: *resources.KeyPairResp.Data.Metadata.Uri,
+			},
+			Subnets: []schema.ReferenceResource{
+				{
+					Uri: *resources.SubnetResp.Data.Metadata.Uri,
+				},
+			},
+			SecurityGroups: []schema.ReferenceResource{
+				{
+					Uri: *resources.SecurityGroupResp.Data.Metadata.Uri,
+				},
+			},
+		},
+	}
+
+	cloudServerResp, err := sdk.Compute.CreateCloudServer(ctx, resources.ProjectID, cloudServerReq, nil)
+	if err != nil {
+		log.Printf("Error creating Cloud Server: %v", err)
+		return nil
+	} else if !cloudServerResp.IsSuccess() {
+		log.Printf("Failed to create Cloud Server - Status: %d, Error: %s, Detail: %s",
+			cloudServerResp.StatusCode,
+			stringValue(cloudServerResp.Error.Title),
+			stringValue(cloudServerResp.Error.Detail))
+		return nil
+	}
+
+	if cloudServerResp.Data != nil && cloudServerResp.Data.Metadata.Name != "" {
+		fmt.Printf("✓ Created Cloud Server: %s (Zone: %s, Flavor: %s)\n",
+			cloudServerResp.Data.Metadata.Name,
+			cloudServerResp.Data.Properties.Zone,
+			cloudServerResp.Data.Properties.Flavor.Name)
+	}
+
+	return cloudServerResp
 }
 
 // printResourceSummary prints a summary of all created resources
@@ -663,7 +789,7 @@ func printResourceSummary(resources *ResourceCollection) {
 		fmt.Println("- Security Rule ID:", *resources.SecurityRuleResp.Data.Metadata.Id)
 	}
 
-	if resources.KeyPairResp != nil && resources.KeyPairResp.Data != nil && resources.KeyPairResp.Data.Metadata.Name != "" {
+	if resources.KeyPairResp != nil && resources.KeyPairResp.Data != nil && *resources.KeyPairResp.Data.Metadata.Name != "" {
 		fmt.Println("- SSH Key Pair:", resources.KeyPairResp.Data.Metadata.Name)
 	}
 

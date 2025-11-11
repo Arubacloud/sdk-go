@@ -36,6 +36,10 @@ type NodePoolProperties struct {
 	Zone string `json:"dataCenter"`
 }
 
+type SecurityGroupProperties struct {
+	Name string `json:"name"`
+}
+
 type KaaSPropertiesRequest struct {
 
 	//LinkedResources linked resources to the KaaS cluster
@@ -49,7 +53,7 @@ type KaaSPropertiesRequest struct {
 
 	NodeCidr NodeCidrProperties `json:"nodeCidr"`
 
-	SecurityGroup ReferenceResource `json:"securityGroup"`
+	SecurityGroup SecurityGroupProperties `json:"securityGroup"`
 
 	KubernetesVersion KubernetesVersionInfo `json:"kubernetesVersion"`
 
