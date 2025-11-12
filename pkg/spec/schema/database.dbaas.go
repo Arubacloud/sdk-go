@@ -191,7 +191,7 @@ type DBaaSRequest struct {
 	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 
 	// Spec contains the DBaaS instance specification
-	Properties DBaaSPropertiesRequest `json:"spec"`
+	Properties DBaaSPropertiesRequest `json:"properties"`
 }
 
 type DBaaSResponse struct {
@@ -199,7 +199,7 @@ type DBaaSResponse struct {
 	Metadata ResourceMetadataResponse `json:"metadata"`
 
 	// Spec contains the DBaaS instance specification
-	Properties DBaaSPropertiesResponse `json:"spec"`
+	Properties DBaaSPropertiesResponse `json:"properties"`
 
 	Status ResourceStatus `json:"status,omitempty"`
 }
