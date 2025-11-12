@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,11 +18,39 @@ import (
 // main demonstrates a modular approach for creating cloud infrastructure.
 // The code is organized into focused, reusable functions rather than one monolithic main function.
 // The example shows how to create all resources, poll for their Active state, and then print a summary.
+//
+// Usage:
+//   go run . [flags]
+//
+// Flags:
+//   -mode string
+//        Operation mode: create, update, or delete (default "create")
+//
+// Examples:
+//   go run .                                  # Create resources
+//   PROJECT_ID=my-project go run . -mode=update    # Update resources
+//   PROJECT_ID=my-project go run . -mode=delete    # Delete resources
 /*******  916ef78b-f0e3-4a8d-8711-6783ddf0996d  *******/
 func main() {
+	mode := flag.String("mode", "create", "Operation mode: create, update, or delete")
+	flag.Parse()
+
+	switch *mode {
+	case "create":
+		runCreateExample()
+	case "update":
+		runUpdateExample()
+	case "delete":
+		runDeleteExample()
+	default:
+		log.Fatalf("Unknown mode: %s. Use 'create', 'update', or 'delete'", *mode)
+	}
+}
+
+func runCreateExample() {
 	config := &client.Config{
-		ClientID:     "cmp-74603fc1-ba10-40b3-9ff9-4aef35548642",
-		ClientSecret: "UZXfEZFFOz1M0t66FNTcO4c5nez76Kwf",
+		ClientID:     "clientId",
+		ClientSecret: "clientSecret",
 		HTTPClient:   &http.Client{Timeout: 30 * time.Second},
 		Debug:        true,
 	}
@@ -40,7 +69,7 @@ func main() {
 	// Use the SDK with context
 	sdk.Client = sdk.Client.WithContext(ctx)
 
-	fmt.Println("\n=== SDK Examples ===")
+	fmt.Println("\n=== SDK Create Example ===")
 
 	// Create all resources
 	resources := createAllResources(ctx, sdk)
