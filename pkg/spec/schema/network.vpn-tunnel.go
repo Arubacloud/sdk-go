@@ -12,8 +12,8 @@ type IPConfigurations struct {
 	PublicIP *ReferenceResource `json:"publicIp,omitempty"`
 }
 
-// IkeSettings contains IKE settings
-type IkeSettings struct {
+// IKESettings contains IKE settings
+type IKESettings struct {
 	// Lifetime Lifetime value
 	Lifetime int32 `json:"lifetime,omitempty"`
 
@@ -23,21 +23,21 @@ type IkeSettings struct {
 	// Hash Hash algorithm (nullable)
 	Hash *string `json:"hash,omitempty"`
 
-	// DhGroup Diffie-Hellman group (nullable)
-	DhGroup *string `json:"dhGroup,omitempty"`
+	// DHGroup Diffie-Hellman group (nullable)
+	DHGroup *string `json:"dhGroup,omitempty"`
 
-	// DpdAction Dead Peer Detection action (nullable)
-	DpdAction *string `json:"dpdAction,omitempty"`
+	// DPDAction Dead Peer Detection action (nullable)
+	DPDAction *string `json:"dpdAction,omitempty"`
 
-	// DpdInterval Dead Peer Detection interval
-	DpdInterval int32 `json:"dpdInterval,omitempty"`
+	// DPDInterval Dead Peer Detection interval
+	DPDInterval int32 `json:"dpdInterval,omitempty"`
 
-	// DpdTimeout Dead Peer Detection timeout
-	DpdTimeout int32 `json:"dpdTimeout,omitempty"`
+	// DPDTimeout Dead Peer Detection timeout
+	DPDTimeout int32 `json:"dpdTimeout,omitempty"`
 }
 
-// EspSettings contains ESP settings
-type EspSettings struct {
+// ESPSettings contains ESP settings
+type ESPSettings struct {
 	// Lifetime Lifetime value
 	Lifetime int32 `json:"lifetime,omitempty"`
 
@@ -47,12 +47,12 @@ type EspSettings struct {
 	// Hash Hash algorithm (nullable)
 	Hash *string `json:"hash,omitempty"`
 
-	// Pfs Perfect Forward Secrecy (nullable)
-	Pfs *string `json:"pfs,omitempty"`
+	// PFS Perfect Forward Secrecy (nullable)
+	PFS *string `json:"pfs,omitempty"`
 }
 
-// PskSettings contains Pre-Shared Key settings
-type PskSettings struct {
+// PSKSettings contains Pre-Shared Key settings
+type PSKSettings struct {
 	// CloudSite Cloud site identifier (nullable)
 	CloudSite *string `json:"cloudSite,omitempty"`
 
@@ -65,14 +65,14 @@ type PskSettings struct {
 
 // VPNClientSettings contains client settings of the VPN tunnel
 type VPNClientSettings struct {
-	// Ike IKE settings (nullable)
-	Ike *IkeSettings `json:"ike,omitempty"`
+	// IKE settings (nullable)
+	IKE *IKESettings `json:"ike,omitempty"`
 
-	// Esp ESP settings (nullable)
-	Esp *EspSettings `json:"esp,omitempty"`
+	// ESP settings (nullable)
+	ESP *ESPSettings `json:"esp,omitempty"`
 
-	// Psk Pre-Shared Key settings (nullable)
-	Psk *PskSettings `json:"psk,omitempty"`
+	// PSK Pre-Shared Key settings (nullable)
+	PSK *PSKSettings `json:"psk,omitempty"`
 }
 
 // VPNTunnelPropertiesRequest contains properties of a VPN tunnel
