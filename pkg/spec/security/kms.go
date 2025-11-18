@@ -19,7 +19,7 @@ func (s *Service) ListKMSKeys(ctx context.Context, project string, params *schem
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KmsKeysPath, project)
+	path := fmt.Sprintf(KMSKeysPath, project)
 
 	if params == nil {
 		params = &schema.RequestParameters{
@@ -49,7 +49,7 @@ func (s *Service) GetKMSKey(ctx context.Context, project string, kmsKeyId string
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KmsKeyPath, project, kmsKeyId)
+	path := fmt.Sprintf(KMSKeyPath, project, kmsKeyId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
@@ -79,7 +79,7 @@ func (s *Service) CreateKMSKey(ctx context.Context, project string, body schema.
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KmsKeysPath, project)
+	path := fmt.Sprintf(KMSKeysPath, project)
 
 	if params == nil {
 		params = &schema.RequestParameters{
@@ -139,7 +139,7 @@ func (s *Service) UpdateKMSKey(ctx context.Context, project string, kmsKeyId str
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KmsKeyPath, project, kmsKeyId)
+	path := fmt.Sprintf(KMSKeyPath, project, kmsKeyId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
@@ -199,7 +199,7 @@ func (s *Service) DeleteKMSKey(ctx context.Context, projectId string, kmsKeyId s
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KmsKeyPath, projectId, kmsKeyId)
+	path := fmt.Sprintf(KMSKeyPath, projectId, kmsKeyId)
 
 	if params == nil {
 		params = &schema.RequestParameters{

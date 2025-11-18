@@ -19,7 +19,7 @@ func (s *Service) ListVpnTunnels(ctx context.Context, project string, params *sc
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpnTunnelsPath, project)
+	path := fmt.Sprintf(VPNTunnelsPath, project)
 
 	if params == nil {
 		params = &schema.RequestParameters{
@@ -49,7 +49,7 @@ func (s *Service) GetVpnTunnel(ctx context.Context, project string, vpnTunnelId 
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpnTunnelPath, project, vpnTunnelId)
+	path := fmt.Sprintf(VPNTunnelPath, project, vpnTunnelId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
@@ -79,7 +79,7 @@ func (s *Service) CreateVpnTunnel(ctx context.Context, project string, body sche
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpnTunnelsPath, project)
+	path := fmt.Sprintf(VPNTunnelsPath, project)
 
 	if params == nil {
 		params = &schema.RequestParameters{
@@ -139,7 +139,7 @@ func (s *Service) UpdateVpnTunnel(ctx context.Context, project string, vpnTunnel
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpnTunnelPath, project, vpnTunnelId)
+	path := fmt.Sprintf(VPNTunnelPath, project, vpnTunnelId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
@@ -199,7 +199,7 @@ func (s *Service) DeleteVpnTunnel(ctx context.Context, projectId string, vpnTunn
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpnTunnelPath, projectId, vpnTunnelId)
+	path := fmt.Sprintf(VPNTunnelPath, projectId, vpnTunnelId)
 
 	if params == nil {
 		params = &schema.RequestParameters{

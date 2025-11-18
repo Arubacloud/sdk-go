@@ -19,7 +19,7 @@ func (s *Service) ListVpcPeerings(ctx context.Context, project string, vpcId str
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpcPeeringsPath, project, vpcId)
+	path := fmt.Sprintf(VPCPeeringsPath, project, vpcId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
@@ -49,7 +49,7 @@ func (s *Service) GetVpcPeering(ctx context.Context, project string, vpcId strin
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpcPeeringPath, project, vpcId, vpcPeeringId)
+	path := fmt.Sprintf(VPCPeeringPath, project, vpcId, vpcPeeringId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
@@ -79,7 +79,7 @@ func (s *Service) CreateVpcPeering(ctx context.Context, project string, vpcId st
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpcPeeringsPath, project, vpcId)
+	path := fmt.Sprintf(VPCPeeringsPath, project, vpcId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
@@ -139,7 +139,7 @@ func (s *Service) UpdateVpcPeering(ctx context.Context, project string, vpcId st
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpcPeeringPath, project, vpcId, vpcPeeringId)
+	path := fmt.Sprintf(VPCPeeringPath, project, vpcId, vpcPeeringId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
@@ -199,7 +199,7 @@ func (s *Service) DeleteVpcPeering(ctx context.Context, projectId string, vpcId 
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpcPeeringPath, projectId, vpcId, vpcPeeringId)
+	path := fmt.Sprintf(VPCPeeringPath, projectId, vpcId, vpcPeeringId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
