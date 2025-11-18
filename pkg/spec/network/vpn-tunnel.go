@@ -12,21 +12,21 @@ import (
 )
 
 // ListVpnTunnels retrieves all VPN tunnels for a project
-func (s *Service) ListVpnTunnels(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelList], error) {
+func (s *Service) ListVpnTunnels(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VPNTunnelList], error) {
 	s.client.Logger().Debugf("Listing VPN tunnels for project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpnTunnelsPath, project)
+	path := fmt.Sprintf(VPNTunnelsPath, project)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpnTunnelListAPIVersion,
+			APIVersion: &VPNTunnelListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpnTunnelListAPIVersion
+		params.APIVersion = &VPNTunnelListAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -38,25 +38,25 @@ func (s *Service) ListVpnTunnels(ctx context.Context, project string, params *sc
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.VpnTunnelList](httpResp)
+	return schema.ParseResponseBody[schema.VPNTunnelList](httpResp)
 }
 
 // GetVpnTunnel retrieves a specific VPN tunnel by ID
-func (s *Service) GetVpnTunnel(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
+func (s *Service) GetVpnTunnel(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VPNTunnelResponse], error) {
 	s.client.Logger().Debugf("Getting VPN tunnel: %s in project: %s", vpnTunnelId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpnTunnelId, "VPN tunnel ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpnTunnelPath, project, vpnTunnelId)
+	path := fmt.Sprintf(VPNTunnelPath, project, vpnTunnelId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpnTunnelGetAPIVersion,
+			APIVersion: &VPNTunnelGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpnTunnelGetAPIVersion
+		params.APIVersion = &VPNTunnelGetAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -68,25 +68,25 @@ func (s *Service) GetVpnTunnel(ctx context.Context, project string, vpnTunnelId 
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.VpnTunnelResponse](httpResp)
+	return schema.ParseResponseBody[schema.VPNTunnelResponse](httpResp)
 }
 
 // CreateVpnTunnel creates a new VPN tunnel
-func (s *Service) CreateVpnTunnel(ctx context.Context, project string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
+func (s *Service) CreateVpnTunnel(ctx context.Context, project string, body schema.VPNTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VPNTunnelResponse], error) {
 	s.client.Logger().Debugf("Creating VPN tunnel in project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpnTunnelsPath, project)
+	path := fmt.Sprintf(VPNTunnelsPath, project)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpnTunnelCreateAPIVersion,
+			APIVersion: &VPNTunnelCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpnTunnelCreateAPIVersion
+		params.APIVersion = &VPNTunnelCreateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -108,7 +108,7 @@ func (s *Service) CreateVpnTunnel(ctx context.Context, project string, body sche
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.VpnTunnelResponse]{
+	response := &schema.Response[schema.VPNTunnelResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -116,7 +116,7 @@ func (s *Service) CreateVpnTunnel(ctx context.Context, project string, body sche
 	}
 
 	if response.IsSuccess() {
-		var data schema.VpnTunnelResponse
+		var data schema.VPNTunnelResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
@@ -132,21 +132,21 @@ func (s *Service) CreateVpnTunnel(ctx context.Context, project string, body sche
 }
 
 // UpdateVpnTunnel updates an existing VPN tunnel
-func (s *Service) UpdateVpnTunnel(ctx context.Context, project string, vpnTunnelId string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error) {
+func (s *Service) UpdateVpnTunnel(ctx context.Context, project string, vpnTunnelId string, body schema.VPNTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VPNTunnelResponse], error) {
 	s.client.Logger().Debugf("Updating VPN tunnel: %s in project: %s", vpnTunnelId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpnTunnelId, "VPN tunnel ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpnTunnelPath, project, vpnTunnelId)
+	path := fmt.Sprintf(VPNTunnelPath, project, vpnTunnelId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpnTunnelUpdateAPIVersion,
+			APIVersion: &VPNTunnelUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpnTunnelUpdateAPIVersion
+		params.APIVersion = &VPNTunnelUpdateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -168,7 +168,7 @@ func (s *Service) UpdateVpnTunnel(ctx context.Context, project string, vpnTunnel
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.VpnTunnelResponse]{
+	response := &schema.Response[schema.VPNTunnelResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -176,7 +176,7 @@ func (s *Service) UpdateVpnTunnel(ctx context.Context, project string, vpnTunnel
 	}
 
 	if response.IsSuccess() {
-		var data schema.VpnTunnelResponse
+		var data schema.VPNTunnelResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
@@ -199,14 +199,14 @@ func (s *Service) DeleteVpnTunnel(ctx context.Context, projectId string, vpnTunn
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpnTunnelPath, projectId, vpnTunnelId)
+	path := fmt.Sprintf(VPNTunnelPath, projectId, vpnTunnelId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpnTunnelDeleteAPIVersion,
+			APIVersion: &VPNTunnelDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpnTunnelDeleteAPIVersion
+		params.APIVersion = &VPNTunnelDeleteAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()

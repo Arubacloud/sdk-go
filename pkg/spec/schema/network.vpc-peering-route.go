@@ -1,7 +1,7 @@
 package schema
 
-// VpcPeeringRoutePropertiesRequest contains properties of a VPC peering route to create
-type VpcPeeringRoutePropertiesRequest struct {
+// VPCPeeringRoutePropertiesRequest contains properties of a VPC peering route to create
+type VPCPeeringRoutePropertiesRequest struct {
 	// LocalNetworkAddress Local network address in CIDR notation
 	LocalNetworkAddress string `json:"localNetworkAddress"`
 
@@ -11,7 +11,7 @@ type VpcPeeringRoutePropertiesRequest struct {
 	BillingPlan BillingPeriodResource `json:"billingPlan"`
 }
 
-type VpcPeeringRoutePropertiesResponse struct {
+type VPCPeeringRoutePropertiesResponse struct {
 	// LocalNetworkAddress Local network address in CIDR notation
 	LocalNetworkAddress string `json:"localNetworkAddress"`
 
@@ -21,24 +21,24 @@ type VpcPeeringRoutePropertiesResponse struct {
 	BillingPlan BillingPeriodResource `json:"billingPlan"`
 }
 
-type VpcPeeringRouteRequest struct {
+type VPCPeeringRouteRequest struct {
 	// Metadata of the VPC Peering Route
 	Metadata ResourceMetadataRequest `json:"metadata"`
 
 	// Spec contains the VPC Peering Route specification
-	Properties VpcPeeringRoutePropertiesRequest `json:"properties"`
+	Properties VPCPeeringRoutePropertiesRequest `json:"properties"`
 }
 
-type VpcPeeringRouteResponse struct {
+type VPCPeeringRouteResponse struct {
 	// Metadata of the VPC Peering Route
 	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 	// Spec contains the VPC Peering Route specification
-	Properties VpcPeeringRoutePropertiesResponse `json:"properties"`
+	Properties VPCPeeringRoutePropertiesResponse `json:"properties"`
 
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type VpcPeeringRouteList struct {
+type VPCPeeringRouteList struct {
 	ListResponse
-	Values []VpcPeeringRouteResponse `json:"values"`
+	Values []VPCPeeringRouteResponse `json:"values"`
 }

@@ -63,7 +63,7 @@ func fetchExistingResources(ctx context.Context, sdk *sdkgo.Client, projectID st
 	dbaasListResp, err := sdk.Database.ListDBaaS(ctx, projectID, nil)
 	if err == nil && dbaasListResp.IsSuccess() && len(dbaasListResp.Data.Values) > 0 {
 		// Get the first DBaaS instance details
-		dbaasID := *dbaasListResp.Data.Values[0].Metadata.Id
+		dbaasID := *dbaasListResp.Data.Values[0].Metadata.ID
 		dbaasResp, err := sdk.Database.GetDBaaS(ctx, projectID, dbaasID, nil)
 		if err == nil && dbaasResp.IsSuccess() {
 			resources.DBaaSResp = dbaasResp
@@ -75,7 +75,7 @@ func fetchExistingResources(ctx context.Context, sdk *sdkgo.Client, projectID st
 	kaasList, err := sdk.Container.ListKaaS(ctx, projectID, nil)
 	if err == nil && kaasList.IsSuccess() && len(kaasList.Data.Values) > 0 {
 		// Get the first KaaS cluster details
-		kaasID := *kaasList.Data.Values[0].Metadata.Id
+		kaasID := *kaasList.Data.Values[0].Metadata.ID
 		kaasResp, err := sdk.Container.GetKaaS(ctx, projectID, kaasID, nil)
 		if err == nil && kaasResp.IsSuccess() {
 			resources.KaaSResp = kaasResp
@@ -139,7 +139,7 @@ func updateProject(ctx context.Context, sdk *sdkgo.Client, projectID string) {
 func updateDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, dbaasResp *schema.Response[schema.DBaaSResponse]) {
 	fmt.Println("--- Updating DBaaS ---")
 
-	dbaasID := *dbaasResp.Data.Metadata.Id
+	dbaasID := *dbaasResp.Data.Metadata.ID
 
 	// Update with new storage size
 	dbaasReq := schema.DBaaSRequest{
@@ -154,22 +154,22 @@ func updateDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, dbaas
 		},
 		Properties: schema.DBaaSPropertiesRequest{
 			Engine: &schema.DBaaSEngine{
-				Id:         stringPtr("mysql-8.0"),
+				ID:         stringPtr("mysql-8.0"),
 				DataCenter: stringPtr("ITBG-1"),
 			},
 			Flavor: &schema.DBaaSFlavor{
 				Name: stringPtr("DBO2A4"),
 			},
 			Storage: &schema.DBaaSStorage{
-				SizeGb: int32Ptr(25), // Increased from 20 to 25 GB
+				SizeGB: int32Ptr(25), // Increased from 20 to 25 GB
 			},
 			BillingPlan: &schema.DBaaSBillingPlan{
 				BillingPeriod: stringPtr("Hour"),
 			},
 			Networking: &schema.DBaaSNetworking{
-				VpcUri:           &dbaasResp.Data.Properties.Networking.Vpc.Uri,
-				SubnetUri:        &dbaasResp.Data.Properties.Networking.Subnet.Uri,
-				SecurityGroupUri: &dbaasResp.Data.Properties.Networking.SecurityGroup.Uri,
+				VPCURI:           &dbaasResp.Data.Properties.Networking.VPC.URI,
+				SubnetURI:        &dbaasResp.Data.Properties.Networking.Subnet.URI,
+				SecurityGroupURI: &dbaasResp.Data.Properties.Networking.SecurityGroup.URI,
 			},
 			Autoscaling: &schema.DBaaSAutoscaling{
 				Enabled:        boolPtr(true),
@@ -194,7 +194,7 @@ func updateDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, dbaas
 	if updateResp.Data != nil && updateResp.Data.Metadata.Name != nil {
 		fmt.Printf("✓ Updated DBaaS: %s (Storage: %d GB)\n",
 			*updateResp.Data.Metadata.Name,
-			int32Value(updateResp.Data.Properties.Storage.SizeGb))
+			int32Value(updateResp.Data.Properties.Storage.SizeGB))
 	}
 }
 
@@ -202,7 +202,7 @@ func updateDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, dbaas
 func updateKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, kaasResp *schema.Response[schema.KaaSResponse]) {
 	fmt.Println("--- Updating KaaS Cluster ---")
 
-	kaasID := *kaasResp.Data.Metadata.Id
+	kaasID := *kaasResp.Data.Metadata.ID
 
 	// Update with modified node pool
 	kaasReq := schema.KaaSRequest{
@@ -217,18 +217,18 @@ func updateKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, kaasRe
 		},
 		Properties: schema.KaaSPropertiesRequest{
 			Preset: false,
-			Vpc: schema.ReferenceResource{
-				Uri: kaasResp.Data.Properties.Vpc.Uri,
+			VPC: schema.ReferenceResource{
+				URI: kaasResp.Data.Properties.VPC.URI,
 			},
 			Subnet: schema.ReferenceResource{
-				Uri: kaasResp.Data.Properties.Subnet.Uri,
+				URI: kaasResp.Data.Properties.Subnet.URI,
 			},
 			SecurityGroup: schema.SecurityGroupProperties{
 				Name: kaasResp.Data.Properties.SecurityGroup.Name,
 			},
-			NodeCidr: schema.NodeCidrProperties{
-				Name:    kaasResp.Data.Properties.NodeCidr.Name,
-				Address: kaasResp.Data.Properties.NodeCidr.Address,
+			NodeCIDR: schema.NodeCIDRProperties{
+				Name:    kaasResp.Data.Properties.NodeCIDR.Name,
+				Address: kaasResp.Data.Properties.NodeCIDR.Address,
 			},
 			KubernetesVersion: schema.KubernetesVersionInfo{
 				Value: kaasResp.Data.Properties.KubernetesVersion.Value,
@@ -241,7 +241,7 @@ func updateKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, kaasRe
 					Zone:     "ITBG-1",
 				},
 			},
-			Ha: true,
+			HA: true,
 			BillingPlan: schema.BillingPeriodResource{
 				BillingPeriod: "Hour",
 			},

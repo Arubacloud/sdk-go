@@ -131,7 +131,7 @@ func TestCreateSubnet(t *testing.T) {
 			if r.Method == http.MethodGet && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123" {
 				t.Logf("Returning active VPC status")
 				w.WriteHeader(http.StatusOK)
-				vpcResp := schema.VpcResponse{
+				vpcResp := schema.VPCResponse{
 					Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("test-vpc")},
 					Status:   schema.ResourceStatus{State: schema.StringPtr("active")},
 				}

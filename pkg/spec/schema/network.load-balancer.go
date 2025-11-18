@@ -4,7 +4,7 @@ type LoadBalancerPropertiesResponse struct {
 	// LinkedResources array of resources linked to the Load Balancer (nullable)
 	LinkedResources []LinkedResource   `json:"linkedResources,omitempty"`
 	Address         *string            `json:"address,omitempty"`
-	Vpc             *ReferenceResource `json:"vpc,omitempty"`
+	VPC             *ReferenceResource `json:"vpc,omitempty"`
 }
 
 type LoadBalancerResponse struct {

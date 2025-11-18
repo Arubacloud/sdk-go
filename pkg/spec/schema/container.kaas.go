@@ -1,6 +1,6 @@
 package schema
 
-type NodeCidrProperties struct {
+type NodeCIDRProperties struct {
 
 	// Address in CIDR notation The IP range must be between 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
 	Address string `json:"address"`
@@ -47,11 +47,11 @@ type KaaSPropertiesRequest struct {
 
 	Preset bool `json:"preset"`
 
-	Vpc ReferenceResource `json:"vpc"`
+	VPC ReferenceResource `json:"vpc"`
 
 	Subnet ReferenceResource `json:"subnet"`
 
-	NodeCidr NodeCidrProperties `json:"nodeCidr"`
+	NodeCIDR NodeCIDRProperties `json:"nodeCidr"`
 
 	SecurityGroup SecurityGroupProperties `json:"securityGroup"`
 
@@ -59,7 +59,7 @@ type KaaSPropertiesRequest struct {
 
 	NodePools []NodePoolProperties `json:"nodePools"`
 
-	Ha bool `json:"ha"`
+	HA bool `json:"ha"`
 
 	Storage StorageKubernetes `json:"storage,omitempty"`
 
@@ -100,26 +100,26 @@ type KubernetesVersionInfoResponse struct {
 	Recommended bool `json:"recommended,omitempty"`
 }
 
-type PodCidrPropertiesResponse struct {
+type PodCIDRPropertiesResponse struct {
 
 	// Address in CIDR notation The IP range must be between
 	Address string `json:"address,omitempty"`
 }
 
-type NodeCidrPropertiesResponse struct {
+type NodeCIDRPropertiesResponse struct {
 
 	// Address in CIDR notation The IP range must be between
 	Address string `json:"address,omitempty"`
 
 	Name string `json:"name,omitempty"`
 
-	Uri string `json:"uri,omitempty"`
+	URI string `json:"uri,omitempty"`
 }
 
 type KaasSecurityGroupPropertiesResponse struct {
 	Name string `json:"name,omitempty"`
 
-	Uri string `json:"uri,omitempty"`
+	URI string `json:"uri,omitempty"`
 }
 
 type KaaSPropertiesResponse struct {
@@ -129,7 +129,7 @@ type KaaSPropertiesResponse struct {
 
 	Preset bool `json:"preset"`
 
-	Vpc ReferenceResource `json:"vpc"`
+	VPC ReferenceResource `json:"vpc"`
 
 	Subnet ReferenceResource `json:"subnet"`
 
@@ -137,19 +137,19 @@ type KaaSPropertiesResponse struct {
 
 	NodePools []NodePoolPropertiesResponse `json:"nodesPool"`
 
-	PodCidr PodCidrPropertiesResponse `json:"podCidr,omitempty"`
+	PodCIDR PodCIDRPropertiesResponse `json:"podCidr,omitempty"`
 
-	NodeCidr NodeCidrPropertiesResponse `json:"nodeCidr"`
+	NodeCIDR NodeCIDRPropertiesResponse `json:"nodeCidr"`
 
 	SecurityGroup KaasSecurityGroupPropertiesResponse `json:"securityGroup"`
 
-	Ha bool `json:"ha"`
+	HA bool `json:"ha"`
 
 	Storage StorageKubernetes `json:"storage,omitempty"`
 
 	BillingPlan BillingPeriodResource `json:"billingPlan"`
 
-	ManagementIp *string `json:"managementIp,omitempty"`
+	ManagementIP *string `json:"managementIp,omitempty"`
 }
 
 type KaaSRequest struct {

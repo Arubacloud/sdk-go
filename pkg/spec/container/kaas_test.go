@@ -32,7 +32,7 @@ func TestListKaaS(t *testing.T) {
 							},
 							Properties: schema.KaaSPropertiesResponse{
 								Preset: false,
-								Ha:     true,
+								HA:     true,
 								KubernetesVersion: schema.KubernetesVersionInfoResponse{
 									KubernetesVersionInfo: schema.KubernetesVersionInfo{
 										Value: "1.28.0",
@@ -78,7 +78,7 @@ func TestListKaaS(t *testing.T) {
 		if resp.Data.Values[0].Metadata.Name == nil || *resp.Data.Values[0].Metadata.Name != "test-kaas" {
 			t.Errorf("expected name 'test-kaas'")
 		}
-		if !resp.Data.Values[0].Properties.Ha {
+		if !resp.Data.Values[0].Properties.HA {
 			t.Errorf("expected HA to be true")
 		}
 	})
@@ -99,11 +99,11 @@ func TestGetKaaS(t *testing.T) {
 				resp := schema.KaaSResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("test-kaas"),
-						Id:   schema.StringPtr("kaas-123"),
+						ID:   schema.StringPtr("kaas-123"),
 					},
 					Properties: schema.KaaSPropertiesResponse{
 						Preset: false,
-						Ha:     true,
+						HA:     true,
 						KubernetesVersion: schema.KubernetesVersionInfoResponse{
 							KubernetesVersionInfo: schema.KubernetesVersionInfo{
 								Value: "1.28.0",
@@ -121,7 +121,7 @@ func TestGetKaaS(t *testing.T) {
 								Autoscaling: false,
 							},
 						},
-						ManagementIp: schema.StringPtr("10.0.0.100"),
+						ManagementIP: schema.StringPtr("10.0.0.100"),
 					},
 					Status: schema.ResourceStatus{
 						State: schema.StringPtr("active"),
@@ -165,7 +165,7 @@ func TestGetKaaS(t *testing.T) {
 		if len(resp.Data.Properties.NodePools) != 1 {
 			t.Errorf("expected 1 node pool")
 		}
-		if resp.Data.Properties.ManagementIp == nil || *resp.Data.Properties.ManagementIp != "10.0.0.100" {
+		if resp.Data.Properties.ManagementIP == nil || *resp.Data.Properties.ManagementIP != "10.0.0.100" {
 			t.Errorf("expected management IP '10.0.0.100'")
 		}
 	})
@@ -186,11 +186,11 @@ func TestCreateKaaS(t *testing.T) {
 				resp := schema.KaaSResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("new-kaas"),
-						Id:   schema.StringPtr("kaas-456"),
+						ID:   schema.StringPtr("kaas-456"),
 					},
 					Properties: schema.KaaSPropertiesResponse{
 						Preset: false,
-						Ha:     true,
+						HA:     true,
 						KubernetesVersion: schema.KubernetesVersionInfoResponse{
 							KubernetesVersionInfo: schema.KubernetesVersionInfo{
 								Value: "1.28.0",
@@ -231,7 +231,7 @@ func TestCreateKaaS(t *testing.T) {
 			},
 			Properties: schema.KaaSPropertiesRequest{
 				Preset: false,
-				Ha:     true,
+				HA:     true,
 				KubernetesVersion: schema.KubernetesVersionInfo{
 					Value: "1.28.0",
 				},
@@ -269,11 +269,11 @@ func TestUpdateKaaS(t *testing.T) {
 				resp := schema.KaaSResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("updated-kaas"),
-						Id:   schema.StringPtr("kaas-123"),
+						ID:   schema.StringPtr("kaas-123"),
 					},
 					Properties: schema.KaaSPropertiesResponse{
 						Preset: false,
-						Ha:     true,
+						HA:     true,
 						KubernetesVersion: schema.KubernetesVersionInfoResponse{
 							KubernetesVersionInfo: schema.KubernetesVersionInfo{
 								Value: "1.29.0",
@@ -314,7 +314,7 @@ func TestUpdateKaaS(t *testing.T) {
 			},
 			Properties: schema.KaaSPropertiesRequest{
 				Preset: false,
-				Ha:     true,
+				HA:     true,
 				KubernetesVersion: schema.KubernetesVersionInfo{
 					Value: "1.29.0",
 				},

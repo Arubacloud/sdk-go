@@ -22,10 +22,10 @@ func (s *Service) ListElasticIPs(ctx context.Context, project string, params *sc
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &ElasticIpListAPIVersion,
+			APIVersion: &ElasticIPListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &ElasticIpListAPIVersion
+		params.APIVersion = &ElasticIPListAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -41,7 +41,7 @@ func (s *Service) ListElasticIPs(ctx context.Context, project string, params *sc
 }
 
 // GetElasticIP retrieves a specific elastic IP by ID
-func (s *Service) GetElasticIP(ctx context.Context, project string, elasticIPId string, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error) {
+func (s *Service) GetElasticIP(ctx context.Context, project string, elasticIPId string, params *schema.RequestParameters) (*schema.Response[schema.ElasticIPResponse], error) {
 	s.client.Logger().Debugf("Getting elastic IP: %s in project: %s", elasticIPId, project)
 
 	if err := schema.ValidateProjectAndResource(project, elasticIPId, "elastic IP ID"); err != nil {
@@ -52,10 +52,10 @@ func (s *Service) GetElasticIP(ctx context.Context, project string, elasticIPId 
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &ElasticIpGetAPIVersion,
+			APIVersion: &ElasticIPGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &ElasticIpGetAPIVersion
+		params.APIVersion = &ElasticIPGetAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -67,11 +67,11 @@ func (s *Service) GetElasticIP(ctx context.Context, project string, elasticIPId 
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.ElasticIpResponse](httpResp)
+	return schema.ParseResponseBody[schema.ElasticIPResponse](httpResp)
 }
 
 // CreateElasticIP creates a new elastic IP
-func (s *Service) CreateElasticIP(ctx context.Context, project string, body schema.ElasticIpRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error) {
+func (s *Service) CreateElasticIP(ctx context.Context, project string, body schema.ElasticIPRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIPResponse], error) {
 	s.client.Logger().Debugf("Creating elastic IP in project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -82,10 +82,10 @@ func (s *Service) CreateElasticIP(ctx context.Context, project string, body sche
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &ElasticIpCreateAPIVersion,
+			APIVersion: &ElasticIPCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &ElasticIpCreateAPIVersion
+		params.APIVersion = &ElasticIPCreateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -103,11 +103,11 @@ func (s *Service) CreateElasticIP(ctx context.Context, project string, body sche
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.ElasticIpResponse](httpResp)
+	return schema.ParseResponseBody[schema.ElasticIPResponse](httpResp)
 }
 
 // UpdateElasticIP updates an existing elastic IP
-func (s *Service) UpdateElasticIP(ctx context.Context, project string, elasticIPId string, body schema.ElasticIpRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error) {
+func (s *Service) UpdateElasticIP(ctx context.Context, project string, elasticIPId string, body schema.ElasticIPRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIPResponse], error) {
 	s.client.Logger().Debugf("Updating elastic IP: %s in project: %s", elasticIPId, project)
 
 	if err := schema.ValidateProjectAndResource(project, elasticIPId, "elastic IP ID"); err != nil {
@@ -118,10 +118,10 @@ func (s *Service) UpdateElasticIP(ctx context.Context, project string, elasticIP
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &ElasticIpUpdateAPIVersion,
+			APIVersion: &ElasticIPUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &ElasticIpUpdateAPIVersion
+		params.APIVersion = &ElasticIPUpdateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -139,7 +139,7 @@ func (s *Service) UpdateElasticIP(ctx context.Context, project string, elasticIP
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.ElasticIpResponse](httpResp)
+	return schema.ParseResponseBody[schema.ElasticIPResponse](httpResp)
 }
 
 // DeleteElasticIP deletes an elastic IP by ID
@@ -154,10 +154,10 @@ func (s *Service) DeleteElasticIP(ctx context.Context, projectId string, elastic
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &ElasticIpDeleteAPIVersion,
+			APIVersion: &ElasticIPDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &ElasticIpDeleteAPIVersion
+		params.APIVersion = &ElasticIPDeleteAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()

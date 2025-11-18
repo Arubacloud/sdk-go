@@ -39,7 +39,7 @@ type ResourceRequest struct {
 }
 
 type TypologyResponseMetadata struct {
-	Id   string `json:"id,omitempty"`
+	ID   string `json:"id,omitempty"`
 	Name string `json:"name,omitempty"`
 }
 
@@ -50,8 +50,8 @@ type CategoryResponseMetadata struct {
 }
 
 type ResourceMetadataResponse struct {
-	Id                      *string                   `json:"id,omitempty"`
-	Uri                     *string                   `json:"uri,omitempty"`
+	ID                      *string                   `json:"id,omitempty"`
+	URI                     *string                   `json:"uri,omitempty"`
 	Name                    *string                   `json:"name,omitempty"`
 	LocationResponse        *LocationResponse         `json:"location,omitempty"`
 	ProjectResponseMetadata *ProjectResponseMetadata  `json:"project,omitempty"`
@@ -99,7 +99,7 @@ type BillingPeriodResource struct {
 }
 
 type ReferenceResource struct {
-	Uri string `json:"uri"`
+	URI string `json:"uri"`
 }
 
 type ListResponse struct {

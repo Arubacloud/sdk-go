@@ -1,7 +1,7 @@
 package schema
 
-// VpcProperties contains the properties of a VPC
-type VpcProperties struct {
+// VPCProperties contains the properties of a VPC
+type VPCProperties struct {
 	// Default indicates if the vpc must be a default vpc. Only one default vpc for region is admissible.
 	// Default value: true
 	Default *bool `json:"default,omitempty"`
@@ -11,14 +11,14 @@ type VpcProperties struct {
 	Preset *bool `json:"preset,omitempty"`
 }
 
-// VpcPropertiesRequest contains the specification for creating a VPC
-type VpcPropertiesRequest struct {
+// VPCPropertiesRequest contains the specification for creating a VPC
+type VPCPropertiesRequest struct {
 	// Properties of the vpc (nullable object)
-	Properties *VpcProperties `json:"properties,omitempty"`
+	Properties *VPCProperties `json:"properties,omitempty"`
 }
 
-// VpcPropertiesResponse contains the specification returned for a VPC
-type VpcPropertiesResponse struct {
+// VPCPropertiesResponse contains the specification returned for a VPC
+type VPCPropertiesResponse struct {
 	// LinkedResources array of resources linked to the VPC (nullable)
 	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
 
@@ -26,24 +26,24 @@ type VpcPropertiesResponse struct {
 	Default bool `json:"default,omitempty"`
 }
 
-type VpcRequest struct {
+type VPCRequest struct {
 	// Metadata of the VPC
 	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 
 	// Spec contains the VPC specification
-	Properties VpcPropertiesRequest `json:"properties"`
+	Properties VPCPropertiesRequest `json:"properties"`
 }
 
-type VpcResponse struct {
+type VPCResponse struct {
 	// Metadata of the VPC
 	Metadata ResourceMetadataResponse `json:"metadata"`
 	// Spec contains the VPC specification
-	Properties VpcPropertiesResponse `json:"properties"`
+	Properties VPCPropertiesResponse `json:"properties"`
 
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type VpcList struct {
+type VPCList struct {
 	ListResponse
-	Values []VpcResponse `json:"values"`
+	Values []VPCResponse `json:"values"`
 }

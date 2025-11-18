@@ -2,9 +2,9 @@ package schema
 
 // DBaaSEngine contains the database engine configuration
 type DBaaSEngine struct {
-	// Id Type of DB engine to activate (nullable)
+	// ID Type of DB engine to activate (nullable)
 	// For more information, check the documentation.
-	Id *string `json:"id,omitempty"`
+	ID *string `json:"id,omitempty"`
 
 	// DataCenter Datacenter location (nullable)
 	// For more information, check the documentation.
@@ -13,8 +13,8 @@ type DBaaSEngine struct {
 
 // DBaaSEngineResponse contains the database engine response configuration
 type DBaaSEngineResponse struct {
-	// Id Engine identifier (nullable)
-	Id *string `json:"id,omitempty"`
+	// ID Engine identifier (nullable)
+	ID *string `json:"id,omitempty"`
 
 	// Type Engine type (nullable)
 	Type *string `json:"type,omitempty"`
@@ -29,8 +29,8 @@ type DBaaSEngineResponse struct {
 	// For more information, check the documentation.
 	DataCenter *string `json:"dataCenter,omitempty"`
 
-	// PrivateIpAddress Private IP address (nullable)
-	PrivateIpAddress *string `json:"privateIpAddress,omitempty"`
+	// PrivateIPAddress Private IP address (nullable)
+	PrivateIPAddress *string `json:"privateIpAddress,omitempty"`
 }
 
 // DBaaSFlavor contains the flavor configuration
@@ -48,23 +48,23 @@ type DBaaSFlavorResponse struct {
 	// Category Flavor category (nullable)
 	Category *string `json:"category,omitempty"`
 
-	// Cpu Number of CPUs (nullable)
-	Cpu *int32 `json:"cpu,omitempty"`
+	// CPU Number of CPUs (nullable)
+	CPU *int32 `json:"cpu,omitempty"`
 
-	// Ram Amount of RAM in MB (nullable)
-	Ram *int32 `json:"ram,omitempty"`
+	// RAM Amount of RAM in MB (nullable)
+	RAM *int32 `json:"ram,omitempty"`
 }
 
 // DBaaSStorage contains the storage configuration
 type DBaaSStorage struct {
-	// SizeGb Size in GB to use (nullable)
-	SizeGb *int32 `json:"sizeGb,omitempty"`
+	// SizeGB Size in GB to use (nullable)
+	SizeGB *int32 `json:"sizeGb,omitempty"`
 }
 
 // DBaaSStorageResponse contains the storage response configuration
 type DBaaSStorageResponse struct {
-	// SizeGb Size in GB (nullable)
-	SizeGb *int32 `json:"sizeGb,omitempty"`
+	// SizeGB Size in GB (nullable)
+	SizeGB *int32 `json:"sizeGb,omitempty"`
 }
 
 // DBaaSBillingPlan contains the billing plan configuration
@@ -81,28 +81,28 @@ type DBaaSBillingPlanResponse struct {
 
 // DBaaSNetworking contains the network information to use when creating the new DBaaS
 type DBaaSNetworking struct {
-	// VpcUri The URI of the VPC resource to bind to this DBaaS instance (nullable)
+	// VPCURI The URI of the VPC resource to bind to this DBaaS instance (nullable)
 	// Required when user has at least one VPC (with at least one subnet and a security group).
-	VpcUri *string `json:"vpcUri,omitempty"`
+	VPCURI *string `json:"vpcUri,omitempty"`
 
-	// SubnetUri The URI of the Subnet resource to bind to this DBaaS instance (nullable)
-	// It must belong to the VPC defined in VpcUri
+	// SubnetURI The URI of the Subnet resource to bind to this DBaaS instance (nullable)
+	// It must belong to the VPC defined in VPCURI
 	// Required when user has at least one VPC (with at least one subnet and a security group).
-	SubnetUri *string `json:"subnetUri,omitempty"`
+	SubnetURI *string `json:"subnetUri,omitempty"`
 
-	// SecurityGroupUri The URI of the SecurityGroup resource to bind to this DBaaS instance (nullable)
-	// It must belong to the VPC defined in VpcUri
+	// SecurityGroupURI The URI of the SecurityGroup resource to bind to this DBaaS instance (nullable)
+	// It must belong to the VPC defined in VPCURI
 	// Required when user has at least one VPC (with at least one subnet and a security group).
-	SecurityGroupUri *string `json:"securityGroupUri,omitempty"`
+	SecurityGroupURI *string `json:"securityGroupUri,omitempty"`
 
-	// ElasticIpUri The URI of the ElasticIp resource to bind to this DBaaS instance (nullable)
-	ElasticIpUri *string `json:"elasticIpUri,omitempty"`
+	// ElasticIPURI The URI of the ElasticIP resource to bind to this DBaaS instance (nullable)
+	ElasticIPURI *string `json:"elasticIpUri,omitempty"`
 }
 
 // DBaaSNetworkingResponse contains the network response information
 type DBaaSNetworkingResponse struct {
-	// Vpc VPC resource reference (nullable)
-	Vpc *ReferenceResource `json:"vpc,omitempty"`
+	// VPC VPC resource reference (nullable)
+	VPC *ReferenceResource `json:"vpc,omitempty"`
 
 	// Subnet Subnet resource reference (nullable)
 	Subnet *ReferenceResource `json:"subnet,omitempty"`
@@ -110,8 +110,8 @@ type DBaaSNetworkingResponse struct {
 	// SecurityGroup Security group resource reference (nullable)
 	SecurityGroup *ReferenceResource `json:"securityGroup,omitempty"`
 
-	// ElasticIp Elastic IP resource reference (nullable)
-	ElasticIp *ReferenceResource `json:"elasticIp,omitempty"`
+	// ElasticIP Elastic IP resource reference (nullable)
+	ElasticIP *ReferenceResource `json:"elasticIp,omitempty"`
 }
 
 // DBaaSAutoscaling contains the autoscaling configuration
@@ -137,8 +137,8 @@ type DBaaSAutoscalingResponse struct {
 	// StepSize Step size for autoscaling (nullable)
 	StepSize *int32 `json:"stepSize,omitempty"`
 
-	// RuleId Rule identifier (nullable)
-	RuleId *string `json:"ruleId,omitempty"`
+	// RuleID Rule identifier (nullable)
+	RuleID *string `json:"ruleId,omitempty"`
 }
 
 // DBaaSPropertiesRequest contains properties required to create a DBaaS instance

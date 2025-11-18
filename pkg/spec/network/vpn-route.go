@@ -12,21 +12,21 @@ import (
 )
 
 // ListVpnRoutes retrieves all VPN routes for a VPN tunnel
-func (s *Service) ListVpnRoutes(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VpnRouteList], error) {
+func (s *Service) ListVpnRoutes(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VPNRouteList], error) {
 	s.client.Logger().Debugf("Listing VPN routes for VPN tunnel: %s in project: %s", vpnTunnelId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpnTunnelId, "VPN tunnel ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpnRoutesPath, project, vpnTunnelId)
+	path := fmt.Sprintf(VPNRoutesPath, project, vpnTunnelId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpnRouteListAPIVersion,
+			APIVersion: &VPNRouteListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpnRouteListAPIVersion
+		params.APIVersion = &VPNRouteListAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -38,25 +38,25 @@ func (s *Service) ListVpnRoutes(ctx context.Context, project string, vpnTunnelId
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.VpnRouteList](httpResp)
+	return schema.ParseResponseBody[schema.VPNRouteList](httpResp)
 }
 
 // GetVpnRoute retrieves a specific VPN route by ID
-func (s *Service) GetVpnRoute(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, params *schema.RequestParameters) (*schema.Response[schema.VpnRouteResponse], error) {
+func (s *Service) GetVpnRoute(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, params *schema.RequestParameters) (*schema.Response[schema.VPNRouteResponse], error) {
 	s.client.Logger().Debugf("Getting VPN route: %s from VPN tunnel: %s in project: %s", vpnRouteId, vpnTunnelId, project)
 
 	if err := schema.ValidateVPNRoute(project, vpnTunnelId, vpnRouteId); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpnRoutePath, project, vpnTunnelId, vpnRouteId)
+	path := fmt.Sprintf(VPNRoutePath, project, vpnTunnelId, vpnRouteId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpnRouteGetAPIVersion,
+			APIVersion: &VPNRouteGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpnRouteGetAPIVersion
+		params.APIVersion = &VPNRouteGetAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -68,25 +68,25 @@ func (s *Service) GetVpnRoute(ctx context.Context, project string, vpnTunnelId s
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.VpnRouteResponse](httpResp)
+	return schema.ParseResponseBody[schema.VPNRouteResponse](httpResp)
 }
 
 // CreateVpnRoute creates a new VPN route in a VPN tunnel
-func (s *Service) CreateVpnRoute(ctx context.Context, project string, vpnTunnelId string, body schema.VpnRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnRouteResponse], error) {
+func (s *Service) CreateVpnRoute(ctx context.Context, project string, vpnTunnelId string, body schema.VPNRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VPNRouteResponse], error) {
 	s.client.Logger().Debugf("Creating VPN route in VPN tunnel: %s in project: %s", vpnTunnelId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpnTunnelId, "VPN tunnel ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpnRoutesPath, project, vpnTunnelId)
+	path := fmt.Sprintf(VPNRoutesPath, project, vpnTunnelId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpnRouteCreateAPIVersion,
+			APIVersion: &VPNRouteCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpnRouteCreateAPIVersion
+		params.APIVersion = &VPNRouteCreateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -108,7 +108,7 @@ func (s *Service) CreateVpnRoute(ctx context.Context, project string, vpnTunnelI
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.VpnRouteResponse]{
+	response := &schema.Response[schema.VPNRouteResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -116,7 +116,7 @@ func (s *Service) CreateVpnRoute(ctx context.Context, project string, vpnTunnelI
 	}
 
 	if response.IsSuccess() {
-		var data schema.VpnRouteResponse
+		var data schema.VPNRouteResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
@@ -132,21 +132,21 @@ func (s *Service) CreateVpnRoute(ctx context.Context, project string, vpnTunnelI
 }
 
 // UpdateVpnRoute updates an existing VPN route
-func (s *Service) UpdateVpnRoute(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, body schema.VpnRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnRouteResponse], error) {
+func (s *Service) UpdateVpnRoute(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, body schema.VPNRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VPNRouteResponse], error) {
 	s.client.Logger().Debugf("Updating VPN route: %s in VPN tunnel: %s in project: %s", vpnRouteId, vpnTunnelId, project)
 
 	if err := schema.ValidateVPNRoute(project, vpnTunnelId, vpnRouteId); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpnRoutePath, project, vpnTunnelId, vpnRouteId)
+	path := fmt.Sprintf(VPNRoutePath, project, vpnTunnelId, vpnRouteId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpnRouteUpdateAPIVersion,
+			APIVersion: &VPNRouteUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpnRouteUpdateAPIVersion
+		params.APIVersion = &VPNRouteUpdateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -168,7 +168,7 @@ func (s *Service) UpdateVpnRoute(ctx context.Context, project string, vpnTunnelI
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.VpnRouteResponse]{
+	response := &schema.Response[schema.VPNRouteResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -176,7 +176,7 @@ func (s *Service) UpdateVpnRoute(ctx context.Context, project string, vpnTunnelI
 	}
 
 	if response.IsSuccess() {
-		var data schema.VpnRouteResponse
+		var data schema.VPNRouteResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
@@ -199,14 +199,14 @@ func (s *Service) DeleteVpnRoute(ctx context.Context, projectId string, vpnTunne
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpnRoutePath, projectId, vpnTunnelId, vpnRouteId)
+	path := fmt.Sprintf(VPNRoutePath, projectId, vpnTunnelId, vpnRouteId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpnRouteDeleteAPIVersion,
+			APIVersion: &VPNRouteDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpnRouteDeleteAPIVersion
+		params.APIVersion = &VPNRouteDeleteAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()

@@ -10,9 +10,9 @@ import (
 type NetworkAPI interface {
 	// ElasticIP operations
 	ListElasticIPs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.ElasticList], error)
-	GetElasticIP(ctx context.Context, project string, elasticIPId string, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error)
-	CreateElasticIP(ctx context.Context, project string, body schema.ElasticIpRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error)
-	UpdateElasticIP(ctx context.Context, project string, elasticIPId string, body schema.ElasticIpRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error)
+	GetElasticIP(ctx context.Context, project string, elasticIPId string, params *schema.RequestParameters) (*schema.Response[schema.ElasticIPResponse], error)
+	CreateElasticIP(ctx context.Context, project string, body schema.ElasticIPRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIPResponse], error)
+	UpdateElasticIP(ctx context.Context, project string, elasticIPId string, body schema.ElasticIPRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIPResponse], error)
 	DeleteElasticIP(ctx context.Context, projectId string, elasticIPId string, params *schema.RequestParameters) (*schema.Response[any], error)
 
 	// LoadBalancer operations
@@ -20,10 +20,10 @@ type NetworkAPI interface {
 	GetLoadBalancer(ctx context.Context, project string, loadBalancerId string, params *schema.RequestParameters) (*schema.Response[schema.LoadBalancerResponse], error)
 
 	// VPC operations
-	ListVPCs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VpcList], error)
-	GetVPC(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error)
-	CreateVPC(ctx context.Context, project string, body schema.VpcRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error)
-	UpdateVPC(ctx context.Context, project string, vpcId string, body schema.VpcRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error)
+	ListVPCs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VPCList], error)
+	GetVPC(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VPCResponse], error)
+	CreateVPC(ctx context.Context, project string, body schema.VPCRequest, params *schema.RequestParameters) (*schema.Response[schema.VPCResponse], error)
+	UpdateVPC(ctx context.Context, project string, vpcId string, body schema.VPCRequest, params *schema.RequestParameters) (*schema.Response[schema.VPCResponse], error)
 	DeleteVPC(ctx context.Context, projectId string, vpcId string, params *schema.RequestParameters) (*schema.Response[any], error)
 
 	// Subnet operations
@@ -48,30 +48,30 @@ type NetworkAPI interface {
 	DeleteSecurityGroupRule(ctx context.Context, projectId string, vpcId string, securityGroupId string, securityGroupRuleId string, params *schema.RequestParameters) (*schema.Response[any], error)
 
 	// VpcPeering operations
-	ListVpcPeerings(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringList], error)
-	GetVpcPeering(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringResponse], error)
-	CreateVpcPeering(ctx context.Context, project string, vpcId string, body schema.VpcPeeringRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringResponse], error)
-	UpdateVpcPeering(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VpcPeeringRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringResponse], error)
+	ListVpcPeerings(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringList], error)
+	GetVpcPeering(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringResponse], error)
+	CreateVpcPeering(ctx context.Context, project string, vpcId string, body schema.VPCPeeringRequest, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringResponse], error)
+	UpdateVpcPeering(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VPCPeeringRequest, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringResponse], error)
 	DeleteVpcPeering(ctx context.Context, projectId string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[any], error)
 
 	// VpcPeeringRoute operations
-	ListVpcPeeringRoutes(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteList], error)
-	GetVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error)
-	CreateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VpcPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error)
-	UpdateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, body schema.VpcPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error)
+	ListVpcPeeringRoutes(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringRouteList], error)
+	GetVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringRouteResponse], error)
+	CreateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VPCPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringRouteResponse], error)
+	UpdateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, body schema.VPCPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringRouteResponse], error)
 	DeleteVpcPeeringRoute(ctx context.Context, projectId string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *schema.RequestParameters) (*schema.Response[any], error)
 
 	// VpnTunnel operations
-	ListVpnTunnels(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelList], error)
-	GetVpnTunnel(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error)
-	CreateVpnTunnel(ctx context.Context, project string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error)
-	UpdateVpnTunnel(ctx context.Context, project string, vpnTunnelId string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error)
+	ListVpnTunnels(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VPNTunnelList], error)
+	GetVpnTunnel(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VPNTunnelResponse], error)
+	CreateVpnTunnel(ctx context.Context, project string, body schema.VPNTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VPNTunnelResponse], error)
+	UpdateVpnTunnel(ctx context.Context, project string, vpnTunnelId string, body schema.VPNTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VPNTunnelResponse], error)
 	DeleteVpnTunnel(ctx context.Context, projectId string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[any], error)
 
 	// VpnRoute operations
-	ListVpnRoutes(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VpnRouteList], error)
-	GetVpnRoute(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, params *schema.RequestParameters) (*schema.Response[schema.VpnRouteResponse], error)
-	CreateVpnRoute(ctx context.Context, project string, vpnTunnelId string, body schema.VpnRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnRouteResponse], error)
-	UpdateVpnRoute(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, body schema.VpnRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnRouteResponse], error)
+	ListVpnRoutes(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VPNRouteList], error)
+	GetVpnRoute(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, params *schema.RequestParameters) (*schema.Response[schema.VPNRouteResponse], error)
+	CreateVpnRoute(ctx context.Context, project string, vpnTunnelId string, body schema.VPNRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VPNRouteResponse], error)
+	UpdateVpnRoute(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, body schema.VPNRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VPNRouteResponse], error)
 	DeleteVpnRoute(ctx context.Context, projectId string, vpnTunnelId string, vpnRouteId string, params *schema.RequestParameters) (*schema.Response[any], error)
 }

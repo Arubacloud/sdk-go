@@ -9,8 +9,8 @@ type SnapshotPropertiesRequest struct {
 
 // VolumeInfo contains information about the original volume
 type VolumeInfo struct {
-	// Uri of the volume
-	Uri *string `json:"uri,omitempty"`
+	// URI of the volume
+	URI *string `json:"uri,omitempty"`
 
 	// Type of the original volume from which the snapshot was created (nullable)
 	Name *string `json:"name,omitempty"`
@@ -19,8 +19,8 @@ type VolumeInfo struct {
 }
 
 type SnapshotPropertiesResponse struct {
-	// SizeGb The blockStorage's size in gigabyte (nullable)
-	SizeGb *int32 `json:"sizeGb,omitempty"`
+	// SizeGB The blockStorage's size in gigabyte (nullable)
+	SizeGB *int32 `json:"sizeGb,omitempty"`
 
 	// BillingPeriod The billing period for blockStorage. Only Hour is a valid value (nullable)
 	BillingPeriod *string `json:"billingPeriod,omitempty"`

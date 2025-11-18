@@ -4,6 +4,6 @@ package security
 const (
 
 	// KMS Key paths
-	KmsKeysPath = "/projects/%s/providers/Aruba.Security/kms/keys"
-	KmsKeyPath  = "/projects/%s/providers/Aruba.Security/kms/keys/%s"
+	KMSKeysPath = "/projects/%s/providers/Aruba.Security/kms/keys"
+	KMSKeyPath  = "/projects/%s/providers/Aruba.Security/kms/keys/%s"
 )

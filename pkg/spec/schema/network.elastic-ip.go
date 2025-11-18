@@ -1,29 +1,29 @@
 package schema
 
-type ElasticIpPropertiesRequest struct {
+type ElasticIPPropertiesRequest struct {
 	BillingPlan BillingPeriodResource `json:"billingPlan"`
 }
 
-type ElasticIpPropertiesResponse struct {
+type ElasticIPPropertiesResponse struct {
 	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
 
 	Address     *string               `json:"address,omitempty"`
 	BillingPlan BillingPeriodResource `json:"billingPlan"`
 }
 
-type ElasticIpRequest struct {
+type ElasticIPRequest struct {
 	Metadata   RegionalResourceMetadataRequest `json:"metadata"`
-	Properties ElasticIpPropertiesRequest      `json:"properties"`
+	Properties ElasticIPPropertiesRequest      `json:"properties"`
 }
 
-type ElasticIpResponse struct {
+type ElasticIPResponse struct {
 	Metadata   ResourceMetadataResponse    `json:"metadata"`
-	Properties ElasticIpPropertiesResponse `json:"properties"`
+	Properties ElasticIPPropertiesResponse `json:"properties"`
 
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
 type ElasticList struct {
 	ListResponse
-	Values []ElasticIpResponse `json:"values"`
+	Values []ElasticIPResponse `json:"values"`
 }

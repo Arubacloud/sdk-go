@@ -12,21 +12,21 @@ import (
 )
 
 // ListVpcPeeringRoutes retrieves all VPC peering routes for a VPC peering connection
-func (s *Service) ListVpcPeeringRoutes(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteList], error) {
+func (s *Service) ListVpcPeeringRoutes(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringRouteList], error) {
 	s.client.Logger().Debugf("Listing VPC peering routes for VPC peering: %s in VPC: %s in project: %s", vpcPeeringId, vpcId, project)
 
 	if err := schema.ValidateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpcPeeringRoutesPath, project, vpcId, vpcPeeringId)
+	path := fmt.Sprintf(VPCPeeringRoutesPath, project, vpcId, vpcPeeringId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcPeeringRouteListAPIVersion,
+			APIVersion: &VPCPeeringRouteListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcPeeringRouteListAPIVersion
+		params.APIVersion = &VPCPeeringRouteListAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -38,25 +38,25 @@ func (s *Service) ListVpcPeeringRoutes(ctx context.Context, project string, vpcI
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.VpcPeeringRouteList](httpResp)
+	return schema.ParseResponseBody[schema.VPCPeeringRouteList](httpResp)
 }
 
 // GetVpcPeeringRoute retrieves a specific VPC peering route by ID
-func (s *Service) GetVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error) {
+func (s *Service) GetVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringRouteResponse], error) {
 	s.client.Logger().Debugf("Getting VPC peering route: %s from VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteId, vpcPeeringId, vpcId, project)
 
 	if err := schema.ValidateVPCPeeringRoute(project, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpcPeeringRoutePath, project, vpcId, vpcPeeringId, vpcPeeringRouteId)
+	path := fmt.Sprintf(VPCPeeringRoutePath, project, vpcId, vpcPeeringId, vpcPeeringRouteId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcPeeringRouteGetAPIVersion,
+			APIVersion: &VPCPeeringRouteGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcPeeringRouteGetAPIVersion
+		params.APIVersion = &VPCPeeringRouteGetAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -68,25 +68,25 @@ func (s *Service) GetVpcPeeringRoute(ctx context.Context, project string, vpcId 
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.VpcPeeringRouteResponse](httpResp)
+	return schema.ParseResponseBody[schema.VPCPeeringRouteResponse](httpResp)
 }
 
 // CreateVpcPeeringRoute creates a new VPC peering route
-func (s *Service) CreateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VpcPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error) {
+func (s *Service) CreateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VPCPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringRouteResponse], error) {
 	s.client.Logger().Debugf("Creating VPC peering route in VPC peering: %s in VPC: %s in project: %s", vpcPeeringId, vpcId, project)
 
 	if err := schema.ValidateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpcPeeringRoutesPath, project, vpcId, vpcPeeringId)
+	path := fmt.Sprintf(VPCPeeringRoutesPath, project, vpcId, vpcPeeringId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcPeeringRouteCreateAPIVersion,
+			APIVersion: &VPCPeeringRouteCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcPeeringRouteCreateAPIVersion
+		params.APIVersion = &VPCPeeringRouteCreateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -108,7 +108,7 @@ func (s *Service) CreateVpcPeeringRoute(ctx context.Context, project string, vpc
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.VpcPeeringRouteResponse]{
+	response := &schema.Response[schema.VPCPeeringRouteResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -116,7 +116,7 @@ func (s *Service) CreateVpcPeeringRoute(ctx context.Context, project string, vpc
 	}
 
 	if response.IsSuccess() {
-		var data schema.VpcPeeringRouteResponse
+		var data schema.VPCPeeringRouteResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
@@ -132,21 +132,21 @@ func (s *Service) CreateVpcPeeringRoute(ctx context.Context, project string, vpc
 }
 
 // UpdateVpcPeeringRoute updates an existing VPC peering route
-func (s *Service) UpdateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, body schema.VpcPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringRouteResponse], error) {
+func (s *Service) UpdateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, body schema.VPCPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringRouteResponse], error) {
 	s.client.Logger().Debugf("Updating VPC peering route: %s in VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteId, vpcPeeringId, vpcId, project)
 
 	if err := schema.ValidateVPCPeeringRoute(project, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpcPeeringRoutePath, project, vpcId, vpcPeeringId, vpcPeeringRouteId)
+	path := fmt.Sprintf(VPCPeeringRoutePath, project, vpcId, vpcPeeringId, vpcPeeringRouteId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcPeeringRouteUpdateAPIVersion,
+			APIVersion: &VPCPeeringRouteUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcPeeringRouteUpdateAPIVersion
+		params.APIVersion = &VPCPeeringRouteUpdateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -168,7 +168,7 @@ func (s *Service) UpdateVpcPeeringRoute(ctx context.Context, project string, vpc
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.VpcPeeringRouteResponse]{
+	response := &schema.Response[schema.VPCPeeringRouteResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -176,7 +176,7 @@ func (s *Service) UpdateVpcPeeringRoute(ctx context.Context, project string, vpc
 	}
 
 	if response.IsSuccess() {
-		var data schema.VpcPeeringRouteResponse
+		var data schema.VPCPeeringRouteResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
@@ -199,14 +199,14 @@ func (s *Service) DeleteVpcPeeringRoute(ctx context.Context, projectId string, v
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VpcPeeringRoutePath, projectId, vpcId, vpcPeeringId, vpcPeeringRouteId)
+	path := fmt.Sprintf(VPCPeeringRoutePath, projectId, vpcId, vpcPeeringId, vpcPeeringRouteId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcPeeringRouteDeleteAPIVersion,
+			APIVersion: &VPCPeeringRouteDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcPeeringRouteDeleteAPIVersion
+		params.APIVersion = &VPCPeeringRouteDeleteAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()

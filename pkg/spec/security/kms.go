@@ -19,14 +19,14 @@ func (s *Service) ListKMSKeys(ctx context.Context, project string, params *schem
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KmsKeysPath, project)
+	path := fmt.Sprintf(KMSKeysPath, project)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &KmsListAPIVersion,
+			APIVersion: &KMSListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &KmsListAPIVersion
+		params.APIVersion = &KMSListAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -49,14 +49,14 @@ func (s *Service) GetKMSKey(ctx context.Context, project string, kmsKeyId string
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KmsKeyPath, project, kmsKeyId)
+	path := fmt.Sprintf(KMSKeyPath, project, kmsKeyId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &KmsReadAPIVersion,
+			APIVersion: &KMSReadAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &KmsReadAPIVersion
+		params.APIVersion = &KMSReadAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -79,14 +79,14 @@ func (s *Service) CreateKMSKey(ctx context.Context, project string, body schema.
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KmsKeysPath, project)
+	path := fmt.Sprintf(KMSKeysPath, project)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &KmsCreateAPIVersion,
+			APIVersion: &KMSCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &KmsCreateAPIVersion
+		params.APIVersion = &KMSCreateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -139,14 +139,14 @@ func (s *Service) UpdateKMSKey(ctx context.Context, project string, kmsKeyId str
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KmsKeyPath, project, kmsKeyId)
+	path := fmt.Sprintf(KMSKeyPath, project, kmsKeyId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &KmsUpdateAPIVersion,
+			APIVersion: &KMSUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &KmsUpdateAPIVersion
+		params.APIVersion = &KMSUpdateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -199,14 +199,14 @@ func (s *Service) DeleteKMSKey(ctx context.Context, projectId string, kmsKeyId s
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KmsKeyPath, projectId, kmsKeyId)
+	path := fmt.Sprintf(KMSKeyPath, projectId, kmsKeyId)
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &KmsDeleteAPIVersion,
+			APIVersion: &KMSDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &KmsDeleteAPIVersion
+		params.APIVersion = &KMSDeleteAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()

@@ -81,10 +81,10 @@ func runCreateExample() {
 // ResourceCollection holds all created resources
 type ResourceCollection struct {
 	ProjectID         string
-	ElasticIPResp     *schema.Response[schema.ElasticIpResponse]
+	ElasticIPResp     *schema.Response[schema.ElasticIPResponse]
 	BlockStorageResp  *schema.Response[schema.BlockStorageResponse]
 	SnapshotResp      *schema.Response[schema.SnapshotResponse]
-	VPCResp           *schema.Response[schema.VpcResponse]
+	VPCResp           *schema.Response[schema.VPCResponse]
 	SubnetResp        *schema.Response[schema.SubnetResponse]
 	SecurityGroupResp *schema.Response[schema.SecurityGroupResponse]
 	SecurityRuleResp  *schema.Response[schema.SecurityRuleResponse]
@@ -158,7 +158,7 @@ func createProject(ctx context.Context, sdk *sdkgo.Client) string {
 	} else if !createResp.IsSuccess() {
 		log.Fatalf("Failed to create project, status code: %d and error title: %s", createResp.StatusCode, stringValue(createResp.Error.Title))
 	}
-	projectID := *createResp.Data.Metadata.Id
+	projectID := *createResp.Data.Metadata.ID
 	fmt.Printf("✓ Created project with ID: %s\n", projectID)
 
 	// Update the project
@@ -176,10 +176,10 @@ func createProject(ctx context.Context, sdk *sdkgo.Client) string {
 }
 
 // createElasticIP creates an Elastic IP
-func createElasticIP(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema.Response[schema.ElasticIpResponse] {
+func createElasticIP(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema.Response[schema.ElasticIPResponse] {
 	fmt.Println("--- Elastic IP ---")
 
-	elasticIPReq := schema.ElasticIpRequest{
+	elasticIPReq := schema.ElasticIPRequest{
 		Metadata: schema.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: schema.ResourceMetadataRequest{
 				Name: "my-elastic-ip",
@@ -189,7 +189,7 @@ func createElasticIP(ctx context.Context, sdk *sdkgo.Client, projectID string) *
 				Value: "ITBG-Bergamo",
 			},
 		},
-		Properties: schema.ElasticIpPropertiesRequest{
+		Properties: schema.ElasticIPPropertiesRequest{
 			BillingPlan: schema.BillingPeriodResource{
 				BillingPeriod: "Hour",
 			},
@@ -207,7 +207,7 @@ func createElasticIP(ctx context.Context, sdk *sdkgo.Client, projectID string) *
 			stringValue(elasticIPResp.Error.Detail))
 		os.Exit(1)
 	}
-	fmt.Printf("✓ Created Elastic IP: %s (ObjectId: %s)\n", *elasticIPResp.Data.Metadata.Name, *elasticIPResp.Data.Metadata.Id)
+	fmt.Printf("✓ Created Elastic IP: %s (ObjectId: %s)\n", *elasticIPResp.Data.Metadata.Name, *elasticIPResp.Data.Metadata.ID)
 
 	return elasticIPResp
 }
@@ -276,7 +276,7 @@ func createSnapshot(ctx context.Context, sdk *sdkgo.Client, projectID string, bl
 		Properties: schema.SnapshotPropertiesRequest{
 			BillingPeriod: stringPtr("Hour"),
 			Volume: schema.ReferenceResource{
-				Uri: *blockStorageResp.Data.Metadata.Uri,
+				URI: *blockStorageResp.Data.Metadata.URI,
 			},
 		},
 	}
@@ -305,10 +305,10 @@ func createSnapshot(ctx context.Context, sdk *sdkgo.Client, projectID string, bl
 
 // createVPC creates a VPC
 // The SDK automatically waits for it to become Active for dependent operations
-func createVPC(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema.Response[schema.VpcResponse] {
+func createVPC(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema.Response[schema.VPCResponse] {
 	fmt.Println("--- VPC ---")
 
-	vpcReq := schema.VpcRequest{
+	vpcReq := schema.VPCRequest{
 		Metadata: schema.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: schema.ResourceMetadataRequest{
 				Name: "my-vpc",
@@ -318,8 +318,8 @@ func createVPC(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema
 				Value: "ITBG-Bergamo",
 			},
 		},
-		Properties: schema.VpcPropertiesRequest{
-			Properties: &schema.VpcProperties{
+		Properties: schema.VPCPropertiesRequest{
+			Properties: &schema.VPCProperties{
 				Default: boolPtr(false),
 				Preset:  boolPtr(false),
 			},
@@ -350,10 +350,10 @@ func createVPC(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema
 }
 
 // createSubnet creates a subnet in a VPC
-func createSubnet(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse]) *schema.Response[schema.SubnetResponse] {
+func createSubnet(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse]) *schema.Response[schema.SubnetResponse] {
 	fmt.Println("\n--- Network: Subnet ---")
 
-	vpcID := *vpcResp.Data.Metadata.Id
+	vpcID := *vpcResp.Data.Metadata.ID
 
 	subnetReq := schema.SubnetRequest{
 		Metadata: schema.RegionalResourceMetadataRequest{
@@ -397,10 +397,10 @@ func createSubnet(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcR
 
 // createSecurityGroup creates a security group
 // The SDK automatically waits for the VPC to become Active before creating the group
-func createSecurityGroup(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse]) *schema.Response[schema.SecurityGroupResponse] {
+func createSecurityGroup(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse]) *schema.Response[schema.SecurityGroupResponse] {
 	fmt.Println("\n--- Network: Security Group ---")
 
-	vpcID := *vpcResp.Data.Metadata.Id
+	vpcID := *vpcResp.Data.Metadata.ID
 
 	sgReq := schema.SecurityGroupRequest{
 		Metadata: schema.ResourceMetadataRequest{
@@ -432,7 +432,7 @@ func createSecurityGroup(ctx context.Context, sdk *sdkgo.Client, projectID strin
 }
 
 // createSecurityGroupRule creates a security group rule
-func createSecurityGroupRule(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.SecurityRuleResponse] {
+func createSecurityGroupRule(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.SecurityRuleResponse] {
 	if sgResp == nil || sgResp.Data == nil {
 		fmt.Println("⚠ Skipping security rule creation - Security Group not available")
 		return nil
@@ -440,8 +440,8 @@ func createSecurityGroupRule(ctx context.Context, sdk *sdkgo.Client, projectID s
 
 	fmt.Println("\n--- Network: Security Group Rule ---")
 
-	vpcID := *vpcResp.Data.Metadata.Id
-	sgID := *sgResp.Data.Metadata.Id
+	vpcID := *vpcResp.Data.Metadata.ID
+	sgID := *sgResp.Data.Metadata.ID
 
 	ruleReq := schema.SecurityRuleRequest{
 		Metadata: schema.RegionalResourceMetadataRequest{
@@ -521,13 +521,13 @@ func createKeyPair(ctx context.Context, sdk *sdkgo.Client, projectID string) *sc
 }
 
 // createDBaaS creates a DBaaS instance
-func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.DBaaSResponse] {
+func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.DBaaSResponse] {
 	fmt.Println("--- DBaaS ---")
 
 	// Only create DBaaS if VPC, Subnet, and Security Group are available
-	if vpcResp == nil || vpcResp.Data == nil || vpcResp.Data.Metadata.Uri == nil ||
-		subnetResp == nil || subnetResp.Data == nil || subnetResp.Data.Metadata.Uri == nil ||
-		sgResp == nil || sgResp.Data == nil || sgResp.Data.Metadata.Uri == nil {
+	if vpcResp == nil || vpcResp.Data == nil || vpcResp.Data.Metadata.URI == nil ||
+		subnetResp == nil || subnetResp.Data == nil || subnetResp.Data.Metadata.URI == nil ||
+		sgResp == nil || sgResp.Data == nil || sgResp.Data.Metadata.URI == nil {
 		fmt.Println("⚠ Skipping DBaaS creation - VPC, Subnet, or Security Group not available")
 		return nil
 	}
@@ -544,22 +544,22 @@ func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRe
 		},
 		Properties: schema.DBaaSPropertiesRequest{
 			Engine: &schema.DBaaSEngine{
-				Id:         stringPtr("mysql-8.0"),
+				ID:         stringPtr("mysql-8.0"),
 				DataCenter: stringPtr("ITBG-1"),
 			},
 			Flavor: &schema.DBaaSFlavor{
 				Name: stringPtr("DBO2A4"),
 			},
 			Storage: &schema.DBaaSStorage{
-				SizeGb: int32Ptr(20),
+				SizeGB: int32Ptr(20),
 			},
 			BillingPlan: &schema.DBaaSBillingPlan{
 				BillingPeriod: stringPtr("Hour"),
 			},
 			Networking: &schema.DBaaSNetworking{
-				VpcUri:           vpcResp.Data.Metadata.Uri,
-				SubnetUri:        subnetResp.Data.Metadata.Uri,
-				SecurityGroupUri: sgResp.Data.Metadata.Uri,
+				VPCURI:           vpcResp.Data.Metadata.URI,
+				SubnetURI:        subnetResp.Data.Metadata.URI,
+				SecurityGroupURI: sgResp.Data.Metadata.URI,
 			},
 			Autoscaling: &schema.DBaaSAutoscaling{
 				Enabled:        boolPtr(true),
@@ -586,27 +586,27 @@ func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRe
 			*dbaasResp.Data.Metadata.Name,
 			stringValue(dbaasResp.Data.Properties.Engine.Type),
 			stringValue(dbaasResp.Data.Properties.Flavor.Name),
-			int32Value(dbaasResp.Data.Properties.Storage.SizeGb))
+			int32Value(dbaasResp.Data.Properties.Storage.SizeGB))
 	}
 
 	return dbaasResp
 }
 
 // createKaaS creates a KaaS cluster
-func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.KaaSResponse] {
+func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.KaaSResponse] {
 	fmt.Println("--- KaaS (Kubernetes) ---")
 
 	// Only create KaaS if VPC, Subnet, and Security Group are available
-	if vpcResp == nil || vpcResp.Data == nil || vpcResp.Data.Metadata.Uri == nil ||
-		subnetResp == nil || subnetResp.Data == nil || subnetResp.Data.Metadata.Uri == nil ||
-		sgResp == nil || sgResp.Data == nil || sgResp.Data.Metadata.Uri == nil {
+	if vpcResp == nil || vpcResp.Data == nil || vpcResp.Data.Metadata.URI == nil ||
+		subnetResp == nil || subnetResp.Data == nil || subnetResp.Data.Metadata.URI == nil ||
+		sgResp == nil || sgResp.Data == nil || sgResp.Data.Metadata.URI == nil {
 		fmt.Println("⚠ Skipping KaaS creation - VPC, Subnet, or Security Group not available")
 		return nil
 	}
 
 	// Wait for Subnet to become Active before creating KaaS
-	vpcID := *vpcResp.Data.Metadata.Id
-	subnetID := *subnetResp.Data.Metadata.Id
+	vpcID := *vpcResp.Data.Metadata.ID
+	subnetID := *subnetResp.Data.Metadata.ID
 	fmt.Println("⏳ Waiting for Subnet to become Active before creating KaaS...")
 
 	// Create a simple polling loop to check Subnet state
@@ -644,16 +644,16 @@ func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRes
 		},
 		Properties: schema.KaaSPropertiesRequest{
 			Preset: false,
-			Vpc: schema.ReferenceResource{
-				Uri: *vpcResp.Data.Metadata.Uri,
+			VPC: schema.ReferenceResource{
+				URI: *vpcResp.Data.Metadata.URI,
 			},
 			Subnet: schema.ReferenceResource{
-				Uri: *subnetResp.Data.Metadata.Uri,
+				URI: *subnetResp.Data.Metadata.URI,
 			},
 			SecurityGroup: schema.SecurityGroupProperties{
 				Name: "sg-name-for-kaas",
 			},
-			NodeCidr: schema.NodeCidrProperties{
+			NodeCIDR: schema.NodeCIDRProperties{
 				Name:    "my-node-cidr",
 				Address: "10.100.0.0/16",
 			},
@@ -668,7 +668,7 @@ func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRes
 					Zone:     "ITBG-1",
 				},
 			},
-			Ha: true,
+			HA: true,
 			BillingPlan: schema.BillingPeriodResource{
 				BillingPeriod: "Hour",
 			},
@@ -692,7 +692,7 @@ func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRes
 			*kaasResp.Data.Metadata.Name,
 			kaasResp.Data.Properties.KubernetesVersion.Value,
 			len(kaasResp.Data.Properties.NodePools),
-			kaasResp.Data.Properties.Ha)
+			kaasResp.Data.Properties.HA)
 	}
 
 	return kaasResp
@@ -703,15 +703,15 @@ func createCloudServer(ctx context.Context, sdk *sdkgo.Client, resources *Resour
 	fmt.Println("--- Cloud Server ---")
 
 	// Verify all required resources are available
-	if resources.VPCResp == nil || resources.VPCResp.Data == nil || resources.VPCResp.Data.Metadata.Uri == nil {
+	if resources.VPCResp == nil || resources.VPCResp.Data == nil || resources.VPCResp.Data.Metadata.URI == nil {
 		fmt.Println("⚠ Skipping Cloud Server creation - VPC not available")
 		return nil
 	}
-	if resources.ElasticIPResp == nil || resources.ElasticIPResp.Data == nil || resources.ElasticIPResp.Data.Metadata.Uri == nil {
+	if resources.ElasticIPResp == nil || resources.ElasticIPResp.Data == nil || resources.ElasticIPResp.Data.Metadata.URI == nil {
 		fmt.Println("⚠ Skipping Cloud Server creation - Elastic IP not available")
 		return nil
 	}
-	if resources.BlockStorageResp == nil || resources.BlockStorageResp.Data == nil || resources.BlockStorageResp.Data.Metadata.Uri == nil {
+	if resources.BlockStorageResp == nil || resources.BlockStorageResp.Data == nil || resources.BlockStorageResp.Data.Metadata.URI == nil {
 		fmt.Println("⚠ Skipping Cloud Server creation - Block Storage not available")
 		return nil
 	}
@@ -719,11 +719,11 @@ func createCloudServer(ctx context.Context, sdk *sdkgo.Client, resources *Resour
 		fmt.Println("⚠ Skipping Cloud Server creation - Key Pair not available")
 		return nil
 	}
-	if resources.SubnetResp == nil || resources.SubnetResp.Data == nil || resources.SubnetResp.Data.Metadata.Uri == nil {
+	if resources.SubnetResp == nil || resources.SubnetResp.Data == nil || resources.SubnetResp.Data.Metadata.URI == nil {
 		fmt.Println("⚠ Skipping Cloud Server creation - Subnet not available")
 		return nil
 	}
-	if resources.SecurityGroupResp == nil || resources.SecurityGroupResp.Data == nil || resources.SecurityGroupResp.Data.Metadata.Uri == nil {
+	if resources.SecurityGroupResp == nil || resources.SecurityGroupResp.Data == nil || resources.SecurityGroupResp.Data.Metadata.URI == nil {
 		fmt.Println("⚠ Skipping Cloud Server creation - Security Group not available")
 		return nil
 	}
@@ -740,28 +740,28 @@ func createCloudServer(ctx context.Context, sdk *sdkgo.Client, resources *Resour
 		},
 		Properties: schema.CloudServerPropertiesRequest{
 			Zone:       "ITBG-1",
-			VpcPreset:  false,
+			VPCPreset:  false,
 			FlavorName: stringPtr("CSO2A4"),
-			Vpc: schema.ReferenceResource{
-				Uri: *resources.VPCResp.Data.Metadata.Uri,
+			VPC: schema.ReferenceResource{
+				URI: *resources.VPCResp.Data.Metadata.URI,
 			},
-			ElastcIp: schema.ReferenceResource{
-				Uri: *resources.ElasticIPResp.Data.Metadata.Uri,
+			ElastcIP: schema.ReferenceResource{
+				URI: *resources.ElasticIPResp.Data.Metadata.URI,
 			},
 			BootVolume: schema.ReferenceResource{
-				Uri: *resources.BlockStorageResp.Data.Metadata.Uri,
+				URI: *resources.BlockStorageResp.Data.Metadata.URI,
 			},
 			KeyPair: schema.ReferenceResource{
-				Uri: *resources.KeyPairResp.Data.Metadata.Uri,
+				URI: *resources.KeyPairResp.Data.Metadata.URI,
 			},
 			Subnets: []schema.ReferenceResource{
 				{
-					Uri: *resources.SubnetResp.Data.Metadata.Uri,
+					URI: *resources.SubnetResp.Data.Metadata.URI,
 				},
 			},
 			SecurityGroups: []schema.ReferenceResource{
 				{
-					Uri: *resources.SecurityGroupResp.Data.Metadata.Uri,
+					URI: *resources.SecurityGroupResp.Data.Metadata.URI,
 				},
 			},
 		},
@@ -795,44 +795,44 @@ func printResourceSummary(resources *ResourceCollection) {
 	fmt.Println("Successfully created resources:")
 	fmt.Println("- Project ID:", resources.ProjectID)
 
-	if resources.ElasticIPResp != nil && resources.ElasticIPResp.Data != nil && resources.ElasticIPResp.Data.Metadata.Id != nil {
-		fmt.Println("- ElasticIP ID:", *resources.ElasticIPResp.Data.Metadata.Id)
+	if resources.ElasticIPResp != nil && resources.ElasticIPResp.Data != nil && resources.ElasticIPResp.Data.Metadata.ID != nil {
+		fmt.Println("- ElasticIP ID:", *resources.ElasticIPResp.Data.Metadata.ID)
 	}
 
-	if resources.BlockStorageResp != nil && resources.BlockStorageResp.Data != nil && resources.BlockStorageResp.Data.Metadata.Id != nil {
-		fmt.Println("- Block Storage ID:", *resources.BlockStorageResp.Data.Metadata.Id)
+	if resources.BlockStorageResp != nil && resources.BlockStorageResp.Data != nil && resources.BlockStorageResp.Data.Metadata.ID != nil {
+		fmt.Println("- Block Storage ID:", *resources.BlockStorageResp.Data.Metadata.ID)
 	}
 
-	if resources.SnapshotResp != nil && resources.SnapshotResp.Data != nil && resources.SnapshotResp.Data.Metadata.Id != nil {
-		fmt.Println("- Snapshot ID:", *resources.SnapshotResp.Data.Metadata.Id)
+	if resources.SnapshotResp != nil && resources.SnapshotResp.Data != nil && resources.SnapshotResp.Data.Metadata.ID != nil {
+		fmt.Println("- Snapshot ID:", *resources.SnapshotResp.Data.Metadata.ID)
 	}
 
-	if resources.VPCResp != nil && resources.VPCResp.Data != nil && resources.VPCResp.Data.Metadata.Id != nil {
-		fmt.Println("- VPC ID:", *resources.VPCResp.Data.Metadata.Id)
+	if resources.VPCResp != nil && resources.VPCResp.Data != nil && resources.VPCResp.Data.Metadata.ID != nil {
+		fmt.Println("- VPC ID:", *resources.VPCResp.Data.Metadata.ID)
 	}
 
-	if resources.SubnetResp != nil && resources.SubnetResp.Data != nil && resources.SubnetResp.Data.Metadata.Id != nil {
-		fmt.Println("- Subnet ID:", *resources.SubnetResp.Data.Metadata.Id)
+	if resources.SubnetResp != nil && resources.SubnetResp.Data != nil && resources.SubnetResp.Data.Metadata.ID != nil {
+		fmt.Println("- Subnet ID:", *resources.SubnetResp.Data.Metadata.ID)
 	}
 
-	if resources.SecurityGroupResp != nil && resources.SecurityGroupResp.Data != nil && resources.SecurityGroupResp.Data.Metadata.Id != nil {
-		fmt.Println("- Security Group ID:", *resources.SecurityGroupResp.Data.Metadata.Id)
+	if resources.SecurityGroupResp != nil && resources.SecurityGroupResp.Data != nil && resources.SecurityGroupResp.Data.Metadata.ID != nil {
+		fmt.Println("- Security Group ID:", *resources.SecurityGroupResp.Data.Metadata.ID)
 	}
 
-	if resources.SecurityRuleResp != nil && resources.SecurityRuleResp.Data != nil && resources.SecurityRuleResp.Data.Metadata.Id != nil {
-		fmt.Println("- Security Rule ID:", *resources.SecurityRuleResp.Data.Metadata.Id)
+	if resources.SecurityRuleResp != nil && resources.SecurityRuleResp.Data != nil && resources.SecurityRuleResp.Data.Metadata.ID != nil {
+		fmt.Println("- Security Rule ID:", *resources.SecurityRuleResp.Data.Metadata.ID)
 	}
 
 	if resources.KeyPairResp != nil && resources.KeyPairResp.Data != nil && *resources.KeyPairResp.Data.Metadata.Name != "" {
 		fmt.Println("- SSH Key Pair:", resources.KeyPairResp.Data.Metadata.Name)
 	}
 
-	if resources.DBaaSResp != nil && resources.DBaaSResp.Data != nil && resources.DBaaSResp.Data.Metadata.Id != nil {
-		fmt.Println("- DBaaS ID:", *resources.DBaaSResp.Data.Metadata.Id)
+	if resources.DBaaSResp != nil && resources.DBaaSResp.Data != nil && resources.DBaaSResp.Data.Metadata.ID != nil {
+		fmt.Println("- DBaaS ID:", *resources.DBaaSResp.Data.Metadata.ID)
 	}
 
-	if resources.KaaSResp != nil && resources.KaaSResp.Data != nil && resources.KaaSResp.Data.Metadata.Id != nil {
-		fmt.Println("- KaaS Cluster ID:", *resources.KaaSResp.Data.Metadata.Id)
+	if resources.KaaSResp != nil && resources.KaaSResp.Data != nil && resources.KaaSResp.Data.Metadata.ID != nil {
+		fmt.Println("- KaaS Cluster ID:", *resources.KaaSResp.Data.Metadata.ID)
 	}
 
 	if resources.CloudServerResp != nil && resources.CloudServerResp.Data != nil && resources.CloudServerResp.Data.Metadata.Name != "" {

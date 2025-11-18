@@ -22,9 +22,9 @@ func TestListVpcPeerings(t *testing.T) {
 
 		if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings" {
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VpcPeeringList{
+			resp := schema.VPCPeeringList{
 				ListResponse: schema.ListResponse{Total: 1},
-				Values: []schema.VpcPeeringResponse{
+				Values: []schema.VPCPeeringResponse{
 					{Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("test-peering")}},
 				},
 			}
@@ -70,7 +70,7 @@ func TestGetVpcPeering(t *testing.T) {
 
 		if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1" {
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VpcPeeringResponse{
+			resp := schema.VPCPeeringResponse{
 				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("test-peering")},
 			}
 			json.NewEncoder(w).Encode(resp)

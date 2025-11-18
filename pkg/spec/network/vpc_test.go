@@ -22,9 +22,9 @@ func TestListVPCs(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VpcList{
+			resp := schema.VPCList{
 				ListResponse: schema.ListResponse{Total: 1},
-				Values: []schema.VpcResponse{
+				Values: []schema.VPCResponse{
 					{Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("vpc-1")}},
 				},
 			}
@@ -67,7 +67,7 @@ func TestGetVPC(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VpcResponse{
+			resp := schema.VPCResponse{
 				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("my-vpc")},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -113,7 +113,7 @@ func TestCreateVPC(t *testing.T) {
 				t.Errorf("expected POST, got %s", r.Method)
 			}
 			w.WriteHeader(http.StatusCreated)
-			resp := schema.VpcResponse{
+			resp := schema.VPCResponse{
 				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("new-vpc")},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -134,7 +134,7 @@ func TestCreateVPC(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		req := schema.VpcRequest{
+		req := schema.VPCRequest{
 			Metadata: schema.RegionalResourceMetadataRequest{
 				ResourceMetadataRequest: schema.ResourceMetadataRequest{Name: "new-vpc"},
 				Location:                schema.LocationRequest{Value: "ITBG-Bergamo"},

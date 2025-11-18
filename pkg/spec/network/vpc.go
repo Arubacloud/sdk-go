@@ -12,7 +12,7 @@ import (
 )
 
 // ListVPCs retrieves all VPCs for a project
-func (s *Service) ListVPCs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VpcList], error) {
+func (s *Service) ListVPCs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VPCList], error) {
 	s.client.Logger().Debugf("Listing VPCs for project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -23,10 +23,10 @@ func (s *Service) ListVPCs(ctx context.Context, project string, params *schema.R
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcListAPIVersion,
+			APIVersion: &VPCListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcListAPIVersion
+		params.APIVersion = &VPCListAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -38,11 +38,11 @@ func (s *Service) ListVPCs(ctx context.Context, project string, params *schema.R
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.VpcList](httpResp)
+	return schema.ParseResponseBody[schema.VPCList](httpResp)
 }
 
 // GetVPC retrieves a specific VPC by ID
-func (s *Service) GetVPC(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
+func (s *Service) GetVPC(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VPCResponse], error) {
 	s.client.Logger().Debugf("Getting VPC: %s in project: %s", vpcId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
@@ -53,10 +53,10 @@ func (s *Service) GetVPC(ctx context.Context, project string, vpcId string, para
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcGetAPIVersion,
+			APIVersion: &VPCGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcGetAPIVersion
+		params.APIVersion = &VPCGetAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -68,11 +68,11 @@ func (s *Service) GetVPC(ctx context.Context, project string, vpcId string, para
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.VpcResponse](httpResp)
+	return schema.ParseResponseBody[schema.VPCResponse](httpResp)
 }
 
 // CreateVPC creates a new VPC
-func (s *Service) CreateVPC(ctx context.Context, project string, body schema.VpcRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
+func (s *Service) CreateVPC(ctx context.Context, project string, body schema.VPCRequest, params *schema.RequestParameters) (*schema.Response[schema.VPCResponse], error) {
 	s.client.Logger().Debugf("Creating VPC in project: %s", project)
 
 	if err := schema.ValidateProject(project); err != nil {
@@ -83,10 +83,10 @@ func (s *Service) CreateVPC(ctx context.Context, project string, body schema.Vpc
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcCreateAPIVersion,
+			APIVersion: &VPCCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcCreateAPIVersion
+		params.APIVersion = &VPCCreateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -108,7 +108,7 @@ func (s *Service) CreateVPC(ctx context.Context, project string, body schema.Vpc
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.VpcResponse]{
+	response := &schema.Response[schema.VPCResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -116,7 +116,7 @@ func (s *Service) CreateVPC(ctx context.Context, project string, body schema.Vpc
 	}
 
 	if response.IsSuccess() {
-		var data schema.VpcResponse
+		var data schema.VPCResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
@@ -132,7 +132,7 @@ func (s *Service) CreateVPC(ctx context.Context, project string, body schema.Vpc
 }
 
 // UpdateVPC updates an existing VPC
-func (s *Service) UpdateVPC(ctx context.Context, project string, vpcId string, body schema.VpcRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
+func (s *Service) UpdateVPC(ctx context.Context, project string, vpcId string, body schema.VPCRequest, params *schema.RequestParameters) (*schema.Response[schema.VPCResponse], error) {
 	s.client.Logger().Debugf("Updating VPC: %s in project: %s", vpcId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
@@ -143,10 +143,10 @@ func (s *Service) UpdateVPC(ctx context.Context, project string, vpcId string, b
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcUpdateAPIVersion,
+			APIVersion: &VPCUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcUpdateAPIVersion
+		params.APIVersion = &VPCUpdateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -168,7 +168,7 @@ func (s *Service) UpdateVPC(ctx context.Context, project string, vpcId string, b
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.VpcResponse]{
+	response := &schema.Response[schema.VPCResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -176,7 +176,7 @@ func (s *Service) UpdateVPC(ctx context.Context, project string, vpcId string, b
 	}
 
 	if response.IsSuccess() {
-		var data schema.VpcResponse
+		var data schema.VPCResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
@@ -203,10 +203,10 @@ func (s *Service) DeleteVPC(ctx context.Context, projectId string, vpcId string,
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcDeleteAPIVersion,
+			APIVersion: &VPCDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcDeleteAPIVersion
+		params.APIVersion = &VPCDeleteAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()

@@ -3,13 +3,13 @@ package schema
 type CloudServerPropertiesRequest struct {
 	Zone string `json:"dataCenter"`
 
-	Vpc ReferenceResource `json:"vpc"`
+	VPC ReferenceResource `json:"vpc"`
 
-	VpcPreset bool `json:"vpcPreset,omitempty"`
+	VPCPreset bool `json:"vpcPreset,omitempty"`
 
 	FlavorName *string `json:"flavorName,omitempty"`
 
-	ElastcIp ReferenceResource `json:"elasticIp"`
+	ElastcIP ReferenceResource `json:"elasticIp"`
 
 	BootVolume ReferenceResource `json:"bootVolume"`
 
@@ -21,7 +21,7 @@ type CloudServerPropertiesRequest struct {
 }
 
 type CloudServerFlavorResponse struct {
-	Id string `json:"id"`
+	ID string `json:"id"`
 
 	Name string `json:"name"`
 
@@ -31,7 +31,7 @@ type CloudServerFlavorResponse struct {
 
 	RAM int32 `json:"ram"`
 
-	Hd int32 `json:"hd"`
+	HD int32 `json:"hd"`
 }
 
 type CloudServerNetworkInterfaceDetails struct {
@@ -47,7 +47,7 @@ type CloudServerPropertiesResult struct {
 
 	Zone string `json:"dataCenter"`
 
-	Vpc ReferenceResource `json:"vpc"`
+	VPC ReferenceResource `json:"vpc"`
 
 	Flavor CloudServerFlavorResponse `json:"flavor,omitempty"`
 
