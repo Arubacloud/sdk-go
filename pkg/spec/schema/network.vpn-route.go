@@ -1,6 +1,6 @@
 package schema
 
-type VpnRoutePropertiesRequest struct {
+type VPNRoutePropertiesRequest struct {
 
 	// CloudSubnet CIDR of the cloud subnet
 	CloudSubnet string `json:"cloudSubnet"`
@@ -9,7 +9,7 @@ type VpnRoutePropertiesRequest struct {
 	OnPremSubnet string `json:"onPremSubnet"`
 }
 
-type VpnRoutePropertiesResponse struct {
+type VPNRoutePropertiesResponse struct {
 	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
 
 	// CloudSubnet CIDR of the cloud subnet
@@ -18,27 +18,27 @@ type VpnRoutePropertiesResponse struct {
 	// OnPremSubnet CIDR of the onPrem subnet
 	OnPremSubnet string `json:"onPremSubnet"`
 
-	VpnTunnel *ReferenceResource `json:"vpnTunnel,omitempty"`
+	VPNTunnel *ReferenceResource `json:"vpnTunnel,omitempty"`
 }
 
-type VpnRouteRequest struct {
+type VPNRouteRequest struct {
 	// Metadata of the VPC Route
 	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 
 	// Spec contains the VPC Route specification
-	Properties VpnRoutePropertiesRequest `json:"properties"`
+	Properties VPNRoutePropertiesRequest `json:"properties"`
 }
 
-type VpnRouteResponse struct {
+type VPNRouteResponse struct {
 	// Metadata of the VPC Route
 	Metadata ResourceMetadataResponse `json:"metadata"`
 	// Spec contains the VPC Route specification
-	Properties VpnRoutePropertiesResponse `json:"properties"`
+	Properties VPNRoutePropertiesResponse `json:"properties"`
 
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type VpnRouteList struct {
+type VPNRouteList struct {
 	ListResponse
-	Values []VpnRouteResponse `json:"values"`
+	Values []VPNRouteResponse `json:"values"`
 }

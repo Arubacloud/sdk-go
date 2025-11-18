@@ -22,9 +22,9 @@ func TestListVpnTunnels(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VpnTunnelList{
+			resp := schema.VPNTunnelList{
 				ListResponse: schema.ListResponse{Total: 1},
-				Values: []schema.VpnTunnelResponse{
+				Values: []schema.VPNTunnelResponse{
 					{Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("vpn-1")}},
 				},
 			}
@@ -67,7 +67,7 @@ func TestGetVpnTunnel(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VpnTunnelResponse{
+			resp := schema.VPNTunnelResponse{
 				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("my-vpn")},
 			}
 			json.NewEncoder(w).Encode(resp)

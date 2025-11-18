@@ -62,16 +62,16 @@ type NetworkAPI interface {
 	DeleteVpcPeeringRoute(ctx context.Context, projectId string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *schema.RequestParameters) (*schema.Response[any], error)
 
 	// VpnTunnel operations
-	ListVpnTunnels(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelList], error)
-	GetVpnTunnel(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error)
-	CreateVpnTunnel(ctx context.Context, project string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error)
-	UpdateVpnTunnel(ctx context.Context, project string, vpnTunnelId string, body schema.VpnTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnTunnelResponse], error)
+	ListVpnTunnels(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VPNTunnelList], error)
+	GetVpnTunnel(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VPNTunnelResponse], error)
+	CreateVpnTunnel(ctx context.Context, project string, body schema.VPNTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VPNTunnelResponse], error)
+	UpdateVpnTunnel(ctx context.Context, project string, vpnTunnelId string, body schema.VPNTunnelRequest, params *schema.RequestParameters) (*schema.Response[schema.VPNTunnelResponse], error)
 	DeleteVpnTunnel(ctx context.Context, projectId string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[any], error)
 
 	// VpnRoute operations
-	ListVpnRoutes(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VpnRouteList], error)
-	GetVpnRoute(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, params *schema.RequestParameters) (*schema.Response[schema.VpnRouteResponse], error)
-	CreateVpnRoute(ctx context.Context, project string, vpnTunnelId string, body schema.VpnRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnRouteResponse], error)
-	UpdateVpnRoute(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, body schema.VpnRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VpnRouteResponse], error)
+	ListVpnRoutes(ctx context.Context, project string, vpnTunnelId string, params *schema.RequestParameters) (*schema.Response[schema.VPNRouteList], error)
+	GetVpnRoute(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, params *schema.RequestParameters) (*schema.Response[schema.VPNRouteResponse], error)
+	CreateVpnRoute(ctx context.Context, project string, vpnTunnelId string, body schema.VPNRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VPNRouteResponse], error)
+	UpdateVpnRoute(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, body schema.VPNRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VPNRouteResponse], error)
 	DeleteVpnRoute(ctx context.Context, projectId string, vpnTunnelId string, vpnRouteId string, params *schema.RequestParameters) (*schema.Response[any], error)
 }

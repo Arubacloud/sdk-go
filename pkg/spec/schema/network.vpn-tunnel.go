@@ -1,15 +1,15 @@
 package schema
 
-// IpConfigurations contains network configuration of the VPN tunnel
-type IpConfigurations struct {
+// IPConfigurations contains network configuration of the VPN tunnel
+type IPConfigurations struct {
 	// VPC reference to the VPC (nullable)
 	VPC *ReferenceResource `json:"vpc,omitempty"`
 
 	// Subnet reference to the subnet (nullable)
 	Subnet *ReferenceResource `json:"subnet,omitempty"`
 
-	// PublicIp reference to the public IP (nullable)
-	PublicIp *ReferenceResource `json:"publicIp,omitempty"`
+	// PublicIP reference to the public IP (nullable)
+	PublicIP *ReferenceResource `json:"publicIp,omitempty"`
 }
 
 // IkeSettings contains IKE settings
@@ -63,8 +63,8 @@ type PskSettings struct {
 	Secret *string `json:"secret,omitempty"`
 }
 
-// VpnClientSettings contains client settings of the VPN tunnel
-type VpnClientSettings struct {
+// VPNClientSettings contains client settings of the VPN tunnel
+type VPNClientSettings struct {
 	// Ike IKE settings (nullable)
 	Ike *IkeSettings `json:"ike,omitempty"`
 
@@ -75,43 +75,43 @@ type VpnClientSettings struct {
 	Psk *PskSettings `json:"psk,omitempty"`
 }
 
-// VpnTunnelPropertiesRequest contains properties of a VPN tunnel
-type VpnTunnelPropertiesRequest struct {
-	// VpnType Type of VPN tunnel. Admissible values: Site-To-Site (nullable)
-	VpnType *string `json:"vpnType,omitempty"`
+// VPNTunnelPropertiesRequest contains properties of a VPN tunnel
+type VPNTunnelPropertiesRequest struct {
+	// VPNType Type of VPN tunnel. Admissible values: Site-To-Site (nullable)
+	VPNType *string `json:"vpnType,omitempty"`
 
-	// VpnClientProtocol Protocol of the VPN tunnel. Admissible values: ikev2 (nullable)
-	VpnClientProtocol *string `json:"vpnClientProtocol,omitempty"`
+	// VPNClientProtocol Protocol of the VPN tunnel. Admissible values: ikev2 (nullable)
+	VPNClientProtocol *string `json:"vpnClientProtocol,omitempty"`
 
-	// IpConfigurations Network configuration of the VPN tunnel (nullable)
-	IpConfigurations *IpConfigurations `json:"ipConfigurations,omitempty"`
+	// IPConfigurations Network configuration of the VPN tunnel (nullable)
+	IPConfigurations *IPConfigurations `json:"ipConfigurations,omitempty"`
 
-	// VpnClientSettings Client settings of the VPN tunnel (nullable)
-	VpnClientSettings *VpnClientSettings `json:"vpnClientSettings,omitempty"`
+	// VPNClientSettings Client settings of the VPN tunnel (nullable)
+	VPNClientSettings *VPNClientSettings `json:"vpnClientSettings,omitempty"`
 
-	// PeerClientPublicIp Peer client public IP address (nullable)
-	PeerClientPublicIp *string `json:"peerClientPublicIp,omitempty"`
+	// PeerClientPublicIP Peer client public IP address (nullable)
+	PeerClientPublicIP *string `json:"peerClientPublicIp,omitempty"`
 
 	// BillingPlan Billing plan
 	BillingPlan *BillingPeriodResource `json:"billingPlan,omitempty"`
 }
 
-// VpnTunnelPropertiesResponse contains the response properties of a VPN tunnel
-type VpnTunnelPropertiesResponse struct {
-	// VpnType Type of the VPN tunnel (nullable)
-	VpnType *string `json:"vpnType,omitempty"`
+// VPNTunnelPropertiesResponse contains the response properties of a VPN tunnel
+type VPNTunnelPropertiesResponse struct {
+	// VPNType Type of the VPN tunnel (nullable)
+	VPNType *string `json:"vpnType,omitempty"`
 
-	// VpnClientProtocol Protocol of the VPN tunnel (nullable)
-	VpnClientProtocol *string `json:"vpnClientProtocol,omitempty"`
+	// VPNClientProtocol Protocol of the VPN tunnel (nullable)
+	VPNClientProtocol *string `json:"vpnClientProtocol,omitempty"`
 
-	// IpConfigurations Network configuration of the VPN tunnel (nullable)
-	IpConfigurations *IpConfigurations `json:"ipConfigurations,omitempty"`
+	// IPConfigurations Network configuration of the VPN tunnel (nullable)
+	IPConfigurations *IPConfigurations `json:"ipConfigurations,omitempty"`
 
-	// VpnClientSettings Client settings of the VPN tunnel (nullable)
-	VpnClientSettings *VpnClientSettings `json:"vpnClientSettings,omitempty"`
+	// VPNClientSettings Client settings of the VPN tunnel (nullable)
+	VPNClientSettings *VPNClientSettings `json:"vpnClientSettings,omitempty"`
 
-	// PeerClientPublicIp Peer client public IP address (nullable)
-	PeerClientPublicIp *string `json:"peerClientPublicIp,omitempty"`
+	// PeerClientPublicIP Peer client public IP address (nullable)
+	PeerClientPublicIP *string `json:"peerClientPublicIp,omitempty"`
 
 	// RoutesNumber Number of valid VPN routes of the VPN tunnel
 	RoutesNumber int32 `json:"routesNumber,omitempty"`
@@ -120,24 +120,24 @@ type VpnTunnelPropertiesResponse struct {
 	BillingPlan *BillingPeriodResource `json:"billingPlan,omitempty"`
 }
 
-type VpnTunnelRequest struct {
+type VPNTunnelRequest struct {
 	// Metadata of the VPN Tunnel
 	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 
 	// Spec contains the VPN Tunnel specification
-	Properties VpnTunnelPropertiesRequest `json:"properties"`
+	Properties VPNTunnelPropertiesRequest `json:"properties"`
 }
 
-type VpnTunnelResponse struct {
+type VPNTunnelResponse struct {
 	// Metadata of the VPN Tunnel
 	Metadata ResourceMetadataResponse `json:"metadata"`
 	// Spec contains the VPN Tunnel specification
-	Properties VpnTunnelPropertiesResponse `json:"properties"`
+	Properties VPNTunnelPropertiesResponse `json:"properties"`
 
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type VpnTunnelList struct {
+type VPNTunnelList struct {
 	ListResponse
-	Values []VpnTunnelResponse `json:"values"`
+	Values []VPNTunnelResponse `json:"values"`
 }
