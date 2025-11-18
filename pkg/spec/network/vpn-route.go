@@ -23,10 +23,10 @@ func (s *Service) ListVpnRoutes(ctx context.Context, project string, vpnTunnelId
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpnRouteListAPIVersion,
+			APIVersion: &VPNRouteListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpnRouteListAPIVersion
+		params.APIVersion = &VPNRouteListAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -53,10 +53,10 @@ func (s *Service) GetVpnRoute(ctx context.Context, project string, vpnTunnelId s
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpnRouteGetAPIVersion,
+			APIVersion: &VPNRouteGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpnRouteGetAPIVersion
+		params.APIVersion = &VPNRouteGetAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -83,10 +83,10 @@ func (s *Service) CreateVpnRoute(ctx context.Context, project string, vpnTunnelI
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpnRouteCreateAPIVersion,
+			APIVersion: &VPNRouteCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpnRouteCreateAPIVersion
+		params.APIVersion = &VPNRouteCreateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -143,10 +143,10 @@ func (s *Service) UpdateVpnRoute(ctx context.Context, project string, vpnTunnelI
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpnRouteUpdateAPIVersion,
+			APIVersion: &VPNRouteUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpnRouteUpdateAPIVersion
+		params.APIVersion = &VPNRouteUpdateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -203,10 +203,10 @@ func (s *Service) DeleteVpnRoute(ctx context.Context, projectId string, vpnTunne
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpnRouteDeleteAPIVersion,
+			APIVersion: &VPNRouteDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpnRouteDeleteAPIVersion
+		params.APIVersion = &VPNRouteDeleteAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()

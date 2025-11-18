@@ -23,10 +23,10 @@ func (s *Service) ListVpcPeeringRoutes(ctx context.Context, project string, vpcI
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcPeeringRouteListAPIVersion,
+			APIVersion: &VPCPeeringRouteListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcPeeringRouteListAPIVersion
+		params.APIVersion = &VPCPeeringRouteListAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -53,10 +53,10 @@ func (s *Service) GetVpcPeeringRoute(ctx context.Context, project string, vpcId 
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcPeeringRouteGetAPIVersion,
+			APIVersion: &VPCPeeringRouteGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcPeeringRouteGetAPIVersion
+		params.APIVersion = &VPCPeeringRouteGetAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -83,10 +83,10 @@ func (s *Service) CreateVpcPeeringRoute(ctx context.Context, project string, vpc
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcPeeringRouteCreateAPIVersion,
+			APIVersion: &VPCPeeringRouteCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcPeeringRouteCreateAPIVersion
+		params.APIVersion = &VPCPeeringRouteCreateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -143,10 +143,10 @@ func (s *Service) UpdateVpcPeeringRoute(ctx context.Context, project string, vpc
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcPeeringRouteUpdateAPIVersion,
+			APIVersion: &VPCPeeringRouteUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcPeeringRouteUpdateAPIVersion
+		params.APIVersion = &VPCPeeringRouteUpdateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -203,10 +203,10 @@ func (s *Service) DeleteVpcPeeringRoute(ctx context.Context, projectId string, v
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcPeeringRouteDeleteAPIVersion,
+			APIVersion: &VPCPeeringRouteDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcPeeringRouteDeleteAPIVersion
+		params.APIVersion = &VPCPeeringRouteDeleteAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()

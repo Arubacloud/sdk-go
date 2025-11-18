@@ -3,22 +3,22 @@ package network
 var (
 
 	//ElasticIP API versions
-	ElasticIpCreateAPIVersion = "1.0"
-	ElasticIpGetAPIVersion    = "1.0"
-	ElasticIpListAPIVersion   = "1.0"
-	ElasticIpUpdateAPIVersion = "1.0"
-	ElasticIpDeleteAPIVersion = "1.0"
+	ElasticIPCreateAPIVersion = "1.0"
+	ElasticIPGetAPIVersion    = "1.0"
+	ElasticIPListAPIVersion   = "1.0"
+	ElasticIPUpdateAPIVersion = "1.0"
+	ElasticIPDeleteAPIVersion = "1.0"
 
 	//LoadBalancer API versions
 	LoadBalancerListAPIVersion = "1.0"
 	LoadBalancerGetAPIVersion  = "1.0"
 
 	// VPC API versions
-	VpcCreateAPIVersion = "1.0"
-	VpcDeleteAPIVersion = "1.0"
-	VpcGetAPIVersion    = "1.0"
-	VpcListAPIVersion   = "1.0"
-	VpcUpdateAPIVersion = "1.0"
+	VPCCreateAPIVersion = "1.0"
+	VPCDeleteAPIVersion = "1.0"
+	VPCGetAPIVersion    = "1.0"
+	VPCListAPIVersion   = "1.0"
+	VPCUpdateAPIVersion = "1.0"
 
 	// Subnet API versions
 	SubnetCreateAPIVersion = "1.0"
@@ -42,30 +42,30 @@ var (
 	SecurityRuleUpdateAPIVersion = "1.0"
 
 	// VPC Peering API versions
-	VpcPeeringCreateAPIVersion = "1.0"
-	VpcPeeringDeleteAPIVersion = "1.0"
-	VpcPeeringGetAPIVersion    = "1.0"
-	VpcPeeringListAPIVersion   = "1.0"
-	VpcPeeringUpdateAPIVersion = "1.0"
+	VPCPeeringCreateAPIVersion = "1.0"
+	VPCPeeringDeleteAPIVersion = "1.0"
+	VPCPeeringGetAPIVersion    = "1.0"
+	VPCPeeringListAPIVersion   = "1.0"
+	VPCPeeringUpdateAPIVersion = "1.0"
 
-	// Vpc Peering Route API versions
-	VpcPeeringRouteCreateAPIVersion = "1.0"
-	VpcPeeringRouteDeleteAPIVersion = "1.0"
-	VpcPeeringRouteGetAPIVersion    = "1.0"
-	VpcPeeringRouteListAPIVersion   = "1.0"
-	VpcPeeringRouteUpdateAPIVersion = "1.0"
+	// VPC Peering Route API versions
+	VPCPeeringRouteCreateAPIVersion = "1.0"
+	VPCPeeringRouteDeleteAPIVersion = "1.0"
+	VPCPeeringRouteGetAPIVersion    = "1.0"
+	VPCPeeringRouteListAPIVersion   = "1.0"
+	VPCPeeringRouteUpdateAPIVersion = "1.0"
 
 	// VPN Tunnel API versions
-	VpnTunnelCreateAPIVersion = "1.0"
-	VpnTunnelDeleteAPIVersion = "1.0"
-	VpnTunnelGetAPIVersion    = "1.0"
-	VpnTunnelListAPIVersion   = "1.0"
-	VpnTunnelUpdateAPIVersion = "1.0"
+	VPNTunnelCreateAPIVersion = "1.0"
+	VPNTunnelDeleteAPIVersion = "1.0"
+	VPNTunnelGetAPIVersion    = "1.0"
+	VPNTunnelListAPIVersion   = "1.0"
+	VPNTunnelUpdateAPIVersion = "1.0"
 
 	//VPN Route API versions
-	VpnRouteCreateAPIVersion = "1.0"
-	VpnRouteDeleteAPIVersion = "1.0"
-	VpnRouteGetAPIVersion    = "1.0"
-	VpnRouteListAPIVersion   = "1.0"
-	VpnRouteUpdateAPIVersion = "1.0"
+	VPNRouteCreateAPIVersion = "1.0"
+	VPNRouteDeleteAPIVersion = "1.0"
+	VPNRouteGetAPIVersion    = "1.0"
+	VPNRouteListAPIVersion   = "1.0"
+	VPNRouteUpdateAPIVersion = "1.0"
 )

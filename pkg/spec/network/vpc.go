@@ -23,10 +23,10 @@ func (s *Service) ListVPCs(ctx context.Context, project string, params *schema.R
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcListAPIVersion,
+			APIVersion: &VPCListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcListAPIVersion
+		params.APIVersion = &VPCListAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -53,10 +53,10 @@ func (s *Service) GetVPC(ctx context.Context, project string, vpcId string, para
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcGetAPIVersion,
+			APIVersion: &VPCGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcGetAPIVersion
+		params.APIVersion = &VPCGetAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -83,10 +83,10 @@ func (s *Service) CreateVPC(ctx context.Context, project string, body schema.VPC
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcCreateAPIVersion,
+			APIVersion: &VPCCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcCreateAPIVersion
+		params.APIVersion = &VPCCreateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -143,10 +143,10 @@ func (s *Service) UpdateVPC(ctx context.Context, project string, vpcId string, b
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcUpdateAPIVersion,
+			APIVersion: &VPCUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcUpdateAPIVersion
+		params.APIVersion = &VPCUpdateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -203,10 +203,10 @@ func (s *Service) DeleteVPC(ctx context.Context, projectId string, vpcId string,
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcDeleteAPIVersion,
+			APIVersion: &VPCDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcDeleteAPIVersion
+		params.APIVersion = &VPCDeleteAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()

@@ -23,10 +23,10 @@ func (s *Service) ListVpcPeerings(ctx context.Context, project string, vpcId str
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcPeeringListAPIVersion,
+			APIVersion: &VPCPeeringListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcPeeringListAPIVersion
+		params.APIVersion = &VPCPeeringListAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -53,10 +53,10 @@ func (s *Service) GetVpcPeering(ctx context.Context, project string, vpcId strin
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcPeeringGetAPIVersion,
+			APIVersion: &VPCPeeringGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcPeeringGetAPIVersion
+		params.APIVersion = &VPCPeeringGetAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -83,10 +83,10 @@ func (s *Service) CreateVpcPeering(ctx context.Context, project string, vpcId st
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcPeeringCreateAPIVersion,
+			APIVersion: &VPCPeeringCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcPeeringCreateAPIVersion
+		params.APIVersion = &VPCPeeringCreateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -143,10 +143,10 @@ func (s *Service) UpdateVpcPeering(ctx context.Context, project string, vpcId st
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcPeeringUpdateAPIVersion,
+			APIVersion: &VPCPeeringUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcPeeringUpdateAPIVersion
+		params.APIVersion = &VPCPeeringUpdateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -203,10 +203,10 @@ func (s *Service) DeleteVpcPeering(ctx context.Context, projectId string, vpcId 
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &VpcPeeringDeleteAPIVersion,
+			APIVersion: &VPCPeeringDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &VpcPeeringDeleteAPIVersion
+		params.APIVersion = &VPCPeeringDeleteAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()

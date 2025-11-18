@@ -22,10 +22,10 @@ func (s *Service) ListElasticIPs(ctx context.Context, project string, params *sc
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &ElasticIpListAPIVersion,
+			APIVersion: &ElasticIPListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &ElasticIpListAPIVersion
+		params.APIVersion = &ElasticIPListAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -52,10 +52,10 @@ func (s *Service) GetElasticIP(ctx context.Context, project string, elasticIPId 
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &ElasticIpGetAPIVersion,
+			APIVersion: &ElasticIPGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &ElasticIpGetAPIVersion
+		params.APIVersion = &ElasticIPGetAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -82,10 +82,10 @@ func (s *Service) CreateElasticIP(ctx context.Context, project string, body sche
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &ElasticIpCreateAPIVersion,
+			APIVersion: &ElasticIPCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &ElasticIpCreateAPIVersion
+		params.APIVersion = &ElasticIPCreateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -118,10 +118,10 @@ func (s *Service) UpdateElasticIP(ctx context.Context, project string, elasticIP
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &ElasticIpUpdateAPIVersion,
+			APIVersion: &ElasticIPUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &ElasticIpUpdateAPIVersion
+		params.APIVersion = &ElasticIPUpdateAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
@@ -154,10 +154,10 @@ func (s *Service) DeleteElasticIP(ctx context.Context, projectId string, elastic
 
 	if params == nil {
 		params = &schema.RequestParameters{
-			APIVersion: &ElasticIpDeleteAPIVersion,
+			APIVersion: &ElasticIPDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
-		params.APIVersion = &ElasticIpDeleteAPIVersion
+		params.APIVersion = &ElasticIPDeleteAPIVersion
 	}
 
 	queryParams := params.ToQueryParams()
