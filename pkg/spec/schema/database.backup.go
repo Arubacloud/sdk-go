@@ -3,7 +3,7 @@ package schema
 type BackupPropertiesRequest struct {
 	Zone string `json:"datacenter"`
 
-	DbaaS ReferenceResource `json:"dbaas"`
+	DBaaS ReferenceResource `json:"dbaas"`
 
 	Database ReferenceResource `json:"database"`
 
@@ -19,7 +19,7 @@ type BackupPropertiesResponse struct {
 
 	Zone string `json:"datacenter"`
 
-	DbaaS ReferenceResource `json:"dbaas"`
+	DBaaS ReferenceResource `json:"dbaas"`
 
 	Database ReferenceResource `json:"database"`
 

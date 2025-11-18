@@ -161,7 +161,7 @@ func updateDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, dbaas
 				Name: stringPtr("DBO2A4"),
 			},
 			Storage: &schema.DBaaSStorage{
-				SizeGb: int32Ptr(25), // Increased from 20 to 25 GB
+				SizeGB: int32Ptr(25), // Increased from 20 to 25 GB
 			},
 			BillingPlan: &schema.DBaaSBillingPlan{
 				BillingPeriod: stringPtr("Hour"),
@@ -194,7 +194,7 @@ func updateDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, dbaas
 	if updateResp.Data != nil && updateResp.Data.Metadata.Name != nil {
 		fmt.Printf("✓ Updated DBaaS: %s (Storage: %d GB)\n",
 			*updateResp.Data.Metadata.Name,
-			int32Value(updateResp.Data.Properties.Storage.SizeGb))
+			int32Value(updateResp.Data.Properties.Storage.SizeGB))
 	}
 }
 

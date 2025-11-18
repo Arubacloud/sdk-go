@@ -48,23 +48,23 @@ type DBaaSFlavorResponse struct {
 	// Category Flavor category (nullable)
 	Category *string `json:"category,omitempty"`
 
-	// Cpu Number of CPUs (nullable)
-	Cpu *int32 `json:"cpu,omitempty"`
+	// CPU Number of CPUs (nullable)
+	CPU *int32 `json:"cpu,omitempty"`
 
-	// Ram Amount of RAM in MB (nullable)
-	Ram *int32 `json:"ram,omitempty"`
+	// RAM Amount of RAM in MB (nullable)
+	RAM *int32 `json:"ram,omitempty"`
 }
 
 // DBaaSStorage contains the storage configuration
 type DBaaSStorage struct {
-	// SizeGb Size in GB to use (nullable)
-	SizeGb *int32 `json:"sizeGb,omitempty"`
+	// SizeGB Size in GB to use (nullable)
+	SizeGB *int32 `json:"sizeGb,omitempty"`
 }
 
 // DBaaSStorageResponse contains the storage response configuration
 type DBaaSStorageResponse struct {
-	// SizeGb Size in GB (nullable)
-	SizeGb *int32 `json:"sizeGb,omitempty"`
+	// SizeGB Size in GB (nullable)
+	SizeGB *int32 `json:"sizeGb,omitempty"`
 }
 
 // DBaaSBillingPlan contains the billing plan configuration

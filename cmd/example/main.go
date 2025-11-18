@@ -551,7 +551,7 @@ func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRe
 				Name: stringPtr("DBO2A4"),
 			},
 			Storage: &schema.DBaaSStorage{
-				SizeGb: int32Ptr(20),
+				SizeGB: int32Ptr(20),
 			},
 			BillingPlan: &schema.DBaaSBillingPlan{
 				BillingPeriod: stringPtr("Hour"),
@@ -586,7 +586,7 @@ func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRe
 			*dbaasResp.Data.Metadata.Name,
 			stringValue(dbaasResp.Data.Properties.Engine.Type),
 			stringValue(dbaasResp.Data.Properties.Flavor.Name),
-			int32Value(dbaasResp.Data.Properties.Storage.SizeGb))
+			int32Value(dbaasResp.Data.Properties.Storage.SizeGB))
 	}
 
 	return dbaasResp
