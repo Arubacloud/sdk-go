@@ -167,7 +167,7 @@ func updateDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, dbaas
 				BillingPeriod: stringPtr("Hour"),
 			},
 			Networking: &schema.DBaaSNetworking{
-				VpcURI:           &dbaasResp.Data.Properties.Networking.Vpc.URI,
+				VPCURI:           &dbaasResp.Data.Properties.Networking.VPC.URI,
 				SubnetURI:        &dbaasResp.Data.Properties.Networking.Subnet.URI,
 				SecurityGroupURI: &dbaasResp.Data.Properties.Networking.SecurityGroup.URI,
 			},
@@ -217,8 +217,8 @@ func updateKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, kaasRe
 		},
 		Properties: schema.KaaSPropertiesRequest{
 			Preset: false,
-			Vpc: schema.ReferenceResource{
-				URI: kaasResp.Data.Properties.Vpc.URI,
+			VPC: schema.ReferenceResource{
+				URI: kaasResp.Data.Properties.VPC.URI,
 			},
 			Subnet: schema.ReferenceResource{
 				URI: kaasResp.Data.Properties.Subnet.URI,

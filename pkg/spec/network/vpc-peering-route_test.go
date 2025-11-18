@@ -22,16 +22,16 @@ func TestListVpcPeeringRoutes(t *testing.T) {
 
 		if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1/routes" {
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VpcPeeringRouteList{
+			resp := schema.VPCPeeringRouteList{
 				ListResponse: schema.ListResponse{Total: 1},
-				Values: []schema.VpcPeeringRouteResponse{
+				Values: []schema.VPCPeeringRouteResponse{
 					{
 						Metadata: schema.RegionalResourceMetadataRequest{
 							ResourceMetadataRequest: schema.ResourceMetadataRequest{
 								Name: "route-1",
 							},
 						},
-						Properties: schema.VpcPeeringRoutePropertiesResponse{
+						Properties: schema.VPCPeeringRoutePropertiesResponse{
 							LocalNetworkAddress:  "10.0.0.0/16",
 							RemoteNetworkAddress: "10.1.0.0/16",
 						},
@@ -80,13 +80,13 @@ func TestGetVpcPeeringRoute(t *testing.T) {
 
 		if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1/routes/route-1" {
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VpcPeeringRouteResponse{
+			resp := schema.VPCPeeringRouteResponse{
 				Metadata: schema.RegionalResourceMetadataRequest{
 					ResourceMetadataRequest: schema.ResourceMetadataRequest{
 						Name: "route-1",
 					},
 				},
-				Properties: schema.VpcPeeringRoutePropertiesResponse{
+				Properties: schema.VPCPeeringRoutePropertiesResponse{
 					LocalNetworkAddress:  "10.0.0.0/16",
 					RemoteNetworkAddress: "10.1.0.0/16",
 				},

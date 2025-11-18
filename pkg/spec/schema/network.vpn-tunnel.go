@@ -2,8 +2,8 @@ package schema
 
 // IpConfigurations contains network configuration of the VPN tunnel
 type IpConfigurations struct {
-	// Vpc reference to the VPC (nullable)
-	Vpc *ReferenceResource `json:"vpc,omitempty"`
+	// VPC reference to the VPC (nullable)
+	VPC *ReferenceResource `json:"vpc,omitempty"`
 
 	// Subnet reference to the subnet (nullable)
 	Subnet *ReferenceResource `json:"subnet,omitempty"`

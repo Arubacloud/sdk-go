@@ -84,7 +84,7 @@ type ResourceCollection struct {
 	ElasticIPResp     *schema.Response[schema.ElasticIpResponse]
 	BlockStorageResp  *schema.Response[schema.BlockStorageResponse]
 	SnapshotResp      *schema.Response[schema.SnapshotResponse]
-	VPCResp           *schema.Response[schema.VpcResponse]
+	VPCResp           *schema.Response[schema.VPCResponse]
 	SubnetResp        *schema.Response[schema.SubnetResponse]
 	SecurityGroupResp *schema.Response[schema.SecurityGroupResponse]
 	SecurityRuleResp  *schema.Response[schema.SecurityRuleResponse]
@@ -305,10 +305,10 @@ func createSnapshot(ctx context.Context, sdk *sdkgo.Client, projectID string, bl
 
 // createVPC creates a VPC
 // The SDK automatically waits for it to become Active for dependent operations
-func createVPC(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema.Response[schema.VpcResponse] {
+func createVPC(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema.Response[schema.VPCResponse] {
 	fmt.Println("--- VPC ---")
 
-	vpcReq := schema.VpcRequest{
+	vpcReq := schema.VPCRequest{
 		Metadata: schema.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: schema.ResourceMetadataRequest{
 				Name: "my-vpc",
@@ -318,8 +318,8 @@ func createVPC(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema
 				Value: "ITBG-Bergamo",
 			},
 		},
-		Properties: schema.VpcPropertiesRequest{
-			Properties: &schema.VpcProperties{
+		Properties: schema.VPCPropertiesRequest{
+			Properties: &schema.VPCProperties{
 				Default: boolPtr(false),
 				Preset:  boolPtr(false),
 			},
@@ -350,7 +350,7 @@ func createVPC(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema
 }
 
 // createSubnet creates a subnet in a VPC
-func createSubnet(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse]) *schema.Response[schema.SubnetResponse] {
+func createSubnet(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse]) *schema.Response[schema.SubnetResponse] {
 	fmt.Println("\n--- Network: Subnet ---")
 
 	vpcID := *vpcResp.Data.Metadata.ID
@@ -397,7 +397,7 @@ func createSubnet(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcR
 
 // createSecurityGroup creates a security group
 // The SDK automatically waits for the VPC to become Active before creating the group
-func createSecurityGroup(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse]) *schema.Response[schema.SecurityGroupResponse] {
+func createSecurityGroup(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse]) *schema.Response[schema.SecurityGroupResponse] {
 	fmt.Println("\n--- Network: Security Group ---")
 
 	vpcID := *vpcResp.Data.Metadata.ID
@@ -432,7 +432,7 @@ func createSecurityGroup(ctx context.Context, sdk *sdkgo.Client, projectID strin
 }
 
 // createSecurityGroupRule creates a security group rule
-func createSecurityGroupRule(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.SecurityRuleResponse] {
+func createSecurityGroupRule(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.SecurityRuleResponse] {
 	if sgResp == nil || sgResp.Data == nil {
 		fmt.Println("⚠ Skipping security rule creation - Security Group not available")
 		return nil
@@ -521,7 +521,7 @@ func createKeyPair(ctx context.Context, sdk *sdkgo.Client, projectID string) *sc
 }
 
 // createDBaaS creates a DBaaS instance
-func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.DBaaSResponse] {
+func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.DBaaSResponse] {
 	fmt.Println("--- DBaaS ---")
 
 	// Only create DBaaS if VPC, Subnet, and Security Group are available
@@ -557,7 +557,7 @@ func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRe
 				BillingPeriod: stringPtr("Hour"),
 			},
 			Networking: &schema.DBaaSNetworking{
-				VpcURI:           vpcResp.Data.Metadata.URI,
+				VPCURI:           vpcResp.Data.Metadata.URI,
 				SubnetURI:        subnetResp.Data.Metadata.URI,
 				SecurityGroupURI: sgResp.Data.Metadata.URI,
 			},
@@ -593,7 +593,7 @@ func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRe
 }
 
 // createKaaS creates a KaaS cluster
-func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.KaaSResponse] {
+func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.KaaSResponse] {
 	fmt.Println("--- KaaS (Kubernetes) ---")
 
 	// Only create KaaS if VPC, Subnet, and Security Group are available
@@ -644,7 +644,7 @@ func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRes
 		},
 		Properties: schema.KaaSPropertiesRequest{
 			Preset: false,
-			Vpc: schema.ReferenceResource{
+			VPC: schema.ReferenceResource{
 				URI: *vpcResp.Data.Metadata.URI,
 			},
 			Subnet: schema.ReferenceResource{
@@ -740,9 +740,9 @@ func createCloudServer(ctx context.Context, sdk *sdkgo.Client, resources *Resour
 		},
 		Properties: schema.CloudServerPropertiesRequest{
 			Zone:       "ITBG-1",
-			VpcPreset:  false,
+			VPCPreset:  false,
 			FlavorName: stringPtr("CSO2A4"),
-			Vpc: schema.ReferenceResource{
+			VPC: schema.ReferenceResource{
 				URI: *resources.VPCResp.Data.Metadata.URI,
 			},
 			ElastcIp: schema.ReferenceResource{

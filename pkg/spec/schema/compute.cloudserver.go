@@ -3,9 +3,9 @@ package schema
 type CloudServerPropertiesRequest struct {
 	Zone string `json:"dataCenter"`
 
-	Vpc ReferenceResource `json:"vpc"`
+	VPC ReferenceResource `json:"vpc"`
 
-	VpcPreset bool `json:"vpcPreset,omitempty"`
+	VPCPreset bool `json:"vpcPreset,omitempty"`
 
 	FlavorName *string `json:"flavorName,omitempty"`
 
@@ -47,7 +47,7 @@ type CloudServerPropertiesResult struct {
 
 	Zone string `json:"dataCenter"`
 
-	Vpc ReferenceResource `json:"vpc"`
+	VPC ReferenceResource `json:"vpc"`
 
 	Flavor CloudServerFlavorResponse `json:"flavor,omitempty"`
 

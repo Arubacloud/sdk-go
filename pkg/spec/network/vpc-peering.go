@@ -12,7 +12,7 @@ import (
 )
 
 // ListVpcPeerings retrieves all VPC peerings for a VPC
-func (s *Service) ListVpcPeerings(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringList], error) {
+func (s *Service) ListVpcPeerings(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringList], error) {
 	s.client.Logger().Debugf("Listing VPC peerings for VPC: %s in project: %s", vpcId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
@@ -38,11 +38,11 @@ func (s *Service) ListVpcPeerings(ctx context.Context, project string, vpcId str
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.VpcPeeringList](httpResp)
+	return schema.ParseResponseBody[schema.VPCPeeringList](httpResp)
 }
 
 // GetVpcPeering retrieves a specific VPC peering by ID
-func (s *Service) GetVpcPeering(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringResponse], error) {
+func (s *Service) GetVpcPeering(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringResponse], error) {
 	s.client.Logger().Debugf("Getting VPC peering: %s from VPC: %s in project: %s", vpcPeeringId, vpcId, project)
 
 	if err := schema.ValidateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
@@ -68,11 +68,11 @@ func (s *Service) GetVpcPeering(ctx context.Context, project string, vpcId strin
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.VpcPeeringResponse](httpResp)
+	return schema.ParseResponseBody[schema.VPCPeeringResponse](httpResp)
 }
 
 // CreateVpcPeering creates a new VPC peering
-func (s *Service) CreateVpcPeering(ctx context.Context, project string, vpcId string, body schema.VpcPeeringRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringResponse], error) {
+func (s *Service) CreateVpcPeering(ctx context.Context, project string, vpcId string, body schema.VPCPeeringRequest, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringResponse], error) {
 	s.client.Logger().Debugf("Creating VPC peering in VPC: %s in project: %s", vpcId, project)
 
 	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
@@ -108,7 +108,7 @@ func (s *Service) CreateVpcPeering(ctx context.Context, project string, vpcId st
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.VpcPeeringResponse]{
+	response := &schema.Response[schema.VPCPeeringResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -116,7 +116,7 @@ func (s *Service) CreateVpcPeering(ctx context.Context, project string, vpcId st
 	}
 
 	if response.IsSuccess() {
-		var data schema.VpcPeeringResponse
+		var data schema.VPCPeeringResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
@@ -132,7 +132,7 @@ func (s *Service) CreateVpcPeering(ctx context.Context, project string, vpcId st
 }
 
 // UpdateVpcPeering updates an existing VPC peering
-func (s *Service) UpdateVpcPeering(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VpcPeeringRequest, params *schema.RequestParameters) (*schema.Response[schema.VpcPeeringResponse], error) {
+func (s *Service) UpdateVpcPeering(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VPCPeeringRequest, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringResponse], error) {
 	s.client.Logger().Debugf("Updating VPC peering: %s in VPC: %s in project: %s", vpcPeeringId, vpcId, project)
 
 	if err := schema.ValidateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
@@ -168,7 +168,7 @@ func (s *Service) UpdateVpcPeering(ctx context.Context, project string, vpcId st
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.VpcPeeringResponse]{
+	response := &schema.Response[schema.VPCPeeringResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -176,7 +176,7 @@ func (s *Service) UpdateVpcPeering(ctx context.Context, project string, vpcId st
 	}
 
 	if response.IsSuccess() {
-		var data schema.VpcPeeringResponse
+		var data schema.VPCPeeringResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}

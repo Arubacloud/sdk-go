@@ -47,7 +47,7 @@ type KaaSPropertiesRequest struct {
 
 	Preset bool `json:"preset"`
 
-	Vpc ReferenceResource `json:"vpc"`
+	VPC ReferenceResource `json:"vpc"`
 
 	Subnet ReferenceResource `json:"subnet"`
 
@@ -113,13 +113,13 @@ type NodeCidrPropertiesResponse struct {
 
 	Name string `json:"name,omitempty"`
 
-	Uri string `json:"uri,omitempty"`
+	URI string `json:"uri,omitempty"`
 }
 
 type KaasSecurityGroupPropertiesResponse struct {
 	Name string `json:"name,omitempty"`
 
-	Uri string `json:"uri,omitempty"`
+	URI string `json:"uri,omitempty"`
 }
 
 type KaaSPropertiesResponse struct {
@@ -129,7 +129,7 @@ type KaaSPropertiesResponse struct {
 
 	Preset bool `json:"preset"`
 
-	Vpc ReferenceResource `json:"vpc"`
+	VPC ReferenceResource `json:"vpc"`
 
 	Subnet ReferenceResource `json:"subnet"`
 

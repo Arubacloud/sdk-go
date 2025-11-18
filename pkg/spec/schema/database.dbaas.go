@@ -81,17 +81,17 @@ type DBaaSBillingPlanResponse struct {
 
 // DBaaSNetworking contains the network information to use when creating the new DBaaS
 type DBaaSNetworking struct {
-	// VpcRIri The URI of the VPC resource to bind to this DBaaS instance (nullable)
+	// VPCURI The URI of the VPC resource to bind to this DBaaS instance (nullable)
 	// Required when user has at least one VPC (with at least one subnet and a security group).
-	VpcURI *string `json:"vpcUri,omitempty"`
+	VPCURI *string `json:"vpcUri,omitempty"`
 
 	// SubnetURI The URI of the Subnet resource to bind to this DBaaS instance (nullable)
-	// It must belong to the VPC defined in VpcURI
+	// It must belong to the VPC defined in VPCURI
 	// Required when user has at least one VPC (with at least one subnet and a security group).
 	SubnetURI *string `json:"subnetUri,omitempty"`
 
 	// SecurityGroupURI The URI of the SecurityGroup resource to bind to this DBaaS instance (nullable)
-	// It must belong to the VPC defined in VpcURI
+	// It must belong to the VPC defined in VPCURI
 	// Required when user has at least one VPC (with at least one subnet and a security group).
 	SecurityGroupURI *string `json:"securityGroupUri,omitempty"`
 
@@ -101,8 +101,8 @@ type DBaaSNetworking struct {
 
 // DBaaSNetworkingResponse contains the network response information
 type DBaaSNetworkingResponse struct {
-	// Vpc VPC resource reference (nullable)
-	Vpc *ReferenceResource `json:"vpc,omitempty"`
+	// VPC VPC resource reference (nullable)
+	VPC *ReferenceResource `json:"vpc,omitempty"`
 
 	// Subnet Subnet resource reference (nullable)
 	Subnet *ReferenceResource `json:"subnet,omitempty"`
