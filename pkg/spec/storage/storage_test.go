@@ -303,7 +303,7 @@ func TestListSnapshots(t *testing.T) {
 								ID:   schema.StringPtr("snap-123"),
 							},
 							Properties: schema.SnapshotPropertiesResponse{
-								SizeGb:        schema.Int32Ptr(100),
+								SizeGB:        schema.Int32Ptr(100),
 								BillingPeriod: schema.StringPtr("Hour"),
 								Zone:          "it-eur-1",
 								Type:          schema.BlockStorageTypePerformance,
@@ -318,7 +318,7 @@ func TestListSnapshots(t *testing.T) {
 								ID:   schema.StringPtr("snap-456"),
 							},
 							Properties: schema.SnapshotPropertiesResponse{
-								SizeGb:        schema.Int32Ptr(200),
+								SizeGB:        schema.Int32Ptr(200),
 								BillingPeriod: schema.StringPtr("Hour"),
 								Zone:          "it-eur-1",
 								Type:          schema.BlockStorageTypeStandard,
@@ -382,7 +382,7 @@ func TestGetSnapshot(t *testing.T) {
 						ID:   schema.StringPtr("snap-123"),
 					},
 					Properties: schema.SnapshotPropertiesResponse{
-						SizeGb:        schema.Int32Ptr(150),
+						SizeGB:        schema.Int32Ptr(150),
 						BillingPeriod: schema.StringPtr("Hour"),
 						Zone:          "it-eur-1",
 						Type:          schema.BlockStorageTypePerformance,
@@ -467,7 +467,7 @@ func TestCreateSnapshot(t *testing.T) {
 						ID:   schema.StringPtr("snap-789"),
 					},
 					Properties: schema.SnapshotPropertiesResponse{
-						SizeGb:        schema.Int32Ptr(50),
+						SizeGB:        schema.Int32Ptr(50),
 						BillingPeriod: schema.StringPtr("Hour"),
 						Zone:          "it-eur-1",
 						Type:          schema.BlockStorageTypeStandard,

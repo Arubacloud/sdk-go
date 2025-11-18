@@ -19,8 +19,8 @@ type VolumeInfo struct {
 }
 
 type SnapshotPropertiesResponse struct {
-	// SizeGb The blockStorage's size in gigabyte (nullable)
-	SizeGb *int32 `json:"sizeGb,omitempty"`
+	// SizeGB The blockStorage's size in gigabyte (nullable)
+	SizeGB *int32 `json:"sizeGb,omitempty"`
 
 	// BillingPeriod The billing period for blockStorage. Only Hour is a valid value (nullable)
 	BillingPeriod *string `json:"billingPeriod,omitempty"`
