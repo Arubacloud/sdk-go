@@ -186,13 +186,13 @@ func TestListAlerts(t *testing.T) {
 							LastReception:      time.Now(),
 							Rule:               "greater_than",
 							Theshold:           80,
-							Um:                 "%",
+							UM:                 "%",
 							Duration:           "5m",
 							ThesholdExceedence: "85%",
 							Component:          "CPU",
 							Email:              true,
 							Panel:              true,
-							Sms:                false,
+							SMS:                false,
 							Hidden:             false,
 							ExecutedAlertActions: []schema.ExecutedAlertAction{
 								{
@@ -223,12 +223,12 @@ func TestListAlerts(t *testing.T) {
 							LastReception:      time.Now(),
 							Rule:               "greater_than",
 							Theshold:           90,
-							Um:                 "%",
+							UM:                 "%",
 							Duration:           "10m",
 							ThesholdExceedence: "95%",
 							Email:              true,
 							Panel:              true,
-							Sms:                true,
+							SMS:                true,
 							Hidden:             false,
 						},
 					},
@@ -280,7 +280,7 @@ func TestListAlerts(t *testing.T) {
 		if len(resp.Data.Values[0].ExecutedAlertActions) != 1 {
 			t.Errorf("expected 1 executed action")
 		}
-		if resp.Data.Values[1].Sms != true {
+		if resp.Data.Values[1].SMS != true {
 			t.Errorf("expected SMS notification to be enabled for second alert")
 		}
 	})

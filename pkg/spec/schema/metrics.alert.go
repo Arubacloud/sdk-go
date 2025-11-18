@@ -8,8 +8,8 @@ type ActionType string
 const (
 	ActionTypeNotificationPanel ActionType = "NotificationPanel"
 	ActionTypeSendEmail         ActionType = "SendEmail"
-	ActionTypeSendSms           ActionType = "SendSms"
-	ActionTypeAutoscalingDbaas  ActionType = "AutoscalingDbaas"
+	ActionTypeSendSMS           ActionType = "SendSms"
+	ActionTypeAutoscalingDBaaS  ActionType = "AutoscalingDbaas"
 )
 
 // ExecutedAlertAction represents an executed alert action
@@ -41,7 +41,7 @@ type AlertResponse struct {
 	LastReception        time.Time             `json:"lastReception,omitempty"`
 	Rule                 string                `json:"rule,omitempty"`
 	Theshold             int64                 `json:"theshold,omitempty"`
-	Um                   string                `json:"um,omitempty"`
+	UM                   string                `json:"um,omitempty"`
 	Duration             string                `json:"duration,omitempty"`
 	ThesholdExceedence   string                `json:"thesholdExceedence,omitempty"`
 	Component            string                `json:"component,omitempty"`
@@ -49,7 +49,7 @@ type AlertResponse struct {
 	Cluster              string                `json:"cluster,omitempty"`
 	Clustername          string                `json:"clustername,omitempty"`
 	NodePool             string                `json:"nodePool,omitempty"`
-	Sms                  bool                  `json:"sms,omitempty"`
+	SMS                  bool                  `json:"sms,omitempty"`
 	Email                bool                  `json:"email,omitempty"`
 	Panel                bool                  `json:"panel,omitempty"`
 	Hidden               bool                  `json:"hidden,omitempty"`
