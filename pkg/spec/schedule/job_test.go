@@ -40,8 +40,8 @@ func TestListScheduleJobs(t *testing.T) {
 								Steps: []schema.JobStepResponse{
 									{
 										Name:        schema.StringPtr("backup-step"),
-										ResourceUri: schema.StringPtr("/projects/test-project/providers/Aruba.Storage/block-storages/vol-123"),
-										ActionUri:   schema.StringPtr("/snapshot"),
+										ResourceURI: schema.StringPtr("/projects/test-project/providers/Aruba.Storage/block-storages/vol-123"),
+										ActionURI:   schema.StringPtr("/snapshot"),
 										HttpVerb:    schema.StringPtr("POST"),
 									},
 								},
@@ -62,8 +62,8 @@ func TestListScheduleJobs(t *testing.T) {
 								Steps: []schema.JobStepResponse{
 									{
 										Name:        schema.StringPtr("shutdown-step"),
-										ResourceUri: schema.StringPtr("/projects/test-project/providers/Aruba.Compute/cloudservers/vm-123"),
-										ActionUri:   schema.StringPtr("/stop"),
+										ResourceURI: schema.StringPtr("/projects/test-project/providers/Aruba.Compute/cloudservers/vm-123"),
+										ActionURI:   schema.StringPtr("/stop"),
 										HttpVerb:    schema.StringPtr("POST"),
 									},
 								},
@@ -188,8 +188,8 @@ func TestGetScheduleJob(t *testing.T) {
 						Steps: []schema.JobStepResponse{
 							{
 								Name:         schema.StringPtr("backup-step"),
-								ResourceUri:  schema.StringPtr("/projects/test-project/providers/Aruba.Storage/block-storages/vol-123"),
-								ActionUri:    schema.StringPtr("/snapshot"),
+								ResourceURI:  schema.StringPtr("/projects/test-project/providers/Aruba.Storage/block-storages/vol-123"),
+								ActionURI:    schema.StringPtr("/snapshot"),
 								ActionName:   schema.StringPtr("CreateSnapshot"),
 								Typology:     schema.StringPtr("Aruba.Storage/block-storages"),
 								TypologyName: schema.StringPtr("Block Storage"),
@@ -273,8 +273,8 @@ func TestCreateScheduleJob(t *testing.T) {
 						Steps: []schema.JobStepResponse{
 							{
 								Name:        schema.StringPtr("cleanup-old-snapshots"),
-								ResourceUri: schema.StringPtr("/projects/test-project/providers/Aruba.Storage/snapshots"),
-								ActionUri:   schema.StringPtr("/cleanup"),
+								ResourceURI: schema.StringPtr("/projects/test-project/providers/Aruba.Storage/snapshots"),
+								ActionURI:   schema.StringPtr("/cleanup"),
 								HttpVerb:    schema.StringPtr("POST"),
 							},
 						},
@@ -320,8 +320,8 @@ func TestCreateScheduleJob(t *testing.T) {
 				Steps: []schema.JobStep{
 					{
 						Name:        schema.StringPtr("cleanup-old-snapshots"),
-						ResourceUri: "/projects/test-project/providers/Aruba.Storage/snapshots",
-						ActionUri:   "/cleanup",
+						ResourceURI: "/projects/test-project/providers/Aruba.Storage/snapshots",
+						ActionURI:   "/cleanup",
 						HttpVerb:    "POST",
 					},
 				},
@@ -366,8 +366,8 @@ func TestCreateScheduleJob(t *testing.T) {
 						Steps: []schema.JobStepResponse{
 							{
 								Name:        schema.StringPtr("stop-servers"),
-								ResourceUri: schema.StringPtr("/projects/test-project/providers/Aruba.Compute/cloudservers/vm-123"),
-								ActionUri:   schema.StringPtr("/stop"),
+								ResourceURI: schema.StringPtr("/projects/test-project/providers/Aruba.Compute/cloudservers/vm-123"),
+								ActionURI:   schema.StringPtr("/stop"),
 								HttpVerb:    schema.StringPtr("POST"),
 							},
 						},
@@ -412,8 +412,8 @@ func TestCreateScheduleJob(t *testing.T) {
 				Steps: []schema.JobStep{
 					{
 						Name:        schema.StringPtr("stop-servers"),
-						ResourceUri: "/projects/test-project/providers/Aruba.Compute/cloudservers/vm-123",
-						ActionUri:   "/stop",
+						ResourceURI: "/projects/test-project/providers/Aruba.Compute/cloudservers/vm-123",
+						ActionURI:   "/stop",
 						HttpVerb:    "POST",
 					},
 				},
@@ -466,8 +466,8 @@ func TestUpdateScheduleJob(t *testing.T) {
 						Steps: []schema.JobStepResponse{
 							{
 								Name:        schema.StringPtr("updated-backup-step"),
-								ResourceUri: schema.StringPtr("/projects/test-project/providers/Aruba.Storage/block-storages/vol-456"),
-								ActionUri:   schema.StringPtr("/snapshot"),
+								ResourceURI: schema.StringPtr("/projects/test-project/providers/Aruba.Storage/block-storages/vol-456"),
+								ActionURI:   schema.StringPtr("/snapshot"),
 								HttpVerb:    schema.StringPtr("POST"),
 							},
 						},
@@ -513,8 +513,8 @@ func TestUpdateScheduleJob(t *testing.T) {
 				Steps: []schema.JobStep{
 					{
 						Name:        schema.StringPtr("updated-backup-step"),
-						ResourceUri: "/projects/test-project/providers/Aruba.Storage/block-storages/vol-456",
-						ActionUri:   "/snapshot",
+						ResourceURI: "/projects/test-project/providers/Aruba.Storage/block-storages/vol-456",
+						ActionURI:   "/snapshot",
 						HttpVerb:    "POST",
 					},
 				},

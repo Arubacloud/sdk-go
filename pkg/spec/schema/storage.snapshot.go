@@ -9,8 +9,8 @@ type SnapshotPropertiesRequest struct {
 
 // VolumeInfo contains information about the original volume
 type VolumeInfo struct {
-	// Uri of the volume
-	Uri *string `json:"uri,omitempty"`
+	// URI of the volume
+	URI *string `json:"uri,omitempty"`
 
 	// Type of the original volume from which the snapshot was created (nullable)
 	Name *string `json:"name,omitempty"`

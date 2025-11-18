@@ -276,7 +276,7 @@ func createSnapshot(ctx context.Context, sdk *sdkgo.Client, projectID string, bl
 		Properties: schema.SnapshotPropertiesRequest{
 			BillingPeriod: stringPtr("Hour"),
 			Volume: schema.ReferenceResource{
-				Uri: *blockStorageResp.Data.Metadata.Uri,
+				URI: *blockStorageResp.Data.Metadata.URI,
 			},
 		},
 	}
@@ -525,9 +525,9 @@ func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRe
 	fmt.Println("--- DBaaS ---")
 
 	// Only create DBaaS if VPC, Subnet, and Security Group are available
-	if vpcResp == nil || vpcResp.Data == nil || vpcResp.Data.Metadata.Uri == nil ||
-		subnetResp == nil || subnetResp.Data == nil || subnetResp.Data.Metadata.Uri == nil ||
-		sgResp == nil || sgResp.Data == nil || sgResp.Data.Metadata.Uri == nil {
+	if vpcResp == nil || vpcResp.Data == nil || vpcResp.Data.Metadata.URI == nil ||
+		subnetResp == nil || subnetResp.Data == nil || subnetResp.Data.Metadata.URI == nil ||
+		sgResp == nil || sgResp.Data == nil || sgResp.Data.Metadata.URI == nil {
 		fmt.Println("⚠ Skipping DBaaS creation - VPC, Subnet, or Security Group not available")
 		return nil
 	}
@@ -557,9 +557,9 @@ func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRe
 				BillingPeriod: stringPtr("Hour"),
 			},
 			Networking: &schema.DBaaSNetworking{
-				VpcUri:           vpcResp.Data.Metadata.Uri,
-				SubnetUri:        subnetResp.Data.Metadata.Uri,
-				SecurityGroupUri: sgResp.Data.Metadata.Uri,
+				VpcURI:           vpcResp.Data.Metadata.URI,
+				SubnetURI:        subnetResp.Data.Metadata.URI,
+				SecurityGroupURI: sgResp.Data.Metadata.URI,
 			},
 			Autoscaling: &schema.DBaaSAutoscaling{
 				Enabled:        boolPtr(true),
@@ -597,9 +597,9 @@ func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRes
 	fmt.Println("--- KaaS (Kubernetes) ---")
 
 	// Only create KaaS if VPC, Subnet, and Security Group are available
-	if vpcResp == nil || vpcResp.Data == nil || vpcResp.Data.Metadata.Uri == nil ||
-		subnetResp == nil || subnetResp.Data == nil || subnetResp.Data.Metadata.Uri == nil ||
-		sgResp == nil || sgResp.Data == nil || sgResp.Data.Metadata.Uri == nil {
+	if vpcResp == nil || vpcResp.Data == nil || vpcResp.Data.Metadata.URI == nil ||
+		subnetResp == nil || subnetResp.Data == nil || subnetResp.Data.Metadata.URI == nil ||
+		sgResp == nil || sgResp.Data == nil || sgResp.Data.Metadata.URI == nil {
 		fmt.Println("⚠ Skipping KaaS creation - VPC, Subnet, or Security Group not available")
 		return nil
 	}
@@ -645,10 +645,10 @@ func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRes
 		Properties: schema.KaaSPropertiesRequest{
 			Preset: false,
 			Vpc: schema.ReferenceResource{
-				Uri: *vpcResp.Data.Metadata.Uri,
+				URI: *vpcResp.Data.Metadata.URI,
 			},
 			Subnet: schema.ReferenceResource{
-				Uri: *subnetResp.Data.Metadata.Uri,
+				URI: *subnetResp.Data.Metadata.URI,
 			},
 			SecurityGroup: schema.SecurityGroupProperties{
 				Name: "sg-name-for-kaas",
@@ -703,15 +703,15 @@ func createCloudServer(ctx context.Context, sdk *sdkgo.Client, resources *Resour
 	fmt.Println("--- Cloud Server ---")
 
 	// Verify all required resources are available
-	if resources.VPCResp == nil || resources.VPCResp.Data == nil || resources.VPCResp.Data.Metadata.Uri == nil {
+	if resources.VPCResp == nil || resources.VPCResp.Data == nil || resources.VPCResp.Data.Metadata.URI == nil {
 		fmt.Println("⚠ Skipping Cloud Server creation - VPC not available")
 		return nil
 	}
-	if resources.ElasticIPResp == nil || resources.ElasticIPResp.Data == nil || resources.ElasticIPResp.Data.Metadata.Uri == nil {
+	if resources.ElasticIPResp == nil || resources.ElasticIPResp.Data == nil || resources.ElasticIPResp.Data.Metadata.URI == nil {
 		fmt.Println("⚠ Skipping Cloud Server creation - Elastic IP not available")
 		return nil
 	}
-	if resources.BlockStorageResp == nil || resources.BlockStorageResp.Data == nil || resources.BlockStorageResp.Data.Metadata.Uri == nil {
+	if resources.BlockStorageResp == nil || resources.BlockStorageResp.Data == nil || resources.BlockStorageResp.Data.Metadata.URI == nil {
 		fmt.Println("⚠ Skipping Cloud Server creation - Block Storage not available")
 		return nil
 	}
@@ -719,11 +719,11 @@ func createCloudServer(ctx context.Context, sdk *sdkgo.Client, resources *Resour
 		fmt.Println("⚠ Skipping Cloud Server creation - Key Pair not available")
 		return nil
 	}
-	if resources.SubnetResp == nil || resources.SubnetResp.Data == nil || resources.SubnetResp.Data.Metadata.Uri == nil {
+	if resources.SubnetResp == nil || resources.SubnetResp.Data == nil || resources.SubnetResp.Data.Metadata.URI == nil {
 		fmt.Println("⚠ Skipping Cloud Server creation - Subnet not available")
 		return nil
 	}
-	if resources.SecurityGroupResp == nil || resources.SecurityGroupResp.Data == nil || resources.SecurityGroupResp.Data.Metadata.Uri == nil {
+	if resources.SecurityGroupResp == nil || resources.SecurityGroupResp.Data == nil || resources.SecurityGroupResp.Data.Metadata.URI == nil {
 		fmt.Println("⚠ Skipping Cloud Server creation - Security Group not available")
 		return nil
 	}
@@ -743,25 +743,25 @@ func createCloudServer(ctx context.Context, sdk *sdkgo.Client, resources *Resour
 			VpcPreset:  false,
 			FlavorName: stringPtr("CSO2A4"),
 			Vpc: schema.ReferenceResource{
-				Uri: *resources.VPCResp.Data.Metadata.Uri,
+				URI: *resources.VPCResp.Data.Metadata.URI,
 			},
 			ElastcIp: schema.ReferenceResource{
-				Uri: *resources.ElasticIPResp.Data.Metadata.Uri,
+				URI: *resources.ElasticIPResp.Data.Metadata.URI,
 			},
 			BootVolume: schema.ReferenceResource{
-				Uri: *resources.BlockStorageResp.Data.Metadata.Uri,
+				URI: *resources.BlockStorageResp.Data.Metadata.URI,
 			},
 			KeyPair: schema.ReferenceResource{
-				Uri: *resources.KeyPairResp.Data.Metadata.Uri,
+				URI: *resources.KeyPairResp.Data.Metadata.URI,
 			},
 			Subnets: []schema.ReferenceResource{
 				{
-					Uri: *resources.SubnetResp.Data.Metadata.Uri,
+					URI: *resources.SubnetResp.Data.Metadata.URI,
 				},
 			},
 			SecurityGroups: []schema.ReferenceResource{
 				{
-					Uri: *resources.SecurityGroupResp.Data.Metadata.Uri,
+					URI: *resources.SecurityGroupResp.Data.Metadata.URI,
 				},
 			},
 		},

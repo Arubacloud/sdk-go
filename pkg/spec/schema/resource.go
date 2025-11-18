@@ -51,7 +51,7 @@ type CategoryResponseMetadata struct {
 
 type ResourceMetadataResponse struct {
 	ID                      *string                   `json:"id,omitempty"`
-	Uri                     *string                   `json:"uri,omitempty"`
+	URI                     *string                   `json:"uri,omitempty"`
 	Name                    *string                   `json:"name,omitempty"`
 	LocationResponse        *LocationResponse         `json:"location,omitempty"`
 	ProjectResponseMetadata *ProjectResponseMetadata  `json:"project,omitempty"`
@@ -99,7 +99,7 @@ type BillingPeriodResource struct {
 }
 
 type ReferenceResource struct {
-	Uri string `json:"uri"`
+	URI string `json:"uri"`
 }
 
 type ListResponse struct {

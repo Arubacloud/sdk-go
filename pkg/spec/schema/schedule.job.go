@@ -37,12 +37,12 @@ type JobStep struct {
 	// For more information, check the documentation.
 	Name *string `json:"name,omitempty"`
 
-	// ResourceUri URI of the resource on which the action will be performed
-	ResourceUri string `json:"resourceUri"`
+	// ResourceURI URI of the resource on which the action will be performed
+	ResourceURI string `json:"resourceUri"`
 
-	// ActionUri URI of the action to execute on the resource
+	// ActionURI URI of the action to execute on the resource
 	// For more information, check the documentation.
-	ActionUri string `json:"actionUri"`
+	ActionURI string `json:"actionUri"`
 
 	// HttpVerb HTTP verb to be used for the action (e.g., GET, POST, PUT, DELETE)
 	// For more information, check the documentation.
@@ -58,11 +58,11 @@ type JobStepResponse struct {
 	// Name Descriptive name of the step (nullable)
 	Name *string `json:"name,omitempty"`
 
-	// ResourceUri URI of the resource (nullable)
-	ResourceUri *string `json:"resourceUri,omitempty"`
+	// ResourceURI URI of the resource (nullable)
+	ResourceURI *string `json:"resourceUri,omitempty"`
 
-	// ActionUri URI of the action (nullable)
-	ActionUri *string `json:"actionUri,omitempty"`
+	// ActionURI URI of the action (nullable)
+	ActionURI *string `json:"actionUri,omitempty"`
 
 	// ActionName Name of the action (nullable)
 	ActionName *string `json:"actionName,omitempty"`

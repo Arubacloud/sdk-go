@@ -81,22 +81,22 @@ type DBaaSBillingPlanResponse struct {
 
 // DBaaSNetworking contains the network information to use when creating the new DBaaS
 type DBaaSNetworking struct {
-	// VpcUri The URI of the VPC resource to bind to this DBaaS instance (nullable)
+	// VpcRIri The URI of the VPC resource to bind to this DBaaS instance (nullable)
 	// Required when user has at least one VPC (with at least one subnet and a security group).
-	VpcUri *string `json:"vpcUri,omitempty"`
+	VpcURI *string `json:"vpcUri,omitempty"`
 
-	// SubnetUri The URI of the Subnet resource to bind to this DBaaS instance (nullable)
-	// It must belong to the VPC defined in VpcUri
+	// SubnetURI The URI of the Subnet resource to bind to this DBaaS instance (nullable)
+	// It must belong to the VPC defined in VpcURI
 	// Required when user has at least one VPC (with at least one subnet and a security group).
-	SubnetUri *string `json:"subnetUri,omitempty"`
+	SubnetURI *string `json:"subnetUri,omitempty"`
 
-	// SecurityGroupUri The URI of the SecurityGroup resource to bind to this DBaaS instance (nullable)
-	// It must belong to the VPC defined in VpcUri
+	// SecurityGroupURI The URI of the SecurityGroup resource to bind to this DBaaS instance (nullable)
+	// It must belong to the VPC defined in VpcURI
 	// Required when user has at least one VPC (with at least one subnet and a security group).
-	SecurityGroupUri *string `json:"securityGroupUri,omitempty"`
+	SecurityGroupURI *string `json:"securityGroupUri,omitempty"`
 
-	// ElasticIpUri The URI of the ElasticIp resource to bind to this DBaaS instance (nullable)
-	ElasticIpUri *string `json:"elasticIpUri,omitempty"`
+	// ElasticIpURI The URI of the ElasticIp resource to bind to this DBaaS instance (nullable)
+	ElasticIpURI *string `json:"elasticIpUri,omitempty"`
 }
 
 // DBaaSNetworkingResponse contains the network response information

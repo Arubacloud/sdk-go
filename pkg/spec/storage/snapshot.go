@@ -96,9 +96,9 @@ func (s *Service) CreateSnapshot(ctx context.Context, project string, body schem
 	}
 
 	// Extract volume ID from the Volume URI if present
-	if body.Properties.Volume.Uri != "" {
+	if body.Properties.Volume.URI != "" {
 		// Parse URI to get volume ID: /projects/{project}/providers/Aruba.Storage/blockstorages/{volumeId}
-		volumeID, err := extractVolumeIDFromURI(body.Properties.Volume.Uri)
+		volumeID, err := extractVolumeIDFromURI(body.Properties.Volume.URI)
 		if err == nil && volumeID != "" {
 			// Wait for BlockStorage to become Active or NotUsed before creating snapshot
 			err := s.waitForBlockStorageActive(ctx, project, volumeID)

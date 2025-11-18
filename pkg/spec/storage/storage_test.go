@@ -387,7 +387,7 @@ func TestGetSnapshot(t *testing.T) {
 						Zone:          "it-eur-1",
 						Type:          schema.BlockStorageTypePerformance,
 						Volume: &schema.VolumeInfo{
-							Uri:  schema.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123"),
+							URI:  schema.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123"),
 							Name: schema.StringPtr("source-volume"),
 						},
 					},
@@ -472,7 +472,7 @@ func TestCreateSnapshot(t *testing.T) {
 						Zone:          "it-eur-1",
 						Type:          schema.BlockStorageTypeStandard,
 						Volume: &schema.VolumeInfo{
-							Uri: schema.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123"),
+							URI: schema.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123"),
 						},
 					},
 					Status: schema.ResourceStatus{
@@ -511,7 +511,7 @@ func TestCreateSnapshot(t *testing.T) {
 			Properties: schema.SnapshotPropertiesRequest{
 				BillingPeriod: schema.StringPtr("Hour"),
 				Volume: schema.ReferenceResource{
-					Uri: "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123",
+					URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123",
 				},
 			},
 		}
