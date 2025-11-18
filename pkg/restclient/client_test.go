@@ -104,38 +104,6 @@ func TestNewClient(t *testing.T) {
 	}
 }
 
-func TestClient_WithContext(t *testing.T) {
-	tokenServer := setupMockTokenServer(t)
-	defer tokenServer.Close()
-
-	config := &Config{
-		BaseURL:        "https://api.example.com",
-		TokenIssuerURL: tokenServer.URL,
-		ClientID:       "test-client-id",
-		ClientSecret:   "test-client-secret",
-		HTTPClient:     http.DefaultClient,
-	}
-
-	client, err := NewClient(config)
-	if err != nil {
-		t.Fatalf("NewClient() error = %v", err)
-	}
-
-	type CtxTestKey string
-
-	ctx := context.WithValue(context.Background(), CtxTestKey("key"), "value")
-	newClient := client.WithContext(ctx)
-
-	if newClient.Context() != ctx {
-		t.Error("WithContext() did not set context correctly")
-	}
-
-	// Original client should not be modified
-	if client.Context() == ctx {
-		t.Error("WithContext() modified original client")
-	}
-}
-
 func TestClient_RequestEditorFn(t *testing.T) {
 	tokenServer := setupMockTokenServer(t)
 	defer tokenServer.Close()

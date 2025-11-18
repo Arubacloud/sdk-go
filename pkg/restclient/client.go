@@ -117,7 +117,6 @@ func (c *Config) Validate() error {
 // Client is the main SDK client that aggregates all resource providers
 type Client struct {
 	config       *Config
-	ctx          context.Context
 	tokenManager *TokenManager
 	logger       Logger
 
@@ -162,7 +161,6 @@ func NewClient(config *Config) (*Client, error) {
 
 	client := &Client{
 		config:       config,
-		ctx:          context.Background(),
 		tokenManager: tokenManager,
 		logger:       logger,
 		services:     make(map[string]interface{}),
@@ -171,7 +169,7 @@ func NewClient(config *Config) (*Client, error) {
 	logger.Debugf("Initializing SDK client with base URL: %s", config.BaseURL)
 
 	// Obtain initial token
-	if err := tokenManager.ObtainToken(client.ctx); err != nil {
+	if err := tokenManager.ObtainToken(context.TODO()); err != nil {
 		logger.Errorf("Failed to obtain initial token: %v", err)
 		return nil, fmt.Errorf("failed to obtain initial token: %w", err)
 	}
@@ -181,25 +179,9 @@ func NewClient(config *Config) (*Client, error) {
 	return client, nil
 }
 
-// WithContext returns a new client with the given context
-func (c *Client) WithContext(ctx context.Context) *Client {
-	newClient := *c
-	newClient.ctx = ctx
-	newClient.services = make(map[string]interface{})
-	return &newClient
-}
-
 // Config returns the client configuration
 func (c *Client) Config() *Config {
 	return c.config
-}
-
-// Context returns the client context
-func (c *Client) Context() context.Context {
-	if c.ctx == nil {
-		return context.Background()
-	}
-	return c.ctx
 }
 
 // HTTPClient returns the HTTP client
