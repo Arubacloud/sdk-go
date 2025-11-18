@@ -1,4 +1,4 @@
-package client
+package restclient
 
 import (
 	"encoding/json"

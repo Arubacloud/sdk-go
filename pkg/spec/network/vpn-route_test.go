@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
@@ -44,15 +44,15 @@ func TestListVpnRoutes(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cfg := &client.Config{
+	cfg := &restclient.Config{
 		BaseURL:        server.URL,
 		HTTPClient:     http.DefaultClient,
 		TokenIssuerURL: server.URL + "/token",
 		ClientID:       "test-client",
 		ClientSecret:   "test-secret",
-		Logger:         &client.NoOpLogger{},
+		Logger:         &restclient.NoOpLogger{},
 	}
-	c, err := client.NewClient(cfg)
+	c, err := restclient.NewClient(cfg)
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}
@@ -95,15 +95,15 @@ func TestGetVpnRoute(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cfg := &client.Config{
+	cfg := &restclient.Config{
 		BaseURL:        server.URL,
 		HTTPClient:     http.DefaultClient,
 		TokenIssuerURL: server.URL + "/token",
 		ClientID:       "test-client",
 		ClientSecret:   "test-secret",
-		Logger:         &client.NoOpLogger{},
+		Logger:         &restclient.NoOpLogger{},
 	}
-	c, err := client.NewClient(cfg)
+	c, err := restclient.NewClient(cfg)
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}
@@ -136,15 +136,15 @@ func TestDeleteVpnRoute(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cfg := &client.Config{
+	cfg := &restclient.Config{
 		BaseURL:        server.URL,
 		HTTPClient:     http.DefaultClient,
 		TokenIssuerURL: server.URL + "/token",
 		ClientID:       "test-client",
 		ClientSecret:   "test-secret",
-		Logger:         &client.NoOpLogger{},
+		Logger:         &restclient.NoOpLogger{},
 	}
-	c, err := client.NewClient(cfg)
+	c, err := restclient.NewClient(cfg)
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}

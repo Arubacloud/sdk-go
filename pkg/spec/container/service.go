@@ -1,16 +1,16 @@
 package container
 
 import (
-	"github.com/Arubacloud/sdk-go/pkg/client"
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 )
 
 // Service implements the ContainerAPI interface for all Container operations
 type Service struct {
-	client *client.Client
+	client *restclient.Client
 }
 
 // NewService creates a new unified Container service
-func NewService(client *client.Client) *Service {
+func NewService(client *restclient.Client) *Service {
 	return &Service{
 		client: client,
 	}

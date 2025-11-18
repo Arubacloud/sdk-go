@@ -1,4 +1,4 @@
-package client
+package restclient
 
 // This file contains examples of how to integrate generated clients
 // After running 'make generate', you can integrate the generated clients here

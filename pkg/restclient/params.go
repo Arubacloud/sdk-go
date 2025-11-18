@@ -1,4 +1,4 @@
-package client
+package restclient
 
 // Common parameter types that can be reused across different API calls
 

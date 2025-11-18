@@ -10,7 +10,7 @@ import (
 	"time"
 
 	sdkgo "github.com/Arubacloud/sdk-go"
-	"github.com/Arubacloud/sdk-go/pkg/client"
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
@@ -48,7 +48,7 @@ func main() {
 }
 
 func runCreateExample() {
-	config := &client.Config{
+	config := &restclient.Config{
 		ClientID:     "clientId",
 		ClientSecret: "clientSecret",
 		HTTPClient:   &http.Client{Timeout: 30 * time.Second},

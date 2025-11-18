@@ -4,16 +4,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 )
 
 // Service implements the NetworkAPI interface for all Network operations
 type Service struct {
-	client *client.Client
+	client *restclient.Client
 }
 
 // NewService creates a new unified Network service
-func NewService(client *client.Client) *Service {
+func NewService(client *restclient.Client) *Service {
 	return &Service{
 		client: client,
 	}
@@ -32,7 +32,7 @@ func (s *Service) waitForVPCActive(ctx context.Context, projectID, vpcID string)
 		return *resp.Data.Status.State, nil
 	}
 
-	return s.client.WaitForResourceState(ctx, "VPC", vpcID, getter, client.DefaultPollingConfig())
+	return s.client.WaitForResourceState(ctx, "VPC", vpcID, getter, restclient.DefaultPollingConfig())
 }
 
 // waitForSecurityGroupActive waits for a Security Group to become Active before proceeding
@@ -48,7 +48,7 @@ func (s *Service) waitForSecurityGroupActive(ctx context.Context, projectID, vpc
 		return *resp.Data.Status.State, nil
 	}
 
-	return s.client.WaitForResourceState(ctx, "SecurityGroup", sgID, getter, client.DefaultPollingConfig())
+	return s.client.WaitForResourceState(ctx, "SecurityGroup", sgID, getter, restclient.DefaultPollingConfig())
 }
 
 // waitForSubnetActive waits for a Subnet to become Active before proceeding
@@ -64,5 +64,5 @@ func (s *Service) waitForSecurityGroupActive(ctx context.Context, projectID, vpc
 		return *resp.Data.Status.State, nil
 	}
 
-	return s.client.WaitForResourceState(ctx, "Subnet", subnetID, getter, client.DefaultPollingConfig())
+	return s.client.WaitForResourceState(ctx, "Subnet", subnetID, getter, restclient.DefaultPollingConfig())
 }*/

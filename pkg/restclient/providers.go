@@ -1,4 +1,4 @@
-package client
+package restclient
 
 // This file will contain wrappers for generated clients
 // Each resource provider (microservice) will have its own wrapper

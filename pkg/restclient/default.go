@@ -1,4 +1,4 @@
-package client
+package restclient
 
 // DefaultBaseURL is the default Aruba Cloud API base URL
 const DefaultBaseURL = "https://api.arubacloud.com"

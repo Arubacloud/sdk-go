@@ -9,14 +9,14 @@ import (
 	"time"
 
 	sdkgo "github.com/Arubacloud/sdk-go"
-	"github.com/Arubacloud/sdk-go/pkg/client"
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
 // runUpdateExample demonstrates how to update existing resources
 // To run: PROJECT_ID=your-project go run . -mode=update
 func runUpdateExample() {
-	config := &client.Config{
+	config := &restclient.Config{
 		ClientID:     "clientId",
 		ClientSecret: "clientSecret",
 		HTTPClient:   &http.Client{Timeout: 30 * time.Second},

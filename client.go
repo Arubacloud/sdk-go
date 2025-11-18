@@ -2,7 +2,7 @@
 package sdkgo
 
 import (
-	"github.com/Arubacloud/sdk-go/pkg/client"
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/pkg/spec/audit"
 	"github.com/Arubacloud/sdk-go/pkg/spec/compute"
 	"github.com/Arubacloud/sdk-go/pkg/spec/container"
@@ -17,7 +17,7 @@ import (
 
 // Client wraps the client.Client and provides direct access to all service interfaces
 type Client struct {
-	*client.Client
+	*restclient.Client
 
 	// Service interfaces for all API categories
 	Compute   compute.ComputeAPI
@@ -33,8 +33,8 @@ type Client struct {
 }
 
 // NewClient creates a new SDK client with all services initialized
-func NewClient(config *client.Config) (*Client, error) {
-	baseClient, err := client.NewClient(config)
+func NewClient(config *restclient.Config) (*Client, error) {
+	baseClient, err := restclient.NewClient(config)
 	if err != nil {
 		return nil, err
 	}

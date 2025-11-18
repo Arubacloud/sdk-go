@@ -4,16 +4,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Arubacloud/sdk-go/pkg/client"
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 )
 
 // Service implements the StorageAPI interface for all Storage operations
 type Service struct {
-	client *client.Client
+	client *restclient.Client
 }
 
 // NewService creates a new unified Storage service
-func NewService(client *client.Client) *Service {
+func NewService(client *restclient.Client) *Service {
 	return &Service{
 		client: client,
 	}
@@ -32,7 +32,7 @@ func (s *Service) waitForBlockStorageActive(ctx context.Context, projectID, volu
 		return *resp.Data.Status.State, nil
 	}
 
-	config := client.DefaultPollingConfig()
+	config := restclient.DefaultPollingConfig()
 	// BlockStorage can be "Active" (attached) or "NotUsed" (unattached but ready)
 	config.SuccessStates = []string{"Active", "NotUsed"}
 
