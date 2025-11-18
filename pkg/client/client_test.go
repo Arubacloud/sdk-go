@@ -121,7 +121,9 @@ func TestClient_WithContext(t *testing.T) {
 		t.Fatalf("NewClient() error = %v", err)
 	}
 
-	ctx := context.WithValue(context.Background(), "key", "value")
+	type CtxTestKey string
+
+	ctx := context.WithValue(context.Background(), CtxTestKey("key"), "value")
 	newClient := client.WithContext(ctx)
 
 	if newClient.Context() != ctx {
