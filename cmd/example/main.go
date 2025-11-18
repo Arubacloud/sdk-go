@@ -66,9 +66,6 @@ func runCreateExample() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
-	// Use the SDK with context
-	arubaClient.Client = arubaClient.Client.WithContext(ctx)
-
 	fmt.Println("\n=== SDK Create Example ===")
 
 	// Create all resources

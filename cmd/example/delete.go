@@ -31,8 +31,6 @@ func runDeleteExample() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
-	arubaClient.Client = arubaClient.Client.WithContext(ctx)
-
 	fmt.Println("\n=== Delete Example ===")
 
 	// Get project ID from environment

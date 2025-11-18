@@ -32,8 +32,6 @@ func runUpdateExample() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	arubaClient.Client = arubaClient.Client.WithContext(ctx)
-
 	fmt.Println("\n=== Update Example ===")
 
 	// Get project ID from environment
