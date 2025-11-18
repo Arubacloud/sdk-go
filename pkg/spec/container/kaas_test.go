@@ -32,7 +32,7 @@ func TestListKaaS(t *testing.T) {
 							},
 							Properties: schema.KaaSPropertiesResponse{
 								Preset: false,
-								Ha:     true,
+								HA:     true,
 								KubernetesVersion: schema.KubernetesVersionInfoResponse{
 									KubernetesVersionInfo: schema.KubernetesVersionInfo{
 										Value: "1.28.0",
@@ -78,7 +78,7 @@ func TestListKaaS(t *testing.T) {
 		if resp.Data.Values[0].Metadata.Name == nil || *resp.Data.Values[0].Metadata.Name != "test-kaas" {
 			t.Errorf("expected name 'test-kaas'")
 		}
-		if !resp.Data.Values[0].Properties.Ha {
+		if !resp.Data.Values[0].Properties.HA {
 			t.Errorf("expected HA to be true")
 		}
 	})
@@ -103,7 +103,7 @@ func TestGetKaaS(t *testing.T) {
 					},
 					Properties: schema.KaaSPropertiesResponse{
 						Preset: false,
-						Ha:     true,
+						HA:     true,
 						KubernetesVersion: schema.KubernetesVersionInfoResponse{
 							KubernetesVersionInfo: schema.KubernetesVersionInfo{
 								Value: "1.28.0",
@@ -190,7 +190,7 @@ func TestCreateKaaS(t *testing.T) {
 					},
 					Properties: schema.KaaSPropertiesResponse{
 						Preset: false,
-						Ha:     true,
+						HA:     true,
 						KubernetesVersion: schema.KubernetesVersionInfoResponse{
 							KubernetesVersionInfo: schema.KubernetesVersionInfo{
 								Value: "1.28.0",
@@ -231,7 +231,7 @@ func TestCreateKaaS(t *testing.T) {
 			},
 			Properties: schema.KaaSPropertiesRequest{
 				Preset: false,
-				Ha:     true,
+				HA:     true,
 				KubernetesVersion: schema.KubernetesVersionInfo{
 					Value: "1.28.0",
 				},
@@ -273,7 +273,7 @@ func TestUpdateKaaS(t *testing.T) {
 					},
 					Properties: schema.KaaSPropertiesResponse{
 						Preset: false,
-						Ha:     true,
+						HA:     true,
 						KubernetesVersion: schema.KubernetesVersionInfoResponse{
 							KubernetesVersionInfo: schema.KubernetesVersionInfo{
 								Value: "1.29.0",
@@ -314,7 +314,7 @@ func TestUpdateKaaS(t *testing.T) {
 			},
 			Properties: schema.KaaSPropertiesRequest{
 				Preset: false,
-				Ha:     true,
+				HA:     true,
 				KubernetesVersion: schema.KubernetesVersionInfo{
 					Value: "1.29.0",
 				},

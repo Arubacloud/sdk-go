@@ -59,7 +59,7 @@ type KaaSPropertiesRequest struct {
 
 	NodePools []NodePoolProperties `json:"nodePools"`
 
-	Ha bool `json:"ha"`
+	HA bool `json:"ha"`
 
 	Storage StorageKubernetes `json:"storage,omitempty"`
 
@@ -143,7 +143,7 @@ type KaaSPropertiesResponse struct {
 
 	SecurityGroup KaasSecurityGroupPropertiesResponse `json:"securityGroup"`
 
-	Ha bool `json:"ha"`
+	HA bool `json:"ha"`
 
 	Storage StorageKubernetes `json:"storage,omitempty"`
 

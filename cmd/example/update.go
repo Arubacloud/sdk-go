@@ -241,7 +241,7 @@ func updateKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, kaasRe
 					Zone:     "ITBG-1",
 				},
 			},
-			Ha: true,
+			HA: true,
 			BillingPlan: schema.BillingPeriodResource{
 				BillingPeriod: "Hour",
 			},

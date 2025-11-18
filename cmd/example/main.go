@@ -668,7 +668,7 @@ func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRes
 					Zone:     "ITBG-1",
 				},
 			},
-			Ha: true,
+			HA: true,
 			BillingPlan: schema.BillingPeriodResource{
 				BillingPeriod: "Hour",
 			},
@@ -692,7 +692,7 @@ func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRes
 			*kaasResp.Data.Metadata.Name,
 			kaasResp.Data.Properties.KubernetesVersion.Value,
 			len(kaasResp.Data.Properties.NodePools),
-			kaasResp.Data.Properties.Ha)
+			kaasResp.Data.Properties.HA)
 	}
 
 	return kaasResp
