@@ -24,7 +24,7 @@ func runUpdateExample() {
 	}
 
 	// Initialize the SDK
-	sdk, err := aruba.NewClient(config)
+	arubaClient, err := aruba.NewClient(config)
 	if err != nil {
 		log.Fatalf("Failed to create SDK client: %v", err)
 	}
@@ -32,7 +32,7 @@ func runUpdateExample() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	sdk.Client = sdk.Client.WithContext(ctx)
+	arubaClient.Client = arubaClient.Client.WithContext(ctx)
 
 	fmt.Println("\n=== Update Example ===")
 
@@ -43,16 +43,16 @@ func runUpdateExample() {
 	}
 
 	// Fetch existing resources
-	resources := fetchExistingResources(ctx, sdk, projectID)
+	resources := fetchExistingResources(ctx, arubaClient, projectID)
 
 	// Update all resources
-	updateAllResources(ctx, sdk, resources)
+	updateAllResources(ctx, arubaClient, resources)
 
 	fmt.Println("\n=== Update Example Complete ===")
 }
 
 // fetchExistingResources retrieves existing resources from the API for updating
-func fetchExistingResources(ctx context.Context, sdk *aruba.ClientImpl, projectID string) *ResourceCollection {
+func fetchExistingResources(ctx context.Context, arubaClient aruba.Client, projectID string) *ResourceCollection {
 	resources := &ResourceCollection{
 		ProjectID: projectID,
 	}
@@ -60,11 +60,11 @@ func fetchExistingResources(ctx context.Context, sdk *aruba.ClientImpl, projectI
 	fmt.Println("Fetching existing resources...")
 
 	// Fetch DBaaS instances
-	dbaasListResp, err := sdk.Database.ListDBaaS(ctx, projectID, nil)
+	dbaasListResp, err := arubaClient.FromDatabase().ListDBaaS(ctx, projectID, nil)
 	if err == nil && dbaasListResp.IsSuccess() && len(dbaasListResp.Data.Values) > 0 {
 		// Get the first DBaaS instance details
 		dbaasID := *dbaasListResp.Data.Values[0].Metadata.ID
-		dbaasResp, err := sdk.Database.GetDBaaS(ctx, projectID, dbaasID, nil)
+		dbaasResp, err := arubaClient.FromDatabase().GetDBaaS(ctx, projectID, dbaasID, nil)
 		if err == nil && dbaasResp.IsSuccess() {
 			resources.DBaaSResp = dbaasResp
 			fmt.Printf("✓ Found DBaaS: %s\n", *dbaasResp.Data.Metadata.Name)
@@ -72,11 +72,11 @@ func fetchExistingResources(ctx context.Context, sdk *aruba.ClientImpl, projectI
 	}
 
 	// Fetch KaaS clusters
-	kaasList, err := sdk.Container.ListKaaS(ctx, projectID, nil)
+	kaasList, err := arubaClient.FromContainer().ListKaaS(ctx, projectID, nil)
 	if err == nil && kaasList.IsSuccess() && len(kaasList.Data.Values) > 0 {
 		// Get the first KaaS cluster details
 		kaasID := *kaasList.Data.Values[0].Metadata.ID
-		kaasResp, err := sdk.Container.GetKaaS(ctx, projectID, kaasID, nil)
+		kaasResp, err := arubaClient.FromContainer().GetKaaS(ctx, projectID, kaasID, nil)
 		if err == nil && kaasResp.IsSuccess() {
 			resources.KaaSResp = kaasResp
 			fmt.Printf("✓ Found KaaS: %s\n", *kaasResp.Data.Metadata.Name)
@@ -87,20 +87,20 @@ func fetchExistingResources(ctx context.Context, sdk *aruba.ClientImpl, projectI
 }
 
 // updateAllResources updates all resources that support update operations
-func updateAllResources(ctx context.Context, sdk *aruba.ClientImpl, resources *ResourceCollection) {
+func updateAllResources(ctx context.Context, arubaClient aruba.Client, resources *ResourceCollection) {
 	fmt.Println("\n=== Updating Resources ===")
 
 	// Update Project
-	updateProject(ctx, sdk, resources.ProjectID)
+	updateProject(ctx, arubaClient, resources.ProjectID)
 
 	// Update DBaaS (if created)
 	if resources.DBaaSResp != nil && resources.DBaaSResp.Data != nil {
-		updateDBaaS(ctx, sdk, resources.ProjectID, resources.DBaaSResp)
+		updateDBaaS(ctx, arubaClient, resources.ProjectID, resources.DBaaSResp)
 	}
 
 	// Update KaaS (if created)
 	if resources.KaaSResp != nil && resources.KaaSResp.Data != nil {
-		updateKaaS(ctx, sdk, resources.ProjectID, resources.KaaSResp)
+		updateKaaS(ctx, arubaClient, resources.ProjectID, resources.KaaSResp)
 	}
 
 	// Update KMS Key (if you create one in the future)
@@ -110,7 +110,7 @@ func updateAllResources(ctx context.Context, sdk *aruba.ClientImpl, resources *R
 }
 
 // updateProject updates a project
-func updateProject(ctx context.Context, sdk *aruba.ClientImpl, projectID string) {
+func updateProject(ctx context.Context, arubaClient aruba.Client, projectID string) {
 	fmt.Println("--- Updating Project ---")
 
 	projectReq := schema.ProjectRequest{
@@ -124,7 +124,7 @@ func updateProject(ctx context.Context, sdk *aruba.ClientImpl, projectID string)
 		},
 	}
 
-	updateResp, err := sdk.Project.UpdateProject(ctx, projectID, projectReq, nil)
+	updateResp, err := arubaClient.FromProject().UpdateProject(ctx, projectID, projectReq, nil)
 	if err != nil {
 		log.Printf("Error updating project: %v", err)
 		return
@@ -136,7 +136,7 @@ func updateProject(ctx context.Context, sdk *aruba.ClientImpl, projectID string)
 }
 
 // updateDBaaS updates a DBaaS instance
-func updateDBaaS(ctx context.Context, sdk *aruba.ClientImpl, projectID string, dbaasResp *schema.Response[schema.DBaaSResponse]) {
+func updateDBaaS(ctx context.Context, arubaClient aruba.Client, projectID string, dbaasResp *schema.Response[schema.DBaaSResponse]) {
 	fmt.Println("--- Updating DBaaS ---")
 
 	dbaasID := *dbaasResp.Data.Metadata.ID
@@ -179,7 +179,7 @@ func updateDBaaS(ctx context.Context, sdk *aruba.ClientImpl, projectID string, d
 		},
 	}
 
-	updateResp, err := sdk.Database.UpdateDBaaS(ctx, projectID, dbaasID, dbaasReq, nil)
+	updateResp, err := arubaClient.FromDatabase().UpdateDBaaS(ctx, projectID, dbaasID, dbaasReq, nil)
 	if err != nil {
 		log.Printf("Error updating DBaaS: %v", err)
 		return
@@ -199,7 +199,7 @@ func updateDBaaS(ctx context.Context, sdk *aruba.ClientImpl, projectID string, d
 }
 
 // updateKaaS updates a KaaS cluster
-func updateKaaS(ctx context.Context, sdk *aruba.ClientImpl, projectID string, kaasResp *schema.Response[schema.KaaSResponse]) {
+func updateKaaS(ctx context.Context, arubaClient aruba.Client, projectID string, kaasResp *schema.Response[schema.KaaSResponse]) {
 	fmt.Println("--- Updating KaaS Cluster ---")
 
 	kaasID := *kaasResp.Data.Metadata.ID
@@ -248,7 +248,7 @@ func updateKaaS(ctx context.Context, sdk *aruba.ClientImpl, projectID string, ka
 		},
 	}
 
-	updateResp, err := sdk.Container.UpdateKaaS(ctx, projectID, kaasID, kaasReq, nil)
+	updateResp, err := arubaClient.FromContainer().UpdateKaaS(ctx, projectID, kaasID, kaasReq, nil)
 	if err != nil {
 		log.Printf("Error updating KaaS cluster: %v", err)
 		return

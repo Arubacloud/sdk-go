@@ -56,7 +56,7 @@ func runCreateExample() {
 	}
 
 	// Initialize the SDK (automatically obtains JWT token)
-	sdk, err := aruba.NewClient(config)
+	arubaClient, err := aruba.NewClient(config)
 	if err != nil {
 		log.Fatalf("Failed to create SDK client: %v", err)
 	}
@@ -67,12 +67,12 @@ func runCreateExample() {
 	defer cancel()
 
 	// Use the SDK with context
-	sdk.Client = sdk.Client.WithContext(ctx)
+	arubaClient.Client = arubaClient.Client.WithContext(ctx)
 
 	fmt.Println("\n=== SDK Create Example ===")
 
 	// Create all resources
-	resources := createAllResources(ctx, sdk)
+	resources := createAllResources(ctx, arubaClient)
 
 	// Print summary
 	printResourceSummary(resources)
@@ -95,50 +95,50 @@ type ResourceCollection struct {
 }
 
 // createAllResources creates all resources in the correct order
-func createAllResources(ctx context.Context, sdk *aruba.ClientImpl) *ResourceCollection {
+func createAllResources(ctx context.Context, arubaClient aruba.Client) *ResourceCollection {
 	resources := &ResourceCollection{}
 
 	// 1. Create Project
-	resources.ProjectID = createProject(ctx, sdk)
+	resources.ProjectID = createProject(ctx, arubaClient)
 
 	// 2. Create Elastic IP
-	resources.ElasticIPResp = createElasticIP(ctx, sdk, resources.ProjectID)
+	resources.ElasticIPResp = createElasticIP(ctx, arubaClient, resources.ProjectID)
 
 	// 3. Create Block Storage (SDK handles waiting for it to be ready)
-	resources.BlockStorageResp = createBlockStorage(ctx, sdk, resources.ProjectID)
+	resources.BlockStorageResp = createBlockStorage(ctx, arubaClient, resources.ProjectID)
 
 	// 4. Create Snapshot from Block Storage (SDK waits for BlockStorage to be ready)
-	resources.SnapshotResp = createSnapshot(ctx, sdk, resources.ProjectID, resources.BlockStorageResp)
+	resources.SnapshotResp = createSnapshot(ctx, arubaClient, resources.ProjectID, resources.BlockStorageResp)
 
 	// 5. Create VPC (SDK handles waiting for it to be active)
-	resources.VPCResp = createVPC(ctx, sdk, resources.ProjectID)
+	resources.VPCResp = createVPC(ctx, arubaClient, resources.ProjectID)
 
 	// 6. Create Subnet in VPC (SDK waits for VPC to be active)
-	resources.SubnetResp = createSubnet(ctx, sdk, resources.ProjectID, resources.VPCResp)
+	resources.SubnetResp = createSubnet(ctx, arubaClient, resources.ProjectID, resources.VPCResp)
 
 	// 7. Create Security Group (SDK waits for VPC to be active)
-	resources.SecurityGroupResp = createSecurityGroup(ctx, sdk, resources.ProjectID, resources.VPCResp)
+	resources.SecurityGroupResp = createSecurityGroup(ctx, arubaClient, resources.ProjectID, resources.VPCResp)
 
 	// 8. Create Security Group Rule (SDK waits for SecurityGroup to be active)
-	resources.SecurityRuleResp = createSecurityGroupRule(ctx, sdk, resources.ProjectID, resources.VPCResp, resources.SecurityGroupResp)
+	resources.SecurityRuleResp = createSecurityGroupRule(ctx, arubaClient, resources.ProjectID, resources.VPCResp, resources.SecurityGroupResp)
 
 	// 9. Create SSH Key Pair
-	resources.KeyPairResp = createKeyPair(ctx, sdk, resources.ProjectID)
+	resources.KeyPairResp = createKeyPair(ctx, arubaClient, resources.ProjectID)
 
 	// 10. Create DBaaS
-	resources.DBaaSResp = createDBaaS(ctx, sdk, resources.ProjectID, resources.VPCResp, resources.SubnetResp, resources.SecurityGroupResp)
+	resources.DBaaSResp = createDBaaS(ctx, arubaClient, resources.ProjectID, resources.VPCResp, resources.SubnetResp, resources.SecurityGroupResp)
 
 	// 11. Create KaaS
-	resources.KaaSResp = createKaaS(ctx, sdk, resources.ProjectID, resources.VPCResp, resources.SubnetResp, resources.SecurityGroupResp)
+	resources.KaaSResp = createKaaS(ctx, arubaClient, resources.ProjectID, resources.VPCResp, resources.SubnetResp, resources.SecurityGroupResp)
 
 	// 12. Create Cloud Server (commented out)
-	resources.CloudServerResp = createCloudServer(ctx, sdk, resources)
+	resources.CloudServerResp = createCloudServer(ctx, arubaClient, resources)
 
 	return resources
 }
 
 // createProject creates and updates a project
-func createProject(ctx context.Context, sdk *aruba.ClientImpl) string {
+func createProject(ctx context.Context, arubaClient aruba.Client) string {
 	fmt.Println("--- Project Management ---")
 
 	projectReq := schema.ProjectRequest{
@@ -152,7 +152,7 @@ func createProject(ctx context.Context, sdk *aruba.ClientImpl) string {
 		},
 	}
 
-	createResp, err := sdk.Project.CreateProject(ctx, projectReq, nil)
+	createResp, err := arubaClient.FromProject().CreateProject(ctx, projectReq, nil)
 	if err != nil {
 		log.Fatalf("Error creating project: %v", err)
 	} else if !createResp.IsSuccess() {
@@ -162,7 +162,7 @@ func createProject(ctx context.Context, sdk *aruba.ClientImpl) string {
 	fmt.Printf("✓ Created project with ID: %s\n", projectID)
 
 	// Update the project
-	updateResp, err := sdk.Project.UpdateProject(ctx, projectID, projectReq, nil)
+	updateResp, err := arubaClient.FromProject().UpdateProject(ctx, projectID, projectReq, nil)
 	if err != nil {
 		log.Printf("Error updating project: %v", err)
 		os.Exit(1)
@@ -176,7 +176,7 @@ func createProject(ctx context.Context, sdk *aruba.ClientImpl) string {
 }
 
 // createElasticIP creates an Elastic IP
-func createElasticIP(ctx context.Context, sdk *aruba.ClientImpl, projectID string) *schema.Response[schema.ElasticIPResponse] {
+func createElasticIP(ctx context.Context, arubaClient aruba.Client, projectID string) *schema.Response[schema.ElasticIPResponse] {
 	fmt.Println("--- Elastic IP ---")
 
 	elasticIPReq := schema.ElasticIPRequest{
@@ -196,7 +196,7 @@ func createElasticIP(ctx context.Context, sdk *aruba.ClientImpl, projectID strin
 		},
 	}
 
-	elasticIPResp, err := sdk.Network.CreateElasticIP(ctx, projectID, elasticIPReq, nil)
+	elasticIPResp, err := arubaClient.FromNetwork().CreateElasticIP(ctx, projectID, elasticIPReq, nil)
 	if err != nil {
 		log.Printf("Error creating Elastic IP: %v", err)
 		os.Exit(1)
@@ -214,7 +214,7 @@ func createElasticIP(ctx context.Context, sdk *aruba.ClientImpl, projectID strin
 
 // createBlockStorage creates a block storage volume
 // The SDK automatically waits for it to become Active or NotUsed
-func createBlockStorage(ctx context.Context, sdk *aruba.ClientImpl, projectID string) *schema.Response[schema.BlockStorageResponse] {
+func createBlockStorage(ctx context.Context, arubaClient aruba.Client, projectID string) *schema.Response[schema.BlockStorageResponse] {
 	fmt.Println("--- Block Storage ---")
 
 	blockStorageReq := schema.BlockStorageRequest{
@@ -237,7 +237,7 @@ func createBlockStorage(ctx context.Context, sdk *aruba.ClientImpl, projectID st
 		},
 	}
 
-	blockStorageResp, err := sdk.Storage.CreateBlockStorageVolume(ctx, projectID, blockStorageReq, nil)
+	blockStorageResp, err := arubaClient.FromStorage().CreateBlockStorageVolume(ctx, projectID, blockStorageReq, nil)
 	if err != nil {
 		log.Printf("Error creating block storage: %v", err)
 		os.Exit(1)
@@ -260,7 +260,7 @@ func createBlockStorage(ctx context.Context, sdk *aruba.ClientImpl, projectID st
 }
 
 // createSnapshot creates a snapshot from block storage
-func createSnapshot(ctx context.Context, sdk *aruba.ClientImpl, projectID string, blockStorageResp *schema.Response[schema.BlockStorageResponse]) *schema.Response[schema.SnapshotResponse] {
+func createSnapshot(ctx context.Context, arubaClient aruba.Client, projectID string, blockStorageResp *schema.Response[schema.BlockStorageResponse]) *schema.Response[schema.SnapshotResponse] {
 	fmt.Println("--- Snapshot ---")
 
 	snapshotReq := schema.SnapshotRequest{
@@ -281,7 +281,7 @@ func createSnapshot(ctx context.Context, sdk *aruba.ClientImpl, projectID string
 		},
 	}
 
-	snapshotResp, err := sdk.Storage.CreateSnapshot(ctx, projectID, snapshotReq, nil)
+	snapshotResp, err := arubaClient.FromStorage().CreateSnapshot(ctx, projectID, snapshotReq, nil)
 	if err != nil {
 		log.Printf("Error creating snapshot: %v", err)
 		os.Exit(1)
@@ -305,7 +305,7 @@ func createSnapshot(ctx context.Context, sdk *aruba.ClientImpl, projectID string
 
 // createVPC creates a VPC
 // The SDK automatically waits for it to become Active for dependent operations
-func createVPC(ctx context.Context, sdk *aruba.ClientImpl, projectID string) *schema.Response[schema.VPCResponse] {
+func createVPC(ctx context.Context, arubaClient aruba.Client, projectID string) *schema.Response[schema.VPCResponse] {
 	fmt.Println("--- VPC ---")
 
 	vpcReq := schema.VPCRequest{
@@ -326,7 +326,7 @@ func createVPC(ctx context.Context, sdk *aruba.ClientImpl, projectID string) *sc
 		},
 	}
 
-	vpcResp, err := sdk.Network.CreateVPC(ctx, projectID, vpcReq, nil)
+	vpcResp, err := arubaClient.FromNetwork().CreateVPC(ctx, projectID, vpcReq, nil)
 	if err != nil {
 		log.Printf("Error creating VPC: %v", err)
 		os.Exit(1)
@@ -350,7 +350,7 @@ func createVPC(ctx context.Context, sdk *aruba.ClientImpl, projectID string) *sc
 }
 
 // createSubnet creates a subnet in a VPC
-func createSubnet(ctx context.Context, sdk *aruba.ClientImpl, projectID string, vpcResp *schema.Response[schema.VPCResponse]) *schema.Response[schema.SubnetResponse] {
+func createSubnet(ctx context.Context, arubaClient aruba.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse]) *schema.Response[schema.SubnetResponse] {
 	fmt.Println("\n--- Network: Subnet ---")
 
 	vpcID := *vpcResp.Data.Metadata.ID
@@ -377,7 +377,7 @@ func createSubnet(ctx context.Context, sdk *aruba.ClientImpl, projectID string, 
 		},
 	}
 
-	subnetResp, err := sdk.Network.CreateSubnet(ctx, projectID, vpcID, subnetReq, nil)
+	subnetResp, err := arubaClient.FromNetwork().CreateSubnet(ctx, projectID, vpcID, subnetReq, nil)
 	if err != nil {
 		log.Printf("Error creating subnet: %v", err)
 	} else if subnetResp.IsError() && subnetResp.Error != nil {
@@ -397,7 +397,7 @@ func createSubnet(ctx context.Context, sdk *aruba.ClientImpl, projectID string, 
 
 // createSecurityGroup creates a security group
 // The SDK automatically waits for the VPC to become Active before creating the group
-func createSecurityGroup(ctx context.Context, sdk *aruba.ClientImpl, projectID string, vpcResp *schema.Response[schema.VPCResponse]) *schema.Response[schema.SecurityGroupResponse] {
+func createSecurityGroup(ctx context.Context, arubaClient aruba.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse]) *schema.Response[schema.SecurityGroupResponse] {
 	fmt.Println("\n--- Network: Security Group ---")
 
 	vpcID := *vpcResp.Data.Metadata.ID
@@ -412,7 +412,7 @@ func createSecurityGroup(ctx context.Context, sdk *aruba.ClientImpl, projectID s
 		},
 	}
 
-	sgResp, err := sdk.Network.CreateSecurityGroup(ctx, projectID, vpcID, sgReq, nil)
+	sgResp, err := arubaClient.FromNetwork().CreateSecurityGroup(ctx, projectID, vpcID, sgReq, nil)
 	if err != nil {
 		log.Printf("Error creating security group: %v", err)
 		return nil
@@ -432,7 +432,7 @@ func createSecurityGroup(ctx context.Context, sdk *aruba.ClientImpl, projectID s
 }
 
 // createSecurityGroupRule creates a security group rule
-func createSecurityGroupRule(ctx context.Context, sdk *aruba.ClientImpl, projectID string, vpcResp *schema.Response[schema.VPCResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.SecurityRuleResponse] {
+func createSecurityGroupRule(ctx context.Context, arubaClient aruba.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.SecurityRuleResponse] {
 	if sgResp == nil || sgResp.Data == nil {
 		fmt.Println("⚠ Skipping security rule creation - Security Group not available")
 		return nil
@@ -464,7 +464,7 @@ func createSecurityGroupRule(ctx context.Context, sdk *aruba.ClientImpl, project
 		},
 	}
 
-	ruleResp, err := sdk.Network.CreateSecurityGroupRule(ctx, projectID, vpcID, sgID, ruleReq, nil)
+	ruleResp, err := arubaClient.FromNetwork().CreateSecurityGroupRule(ctx, projectID, vpcID, sgID, ruleReq, nil)
 	if err != nil {
 		log.Printf("Error creating security rule: %v", err)
 	} else if ruleResp.IsError() && ruleResp.Error != nil {
@@ -485,7 +485,7 @@ func createSecurityGroupRule(ctx context.Context, sdk *aruba.ClientImpl, project
 }
 
 // createKeyPair creates an SSH key pair
-func createKeyPair(ctx context.Context, sdk *aruba.ClientImpl, projectID string) *schema.Response[schema.KeyPairResponse] {
+func createKeyPair(ctx context.Context, arubaClient aruba.Client, projectID string) *schema.Response[schema.KeyPairResponse] {
 	fmt.Println("--- SSH Key Pair ---")
 
 	sshPublicKey := "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEA2No7At0tgHrcZTL0kGWyLLUqPKfOhD9hGdNV9PbJxhjOGNFxcwdQ9wCXsJ3RQaRHBuGIgVodDurrlqzxFK86yCHMgXT2YLHF0j9P4m9GDiCfOK6msbFb89p5xZExjwD2zK+w68r7iOKZeRB2yrznW5TD3KDemSPIQQIVcyLF+yxft49HWBTI3PVQ4rBVOBJ2PdC9SAOf7CYnptW24CRrC0h85szIdwMA+Kmasfl3YGzk4MxheHrTO8C40aXXpieJ9S2VQA4VJAMRyAboptIK0cKjBYrbt5YkEL0AlyBGPIu6MPYr5K/MHyDunDi9yc7VYRYRR0f46MBOSqMUiGPnMw=="
@@ -505,7 +505,7 @@ func createKeyPair(ctx context.Context, sdk *aruba.ClientImpl, projectID string)
 		},
 	}
 
-	keyPairResp, err := sdk.Compute.CreateKeyPair(ctx, projectID, keyPairReq, nil)
+	keyPairResp, err := arubaClient.FromCompute().CreateKeyPair(ctx, projectID, keyPairReq, nil)
 	if err != nil {
 		log.Printf("Error creating SSH key pair: %v", err)
 	} else if !keyPairResp.IsSuccess() {
@@ -521,7 +521,7 @@ func createKeyPair(ctx context.Context, sdk *aruba.ClientImpl, projectID string)
 }
 
 // createDBaaS creates a DBaaS instance
-func createDBaaS(ctx context.Context, sdk *aruba.ClientImpl, projectID string, vpcResp *schema.Response[schema.VPCResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.DBaaSResponse] {
+func createDBaaS(ctx context.Context, arubaClient aruba.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.DBaaSResponse] {
 	fmt.Println("--- DBaaS ---")
 
 	// Only create DBaaS if VPC, Subnet, and Security Group are available
@@ -569,7 +569,7 @@ func createDBaaS(ctx context.Context, sdk *aruba.ClientImpl, projectID string, v
 		},
 	}
 
-	dbaasResp, err := sdk.Database.CreateDBaaS(ctx, projectID, dbaasReq, nil)
+	dbaasResp, err := arubaClient.FromDatabase().CreateDBaaS(ctx, projectID, dbaasReq, nil)
 	if err != nil {
 		log.Printf("Error creating DBaaS: %v", err)
 		return nil
@@ -593,7 +593,7 @@ func createDBaaS(ctx context.Context, sdk *aruba.ClientImpl, projectID string, v
 }
 
 // createKaaS creates a KaaS cluster
-func createKaaS(ctx context.Context, sdk *aruba.ClientImpl, projectID string, vpcResp *schema.Response[schema.VPCResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.KaaSResponse] {
+func createKaaS(ctx context.Context, arubaClient aruba.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.KaaSResponse] {
 	fmt.Println("--- KaaS (Kubernetes) ---")
 
 	// Only create KaaS if VPC, Subnet, and Security Group are available
@@ -612,7 +612,7 @@ func createKaaS(ctx context.Context, sdk *aruba.ClientImpl, projectID string, vp
 	// Create a simple polling loop to check Subnet state
 	maxAttempts := 30
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		subnetCheckResp, err := sdk.Network.GetSubnet(ctx, projectID, vpcID, subnetID, nil)
+		subnetCheckResp, err := arubaClient.FromNetwork().GetSubnet(ctx, projectID, vpcID, subnetID, nil)
 		if err != nil {
 			log.Printf("Error checking Subnet state: %v", err)
 			break
@@ -675,7 +675,7 @@ func createKaaS(ctx context.Context, sdk *aruba.ClientImpl, projectID string, vp
 		},
 	}
 
-	kaasResp, err := sdk.Container.CreateKaaS(ctx, projectID, kaasReq, nil)
+	kaasResp, err := arubaClient.FromContainer().CreateKaaS(ctx, projectID, kaasReq, nil)
 	if err != nil {
 		log.Printf("Error creating KaaS cluster: %v", err)
 		return nil
@@ -699,7 +699,7 @@ func createKaaS(ctx context.Context, sdk *aruba.ClientImpl, projectID string, vp
 }
 
 // createCloudServer creates a cloud server instance
-func createCloudServer(ctx context.Context, sdk *aruba.ClientImpl, resources *ResourceCollection) *schema.Response[schema.CloudServerResponse] {
+func createCloudServer(ctx context.Context, arubaClient aruba.Client, resources *ResourceCollection) *schema.Response[schema.CloudServerResponse] {
 	fmt.Println("--- Cloud Server ---")
 
 	// Verify all required resources are available
@@ -767,7 +767,7 @@ func createCloudServer(ctx context.Context, sdk *aruba.ClientImpl, resources *Re
 		},
 	}
 
-	cloudServerResp, err := sdk.Compute.CreateCloudServer(ctx, resources.ProjectID, cloudServerReq, nil)
+	cloudServerResp, err := arubaClient.FromCompute().CreateCloudServer(ctx, resources.ProjectID, cloudServerReq, nil)
 	if err != nil {
 		log.Printf("Error creating Cloud Server: %v", err)
 		return nil

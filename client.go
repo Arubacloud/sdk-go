@@ -15,6 +15,19 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/spec/storage"
 )
 
+type Client interface {
+	FromAudit() audit.AuditAPI
+	FromCompute() compute.ComputeAPI
+	FromContainer() container.ContainerAPI
+	FromDatabase() database.DatabaseAPI
+	FromMetric() metric.MetricAPI
+	FromNetwork() network.NetworkAPI
+	FromProject() project.ProjectAPI
+	FromSchedule() schedule.ScheduleAPI
+	FromSecurity() security.SecurityAPI
+	FromStorage() storage.StorageAPI
+}
+
 // ClientImpl wraps the client.ClientImpl and provides direct access to all service interfaces
 type ClientImpl struct {
 	*restclient.Client
@@ -31,6 +44,8 @@ type ClientImpl struct {
 	Schedule  schedule.ScheduleAPI
 	Project   project.ProjectAPI
 }
+
+var _ Client = (*ClientImpl)(nil)
 
 // NewClient creates a new SDK client with all services initialized
 func NewClient(config *restclient.Config) (*ClientImpl, error) {
@@ -54,4 +69,36 @@ func NewClient(config *restclient.Config) (*ClientImpl, error) {
 	}
 
 	return sdkClient, nil
+}
+
+func (c *ClientImpl) FromAudit() audit.AuditAPI {
+	return c.Audit
+}
+
+func (c *ClientImpl) FromCompute() compute.ComputeAPI {
+	return c.Compute
+}
+func (c *ClientImpl) FromContainer() container.ContainerAPI {
+	return c.Container
+}
+func (c *ClientImpl) FromDatabase() database.DatabaseAPI {
+	return c.Database
+}
+func (c *ClientImpl) FromMetric() metric.MetricAPI {
+	return c.Metric
+}
+func (c *ClientImpl) FromNetwork() network.NetworkAPI {
+	return c.Network
+}
+func (c *ClientImpl) FromProject() project.ProjectAPI {
+	return c.Project
+}
+func (c *ClientImpl) FromSchedule() schedule.ScheduleAPI {
+	return c.Schedule
+}
+func (c *ClientImpl) FromSecurity() security.SecurityAPI {
+	return c.Security
+}
+func (c *ClientImpl) FromStorage() storage.StorageAPI {
+	return c.Storage
 }
