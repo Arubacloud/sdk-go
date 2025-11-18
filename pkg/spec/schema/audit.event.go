@@ -4,13 +4,13 @@ import "time"
 
 // Operation represents an operation in the audit log
 type Operation struct {
-	Id    string  `json:"id"`
+	ID    string  `json:"id"`
 	Value *string `json:"value,omitempty"`
 }
 
 // EventInfo represents event information
 type EventInfo struct {
-	Id    string  `json:"id"`
+	ID    string  `json:"id"`
 	Value *string `json:"value,omitempty"`
 	Type  string  `json:"type"`
 }
@@ -47,7 +47,7 @@ type Caller struct {
 	Subject  string  `json:"subject"`
 	Username *string `json:"username,omitempty"`
 	Company  *string `json:"company,omitempty"`
-	TenantId *string `json:"tenantId,omitempty"`
+	TenantID *string `json:"tenantId,omitempty"`
 }
 
 // Identity represents the identity information
@@ -84,8 +84,8 @@ type AuditEvent struct {
 	Identity      Identity               `json:"identity"`
 	Properties    map[string]interface{} `json:"properties,omitempty"`
 	Actions       []Action               `json:"actions,omitempty"`
-	CategoryId    *string                `json:"categoryId,omitempty"`
-	TypologyId    *string                `json:"typologyId,omitempty"`
+	CategoryID    *string                `json:"categoryId,omitempty"`
+	TypologyID    *string                `json:"typologyId,omitempty"`
 	Title         *string                `json:"title,omitempty"`
 }
 

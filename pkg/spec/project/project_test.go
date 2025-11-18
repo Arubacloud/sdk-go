@@ -29,7 +29,7 @@ func TestListProjects(t *testing.T) {
 						{
 							Metadata: schema.ResourceMetadataResponse{
 								Name: schema.StringPtr("default-project"),
-								Id:   schema.StringPtr("project-123"),
+								ID:   schema.StringPtr("project-123"),
 							},
 							Properties: schema.ProjectPropertiesResponse{
 								Description:     schema.StringPtr("Default project"),
@@ -43,7 +43,7 @@ func TestListProjects(t *testing.T) {
 						{
 							Metadata: schema.ResourceMetadataResponse{
 								Name: schema.StringPtr("test-project"),
-								Id:   schema.StringPtr("project-456"),
+								ID:   schema.StringPtr("project-456"),
 							},
 							Properties: schema.ProjectPropertiesResponse{
 								Description:     schema.StringPtr("Test project"),
@@ -112,7 +112,7 @@ func TestGetProject(t *testing.T) {
 				resp := schema.ProjectResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("my-project"),
-						Id:   schema.StringPtr("project-123"),
+						ID:   schema.StringPtr("project-123"),
 					},
 					Properties: schema.ProjectPropertiesResponse{
 						Description:     schema.StringPtr("My test project"),
@@ -179,7 +179,7 @@ func TestCreateProject(t *testing.T) {
 				resp := schema.ProjectResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("new-project"),
-						Id:   schema.StringPtr("project-789"),
+						ID:   schema.StringPtr("project-789"),
 					},
 					Properties: schema.ProjectPropertiesResponse{
 						Description:     schema.StringPtr("A new project"),
@@ -253,7 +253,7 @@ func TestUpdateProject(t *testing.T) {
 				resp := schema.ProjectResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("updated-project"),
-						Id:   schema.StringPtr("project-123"),
+						ID:   schema.StringPtr("project-123"),
 					},
 					Properties: schema.ProjectPropertiesResponse{
 						Description:     schema.StringPtr("Updated description"),

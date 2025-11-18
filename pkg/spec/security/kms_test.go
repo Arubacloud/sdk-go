@@ -1,21 +1,21 @@
 package security
 
 import (
-"context"
-"encoding/json"
-"net/http"
-"net/http/httptest"
-"testing"
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 
-"github.com/Arubacloud/sdk-go/pkg/client"
-"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/pkg/client"
+	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
 func TestListKMSKeys(t *testing.T) {
 	t.Run("successful_list", func(t *testing.T) {
-server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-if r.URL.Path == "/token" {
-w.Header().Set("Content-Type", "application/json")
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/token" {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
 				return
@@ -29,7 +29,7 @@ w.Header().Set("Content-Type", "application/json")
 						{
 							Metadata: schema.ResourceMetadataResponse{
 								Name: schema.StringPtr("encryption-key-1"),
-								Id:   schema.StringPtr("kms-123"),
+								ID:   schema.StringPtr("kms-123"),
 							},
 							Properties: schema.KmsPropertiesResponse{
 								BillingPeriod: schema.BillingPeriodResource{
@@ -43,7 +43,7 @@ w.Header().Set("Content-Type", "application/json")
 						{
 							Metadata: schema.ResourceMetadataResponse{
 								Name: schema.StringPtr("encryption-key-2"),
-								Id:   schema.StringPtr("kms-456"),
+								ID:   schema.StringPtr("kms-456"),
 							},
 							Properties: schema.KmsPropertiesResponse{
 								BillingPeriod: schema.BillingPeriodResource{
@@ -93,9 +93,9 @@ w.Header().Set("Content-Type", "application/json")
 
 func TestGetKMSKey(t *testing.T) {
 	t.Run("successful_get", func(t *testing.T) {
-server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-if r.URL.Path == "/token" {
-w.Header().Set("Content-Type", "application/json")
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/token" {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
 				return
@@ -106,7 +106,7 @@ w.Header().Set("Content-Type", "application/json")
 				resp := schema.KmsResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("my-encryption-key"),
-						Id:   schema.StringPtr("kms-123"),
+						ID:   schema.StringPtr("kms-123"),
 					},
 					Properties: schema.KmsPropertiesResponse{
 						BillingPeriod: schema.BillingPeriodResource{
@@ -157,9 +157,9 @@ w.Header().Set("Content-Type", "application/json")
 
 func TestCreateKMSKey(t *testing.T) {
 	t.Run("successful_create", func(t *testing.T) {
-server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-if r.URL.Path == "/token" {
-w.Header().Set("Content-Type", "application/json")
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/token" {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
 				return
@@ -170,7 +170,7 @@ w.Header().Set("Content-Type", "application/json")
 				resp := schema.KmsResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("new-encryption-key"),
-						Id:   schema.StringPtr("kms-789"),
+						ID:   schema.StringPtr("kms-789"),
 					},
 					Properties: schema.KmsPropertiesResponse{
 						BillingPeriod: schema.BillingPeriodResource{
@@ -235,9 +235,9 @@ w.Header().Set("Content-Type", "application/json")
 
 func TestUpdateKMSKey(t *testing.T) {
 	t.Run("successful_update", func(t *testing.T) {
-server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-if r.URL.Path == "/token" {
-w.Header().Set("Content-Type", "application/json")
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/token" {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
 				return
@@ -248,7 +248,7 @@ w.Header().Set("Content-Type", "application/json")
 				resp := schema.KmsResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("updated-encryption-key"),
-						Id:   schema.StringPtr("kms-123"),
+						ID:   schema.StringPtr("kms-123"),
 					},
 					Properties: schema.KmsPropertiesResponse{
 						BillingPeriod: schema.BillingPeriodResource{
@@ -313,9 +313,9 @@ w.Header().Set("Content-Type", "application/json")
 
 func TestDeleteKMSKey(t *testing.T) {
 	t.Run("successful_delete", func(t *testing.T) {
-server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-if r.URL.Path == "/token" {
-w.Header().Set("Content-Type", "application/json")
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/token" {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
 				return

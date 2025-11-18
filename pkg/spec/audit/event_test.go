@@ -34,11 +34,11 @@ func TestListEvents(t *testing.T) {
 							},
 							Timestamp: time.Now(),
 							Operation: schema.Operation{
-								Id:    "Microsoft.Compute/virtualMachines/start/action",
+								ID:    "Microsoft.Compute/virtualMachines/start/action",
 								Value: schema.StringPtr("Start Virtual Machine"),
 							},
 							Event: schema.EventInfo{
-								Id:    "event-123",
+								ID:    "event-123",
 								Value: schema.StringPtr("Virtual Machine Started"),
 								Type:  "operational",
 							},
@@ -58,7 +58,7 @@ func TestListEvents(t *testing.T) {
 									Subject:  "user@example.com",
 									Username: schema.StringPtr("testuser"),
 									Company:  schema.StringPtr("TestCompany"),
-									TenantId: schema.StringPtr("tenant-123"),
+									TenantID: schema.StringPtr("tenant-123"),
 								},
 							},
 						},
@@ -96,8 +96,8 @@ func TestListEvents(t *testing.T) {
 		if resp.Data.Values[0].SeverityLevel != "Information" {
 			t.Errorf("expected severity level 'Information', got %s", resp.Data.Values[0].SeverityLevel)
 		}
-		if resp.Data.Values[0].Operation.Id != "Microsoft.Compute/virtualMachines/start/action" {
-			t.Errorf("expected operation id 'Microsoft.Compute/virtualMachines/start/action', got %s", resp.Data.Values[0].Operation.Id)
+		if resp.Data.Values[0].Operation.ID != "Microsoft.Compute/virtualMachines/start/action" {
+			t.Errorf("expected operation id 'Microsoft.Compute/virtualMachines/start/action', got %s", resp.Data.Values[0].Operation.ID)
 		}
 	})
 
@@ -178,10 +178,10 @@ func TestListEvents(t *testing.T) {
 							},
 							Timestamp: time.Now(),
 							Operation: schema.Operation{
-								Id: "test-operation",
+								ID: "test-operation",
 							},
 							Event: schema.EventInfo{
-								Id:   "event-456",
+								ID:   "event-456",
 								Type: "operational",
 							},
 							Category: schema.EventCategory{

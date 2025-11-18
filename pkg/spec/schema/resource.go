@@ -39,7 +39,7 @@ type ResourceRequest struct {
 }
 
 type TypologyResponseMetadata struct {
-	Id   string `json:"id,omitempty"`
+	ID   string `json:"id,omitempty"`
 	Name string `json:"name,omitempty"`
 }
 
@@ -50,7 +50,7 @@ type CategoryResponseMetadata struct {
 }
 
 type ResourceMetadataResponse struct {
-	Id                      *string                   `json:"id,omitempty"`
+	ID                      *string                   `json:"id,omitempty"`
 	Uri                     *string                   `json:"uri,omitempty"`
 	Name                    *string                   `json:"name,omitempty"`
 	LocationResponse        *LocationResponse         `json:"location,omitempty"`

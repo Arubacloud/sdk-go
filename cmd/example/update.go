@@ -63,7 +63,7 @@ func fetchExistingResources(ctx context.Context, sdk *sdkgo.Client, projectID st
 	dbaasListResp, err := sdk.Database.ListDBaaS(ctx, projectID, nil)
 	if err == nil && dbaasListResp.IsSuccess() && len(dbaasListResp.Data.Values) > 0 {
 		// Get the first DBaaS instance details
-		dbaasID := *dbaasListResp.Data.Values[0].Metadata.Id
+		dbaasID := *dbaasListResp.Data.Values[0].Metadata.ID
 		dbaasResp, err := sdk.Database.GetDBaaS(ctx, projectID, dbaasID, nil)
 		if err == nil && dbaasResp.IsSuccess() {
 			resources.DBaaSResp = dbaasResp
@@ -75,7 +75,7 @@ func fetchExistingResources(ctx context.Context, sdk *sdkgo.Client, projectID st
 	kaasList, err := sdk.Container.ListKaaS(ctx, projectID, nil)
 	if err == nil && kaasList.IsSuccess() && len(kaasList.Data.Values) > 0 {
 		// Get the first KaaS cluster details
-		kaasID := *kaasList.Data.Values[0].Metadata.Id
+		kaasID := *kaasList.Data.Values[0].Metadata.ID
 		kaasResp, err := sdk.Container.GetKaaS(ctx, projectID, kaasID, nil)
 		if err == nil && kaasResp.IsSuccess() {
 			resources.KaaSResp = kaasResp
@@ -139,7 +139,7 @@ func updateProject(ctx context.Context, sdk *sdkgo.Client, projectID string) {
 func updateDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, dbaasResp *schema.Response[schema.DBaaSResponse]) {
 	fmt.Println("--- Updating DBaaS ---")
 
-	dbaasID := *dbaasResp.Data.Metadata.Id
+	dbaasID := *dbaasResp.Data.Metadata.ID
 
 	// Update with new storage size
 	dbaasReq := schema.DBaaSRequest{
@@ -154,7 +154,7 @@ func updateDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, dbaas
 		},
 		Properties: schema.DBaaSPropertiesRequest{
 			Engine: &schema.DBaaSEngine{
-				Id:         stringPtr("mysql-8.0"),
+				ID:         stringPtr("mysql-8.0"),
 				DataCenter: stringPtr("ITBG-1"),
 			},
 			Flavor: &schema.DBaaSFlavor{
@@ -202,7 +202,7 @@ func updateDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, dbaas
 func updateKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, kaasResp *schema.Response[schema.KaaSResponse]) {
 	fmt.Println("--- Updating KaaS Cluster ---")
 
-	kaasID := *kaasResp.Data.Metadata.Id
+	kaasID := *kaasResp.Data.Metadata.ID
 
 	// Update with modified node pool
 	kaasReq := schema.KaaSRequest{

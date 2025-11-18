@@ -1,21 +1,21 @@
 package network
 
 import (
-"context"
-"encoding/json"
-"net/http"
-"net/http/httptest"
-"testing"
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 
-"github.com/Arubacloud/sdk-go/pkg/client"
-"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/pkg/client"
+	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
 
 func TestListVpnTunnels(t *testing.T) {
 	t.Run("successful list", func(t *testing.T) {
-server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-if r.URL.Path == "/token" {
-w.Header().Set("Content-Type", "application/json")
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/token" {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
 				return
@@ -58,9 +58,9 @@ w.Header().Set("Content-Type", "application/json")
 
 func TestGetVpnTunnel(t *testing.T) {
 	t.Run("successful get", func(t *testing.T) {
-server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-if r.URL.Path == "/token" {
-w.Header().Set("Content-Type", "application/json")
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/token" {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
 				return
@@ -100,9 +100,9 @@ w.Header().Set("Content-Type", "application/json")
 
 func TestDeleteVpnTunnel(t *testing.T) {
 	t.Run("successful delete", func(t *testing.T) {
-server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-if r.URL.Path == "/token" {
-w.Header().Set("Content-Type", "application/json")
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/token" {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
 				return

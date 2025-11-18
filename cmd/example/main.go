@@ -158,7 +158,7 @@ func createProject(ctx context.Context, sdk *sdkgo.Client) string {
 	} else if !createResp.IsSuccess() {
 		log.Fatalf("Failed to create project, status code: %d and error title: %s", createResp.StatusCode, stringValue(createResp.Error.Title))
 	}
-	projectID := *createResp.Data.Metadata.Id
+	projectID := *createResp.Data.Metadata.ID
 	fmt.Printf("✓ Created project with ID: %s\n", projectID)
 
 	// Update the project
@@ -207,7 +207,7 @@ func createElasticIP(ctx context.Context, sdk *sdkgo.Client, projectID string) *
 			stringValue(elasticIPResp.Error.Detail))
 		os.Exit(1)
 	}
-	fmt.Printf("✓ Created Elastic IP: %s (ObjectId: %s)\n", *elasticIPResp.Data.Metadata.Name, *elasticIPResp.Data.Metadata.Id)
+	fmt.Printf("✓ Created Elastic IP: %s (ObjectId: %s)\n", *elasticIPResp.Data.Metadata.Name, *elasticIPResp.Data.Metadata.ID)
 
 	return elasticIPResp
 }
@@ -353,7 +353,7 @@ func createVPC(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema
 func createSubnet(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse]) *schema.Response[schema.SubnetResponse] {
 	fmt.Println("\n--- Network: Subnet ---")
 
-	vpcID := *vpcResp.Data.Metadata.Id
+	vpcID := *vpcResp.Data.Metadata.ID
 
 	subnetReq := schema.SubnetRequest{
 		Metadata: schema.RegionalResourceMetadataRequest{
@@ -400,7 +400,7 @@ func createSubnet(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcR
 func createSecurityGroup(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcResp *schema.Response[schema.VpcResponse]) *schema.Response[schema.SecurityGroupResponse] {
 	fmt.Println("\n--- Network: Security Group ---")
 
-	vpcID := *vpcResp.Data.Metadata.Id
+	vpcID := *vpcResp.Data.Metadata.ID
 
 	sgReq := schema.SecurityGroupRequest{
 		Metadata: schema.ResourceMetadataRequest{
@@ -440,8 +440,8 @@ func createSecurityGroupRule(ctx context.Context, sdk *sdkgo.Client, projectID s
 
 	fmt.Println("\n--- Network: Security Group Rule ---")
 
-	vpcID := *vpcResp.Data.Metadata.Id
-	sgID := *sgResp.Data.Metadata.Id
+	vpcID := *vpcResp.Data.Metadata.ID
+	sgID := *sgResp.Data.Metadata.ID
 
 	ruleReq := schema.SecurityRuleRequest{
 		Metadata: schema.RegionalResourceMetadataRequest{
@@ -544,7 +544,7 @@ func createDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRe
 		},
 		Properties: schema.DBaaSPropertiesRequest{
 			Engine: &schema.DBaaSEngine{
-				Id:         stringPtr("mysql-8.0"),
+				ID:         stringPtr("mysql-8.0"),
 				DataCenter: stringPtr("ITBG-1"),
 			},
 			Flavor: &schema.DBaaSFlavor{
@@ -605,8 +605,8 @@ func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRes
 	}
 
 	// Wait for Subnet to become Active before creating KaaS
-	vpcID := *vpcResp.Data.Metadata.Id
-	subnetID := *subnetResp.Data.Metadata.Id
+	vpcID := *vpcResp.Data.Metadata.ID
+	subnetID := *subnetResp.Data.Metadata.ID
 	fmt.Println("⏳ Waiting for Subnet to become Active before creating KaaS...")
 
 	// Create a simple polling loop to check Subnet state
@@ -795,44 +795,44 @@ func printResourceSummary(resources *ResourceCollection) {
 	fmt.Println("Successfully created resources:")
 	fmt.Println("- Project ID:", resources.ProjectID)
 
-	if resources.ElasticIPResp != nil && resources.ElasticIPResp.Data != nil && resources.ElasticIPResp.Data.Metadata.Id != nil {
-		fmt.Println("- ElasticIP ID:", *resources.ElasticIPResp.Data.Metadata.Id)
+	if resources.ElasticIPResp != nil && resources.ElasticIPResp.Data != nil && resources.ElasticIPResp.Data.Metadata.ID != nil {
+		fmt.Println("- ElasticIP ID:", *resources.ElasticIPResp.Data.Metadata.ID)
 	}
 
-	if resources.BlockStorageResp != nil && resources.BlockStorageResp.Data != nil && resources.BlockStorageResp.Data.Metadata.Id != nil {
-		fmt.Println("- Block Storage ID:", *resources.BlockStorageResp.Data.Metadata.Id)
+	if resources.BlockStorageResp != nil && resources.BlockStorageResp.Data != nil && resources.BlockStorageResp.Data.Metadata.ID != nil {
+		fmt.Println("- Block Storage ID:", *resources.BlockStorageResp.Data.Metadata.ID)
 	}
 
-	if resources.SnapshotResp != nil && resources.SnapshotResp.Data != nil && resources.SnapshotResp.Data.Metadata.Id != nil {
-		fmt.Println("- Snapshot ID:", *resources.SnapshotResp.Data.Metadata.Id)
+	if resources.SnapshotResp != nil && resources.SnapshotResp.Data != nil && resources.SnapshotResp.Data.Metadata.ID != nil {
+		fmt.Println("- Snapshot ID:", *resources.SnapshotResp.Data.Metadata.ID)
 	}
 
-	if resources.VPCResp != nil && resources.VPCResp.Data != nil && resources.VPCResp.Data.Metadata.Id != nil {
-		fmt.Println("- VPC ID:", *resources.VPCResp.Data.Metadata.Id)
+	if resources.VPCResp != nil && resources.VPCResp.Data != nil && resources.VPCResp.Data.Metadata.ID != nil {
+		fmt.Println("- VPC ID:", *resources.VPCResp.Data.Metadata.ID)
 	}
 
-	if resources.SubnetResp != nil && resources.SubnetResp.Data != nil && resources.SubnetResp.Data.Metadata.Id != nil {
-		fmt.Println("- Subnet ID:", *resources.SubnetResp.Data.Metadata.Id)
+	if resources.SubnetResp != nil && resources.SubnetResp.Data != nil && resources.SubnetResp.Data.Metadata.ID != nil {
+		fmt.Println("- Subnet ID:", *resources.SubnetResp.Data.Metadata.ID)
 	}
 
-	if resources.SecurityGroupResp != nil && resources.SecurityGroupResp.Data != nil && resources.SecurityGroupResp.Data.Metadata.Id != nil {
-		fmt.Println("- Security Group ID:", *resources.SecurityGroupResp.Data.Metadata.Id)
+	if resources.SecurityGroupResp != nil && resources.SecurityGroupResp.Data != nil && resources.SecurityGroupResp.Data.Metadata.ID != nil {
+		fmt.Println("- Security Group ID:", *resources.SecurityGroupResp.Data.Metadata.ID)
 	}
 
-	if resources.SecurityRuleResp != nil && resources.SecurityRuleResp.Data != nil && resources.SecurityRuleResp.Data.Metadata.Id != nil {
-		fmt.Println("- Security Rule ID:", *resources.SecurityRuleResp.Data.Metadata.Id)
+	if resources.SecurityRuleResp != nil && resources.SecurityRuleResp.Data != nil && resources.SecurityRuleResp.Data.Metadata.ID != nil {
+		fmt.Println("- Security Rule ID:", *resources.SecurityRuleResp.Data.Metadata.ID)
 	}
 
 	if resources.KeyPairResp != nil && resources.KeyPairResp.Data != nil && *resources.KeyPairResp.Data.Metadata.Name != "" {
 		fmt.Println("- SSH Key Pair:", resources.KeyPairResp.Data.Metadata.Name)
 	}
 
-	if resources.DBaaSResp != nil && resources.DBaaSResp.Data != nil && resources.DBaaSResp.Data.Metadata.Id != nil {
-		fmt.Println("- DBaaS ID:", *resources.DBaaSResp.Data.Metadata.Id)
+	if resources.DBaaSResp != nil && resources.DBaaSResp.Data != nil && resources.DBaaSResp.Data.Metadata.ID != nil {
+		fmt.Println("- DBaaS ID:", *resources.DBaaSResp.Data.Metadata.ID)
 	}
 
-	if resources.KaaSResp != nil && resources.KaaSResp.Data != nil && resources.KaaSResp.Data.Metadata.Id != nil {
-		fmt.Println("- KaaS Cluster ID:", *resources.KaaSResp.Data.Metadata.Id)
+	if resources.KaaSResp != nil && resources.KaaSResp.Data != nil && resources.KaaSResp.Data.Metadata.ID != nil {
+		fmt.Println("- KaaS Cluster ID:", *resources.KaaSResp.Data.Metadata.ID)
 	}
 
 	if resources.CloudServerResp != nil && resources.CloudServerResp.Data != nil && resources.CloudServerResp.Data.Metadata.Name != "" {

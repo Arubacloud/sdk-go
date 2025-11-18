@@ -2,9 +2,9 @@ package schema
 
 // DBaaSEngine contains the database engine configuration
 type DBaaSEngine struct {
-	// Id Type of DB engine to activate (nullable)
+	// ID Type of DB engine to activate (nullable)
 	// For more information, check the documentation.
-	Id *string `json:"id,omitempty"`
+	ID *string `json:"id,omitempty"`
 
 	// DataCenter Datacenter location (nullable)
 	// For more information, check the documentation.
@@ -13,8 +13,8 @@ type DBaaSEngine struct {
 
 // DBaaSEngineResponse contains the database engine response configuration
 type DBaaSEngineResponse struct {
-	// Id Engine identifier (nullable)
-	Id *string `json:"id,omitempty"`
+	// ID Engine identifier (nullable)
+	ID *string `json:"id,omitempty"`
 
 	// Type Engine type (nullable)
 	Type *string `json:"type,omitempty"`
@@ -137,8 +137,8 @@ type DBaaSAutoscalingResponse struct {
 	// StepSize Step size for autoscaling (nullable)
 	StepSize *int32 `json:"stepSize,omitempty"`
 
-	// RuleId Rule identifier (nullable)
-	RuleId *string `json:"ruleId,omitempty"`
+	// RuleID Rule identifier (nullable)
+	RuleID *string `json:"ruleId,omitempty"`
 }
 
 // DBaaSPropertiesRequest contains properties required to create a DBaaS instance

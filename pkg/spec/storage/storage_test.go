@@ -29,7 +29,7 @@ func TestListBlockStorageVolumes(t *testing.T) {
 						{
 							Metadata: schema.ResourceMetadataResponse{
 								Name: schema.StringPtr("data-volume"),
-								Id:   schema.StringPtr("vol-123"),
+								ID:   schema.StringPtr("vol-123"),
 							},
 							Properties: schema.BlockStoragePropertiesResponse{
 								SizeGB:        100,
@@ -44,7 +44,7 @@ func TestListBlockStorageVolumes(t *testing.T) {
 						{
 							Metadata: schema.ResourceMetadataResponse{
 								Name: schema.StringPtr("backup-volume"),
-								Id:   schema.StringPtr("vol-456"),
+								ID:   schema.StringPtr("vol-456"),
 							},
 							Properties: schema.BlockStoragePropertiesResponse{
 								SizeGB:        200,
@@ -111,7 +111,7 @@ func TestGetBlockStorageVolume(t *testing.T) {
 				resp := schema.BlockStorageResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("my-volume"),
-						Id:   schema.StringPtr("vol-123"),
+						ID:   schema.StringPtr("vol-123"),
 					},
 					Properties: schema.BlockStoragePropertiesResponse{
 						SizeGB:        150,
@@ -177,7 +177,7 @@ func TestCreateBlockStorageVolume(t *testing.T) {
 				resp := schema.BlockStorageResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("new-volume"),
-						Id:   schema.StringPtr("vol-789"),
+						ID:   schema.StringPtr("vol-789"),
 					},
 					Properties: schema.BlockStoragePropertiesResponse{
 						SizeGB:        50,
@@ -300,7 +300,7 @@ func TestListSnapshots(t *testing.T) {
 						{
 							Metadata: schema.ResourceMetadataResponse{
 								Name: schema.StringPtr("backup-snapshot-1"),
-								Id:   schema.StringPtr("snap-123"),
+								ID:   schema.StringPtr("snap-123"),
 							},
 							Properties: schema.SnapshotPropertiesResponse{
 								SizeGb:        schema.Int32Ptr(100),
@@ -315,7 +315,7 @@ func TestListSnapshots(t *testing.T) {
 						{
 							Metadata: schema.ResourceMetadataResponse{
 								Name: schema.StringPtr("backup-snapshot-2"),
-								Id:   schema.StringPtr("snap-456"),
+								ID:   schema.StringPtr("snap-456"),
 							},
 							Properties: schema.SnapshotPropertiesResponse{
 								SizeGb:        schema.Int32Ptr(200),
@@ -379,7 +379,7 @@ func TestGetSnapshot(t *testing.T) {
 				resp := schema.SnapshotResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("my-snapshot"),
-						Id:   schema.StringPtr("snap-123"),
+						ID:   schema.StringPtr("snap-123"),
 					},
 					Properties: schema.SnapshotPropertiesResponse{
 						SizeGb:        schema.Int32Ptr(150),
@@ -449,7 +449,7 @@ func TestCreateSnapshot(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				resp := schema.BlockStorageResponse{
 					Metadata: schema.ResourceMetadataResponse{
-						Id: schema.StringPtr("vol-123"),
+						ID: schema.StringPtr("vol-123"),
 					},
 					Status: schema.ResourceStatus{
 						State: schema.StringPtr("active"),
@@ -464,7 +464,7 @@ func TestCreateSnapshot(t *testing.T) {
 				resp := schema.SnapshotResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("new-snapshot"),
-						Id:   schema.StringPtr("snap-789"),
+						ID:   schema.StringPtr("snap-789"),
 					},
 					Properties: schema.SnapshotPropertiesResponse{
 						SizeGb:        schema.Int32Ptr(50),

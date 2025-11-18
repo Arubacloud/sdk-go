@@ -83,7 +83,7 @@ func fetchAllResources(ctx context.Context, sdk *sdkgo.Client, projectID string)
 	// Fetch KaaS clusters
 	kaasList, err := sdk.Container.ListKaaS(ctx, projectID, nil)
 	if err == nil && kaasList.IsSuccess() && len(kaasList.Data.Values) > 0 {
-		kaasID := *kaasList.Data.Values[0].Metadata.Id
+		kaasID := *kaasList.Data.Values[0].Metadata.ID
 		kaasResp, err := sdk.Container.GetKaaS(ctx, projectID, kaasID, nil)
 		if err == nil && kaasResp.IsSuccess() {
 			resources.KaaSResp = kaasResp
@@ -94,7 +94,7 @@ func fetchAllResources(ctx context.Context, sdk *sdkgo.Client, projectID string)
 	// Fetch DBaaS instances
 	dbaasListResp, err := sdk.Database.ListDBaaS(ctx, projectID, nil)
 	if err == nil && dbaasListResp.IsSuccess() && len(dbaasListResp.Data.Values) > 0 {
-		dbaasID := *dbaasListResp.Data.Values[0].Metadata.Id
+		dbaasID := *dbaasListResp.Data.Values[0].Metadata.ID
 		dbaasResp, err := sdk.Database.GetDBaaS(ctx, projectID, dbaasID, nil)
 		if err == nil && dbaasResp.IsSuccess() {
 			resources.DBaaSResp = dbaasResp
@@ -105,7 +105,7 @@ func fetchAllResources(ctx context.Context, sdk *sdkgo.Client, projectID string)
 	// Fetch Key Pairs
 	keyPairList, err := sdk.Compute.ListKeyPairs(ctx, projectID, nil)
 	if err == nil && keyPairList.IsSuccess() && len(keyPairList.Data.Values) > 0 {
-		keyPairID := *keyPairList.Data.Values[0].Metadata.Id
+		keyPairID := *keyPairList.Data.Values[0].Metadata.ID
 		keyPairResp, err := sdk.Compute.GetKeyPair(ctx, projectID, keyPairID, nil)
 		if err == nil && keyPairResp.IsSuccess() {
 			resources.KeyPairResp = keyPairResp
@@ -116,7 +116,7 @@ func fetchAllResources(ctx context.Context, sdk *sdkgo.Client, projectID string)
 	// Fetch VPCs and their resources
 	vpcList, err := sdk.Network.ListVPCs(ctx, projectID, nil)
 	if err == nil && vpcList.IsSuccess() && len(vpcList.Data.Values) > 0 {
-		vpcID := *vpcList.Data.Values[0].Metadata.Id
+		vpcID := *vpcList.Data.Values[0].Metadata.ID
 		vpcResp, err := sdk.Network.GetVPC(ctx, projectID, vpcID, nil)
 		if err == nil && vpcResp.IsSuccess() {
 			resources.VPCResp = vpcResp
@@ -125,7 +125,7 @@ func fetchAllResources(ctx context.Context, sdk *sdkgo.Client, projectID string)
 			// Fetch Security Groups in VPC
 			sgList, err := sdk.Network.ListSecurityGroups(ctx, projectID, vpcID, nil)
 			if err == nil && sgList.IsSuccess() && len(sgList.Data.Values) > 0 {
-				sgID := *sgList.Data.Values[0].Metadata.Id
+				sgID := *sgList.Data.Values[0].Metadata.ID
 				sgResp, err := sdk.Network.GetSecurityGroup(ctx, projectID, vpcID, sgID, nil)
 				if err == nil && sgResp.IsSuccess() {
 					resources.SecurityGroupResp = sgResp
@@ -134,7 +134,7 @@ func fetchAllResources(ctx context.Context, sdk *sdkgo.Client, projectID string)
 					// Fetch Security Group Rules
 					ruleList, err := sdk.Network.ListSecurityGroupRules(ctx, projectID, vpcID, sgID, nil)
 					if err == nil && ruleList.IsSuccess() && len(ruleList.Data.Values) > 0 {
-						ruleID := *ruleList.Data.Values[0].Metadata.Id
+						ruleID := *ruleList.Data.Values[0].Metadata.ID
 						ruleResp, err := sdk.Network.GetSecurityGroupRule(ctx, projectID, vpcID, sgID, ruleID, nil)
 						if err == nil && ruleResp.IsSuccess() {
 							resources.SecurityRuleResp = ruleResp
@@ -147,7 +147,7 @@ func fetchAllResources(ctx context.Context, sdk *sdkgo.Client, projectID string)
 			// Fetch Subnets in VPC
 			subnetList, err := sdk.Network.ListSubnets(ctx, projectID, vpcID, nil)
 			if err == nil && subnetList.IsSuccess() && len(subnetList.Data.Values) > 0 {
-				subnetID := *subnetList.Data.Values[0].Metadata.Id
+				subnetID := *subnetList.Data.Values[0].Metadata.ID
 				subnetResp, err := sdk.Network.GetSubnet(ctx, projectID, vpcID, subnetID, nil)
 				if err == nil && subnetResp.IsSuccess() {
 					resources.SubnetResp = subnetResp
@@ -160,7 +160,7 @@ func fetchAllResources(ctx context.Context, sdk *sdkgo.Client, projectID string)
 	// Fetch Snapshots
 	snapshotList, err := sdk.Storage.ListSnapshots(ctx, projectID, nil)
 	if err == nil && snapshotList.IsSuccess() && len(snapshotList.Data.Values) > 0 {
-		snapshotID := *snapshotList.Data.Values[0].Metadata.Id
+		snapshotID := *snapshotList.Data.Values[0].Metadata.ID
 		snapshotResp, err := sdk.Storage.GetSnapshot(ctx, projectID, snapshotID, nil)
 		if err == nil && snapshotResp.IsSuccess() {
 			resources.SnapshotResp = snapshotResp
@@ -171,7 +171,7 @@ func fetchAllResources(ctx context.Context, sdk *sdkgo.Client, projectID string)
 	// Fetch Block Storage
 	blockStorageList, err := sdk.Storage.ListBlockStorageVolumes(ctx, projectID, nil)
 	if err == nil && blockStorageList.IsSuccess() && len(blockStorageList.Data.Values) > 0 {
-		blockStorageID := *blockStorageList.Data.Values[0].Metadata.Id
+		blockStorageID := *blockStorageList.Data.Values[0].Metadata.ID
 		blockStorageResp, err := sdk.Storage.GetBlockStorageVolume(ctx, projectID, blockStorageID, nil)
 		if err == nil && blockStorageResp.IsSuccess() {
 			resources.BlockStorageResp = blockStorageResp
@@ -182,7 +182,7 @@ func fetchAllResources(ctx context.Context, sdk *sdkgo.Client, projectID string)
 	// Fetch Elastic IPs
 	elasticIPList, err := sdk.Network.ListElasticIPs(ctx, projectID, nil)
 	if err == nil && elasticIPList.IsSuccess() && len(elasticIPList.Data.Values) > 0 {
-		elasticIPID := *elasticIPList.Data.Values[0].Metadata.Id
+		elasticIPID := *elasticIPList.Data.Values[0].Metadata.ID
 		elasticIPResp, err := sdk.Network.GetElasticIP(ctx, projectID, elasticIPID, nil)
 		if err == nil && elasticIPResp.IsSuccess() {
 			resources.ElasticIPResp = elasticIPResp
@@ -207,55 +207,55 @@ func deleteAllResources(ctx context.Context, sdk *sdkgo.Client, resources *Resou
 
 	// 11. Delete KaaS (if created)
 	if resources.KaaSResp != nil && resources.KaaSResp.Data != nil {
-		deleteKaaS(ctx, sdk, resources.ProjectID, *resources.KaaSResp.Data.Metadata.Id)
+		deleteKaaS(ctx, sdk, resources.ProjectID, *resources.KaaSResp.Data.Metadata.ID)
 	}
 
 	// 10. Delete DBaaS (if created)
 	if resources.DBaaSResp != nil && resources.DBaaSResp.Data != nil {
-		deleteDBaaS(ctx, sdk, resources.ProjectID, *resources.DBaaSResp.Data.Metadata.Id)
+		deleteDBaaS(ctx, sdk, resources.ProjectID, *resources.DBaaSResp.Data.Metadata.ID)
 	}
 
 	// 9. Delete SSH Key Pair (if created)
 	if resources.KeyPairResp != nil && resources.KeyPairResp.Data != nil {
-		deleteKeyPair(ctx, sdk, resources.ProjectID, *resources.KeyPairResp.Data.Metadata.Id)
+		deleteKeyPair(ctx, sdk, resources.ProjectID, *resources.KeyPairResp.Data.Metadata.ID)
 	}
 
 	// 8. Delete Security Group Rule (if created)
 	if resources.SecurityRuleResp != nil && resources.SecurityRuleResp.Data != nil && resources.VPCResp != nil {
-		deleteSecurityGroupRule(ctx, sdk, resources.ProjectID, *resources.VPCResp.Data.Metadata.Id,
-			*resources.SecurityGroupResp.Data.Metadata.Id, *resources.SecurityRuleResp.Data.Metadata.Id)
+		deleteSecurityGroupRule(ctx, sdk, resources.ProjectID, *resources.VPCResp.Data.Metadata.ID,
+			*resources.SecurityGroupResp.Data.Metadata.ID, *resources.SecurityRuleResp.Data.Metadata.ID)
 	}
 
 	// 7. Delete Security Group (if created)
 	if resources.SecurityGroupResp != nil && resources.SecurityGroupResp.Data != nil && resources.VPCResp != nil {
-		deleteSecurityGroup(ctx, sdk, resources.ProjectID, *resources.VPCResp.Data.Metadata.Id,
-			*resources.SecurityGroupResp.Data.Metadata.Id)
+		deleteSecurityGroup(ctx, sdk, resources.ProjectID, *resources.VPCResp.Data.Metadata.ID,
+			*resources.SecurityGroupResp.Data.Metadata.ID)
 	}
 
 	// 6. Delete Subnet (if created)
 	if resources.SubnetResp != nil && resources.SubnetResp.Data != nil && resources.VPCResp != nil {
-		deleteSubnet(ctx, sdk, resources.ProjectID, *resources.VPCResp.Data.Metadata.Id,
-			*resources.SubnetResp.Data.Metadata.Id)
+		deleteSubnet(ctx, sdk, resources.ProjectID, *resources.VPCResp.Data.Metadata.ID,
+			*resources.SubnetResp.Data.Metadata.ID)
 	}
 
 	// 5. Delete VPC (if created)
 	if resources.VPCResp != nil && resources.VPCResp.Data != nil {
-		deleteVPC(ctx, sdk, resources.ProjectID, *resources.VPCResp.Data.Metadata.Id)
+		deleteVPC(ctx, sdk, resources.ProjectID, *resources.VPCResp.Data.Metadata.ID)
 	}
 
 	// 4. Delete Snapshot (if created)
 	if resources.SnapshotResp != nil && resources.SnapshotResp.Data != nil {
-		deleteSnapshot(ctx, sdk, resources.ProjectID, *resources.SnapshotResp.Data.Metadata.Id)
+		deleteSnapshot(ctx, sdk, resources.ProjectID, *resources.SnapshotResp.Data.Metadata.ID)
 	}
 
 	// 3. Delete Block Storage (if created)
 	if resources.BlockStorageResp != nil && resources.BlockStorageResp.Data != nil {
-		deleteBlockStorage(ctx, sdk, resources.ProjectID, *resources.BlockStorageResp.Data.Metadata.Id)
+		deleteBlockStorage(ctx, sdk, resources.ProjectID, *resources.BlockStorageResp.Data.Metadata.ID)
 	}
 
 	// 2. Delete Elastic IP (if created)
 	if resources.ElasticIPResp != nil && resources.ElasticIPResp.Data != nil {
-		deleteElasticIP(ctx, sdk, resources.ProjectID, *resources.ElasticIPResp.Data.Metadata.Id)
+		deleteElasticIP(ctx, sdk, resources.ProjectID, *resources.ElasticIPResp.Data.Metadata.ID)
 	}
 
 	// 1. Delete Project (last - after all resources are deleted)

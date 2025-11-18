@@ -99,7 +99,7 @@ func TestGetKaaS(t *testing.T) {
 				resp := schema.KaaSResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("test-kaas"),
-						Id:   schema.StringPtr("kaas-123"),
+						ID:   schema.StringPtr("kaas-123"),
 					},
 					Properties: schema.KaaSPropertiesResponse{
 						Preset: false,
@@ -186,7 +186,7 @@ func TestCreateKaaS(t *testing.T) {
 				resp := schema.KaaSResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("new-kaas"),
-						Id:   schema.StringPtr("kaas-456"),
+						ID:   schema.StringPtr("kaas-456"),
 					},
 					Properties: schema.KaaSPropertiesResponse{
 						Preset: false,
@@ -269,7 +269,7 @@ func TestUpdateKaaS(t *testing.T) {
 				resp := schema.KaaSResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("updated-kaas"),
-						Id:   schema.StringPtr("kaas-123"),
+						ID:   schema.StringPtr("kaas-123"),
 					},
 					Properties: schema.KaaSPropertiesResponse{
 						Preset: false,

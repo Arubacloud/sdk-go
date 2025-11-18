@@ -28,7 +28,7 @@ func TestListMetrics(t *testing.T) {
 					ListResponse: schema.ListResponse{Total: 2},
 					Values: []schema.MetricResponse{
 						{
-							ReferenceId:   "resource-123",
+							ReferenceID:   "resource-123",
 							Name:          "cpu_usage",
 							ReferenceName: "test-server",
 							Metadata: []schema.MetricMetadata{
@@ -49,7 +49,7 @@ func TestListMetrics(t *testing.T) {
 							},
 						},
 						{
-							ReferenceId:   "resource-123",
+							ReferenceID:   "resource-123",
 							Name:          "memory_usage",
 							ReferenceName: "test-server",
 							Metadata: []schema.MetricMetadata{
@@ -99,8 +99,8 @@ func TestListMetrics(t *testing.T) {
 		if resp.Data.Values[0].Name != "cpu_usage" {
 			t.Errorf("expected metric name 'cpu_usage', got %s", resp.Data.Values[0].Name)
 		}
-		if resp.Data.Values[0].ReferenceId != "resource-123" {
-			t.Errorf("expected reference ID 'resource-123', got %s", resp.Data.Values[0].ReferenceId)
+		if resp.Data.Values[0].ReferenceID != "resource-123" {
+			t.Errorf("expected reference ID 'resource-123', got %s", resp.Data.Values[0].ReferenceID)
 		}
 		if len(resp.Data.Values[0].Data) != 2 {
 			t.Errorf("expected 2 data points for cpu_usage")
@@ -173,13 +173,13 @@ func TestListAlerts(t *testing.T) {
 					ListResponse: schema.ListResponse{Total: 2},
 					Values: []schema.AlertResponse{
 						{
-							Id:                 "alert-123",
-							EventId:            "event-456",
+							ID:                 "alert-123",
+							EventID:            "event-456",
 							EventName:          "High CPU Usage",
 							Username:           "user@example.com",
 							ServiceCategory:    "Compute",
 							ServiceTypology:    "VirtualMachine",
-							ResourceId:         "vm-789",
+							ResourceID:         "vm-789",
 							ServiceName:        "test-vm",
 							ResourceTypology:   "CloudServer",
 							Metric:             "cpu_usage",
@@ -210,13 +210,13 @@ func TestListAlerts(t *testing.T) {
 							},
 						},
 						{
-							Id:                 "alert-456",
-							EventId:            "event-789",
+							ID:                 "alert-456",
+							EventID:            "event-789",
 							EventName:          "Low Disk Space",
 							Username:           "admin@example.com",
 							ServiceCategory:    "Storage",
 							ServiceTypology:    "BlockStorage",
-							ResourceId:         "disk-321",
+							ResourceID:         "disk-321",
 							ServiceName:        "test-disk",
 							ResourceTypology:   "Volume",
 							Metric:             "disk_usage",
@@ -262,8 +262,8 @@ func TestListAlerts(t *testing.T) {
 		if resp == nil || resp.Data == nil || len(resp.Data.Values) != 2 {
 			t.Errorf("expected 2 alerts")
 		}
-		if resp.Data.Values[0].Id != "alert-123" {
-			t.Errorf("expected alert ID 'alert-123', got %s", resp.Data.Values[0].Id)
+		if resp.Data.Values[0].ID != "alert-123" {
+			t.Errorf("expected alert ID 'alert-123', got %s", resp.Data.Values[0].ID)
 		}
 		if resp.Data.Values[0].EventName != "High CPU Usage" {
 			t.Errorf("expected event name 'High CPU Usage', got %s", resp.Data.Values[0].EventName)
@@ -352,9 +352,9 @@ func TestListAlerts(t *testing.T) {
 					ListResponse: schema.ListResponse{Total: 1},
 					Values: []schema.AlertResponse{
 						{
-							Id:            "alert-123",
+							ID:            "alert-123",
 							EventName:     "Filtered Alert",
-							ResourceId:    "vm-789",
+							ResourceID:    "vm-789",
 							Metric:        "cpu_usage",
 							LastReception: time.Now(),
 							Email:         true,
@@ -395,7 +395,7 @@ func TestListAlerts(t *testing.T) {
 		if resp == nil || resp.Data == nil || len(resp.Data.Values) != 1 {
 			t.Errorf("expected 1 filtered alert")
 		}
-		if resp.Data.Values[0].ResourceId != "vm-789" {
+		if resp.Data.Values[0].ResourceID != "vm-789" {
 			t.Errorf("expected resource ID 'vm-789' in filtered result")
 		}
 	})

@@ -21,7 +21,7 @@ type CloudServerPropertiesRequest struct {
 }
 
 type CloudServerFlavorResponse struct {
-	Id string `json:"id"`
+	ID string `json:"id"`
 
 	Name string `json:"name"`
 

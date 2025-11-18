@@ -29,7 +29,7 @@ func TestListScheduleJobs(t *testing.T) {
 						{
 							Metadata: schema.ResourceMetadataResponse{
 								Name: schema.StringPtr("daily-backup"),
-								Id:   schema.StringPtr("job-123"),
+								ID:   schema.StringPtr("job-123"),
 							},
 							Properties: schema.JobPropertiesResponse{
 								Enabled:       true,
@@ -53,7 +53,7 @@ func TestListScheduleJobs(t *testing.T) {
 						{
 							Metadata: schema.ResourceMetadataResponse{
 								Name: schema.StringPtr("oneshot-task"),
-								Id:   schema.StringPtr("job-456"),
+								ID:   schema.StringPtr("job-456"),
 							},
 							Properties: schema.JobPropertiesResponse{
 								Enabled:    true,
@@ -176,7 +176,7 @@ func TestGetScheduleJob(t *testing.T) {
 				resp := schema.JobResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("daily-backup"),
-						Id:   schema.StringPtr("job-123"),
+						ID:   schema.StringPtr("job-123"),
 					},
 					Properties: schema.JobPropertiesResponse{
 						Enabled:       true,
@@ -261,7 +261,7 @@ func TestCreateScheduleJob(t *testing.T) {
 				resp := schema.JobResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("weekly-cleanup"),
-						Id:   schema.StringPtr("job-789"),
+						ID:   schema.StringPtr("job-789"),
 					},
 					Properties: schema.JobPropertiesResponse{
 						Enabled:       true,
@@ -357,7 +357,7 @@ func TestCreateScheduleJob(t *testing.T) {
 				resp := schema.JobResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("maintenance-window"),
-						Id:   schema.StringPtr("job-999"),
+						ID:   schema.StringPtr("job-999"),
 					},
 					Properties: schema.JobPropertiesResponse{
 						Enabled:    true,
@@ -454,7 +454,7 @@ func TestUpdateScheduleJob(t *testing.T) {
 				resp := schema.JobResponse{
 					Metadata: schema.ResourceMetadataResponse{
 						Name: schema.StringPtr("updated-backup"),
-						Id:   schema.StringPtr("job-123"),
+						ID:   schema.StringPtr("job-123"),
 					},
 					Properties: schema.JobPropertiesResponse{
 						Enabled:        false,

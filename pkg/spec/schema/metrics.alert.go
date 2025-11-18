@@ -28,13 +28,13 @@ type AlertAction struct {
 
 // AlertResponse represents an alert response
 type AlertResponse struct {
-	Id                   string                `json:"id,omitempty"`
-	EventId              string                `json:"eventId,omitempty"`
+	ID                   string                `json:"id,omitempty"`
+	EventID              string                `json:"eventId,omitempty"`
 	EventName            string                `json:"eventName,omitempty"`
 	Username             string                `json:"username,omitempty"`
 	ServiceCategory      string                `json:"serviceCategory,omitempty"`
 	ServiceTypology      string                `json:"serviceTypology,omitempty"`
-	ResourceId           string                `json:"resourceId,omitempty"`
+	ResourceID           string                `json:"resourceId,omitempty"`
 	ServiceName          string                `json:"serviceName,omitempty"`
 	ResourceTypology     string                `json:"resourceTypology,omitempty"`
 	Metric               string                `json:"metric,omitempty"`
