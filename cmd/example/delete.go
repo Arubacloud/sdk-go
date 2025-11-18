@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	sdkgo "github.com/Arubacloud/sdk-go"
+	aruba "github.com/Arubacloud/sdk-go"
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
 )
 
@@ -23,7 +23,7 @@ func runDeleteExample() {
 	}
 
 	// Initialize the SDK
-	sdk, err := sdkgo.NewClient(config)
+	sdk, err := aruba.NewClient(config)
 	if err != nil {
 		log.Fatalf("Failed to create SDK client: %v", err)
 	}
@@ -64,7 +64,7 @@ func runDeleteExample() {
 }
 
 // fetchAllResources retrieves all existing resources from the API
-func fetchAllResources(ctx context.Context, sdk *sdkgo.Client, projectID string) *ResourceCollection {
+func fetchAllResources(ctx context.Context, sdk *aruba.ClientImpl, projectID string) *ResourceCollection {
 	resources := &ResourceCollection{
 		ProjectID: projectID,
 	}
@@ -198,7 +198,7 @@ func fetchAllResources(ctx context.Context, sdk *sdkgo.Client, projectID string)
 
 // deleteAllResources deletes all resources in reverse order of creation
 // This ensures dependencies are respected (e.g., delete cloud server before VPC)
-func deleteAllResources(ctx context.Context, sdk *sdkgo.Client, resources *ResourceCollection) {
+func deleteAllResources(ctx context.Context, sdk *aruba.ClientImpl, resources *ResourceCollection) {
 	fmt.Println("\n=== Deleting Resources ===")
 
 	// Delete in reverse order of creation to respect dependencies
@@ -270,7 +270,7 @@ func deleteAllResources(ctx context.Context, sdk *sdkgo.Client, resources *Resou
 }
 
 // deleteProject deletes a project
-func deleteProject(ctx context.Context, sdk *sdkgo.Client, projectID string) {
+func deleteProject(ctx context.Context, sdk *aruba.ClientImpl, projectID string) {
 	fmt.Println("--- Deleting Project ---")
 
 	deleteResp, err := sdk.Project.DeleteProject(ctx, projectID, nil)
@@ -287,7 +287,7 @@ func deleteProject(ctx context.Context, sdk *sdkgo.Client, projectID string) {
 }
 
 // deleteElasticIP deletes an Elastic IP
-func deleteElasticIP(ctx context.Context, sdk *sdkgo.Client, projectID, elasticIPID string) {
+func deleteElasticIP(ctx context.Context, sdk *aruba.ClientImpl, projectID, elasticIPID string) {
 	fmt.Println("--- Deleting Elastic IP ---")
 
 	deleteResp, err := sdk.Network.DeleteElasticIP(ctx, projectID, elasticIPID, nil)
@@ -304,7 +304,7 @@ func deleteElasticIP(ctx context.Context, sdk *sdkgo.Client, projectID, elasticI
 }
 
 // deleteBlockStorage deletes a block storage volume
-func deleteBlockStorage(ctx context.Context, sdk *sdkgo.Client, projectID, blockStorageID string) {
+func deleteBlockStorage(ctx context.Context, sdk *aruba.ClientImpl, projectID, blockStorageID string) {
 	fmt.Println("--- Deleting Block Storage ---")
 
 	deleteResp, err := sdk.Storage.DeleteBlockStorageVolume(ctx, projectID, blockStorageID, nil)
@@ -321,7 +321,7 @@ func deleteBlockStorage(ctx context.Context, sdk *sdkgo.Client, projectID, block
 }
 
 // deleteSnapshot deletes a snapshot
-func deleteSnapshot(ctx context.Context, sdk *sdkgo.Client, projectID, snapshotID string) {
+func deleteSnapshot(ctx context.Context, sdk *aruba.ClientImpl, projectID, snapshotID string) {
 	fmt.Println("--- Deleting Snapshot ---")
 
 	deleteResp, err := sdk.Storage.DeleteSnapshot(ctx, projectID, snapshotID, nil)
@@ -338,7 +338,7 @@ func deleteSnapshot(ctx context.Context, sdk *sdkgo.Client, projectID, snapshotI
 }
 
 // deleteVPC deletes a VPC
-func deleteVPC(ctx context.Context, sdk *sdkgo.Client, projectID, vpcID string) {
+func deleteVPC(ctx context.Context, sdk *aruba.ClientImpl, projectID, vpcID string) {
 	fmt.Println("--- Deleting VPC ---")
 
 	deleteResp, err := sdk.Network.DeleteVPC(ctx, projectID, vpcID, nil)
@@ -355,7 +355,7 @@ func deleteVPC(ctx context.Context, sdk *sdkgo.Client, projectID, vpcID string) 
 }
 
 // deleteSubnet deletes a subnet
-func deleteSubnet(ctx context.Context, sdk *sdkgo.Client, projectID, vpcID, subnetID string) {
+func deleteSubnet(ctx context.Context, sdk *aruba.ClientImpl, projectID, vpcID, subnetID string) {
 	fmt.Println("--- Deleting Subnet ---")
 
 	deleteResp, err := sdk.Network.DeleteSubnet(ctx, projectID, vpcID, subnetID, nil)
@@ -372,7 +372,7 @@ func deleteSubnet(ctx context.Context, sdk *sdkgo.Client, projectID, vpcID, subn
 }
 
 // deleteSecurityGroup deletes a security group
-func deleteSecurityGroup(ctx context.Context, sdk *sdkgo.Client, projectID, vpcID, securityGroupID string) {
+func deleteSecurityGroup(ctx context.Context, sdk *aruba.ClientImpl, projectID, vpcID, securityGroupID string) {
 	fmt.Println("--- Deleting Security Group ---")
 
 	deleteResp, err := sdk.Network.DeleteSecurityGroup(ctx, projectID, vpcID, securityGroupID, nil)
@@ -389,7 +389,7 @@ func deleteSecurityGroup(ctx context.Context, sdk *sdkgo.Client, projectID, vpcI
 }
 
 // deleteSecurityGroupRule deletes a security group rule
-func deleteSecurityGroupRule(ctx context.Context, sdk *sdkgo.Client, projectID, vpcID, securityGroupID, ruleID string) {
+func deleteSecurityGroupRule(ctx context.Context, sdk *aruba.ClientImpl, projectID, vpcID, securityGroupID, ruleID string) {
 	fmt.Println("--- Deleting Security Group Rule ---")
 
 	deleteResp, err := sdk.Network.DeleteSecurityGroupRule(ctx, projectID, vpcID, securityGroupID, ruleID, nil)
@@ -406,7 +406,7 @@ func deleteSecurityGroupRule(ctx context.Context, sdk *sdkgo.Client, projectID, 
 }
 
 // deleteKeyPair deletes an SSH key pair
-func deleteKeyPair(ctx context.Context, sdk *sdkgo.Client, projectID, keyPairID string) {
+func deleteKeyPair(ctx context.Context, sdk *aruba.ClientImpl, projectID, keyPairID string) {
 	fmt.Println("--- Deleting SSH Key Pair ---")
 
 	deleteResp, err := sdk.Compute.DeleteKeyPair(ctx, projectID, keyPairID, nil)
@@ -423,7 +423,7 @@ func deleteKeyPair(ctx context.Context, sdk *sdkgo.Client, projectID, keyPairID 
 }
 
 // deleteDBaaS deletes a DBaaS instance
-func deleteDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID, dbaasID string) {
+func deleteDBaaS(ctx context.Context, sdk *aruba.ClientImpl, projectID, dbaasID string) {
 	fmt.Println("--- Deleting DBaaS ---")
 
 	deleteResp, err := sdk.Database.DeleteDBaaS(ctx, projectID, dbaasID, nil)
@@ -440,7 +440,7 @@ func deleteDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID, dbaasID stri
 }
 
 // deleteKaaS deletes a KaaS cluster
-func deleteKaaS(ctx context.Context, sdk *sdkgo.Client, projectID, kaasID string) {
+func deleteKaaS(ctx context.Context, sdk *aruba.ClientImpl, projectID, kaasID string) {
 	fmt.Println("--- Deleting KaaS Cluster ---")
 
 	deleteResp, err := sdk.Container.DeleteKaaS(ctx, projectID, kaasID, nil)
@@ -457,7 +457,7 @@ func deleteKaaS(ctx context.Context, sdk *sdkgo.Client, projectID, kaasID string
 }
 
 // deleteCloudServer deletes a cloud server
-func deleteCloudServer(ctx context.Context, sdk *sdkgo.Client, projectID string, cloudServerID *string) {
+func deleteCloudServer(ctx context.Context, sdk *aruba.ClientImpl, projectID string, cloudServerID *string) {
 	if cloudServerID == nil {
 		log.Println("Cloud Server ID is nil, skipping deletion")
 		return

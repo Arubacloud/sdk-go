@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	sdkgo "github.com/Arubacloud/sdk-go"
+	aruba "github.com/Arubacloud/sdk-go"
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
 )
@@ -24,7 +24,7 @@ func runUpdateExample() {
 	}
 
 	// Initialize the SDK
-	sdk, err := sdkgo.NewClient(config)
+	sdk, err := aruba.NewClient(config)
 	if err != nil {
 		log.Fatalf("Failed to create SDK client: %v", err)
 	}
@@ -52,7 +52,7 @@ func runUpdateExample() {
 }
 
 // fetchExistingResources retrieves existing resources from the API for updating
-func fetchExistingResources(ctx context.Context, sdk *sdkgo.Client, projectID string) *ResourceCollection {
+func fetchExistingResources(ctx context.Context, sdk *aruba.ClientImpl, projectID string) *ResourceCollection {
 	resources := &ResourceCollection{
 		ProjectID: projectID,
 	}
@@ -87,7 +87,7 @@ func fetchExistingResources(ctx context.Context, sdk *sdkgo.Client, projectID st
 }
 
 // updateAllResources updates all resources that support update operations
-func updateAllResources(ctx context.Context, sdk *sdkgo.Client, resources *ResourceCollection) {
+func updateAllResources(ctx context.Context, sdk *aruba.ClientImpl, resources *ResourceCollection) {
 	fmt.Println("\n=== Updating Resources ===")
 
 	// Update Project
@@ -110,7 +110,7 @@ func updateAllResources(ctx context.Context, sdk *sdkgo.Client, resources *Resou
 }
 
 // updateProject updates a project
-func updateProject(ctx context.Context, sdk *sdkgo.Client, projectID string) {
+func updateProject(ctx context.Context, sdk *aruba.ClientImpl, projectID string) {
 	fmt.Println("--- Updating Project ---")
 
 	projectReq := schema.ProjectRequest{
@@ -136,7 +136,7 @@ func updateProject(ctx context.Context, sdk *sdkgo.Client, projectID string) {
 }
 
 // updateDBaaS updates a DBaaS instance
-func updateDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, dbaasResp *schema.Response[schema.DBaaSResponse]) {
+func updateDBaaS(ctx context.Context, sdk *aruba.ClientImpl, projectID string, dbaasResp *schema.Response[schema.DBaaSResponse]) {
 	fmt.Println("--- Updating DBaaS ---")
 
 	dbaasID := *dbaasResp.Data.Metadata.ID
@@ -199,7 +199,7 @@ func updateDBaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, dbaas
 }
 
 // updateKaaS updates a KaaS cluster
-func updateKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, kaasResp *schema.Response[schema.KaaSResponse]) {
+func updateKaaS(ctx context.Context, sdk *aruba.ClientImpl, projectID string, kaasResp *schema.Response[schema.KaaSResponse]) {
 	fmt.Println("--- Updating KaaS Cluster ---")
 
 	kaasID := *kaasResp.Data.Metadata.ID

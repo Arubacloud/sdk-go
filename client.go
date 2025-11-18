@@ -1,5 +1,5 @@
 // Package sdkgo provides the main entry point for the Aruba Cloud SDK
-package sdkgo
+package aruba
 
 import (
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
@@ -15,8 +15,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/spec/storage"
 )
 
-// Client wraps the client.Client and provides direct access to all service interfaces
-type Client struct {
+// ClientImpl wraps the client.ClientImpl and provides direct access to all service interfaces
+type ClientImpl struct {
 	*restclient.Client
 
 	// Service interfaces for all API categories
@@ -33,13 +33,13 @@ type Client struct {
 }
 
 // NewClient creates a new SDK client with all services initialized
-func NewClient(config *restclient.Config) (*Client, error) {
+func NewClient(config *restclient.Config) (*ClientImpl, error) {
 	baseClient, err := restclient.NewClient(config)
 	if err != nil {
 		return nil, err
 	}
 
-	sdkClient := &Client{
+	sdkClient := &ClientImpl{
 		Client:    baseClient,
 		Compute:   compute.NewService(baseClient),
 		Network:   network.NewService(baseClient),
