@@ -31,7 +31,7 @@ type CloudServerFlavorResponse struct {
 
 	RAM int32 `json:"ram"`
 
-	Hd int32 `json:"hd"`
+	HD int32 `json:"hd"`
 }
 
 type CloudServerNetworkInterfaceDetails struct {
