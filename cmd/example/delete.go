@@ -48,7 +48,10 @@ func runDeleteExample() {
 	fmt.Printf("\n⚠️  WARNING: This will delete ALL resources in project: %s\n", projectID)
 	fmt.Print("Type 'yes' to confirm: ")
 	var confirm string
-	fmt.Scanln(&confirm)
+	_, err = fmt.Scanln(&confirm)
+	if err != nil {
+		log.Fatalf("Internal Error: %v", err)
+	}
 	if confirm != "yes" {
 		fmt.Println("Deletion cancelled.")
 		return
