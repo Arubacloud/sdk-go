@@ -9,6 +9,8 @@ import (
 )
 
 func setupMockTokenServer(t *testing.T) *httptest.Server {
+	t.Helper()
+
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := TokenResponse{
 			AccessToken: "mock-access-token",
