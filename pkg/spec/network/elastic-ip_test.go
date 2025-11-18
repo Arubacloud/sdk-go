@@ -24,7 +24,7 @@ func TestListElasticIPs(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			resp := schema.ElasticList{
 				ListResponse: schema.ListResponse{Total: 1},
-				Values: []schema.ElasticIpResponse{
+				Values: []schema.ElasticIPResponse{
 					{Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("eip-1")}},
 				},
 			}
@@ -67,7 +67,7 @@ func TestGetElasticIP(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.ElasticIpResponse{
+			resp := schema.ElasticIPResponse{
 				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("my-eip")},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -112,7 +112,7 @@ func TestCreateElasticIP(t *testing.T) {
 				t.Errorf("expected POST, got %s", r.Method)
 			}
 			w.WriteHeader(http.StatusCreated)
-			resp := schema.ElasticIpResponse{
+			resp := schema.ElasticIPResponse{
 				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("new-eip")},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -133,12 +133,12 @@ func TestCreateElasticIP(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		req := schema.ElasticIpRequest{
+		req := schema.ElasticIPRequest{
 			Metadata: schema.RegionalResourceMetadataRequest{
 				ResourceMetadataRequest: schema.ResourceMetadataRequest{Name: "new-eip"},
 				Location:                schema.LocationRequest{Value: "ITBG-Bergamo"},
 			},
-			Properties: schema.ElasticIpPropertiesRequest{
+			Properties: schema.ElasticIPPropertiesRequest{
 				BillingPlan: schema.BillingPeriodResource{BillingPeriod: "monthly"},
 			},
 		}

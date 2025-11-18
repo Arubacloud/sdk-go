@@ -121,7 +121,7 @@ func TestGetKaaS(t *testing.T) {
 								Autoscaling: false,
 							},
 						},
-						ManagementIp: schema.StringPtr("10.0.0.100"),
+						ManagementIP: schema.StringPtr("10.0.0.100"),
 					},
 					Status: schema.ResourceStatus{
 						State: schema.StringPtr("active"),
@@ -165,7 +165,7 @@ func TestGetKaaS(t *testing.T) {
 		if len(resp.Data.Properties.NodePools) != 1 {
 			t.Errorf("expected 1 node pool")
 		}
-		if resp.Data.Properties.ManagementIp == nil || *resp.Data.Properties.ManagementIp != "10.0.0.100" {
+		if resp.Data.Properties.ManagementIP == nil || *resp.Data.Properties.ManagementIP != "10.0.0.100" {
 			t.Errorf("expected management IP '10.0.0.100'")
 		}
 	})

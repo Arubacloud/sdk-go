@@ -149,7 +149,7 @@ type KaaSPropertiesResponse struct {
 
 	BillingPlan BillingPeriodResource `json:"billingPlan"`
 
-	ManagementIp *string `json:"managementIp,omitempty"`
+	ManagementIP *string `json:"managementIp,omitempty"`
 }
 
 type KaaSRequest struct {

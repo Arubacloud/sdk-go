@@ -10,9 +10,9 @@ import (
 type NetworkAPI interface {
 	// ElasticIP operations
 	ListElasticIPs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.ElasticList], error)
-	GetElasticIP(ctx context.Context, project string, elasticIPId string, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error)
-	CreateElasticIP(ctx context.Context, project string, body schema.ElasticIpRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error)
-	UpdateElasticIP(ctx context.Context, project string, elasticIPId string, body schema.ElasticIpRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIpResponse], error)
+	GetElasticIP(ctx context.Context, project string, elasticIPId string, params *schema.RequestParameters) (*schema.Response[schema.ElasticIPResponse], error)
+	CreateElasticIP(ctx context.Context, project string, body schema.ElasticIPRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIPResponse], error)
+	UpdateElasticIP(ctx context.Context, project string, elasticIPId string, body schema.ElasticIPRequest, params *schema.RequestParameters) (*schema.Response[schema.ElasticIPResponse], error)
 	DeleteElasticIP(ctx context.Context, projectId string, elasticIPId string, params *schema.RequestParameters) (*schema.Response[any], error)
 
 	// LoadBalancer operations

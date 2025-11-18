@@ -81,7 +81,7 @@ func runCreateExample() {
 // ResourceCollection holds all created resources
 type ResourceCollection struct {
 	ProjectID         string
-	ElasticIPResp     *schema.Response[schema.ElasticIpResponse]
+	ElasticIPResp     *schema.Response[schema.ElasticIPResponse]
 	BlockStorageResp  *schema.Response[schema.BlockStorageResponse]
 	SnapshotResp      *schema.Response[schema.SnapshotResponse]
 	VPCResp           *schema.Response[schema.VPCResponse]
@@ -176,10 +176,10 @@ func createProject(ctx context.Context, sdk *sdkgo.Client) string {
 }
 
 // createElasticIP creates an Elastic IP
-func createElasticIP(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema.Response[schema.ElasticIpResponse] {
+func createElasticIP(ctx context.Context, sdk *sdkgo.Client, projectID string) *schema.Response[schema.ElasticIPResponse] {
 	fmt.Println("--- Elastic IP ---")
 
-	elasticIPReq := schema.ElasticIpRequest{
+	elasticIPReq := schema.ElasticIPRequest{
 		Metadata: schema.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: schema.ResourceMetadataRequest{
 				Name: "my-elastic-ip",
@@ -189,7 +189,7 @@ func createElasticIP(ctx context.Context, sdk *sdkgo.Client, projectID string) *
 				Value: "ITBG-Bergamo",
 			},
 		},
-		Properties: schema.ElasticIpPropertiesRequest{
+		Properties: schema.ElasticIPPropertiesRequest{
 			BillingPlan: schema.BillingPeriodResource{
 				BillingPeriod: "Hour",
 			},
@@ -745,7 +745,7 @@ func createCloudServer(ctx context.Context, sdk *sdkgo.Client, resources *Resour
 			VPC: schema.ReferenceResource{
 				URI: *resources.VPCResp.Data.Metadata.URI,
 			},
-			ElastcIp: schema.ReferenceResource{
+			ElastcIP: schema.ReferenceResource{
 				URI: *resources.ElasticIPResp.Data.Metadata.URI,
 			},
 			BootVolume: schema.ReferenceResource{

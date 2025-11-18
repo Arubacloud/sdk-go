@@ -29,8 +29,8 @@ type DBaaSEngineResponse struct {
 	// For more information, check the documentation.
 	DataCenter *string `json:"dataCenter,omitempty"`
 
-	// PrivateIpAddress Private IP address (nullable)
-	PrivateIpAddress *string `json:"privateIpAddress,omitempty"`
+	// PrivateIPAddress Private IP address (nullable)
+	PrivateIPAddress *string `json:"privateIpAddress,omitempty"`
 }
 
 // DBaaSFlavor contains the flavor configuration
@@ -95,8 +95,8 @@ type DBaaSNetworking struct {
 	// Required when user has at least one VPC (with at least one subnet and a security group).
 	SecurityGroupURI *string `json:"securityGroupUri,omitempty"`
 
-	// ElasticIpURI The URI of the ElasticIp resource to bind to this DBaaS instance (nullable)
-	ElasticIpURI *string `json:"elasticIpUri,omitempty"`
+	// ElasticIPURI The URI of the ElasticIP resource to bind to this DBaaS instance (nullable)
+	ElasticIPURI *string `json:"elasticIpUri,omitempty"`
 }
 
 // DBaaSNetworkingResponse contains the network response information
@@ -110,8 +110,8 @@ type DBaaSNetworkingResponse struct {
 	// SecurityGroup Security group resource reference (nullable)
 	SecurityGroup *ReferenceResource `json:"securityGroup,omitempty"`
 
-	// ElasticIp Elastic IP resource reference (nullable)
-	ElasticIp *ReferenceResource `json:"elasticIp,omitempty"`
+	// ElasticIP Elastic IP resource reference (nullable)
+	ElasticIP *ReferenceResource `json:"elasticIp,omitempty"`
 }
 
 // DBaaSAutoscaling contains the autoscaling configuration
