@@ -226,9 +226,9 @@ func updateKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, kaasRe
 			SecurityGroup: schema.SecurityGroupProperties{
 				Name: kaasResp.Data.Properties.SecurityGroup.Name,
 			},
-			NodeCidr: schema.NodeCidrProperties{
-				Name:    kaasResp.Data.Properties.NodeCidr.Name,
-				Address: kaasResp.Data.Properties.NodeCidr.Address,
+			NodeCIDR: schema.NodeCIDRProperties{
+				Name:    kaasResp.Data.Properties.NodeCIDR.Name,
+				Address: kaasResp.Data.Properties.NodeCIDR.Address,
 			},
 			KubernetesVersion: schema.KubernetesVersionInfo{
 				Value: kaasResp.Data.Properties.KubernetesVersion.Value,

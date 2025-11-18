@@ -1,6 +1,6 @@
 package schema
 
-type NodeCidrProperties struct {
+type NodeCIDRProperties struct {
 
 	// Address in CIDR notation The IP range must be between 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
 	Address string `json:"address"`
@@ -51,7 +51,7 @@ type KaaSPropertiesRequest struct {
 
 	Subnet ReferenceResource `json:"subnet"`
 
-	NodeCidr NodeCidrProperties `json:"nodeCidr"`
+	NodeCIDR NodeCIDRProperties `json:"nodeCidr"`
 
 	SecurityGroup SecurityGroupProperties `json:"securityGroup"`
 
@@ -100,13 +100,13 @@ type KubernetesVersionInfoResponse struct {
 	Recommended bool `json:"recommended,omitempty"`
 }
 
-type PodCidrPropertiesResponse struct {
+type PodCIDRPropertiesResponse struct {
 
 	// Address in CIDR notation The IP range must be between
 	Address string `json:"address,omitempty"`
 }
 
-type NodeCidrPropertiesResponse struct {
+type NodeCIDRPropertiesResponse struct {
 
 	// Address in CIDR notation The IP range must be between
 	Address string `json:"address,omitempty"`
@@ -137,9 +137,9 @@ type KaaSPropertiesResponse struct {
 
 	NodePools []NodePoolPropertiesResponse `json:"nodesPool"`
 
-	PodCidr PodCidrPropertiesResponse `json:"podCidr,omitempty"`
+	PodCIDR PodCIDRPropertiesResponse `json:"podCidr,omitempty"`
 
-	NodeCidr NodeCidrPropertiesResponse `json:"nodeCidr"`
+	NodeCIDR NodeCIDRPropertiesResponse `json:"nodeCidr"`
 
 	SecurityGroup KaasSecurityGroupPropertiesResponse `json:"securityGroup"`
 

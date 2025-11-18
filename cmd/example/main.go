@@ -653,7 +653,7 @@ func createKaaS(ctx context.Context, sdk *sdkgo.Client, projectID string, vpcRes
 			SecurityGroup: schema.SecurityGroupProperties{
 				Name: "sg-name-for-kaas",
 			},
-			NodeCidr: schema.NodeCidrProperties{
+			NodeCIDR: schema.NodeCIDRProperties{
 				Name:    "my-node-cidr",
 				Address: "10.100.0.0/16",
 			},
