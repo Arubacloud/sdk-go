@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 func TestListEvents(t *testing.T) {
@@ -24,41 +24,41 @@ func TestListEvents(t *testing.T) {
 
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Audit/events" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.AuditEventListResponse{
-					ListResponse: schema.ListResponse{Total: 1},
-					Values: []schema.AuditEvent{
+				resp := types.AuditEventListResponse{
+					ListResponse: types.ListResponse{Total: 1},
+					Values: []types.AuditEvent{
 						{
 							SeverityLevel: "Information",
-							LogFormat: schema.LogFormatVersion{
+							LogFormat: types.LogFormatVersion{
 								Version: "1.0",
 							},
 							Timestamp: time.Now(),
-							Operation: schema.Operation{
+							Operation: types.Operation{
 								ID:    "Microsoft.Compute/virtualMachines/start/action",
-								Value: schema.StringPtr("Start Virtual Machine"),
+								Value: types.StringPtr("Start Virtual Machine"),
 							},
-							Event: schema.EventInfo{
+							Event: types.EventInfo{
 								ID:    "event-123",
-								Value: schema.StringPtr("Virtual Machine Started"),
+								Value: types.StringPtr("Virtual Machine Started"),
 								Type:  "operational",
 							},
-							Category: schema.EventCategory{
+							Category: types.EventCategory{
 								Value:       "Administrative",
-								Description: schema.StringPtr("Administrative operations"),
+								Description: types.StringPtr("Administrative operations"),
 							},
 							Origin:  "user",
 							Channel: "Operation",
-							Status: schema.Status{
+							Status: types.Status{
 								Value:       "Succeeded",
-								Description: schema.StringPtr("Operation completed successfully"),
-								Code:        schema.Int32Ptr(200),
+								Description: types.StringPtr("Operation completed successfully"),
+								Code:        types.Int32Ptr(200),
 							},
-							Identity: schema.Identity{
-								Caller: schema.Caller{
+							Identity: types.Identity{
+								Caller: types.Caller{
 									Subject:  "user@example.com",
-									Username: schema.StringPtr("testuser"),
-									Company:  schema.StringPtr("TestCompany"),
-									TenantID: schema.StringPtr("tenant-123"),
+									Username: types.StringPtr("testuser"),
+									Company:  types.StringPtr("TestCompany"),
+									TenantID: types.StringPtr("tenant-123"),
 								},
 							},
 						},
@@ -112,9 +112,9 @@ func TestListEvents(t *testing.T) {
 
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Audit/events" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.AuditEventListResponse{
-					ListResponse: schema.ListResponse{Total: 0},
-					Values:       []schema.AuditEvent{},
+				resp := types.AuditEventListResponse{
+					ListResponse: types.ListResponse{Total: 0},
+					Values:       []types.AuditEvent{},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return
@@ -166,35 +166,35 @@ func TestListEvents(t *testing.T) {
 				}
 
 				w.WriteHeader(http.StatusOK)
-				resp := schema.AuditEventListResponse{
-					ListResponse: schema.ListResponse{
+				resp := types.AuditEventListResponse{
+					ListResponse: types.ListResponse{
 						Total: 100,
 					},
-					Values: []schema.AuditEvent{
+					Values: []types.AuditEvent{
 						{
 							SeverityLevel: "Warning",
-							LogFormat: schema.LogFormatVersion{
+							LogFormat: types.LogFormatVersion{
 								Version: "1.0",
 							},
 							Timestamp: time.Now(),
-							Operation: schema.Operation{
+							Operation: types.Operation{
 								ID: "test-operation",
 							},
-							Event: schema.EventInfo{
+							Event: types.EventInfo{
 								ID:   "event-456",
 								Type: "operational",
 							},
-							Category: schema.EventCategory{
+							Category: types.EventCategory{
 								Value: "Security",
 							},
 							Origin:  "system",
 							Channel: "Security",
-							Status: schema.Status{
+							Status: types.Status{
 								Value: "Failed",
-								Code:  schema.Int32Ptr(403),
+								Code:  types.Int32Ptr(403),
 							},
-							Identity: schema.Identity{
-								Caller: schema.Caller{
+							Identity: types.Identity{
+								Caller: types.Caller{
 									Subject: "system",
 								},
 							},
@@ -223,9 +223,9 @@ func TestListEvents(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		params := &schema.RequestParameters{
-			Limit:  schema.Int32Ptr(10),
-			Offset: schema.Int32Ptr(5),
+		params := &types.RequestParameters{
+			Limit:  types.Int32Ptr(10),
+			Offset: types.Int32Ptr(5),
 		}
 
 		resp, err := svc.ListEvents(context.Background(), "test-project", params)

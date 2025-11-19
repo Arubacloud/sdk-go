@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // TestListKeyPairs tests the ListKeyPairs method
@@ -23,11 +23,11 @@ func TestListKeyPairs(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.KeyPairListResponse{
-				ListResponse: schema.ListResponse{Total: 1},
-				Values: []schema.KeyPairResponse{
+			resp := types.KeyPairListResponse{
+				ListResponse: types.ListResponse{Total: 1},
+				Values: []types.KeyPairResponse{
 					{
-						Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("my-keypair")},
+						Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("my-keypair")},
 					},
 				},
 			}
@@ -105,8 +105,8 @@ func TestGetKeyPair(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.KeyPairResponse{
-				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("my-keypair")},
+			resp := types.KeyPairResponse{
+				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("my-keypair")},
 			}
 			json.NewEncoder(w).Encode(resp)
 		}))
@@ -182,8 +182,8 @@ func TestCreateKeyPair(t *testing.T) {
 				t.Errorf("expected POST, got %s", r.Method)
 			}
 			w.WriteHeader(http.StatusCreated)
-			resp := schema.KeyPairResponse{
-				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("new-keypair")},
+			resp := types.KeyPairResponse{
+				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("new-keypair")},
 			}
 			json.NewEncoder(w).Encode(resp)
 		}))
@@ -203,12 +203,12 @@ func TestCreateKeyPair(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		req := schema.KeyPairRequest{
-			Metadata: schema.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: schema.ResourceMetadataRequest{Name: "new-keypair"},
-				Location:                schema.LocationRequest{Value: "ITBG-Bergamo"},
+		req := types.KeyPairRequest{
+			Metadata: types.RegionalResourceMetadataRequest{
+				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-keypair"},
+				Location:                types.LocationRequest{Value: "ITBG-Bergamo"},
 			},
-			Properties: schema.KeyPairPropertiesRequest{Value: "ssh-rsa AAAAB3Nza..."},
+			Properties: types.KeyPairPropertiesRequest{Value: "ssh-rsa AAAAB3Nza..."},
 		}
 
 		resp, err := svc.CreateKeyPair(context.Background(), "test-project", req, nil)

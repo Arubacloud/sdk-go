@@ -8,21 +8,21 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // ListSecurityGroups retrieves all security groups for a VPC
-func (s *Service) ListSecurityGroups(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.SecurityGroupList], error) {
+func (s *Service) ListSecurityGroups(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.SecurityGroupList], error) {
 	s.client.Logger().Debugf("Listing security groups for VPC: %s in project: %s", vpcId, project)
 
-	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(SecurityGroupsPath, project, vpcId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &SecurityGroupListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -38,21 +38,21 @@ func (s *Service) ListSecurityGroups(ctx context.Context, project string, vpcId 
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.SecurityGroupList](httpResp)
+	return types.ParseResponseBody[types.SecurityGroupList](httpResp)
 }
 
 // GetSecurityGroup retrieves a specific security group by ID
-func (s *Service) GetSecurityGroup(ctx context.Context, project string, vpcId string, securityGroupId string, params *schema.RequestParameters) (*schema.Response[schema.SecurityGroupResponse], error) {
+func (s *Service) GetSecurityGroup(ctx context.Context, project string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error) {
 	s.client.Logger().Debugf("Getting security group: %s from VPC: %s in project: %s", securityGroupId, vpcId, project)
 
-	if err := schema.ValidateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
+	if err := types.ValidateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(SecurityGroupPath, project, vpcId, securityGroupId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &SecurityGroupGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -68,15 +68,15 @@ func (s *Service) GetSecurityGroup(ctx context.Context, project string, vpcId st
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.SecurityGroupResponse](httpResp)
+	return types.ParseResponseBody[types.SecurityGroupResponse](httpResp)
 }
 
 // CreateSecurityGroup creates a new security group in a VPC
 // The SDK automatically waits for the VPC to become Active before creating the security group
-func (s *Service) CreateSecurityGroup(ctx context.Context, project string, vpcId string, body schema.SecurityGroupRequest, params *schema.RequestParameters) (*schema.Response[schema.SecurityGroupResponse], error) {
+func (s *Service) CreateSecurityGroup(ctx context.Context, project string, vpcId string, body types.SecurityGroupRequest, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error) {
 	s.client.Logger().Debugf("Creating security group in VPC: %s in project: %s", vpcId, project)
 
-	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
@@ -89,7 +89,7 @@ func (s *Service) CreateSecurityGroup(ctx context.Context, project string, vpcId
 	path := fmt.Sprintf(SecurityGroupsPath, project, vpcId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &SecurityGroupCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -115,7 +115,7 @@ func (s *Service) CreateSecurityGroup(ctx context.Context, project string, vpcId
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.SecurityGroupResponse]{
+	response := &types.Response[types.SecurityGroupResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -123,13 +123,13 @@ func (s *Service) CreateSecurityGroup(ctx context.Context, project string, vpcId
 	}
 
 	if response.IsSuccess() {
-		var data schema.SecurityGroupResponse
+		var data types.SecurityGroupResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -139,17 +139,17 @@ func (s *Service) CreateSecurityGroup(ctx context.Context, project string, vpcId
 }
 
 // UpdateSecurityGroup updates an existing security group
-func (s *Service) UpdateSecurityGroup(ctx context.Context, project string, vpcId string, securityGroupId string, body schema.SecurityGroupRequest, params *schema.RequestParameters) (*schema.Response[schema.SecurityGroupResponse], error) {
+func (s *Service) UpdateSecurityGroup(ctx context.Context, project string, vpcId string, securityGroupId string, body types.SecurityGroupRequest, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error) {
 	s.client.Logger().Debugf("Updating security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, project)
 
-	if err := schema.ValidateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
+	if err := types.ValidateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(SecurityGroupPath, project, vpcId, securityGroupId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &SecurityGroupUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -175,7 +175,7 @@ func (s *Service) UpdateSecurityGroup(ctx context.Context, project string, vpcId
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.SecurityGroupResponse]{
+	response := &types.Response[types.SecurityGroupResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -183,13 +183,13 @@ func (s *Service) UpdateSecurityGroup(ctx context.Context, project string, vpcId
 	}
 
 	if response.IsSuccess() {
-		var data schema.SecurityGroupResponse
+		var data types.SecurityGroupResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -199,17 +199,17 @@ func (s *Service) UpdateSecurityGroup(ctx context.Context, project string, vpcId
 }
 
 // DeleteSecurityGroup deletes a security group by ID
-func (s *Service) DeleteSecurityGroup(ctx context.Context, projectId string, vpcId string, securityGroupId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteSecurityGroup(ctx context.Context, projectId string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[any], error) {
 	s.client.Logger().Debugf("Deleting security group: %s from VPC: %s in project: %s", securityGroupId, vpcId, projectId)
 
-	if err := schema.ValidateVPCResource(projectId, vpcId, securityGroupId, "security group ID"); err != nil {
+	if err := types.ValidateVPCResource(projectId, vpcId, securityGroupId, "security group ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(SecurityGroupPath, projectId, vpcId, securityGroupId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &SecurityGroupDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -225,5 +225,5 @@ func (s *Service) DeleteSecurityGroup(ctx context.Context, projectId string, vpc
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp)
 }

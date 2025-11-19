@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 func TestListElasticIPs(t *testing.T) {
@@ -22,10 +22,10 @@ func TestListElasticIPs(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.ElasticList{
-				ListResponse: schema.ListResponse{Total: 1},
-				Values: []schema.ElasticIPResponse{
-					{Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("eip-1")}},
+			resp := types.ElasticList{
+				ListResponse: types.ListResponse{Total: 1},
+				Values: []types.ElasticIPResponse{
+					{Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("eip-1")}},
 				},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -67,8 +67,8 @@ func TestGetElasticIP(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.ElasticIPResponse{
-				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("my-eip")},
+			resp := types.ElasticIPResponse{
+				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("my-eip")},
 			}
 			json.NewEncoder(w).Encode(resp)
 		}))
@@ -112,8 +112,8 @@ func TestCreateElasticIP(t *testing.T) {
 				t.Errorf("expected POST, got %s", r.Method)
 			}
 			w.WriteHeader(http.StatusCreated)
-			resp := schema.ElasticIPResponse{
-				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("new-eip")},
+			resp := types.ElasticIPResponse{
+				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("new-eip")},
 			}
 			json.NewEncoder(w).Encode(resp)
 		}))
@@ -133,13 +133,13 @@ func TestCreateElasticIP(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		req := schema.ElasticIPRequest{
-			Metadata: schema.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: schema.ResourceMetadataRequest{Name: "new-eip"},
-				Location:                schema.LocationRequest{Value: "ITBG-Bergamo"},
+		req := types.ElasticIPRequest{
+			Metadata: types.RegionalResourceMetadataRequest{
+				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-eip"},
+				Location:                types.LocationRequest{Value: "ITBG-Bergamo"},
 			},
-			Properties: schema.ElasticIPPropertiesRequest{
-				BillingPlan: schema.BillingPeriodResource{BillingPeriod: "monthly"},
+			Properties: types.ElasticIPPropertiesRequest{
+				BillingPlan: types.BillingPeriodResource{BillingPeriod: "monthly"},
 			},
 		}
 

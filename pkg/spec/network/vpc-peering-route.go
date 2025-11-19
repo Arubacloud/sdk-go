@@ -8,21 +8,21 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // ListVpcPeeringRoutes retrieves all VPC peering routes for a VPC peering connection
-func (s *Service) ListVpcPeeringRoutes(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringRouteList], error) {
+func (s *Service) ListVpcPeeringRoutes(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteList], error) {
 	s.client.Logger().Debugf("Listing VPC peering routes for VPC peering: %s in VPC: %s in project: %s", vpcPeeringId, vpcId, project)
 
-	if err := schema.ValidateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
+	if err := types.ValidateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(VPCPeeringRoutesPath, project, vpcId, vpcPeeringId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &VPCPeeringRouteListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -38,21 +38,21 @@ func (s *Service) ListVpcPeeringRoutes(ctx context.Context, project string, vpcI
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.VPCPeeringRouteList](httpResp)
+	return types.ParseResponseBody[types.VPCPeeringRouteList](httpResp)
 }
 
 // GetVpcPeeringRoute retrieves a specific VPC peering route by ID
-func (s *Service) GetVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringRouteResponse], error) {
+func (s *Service) GetVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error) {
 	s.client.Logger().Debugf("Getting VPC peering route: %s from VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteId, vpcPeeringId, vpcId, project)
 
-	if err := schema.ValidateVPCPeeringRoute(project, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {
+	if err := types.ValidateVPCPeeringRoute(project, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(VPCPeeringRoutePath, project, vpcId, vpcPeeringId, vpcPeeringRouteId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &VPCPeeringRouteGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -68,21 +68,21 @@ func (s *Service) GetVpcPeeringRoute(ctx context.Context, project string, vpcId 
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.VPCPeeringRouteResponse](httpResp)
+	return types.ParseResponseBody[types.VPCPeeringRouteResponse](httpResp)
 }
 
 // CreateVpcPeeringRoute creates a new VPC peering route
-func (s *Service) CreateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, body schema.VPCPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringRouteResponse], error) {
+func (s *Service) CreateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, body types.VPCPeeringRouteRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error) {
 	s.client.Logger().Debugf("Creating VPC peering route in VPC peering: %s in VPC: %s in project: %s", vpcPeeringId, vpcId, project)
 
-	if err := schema.ValidateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
+	if err := types.ValidateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(VPCPeeringRoutesPath, project, vpcId, vpcPeeringId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &VPCPeeringRouteCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -108,7 +108,7 @@ func (s *Service) CreateVpcPeeringRoute(ctx context.Context, project string, vpc
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.VPCPeeringRouteResponse]{
+	response := &types.Response[types.VPCPeeringRouteResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -116,13 +116,13 @@ func (s *Service) CreateVpcPeeringRoute(ctx context.Context, project string, vpc
 	}
 
 	if response.IsSuccess() {
-		var data schema.VPCPeeringRouteResponse
+		var data types.VPCPeeringRouteResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -132,17 +132,17 @@ func (s *Service) CreateVpcPeeringRoute(ctx context.Context, project string, vpc
 }
 
 // UpdateVpcPeeringRoute updates an existing VPC peering route
-func (s *Service) UpdateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, body schema.VPCPeeringRouteRequest, params *schema.RequestParameters) (*schema.Response[schema.VPCPeeringRouteResponse], error) {
+func (s *Service) UpdateVpcPeeringRoute(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, body types.VPCPeeringRouteRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error) {
 	s.client.Logger().Debugf("Updating VPC peering route: %s in VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteId, vpcPeeringId, vpcId, project)
 
-	if err := schema.ValidateVPCPeeringRoute(project, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {
+	if err := types.ValidateVPCPeeringRoute(project, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(VPCPeeringRoutePath, project, vpcId, vpcPeeringId, vpcPeeringRouteId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &VPCPeeringRouteUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -168,7 +168,7 @@ func (s *Service) UpdateVpcPeeringRoute(ctx context.Context, project string, vpc
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.VPCPeeringRouteResponse]{
+	response := &types.Response[types.VPCPeeringRouteResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -176,13 +176,13 @@ func (s *Service) UpdateVpcPeeringRoute(ctx context.Context, project string, vpc
 	}
 
 	if response.IsSuccess() {
-		var data schema.VPCPeeringRouteResponse
+		var data types.VPCPeeringRouteResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -192,17 +192,17 @@ func (s *Service) UpdateVpcPeeringRoute(ctx context.Context, project string, vpc
 }
 
 // DeleteVpcPeeringRoute deletes a VPC peering route by ID
-func (s *Service) DeleteVpcPeeringRoute(ctx context.Context, projectId string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteVpcPeeringRoute(ctx context.Context, projectId string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *types.RequestParameters) (*types.Response[any], error) {
 	s.client.Logger().Debugf("Deleting VPC peering route: %s from VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteId, vpcPeeringId, vpcId, projectId)
 
-	if err := schema.ValidateVPCPeeringRoute(projectId, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {
+	if err := types.ValidateVPCPeeringRoute(projectId, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(VPCPeeringRoutePath, projectId, vpcId, vpcPeeringId, vpcPeeringRouteId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &VPCPeeringRouteDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -218,5 +218,5 @@ func (s *Service) DeleteVpcPeeringRoute(ctx context.Context, projectId string, v
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp)
 }

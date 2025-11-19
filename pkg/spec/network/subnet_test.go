@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 func TestListSubnets(t *testing.T) {
@@ -22,10 +22,10 @@ func TestListSubnets(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.SubnetList{
-				ListResponse: schema.ListResponse{Total: 1},
-				Values: []schema.SubnetResponse{
-					{Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("subnet-1")}},
+			resp := types.SubnetList{
+				ListResponse: types.ListResponse{Total: 1},
+				Values: []types.SubnetResponse{
+					{Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("subnet-1")}},
 				},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -67,8 +67,8 @@ func TestGetSubnet(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.SubnetResponse{
-				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("my-subnet")},
+			resp := types.SubnetResponse{
+				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("my-subnet")},
 			}
 			json.NewEncoder(w).Encode(resp)
 		}))
@@ -131,9 +131,9 @@ func TestCreateSubnet(t *testing.T) {
 			if r.Method == http.MethodGet && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123" {
 				t.Logf("Returning active VPC status")
 				w.WriteHeader(http.StatusOK)
-				vpcResp := schema.VPCResponse{
-					Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("test-vpc")},
-					Status:   schema.ResourceStatus{State: schema.StringPtr("active")},
+				vpcResp := types.VPCResponse{
+					Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("test-vpc")},
+					Status:   types.ResourceStatus{State: types.StringPtr("active")},
 				}
 				json.NewEncoder(w).Encode(vpcResp)
 				return
@@ -143,8 +143,8 @@ func TestCreateSubnet(t *testing.T) {
 			if r.Method == http.MethodPost {
 				t.Logf("Creating subnet")
 				w.WriteHeader(http.StatusCreated)
-				resp := schema.SubnetResponse{
-					Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("new-subnet")},
+				resp := types.SubnetResponse{
+					Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("new-subnet")},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return
@@ -170,9 +170,9 @@ func TestCreateSubnet(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		req := schema.SubnetRequest{
-			Metadata: schema.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: schema.ResourceMetadataRequest{Name: "new-subnet"},
+		req := types.SubnetRequest{
+			Metadata: types.RegionalResourceMetadataRequest{
+				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-subnet"},
 			},
 		}
 

@@ -8,17 +8,17 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // ListProjects retrieves all projects
-func (s *Service) ListProjects(ctx context.Context, params *schema.RequestParameters) (*schema.Response[schema.ProjectList], error) {
+func (s *Service) ListProjects(ctx context.Context, params *types.RequestParameters) (*types.Response[types.ProjectList], error) {
 	s.client.Logger().Debugf("Listing projects")
 
 	path := ProjectsPath
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ProjectListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -34,21 +34,21 @@ func (s *Service) ListProjects(ctx context.Context, params *schema.RequestParame
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.ProjectList](httpResp)
+	return types.ParseResponseBody[types.ProjectList](httpResp)
 }
 
 // GetProject retrieves a specific project by ID
-func (s *Service) GetProject(ctx context.Context, projectId string, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
+func (s *Service) GetProject(ctx context.Context, projectId string, params *types.RequestParameters) (*types.Response[types.ProjectResponse], error) {
 	s.client.Logger().Debugf("Getting project: %s", projectId)
 
-	if err := schema.ValidateProject(projectId); err != nil {
+	if err := types.ValidateProject(projectId); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(ProjectPath, projectId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ProjectGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -64,17 +64,17 @@ func (s *Service) GetProject(ctx context.Context, projectId string, params *sche
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.ProjectResponse](httpResp)
+	return types.ParseResponseBody[types.ProjectResponse](httpResp)
 }
 
 // CreateProject creates a new project
-func (s *Service) CreateProject(ctx context.Context, body schema.ProjectRequest, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
+func (s *Service) CreateProject(ctx context.Context, body types.ProjectRequest, params *types.RequestParameters) (*types.Response[types.ProjectResponse], error) {
 	s.client.Logger().Debugf("Creating project")
 
 	path := ProjectsPath
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ProjectCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -100,7 +100,7 @@ func (s *Service) CreateProject(ctx context.Context, body schema.ProjectRequest,
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.ProjectResponse]{
+	response := &types.Response[types.ProjectResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -108,13 +108,13 @@ func (s *Service) CreateProject(ctx context.Context, body schema.ProjectRequest,
 	}
 
 	if response.IsSuccess() {
-		var data schema.ProjectResponse
+		var data types.ProjectResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -124,17 +124,17 @@ func (s *Service) CreateProject(ctx context.Context, body schema.ProjectRequest,
 }
 
 // UpdateProject updates an existing project
-func (s *Service) UpdateProject(ctx context.Context, projectId string, body schema.ProjectRequest, params *schema.RequestParameters) (*schema.Response[schema.ProjectResponse], error) {
+func (s *Service) UpdateProject(ctx context.Context, projectId string, body types.ProjectRequest, params *types.RequestParameters) (*types.Response[types.ProjectResponse], error) {
 	s.client.Logger().Debugf("Updating project: %s", projectId)
 
-	if err := schema.ValidateProject(projectId); err != nil {
+	if err := types.ValidateProject(projectId); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(ProjectPath, projectId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ProjectUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -160,7 +160,7 @@ func (s *Service) UpdateProject(ctx context.Context, projectId string, body sche
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.ProjectResponse]{
+	response := &types.Response[types.ProjectResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -168,13 +168,13 @@ func (s *Service) UpdateProject(ctx context.Context, projectId string, body sche
 	}
 
 	if response.IsSuccess() {
-		var data schema.ProjectResponse
+		var data types.ProjectResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -184,17 +184,17 @@ func (s *Service) UpdateProject(ctx context.Context, projectId string, body sche
 }
 
 // DeleteProject deletes a project by ID
-func (s *Service) DeleteProject(ctx context.Context, projectId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteProject(ctx context.Context, projectId string, params *types.RequestParameters) (*types.Response[any], error) {
 	s.client.Logger().Debugf("Deleting project: %s", projectId)
 
-	if err := schema.ValidateProject(projectId); err != nil {
+	if err := types.ValidateProject(projectId); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(ProjectPath, projectId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ProjectDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -215,7 +215,7 @@ func (s *Service) DeleteProject(ctx context.Context, projectId string, params *s
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[any]{
+	response := &types.Response[any]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,

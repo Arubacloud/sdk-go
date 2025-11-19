@@ -8,21 +8,21 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // ListVPCs retrieves all VPCs for a project
-func (s *Service) ListVPCs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.VPCList], error) {
+func (s *Service) ListVPCs(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.VPCList], error) {
 	s.client.Logger().Debugf("Listing VPCs for project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(VPCNetworksPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &VPCListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -38,21 +38,21 @@ func (s *Service) ListVPCs(ctx context.Context, project string, params *schema.R
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.VPCList](httpResp)
+	return types.ParseResponseBody[types.VPCList](httpResp)
 }
 
 // GetVPC retrieves a specific VPC by ID
-func (s *Service) GetVPC(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VPCResponse], error) {
+func (s *Service) GetVPC(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.VPCResponse], error) {
 	s.client.Logger().Debugf("Getting VPC: %s in project: %s", vpcId, project)
 
-	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(VPCNetworkPath, project, vpcId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &VPCGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -68,21 +68,21 @@ func (s *Service) GetVPC(ctx context.Context, project string, vpcId string, para
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.VPCResponse](httpResp)
+	return types.ParseResponseBody[types.VPCResponse](httpResp)
 }
 
 // CreateVPC creates a new VPC
-func (s *Service) CreateVPC(ctx context.Context, project string, body schema.VPCRequest, params *schema.RequestParameters) (*schema.Response[schema.VPCResponse], error) {
+func (s *Service) CreateVPC(ctx context.Context, project string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error) {
 	s.client.Logger().Debugf("Creating VPC in project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(VPCNetworksPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &VPCCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -108,7 +108,7 @@ func (s *Service) CreateVPC(ctx context.Context, project string, body schema.VPC
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.VPCResponse]{
+	response := &types.Response[types.VPCResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -116,13 +116,13 @@ func (s *Service) CreateVPC(ctx context.Context, project string, body schema.VPC
 	}
 
 	if response.IsSuccess() {
-		var data schema.VPCResponse
+		var data types.VPCResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -132,17 +132,17 @@ func (s *Service) CreateVPC(ctx context.Context, project string, body schema.VPC
 }
 
 // UpdateVPC updates an existing VPC
-func (s *Service) UpdateVPC(ctx context.Context, project string, vpcId string, body schema.VPCRequest, params *schema.RequestParameters) (*schema.Response[schema.VPCResponse], error) {
+func (s *Service) UpdateVPC(ctx context.Context, project string, vpcId string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error) {
 	s.client.Logger().Debugf("Updating VPC: %s in project: %s", vpcId, project)
 
-	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(VPCNetworkPath, project, vpcId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &VPCUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -168,7 +168,7 @@ func (s *Service) UpdateVPC(ctx context.Context, project string, vpcId string, b
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.VPCResponse]{
+	response := &types.Response[types.VPCResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -176,13 +176,13 @@ func (s *Service) UpdateVPC(ctx context.Context, project string, vpcId string, b
 	}
 
 	if response.IsSuccess() {
-		var data schema.VPCResponse
+		var data types.VPCResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -192,17 +192,17 @@ func (s *Service) UpdateVPC(ctx context.Context, project string, vpcId string, b
 }
 
 // DeleteVPC deletes a VPC by ID
-func (s *Service) DeleteVPC(ctx context.Context, projectId string, vpcId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteVPC(ctx context.Context, projectId string, vpcId string, params *types.RequestParameters) (*types.Response[any], error) {
 	s.client.Logger().Debugf("Deleting VPC: %s in project: %s", vpcId, projectId)
 
-	if err := schema.ValidateProjectAndResource(projectId, vpcId, "VPC ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectId, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(VPCNetworkPath, projectId, vpcId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &VPCDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -218,5 +218,5 @@ func (s *Service) DeleteVPC(ctx context.Context, projectId string, vpcId string,
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp)
 }

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // TestListCloudServers tests the ListCloudServers method
@@ -29,11 +29,11 @@ func TestListCloudServers(t *testing.T) {
 
 			apiCalled = true
 			w.WriteHeader(http.StatusOK)
-			resp := schema.CloudServerList{
-				ListResponse: schema.ListResponse{Total: 2},
-				Values: []schema.CloudServerResponse{
-					{Metadata: schema.RegionalResourceMetadataRequest{
-						ResourceMetadataRequest: schema.ResourceMetadataRequest{Name: "server-1"},
+			resp := types.CloudServerList{
+				ListResponse: types.ListResponse{Total: 2},
+				Values: []types.CloudServerResponse{
+					{Metadata: types.RegionalResourceMetadataRequest{
+						ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "server-1"},
 					}},
 				},
 			}
@@ -112,11 +112,11 @@ func TestGetCloudServer(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.CloudServerResponse{
-				Metadata: schema.RegionalResourceMetadataRequest{
-					ResourceMetadataRequest: schema.ResourceMetadataRequest{Name: "my-server"},
+			resp := types.CloudServerResponse{
+				Metadata: types.RegionalResourceMetadataRequest{
+					ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "my-server"},
 				},
-				Properties: schema.CloudServerPropertiesResult{Zone: "ITBG-1"},
+				Properties: types.CloudServerPropertiesResult{Zone: "ITBG-1"},
 			}
 			json.NewEncoder(w).Encode(resp)
 		}))
@@ -192,9 +192,9 @@ func TestCreateCloudServer(t *testing.T) {
 				t.Errorf("expected POST, got %s", r.Method)
 			}
 			w.WriteHeader(http.StatusCreated)
-			resp := schema.CloudServerResponse{
-				Metadata: schema.RegionalResourceMetadataRequest{
-					ResourceMetadataRequest: schema.ResourceMetadataRequest{Name: "new-server"},
+			resp := types.CloudServerResponse{
+				Metadata: types.RegionalResourceMetadataRequest{
+					ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-server"},
 				},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -215,12 +215,12 @@ func TestCreateCloudServer(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		req := schema.CloudServerRequest{
-			Metadata: schema.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: schema.ResourceMetadataRequest{Name: "new-server"},
-				Location:                schema.LocationRequest{Value: "ITBG-Bergamo"},
+		req := types.CloudServerRequest{
+			Metadata: types.RegionalResourceMetadataRequest{
+				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-server"},
+				Location:                types.LocationRequest{Value: "ITBG-Bergamo"},
 			},
-			Properties: schema.CloudServerPropertiesRequest{Zone: "ITBG-1"},
+			Properties: types.CloudServerPropertiesRequest{Zone: "ITBG-1"},
 		}
 
 		resp, err := svc.CreateCloudServer(context.Background(), "test-project", req, nil)

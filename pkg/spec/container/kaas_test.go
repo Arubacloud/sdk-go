@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 func TestListKaaS(t *testing.T) {
@@ -23,25 +23,25 @@ func TestListKaaS(t *testing.T) {
 
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Container/kaas" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.KaaSList{
-					ListResponse: schema.ListResponse{Total: 1},
-					Values: []schema.KaaSResponse{
+				resp := types.KaaSList{
+					ListResponse: types.ListResponse{Total: 1},
+					Values: []types.KaaSResponse{
 						{
-							Metadata: schema.ResourceMetadataResponse{
-								Name: schema.StringPtr("test-kaas"),
+							Metadata: types.ResourceMetadataResponse{
+								Name: types.StringPtr("test-kaas"),
 							},
-							Properties: schema.KaaSPropertiesResponse{
+							Properties: types.KaaSPropertiesResponse{
 								Preset: false,
 								HA:     true,
-								KubernetesVersion: schema.KubernetesVersionInfoResponse{
-									KubernetesVersionInfo: schema.KubernetesVersionInfo{
+								KubernetesVersion: types.KubernetesVersionInfoResponse{
+									KubernetesVersionInfo: types.KubernetesVersionInfo{
 										Value: "1.28.0",
 									},
 									Recommended: true,
 								},
 							},
-							Status: schema.ResourceStatus{
-								State: schema.StringPtr("active"),
+							Status: types.ResourceStatus{
+								State: types.StringPtr("active"),
 							},
 						},
 					},
@@ -96,23 +96,23 @@ func TestGetKaaS(t *testing.T) {
 
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Container/kaas/kaas-123" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.KaaSResponse{
-					Metadata: schema.ResourceMetadataResponse{
-						Name: schema.StringPtr("test-kaas"),
-						ID:   schema.StringPtr("kaas-123"),
+				resp := types.KaaSResponse{
+					Metadata: types.ResourceMetadataResponse{
+						Name: types.StringPtr("test-kaas"),
+						ID:   types.StringPtr("kaas-123"),
 					},
-					Properties: schema.KaaSPropertiesResponse{
+					Properties: types.KaaSPropertiesResponse{
 						Preset: false,
 						HA:     true,
-						KubernetesVersion: schema.KubernetesVersionInfoResponse{
-							KubernetesVersionInfo: schema.KubernetesVersionInfo{
+						KubernetesVersion: types.KubernetesVersionInfoResponse{
+							KubernetesVersionInfo: types.KubernetesVersionInfo{
 								Value: "1.28.0",
 							},
 							Recommended: true,
 						},
-						NodePools: []schema.NodePoolPropertiesResponse{
+						NodePools: []types.NodePoolPropertiesResponse{
 							{
-								NodePoolProperties: schema.NodePoolProperties{
+								NodePoolProperties: types.NodePoolProperties{
 									Name:     "default-pool",
 									Nodes:    3,
 									Instance: "small",
@@ -121,10 +121,10 @@ func TestGetKaaS(t *testing.T) {
 								Autoscaling: false,
 							},
 						},
-						ManagementIP: schema.StringPtr("10.0.0.100"),
+						ManagementIP: types.StringPtr("10.0.0.100"),
 					},
-					Status: schema.ResourceStatus{
-						State: schema.StringPtr("active"),
+					Status: types.ResourceStatus{
+						State: types.StringPtr("active"),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -183,22 +183,22 @@ func TestCreateKaaS(t *testing.T) {
 
 			if r.Method == "POST" && r.URL.Path == "/projects/test-project/providers/Aruba.Container/kaas" {
 				w.WriteHeader(http.StatusCreated)
-				resp := schema.KaaSResponse{
-					Metadata: schema.ResourceMetadataResponse{
-						Name: schema.StringPtr("new-kaas"),
-						ID:   schema.StringPtr("kaas-456"),
+				resp := types.KaaSResponse{
+					Metadata: types.ResourceMetadataResponse{
+						Name: types.StringPtr("new-kaas"),
+						ID:   types.StringPtr("kaas-456"),
 					},
-					Properties: schema.KaaSPropertiesResponse{
+					Properties: types.KaaSPropertiesResponse{
 						Preset: false,
 						HA:     true,
-						KubernetesVersion: schema.KubernetesVersionInfoResponse{
-							KubernetesVersionInfo: schema.KubernetesVersionInfo{
+						KubernetesVersion: types.KubernetesVersionInfoResponse{
+							KubernetesVersionInfo: types.KubernetesVersionInfo{
 								Value: "1.28.0",
 							},
 						},
 					},
-					Status: schema.ResourceStatus{
-						State: schema.StringPtr("creating"),
+					Status: types.ResourceStatus{
+						State: types.StringPtr("creating"),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -223,16 +223,16 @@ func TestCreateKaaS(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		body := schema.KaaSRequest{
-			Metadata: schema.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: schema.ResourceMetadataRequest{
+		body := types.KaaSRequest{
+			Metadata: types.RegionalResourceMetadataRequest{
+				ResourceMetadataRequest: types.ResourceMetadataRequest{
 					Name: "new-kaas",
 				},
 			},
-			Properties: schema.KaaSPropertiesRequest{
+			Properties: types.KaaSPropertiesRequest{
 				Preset: false,
 				HA:     true,
-				KubernetesVersion: schema.KubernetesVersionInfo{
+				KubernetesVersion: types.KubernetesVersionInfo{
 					Value: "1.28.0",
 				},
 			},
@@ -266,22 +266,22 @@ func TestUpdateKaaS(t *testing.T) {
 
 			if r.Method == "PUT" && r.URL.Path == "/projects/test-project/providers/Aruba.Container/kaas/kaas-123" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.KaaSResponse{
-					Metadata: schema.ResourceMetadataResponse{
-						Name: schema.StringPtr("updated-kaas"),
-						ID:   schema.StringPtr("kaas-123"),
+				resp := types.KaaSResponse{
+					Metadata: types.ResourceMetadataResponse{
+						Name: types.StringPtr("updated-kaas"),
+						ID:   types.StringPtr("kaas-123"),
 					},
-					Properties: schema.KaaSPropertiesResponse{
+					Properties: types.KaaSPropertiesResponse{
 						Preset: false,
 						HA:     true,
-						KubernetesVersion: schema.KubernetesVersionInfoResponse{
-							KubernetesVersionInfo: schema.KubernetesVersionInfo{
+						KubernetesVersion: types.KubernetesVersionInfoResponse{
+							KubernetesVersionInfo: types.KubernetesVersionInfo{
 								Value: "1.29.0",
 							},
 						},
 					},
-					Status: schema.ResourceStatus{
-						State: schema.StringPtr("updating"),
+					Status: types.ResourceStatus{
+						State: types.StringPtr("updating"),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -306,16 +306,16 @@ func TestUpdateKaaS(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		body := schema.KaaSRequest{
-			Metadata: schema.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: schema.ResourceMetadataRequest{
+		body := types.KaaSRequest{
+			Metadata: types.RegionalResourceMetadataRequest{
+				ResourceMetadataRequest: types.ResourceMetadataRequest{
 					Name: "updated-kaas",
 				},
 			},
-			Properties: schema.KaaSPropertiesRequest{
+			Properties: types.KaaSPropertiesRequest{
 				Preset: false,
 				HA:     true,
-				KubernetesVersion: schema.KubernetesVersionInfo{
+				KubernetesVersion: types.KubernetesVersionInfo{
 					Value: "1.29.0",
 				},
 			},

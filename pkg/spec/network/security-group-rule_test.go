@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 func TestListSecurityGroupRules(t *testing.T) {
@@ -22,10 +22,10 @@ func TestListSecurityGroupRules(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.SecurityRuleList{
-				ListResponse: schema.ListResponse{Total: 1},
-				Values: []schema.SecurityRuleResponse{
-					{Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("rule-1")}},
+			resp := types.SecurityRuleList{
+				ListResponse: types.ListResponse{Total: 1},
+				Values: []types.SecurityRuleResponse{
+					{Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("rule-1")}},
 				},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -67,8 +67,8 @@ func TestGetSecurityGroupRule(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.SecurityRuleResponse{
-				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("my-rule")},
+			resp := types.SecurityRuleResponse{
+				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("my-rule")},
 			}
 			json.NewEncoder(w).Encode(resp)
 		}))

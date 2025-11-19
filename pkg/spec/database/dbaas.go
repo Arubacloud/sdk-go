@@ -8,20 +8,20 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // ListDBaaS retrieves all DBaaS instances for a project
-func (s *Service) ListDBaaS(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.DBaaSList], error) {
+func (s *Service) ListDBaaS(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.DBaaSList], error) {
 	s.client.Logger().Debugf("Listing DBaaS instances for project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(DBaaSPath, project)
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &DatabaseDBaaSListVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -37,21 +37,21 @@ func (s *Service) ListDBaaS(ctx context.Context, project string, params *schema.
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.DBaaSList](httpResp)
+	return types.ParseResponseBody[types.DBaaSList](httpResp)
 }
 
 // GetDBaaS retrieves a specific DBaaS instance by ID
-func (s *Service) GetDBaaS(ctx context.Context, project string, dbaasId string, params *schema.RequestParameters) (*schema.Response[schema.DBaaSResponse], error) {
+func (s *Service) GetDBaaS(ctx context.Context, project string, dbaasId string, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error) {
 	s.client.Logger().Debugf("Getting DBaaS instance: %s in project: %s", dbaasId, project)
 
-	if err := schema.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(DBaaSItemPath, project, dbaasId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &DatabaseDBaaSGetVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -67,21 +67,21 @@ func (s *Service) GetDBaaS(ctx context.Context, project string, dbaasId string, 
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.DBaaSResponse](httpResp)
+	return types.ParseResponseBody[types.DBaaSResponse](httpResp)
 }
 
 // CreateDBaaS creates a new DBaaS instance
-func (s *Service) CreateDBaaS(ctx context.Context, project string, body schema.DBaaSRequest, params *schema.RequestParameters) (*schema.Response[schema.DBaaSResponse], error) {
+func (s *Service) CreateDBaaS(ctx context.Context, project string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error) {
 	s.client.Logger().Debugf("Creating DBaaS instance in project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(DBaaSPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &DatabaseDBaaSCreateVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -110,7 +110,7 @@ func (s *Service) CreateDBaaS(ctx context.Context, project string, body schema.D
 	}
 
 	// Create the response wrapper
-	response := &schema.Response[schema.DBaaSResponse]{
+	response := &types.Response[types.DBaaSResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -119,13 +119,13 @@ func (s *Service) CreateDBaaS(ctx context.Context, project string, body schema.D
 
 	// Parse the response body if successful
 	if response.IsSuccess() {
-		var data schema.DBaaSResponse
+		var data types.DBaaSResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -135,17 +135,17 @@ func (s *Service) CreateDBaaS(ctx context.Context, project string, body schema.D
 }
 
 // UpdateDBaaS updates an existing DBaaS instance
-func (s *Service) UpdateDBaaS(ctx context.Context, project string, databaseId string, body schema.DBaaSRequest, params *schema.RequestParameters) (*schema.Response[schema.DBaaSResponse], error) {
+func (s *Service) UpdateDBaaS(ctx context.Context, project string, databaseId string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error) {
 	s.client.Logger().Debugf("Updating DBaaS instance: %s in project: %s", databaseId, project)
 
-	if err := schema.ValidateProjectAndResource(project, databaseId, "DBaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, databaseId, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(DBaaSItemPath, project, databaseId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &DatabaseDBaaSUpdateVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -174,7 +174,7 @@ func (s *Service) UpdateDBaaS(ctx context.Context, project string, databaseId st
 	}
 
 	// Create the response wrapper
-	response := &schema.Response[schema.DBaaSResponse]{
+	response := &types.Response[types.DBaaSResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -183,13 +183,13 @@ func (s *Service) UpdateDBaaS(ctx context.Context, project string, databaseId st
 
 	// Parse the response body if successful
 	if response.IsSuccess() {
-		var data schema.DBaaSResponse
+		var data types.DBaaSResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -199,17 +199,17 @@ func (s *Service) UpdateDBaaS(ctx context.Context, project string, databaseId st
 }
 
 // DeleteDBaaS deletes a DBaaS instance by ID
-func (s *Service) DeleteDBaaS(ctx context.Context, projectId string, dbaasId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteDBaaS(ctx context.Context, projectId string, dbaasId string, params *types.RequestParameters) (*types.Response[any], error) {
 	s.client.Logger().Debugf("Deleting DBaaS instance: %s in project: %s", dbaasId, projectId)
 
-	if err := schema.ValidateProjectAndResource(projectId, dbaasId, "DBaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectId, dbaasId, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(DBaaSItemPath, projectId, dbaasId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &DatabaseDBaaSDeleteVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -225,5 +225,5 @@ func (s *Service) DeleteDBaaS(ctx context.Context, projectId string, dbaasId str
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp)
 }

@@ -8,21 +8,21 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // ListScheduleJobs retrieves all schedule jobs for a project
-func (s *Service) ListScheduleJobs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.JobList], error) {
+func (s *Service) ListScheduleJobs(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.JobList], error) {
 	s.client.Logger().Debugf("Listing schedule jobs for project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(JobsPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ScheduleJobListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -38,21 +38,21 @@ func (s *Service) ListScheduleJobs(ctx context.Context, project string, params *
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.JobList](httpResp)
+	return types.ParseResponseBody[types.JobList](httpResp)
 }
 
 // GetScheduleJob retrieves a specific schedule job by ID
-func (s *Service) GetScheduleJob(ctx context.Context, project string, scheduleJobId string, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
+func (s *Service) GetScheduleJob(ctx context.Context, project string, scheduleJobId string, params *types.RequestParameters) (*types.Response[types.JobResponse], error) {
 	s.client.Logger().Debugf("Getting schedule job: %s in project: %s", scheduleJobId, project)
 
-	if err := schema.ValidateProjectAndResource(project, scheduleJobId, "job ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, scheduleJobId, "job ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(JobPath, project, scheduleJobId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ScheduleJobGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -68,21 +68,21 @@ func (s *Service) GetScheduleJob(ctx context.Context, project string, scheduleJo
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.JobResponse](httpResp)
+	return types.ParseResponseBody[types.JobResponse](httpResp)
 }
 
 // CreateScheduleJob creates a new schedule job
-func (s *Service) CreateScheduleJob(ctx context.Context, project string, body schema.JobRequest, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
+func (s *Service) CreateScheduleJob(ctx context.Context, project string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error) {
 	s.client.Logger().Debugf("Creating schedule job in project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(JobsPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ScheduleJobCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -108,7 +108,7 @@ func (s *Service) CreateScheduleJob(ctx context.Context, project string, body sc
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.JobResponse]{
+	response := &types.Response[types.JobResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -116,13 +116,13 @@ func (s *Service) CreateScheduleJob(ctx context.Context, project string, body sc
 	}
 
 	if response.IsSuccess() {
-		var data schema.JobResponse
+		var data types.JobResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -132,17 +132,17 @@ func (s *Service) CreateScheduleJob(ctx context.Context, project string, body sc
 }
 
 // UpdateScheduleJob updates an existing schedule job
-func (s *Service) UpdateScheduleJob(ctx context.Context, project string, scheduleJobId string, body schema.JobRequest, params *schema.RequestParameters) (*schema.Response[schema.JobResponse], error) {
+func (s *Service) UpdateScheduleJob(ctx context.Context, project string, scheduleJobId string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error) {
 	s.client.Logger().Debugf("Updating schedule job: %s in project: %s", scheduleJobId, project)
 
-	if err := schema.ValidateProjectAndResource(project, scheduleJobId, "job ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, scheduleJobId, "job ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(JobPath, project, scheduleJobId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ScheduleJobUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -168,7 +168,7 @@ func (s *Service) UpdateScheduleJob(ctx context.Context, project string, schedul
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.JobResponse]{
+	response := &types.Response[types.JobResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -176,13 +176,13 @@ func (s *Service) UpdateScheduleJob(ctx context.Context, project string, schedul
 	}
 
 	if response.IsSuccess() {
-		var data schema.JobResponse
+		var data types.JobResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -192,17 +192,17 @@ func (s *Service) UpdateScheduleJob(ctx context.Context, project string, schedul
 }
 
 // DeleteScheduleJob deletes a schedule job by ID
-func (s *Service) DeleteScheduleJob(ctx context.Context, projectId string, scheduleJobId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteScheduleJob(ctx context.Context, projectId string, scheduleJobId string, params *types.RequestParameters) (*types.Response[any], error) {
 	s.client.Logger().Debugf("Deleting schedule job: %s in project: %s", scheduleJobId, projectId)
 
-	if err := schema.ValidateProjectAndResource(projectId, scheduleJobId, "job ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectId, scheduleJobId, "job ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(JobPath, projectId, scheduleJobId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ScheduleJobDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -218,5 +218,5 @@ func (s *Service) DeleteScheduleJob(ctx context.Context, projectId string, sched
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp)
 }

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 func TestListVPCs(t *testing.T) {
@@ -22,10 +22,10 @@ func TestListVPCs(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VPCList{
-				ListResponse: schema.ListResponse{Total: 1},
-				Values: []schema.VPCResponse{
-					{Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("vpc-1")}},
+			resp := types.VPCList{
+				ListResponse: types.ListResponse{Total: 1},
+				Values: []types.VPCResponse{
+					{Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("vpc-1")}},
 				},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -67,8 +67,8 @@ func TestGetVPC(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VPCResponse{
-				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("my-vpc")},
+			resp := types.VPCResponse{
+				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("my-vpc")},
 			}
 			json.NewEncoder(w).Encode(resp)
 		}))
@@ -113,8 +113,8 @@ func TestCreateVPC(t *testing.T) {
 				t.Errorf("expected POST, got %s", r.Method)
 			}
 			w.WriteHeader(http.StatusCreated)
-			resp := schema.VPCResponse{
-				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("new-vpc")},
+			resp := types.VPCResponse{
+				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("new-vpc")},
 			}
 			json.NewEncoder(w).Encode(resp)
 		}))
@@ -134,10 +134,10 @@ func TestCreateVPC(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		req := schema.VPCRequest{
-			Metadata: schema.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: schema.ResourceMetadataRequest{Name: "new-vpc"},
-				Location:                schema.LocationRequest{Value: "ITBG-Bergamo"},
+		req := types.VPCRequest{
+			Metadata: types.RegionalResourceMetadataRequest{
+				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-vpc"},
+				Location:                types.LocationRequest{Value: "ITBG-Bergamo"},
 			},
 		}
 

@@ -5,21 +5,21 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // ListAlerts retrieves all alerts for a project
-func (s *Service) ListAlerts(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.AlertsListResponse], error) {
+func (s *Service) ListAlerts(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.AlertsListResponse], error) {
 	s.client.Logger().Debugf("Listing alerts for project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(AlertsPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &AlertListVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -35,5 +35,5 @@ func (s *Service) ListAlerts(ctx context.Context, project string, params *schema
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.AlertsListResponse](httpResp)
+	return types.ParseResponseBody[types.AlertsListResponse](httpResp)
 }

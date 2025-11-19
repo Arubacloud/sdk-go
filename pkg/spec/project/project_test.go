@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 func TestListProjects(t *testing.T) {
@@ -23,35 +23,35 @@ func TestListProjects(t *testing.T) {
 
 			if r.Method == "GET" && r.URL.Path == "/projects" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.ProjectList{
-					ListResponse: schema.ListResponse{Total: 2},
-					Values: []schema.ProjectResponse{
+				resp := types.ProjectList{
+					ListResponse: types.ListResponse{Total: 2},
+					Values: []types.ProjectResponse{
 						{
-							Metadata: schema.ResourceMetadataResponse{
-								Name: schema.StringPtr("default-project"),
-								ID:   schema.StringPtr("project-123"),
+							Metadata: types.ResourceMetadataResponse{
+								Name: types.StringPtr("default-project"),
+								ID:   types.StringPtr("project-123"),
 							},
-							Properties: schema.ProjectPropertiesResponse{
-								Description:     schema.StringPtr("Default project"),
+							Properties: types.ProjectPropertiesResponse{
+								Description:     types.StringPtr("Default project"),
 								Default:         true,
 								ResourcesNumber: 10,
 							},
-							Status: schema.ResourceStatus{
-								State: schema.StringPtr("active"),
+							Status: types.ResourceStatus{
+								State: types.StringPtr("active"),
 							},
 						},
 						{
-							Metadata: schema.ResourceMetadataResponse{
-								Name: schema.StringPtr("test-project"),
-								ID:   schema.StringPtr("project-456"),
+							Metadata: types.ResourceMetadataResponse{
+								Name: types.StringPtr("test-project"),
+								ID:   types.StringPtr("project-456"),
 							},
-							Properties: schema.ProjectPropertiesResponse{
-								Description:     schema.StringPtr("Test project"),
+							Properties: types.ProjectPropertiesResponse{
+								Description:     types.StringPtr("Test project"),
 								Default:         false,
 								ResourcesNumber: 5,
 							},
-							Status: schema.ResourceStatus{
-								State: schema.StringPtr("active"),
+							Status: types.ResourceStatus{
+								State: types.StringPtr("active"),
 							},
 						},
 					},
@@ -109,18 +109,18 @@ func TestGetProject(t *testing.T) {
 
 			if r.Method == "GET" && r.URL.Path == "/projects/project-123" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.ProjectResponse{
-					Metadata: schema.ResourceMetadataResponse{
-						Name: schema.StringPtr("my-project"),
-						ID:   schema.StringPtr("project-123"),
+				resp := types.ProjectResponse{
+					Metadata: types.ResourceMetadataResponse{
+						Name: types.StringPtr("my-project"),
+						ID:   types.StringPtr("project-123"),
 					},
-					Properties: schema.ProjectPropertiesResponse{
-						Description:     schema.StringPtr("My test project"),
+					Properties: types.ProjectPropertiesResponse{
+						Description:     types.StringPtr("My test project"),
 						Default:         false,
 						ResourcesNumber: 15,
 					},
-					Status: schema.ResourceStatus{
-						State: schema.StringPtr("active"),
+					Status: types.ResourceStatus{
+						State: types.StringPtr("active"),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -176,18 +176,18 @@ func TestCreateProject(t *testing.T) {
 
 			if r.Method == "POST" && r.URL.Path == "/projects" {
 				w.WriteHeader(http.StatusCreated)
-				resp := schema.ProjectResponse{
-					Metadata: schema.ResourceMetadataResponse{
-						Name: schema.StringPtr("new-project"),
-						ID:   schema.StringPtr("project-789"),
+				resp := types.ProjectResponse{
+					Metadata: types.ResourceMetadataResponse{
+						Name: types.StringPtr("new-project"),
+						ID:   types.StringPtr("project-789"),
 					},
-					Properties: schema.ProjectPropertiesResponse{
-						Description:     schema.StringPtr("A new project"),
+					Properties: types.ProjectPropertiesResponse{
+						Description:     types.StringPtr("A new project"),
 						Default:         false,
 						ResourcesNumber: 0,
 					},
-					Status: schema.ResourceStatus{
-						State: schema.StringPtr("creating"),
+					Status: types.ResourceStatus{
+						State: types.StringPtr("creating"),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -212,12 +212,12 @@ func TestCreateProject(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		body := schema.ProjectRequest{
-			Metadata: schema.ResourceMetadataRequest{
+		body := types.ProjectRequest{
+			Metadata: types.ResourceMetadataRequest{
 				Name: "new-project",
 			},
-			Properties: schema.ProjectPropertiesRequest{
-				Description: schema.StringPtr("A new project"),
+			Properties: types.ProjectPropertiesRequest{
+				Description: types.StringPtr("A new project"),
 				Default:     false,
 			},
 		}
@@ -250,18 +250,18 @@ func TestUpdateProject(t *testing.T) {
 
 			if r.Method == "PUT" && r.URL.Path == "/projects/project-123" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.ProjectResponse{
-					Metadata: schema.ResourceMetadataResponse{
-						Name: schema.StringPtr("updated-project"),
-						ID:   schema.StringPtr("project-123"),
+				resp := types.ProjectResponse{
+					Metadata: types.ResourceMetadataResponse{
+						Name: types.StringPtr("updated-project"),
+						ID:   types.StringPtr("project-123"),
 					},
-					Properties: schema.ProjectPropertiesResponse{
-						Description:     schema.StringPtr("Updated description"),
+					Properties: types.ProjectPropertiesResponse{
+						Description:     types.StringPtr("Updated description"),
 						Default:         false,
 						ResourcesNumber: 15,
 					},
-					Status: schema.ResourceStatus{
-						State: schema.StringPtr("active"),
+					Status: types.ResourceStatus{
+						State: types.StringPtr("active"),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -286,12 +286,12 @@ func TestUpdateProject(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		body := schema.ProjectRequest{
-			Metadata: schema.ResourceMetadataRequest{
+		body := types.ProjectRequest{
+			Metadata: types.ResourceMetadataRequest{
 				Name: "updated-project",
 			},
-			Properties: schema.ProjectPropertiesRequest{
-				Description: schema.StringPtr("Updated description"),
+			Properties: types.ProjectPropertiesRequest{
+				Description: types.StringPtr("Updated description"),
 				Default:     false,
 			},
 		}

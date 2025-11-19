@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 func TestListSecurityGroups(t *testing.T) {
@@ -22,10 +22,10 @@ func TestListSecurityGroups(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.SecurityGroupList{
-				ListResponse: schema.ListResponse{Total: 1},
-				Values: []schema.SecurityGroupResponse{
-					{Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("sg-1")}},
+			resp := types.SecurityGroupList{
+				ListResponse: types.ListResponse{Total: 1},
+				Values: []types.SecurityGroupResponse{
+					{Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("sg-1")}},
 				},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -67,8 +67,8 @@ func TestGetSecurityGroup(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.SecurityGroupResponse{
-				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("my-sg")},
+			resp := types.SecurityGroupResponse{
+				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("my-sg")},
 			}
 			json.NewEncoder(w).Encode(resp)
 		}))
@@ -114,8 +114,8 @@ func TestCreateSecurityGroup(t *testing.T) {
 				t.Errorf("expected POST, got %s", r.Method)
 			}
 			w.WriteHeader(http.StatusCreated)
-			resp := schema.SecurityGroupResponse{
-				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("new-sg")},
+			resp := types.SecurityGroupResponse{
+				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("new-sg")},
 			}
 			json.NewEncoder(w).Encode(resp)
 		}))
@@ -135,8 +135,8 @@ func TestCreateSecurityGroup(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		req := schema.SecurityGroupRequest{
-			Metadata: schema.ResourceMetadataRequest{Name: "new-sg"},
+		req := types.SecurityGroupRequest{
+			Metadata: types.ResourceMetadataRequest{Name: "new-sg"},
 		}
 
 		resp, err := svc.CreateSecurityGroup(context.Background(), "test-project", "vpc-123", req, nil)

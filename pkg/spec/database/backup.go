@@ -7,21 +7,21 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // ListBackups retrieves all backups for a project
-func (s *Service) ListBackups(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.BackupList], error) {
+func (s *Service) ListBackups(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.BackupList], error) {
 	s.client.Logger().Debugf("Listing backups for project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(BackupsPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &DatabaseBackupListVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -37,21 +37,21 @@ func (s *Service) ListBackups(ctx context.Context, project string, params *schem
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.BackupList](httpResp)
+	return types.ParseResponseBody[types.BackupList](httpResp)
 }
 
 // GetBackup retrieves a specific backup by ID
-func (s *Service) GetBackup(ctx context.Context, project string, backupId string, params *schema.RequestParameters) (*schema.Response[schema.BackupResponse], error) {
+func (s *Service) GetBackup(ctx context.Context, project string, backupId string, params *types.RequestParameters) (*types.Response[types.BackupResponse], error) {
 	s.client.Logger().Debugf("Getting backup: %s in project: %s", backupId, project)
 
-	if err := schema.ValidateProjectAndResource(project, backupId, "backup ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, backupId, "backup ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(BackupPath, project, backupId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &DatabaseBackupGetVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -67,21 +67,21 @@ func (s *Service) GetBackup(ctx context.Context, project string, backupId string
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.BackupResponse](httpResp)
+	return types.ParseResponseBody[types.BackupResponse](httpResp)
 }
 
 // CreateBackup creates a new backup
-func (s *Service) CreateBackup(ctx context.Context, project string, body schema.BackupRequest, params *schema.RequestParameters) (*schema.Response[schema.BackupResponse], error) {
+func (s *Service) CreateBackup(ctx context.Context, project string, body types.BackupRequest, params *types.RequestParameters) (*types.Response[types.BackupResponse], error) {
 	s.client.Logger().Debugf("Creating backup in project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(BackupsPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &DatabaseBackupCreateVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -103,21 +103,21 @@ func (s *Service) CreateBackup(ctx context.Context, project string, body schema.
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.BackupResponse](httpResp)
+	return types.ParseResponseBody[types.BackupResponse](httpResp)
 }
 
 // DeleteBackup deletes a backup by ID
-func (s *Service) DeleteBackup(ctx context.Context, projectId string, backupId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteBackup(ctx context.Context, projectId string, backupId string, params *types.RequestParameters) (*types.Response[any], error) {
 	s.client.Logger().Debugf("Deleting backup: %s in project: %s", backupId, projectId)
 
-	if err := schema.ValidateProjectAndResource(projectId, backupId, "backup ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectId, backupId, "backup ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(BackupPath, projectId, backupId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &DatabaseBackupDeleteVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -133,5 +133,5 @@ func (s *Service) DeleteBackup(ctx context.Context, projectId string, backupId s
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp)
 }

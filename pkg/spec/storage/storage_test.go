@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 func TestListBlockStorageVolumes(t *testing.T) {
@@ -23,37 +23,37 @@ func TestListBlockStorageVolumes(t *testing.T) {
 
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/blockstorages" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.BlockStorageList{
-					ListResponse: schema.ListResponse{Total: 2},
-					Values: []schema.BlockStorageResponse{
+				resp := types.BlockStorageList{
+					ListResponse: types.ListResponse{Total: 2},
+					Values: []types.BlockStorageResponse{
 						{
-							Metadata: schema.ResourceMetadataResponse{
-								Name: schema.StringPtr("data-volume"),
-								ID:   schema.StringPtr("vol-123"),
+							Metadata: types.ResourceMetadataResponse{
+								Name: types.StringPtr("data-volume"),
+								ID:   types.StringPtr("vol-123"),
 							},
-							Properties: schema.BlockStoragePropertiesResponse{
+							Properties: types.BlockStoragePropertiesResponse{
 								SizeGB:        100,
 								BillingPeriod: "Hour",
 								Zone:          "it-eur-1",
-								Type:          schema.BlockStorageTypePerformance,
+								Type:          types.BlockStorageTypePerformance,
 							},
-							Status: schema.ResourceStatus{
-								State: schema.StringPtr("active"),
+							Status: types.ResourceStatus{
+								State: types.StringPtr("active"),
 							},
 						},
 						{
-							Metadata: schema.ResourceMetadataResponse{
-								Name: schema.StringPtr("backup-volume"),
-								ID:   schema.StringPtr("vol-456"),
+							Metadata: types.ResourceMetadataResponse{
+								Name: types.StringPtr("backup-volume"),
+								ID:   types.StringPtr("vol-456"),
 							},
-							Properties: schema.BlockStoragePropertiesResponse{
+							Properties: types.BlockStoragePropertiesResponse{
 								SizeGB:        200,
 								BillingPeriod: "Hour",
 								Zone:          "it-eur-1",
-								Type:          schema.BlockStorageTypeStandard,
+								Type:          types.BlockStorageTypeStandard,
 							},
-							Status: schema.ResourceStatus{
-								State: schema.StringPtr("active"),
+							Status: types.ResourceStatus{
+								State: types.StringPtr("active"),
 							},
 						},
 					},
@@ -90,7 +90,7 @@ func TestListBlockStorageVolumes(t *testing.T) {
 		if resp.Data.Values[0].Metadata.Name == nil || *resp.Data.Values[0].Metadata.Name != "data-volume" {
 			t.Errorf("expected name 'data-volume'")
 		}
-		if resp.Data.Values[0].Properties.Type != schema.BlockStorageTypePerformance {
+		if resp.Data.Values[0].Properties.Type != types.BlockStorageTypePerformance {
 			t.Errorf("expected performance type")
 		}
 	})
@@ -108,20 +108,20 @@ func TestGetBlockStorageVolume(t *testing.T) {
 
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.BlockStorageResponse{
-					Metadata: schema.ResourceMetadataResponse{
-						Name: schema.StringPtr("my-volume"),
-						ID:   schema.StringPtr("vol-123"),
+				resp := types.BlockStorageResponse{
+					Metadata: types.ResourceMetadataResponse{
+						Name: types.StringPtr("my-volume"),
+						ID:   types.StringPtr("vol-123"),
 					},
-					Properties: schema.BlockStoragePropertiesResponse{
+					Properties: types.BlockStoragePropertiesResponse{
 						SizeGB:        150,
 						BillingPeriod: "Hour",
 						Zone:          "it-eur-1",
-						Type:          schema.BlockStorageTypePerformance,
-						Bootable:      schema.BoolPtr(false),
+						Type:          types.BlockStorageTypePerformance,
+						Bootable:      types.BoolPtr(false),
 					},
-					Status: schema.ResourceStatus{
-						State: schema.StringPtr("active"),
+					Status: types.ResourceStatus{
+						State: types.StringPtr("active"),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -174,19 +174,19 @@ func TestCreateBlockStorageVolume(t *testing.T) {
 
 			if r.Method == "POST" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/blockstorages" {
 				w.WriteHeader(http.StatusCreated)
-				resp := schema.BlockStorageResponse{
-					Metadata: schema.ResourceMetadataResponse{
-						Name: schema.StringPtr("new-volume"),
-						ID:   schema.StringPtr("vol-789"),
+				resp := types.BlockStorageResponse{
+					Metadata: types.ResourceMetadataResponse{
+						Name: types.StringPtr("new-volume"),
+						ID:   types.StringPtr("vol-789"),
 					},
-					Properties: schema.BlockStoragePropertiesResponse{
+					Properties: types.BlockStoragePropertiesResponse{
 						SizeGB:        50,
 						BillingPeriod: "Hour",
 						Zone:          "it-eur-1",
-						Type:          schema.BlockStorageTypeStandard,
+						Type:          types.BlockStorageTypeStandard,
 					},
-					Status: schema.ResourceStatus{
-						State: schema.StringPtr("creating"),
+					Status: types.ResourceStatus{
+						State: types.StringPtr("creating"),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -211,18 +211,18 @@ func TestCreateBlockStorageVolume(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		body := schema.BlockStorageRequest{
-			Metadata: schema.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: schema.ResourceMetadataRequest{
+		body := types.BlockStorageRequest{
+			Metadata: types.RegionalResourceMetadataRequest{
+				ResourceMetadataRequest: types.ResourceMetadataRequest{
 					Name: "new-volume",
 				},
-				Location: schema.LocationRequest{Value: "it-eur"},
+				Location: types.LocationRequest{Value: "it-eur"},
 			},
-			Properties: schema.BlockStoragePropertiesRequest{
+			Properties: types.BlockStoragePropertiesRequest{
 				SizeGB:        50,
 				BillingPeriod: "Hour",
 				Zone:          "it-eur-1",
-				Type:          schema.BlockStorageTypeStandard,
+				Type:          types.BlockStorageTypeStandard,
 			},
 		}
 
@@ -294,37 +294,37 @@ func TestListSnapshots(t *testing.T) {
 
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/snapshots" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.SnapshotList{
-					ListResponse: schema.ListResponse{Total: 2},
-					Values: []schema.SnapshotResponse{
+				resp := types.SnapshotList{
+					ListResponse: types.ListResponse{Total: 2},
+					Values: []types.SnapshotResponse{
 						{
-							Metadata: schema.ResourceMetadataResponse{
-								Name: schema.StringPtr("backup-snapshot-1"),
-								ID:   schema.StringPtr("snap-123"),
+							Metadata: types.ResourceMetadataResponse{
+								Name: types.StringPtr("backup-snapshot-1"),
+								ID:   types.StringPtr("snap-123"),
 							},
-							Properties: schema.SnapshotPropertiesResponse{
-								SizeGB:        schema.Int32Ptr(100),
-								BillingPeriod: schema.StringPtr("Hour"),
+							Properties: types.SnapshotPropertiesResponse{
+								SizeGB:        types.Int32Ptr(100),
+								BillingPeriod: types.StringPtr("Hour"),
 								Zone:          "it-eur-1",
-								Type:          schema.BlockStorageTypePerformance,
+								Type:          types.BlockStorageTypePerformance,
 							},
-							Status: schema.ResourceStatus{
-								State: schema.StringPtr("available"),
+							Status: types.ResourceStatus{
+								State: types.StringPtr("available"),
 							},
 						},
 						{
-							Metadata: schema.ResourceMetadataResponse{
-								Name: schema.StringPtr("backup-snapshot-2"),
-								ID:   schema.StringPtr("snap-456"),
+							Metadata: types.ResourceMetadataResponse{
+								Name: types.StringPtr("backup-snapshot-2"),
+								ID:   types.StringPtr("snap-456"),
 							},
-							Properties: schema.SnapshotPropertiesResponse{
-								SizeGB:        schema.Int32Ptr(200),
-								BillingPeriod: schema.StringPtr("Hour"),
+							Properties: types.SnapshotPropertiesResponse{
+								SizeGB:        types.Int32Ptr(200),
+								BillingPeriod: types.StringPtr("Hour"),
 								Zone:          "it-eur-1",
-								Type:          schema.BlockStorageTypeStandard,
+								Type:          types.BlockStorageTypeStandard,
 							},
-							Status: schema.ResourceStatus{
-								State: schema.StringPtr("available"),
+							Status: types.ResourceStatus{
+								State: types.StringPtr("available"),
 							},
 						},
 					},
@@ -376,23 +376,23 @@ func TestGetSnapshot(t *testing.T) {
 
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/snapshots/snap-123" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.SnapshotResponse{
-					Metadata: schema.ResourceMetadataResponse{
-						Name: schema.StringPtr("my-snapshot"),
-						ID:   schema.StringPtr("snap-123"),
+				resp := types.SnapshotResponse{
+					Metadata: types.ResourceMetadataResponse{
+						Name: types.StringPtr("my-snapshot"),
+						ID:   types.StringPtr("snap-123"),
 					},
-					Properties: schema.SnapshotPropertiesResponse{
-						SizeGB:        schema.Int32Ptr(150),
-						BillingPeriod: schema.StringPtr("Hour"),
+					Properties: types.SnapshotPropertiesResponse{
+						SizeGB:        types.Int32Ptr(150),
+						BillingPeriod: types.StringPtr("Hour"),
 						Zone:          "it-eur-1",
-						Type:          schema.BlockStorageTypePerformance,
-						Volume: &schema.VolumeInfo{
-							URI:  schema.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123"),
-							Name: schema.StringPtr("source-volume"),
+						Type:          types.BlockStorageTypePerformance,
+						Volume: &types.VolumeInfo{
+							URI:  types.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123"),
+							Name: types.StringPtr("source-volume"),
 						},
 					},
-					Status: schema.ResourceStatus{
-						State: schema.StringPtr("available"),
+					Status: types.ResourceStatus{
+						State: types.StringPtr("available"),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -447,12 +447,12 @@ func TestCreateSnapshot(t *testing.T) {
 			// Mock the GET request to check volume status (waitForBlockStorageActive)
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.BlockStorageResponse{
-					Metadata: schema.ResourceMetadataResponse{
-						ID: schema.StringPtr("vol-123"),
+				resp := types.BlockStorageResponse{
+					Metadata: types.ResourceMetadataResponse{
+						ID: types.StringPtr("vol-123"),
 					},
-					Status: schema.ResourceStatus{
-						State: schema.StringPtr("active"),
+					Status: types.ResourceStatus{
+						State: types.StringPtr("active"),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -461,22 +461,22 @@ func TestCreateSnapshot(t *testing.T) {
 
 			if r.Method == "POST" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/snapshots" {
 				w.WriteHeader(http.StatusCreated)
-				resp := schema.SnapshotResponse{
-					Metadata: schema.ResourceMetadataResponse{
-						Name: schema.StringPtr("new-snapshot"),
-						ID:   schema.StringPtr("snap-789"),
+				resp := types.SnapshotResponse{
+					Metadata: types.ResourceMetadataResponse{
+						Name: types.StringPtr("new-snapshot"),
+						ID:   types.StringPtr("snap-789"),
 					},
-					Properties: schema.SnapshotPropertiesResponse{
-						SizeGB:        schema.Int32Ptr(50),
-						BillingPeriod: schema.StringPtr("Hour"),
+					Properties: types.SnapshotPropertiesResponse{
+						SizeGB:        types.Int32Ptr(50),
+						BillingPeriod: types.StringPtr("Hour"),
 						Zone:          "it-eur-1",
-						Type:          schema.BlockStorageTypeStandard,
-						Volume: &schema.VolumeInfo{
-							URI: schema.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123"),
+						Type:          types.BlockStorageTypeStandard,
+						Volume: &types.VolumeInfo{
+							URI: types.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123"),
 						},
 					},
-					Status: schema.ResourceStatus{
-						State: schema.StringPtr("creating"),
+					Status: types.ResourceStatus{
+						State: types.StringPtr("creating"),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -501,16 +501,16 @@ func TestCreateSnapshot(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		body := schema.SnapshotRequest{
-			Metadata: schema.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: schema.ResourceMetadataRequest{
+		body := types.SnapshotRequest{
+			Metadata: types.RegionalResourceMetadataRequest{
+				ResourceMetadataRequest: types.ResourceMetadataRequest{
 					Name: "new-snapshot",
 				},
-				Location: schema.LocationRequest{Value: "it-eur"},
+				Location: types.LocationRequest{Value: "it-eur"},
 			},
-			Properties: schema.SnapshotPropertiesRequest{
-				BillingPeriod: schema.StringPtr("Hour"),
-				Volume: schema.ReferenceResource{
+			Properties: types.SnapshotPropertiesRequest{
+				BillingPeriod: types.StringPtr("Hour"),
+				Volume: types.ReferenceResource{
 					URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123",
 				},
 			},

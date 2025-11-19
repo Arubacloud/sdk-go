@@ -11,7 +11,7 @@ import (
 
 	aruba "github.com/Arubacloud/sdk-go"
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 /*************  ✨ Windsurf Command ⭐  *************/
@@ -78,17 +78,17 @@ func runCreateExample() {
 // ResourceCollection holds all created resources
 type ResourceCollection struct {
 	ProjectID         string
-	ElasticIPResp     *schema.Response[schema.ElasticIPResponse]
-	BlockStorageResp  *schema.Response[schema.BlockStorageResponse]
-	SnapshotResp      *schema.Response[schema.SnapshotResponse]
-	VPCResp           *schema.Response[schema.VPCResponse]
-	SubnetResp        *schema.Response[schema.SubnetResponse]
-	SecurityGroupResp *schema.Response[schema.SecurityGroupResponse]
-	SecurityRuleResp  *schema.Response[schema.SecurityRuleResponse]
-	KeyPairResp       *schema.Response[schema.KeyPairResponse]
-	DBaaSResp         *schema.Response[schema.DBaaSResponse]
-	KaaSResp          *schema.Response[schema.KaaSResponse]
-	CloudServerResp   *schema.Response[schema.CloudServerResponse]
+	ElasticIPResp     *types.Response[types.ElasticIPResponse]
+	BlockStorageResp  *types.Response[types.BlockStorageResponse]
+	SnapshotResp      *types.Response[types.SnapshotResponse]
+	VPCResp           *types.Response[types.VPCResponse]
+	SubnetResp        *types.Response[types.SubnetResponse]
+	SecurityGroupResp *types.Response[types.SecurityGroupResponse]
+	SecurityRuleResp  *types.Response[types.SecurityRuleResponse]
+	KeyPairResp       *types.Response[types.KeyPairResponse]
+	DBaaSResp         *types.Response[types.DBaaSResponse]
+	KaaSResp          *types.Response[types.KaaSResponse]
+	CloudServerResp   *types.Response[types.CloudServerResponse]
 }
 
 // createAllResources creates all resources in the correct order
@@ -138,12 +138,12 @@ func createAllResources(ctx context.Context, arubaClient aruba.Client) *Resource
 func createProject(ctx context.Context, arubaClient aruba.Client) string {
 	fmt.Println("--- Project Management ---")
 
-	projectReq := schema.ProjectRequest{
-		Metadata: schema.ResourceMetadataRequest{
+	projectReq := types.ProjectRequest{
+		Metadata: types.ResourceMetadataRequest{
 			Name: "seca-sdk-example",
 			Tags: []string{"production", "arubacloud-sdk"},
 		},
-		Properties: schema.ProjectPropertiesRequest{
+		Properties: types.ProjectPropertiesRequest{
 			Description: stringPtr("My production project"),
 			Default:     false,
 		},
@@ -173,21 +173,21 @@ func createProject(ctx context.Context, arubaClient aruba.Client) string {
 }
 
 // createElasticIP creates an Elastic IP
-func createElasticIP(ctx context.Context, arubaClient aruba.Client, projectID string) *schema.Response[schema.ElasticIPResponse] {
+func createElasticIP(ctx context.Context, arubaClient aruba.Client, projectID string) *types.Response[types.ElasticIPResponse] {
 	fmt.Println("--- Elastic IP ---")
 
-	elasticIPReq := schema.ElasticIPRequest{
-		Metadata: schema.RegionalResourceMetadataRequest{
-			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+	elasticIPReq := types.ElasticIPRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
 				Name: "my-elastic-ip",
 				Tags: []string{"network", "public"},
 			},
-			Location: schema.LocationRequest{
+			Location: types.LocationRequest{
 				Value: "ITBG-Bergamo",
 			},
 		},
-		Properties: schema.ElasticIPPropertiesRequest{
-			BillingPlan: schema.BillingPeriodResource{
+		Properties: types.ElasticIPPropertiesRequest{
+			BillingPlan: types.BillingPeriodResource{
 				BillingPeriod: "Hour",
 			},
 		},
@@ -211,22 +211,22 @@ func createElasticIP(ctx context.Context, arubaClient aruba.Client, projectID st
 
 // createBlockStorage creates a block storage volume
 // The SDK automatically waits for it to become Active or NotUsed
-func createBlockStorage(ctx context.Context, arubaClient aruba.Client, projectID string) *schema.Response[schema.BlockStorageResponse] {
+func createBlockStorage(ctx context.Context, arubaClient aruba.Client, projectID string) *types.Response[types.BlockStorageResponse] {
 	fmt.Println("--- Block Storage ---")
 
-	blockStorageReq := schema.BlockStorageRequest{
-		Metadata: schema.RegionalResourceMetadataRequest{
-			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+	blockStorageReq := types.BlockStorageRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
 				Name: "my-block-storage",
 				Tags: []string{"storage", "data"},
 			},
-			Location: schema.LocationRequest{
+			Location: types.LocationRequest{
 				Value: "ITBG-Bergamo",
 			},
 		},
-		Properties: schema.BlockStoragePropertiesRequest{
+		Properties: types.BlockStoragePropertiesRequest{
 			SizeGB:        20,
-			Type:          schema.BlockStorageTypeStandard,
+			Type:          types.BlockStorageTypeStandard,
 			Zone:          "ITBG-1",
 			BillingPeriod: "Hour",
 			Bootable:      boolPtr(true),
@@ -257,22 +257,22 @@ func createBlockStorage(ctx context.Context, arubaClient aruba.Client, projectID
 }
 
 // createSnapshot creates a snapshot from block storage
-func createSnapshot(ctx context.Context, arubaClient aruba.Client, projectID string, blockStorageResp *schema.Response[schema.BlockStorageResponse]) *schema.Response[schema.SnapshotResponse] {
+func createSnapshot(ctx context.Context, arubaClient aruba.Client, projectID string, blockStorageResp *types.Response[types.BlockStorageResponse]) *types.Response[types.SnapshotResponse] {
 	fmt.Println("--- Snapshot ---")
 
-	snapshotReq := schema.SnapshotRequest{
-		Metadata: schema.RegionalResourceMetadataRequest{
-			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+	snapshotReq := types.SnapshotRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
 				Name: "my-snapshot",
 				Tags: []string{"backup", "snapshot"},
 			},
-			Location: schema.LocationRequest{
+			Location: types.LocationRequest{
 				Value: "ITBG-Bergamo",
 			},
 		},
-		Properties: schema.SnapshotPropertiesRequest{
+		Properties: types.SnapshotPropertiesRequest{
 			BillingPeriod: stringPtr("Hour"),
-			Volume: schema.ReferenceResource{
+			Volume: types.ReferenceResource{
 				URI: *blockStorageResp.Data.Metadata.URI,
 			},
 		},
@@ -302,21 +302,21 @@ func createSnapshot(ctx context.Context, arubaClient aruba.Client, projectID str
 
 // createVPC creates a VPC
 // The SDK automatically waits for it to become Active for dependent operations
-func createVPC(ctx context.Context, arubaClient aruba.Client, projectID string) *schema.Response[schema.VPCResponse] {
+func createVPC(ctx context.Context, arubaClient aruba.Client, projectID string) *types.Response[types.VPCResponse] {
 	fmt.Println("--- VPC ---")
 
-	vpcReq := schema.VPCRequest{
-		Metadata: schema.RegionalResourceMetadataRequest{
-			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+	vpcReq := types.VPCRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
 				Name: "my-vpc",
 				Tags: []string{"network", "infrastructure"},
 			},
-			Location: schema.LocationRequest{
+			Location: types.LocationRequest{
 				Value: "ITBG-Bergamo",
 			},
 		},
-		Properties: schema.VPCPropertiesRequest{
-			Properties: &schema.VPCProperties{
+		Properties: types.VPCPropertiesRequest{
+			Properties: &types.VPCProperties{
 				Default: boolPtr(false),
 				Preset:  boolPtr(false),
 			},
@@ -347,28 +347,28 @@ func createVPC(ctx context.Context, arubaClient aruba.Client, projectID string) 
 }
 
 // createSubnet creates a subnet in a VPC
-func createSubnet(ctx context.Context, arubaClient aruba.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse]) *schema.Response[schema.SubnetResponse] {
+func createSubnet(ctx context.Context, arubaClient aruba.Client, projectID string, vpcResp *types.Response[types.VPCResponse]) *types.Response[types.SubnetResponse] {
 	fmt.Println("\n--- Network: Subnet ---")
 
 	vpcID := *vpcResp.Data.Metadata.ID
 
-	subnetReq := schema.SubnetRequest{
-		Metadata: schema.RegionalResourceMetadataRequest{
-			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+	subnetReq := types.SubnetRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
 				Name: "my-subnet",
 				Tags: []string{"network", "subnet"},
 			},
-			Location: schema.LocationRequest{
+			Location: types.LocationRequest{
 				Value: "ITBG-Bergamo",
 			},
 		},
-		Properties: schema.SubnetPropertiesRequest{
-			Type:    schema.SubnetTypeAdvanced,
+		Properties: types.SubnetPropertiesRequest{
+			Type:    types.SubnetTypeAdvanced,
 			Default: false,
-			Network: &schema.SubnetNetwork{
+			Network: &types.SubnetNetwork{
 				Address: "192.168.1.0/25",
 			},
-			DHCP: &schema.SubnetDHCP{
+			DHCP: &types.SubnetDHCP{
 				Enabled: true,
 			},
 		},
@@ -394,17 +394,17 @@ func createSubnet(ctx context.Context, arubaClient aruba.Client, projectID strin
 
 // createSecurityGroup creates a security group
 // The SDK automatically waits for the VPC to become Active before creating the group
-func createSecurityGroup(ctx context.Context, arubaClient aruba.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse]) *schema.Response[schema.SecurityGroupResponse] {
+func createSecurityGroup(ctx context.Context, arubaClient aruba.Client, projectID string, vpcResp *types.Response[types.VPCResponse]) *types.Response[types.SecurityGroupResponse] {
 	fmt.Println("\n--- Network: Security Group ---")
 
 	vpcID := *vpcResp.Data.Metadata.ID
 
-	sgReq := schema.SecurityGroupRequest{
-		Metadata: schema.ResourceMetadataRequest{
+	sgReq := types.SecurityGroupRequest{
+		Metadata: types.ResourceMetadataRequest{
 			Name: "my-security-group",
 			Tags: []string{"security", "network"},
 		},
-		Properties: schema.SecurityGroupPropertiesRequest{
+		Properties: types.SecurityGroupPropertiesRequest{
 			Default: boolPtr(false),
 		},
 	}
@@ -429,7 +429,7 @@ func createSecurityGroup(ctx context.Context, arubaClient aruba.Client, projectI
 }
 
 // createSecurityGroupRule creates a security group rule
-func createSecurityGroupRule(ctx context.Context, arubaClient aruba.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.SecurityRuleResponse] {
+func createSecurityGroupRule(ctx context.Context, arubaClient aruba.Client, projectID string, vpcResp *types.Response[types.VPCResponse], sgResp *types.Response[types.SecurityGroupResponse]) *types.Response[types.SecurityRuleResponse] {
 	if sgResp == nil || sgResp.Data == nil {
 		fmt.Println("⚠ Skipping security rule creation - Security Group not available")
 		return nil
@@ -440,22 +440,22 @@ func createSecurityGroupRule(ctx context.Context, arubaClient aruba.Client, proj
 	vpcID := *vpcResp.Data.Metadata.ID
 	sgID := *sgResp.Data.Metadata.ID
 
-	ruleReq := schema.SecurityRuleRequest{
-		Metadata: schema.RegionalResourceMetadataRequest{
-			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+	ruleReq := types.SecurityRuleRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
 				Name: "allow-ssh",
 				Tags: []string{"ssh-access", "ingress"},
 			},
-			Location: schema.LocationRequest{
+			Location: types.LocationRequest{
 				Value: "ITBG-Bergamo",
 			},
 		},
-		Properties: schema.SecurityRulePropertiesRequest{
-			Direction: schema.RuleDirectionIngress,
+		Properties: types.SecurityRulePropertiesRequest{
+			Direction: types.RuleDirectionIngress,
 			Protocol:  "TCP",
 			Port:      "22",
-			Target: &schema.RuleTarget{
-				Kind:  schema.EndpointTypeIP,
+			Target: &types.RuleTarget{
+				Kind:  types.EndpointTypeIP,
 				Value: "0.0.0.0/0",
 			},
 		},
@@ -482,22 +482,22 @@ func createSecurityGroupRule(ctx context.Context, arubaClient aruba.Client, proj
 }
 
 // createKeyPair creates an SSH key pair
-func createKeyPair(ctx context.Context, arubaClient aruba.Client, projectID string) *schema.Response[schema.KeyPairResponse] {
+func createKeyPair(ctx context.Context, arubaClient aruba.Client, projectID string) *types.Response[types.KeyPairResponse] {
 	fmt.Println("--- SSH Key Pair ---")
 
 	sshPublicKey := "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEA2No7At0tgHrcZTL0kGWyLLUqPKfOhD9hGdNV9PbJxhjOGNFxcwdQ9wCXsJ3RQaRHBuGIgVodDurrlqzxFK86yCHMgXT2YLHF0j9P4m9GDiCfOK6msbFb89p5xZExjwD2zK+w68r7iOKZeRB2yrznW5TD3KDemSPIQQIVcyLF+yxft49HWBTI3PVQ4rBVOBJ2PdC9SAOf7CYnptW24CRrC0h85szIdwMA+Kmasfl3YGzk4MxheHrTO8C40aXXpieJ9S2VQA4VJAMRyAboptIK0cKjBYrbt5YkEL0AlyBGPIu6MPYr5K/MHyDunDi9yc7VYRYRR0f46MBOSqMUiGPnMw=="
 
-	keyPairReq := schema.KeyPairRequest{
-		Metadata: schema.RegionalResourceMetadataRequest{
-			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+	keyPairReq := types.KeyPairRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
 				Name: "allow-ssh",
 				Tags: []string{"ssh-access", "ingress"},
 			},
-			Location: schema.LocationRequest{
+			Location: types.LocationRequest{
 				Value: "ITBG-Bergamo",
 			},
 		},
-		Properties: schema.KeyPairPropertiesRequest{
+		Properties: types.KeyPairPropertiesRequest{
 			Value: sshPublicKey,
 		},
 	}
@@ -518,7 +518,7 @@ func createKeyPair(ctx context.Context, arubaClient aruba.Client, projectID stri
 }
 
 // createDBaaS creates a DBaaS instance
-func createDBaaS(ctx context.Context, arubaClient aruba.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.DBaaSResponse] {
+func createDBaaS(ctx context.Context, arubaClient aruba.Client, projectID string, vpcResp *types.Response[types.VPCResponse], subnetResp *types.Response[types.SubnetResponse], sgResp *types.Response[types.SecurityGroupResponse]) *types.Response[types.DBaaSResponse] {
 	fmt.Println("--- DBaaS ---")
 
 	// Only create DBaaS if VPC, Subnet, and Security Group are available
@@ -529,36 +529,36 @@ func createDBaaS(ctx context.Context, arubaClient aruba.Client, projectID string
 		return nil
 	}
 
-	dbaasReq := schema.DBaaSRequest{
-		Metadata: schema.RegionalResourceMetadataRequest{
-			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+	dbaasReq := types.DBaaSRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
 				Name: "my-dbaas",
 				Tags: []string{"database", "mysql"},
 			},
-			Location: schema.LocationRequest{
+			Location: types.LocationRequest{
 				Value: "ITBG-Bergamo",
 			},
 		},
-		Properties: schema.DBaaSPropertiesRequest{
-			Engine: &schema.DBaaSEngine{
+		Properties: types.DBaaSPropertiesRequest{
+			Engine: &types.DBaaSEngine{
 				ID:         stringPtr("mysql-8.0"),
 				DataCenter: stringPtr("ITBG-1"),
 			},
-			Flavor: &schema.DBaaSFlavor{
+			Flavor: &types.DBaaSFlavor{
 				Name: stringPtr("DBO2A4"),
 			},
-			Storage: &schema.DBaaSStorage{
+			Storage: &types.DBaaSStorage{
 				SizeGB: int32Ptr(20),
 			},
-			BillingPlan: &schema.DBaaSBillingPlan{
+			BillingPlan: &types.DBaaSBillingPlan{
 				BillingPeriod: stringPtr("Hour"),
 			},
-			Networking: &schema.DBaaSNetworking{
+			Networking: &types.DBaaSNetworking{
 				VPCURI:           vpcResp.Data.Metadata.URI,
 				SubnetURI:        subnetResp.Data.Metadata.URI,
 				SecurityGroupURI: sgResp.Data.Metadata.URI,
 			},
-			Autoscaling: &schema.DBaaSAutoscaling{
+			Autoscaling: &types.DBaaSAutoscaling{
 				Enabled:        boolPtr(true),
 				AvailableSpace: int32Ptr(20),
 				StepSize:       int32Ptr(10),
@@ -590,7 +590,7 @@ func createDBaaS(ctx context.Context, arubaClient aruba.Client, projectID string
 }
 
 // createKaaS creates a KaaS cluster
-func createKaaS(ctx context.Context, arubaClient aruba.Client, projectID string, vpcResp *schema.Response[schema.VPCResponse], subnetResp *schema.Response[schema.SubnetResponse], sgResp *schema.Response[schema.SecurityGroupResponse]) *schema.Response[schema.KaaSResponse] {
+func createKaaS(ctx context.Context, arubaClient aruba.Client, projectID string, vpcResp *types.Response[types.VPCResponse], subnetResp *types.Response[types.SubnetResponse], sgResp *types.Response[types.SecurityGroupResponse]) *types.Response[types.KaaSResponse] {
 	fmt.Println("--- KaaS (Kubernetes) ---")
 
 	// Only create KaaS if VPC, Subnet, and Security Group are available
@@ -629,35 +629,35 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, projectID string,
 		}
 	}
 
-	kaasReq := schema.KaaSRequest{
-		Metadata: schema.RegionalResourceMetadataRequest{
-			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+	kaasReq := types.KaaSRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
 				Name: "my-kaas-cluster",
 				Tags: []string{"kubernetes", "container"},
 			},
-			Location: schema.LocationRequest{
+			Location: types.LocationRequest{
 				Value: "ITBG-Bergamo",
 			},
 		},
-		Properties: schema.KaaSPropertiesRequest{
+		Properties: types.KaaSPropertiesRequest{
 			Preset: false,
-			VPC: schema.ReferenceResource{
+			VPC: types.ReferenceResource{
 				URI: *vpcResp.Data.Metadata.URI,
 			},
-			Subnet: schema.ReferenceResource{
+			Subnet: types.ReferenceResource{
 				URI: *subnetResp.Data.Metadata.URI,
 			},
-			SecurityGroup: schema.SecurityGroupProperties{
+			SecurityGroup: types.SecurityGroupProperties{
 				Name: "sg-name-for-kaas",
 			},
-			NodeCIDR: schema.NodeCIDRProperties{
+			NodeCIDR: types.NodeCIDRProperties{
 				Name:    "my-node-cidr",
 				Address: "10.100.0.0/16",
 			},
-			KubernetesVersion: schema.KubernetesVersionInfo{
+			KubernetesVersion: types.KubernetesVersionInfo{
 				Value: "1.32.3",
 			},
-			NodePools: []schema.NodePoolProperties{
+			NodePools: []types.NodePoolProperties{
 				{
 					Name:     "default-pool",
 					Nodes:    3,
@@ -666,7 +666,7 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, projectID string,
 				},
 			},
 			HA: true,
-			BillingPlan: schema.BillingPeriodResource{
+			BillingPlan: types.BillingPeriodResource{
 				BillingPeriod: "Hour",
 			},
 		},
@@ -696,7 +696,7 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, projectID string,
 }
 
 // createCloudServer creates a cloud server instance
-func createCloudServer(ctx context.Context, arubaClient aruba.Client, resources *ResourceCollection) *schema.Response[schema.CloudServerResponse] {
+func createCloudServer(ctx context.Context, arubaClient aruba.Client, resources *ResourceCollection) *types.Response[types.CloudServerResponse] {
 	fmt.Println("--- Cloud Server ---")
 
 	// Verify all required resources are available
@@ -725,38 +725,38 @@ func createCloudServer(ctx context.Context, arubaClient aruba.Client, resources 
 		return nil
 	}
 
-	cloudServerReq := schema.CloudServerRequest{
-		Metadata: schema.RegionalResourceMetadataRequest{
-			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+	cloudServerReq := types.CloudServerRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
 				Name: "my-cloudserver",
 				Tags: []string{"virtualmachine", "container"},
 			},
-			Location: schema.LocationRequest{
+			Location: types.LocationRequest{
 				Value: "ITBG-Bergamo",
 			},
 		},
-		Properties: schema.CloudServerPropertiesRequest{
+		Properties: types.CloudServerPropertiesRequest{
 			Zone:       "ITBG-1",
 			VPCPreset:  false,
 			FlavorName: stringPtr("CSO2A4"),
-			VPC: schema.ReferenceResource{
+			VPC: types.ReferenceResource{
 				URI: *resources.VPCResp.Data.Metadata.URI,
 			},
-			ElastcIP: schema.ReferenceResource{
+			ElastcIP: types.ReferenceResource{
 				URI: *resources.ElasticIPResp.Data.Metadata.URI,
 			},
-			BootVolume: schema.ReferenceResource{
+			BootVolume: types.ReferenceResource{
 				URI: *resources.BlockStorageResp.Data.Metadata.URI,
 			},
-			KeyPair: schema.ReferenceResource{
+			KeyPair: types.ReferenceResource{
 				URI: *resources.KeyPairResp.Data.Metadata.URI,
 			},
-			Subnets: []schema.ReferenceResource{
+			Subnets: []types.ReferenceResource{
 				{
 					URI: *resources.SubnetResp.Data.Metadata.URI,
 				},
 			},
-			SecurityGroups: []schema.ReferenceResource{
+			SecurityGroups: []types.ReferenceResource{
 				{
 					URI: *resources.SecurityGroupResp.Data.Metadata.URI,
 				},

@@ -10,7 +10,7 @@ import (
 
 	aruba "github.com/Arubacloud/sdk-go"
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // runUpdateExample demonstrates how to update existing resources
@@ -111,12 +111,12 @@ func updateAllResources(ctx context.Context, arubaClient aruba.Client, resources
 func updateProject(ctx context.Context, arubaClient aruba.Client, projectID string) {
 	fmt.Println("--- Updating Project ---")
 
-	projectReq := schema.ProjectRequest{
-		Metadata: schema.ResourceMetadataRequest{
+	projectReq := types.ProjectRequest{
+		Metadata: types.ResourceMetadataRequest{
 			Name: "seca-sdk-example-updated",
 			Tags: []string{"production", "arubacloud-sdk", "updated"},
 		},
-		Properties: schema.ProjectPropertiesRequest{
+		Properties: types.ProjectPropertiesRequest{
 			Description: stringPtr("My production project - UPDATED"),
 			Default:     false,
 		},
@@ -134,42 +134,42 @@ func updateProject(ctx context.Context, arubaClient aruba.Client, projectID stri
 }
 
 // updateDBaaS updates a DBaaS instance
-func updateDBaaS(ctx context.Context, arubaClient aruba.Client, projectID string, dbaasResp *schema.Response[schema.DBaaSResponse]) {
+func updateDBaaS(ctx context.Context, arubaClient aruba.Client, projectID string, dbaasResp *types.Response[types.DBaaSResponse]) {
 	fmt.Println("--- Updating DBaaS ---")
 
 	dbaasID := *dbaasResp.Data.Metadata.ID
 
 	// Update with new storage size
-	dbaasReq := schema.DBaaSRequest{
-		Metadata: schema.RegionalResourceMetadataRequest{
-			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+	dbaasReq := types.DBaaSRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
 				Name: "my-dbaas-updated",
 				Tags: []string{"database", "mysql", "updated"},
 			},
-			Location: schema.LocationRequest{
+			Location: types.LocationRequest{
 				Value: "ITBG-Bergamo",
 			},
 		},
-		Properties: schema.DBaaSPropertiesRequest{
-			Engine: &schema.DBaaSEngine{
+		Properties: types.DBaaSPropertiesRequest{
+			Engine: &types.DBaaSEngine{
 				ID:         stringPtr("mysql-8.0"),
 				DataCenter: stringPtr("ITBG-1"),
 			},
-			Flavor: &schema.DBaaSFlavor{
+			Flavor: &types.DBaaSFlavor{
 				Name: stringPtr("DBO2A4"),
 			},
-			Storage: &schema.DBaaSStorage{
+			Storage: &types.DBaaSStorage{
 				SizeGB: int32Ptr(25), // Increased from 20 to 25 GB
 			},
-			BillingPlan: &schema.DBaaSBillingPlan{
+			BillingPlan: &types.DBaaSBillingPlan{
 				BillingPeriod: stringPtr("Hour"),
 			},
-			Networking: &schema.DBaaSNetworking{
+			Networking: &types.DBaaSNetworking{
 				VPCURI:           &dbaasResp.Data.Properties.Networking.VPC.URI,
 				SubnetURI:        &dbaasResp.Data.Properties.Networking.Subnet.URI,
 				SecurityGroupURI: &dbaasResp.Data.Properties.Networking.SecurityGroup.URI,
 			},
-			Autoscaling: &schema.DBaaSAutoscaling{
+			Autoscaling: &types.DBaaSAutoscaling{
 				Enabled:        boolPtr(true),
 				AvailableSpace: int32Ptr(25), // Updated
 				StepSize:       int32Ptr(15), // Increased step size
@@ -197,41 +197,41 @@ func updateDBaaS(ctx context.Context, arubaClient aruba.Client, projectID string
 }
 
 // updateKaaS updates a KaaS cluster
-func updateKaaS(ctx context.Context, arubaClient aruba.Client, projectID string, kaasResp *schema.Response[schema.KaaSResponse]) {
+func updateKaaS(ctx context.Context, arubaClient aruba.Client, projectID string, kaasResp *types.Response[types.KaaSResponse]) {
 	fmt.Println("--- Updating KaaS Cluster ---")
 
 	kaasID := *kaasResp.Data.Metadata.ID
 
 	// Update with modified node pool
-	kaasReq := schema.KaaSRequest{
-		Metadata: schema.RegionalResourceMetadataRequest{
-			ResourceMetadataRequest: schema.ResourceMetadataRequest{
+	kaasReq := types.KaaSRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
 				Name: "my-kaas-cluster-updated",
 				Tags: []string{"kubernetes", "container", "updated"},
 			},
-			Location: schema.LocationRequest{
+			Location: types.LocationRequest{
 				Value: "ITBG-Bergamo",
 			},
 		},
-		Properties: schema.KaaSPropertiesRequest{
+		Properties: types.KaaSPropertiesRequest{
 			Preset: false,
-			VPC: schema.ReferenceResource{
+			VPC: types.ReferenceResource{
 				URI: kaasResp.Data.Properties.VPC.URI,
 			},
-			Subnet: schema.ReferenceResource{
+			Subnet: types.ReferenceResource{
 				URI: kaasResp.Data.Properties.Subnet.URI,
 			},
-			SecurityGroup: schema.SecurityGroupProperties{
+			SecurityGroup: types.SecurityGroupProperties{
 				Name: kaasResp.Data.Properties.SecurityGroup.Name,
 			},
-			NodeCIDR: schema.NodeCIDRProperties{
+			NodeCIDR: types.NodeCIDRProperties{
 				Name:    kaasResp.Data.Properties.NodeCIDR.Name,
 				Address: kaasResp.Data.Properties.NodeCIDR.Address,
 			},
-			KubernetesVersion: schema.KubernetesVersionInfo{
+			KubernetesVersion: types.KubernetesVersionInfo{
 				Value: kaasResp.Data.Properties.KubernetesVersion.Value,
 			},
-			NodePools: []schema.NodePoolProperties{
+			NodePools: []types.NodePoolProperties{
 				{
 					Name:     "default-pool",
 					Nodes:    5, // Increased from 3 to 5 nodes
@@ -240,7 +240,7 @@ func updateKaaS(ctx context.Context, arubaClient aruba.Client, projectID string,
 				},
 			},
 			HA: true,
-			BillingPlan: schema.BillingPeriodResource{
+			BillingPlan: types.BillingPeriodResource{
 				BillingPeriod: "Hour",
 			},
 		},

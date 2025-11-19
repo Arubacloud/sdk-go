@@ -8,21 +8,21 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // ListCloudServers retrieves all cloud servers for a project
-func (s *Service) ListCloudServers(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.CloudServerList], error) {
+func (s *Service) ListCloudServers(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.CloudServerList], error) {
 	s.client.Logger().Debugf("Listing cloud servers for project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(CloudServersPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ComputeCloudServerList,
 		}
 	} else if params.APIVersion == nil {
@@ -38,21 +38,21 @@ func (s *Service) ListCloudServers(ctx context.Context, project string, params *
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.CloudServerList](httpResp)
+	return types.ParseResponseBody[types.CloudServerList](httpResp)
 }
 
 // GetCloudServer retrieves a specific cloud server by ID
-func (s *Service) GetCloudServer(ctx context.Context, project string, cloudServerId string, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error) {
+func (s *Service) GetCloudServer(ctx context.Context, project string, cloudServerId string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
 	s.client.Logger().Debugf("Getting cloud server: %s in project: %s", cloudServerId, project)
 
-	if err := schema.ValidateProjectAndResource(project, cloudServerId, "cloud server ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, cloudServerId, "cloud server ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(CloudServerPath, project, cloudServerId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ComputeCloudServerGet,
 		}
 	} else if params.APIVersion == nil {
@@ -68,21 +68,21 @@ func (s *Service) GetCloudServer(ctx context.Context, project string, cloudServe
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.CloudServerResponse](httpResp)
+	return types.ParseResponseBody[types.CloudServerResponse](httpResp)
 }
 
 // CreateCloudServer creates a new cloud server
-func (s *Service) CreateCloudServer(ctx context.Context, project string, body schema.CloudServerRequest, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error) {
+func (s *Service) CreateCloudServer(ctx context.Context, project string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
 	s.client.Logger().Debugf("Creating cloud server in project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(CloudServersPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ComputeCloudServerCreate,
 		}
 	} else if params.APIVersion == nil {
@@ -111,7 +111,7 @@ func (s *Service) CreateCloudServer(ctx context.Context, project string, body sc
 	}
 
 	// Create the response wrapper
-	response := &schema.Response[schema.CloudServerResponse]{
+	response := &types.Response[types.CloudServerResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -120,13 +120,13 @@ func (s *Service) CreateCloudServer(ctx context.Context, project string, body sc
 
 	// Parse the response body if successful
 	if response.IsSuccess() {
-		var data schema.CloudServerResponse
+		var data types.CloudServerResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -136,17 +136,17 @@ func (s *Service) CreateCloudServer(ctx context.Context, project string, body sc
 }
 
 // UpdateCloudServer updates an existing cloud server
-func (s *Service) UpdateCloudServer(ctx context.Context, project string, cloudServerId string, body schema.CloudServerRequest, params *schema.RequestParameters) (*schema.Response[schema.CloudServerResponse], error) {
+func (s *Service) UpdateCloudServer(ctx context.Context, project string, cloudServerId string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
 	s.client.Logger().Debugf("Updating cloud server: %s in project: %s", cloudServerId, project)
 
-	if err := schema.ValidateProjectAndResource(project, cloudServerId, "cloud server ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, cloudServerId, "cloud server ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(CloudServerPath, project, cloudServerId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ComputeCloudServerUpdate,
 		}
 	} else if params.APIVersion == nil {
@@ -175,7 +175,7 @@ func (s *Service) UpdateCloudServer(ctx context.Context, project string, cloudSe
 	}
 
 	// Create the response wrapper
-	response := &schema.Response[schema.CloudServerResponse]{
+	response := &types.Response[types.CloudServerResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -184,13 +184,13 @@ func (s *Service) UpdateCloudServer(ctx context.Context, project string, cloudSe
 
 	// Parse the response body if successful
 	if response.IsSuccess() {
-		var data schema.CloudServerResponse
+		var data types.CloudServerResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -200,17 +200,17 @@ func (s *Service) UpdateCloudServer(ctx context.Context, project string, cloudSe
 }
 
 // DeleteCloudServer deletes a cloud server by ID
-func (s *Service) DeleteCloudServer(ctx context.Context, projectId string, cloudServerId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteCloudServer(ctx context.Context, projectId string, cloudServerId string, params *types.RequestParameters) (*types.Response[any], error) {
 	s.client.Logger().Debugf("Deleting cloud server: %s in project: %s", cloudServerId, projectId)
 
-	if err := schema.ValidateProjectAndResource(projectId, cloudServerId, "cloud server ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectId, cloudServerId, "cloud server ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(CloudServerPath, projectId, cloudServerId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ComputeCloudServerDelete,
 		}
 	} else if params.APIVersion == nil {
@@ -226,5 +226,5 @@ func (s *Service) DeleteCloudServer(ctx context.Context, projectId string, cloud
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp)
 }

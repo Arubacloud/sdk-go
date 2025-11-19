@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 func TestListVpcPeeringRoutes(t *testing.T) {
@@ -22,16 +22,16 @@ func TestListVpcPeeringRoutes(t *testing.T) {
 
 		if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1/routes" {
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VPCPeeringRouteList{
-				ListResponse: schema.ListResponse{Total: 1},
-				Values: []schema.VPCPeeringRouteResponse{
+			resp := types.VPCPeeringRouteList{
+				ListResponse: types.ListResponse{Total: 1},
+				Values: []types.VPCPeeringRouteResponse{
 					{
-						Metadata: schema.RegionalResourceMetadataRequest{
-							ResourceMetadataRequest: schema.ResourceMetadataRequest{
+						Metadata: types.RegionalResourceMetadataRequest{
+							ResourceMetadataRequest: types.ResourceMetadataRequest{
 								Name: "route-1",
 							},
 						},
-						Properties: schema.VPCPeeringRoutePropertiesResponse{
+						Properties: types.VPCPeeringRoutePropertiesResponse{
 							LocalNetworkAddress:  "10.0.0.0/16",
 							RemoteNetworkAddress: "10.1.0.0/16",
 						},
@@ -80,13 +80,13 @@ func TestGetVpcPeeringRoute(t *testing.T) {
 
 		if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1/routes/route-1" {
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VPCPeeringRouteResponse{
-				Metadata: schema.RegionalResourceMetadataRequest{
-					ResourceMetadataRequest: schema.ResourceMetadataRequest{
+			resp := types.VPCPeeringRouteResponse{
+				Metadata: types.RegionalResourceMetadataRequest{
+					ResourceMetadataRequest: types.ResourceMetadataRequest{
 						Name: "route-1",
 					},
 				},
-				Properties: schema.VPCPeeringRoutePropertiesResponse{
+				Properties: types.VPCPeeringRoutePropertiesResponse{
 					LocalNetworkAddress:  "10.0.0.0/16",
 					RemoteNetworkAddress: "10.1.0.0/16",
 				},

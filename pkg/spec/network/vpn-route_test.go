@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 func TestListVpnRoutes(t *testing.T) {
@@ -22,14 +22,14 @@ func TestListVpnRoutes(t *testing.T) {
 
 		if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpntunnels/tunnel-123/routes" {
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VPNRouteList{
-				ListResponse: schema.ListResponse{Total: 1},
-				Values: []schema.VPNRouteResponse{
+			resp := types.VPNRouteList{
+				ListResponse: types.ListResponse{Total: 1},
+				Values: []types.VPNRouteResponse{
 					{
-						Metadata: schema.ResourceMetadataResponse{
-							Name: schema.StringPtr("route-1"),
+						Metadata: types.ResourceMetadataResponse{
+							Name: types.StringPtr("route-1"),
 						},
-						Properties: schema.VPNRoutePropertiesResponse{
+						Properties: types.VPNRoutePropertiesResponse{
 							CloudSubnet:  "10.0.0.0/24",
 							OnPremSubnet: "192.168.1.0/24",
 						},
@@ -78,11 +78,11 @@ func TestGetVpnRoute(t *testing.T) {
 
 		if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpntunnels/tunnel-123/routes/route-1" {
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VPNRouteResponse{
-				Metadata: schema.ResourceMetadataResponse{
-					Name: schema.StringPtr("route-1"),
+			resp := types.VPNRouteResponse{
+				Metadata: types.ResourceMetadataResponse{
+					Name: types.StringPtr("route-1"),
 				},
-				Properties: schema.VPNRoutePropertiesResponse{
+				Properties: types.VPNRoutePropertiesResponse{
 					CloudSubnet:  "10.0.0.0/24",
 					OnPremSubnet: "192.168.1.0/24",
 				},

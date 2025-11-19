@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 func TestListVpcPeerings(t *testing.T) {
@@ -22,10 +22,10 @@ func TestListVpcPeerings(t *testing.T) {
 
 		if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings" {
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VPCPeeringList{
-				ListResponse: schema.ListResponse{Total: 1},
-				Values: []schema.VPCPeeringResponse{
-					{Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("test-peering")}},
+			resp := types.VPCPeeringList{
+				ListResponse: types.ListResponse{Total: 1},
+				Values: []types.VPCPeeringResponse{
+					{Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("test-peering")}},
 				},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -70,8 +70,8 @@ func TestGetVpcPeering(t *testing.T) {
 
 		if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1" {
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VPCPeeringResponse{
-				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("test-peering")},
+			resp := types.VPCPeeringResponse{
+				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("test-peering")},
 			}
 			json.NewEncoder(w).Encode(resp)
 			return

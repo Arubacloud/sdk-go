@@ -8,21 +8,21 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // ListSubnets retrieves all subnets for a VPC
-func (s *Service) ListSubnets(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.SubnetList], error) {
+func (s *Service) ListSubnets(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.SubnetList], error) {
 	s.client.Logger().Debugf("Listing subnets for VPC: %s in project: %s", vpcId, project)
 
-	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(SubnetsPath, project, vpcId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &SubnetListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -38,21 +38,21 @@ func (s *Service) ListSubnets(ctx context.Context, project string, vpcId string,
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.SubnetList](httpResp)
+	return types.ParseResponseBody[types.SubnetList](httpResp)
 }
 
 // GetSubnet retrieves a specific subnet by ID
-func (s *Service) GetSubnet(ctx context.Context, project string, vpcId string, subnetId string, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
+func (s *Service) GetSubnet(ctx context.Context, project string, vpcId string, subnetId string, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error) {
 	s.client.Logger().Debugf("Getting subnet: %s from VPC: %s in project: %s", subnetId, vpcId, project)
 
-	if err := schema.ValidateVPCResource(project, vpcId, subnetId, "subnet ID"); err != nil {
+	if err := types.ValidateVPCResource(project, vpcId, subnetId, "subnet ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(SubnetPath, project, vpcId, subnetId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &SubnetGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -68,15 +68,15 @@ func (s *Service) GetSubnet(ctx context.Context, project string, vpcId string, s
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.SubnetResponse](httpResp)
+	return types.ParseResponseBody[types.SubnetResponse](httpResp)
 }
 
 // CreateSubnet creates a new subnet in a VPC
 // The SDK automatically waits for the VPC to become Active before creating the subnet
-func (s *Service) CreateSubnet(ctx context.Context, project string, vpcId string, body schema.SubnetRequest, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
+func (s *Service) CreateSubnet(ctx context.Context, project string, vpcId string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error) {
 	s.client.Logger().Debugf("Creating subnet in VPC: %s in project: %s", vpcId, project)
 
-	if err := schema.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
@@ -89,7 +89,7 @@ func (s *Service) CreateSubnet(ctx context.Context, project string, vpcId string
 	path := fmt.Sprintf(SubnetsPath, project, vpcId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &SubnetCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -114,7 +114,7 @@ func (s *Service) CreateSubnet(ctx context.Context, project string, vpcId string
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.SubnetResponse]{
+	response := &types.Response[types.SubnetResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -122,13 +122,13 @@ func (s *Service) CreateSubnet(ctx context.Context, project string, vpcId string
 	}
 
 	if response.IsSuccess() {
-		var data schema.SubnetResponse
+		var data types.SubnetResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -138,17 +138,17 @@ func (s *Service) CreateSubnet(ctx context.Context, project string, vpcId string
 }
 
 // UpdateSubnet updates an existing subnet
-func (s *Service) UpdateSubnet(ctx context.Context, project string, vpcId string, subnetId string, body schema.SubnetRequest, params *schema.RequestParameters) (*schema.Response[schema.SubnetResponse], error) {
+func (s *Service) UpdateSubnet(ctx context.Context, project string, vpcId string, subnetId string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error) {
 	s.client.Logger().Debugf("Updating subnet: %s in VPC: %s in project: %s", subnetId, vpcId, project)
 
-	if err := schema.ValidateVPCResource(project, vpcId, subnetId, "subnet ID"); err != nil {
+	if err := types.ValidateVPCResource(project, vpcId, subnetId, "subnet ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(SubnetPath, project, vpcId, subnetId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &SubnetUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -174,7 +174,7 @@ func (s *Service) UpdateSubnet(ctx context.Context, project string, vpcId string
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.SubnetResponse]{
+	response := &types.Response[types.SubnetResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -182,13 +182,13 @@ func (s *Service) UpdateSubnet(ctx context.Context, project string, vpcId string
 	}
 
 	if response.IsSuccess() {
-		var data schema.SubnetResponse
+		var data types.SubnetResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -198,17 +198,17 @@ func (s *Service) UpdateSubnet(ctx context.Context, project string, vpcId string
 }
 
 // DeleteSubnet deletes a subnet by ID
-func (s *Service) DeleteSubnet(ctx context.Context, projectId string, vpcId string, subnetId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteSubnet(ctx context.Context, projectId string, vpcId string, subnetId string, params *types.RequestParameters) (*types.Response[any], error) {
 	s.client.Logger().Debugf("Deleting subnet: %s from VPC: %s in project: %s", subnetId, vpcId, projectId)
 
-	if err := schema.ValidateVPCResource(projectId, vpcId, subnetId, "subnet ID"); err != nil {
+	if err := types.ValidateVPCResource(projectId, vpcId, subnetId, "subnet ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(SubnetPath, projectId, vpcId, subnetId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &SubnetDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -224,5 +224,5 @@ func (s *Service) DeleteSubnet(ctx context.Context, projectId string, vpcId stri
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp)
 }

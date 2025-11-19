@@ -8,21 +8,21 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // ListKeyPairs retrieves all key pairs for a project
-func (s *Service) ListKeyPairs(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.KeyPairListResponse], error) {
+func (s *Service) ListKeyPairs(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.KeyPairListResponse], error) {
 	s.client.Logger().Debugf("Listing key pairs for project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(KeyPairsPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ComputeKeyPairList,
 		}
 	} else if params.APIVersion == nil {
@@ -38,21 +38,21 @@ func (s *Service) ListKeyPairs(ctx context.Context, project string, params *sche
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.KeyPairListResponse](httpResp)
+	return types.ParseResponseBody[types.KeyPairListResponse](httpResp)
 }
 
 // GetKeyPair retrieves a specific key pair by ID
-func (s *Service) GetKeyPair(ctx context.Context, project string, keyPairId string, params *schema.RequestParameters) (*schema.Response[schema.KeyPairResponse], error) {
+func (s *Service) GetKeyPair(ctx context.Context, project string, keyPairId string, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error) {
 	s.client.Logger().Debugf("Getting key pair: %s in project: %s", keyPairId, project)
 
-	if err := schema.ValidateProjectAndResource(project, keyPairId, "key pair ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, keyPairId, "key pair ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(KeyPairPath, project, keyPairId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ComputeKeyPairGet,
 		}
 	} else if params.APIVersion == nil {
@@ -68,21 +68,21 @@ func (s *Service) GetKeyPair(ctx context.Context, project string, keyPairId stri
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.KeyPairResponse](httpResp)
+	return types.ParseResponseBody[types.KeyPairResponse](httpResp)
 }
 
 // CreateKeyPair creates a new key pair
-func (s *Service) CreateKeyPair(ctx context.Context, project string, body schema.KeyPairRequest, params *schema.RequestParameters) (*schema.Response[schema.KeyPairResponse], error) {
+func (s *Service) CreateKeyPair(ctx context.Context, project string, body types.KeyPairRequest, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error) {
 	s.client.Logger().Debugf("Creating key pair in project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(KeyPairsPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ComputeKeyPairCreate,
 		}
 	} else if params.APIVersion == nil {
@@ -111,7 +111,7 @@ func (s *Service) CreateKeyPair(ctx context.Context, project string, body schema
 	}
 
 	// Create the response wrapper
-	response := &schema.Response[schema.KeyPairResponse]{
+	response := &types.Response[types.KeyPairResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -120,13 +120,13 @@ func (s *Service) CreateKeyPair(ctx context.Context, project string, body schema
 
 	// Parse the response body if successful
 	if response.IsSuccess() {
-		var data schema.KeyPairResponse
+		var data types.KeyPairResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -136,17 +136,17 @@ func (s *Service) CreateKeyPair(ctx context.Context, project string, body schema
 }
 
 // DeleteKeyPair deletes a key pair by ID
-func (s *Service) DeleteKeyPair(ctx context.Context, projectId string, keyPairId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteKeyPair(ctx context.Context, projectId string, keyPairId string, params *types.RequestParameters) (*types.Response[any], error) {
 	s.client.Logger().Debugf("Deleting key pair: %s in project: %s", keyPairId, projectId)
 
-	if err := schema.ValidateProjectAndResource(projectId, keyPairId, "key pair ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectId, keyPairId, "key pair ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(KeyPairPath, projectId, keyPairId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ComputeKeyPairDelete,
 		}
 	} else if params.APIVersion == nil {
@@ -162,5 +162,5 @@ func (s *Service) DeleteKeyPair(ctx context.Context, projectId string, keyPairId
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp)
 }

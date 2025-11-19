@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 func TestListVpnTunnels(t *testing.T) {
@@ -22,10 +22,10 @@ func TestListVpnTunnels(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VPNTunnelList{
-				ListResponse: schema.ListResponse{Total: 1},
-				Values: []schema.VPNTunnelResponse{
-					{Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("vpn-1")}},
+			resp := types.VPNTunnelList{
+				ListResponse: types.ListResponse{Total: 1},
+				Values: []types.VPNTunnelResponse{
+					{Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("vpn-1")}},
 				},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -67,8 +67,8 @@ func TestGetVpnTunnel(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.VPNTunnelResponse{
-				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("my-vpn")},
+			resp := types.VPNTunnelResponse{
+				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("my-vpn")},
 			}
 			json.NewEncoder(w).Encode(resp)
 		}))

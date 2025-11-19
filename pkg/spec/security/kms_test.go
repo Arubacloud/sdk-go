@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 func TestListKMSKeys(t *testing.T) {
@@ -23,35 +23,35 @@ func TestListKMSKeys(t *testing.T) {
 
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Security/kms/keys" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.KmsList{
-					ListResponse: schema.ListResponse{Total: 2},
-					Values: []schema.KmsResponse{
+				resp := types.KmsList{
+					ListResponse: types.ListResponse{Total: 2},
+					Values: []types.KmsResponse{
 						{
-							Metadata: schema.ResourceMetadataResponse{
-								Name: schema.StringPtr("encryption-key-1"),
-								ID:   schema.StringPtr("kms-123"),
+							Metadata: types.ResourceMetadataResponse{
+								Name: types.StringPtr("encryption-key-1"),
+								ID:   types.StringPtr("kms-123"),
 							},
-							Properties: schema.KmsPropertiesResponse{
-								BillingPeriod: schema.BillingPeriodResource{
+							Properties: types.KmsPropertiesResponse{
+								BillingPeriod: types.BillingPeriodResource{
 									BillingPeriod: "Month",
 								},
 							},
-							Status: schema.ResourceStatus{
-								State: schema.StringPtr("active"),
+							Status: types.ResourceStatus{
+								State: types.StringPtr("active"),
 							},
 						},
 						{
-							Metadata: schema.ResourceMetadataResponse{
-								Name: schema.StringPtr("encryption-key-2"),
-								ID:   schema.StringPtr("kms-456"),
+							Metadata: types.ResourceMetadataResponse{
+								Name: types.StringPtr("encryption-key-2"),
+								ID:   types.StringPtr("kms-456"),
 							},
-							Properties: schema.KmsPropertiesResponse{
-								BillingPeriod: schema.BillingPeriodResource{
+							Properties: types.KmsPropertiesResponse{
+								BillingPeriod: types.BillingPeriodResource{
 									BillingPeriod: "Month",
 								},
 							},
-							Status: schema.ResourceStatus{
-								State: schema.StringPtr("active"),
+							Status: types.ResourceStatus{
+								State: types.StringPtr("active"),
 							},
 						},
 					},
@@ -103,18 +103,18 @@ func TestGetKMSKey(t *testing.T) {
 
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Security/kms/keys/kms-123" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.KmsResponse{
-					Metadata: schema.ResourceMetadataResponse{
-						Name: schema.StringPtr("my-encryption-key"),
-						ID:   schema.StringPtr("kms-123"),
+				resp := types.KmsResponse{
+					Metadata: types.ResourceMetadataResponse{
+						Name: types.StringPtr("my-encryption-key"),
+						ID:   types.StringPtr("kms-123"),
 					},
-					Properties: schema.KmsPropertiesResponse{
-						BillingPeriod: schema.BillingPeriodResource{
+					Properties: types.KmsPropertiesResponse{
+						BillingPeriod: types.BillingPeriodResource{
 							BillingPeriod: "Month",
 						},
 					},
-					Status: schema.ResourceStatus{
-						State: schema.StringPtr("active"),
+					Status: types.ResourceStatus{
+						State: types.StringPtr("active"),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -167,18 +167,18 @@ func TestCreateKMSKey(t *testing.T) {
 
 			if r.Method == "POST" && r.URL.Path == "/projects/test-project/providers/Aruba.Security/kms/keys" {
 				w.WriteHeader(http.StatusCreated)
-				resp := schema.KmsResponse{
-					Metadata: schema.ResourceMetadataResponse{
-						Name: schema.StringPtr("new-encryption-key"),
-						ID:   schema.StringPtr("kms-789"),
+				resp := types.KmsResponse{
+					Metadata: types.ResourceMetadataResponse{
+						Name: types.StringPtr("new-encryption-key"),
+						ID:   types.StringPtr("kms-789"),
 					},
-					Properties: schema.KmsPropertiesResponse{
-						BillingPeriod: schema.BillingPeriodResource{
+					Properties: types.KmsPropertiesResponse{
+						BillingPeriod: types.BillingPeriodResource{
 							BillingPeriod: "Month",
 						},
 					},
-					Status: schema.ResourceStatus{
-						State: schema.StringPtr("creating"),
+					Status: types.ResourceStatus{
+						State: types.StringPtr("creating"),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -203,15 +203,15 @@ func TestCreateKMSKey(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		body := schema.KmsRequest{
-			Metadata: schema.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: schema.ResourceMetadataRequest{
+		body := types.KmsRequest{
+			Metadata: types.RegionalResourceMetadataRequest{
+				ResourceMetadataRequest: types.ResourceMetadataRequest{
 					Name: "new-encryption-key",
 				},
-				Location: schema.LocationRequest{Value: "it-eur"},
+				Location: types.LocationRequest{Value: "it-eur"},
 			},
-			Properties: schema.KmsPropertiesRequest{
-				BillingPeriod: schema.BillingPeriodResource{
+			Properties: types.KmsPropertiesRequest{
+				BillingPeriod: types.BillingPeriodResource{
 					BillingPeriod: "Month",
 				},
 			},
@@ -245,18 +245,18 @@ func TestUpdateKMSKey(t *testing.T) {
 
 			if r.Method == "PUT" && r.URL.Path == "/projects/test-project/providers/Aruba.Security/kms/keys/kms-123" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.KmsResponse{
-					Metadata: schema.ResourceMetadataResponse{
-						Name: schema.StringPtr("updated-encryption-key"),
-						ID:   schema.StringPtr("kms-123"),
+				resp := types.KmsResponse{
+					Metadata: types.ResourceMetadataResponse{
+						Name: types.StringPtr("updated-encryption-key"),
+						ID:   types.StringPtr("kms-123"),
 					},
-					Properties: schema.KmsPropertiesResponse{
-						BillingPeriod: schema.BillingPeriodResource{
+					Properties: types.KmsPropertiesResponse{
+						BillingPeriod: types.BillingPeriodResource{
 							BillingPeriod: "Year",
 						},
 					},
-					Status: schema.ResourceStatus{
-						State: schema.StringPtr("active"),
+					Status: types.ResourceStatus{
+						State: types.StringPtr("active"),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -281,15 +281,15 @@ func TestUpdateKMSKey(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		body := schema.KmsRequest{
-			Metadata: schema.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: schema.ResourceMetadataRequest{
+		body := types.KmsRequest{
+			Metadata: types.RegionalResourceMetadataRequest{
+				ResourceMetadataRequest: types.ResourceMetadataRequest{
 					Name: "updated-encryption-key",
 				},
-				Location: schema.LocationRequest{Value: "it-eur"},
+				Location: types.LocationRequest{Value: "it-eur"},
 			},
-			Properties: schema.KmsPropertiesRequest{
-				BillingPeriod: schema.BillingPeriodResource{
+			Properties: types.KmsPropertiesRequest{
+				BillingPeriod: types.BillingPeriodResource{
 					BillingPeriod: "Year",
 				},
 			},

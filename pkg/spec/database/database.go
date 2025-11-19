@@ -8,21 +8,21 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // ListDatabases retrieves all databases for a DBaaS instance
-func (s *Service) ListDatabases(ctx context.Context, project string, dbaasId string, params *schema.RequestParameters) (*schema.Response[schema.DatabaseList], error) {
+func (s *Service) ListDatabases(ctx context.Context, project string, dbaasId string, params *types.RequestParameters) (*types.Response[types.DatabaseList], error) {
 	s.client.Logger().Debugf("Listing databases for DBaaS: %s in project: %s", dbaasId, project)
 
-	if err := schema.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(DatabaseInstancesPath, project, dbaasId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &DatabaseInstanceListVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -38,21 +38,21 @@ func (s *Service) ListDatabases(ctx context.Context, project string, dbaasId str
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.DatabaseList](httpResp)
+	return types.ParseResponseBody[types.DatabaseList](httpResp)
 }
 
 // GetDatabase retrieves a specific database by ID
-func (s *Service) GetDatabase(ctx context.Context, project string, dbaasId string, databaseId string, params *schema.RequestParameters) (*schema.Response[schema.DatabaseResponse], error) {
+func (s *Service) GetDatabase(ctx context.Context, project string, dbaasId string, databaseId string, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error) {
 	s.client.Logger().Debugf("Getting database: %s from DBaaS: %s in project: %s", databaseId, dbaasId, project)
 
-	if err := schema.ValidateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
+	if err := types.ValidateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(DatabaseInstancePath, project, dbaasId, databaseId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &DatabaseInstanceGetVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -68,21 +68,21 @@ func (s *Service) GetDatabase(ctx context.Context, project string, dbaasId strin
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.DatabaseResponse](httpResp)
+	return types.ParseResponseBody[types.DatabaseResponse](httpResp)
 }
 
 // CreateDatabase creates a new database
-func (s *Service) CreateDatabase(ctx context.Context, project string, dbaasId string, body schema.DatabaseRequest, params *schema.RequestParameters) (*schema.Response[schema.DatabaseResponse], error) {
+func (s *Service) CreateDatabase(ctx context.Context, project string, dbaasId string, body types.DatabaseRequest, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error) {
 	s.client.Logger().Debugf("Creating database in DBaaS: %s in project: %s", dbaasId, project)
 
-	if err := schema.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(DatabaseInstancesPath, project, dbaasId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &DatabaseInstanceCreateVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -111,7 +111,7 @@ func (s *Service) CreateDatabase(ctx context.Context, project string, dbaasId st
 	}
 
 	// Create the response wrapper
-	response := &schema.Response[schema.DatabaseResponse]{
+	response := &types.Response[types.DatabaseResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -120,13 +120,13 @@ func (s *Service) CreateDatabase(ctx context.Context, project string, dbaasId st
 
 	// Parse the response body if successful
 	if response.IsSuccess() {
-		var data schema.DatabaseResponse
+		var data types.DatabaseResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -136,17 +136,17 @@ func (s *Service) CreateDatabase(ctx context.Context, project string, dbaasId st
 }
 
 // UpdateDatabase updates an existing database
-func (s *Service) UpdateDatabase(ctx context.Context, project string, dbaasId string, databaseId string, body schema.DatabaseRequest, params *schema.RequestParameters) (*schema.Response[schema.DatabaseResponse], error) {
+func (s *Service) UpdateDatabase(ctx context.Context, project string, dbaasId string, databaseId string, body types.DatabaseRequest, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error) {
 	s.client.Logger().Debugf("Updating database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, project)
 
-	if err := schema.ValidateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
+	if err := types.ValidateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(DatabaseInstancePath, project, dbaasId, databaseId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &DatabaseInstanceUpdateVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -175,7 +175,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, project string, dbaasId st
 	}
 
 	// Create the response wrapper
-	response := &schema.Response[schema.DatabaseResponse]{
+	response := &types.Response[types.DatabaseResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -184,13 +184,13 @@ func (s *Service) UpdateDatabase(ctx context.Context, project string, dbaasId st
 
 	// Parse the response body if successful
 	if response.IsSuccess() {
-		var data schema.DatabaseResponse
+		var data types.DatabaseResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -200,17 +200,17 @@ func (s *Service) UpdateDatabase(ctx context.Context, project string, dbaasId st
 }
 
 // DeleteDatabase deletes a database by ID
-func (s *Service) DeleteDatabase(ctx context.Context, projectId string, dbaasId string, databaseId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteDatabase(ctx context.Context, projectId string, dbaasId string, databaseId string, params *types.RequestParameters) (*types.Response[any], error) {
 	s.client.Logger().Debugf("Deleting database: %s from DBaaS: %s in project: %s", databaseId, dbaasId, projectId)
 
-	if err := schema.ValidateDBaaSResource(projectId, dbaasId, databaseId, "database ID"); err != nil {
+	if err := types.ValidateDBaaSResource(projectId, dbaasId, databaseId, "database ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(DatabaseInstancePath, projectId, dbaasId, databaseId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &DatabaseInstanceDeleteVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -226,5 +226,5 @@ func (s *Service) DeleteDatabase(ctx context.Context, projectId string, dbaasId 
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp)
 }

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 func TestListMetrics(t *testing.T) {
@@ -24,20 +24,20 @@ func TestListMetrics(t *testing.T) {
 
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Insight/metrics" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.MetricListResponse{
-					ListResponse: schema.ListResponse{Total: 2},
-					Values: []schema.MetricResponse{
+				resp := types.MetricListResponse{
+					ListResponse: types.ListResponse{Total: 2},
+					Values: []types.MetricResponse{
 						{
 							ReferenceID:   "resource-123",
 							Name:          "cpu_usage",
 							ReferenceName: "test-server",
-							Metadata: []schema.MetricMetadata{
+							Metadata: []types.MetricMetadata{
 								{
 									Field: "unit",
 									Value: "percent",
 								},
 							},
-							Data: []schema.MetricData{
+							Data: []types.MetricData{
 								{
 									Time:    "2024-01-01T00:00:00Z",
 									Measure: "45.5",
@@ -52,13 +52,13 @@ func TestListMetrics(t *testing.T) {
 							ReferenceID:   "resource-123",
 							Name:          "memory_usage",
 							ReferenceName: "test-server",
-							Metadata: []schema.MetricMetadata{
+							Metadata: []types.MetricMetadata{
 								{
 									Field: "unit",
 									Value: "MB",
 								},
 							},
-							Data: []schema.MetricData{
+							Data: []types.MetricData{
 								{
 									Time:    "2024-01-01T00:00:00Z",
 									Measure: "2048",
@@ -121,9 +121,9 @@ func TestListMetrics(t *testing.T) {
 
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Insight/metrics" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.MetricListResponse{
-					ListResponse: schema.ListResponse{Total: 0},
-					Values:       []schema.MetricResponse{},
+				resp := types.MetricListResponse{
+					ListResponse: types.ListResponse{Total: 0},
+					Values:       []types.MetricResponse{},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return
@@ -169,9 +169,9 @@ func TestListAlerts(t *testing.T) {
 
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Insight/alerts" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.AlertsListResponse{
-					ListResponse: schema.ListResponse{Total: 2},
-					Values: []schema.AlertResponse{
+				resp := types.AlertsListResponse{
+					ListResponse: types.ListResponse{Total: 2},
+					Values: []types.AlertResponse{
 						{
 							ID:                 "alert-123",
 							EventID:            "event-456",
@@ -194,14 +194,14 @@ func TestListAlerts(t *testing.T) {
 							Panel:              true,
 							SMS:                false,
 							Hidden:             false,
-							ExecutedAlertActions: []schema.ExecutedAlertAction{
+							ExecutedAlertActions: []types.ExecutedAlertAction{
 								{
-									ActionType:   schema.ActionTypeSendEmail,
+									ActionType:   types.ActionTypeSendEmail,
 									Success:      true,
 									ErrorMessage: "",
 								},
 							},
-							Actions: []schema.AlertAction{
+							Actions: []types.AlertAction{
 								{
 									Key:        "acknowledge",
 									Disabled:   false,
@@ -296,9 +296,9 @@ func TestListAlerts(t *testing.T) {
 
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Insight/alerts" {
 				w.WriteHeader(http.StatusOK)
-				resp := schema.AlertsListResponse{
-					ListResponse: schema.ListResponse{Total: 0},
-					Values:       []schema.AlertResponse{},
+				resp := types.AlertsListResponse{
+					ListResponse: types.ListResponse{Total: 0},
+					Values:       []types.AlertResponse{},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return
@@ -348,9 +348,9 @@ func TestListAlerts(t *testing.T) {
 				}
 
 				w.WriteHeader(http.StatusOK)
-				resp := schema.AlertsListResponse{
-					ListResponse: schema.ListResponse{Total: 1},
-					Values: []schema.AlertResponse{
+				resp := types.AlertsListResponse{
+					ListResponse: types.ListResponse{Total: 1},
+					Values: []types.AlertResponse{
 						{
 							ID:            "alert-123",
 							EventName:     "Filtered Alert",
@@ -384,8 +384,8 @@ func TestListAlerts(t *testing.T) {
 		}
 		svc := NewService(c)
 
-		params := &schema.RequestParameters{
-			Filter: schema.StringPtr("resourceId eq 'vm-789'"),
+		params := &types.RequestParameters{
+			Filter: types.StringPtr("resourceId eq 'vm-789'"),
 		}
 
 		resp, err := svc.ListAlerts(context.Background(), "test-project", params)

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 func TestListLoadBalancers(t *testing.T) {
@@ -22,10 +22,10 @@ func TestListLoadBalancers(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.LoadBalancerList{
-				ListResponse: schema.ListResponse{Total: 1},
-				Values: []schema.LoadBalancerResponse{
-					{Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("lb-1")}},
+			resp := types.LoadBalancerList{
+				ListResponse: types.ListResponse{Total: 1},
+				Values: []types.LoadBalancerResponse{
+					{Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("lb-1")}},
 				},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -67,8 +67,8 @@ func TestGetLoadBalancer(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := schema.LoadBalancerResponse{
-				Metadata: schema.ResourceMetadataResponse{Name: schema.StringPtr("my-lb")},
+			resp := types.LoadBalancerResponse{
+				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("my-lb")},
 			}
 			json.NewEncoder(w).Encode(resp)
 		}))

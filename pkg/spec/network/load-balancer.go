@@ -5,19 +5,19 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // ListLoadBalancers retrieves all load balancers for a project
-func (s *Service) ListLoadBalancers(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.LoadBalancerList], error) {
-	if err := schema.ValidateProject(project); err != nil {
+func (s *Service) ListLoadBalancers(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.LoadBalancerList], error) {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(LoadBalancersPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &LoadBalancerListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -33,19 +33,19 @@ func (s *Service) ListLoadBalancers(ctx context.Context, project string, params 
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.LoadBalancerList](httpResp)
+	return types.ParseResponseBody[types.LoadBalancerList](httpResp)
 }
 
 // GetLoadBalancer retrieves a specific load balancer by ID
-func (s *Service) GetLoadBalancer(ctx context.Context, project string, loadBalancerId string, params *schema.RequestParameters) (*schema.Response[schema.LoadBalancerResponse], error) {
-	if err := schema.ValidateProjectAndResource(project, loadBalancerId, "load balancer ID"); err != nil {
+func (s *Service) GetLoadBalancer(ctx context.Context, project string, loadBalancerId string, params *types.RequestParameters) (*types.Response[types.LoadBalancerResponse], error) {
+	if err := types.ValidateProjectAndResource(project, loadBalancerId, "load balancer ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(LoadBalancerPath, project, loadBalancerId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &LoadBalancerGetAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -61,5 +61,5 @@ func (s *Service) GetLoadBalancer(ctx context.Context, project string, loadBalan
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.LoadBalancerResponse](httpResp)
+	return types.ParseResponseBody[types.LoadBalancerResponse](httpResp)
 }

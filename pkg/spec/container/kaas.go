@@ -8,21 +8,21 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // ListKaaS retrieves all KaaS clusters for a project
-func (s *Service) ListKaaS(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.KaaSList], error) {
+func (s *Service) ListKaaS(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.KaaSList], error) {
 	s.client.Logger().Debugf("Listing KaaS clusters for project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(KaaSPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ContainerKaaSListVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -38,21 +38,21 @@ func (s *Service) ListKaaS(ctx context.Context, project string, params *schema.R
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.KaaSList](httpResp)
+	return types.ParseResponseBody[types.KaaSList](httpResp)
 }
 
 // GetKaaS retrieves a specific KaaS cluster by ID
-func (s *Service) GetKaaS(ctx context.Context, project string, kaasId string, params *schema.RequestParameters) (*schema.Response[schema.KaaSResponse], error) {
+func (s *Service) GetKaaS(ctx context.Context, project string, kaasId string, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
 	s.client.Logger().Debugf("Getting KaaS cluster: %s in project: %s", kaasId, project)
 
-	if err := schema.ValidateProjectAndResource(project, kaasId, "KaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, kaasId, "KaaS ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(KaaSItemPath, project, kaasId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ContainerKaaSGetVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -68,21 +68,21 @@ func (s *Service) GetKaaS(ctx context.Context, project string, kaasId string, pa
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.KaaSResponse](httpResp)
+	return types.ParseResponseBody[types.KaaSResponse](httpResp)
 }
 
 // CreateKaaS creates a new KaaS cluster
-func (s *Service) CreateKaaS(ctx context.Context, project string, body schema.KaaSRequest, params *schema.RequestParameters) (*schema.Response[schema.KaaSResponse], error) {
+func (s *Service) CreateKaaS(ctx context.Context, project string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
 	s.client.Logger().Debugf("Creating KaaS cluster in project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(KaaSPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ContainerKaaSCreateVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -111,7 +111,7 @@ func (s *Service) CreateKaaS(ctx context.Context, project string, body schema.Ka
 	}
 
 	// Create the response wrapper
-	response := &schema.Response[schema.KaaSResponse]{
+	response := &types.Response[types.KaaSResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -120,13 +120,13 @@ func (s *Service) CreateKaaS(ctx context.Context, project string, body schema.Ka
 
 	// Parse the response body if successful
 	if response.IsSuccess() {
-		var data schema.KaaSResponse
+		var data types.KaaSResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -136,17 +136,17 @@ func (s *Service) CreateKaaS(ctx context.Context, project string, body schema.Ka
 }
 
 // UpdateKaaS updates an existing KaaS cluster
-func (s *Service) UpdateKaaS(ctx context.Context, project string, kaasId string, body schema.KaaSRequest, params *schema.RequestParameters) (*schema.Response[schema.KaaSResponse], error) {
+func (s *Service) UpdateKaaS(ctx context.Context, project string, kaasId string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
 	s.client.Logger().Debugf("Updating KaaS cluster: %s in project: %s", kaasId, project)
 
-	if err := schema.ValidateProjectAndResource(project, kaasId, "KaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, kaasId, "KaaS ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(KaaSItemPath, project, kaasId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ContainerKaaSUpdateVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -175,7 +175,7 @@ func (s *Service) UpdateKaaS(ctx context.Context, project string, kaasId string,
 	}
 
 	// Create the response wrapper
-	response := &schema.Response[schema.KaaSResponse]{
+	response := &types.Response[types.KaaSResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -184,13 +184,13 @@ func (s *Service) UpdateKaaS(ctx context.Context, project string, kaasId string,
 
 	// Parse the response body if successful
 	if response.IsSuccess() {
-		var data schema.KaaSResponse
+		var data types.KaaSResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -200,17 +200,17 @@ func (s *Service) UpdateKaaS(ctx context.Context, project string, kaasId string,
 }
 
 // DeleteKaaS deletes a KaaS cluster by ID
-func (s *Service) DeleteKaaS(ctx context.Context, projectId string, kaasId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteKaaS(ctx context.Context, projectId string, kaasId string, params *types.RequestParameters) (*types.Response[any], error) {
 	s.client.Logger().Debugf("Deleting KaaS cluster: %s in project: %s", kaasId, projectId)
 
-	if err := schema.ValidateProjectAndResource(projectId, kaasId, "KaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectId, kaasId, "KaaS ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(KaaSItemPath, projectId, kaasId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &ContainerKaaSDeleteVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -226,5 +226,5 @@ func (s *Service) DeleteKaaS(ctx context.Context, projectId string, kaasId strin
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp)
 }

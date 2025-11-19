@@ -8,21 +8,21 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/spec/schema"
+	"github.com/Arubacloud/sdk-go/types"
 )
 
 // ListKMSKeys retrieves all KMS keys for a project
-func (s *Service) ListKMSKeys(ctx context.Context, project string, params *schema.RequestParameters) (*schema.Response[schema.KmsList], error) {
+func (s *Service) ListKMSKeys(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.KmsList], error) {
 	s.client.Logger().Debugf("Listing KMS keys for project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(KMSKeysPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &KMSListAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -38,21 +38,21 @@ func (s *Service) ListKMSKeys(ctx context.Context, project string, params *schem
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.KmsList](httpResp)
+	return types.ParseResponseBody[types.KmsList](httpResp)
 }
 
 // GetKMSKey retrieves a specific KMS key by ID
-func (s *Service) GetKMSKey(ctx context.Context, project string, kmsKeyId string, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error) {
+func (s *Service) GetKMSKey(ctx context.Context, project string, kmsKeyId string, params *types.RequestParameters) (*types.Response[types.KmsResponse], error) {
 	s.client.Logger().Debugf("Getting KMS key: %s in project: %s", kmsKeyId, project)
 
-	if err := schema.ValidateProjectAndResource(project, kmsKeyId, "KMS key ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, kmsKeyId, "KMS key ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(KMSKeyPath, project, kmsKeyId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &KMSReadAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -68,21 +68,21 @@ func (s *Service) GetKMSKey(ctx context.Context, project string, kmsKeyId string
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[schema.KmsResponse](httpResp)
+	return types.ParseResponseBody[types.KmsResponse](httpResp)
 }
 
 // CreateKMSKey creates a new KMS key
-func (s *Service) CreateKMSKey(ctx context.Context, project string, body schema.KmsRequest, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error) {
+func (s *Service) CreateKMSKey(ctx context.Context, project string, body types.KmsRequest, params *types.RequestParameters) (*types.Response[types.KmsResponse], error) {
 	s.client.Logger().Debugf("Creating KMS key in project: %s", project)
 
-	if err := schema.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(KMSKeysPath, project)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &KMSCreateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -108,7 +108,7 @@ func (s *Service) CreateKMSKey(ctx context.Context, project string, body schema.
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.KmsResponse]{
+	response := &types.Response[types.KmsResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -116,13 +116,13 @@ func (s *Service) CreateKMSKey(ctx context.Context, project string, body schema.
 	}
 
 	if response.IsSuccess() {
-		var data schema.KmsResponse
+		var data types.KmsResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -132,17 +132,17 @@ func (s *Service) CreateKMSKey(ctx context.Context, project string, body schema.
 }
 
 // UpdateKMSKey updates an existing KMS key
-func (s *Service) UpdateKMSKey(ctx context.Context, project string, kmsKeyId string, body schema.KmsRequest, params *schema.RequestParameters) (*schema.Response[schema.KmsResponse], error) {
+func (s *Service) UpdateKMSKey(ctx context.Context, project string, kmsKeyId string, body types.KmsRequest, params *types.RequestParameters) (*types.Response[types.KmsResponse], error) {
 	s.client.Logger().Debugf("Updating KMS key: %s in project: %s", kmsKeyId, project)
 
-	if err := schema.ValidateProjectAndResource(project, kmsKeyId, "KMS key ID"); err != nil {
+	if err := types.ValidateProjectAndResource(project, kmsKeyId, "KMS key ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(KMSKeyPath, project, kmsKeyId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &KMSUpdateAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -168,7 +168,7 @@ func (s *Service) UpdateKMSKey(ctx context.Context, project string, kmsKeyId str
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &schema.Response[schema.KmsResponse]{
+	response := &types.Response[types.KmsResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -176,13 +176,13 @@ func (s *Service) UpdateKMSKey(ctx context.Context, project string, kmsKeyId str
 	}
 
 	if response.IsSuccess() {
-		var data schema.KmsResponse
+		var data types.KmsResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
 	} else if response.IsError() && len(respBytes) > 0 {
-		var errorResp schema.ErrorResponse
+		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
 			response.Error = &errorResp
 		}
@@ -192,17 +192,17 @@ func (s *Service) UpdateKMSKey(ctx context.Context, project string, kmsKeyId str
 }
 
 // DeleteKMSKey deletes a KMS key by ID
-func (s *Service) DeleteKMSKey(ctx context.Context, projectId string, kmsKeyId string, params *schema.RequestParameters) (*schema.Response[any], error) {
+func (s *Service) DeleteKMSKey(ctx context.Context, projectId string, kmsKeyId string, params *types.RequestParameters) (*types.Response[any], error) {
 	s.client.Logger().Debugf("Deleting KMS key: %s in project: %s", kmsKeyId, projectId)
 
-	if err := schema.ValidateProjectAndResource(projectId, kmsKeyId, "KMS key ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectId, kmsKeyId, "KMS key ID"); err != nil {
 		return nil, err
 	}
 
 	path := fmt.Sprintf(KMSKeyPath, projectId, kmsKeyId)
 
 	if params == nil {
-		params = &schema.RequestParameters{
+		params = &types.RequestParameters{
 			APIVersion: &KMSDeleteAPIVersion,
 		}
 	} else if params.APIVersion == nil {
@@ -218,5 +218,5 @@ func (s *Service) DeleteKMSKey(ctx context.Context, projectId string, kmsKeyId s
 	}
 	defer httpResp.Body.Close()
 
-	return schema.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp)
 }
