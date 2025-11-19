@@ -672,7 +672,7 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, projectID string,
 		},
 	}
 
-	kaasResp, err := arubaClient.FromContainer().CreateKaaS(ctx, projectID, kaasReq, nil)
+	kaasResp, err := arubaClient.FromContainer().KaaS().Create(ctx, projectID, kaasReq, nil)
 	if err != nil {
 		log.Printf("Error creating KaaS cluster: %v", err)
 		return nil

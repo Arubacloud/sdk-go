@@ -70,11 +70,11 @@ func fetchExistingResources(ctx context.Context, arubaClient aruba.Client, proje
 	}
 
 	// Fetch KaaS clusters
-	kaasList, err := arubaClient.FromContainer().ListKaaS(ctx, projectID, nil)
+	kaasList, err := arubaClient.FromContainer().KaaS().List(ctx, projectID, nil)
 	if err == nil && kaasList.IsSuccess() && len(kaasList.Data.Values) > 0 {
 		// Get the first KaaS cluster details
 		kaasID := *kaasList.Data.Values[0].Metadata.ID
-		kaasResp, err := arubaClient.FromContainer().GetKaaS(ctx, projectID, kaasID, nil)
+		kaasResp, err := arubaClient.FromContainer().KaaS().Get(ctx, projectID, kaasID, nil)
 		if err == nil && kaasResp.IsSuccess() {
 			resources.KaaSResp = kaasResp
 			fmt.Printf("✓ Found KaaS: %s\n", *kaasResp.Data.Metadata.Name)
@@ -246,7 +246,7 @@ func updateKaaS(ctx context.Context, arubaClient aruba.Client, projectID string,
 		},
 	}
 
-	updateResp, err := arubaClient.FromContainer().UpdateKaaS(ctx, projectID, kaasID, kaasReq, nil)
+	updateResp, err := arubaClient.FromContainer().KaaS().Update(ctx, projectID, kaasID, kaasReq, nil)
 	if err != nil {
 		log.Printf("Error updating KaaS cluster: %v", err)
 		return

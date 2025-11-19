@@ -82,10 +82,10 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, projectID 
 	}
 
 	// Fetch KaaS clusters
-	kaasList, err := arubaClient.FromContainer().ListKaaS(ctx, projectID, nil)
+	kaasList, err := arubaClient.FromContainer().KaaS().List(ctx, projectID, nil)
 	if err == nil && kaasList.IsSuccess() && len(kaasList.Data.Values) > 0 {
 		kaasID := *kaasList.Data.Values[0].Metadata.ID
-		kaasResp, err := arubaClient.FromContainer().GetKaaS(ctx, projectID, kaasID, nil)
+		kaasResp, err := arubaClient.FromContainer().KaaS().Get(ctx, projectID, kaasID, nil)
 		if err == nil && kaasResp.IsSuccess() {
 			resources.KaaSResp = kaasResp
 			fmt.Printf("✓ Found KaaS: %s\n", *kaasResp.Data.Metadata.Name)
@@ -441,7 +441,7 @@ func deleteDBaaS(ctx context.Context, arubaClient aruba.Client, projectID, dbaas
 func deleteKaaS(ctx context.Context, arubaClient aruba.Client, projectID, kaasID string) {
 	fmt.Println("--- Deleting KaaS Cluster ---")
 
-	deleteResp, err := arubaClient.FromContainer().DeleteKaaS(ctx, projectID, kaasID, nil)
+	deleteResp, err := arubaClient.FromContainer().KaaS().Delete(ctx, projectID, kaasID, nil)
 	if err != nil {
 		log.Printf("Error deleting KaaS cluster: %v", err)
 		return

@@ -66,9 +66,9 @@ func TestListKaaS(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewKaaSClientImpl(c)
 
-		resp, err := svc.ListKaaS(context.Background(), "test-project", nil)
+		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -147,9 +147,9 @@ func TestGetKaaS(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewKaaSClientImpl(c)
 
-		resp, err := svc.GetKaaS(context.Background(), "test-project", "kaas-123", nil)
+		resp, err := svc.Get(context.Background(), "test-project", "kaas-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -221,7 +221,7 @@ func TestCreateKaaS(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewKaaSClientImpl(c)
 
 		body := types.KaaSRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
@@ -238,7 +238,7 @@ func TestCreateKaaS(t *testing.T) {
 			},
 		}
 
-		resp, err := svc.CreateKaaS(context.Background(), "test-project", body, nil)
+		resp, err := svc.Create(context.Background(), "test-project", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -304,7 +304,7 @@ func TestUpdateKaaS(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewKaaSClientImpl(c)
 
 		body := types.KaaSRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
@@ -321,7 +321,7 @@ func TestUpdateKaaS(t *testing.T) {
 			},
 		}
 
-		resp, err := svc.UpdateKaaS(context.Background(), "test-project", "kaas-123", body, nil)
+		resp, err := svc.Update(context.Background(), "test-project", "kaas-123", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -368,9 +368,9 @@ func TestDeleteKaaS(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewKaaSClientImpl(c)
 
-		_, err = svc.DeleteKaaS(context.Background(), "test-project", "kaas-123", nil)
+		_, err = svc.Delete(context.Background(), "test-project", "kaas-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

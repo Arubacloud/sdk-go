@@ -8,12 +8,25 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListKaaS retrieves all KaaS clusters for a project
-func (s *Service) ListKaaS(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.KaaSList], error) {
-	s.client.Logger().Debugf("Listing KaaS clusters for project: %s", project)
+// kaasClientImpl implements the ContainerAPI interface for all Container operations
+type kaasClientImpl struct {
+	client *restclient.Client
+}
+
+// NewKaaSClientImpl creates a new unified Container service
+func NewKaaSClientImpl(client *restclient.Client) *kaasClientImpl {
+	return &kaasClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all KaaS clusters for a project
+func (c *kaasClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.KaaSList], error) {
+	c.client.Logger().Debugf("Listing KaaS clusters for project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -32,7 +45,7 @@ func (s *Service) ListKaaS(ctx context.Context, project string, params *types.Re
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +54,9 @@ func (s *Service) ListKaaS(ctx context.Context, project string, params *types.Re
 	return types.ParseResponseBody[types.KaaSList](httpResp)
 }
 
-// GetKaaS retrieves a specific KaaS cluster by ID
-func (s *Service) GetKaaS(ctx context.Context, project string, kaasId string, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
-	s.client.Logger().Debugf("Getting KaaS cluster: %s in project: %s", kaasId, project)
+// Get retrieves a specific KaaS cluster by ID
+func (c *kaasClientImpl) Get(ctx context.Context, project string, kaasId string, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
+	c.client.Logger().Debugf("Getting KaaS cluster: %s in project: %s", kaasId, project)
 
 	if err := types.ValidateProjectAndResource(project, kaasId, "KaaS ID"); err != nil {
 		return nil, err
@@ -62,7 +75,7 @@ func (s *Service) GetKaaS(ctx context.Context, project string, kaasId string, pa
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +84,9 @@ func (s *Service) GetKaaS(ctx context.Context, project string, kaasId string, pa
 	return types.ParseResponseBody[types.KaaSResponse](httpResp)
 }
 
-// CreateKaaS creates a new KaaS cluster
-func (s *Service) CreateKaaS(ctx context.Context, project string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
-	s.client.Logger().Debugf("Creating KaaS cluster in project: %s", project)
+// Create creates a new KaaS cluster
+func (c *kaasClientImpl) Create(ctx context.Context, project string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
+	c.client.Logger().Debugf("Creating KaaS cluster in project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -98,7 +111,7 @@ func (s *Service) CreateKaaS(ctx context.Context, project string, body types.Kaa
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -135,9 +148,9 @@ func (s *Service) CreateKaaS(ctx context.Context, project string, body types.Kaa
 	return response, nil
 }
 
-// UpdateKaaS updates an existing KaaS cluster
-func (s *Service) UpdateKaaS(ctx context.Context, project string, kaasId string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
-	s.client.Logger().Debugf("Updating KaaS cluster: %s in project: %s", kaasId, project)
+// Update updates an existing KaaS cluster
+func (c *kaasClientImpl) Update(ctx context.Context, project string, kaasId string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
+	c.client.Logger().Debugf("Updating KaaS cluster: %s in project: %s", kaasId, project)
 
 	if err := types.ValidateProjectAndResource(project, kaasId, "KaaS ID"); err != nil {
 		return nil, err
@@ -162,7 +175,7 @@ func (s *Service) UpdateKaaS(ctx context.Context, project string, kaasId string,
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -199,9 +212,9 @@ func (s *Service) UpdateKaaS(ctx context.Context, project string, kaasId string,
 	return response, nil
 }
 
-// DeleteKaaS deletes a KaaS cluster by ID
-func (s *Service) DeleteKaaS(ctx context.Context, projectId string, kaasId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting KaaS cluster: %s in project: %s", kaasId, projectId)
+// Delete deletes a KaaS cluster by ID
+func (c *kaasClientImpl) Delete(ctx context.Context, projectId string, kaasId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting KaaS cluster: %s in project: %s", kaasId, projectId)
 
 	if err := types.ValidateProjectAndResource(projectId, kaasId, "KaaS ID"); err != nil {
 		return nil, err
@@ -220,7 +233,7 @@ func (s *Service) DeleteKaaS(ctx context.Context, projectId string, kaasId strin
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
