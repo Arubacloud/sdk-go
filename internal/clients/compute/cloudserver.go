@@ -8,12 +8,23 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListCloudServers retrieves all cloud servers for a project
-func (s *Service) ListCloudServers(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.CloudServerList], error) {
-	s.client.Logger().Debugf("Listing cloud servers for project: %s", project)
+type cloudServersClientImpl struct {
+	client *restclient.Client
+}
+
+func NewCloudServersClientImpl(client *restclient.Client) *cloudServersClientImpl {
+	return &cloudServersClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all cloud servers for a project
+func (c *cloudServersClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.CloudServerList], error) {
+	c.client.Logger().Debugf("Listing cloud servers for project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -32,7 +43,7 @@ func (s *Service) ListCloudServers(ctx context.Context, project string, params *
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +52,9 @@ func (s *Service) ListCloudServers(ctx context.Context, project string, params *
 	return types.ParseResponseBody[types.CloudServerList](httpResp)
 }
 
-// GetCloudServer retrieves a specific cloud server by ID
-func (s *Service) GetCloudServer(ctx context.Context, project string, cloudServerId string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
-	s.client.Logger().Debugf("Getting cloud server: %s in project: %s", cloudServerId, project)
+// Get retrieves a specific cloud server by ID
+func (c *cloudServersClientImpl) Get(ctx context.Context, project string, cloudServerId string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
+	c.client.Logger().Debugf("Getting cloud server: %s in project: %s", cloudServerId, project)
 
 	if err := types.ValidateProjectAndResource(project, cloudServerId, "cloud server ID"); err != nil {
 		return nil, err
@@ -62,7 +73,7 @@ func (s *Service) GetCloudServer(ctx context.Context, project string, cloudServe
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +82,9 @@ func (s *Service) GetCloudServer(ctx context.Context, project string, cloudServe
 	return types.ParseResponseBody[types.CloudServerResponse](httpResp)
 }
 
-// CreateCloudServer creates a new cloud server
-func (s *Service) CreateCloudServer(ctx context.Context, project string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
-	s.client.Logger().Debugf("Creating cloud server in project: %s", project)
+// Create creates a new cloud server
+func (c *cloudServersClientImpl) Create(ctx context.Context, project string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
+	c.client.Logger().Debugf("Creating cloud server in project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -98,7 +109,7 @@ func (s *Service) CreateCloudServer(ctx context.Context, project string, body ty
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -135,9 +146,9 @@ func (s *Service) CreateCloudServer(ctx context.Context, project string, body ty
 	return response, nil
 }
 
-// UpdateCloudServer updates an existing cloud server
-func (s *Service) UpdateCloudServer(ctx context.Context, project string, cloudServerId string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
-	s.client.Logger().Debugf("Updating cloud server: %s in project: %s", cloudServerId, project)
+// Update updates an existing cloud server
+func (c *cloudServersClientImpl) Update(ctx context.Context, project string, cloudServerId string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
+	c.client.Logger().Debugf("Updating cloud server: %s in project: %s", cloudServerId, project)
 
 	if err := types.ValidateProjectAndResource(project, cloudServerId, "cloud server ID"); err != nil {
 		return nil, err
@@ -162,7 +173,7 @@ func (s *Service) UpdateCloudServer(ctx context.Context, project string, cloudSe
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -199,9 +210,9 @@ func (s *Service) UpdateCloudServer(ctx context.Context, project string, cloudSe
 	return response, nil
 }
 
-// DeleteCloudServer deletes a cloud server by ID
-func (s *Service) DeleteCloudServer(ctx context.Context, projectId string, cloudServerId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting cloud server: %s in project: %s", cloudServerId, projectId)
+// Delete deletes a cloud server by ID
+func (c *cloudServersClientImpl) Delete(ctx context.Context, projectId string, cloudServerId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting cloud server: %s in project: %s", cloudServerId, projectId)
 
 	if err := types.ValidateProjectAndResource(projectId, cloudServerId, "cloud server ID"); err != nil {
 		return nil, err
@@ -220,7 +231,7 @@ func (s *Service) DeleteCloudServer(ctx context.Context, projectId string, cloud
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

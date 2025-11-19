@@ -53,9 +53,9 @@ func TestListCloudServers(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewCloudServersClientImpl(c)
 
-		resp, err := svc.ListCloudServers(context.Background(), "test-project", nil)
+		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -93,9 +93,9 @@ func TestListCloudServers(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewCloudServersClientImpl(c)
 
-		_, err = svc.ListCloudServers(context.Background(), "", nil)
+		_, err = svc.List(context.Background(), "", nil)
 		if err == nil {
 			t.Error("expected error for empty project ID")
 		}
@@ -134,9 +134,9 @@ func TestGetCloudServer(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewCloudServersClientImpl(c)
 
-		resp, err := svc.GetCloudServer(context.Background(), "test-project", "server-123", nil)
+		resp, err := svc.Get(context.Background(), "test-project", "server-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -168,9 +168,9 @@ func TestGetCloudServer(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewCloudServersClientImpl(c)
 
-		_, err = svc.GetCloudServer(context.Background(), "", "server-123", nil)
+		_, err = svc.Get(context.Background(), "", "server-123", nil)
 		if err == nil {
 			t.Error("expected error for empty project ID")
 		}
@@ -213,7 +213,7 @@ func TestCreateCloudServer(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewCloudServersClientImpl(c)
 
 		req := types.CloudServerRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
@@ -223,7 +223,7 @@ func TestCreateCloudServer(t *testing.T) {
 			Properties: types.CloudServerPropertiesRequest{Zone: "ITBG-1"},
 		}
 
-		resp, err := svc.CreateCloudServer(context.Background(), "test-project", req, nil)
+		resp, err := svc.Create(context.Background(), "test-project", req, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -263,9 +263,9 @@ func TestDeleteCloudServer(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewCloudServersClientImpl(c)
 
-		_, err = svc.DeleteCloudServer(context.Background(), "test-project", "server-123", nil)
+		_, err = svc.Delete(context.Background(), "test-project", "server-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -294,9 +294,9 @@ func TestDeleteCloudServer(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewCloudServersClientImpl(c)
 
-		_, err = svc.DeleteCloudServer(context.Background(), "", "server-123", nil)
+		_, err = svc.Delete(context.Background(), "", "server-123", nil)
 		if err == nil {
 			t.Error("expected error for empty project ID")
 		}

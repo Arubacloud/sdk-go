@@ -47,9 +47,9 @@ func TestListKeyPairs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewKeyPairsClientImpl(c)
 
-		resp, err := svc.ListKeyPairs(context.Background(), "test-project", nil)
+		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -84,9 +84,9 @@ func TestListKeyPairs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewKeyPairsClientImpl(c)
 
-		_, err = svc.ListKeyPairs(context.Background(), "", nil)
+		_, err = svc.List(context.Background(), "", nil)
 		if err == nil {
 			t.Error("expected error for empty project ID")
 		}
@@ -124,9 +124,9 @@ func TestGetKeyPair(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewKeyPairsClientImpl(c)
 
-		resp, err := svc.GetKeyPair(context.Background(), "test-project", "keypair-123", nil)
+		resp, err := svc.Get(context.Background(), "test-project", "keypair-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -158,9 +158,9 @@ func TestGetKeyPair(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewKeyPairsClientImpl(c)
 
-		_, err = svc.GetKeyPair(context.Background(), "test-project", "", nil)
+		_, err = svc.Get(context.Background(), "test-project", "", nil)
 		if err == nil {
 			t.Error("expected error for empty keypair ID")
 		}
@@ -201,7 +201,7 @@ func TestCreateKeyPair(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewKeyPairsClientImpl(c)
 
 		req := types.KeyPairRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
@@ -211,7 +211,7 @@ func TestCreateKeyPair(t *testing.T) {
 			Properties: types.KeyPairPropertiesRequest{Value: "ssh-rsa AAAAB3Nza..."},
 		}
 
-		resp, err := svc.CreateKeyPair(context.Background(), "test-project", req, nil)
+		resp, err := svc.Create(context.Background(), "test-project", req, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -251,9 +251,9 @@ func TestDeleteKeyPair(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewKeyPairsClientImpl(c)
 
-		_, err = svc.DeleteKeyPair(context.Background(), "test-project", "keypair-123", nil)
+		_, err = svc.Delete(context.Background(), "test-project", "keypair-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

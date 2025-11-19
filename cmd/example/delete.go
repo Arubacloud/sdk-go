@@ -70,11 +70,11 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, projectID 
 	fmt.Println("Fetching all resources...")
 
 	// Fetch Cloud Servers
-	serverList, err := arubaClient.FromCompute().ListCloudServers(ctx, projectID, nil)
+	serverList, err := arubaClient.FromCompute().CloudServers().List(ctx, projectID, nil)
 	if err == nil && serverList.IsSuccess() && len(serverList.Data.Values) > 0 {
 		// Get the first server details
 		serverID := serverList.Data.Values[0].Metadata.Name
-		serverResp, err := arubaClient.FromCompute().GetCloudServer(ctx, projectID, serverID, nil)
+		serverResp, err := arubaClient.FromCompute().CloudServers().Get(ctx, projectID, serverID, nil)
 		if err == nil && serverResp.IsSuccess() {
 			resources.CloudServerResp = serverResp
 			fmt.Printf("✓ Found Cloud Server: %s\n", serverResp.Data.Metadata.Name)
@@ -104,10 +104,10 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, projectID 
 	}
 
 	// Fetch Key Pairs
-	keyPairList, err := arubaClient.FromCompute().ListKeyPairs(ctx, projectID, nil)
+	keyPairList, err := arubaClient.FromCompute().KeyPairs().List(ctx, projectID, nil)
 	if err == nil && keyPairList.IsSuccess() && len(keyPairList.Data.Values) > 0 {
 		keyPairID := *keyPairList.Data.Values[0].Metadata.ID
-		keyPairResp, err := arubaClient.FromCompute().GetKeyPair(ctx, projectID, keyPairID, nil)
+		keyPairResp, err := arubaClient.FromCompute().KeyPairs().Get(ctx, projectID, keyPairID, nil)
 		if err == nil && keyPairResp.IsSuccess() {
 			resources.KeyPairResp = keyPairResp
 			fmt.Printf("✓ Found Key Pair: %s\n", *keyPairResp.Data.Metadata.Name)
@@ -407,7 +407,7 @@ func deleteSecurityGroupRule(ctx context.Context, arubaClient aruba.Client, proj
 func deleteKeyPair(ctx context.Context, arubaClient aruba.Client, projectID, keyPairID string) {
 	fmt.Println("--- Deleting SSH Key Pair ---")
 
-	deleteResp, err := arubaClient.FromCompute().DeleteKeyPair(ctx, projectID, keyPairID, nil)
+	deleteResp, err := arubaClient.FromCompute().KeyPairs().Delete(ctx, projectID, keyPairID, nil)
 	if err != nil {
 		log.Printf("Error deleting SSH key pair: %v", err)
 		return
@@ -463,7 +463,7 @@ func deleteCloudServer(ctx context.Context, arubaClient aruba.Client, projectID 
 
 	fmt.Println("--- Deleting Cloud Server ---")
 
-	deleteResp, err := arubaClient.FromCompute().DeleteCloudServer(ctx, projectID, *cloudServerID, nil)
+	deleteResp, err := arubaClient.FromCompute().CloudServers().Delete(ctx, projectID, *cloudServerID, nil)
 	if err != nil {
 		log.Printf("Error deleting cloud server: %v", err)
 		return

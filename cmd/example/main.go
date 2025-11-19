@@ -502,7 +502,7 @@ func createKeyPair(ctx context.Context, arubaClient aruba.Client, projectID stri
 		},
 	}
 
-	keyPairResp, err := arubaClient.FromCompute().CreateKeyPair(ctx, projectID, keyPairReq, nil)
+	keyPairResp, err := arubaClient.FromCompute().KeyPairs().Create(ctx, projectID, keyPairReq, nil)
 	if err != nil {
 		log.Printf("Error creating SSH key pair: %v", err)
 	} else if !keyPairResp.IsSuccess() {
@@ -764,7 +764,7 @@ func createCloudServer(ctx context.Context, arubaClient aruba.Client, resources 
 		},
 	}
 
-	cloudServerResp, err := arubaClient.FromCompute().CreateCloudServer(ctx, resources.ProjectID, cloudServerReq, nil)
+	cloudServerResp, err := arubaClient.FromCompute().CloudServers().Create(ctx, resources.ProjectID, cloudServerReq, nil)
 	if err != nil {
 		log.Printf("Error creating Cloud Server: %v", err)
 		return nil

@@ -8,12 +8,23 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListKeyPairs retrieves all key pairs for a project
-func (s *Service) ListKeyPairs(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.KeyPairListResponse], error) {
-	s.client.Logger().Debugf("Listing key pairs for project: %s", project)
+type keyPairsClientImpl struct {
+	client *restclient.Client
+}
+
+func NewKeyPairsClientImpl(client *restclient.Client) *keyPairsClientImpl {
+	return &keyPairsClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all key pairs for a project
+func (c *keyPairsClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.KeyPairListResponse], error) {
+	c.client.Logger().Debugf("Listing key pairs for project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -32,7 +43,7 @@ func (s *Service) ListKeyPairs(ctx context.Context, project string, params *type
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +52,9 @@ func (s *Service) ListKeyPairs(ctx context.Context, project string, params *type
 	return types.ParseResponseBody[types.KeyPairListResponse](httpResp)
 }
 
-// GetKeyPair retrieves a specific key pair by ID
-func (s *Service) GetKeyPair(ctx context.Context, project string, keyPairId string, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error) {
-	s.client.Logger().Debugf("Getting key pair: %s in project: %s", keyPairId, project)
+// Get retrieves a specific key pair by ID
+func (c *keyPairsClientImpl) Get(ctx context.Context, project string, keyPairId string, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error) {
+	c.client.Logger().Debugf("Getting key pair: %s in project: %s", keyPairId, project)
 
 	if err := types.ValidateProjectAndResource(project, keyPairId, "key pair ID"); err != nil {
 		return nil, err
@@ -62,7 +73,7 @@ func (s *Service) GetKeyPair(ctx context.Context, project string, keyPairId stri
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +82,9 @@ func (s *Service) GetKeyPair(ctx context.Context, project string, keyPairId stri
 	return types.ParseResponseBody[types.KeyPairResponse](httpResp)
 }
 
-// CreateKeyPair creates a new key pair
-func (s *Service) CreateKeyPair(ctx context.Context, project string, body types.KeyPairRequest, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error) {
-	s.client.Logger().Debugf("Creating key pair in project: %s", project)
+// Create creates a new key pair
+func (c *keyPairsClientImpl) Create(ctx context.Context, project string, body types.KeyPairRequest, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error) {
+	c.client.Logger().Debugf("Creating key pair in project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -98,7 +109,7 @@ func (s *Service) CreateKeyPair(ctx context.Context, project string, body types.
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -135,9 +146,9 @@ func (s *Service) CreateKeyPair(ctx context.Context, project string, body types.
 	return response, nil
 }
 
-// DeleteKeyPair deletes a key pair by ID
-func (s *Service) DeleteKeyPair(ctx context.Context, projectId string, keyPairId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting key pair: %s in project: %s", keyPairId, projectId)
+// Delete deletes a key pair by ID
+func (c *keyPairsClientImpl) Delete(ctx context.Context, projectId string, keyPairId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting key pair: %s in project: %s", keyPairId, projectId)
 
 	if err := types.ValidateProjectAndResource(projectId, keyPairId, "key pair ID"); err != nil {
 		return nil, err
@@ -156,7 +167,7 @@ func (s *Service) DeleteKeyPair(ctx context.Context, projectId string, keyPairId
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
