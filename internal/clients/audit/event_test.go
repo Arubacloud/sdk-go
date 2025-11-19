@@ -84,9 +84,9 @@ func TestListEvents(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewEventsClientImpl(c)
 
-		resp, err := svc.ListEvents(context.Background(), "test-project", nil)
+		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -136,9 +136,9 @@ func TestListEvents(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewEventsClientImpl(c)
 
-		resp, err := svc.ListEvents(context.Background(), "test-project", nil)
+		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -221,14 +221,14 @@ func TestListEvents(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewEventsClientImpl(c)
 
 		params := &types.RequestParameters{
 			Limit:  types.Int32Ptr(10),
 			Offset: types.Int32Ptr(5),
 		}
 
-		resp, err := svc.ListEvents(context.Background(), "test-project", params)
+		resp, err := svc.List(context.Background(), "test-project", params)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

@@ -5,11 +5,24 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListEvents retrieves all audit events for a project
-func (s *Service) ListEvents(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.AuditEventListResponse], error) {
+// eventsClientImpl implements the AuditAPI interface for all Audit operations
+type eventsClientImpl struct {
+	client *restclient.Client
+}
+
+// NewEventsClientImpl creates a new unified Audit service
+func NewEventsClientImpl(client *restclient.Client) *eventsClientImpl {
+	return &eventsClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all audit events for a project
+func (s *eventsClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.AuditEventListResponse], error) {
 	s.client.Logger().Debugf("Listing audit events for project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {

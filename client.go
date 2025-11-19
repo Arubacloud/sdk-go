@@ -2,9 +2,6 @@
 package aruba
 
 import (
-	impl "github.com/Arubacloud/sdk-go/internal/client"
-	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/audit"
 	"github.com/Arubacloud/sdk-go/pkg/spec/compute"
 	"github.com/Arubacloud/sdk-go/pkg/spec/container"
 	"github.com/Arubacloud/sdk-go/pkg/spec/database"
@@ -17,7 +14,7 @@ import (
 )
 
 type Client interface {
-	FromAudit() audit.AuditAPI
+	FromAudit() AuditClient
 	FromCompute() compute.ComputeAPI
 	FromContainer() container.ContainerAPI
 	FromDatabase() database.DatabaseAPI
@@ -29,6 +26,48 @@ type Client interface {
 	FromStorage() storage.StorageAPI
 }
 
-func NewClient(config *restclient.Config) (Client, error) {
-	return impl.NewClient(config)
+type clientImpl struct {
+	auditClient     AuditClient
+	computeClient   compute.ComputeAPI
+	containerClient container.ContainerAPI
+	databaseClient  database.DatabaseAPI
+	metricsClient   metric.MetricAPI
+	networkClient   network.NetworkAPI
+	projectClient   project.ProjectAPI
+	scheduleClient  schedule.ScheduleAPI
+	securityClient  security.SecurityAPI
+	storageClient   storage.StorageAPI
+}
+
+var _ Client = (*clientImpl)(nil)
+
+func (c *clientImpl) FromAudit() AuditClient {
+	return c.auditClient
+}
+func (c *clientImpl) FromCompute() compute.ComputeAPI {
+	return c.computeClient
+}
+func (c *clientImpl) FromContainer() container.ContainerAPI {
+	return c.containerClient
+}
+func (c *clientImpl) FromDatabase() database.DatabaseAPI {
+	return c.databaseClient
+}
+func (c *clientImpl) FromMetric() metric.MetricAPI {
+	return c.metricsClient
+}
+func (c *clientImpl) FromNetwork() network.NetworkAPI {
+	return c.networkClient
+}
+func (c *clientImpl) FromProject() project.ProjectAPI {
+	return c.projectClient
+}
+func (c *clientImpl) FromSchedule() schedule.ScheduleAPI {
+	return c.scheduleClient
+}
+func (c *clientImpl) FromSecurity() security.SecurityAPI {
+	return c.securityClient
+}
+func (c *clientImpl) FromStorage() storage.StorageAPI {
+	return c.storageClient
 }
