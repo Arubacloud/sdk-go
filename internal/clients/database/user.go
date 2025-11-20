@@ -8,12 +8,24 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListUsers retrieves all users for a DBaaS instance
-func (s *Service) ListUsers(ctx context.Context, project string, dbaasId string, params *types.RequestParameters) (*types.Response[types.UserList], error) {
-	s.client.Logger().Debugf("Listing users for DBaaS: %s in project: %s", dbaasId, project)
+type usersClientImpl struct {
+	client *restclient.Client
+}
+
+// NewService creates a new unified Database service
+func NewUsersClientImpl(client *restclient.Client) *usersClientImpl {
+	return &usersClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all users for a DBaaS instance
+func (c *usersClientImpl) List(ctx context.Context, project string, dbaasId string, params *types.RequestParameters) (*types.Response[types.UserList], error) {
+	c.client.Logger().Debugf("Listing users for DBaaS: %s in project: %s", dbaasId, project)
 
 	if err := types.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
 		return nil, err
@@ -32,7 +44,7 @@ func (s *Service) ListUsers(ctx context.Context, project string, dbaasId string,
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +53,9 @@ func (s *Service) ListUsers(ctx context.Context, project string, dbaasId string,
 	return types.ParseResponseBody[types.UserList](httpResp)
 }
 
-// GetUser retrieves a specific user by ID
-func (s *Service) GetUser(ctx context.Context, project string, dbaasId string, userId string, params *types.RequestParameters) (*types.Response[types.UserResponse], error) {
-	s.client.Logger().Debugf("Getting user: %s from DBaaS: %s in project: %s", userId, dbaasId, project)
+// Get retrieves a specific user by ID
+func (c *usersClientImpl) Get(ctx context.Context, project string, dbaasId string, userId string, params *types.RequestParameters) (*types.Response[types.UserResponse], error) {
+	c.client.Logger().Debugf("Getting user: %s from DBaaS: %s in project: %s", userId, dbaasId, project)
 
 	if err := types.ValidateDBaaSResource(project, dbaasId, userId, "user ID"); err != nil {
 		return nil, err
@@ -62,7 +74,7 @@ func (s *Service) GetUser(ctx context.Context, project string, dbaasId string, u
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +83,9 @@ func (s *Service) GetUser(ctx context.Context, project string, dbaasId string, u
 	return types.ParseResponseBody[types.UserResponse](httpResp)
 }
 
-// CreateUser creates a new user in a DBaaS instance
-func (s *Service) CreateUser(ctx context.Context, project string, dbaasId string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error) {
-	s.client.Logger().Debugf("Creating user in DBaaS: %s in project: %s", dbaasId, project)
+// Create creates a new user in a DBaaS instance
+func (c *usersClientImpl) Create(ctx context.Context, project string, dbaasId string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error) {
+	c.client.Logger().Debugf("Creating user in DBaaS: %s in project: %s", dbaasId, project)
 
 	if err := types.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
 		return nil, err
@@ -98,7 +110,7 @@ func (s *Service) CreateUser(ctx context.Context, project string, dbaasId string
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -135,9 +147,9 @@ func (s *Service) CreateUser(ctx context.Context, project string, dbaasId string
 	return response, nil
 }
 
-// UpdateUser updates an existing user
-func (s *Service) UpdateUser(ctx context.Context, project string, dbaasId string, userId string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error) {
-	s.client.Logger().Debugf("Updating user: %s in DBaaS: %s in project: %s", userId, dbaasId, project)
+// Update updates an existing user
+func (c *usersClientImpl) Update(ctx context.Context, project string, dbaasId string, userId string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error) {
+	c.client.Logger().Debugf("Updating user: %s in DBaaS: %s in project: %s", userId, dbaasId, project)
 
 	if err := types.ValidateDBaaSResource(project, dbaasId, userId, "user ID"); err != nil {
 		return nil, err
@@ -162,7 +174,7 @@ func (s *Service) UpdateUser(ctx context.Context, project string, dbaasId string
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -199,9 +211,9 @@ func (s *Service) UpdateUser(ctx context.Context, project string, dbaasId string
 	return response, nil
 }
 
-// DeleteUser deletes a user by ID
-func (s *Service) DeleteUser(ctx context.Context, projectId string, dbaasId string, userId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting user: %s from DBaaS: %s in project: %s", userId, dbaasId, projectId)
+// Delete deletes a user by ID
+func (c *usersClientImpl) Delete(ctx context.Context, projectId string, dbaasId string, userId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting user: %s from DBaaS: %s in project: %s", userId, dbaasId, projectId)
 
 	if err := types.ValidateDBaaSResource(projectId, dbaasId, userId, "user ID"); err != nil {
 		return nil, err
@@ -220,7 +232,7 @@ func (s *Service) DeleteUser(ctx context.Context, projectId string, dbaasId stri
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

@@ -8,12 +8,24 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListDBaaS retrieves all DBaaS instances for a project
-func (s *Service) ListDBaaS(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.DBaaSList], error) {
-	s.client.Logger().Debugf("Listing DBaaS instances for project: %s", project)
+type dbaasClientImpl struct {
+	client *restclient.Client
+}
+
+// NewService creates a new unified Database service
+func NewDBaaSClientImpl(client *restclient.Client) *dbaasClientImpl {
+	return &dbaasClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all DBaaS instances for a project
+func (c *dbaasClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.DBaaSList], error) {
+	c.client.Logger().Debugf("Listing DBaaS instances for project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -31,7 +43,7 @@ func (s *Service) ListDBaaS(ctx context.Context, project string, params *types.R
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -40,9 +52,9 @@ func (s *Service) ListDBaaS(ctx context.Context, project string, params *types.R
 	return types.ParseResponseBody[types.DBaaSList](httpResp)
 }
 
-// GetDBaaS retrieves a specific DBaaS instance by ID
-func (s *Service) GetDBaaS(ctx context.Context, project string, dbaasId string, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error) {
-	s.client.Logger().Debugf("Getting DBaaS instance: %s in project: %s", dbaasId, project)
+// Get retrieves a specific DBaaS instance by ID
+func (c *dbaasClientImpl) Get(ctx context.Context, project string, dbaasId string, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error) {
+	c.client.Logger().Debugf("Getting DBaaS instance: %s in project: %s", dbaasId, project)
 
 	if err := types.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
 		return nil, err
@@ -61,7 +73,7 @@ func (s *Service) GetDBaaS(ctx context.Context, project string, dbaasId string, 
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -70,9 +82,9 @@ func (s *Service) GetDBaaS(ctx context.Context, project string, dbaasId string, 
 	return types.ParseResponseBody[types.DBaaSResponse](httpResp)
 }
 
-// CreateDBaaS creates a new DBaaS instance
-func (s *Service) CreateDBaaS(ctx context.Context, project string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error) {
-	s.client.Logger().Debugf("Creating DBaaS instance in project: %s", project)
+// Create creates a new DBaaS instance
+func (c *dbaasClientImpl) Create(ctx context.Context, project string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error) {
+	c.client.Logger().Debugf("Creating DBaaS instance in project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -97,7 +109,7 @@ func (s *Service) CreateDBaaS(ctx context.Context, project string, body types.DB
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -134,9 +146,9 @@ func (s *Service) CreateDBaaS(ctx context.Context, project string, body types.DB
 	return response, nil
 }
 
-// UpdateDBaaS updates an existing DBaaS instance
-func (s *Service) UpdateDBaaS(ctx context.Context, project string, databaseId string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error) {
-	s.client.Logger().Debugf("Updating DBaaS instance: %s in project: %s", databaseId, project)
+// Update updates an existing DBaaS instance
+func (c *dbaasClientImpl) Update(ctx context.Context, project string, databaseId string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error) {
+	c.client.Logger().Debugf("Updating DBaaS instance: %s in project: %s", databaseId, project)
 
 	if err := types.ValidateProjectAndResource(project, databaseId, "DBaaS ID"); err != nil {
 		return nil, err
@@ -161,7 +173,7 @@ func (s *Service) UpdateDBaaS(ctx context.Context, project string, databaseId st
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -198,9 +210,9 @@ func (s *Service) UpdateDBaaS(ctx context.Context, project string, databaseId st
 	return response, nil
 }
 
-// DeleteDBaaS deletes a DBaaS instance by ID
-func (s *Service) DeleteDBaaS(ctx context.Context, projectId string, dbaasId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting DBaaS instance: %s in project: %s", dbaasId, projectId)
+// Delete deletes a DBaaS instance by ID
+func (c *dbaasClientImpl) Delete(ctx context.Context, projectId string, dbaasId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting DBaaS instance: %s in project: %s", dbaasId, projectId)
 
 	if err := types.ValidateProjectAndResource(projectId, dbaasId, "DBaaS ID"); err != nil {
 		return nil, err
@@ -219,7 +231,7 @@ func (s *Service) DeleteDBaaS(ctx context.Context, projectId string, dbaasId str
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

@@ -7,12 +7,24 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListBackups retrieves all backups for a project
-func (s *Service) ListBackups(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.BackupList], error) {
-	s.client.Logger().Debugf("Listing backups for project: %s", project)
+type backupsClientImpl struct {
+	client *restclient.Client
+}
+
+// NewService creates a new unified Database service
+func NewBackupsClientImpl(client *restclient.Client) *backupsClientImpl {
+	return &backupsClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all backups for a project
+func (c *backupsClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.BackupList], error) {
+	c.client.Logger().Debugf("Listing backups for project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -31,7 +43,7 @@ func (s *Service) ListBackups(ctx context.Context, project string, params *types
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -40,9 +52,9 @@ func (s *Service) ListBackups(ctx context.Context, project string, params *types
 	return types.ParseResponseBody[types.BackupList](httpResp)
 }
 
-// GetBackup retrieves a specific backup by ID
-func (s *Service) GetBackup(ctx context.Context, project string, backupId string, params *types.RequestParameters) (*types.Response[types.BackupResponse], error) {
-	s.client.Logger().Debugf("Getting backup: %s in project: %s", backupId, project)
+// Get retrieves a specific backup by ID
+func (c *backupsClientImpl) Get(ctx context.Context, project string, backupId string, params *types.RequestParameters) (*types.Response[types.BackupResponse], error) {
+	c.client.Logger().Debugf("Getting backup: %s in project: %s", backupId, project)
 
 	if err := types.ValidateProjectAndResource(project, backupId, "backup ID"); err != nil {
 		return nil, err
@@ -61,7 +73,7 @@ func (s *Service) GetBackup(ctx context.Context, project string, backupId string
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -70,9 +82,9 @@ func (s *Service) GetBackup(ctx context.Context, project string, backupId string
 	return types.ParseResponseBody[types.BackupResponse](httpResp)
 }
 
-// CreateBackup creates a new backup
-func (s *Service) CreateBackup(ctx context.Context, project string, body types.BackupRequest, params *types.RequestParameters) (*types.Response[types.BackupResponse], error) {
-	s.client.Logger().Debugf("Creating backup in project: %s", project)
+// Create creates a new backup
+func (c *backupsClientImpl) Create(ctx context.Context, project string, body types.BackupRequest, params *types.RequestParameters) (*types.Response[types.BackupResponse], error) {
+	c.client.Logger().Debugf("Creating backup in project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -97,7 +109,7 @@ func (s *Service) CreateBackup(ctx context.Context, project string, body types.B
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -106,9 +118,9 @@ func (s *Service) CreateBackup(ctx context.Context, project string, body types.B
 	return types.ParseResponseBody[types.BackupResponse](httpResp)
 }
 
-// DeleteBackup deletes a backup by ID
-func (s *Service) DeleteBackup(ctx context.Context, projectId string, backupId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting backup: %s in project: %s", backupId, projectId)
+// Delete deletes a backup by ID
+func (c *backupsClientImpl) Delete(ctx context.Context, projectId string, backupId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting backup: %s in project: %s", backupId, projectId)
 
 	if err := types.ValidateProjectAndResource(projectId, backupId, "backup ID"); err != nil {
 		return nil, err
@@ -127,7 +139,7 @@ func (s *Service) DeleteBackup(ctx context.Context, projectId string, backupId s
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

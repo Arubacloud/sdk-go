@@ -8,12 +8,24 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListDatabases retrieves all databases for a DBaaS instance
-func (s *Service) ListDatabases(ctx context.Context, project string, dbaasId string, params *types.RequestParameters) (*types.Response[types.DatabaseList], error) {
-	s.client.Logger().Debugf("Listing databases for DBaaS: %s in project: %s", dbaasId, project)
+type databasesClientImpl struct {
+	client *restclient.Client
+}
+
+// NewService creates a new unified Database service
+func NewDatabasesClientImpl(client *restclient.Client) *databasesClientImpl {
+	return &databasesClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all databases for a DBaaS instance
+func (c *databasesClientImpl) List(ctx context.Context, project string, dbaasId string, params *types.RequestParameters) (*types.Response[types.DatabaseList], error) {
+	c.client.Logger().Debugf("Listing databases for DBaaS: %s in project: %s", dbaasId, project)
 
 	if err := types.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
 		return nil, err
@@ -32,7 +44,7 @@ func (s *Service) ListDatabases(ctx context.Context, project string, dbaasId str
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +53,9 @@ func (s *Service) ListDatabases(ctx context.Context, project string, dbaasId str
 	return types.ParseResponseBody[types.DatabaseList](httpResp)
 }
 
-// GetDatabase retrieves a specific database by ID
-func (s *Service) GetDatabase(ctx context.Context, project string, dbaasId string, databaseId string, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error) {
-	s.client.Logger().Debugf("Getting database: %s from DBaaS: %s in project: %s", databaseId, dbaasId, project)
+// Get retrieves a specific database by ID
+func (c *databasesClientImpl) Get(ctx context.Context, project string, dbaasId string, databaseId string, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error) {
+	c.client.Logger().Debugf("Getting database: %s from DBaaS: %s in project: %s", databaseId, dbaasId, project)
 
 	if err := types.ValidateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
 		return nil, err
@@ -62,7 +74,7 @@ func (s *Service) GetDatabase(ctx context.Context, project string, dbaasId strin
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +83,9 @@ func (s *Service) GetDatabase(ctx context.Context, project string, dbaasId strin
 	return types.ParseResponseBody[types.DatabaseResponse](httpResp)
 }
 
-// CreateDatabase creates a new database
-func (s *Service) CreateDatabase(ctx context.Context, project string, dbaasId string, body types.DatabaseRequest, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error) {
-	s.client.Logger().Debugf("Creating database in DBaaS: %s in project: %s", dbaasId, project)
+// Create creates a new database
+func (c *databasesClientImpl) Create(ctx context.Context, project string, dbaasId string, body types.DatabaseRequest, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error) {
+	c.client.Logger().Debugf("Creating database in DBaaS: %s in project: %s", dbaasId, project)
 
 	if err := types.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
 		return nil, err
@@ -98,7 +110,7 @@ func (s *Service) CreateDatabase(ctx context.Context, project string, dbaasId st
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -135,9 +147,9 @@ func (s *Service) CreateDatabase(ctx context.Context, project string, dbaasId st
 	return response, nil
 }
 
-// UpdateDatabase updates an existing database
-func (s *Service) UpdateDatabase(ctx context.Context, project string, dbaasId string, databaseId string, body types.DatabaseRequest, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error) {
-	s.client.Logger().Debugf("Updating database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, project)
+// Update updates an existing database
+func (c *databasesClientImpl) Update(ctx context.Context, project string, dbaasId string, databaseId string, body types.DatabaseRequest, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error) {
+	c.client.Logger().Debugf("Updating database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, project)
 
 	if err := types.ValidateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
 		return nil, err
@@ -162,7 +174,7 @@ func (s *Service) UpdateDatabase(ctx context.Context, project string, dbaasId st
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -199,9 +211,9 @@ func (s *Service) UpdateDatabase(ctx context.Context, project string, dbaasId st
 	return response, nil
 }
 
-// DeleteDatabase deletes a database by ID
-func (s *Service) DeleteDatabase(ctx context.Context, projectId string, dbaasId string, databaseId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting database: %s from DBaaS: %s in project: %s", databaseId, dbaasId, projectId)
+// Delete deletes a database by ID
+func (c *databasesClientImpl) Delete(ctx context.Context, projectId string, dbaasId string, databaseId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting database: %s from DBaaS: %s in project: %s", databaseId, dbaasId, projectId)
 
 	if err := types.ValidateDBaaSResource(projectId, dbaasId, databaseId, "database ID"); err != nil {
 		return nil, err
@@ -220,7 +232,7 @@ func (s *Service) DeleteDatabase(ctx context.Context, projectId string, dbaasId 
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

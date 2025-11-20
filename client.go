@@ -2,7 +2,6 @@
 package aruba
 
 import (
-	"github.com/Arubacloud/sdk-go/pkg/spec/database"
 	"github.com/Arubacloud/sdk-go/pkg/spec/metric"
 	"github.com/Arubacloud/sdk-go/pkg/spec/network"
 	"github.com/Arubacloud/sdk-go/pkg/spec/project"
@@ -15,7 +14,7 @@ type Client interface {
 	FromAudit() AuditClient
 	FromCompute() ComputeClient
 	FromContainer() ContainerClient
-	FromDatabase() database.DatabaseAPI
+	FromDatabase() DatabaseClient
 	FromMetric() metric.MetricAPI
 	FromNetwork() network.NetworkAPI
 	FromProject() project.ProjectAPI
@@ -28,7 +27,7 @@ type clientImpl struct {
 	auditClient     AuditClient
 	computeClient   ComputeClient
 	containerClient ContainerClient
-	databaseClient  database.DatabaseAPI
+	databaseClient  DatabaseClient
 	metricsClient   metric.MetricAPI
 	networkClient   network.NetworkAPI
 	projectClient   project.ProjectAPI
@@ -48,7 +47,7 @@ func (c *clientImpl) FromCompute() ComputeClient {
 func (c *clientImpl) FromContainer() ContainerClient {
 	return c.containerClient
 }
-func (c *clientImpl) FromDatabase() database.DatabaseAPI {
+func (c *clientImpl) FromDatabase() DatabaseClient {
 	return c.databaseClient
 }
 func (c *clientImpl) FromMetric() metric.MetricAPI {

@@ -58,11 +58,11 @@ func fetchExistingResources(ctx context.Context, arubaClient aruba.Client, proje
 	fmt.Println("Fetching existing resources...")
 
 	// Fetch DBaaS instances
-	dbaasListResp, err := arubaClient.FromDatabase().ListDBaaS(ctx, projectID, nil)
+	dbaasListResp, err := arubaClient.FromDatabase().DBaaS().List(ctx, projectID, nil)
 	if err == nil && dbaasListResp.IsSuccess() && len(dbaasListResp.Data.Values) > 0 {
 		// Get the first DBaaS instance details
 		dbaasID := *dbaasListResp.Data.Values[0].Metadata.ID
-		dbaasResp, err := arubaClient.FromDatabase().GetDBaaS(ctx, projectID, dbaasID, nil)
+		dbaasResp, err := arubaClient.FromDatabase().DBaaS().Get(ctx, projectID, dbaasID, nil)
 		if err == nil && dbaasResp.IsSuccess() {
 			resources.DBaaSResp = dbaasResp
 			fmt.Printf("✓ Found DBaaS: %s\n", *dbaasResp.Data.Metadata.Name)
@@ -177,7 +177,7 @@ func updateDBaaS(ctx context.Context, arubaClient aruba.Client, projectID string
 		},
 	}
 
-	updateResp, err := arubaClient.FromDatabase().UpdateDBaaS(ctx, projectID, dbaasID, dbaasReq, nil)
+	updateResp, err := arubaClient.FromDatabase().DBaaS().Update(ctx, projectID, dbaasID, dbaasReq, nil)
 	if err != nil {
 		log.Printf("Error updating DBaaS: %v", err)
 		return

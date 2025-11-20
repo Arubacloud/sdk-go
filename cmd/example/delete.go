@@ -93,10 +93,10 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, projectID 
 	}
 
 	// Fetch DBaaS instances
-	dbaasListResp, err := arubaClient.FromDatabase().ListDBaaS(ctx, projectID, nil)
+	dbaasListResp, err := arubaClient.FromDatabase().DBaaS().List(ctx, projectID, nil)
 	if err == nil && dbaasListResp.IsSuccess() && len(dbaasListResp.Data.Values) > 0 {
 		dbaasID := *dbaasListResp.Data.Values[0].Metadata.ID
-		dbaasResp, err := arubaClient.FromDatabase().GetDBaaS(ctx, projectID, dbaasID, nil)
+		dbaasResp, err := arubaClient.FromDatabase().DBaaS().Get(ctx, projectID, dbaasID, nil)
 		if err == nil && dbaasResp.IsSuccess() {
 			resources.DBaaSResp = dbaasResp
 			fmt.Printf("✓ Found DBaaS: %s\n", *dbaasResp.Data.Metadata.Name)
@@ -424,7 +424,7 @@ func deleteKeyPair(ctx context.Context, arubaClient aruba.Client, projectID, key
 func deleteDBaaS(ctx context.Context, arubaClient aruba.Client, projectID, dbaasID string) {
 	fmt.Println("--- Deleting DBaaS ---")
 
-	deleteResp, err := arubaClient.FromDatabase().DeleteDBaaS(ctx, projectID, dbaasID, nil)
+	deleteResp, err := arubaClient.FromDatabase().DBaaS().Delete(ctx, projectID, dbaasID, nil)
 	if err != nil {
 		log.Printf("Error deleting DBaaS: %v", err)
 		return

@@ -566,7 +566,7 @@ func createDBaaS(ctx context.Context, arubaClient aruba.Client, projectID string
 		},
 	}
 
-	dbaasResp, err := arubaClient.FromDatabase().CreateDBaaS(ctx, projectID, dbaasReq, nil)
+	dbaasResp, err := arubaClient.FromDatabase().DBaaS().Create(ctx, projectID, dbaasReq, nil)
 	if err != nil {
 		log.Printf("Error creating DBaaS: %v", err)
 		return nil
