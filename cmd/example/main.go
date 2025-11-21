@@ -10,7 +10,7 @@ import (
 	"time"
 
 	aruba "github.com/Arubacloud/sdk-go"
-	"github.com/Arubacloud/sdk-go/pkg/restclient"
+	"github.com/Arubacloud/sdk-go/internal/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Arubacloud/sdk-go/pkg/restclient"
+	"github.com/Arubacloud/sdk-go/internal/restclient"
 )
 
 // waitForBlockStorageActive waits for a Block Storage volume to become Active or NotUsed before proceeding

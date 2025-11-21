@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Arubacloud/sdk-go/pkg/restclient"
+	"github.com/Arubacloud/sdk-go/internal/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 

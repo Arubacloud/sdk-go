@@ -12,7 +12,7 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 	"github.com/Arubacloud/sdk-go/internal/clients/security"
 	"github.com/Arubacloud/sdk-go/internal/clients/storage"
-	"github.com/Arubacloud/sdk-go/pkg/restclient"
+	"github.com/Arubacloud/sdk-go/internal/restclient"
 )
 
 // Client

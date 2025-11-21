@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Arubacloud/sdk-go/pkg/restclient"
+	"github.com/Arubacloud/sdk-go/internal/restclient"
 )
 
 // waitForVPCActive waits for a VPC to become Active before proceeding

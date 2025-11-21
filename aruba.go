@@ -1,6 +1,6 @@
 package aruba
 
-import "github.com/Arubacloud/sdk-go/pkg/restclient"
+import "github.com/Arubacloud/sdk-go/internal/restclient"
 
 func NewClient(config *restclient.Config) (Client, error) {
 	return buildClient(config)
