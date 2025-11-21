@@ -8,12 +8,24 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListVPCs retrieves all VPCs for a project
-func (s *Service) ListVPCs(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.VPCList], error) {
-	s.client.Logger().Debugf("Listing VPCs for project: %s", project)
+type vpcsClientImpl struct {
+	client *restclient.Client
+}
+
+// NewService creates a new unified Network service
+func NewVPCsClientImpl(client *restclient.Client) *vpcsClientImpl {
+	return &vpcsClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all VPCs for a project
+func (c *vpcsClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.VPCList], error) {
+	c.client.Logger().Debugf("Listing VPCs for project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -32,7 +44,7 @@ func (s *Service) ListVPCs(ctx context.Context, project string, params *types.Re
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +53,9 @@ func (s *Service) ListVPCs(ctx context.Context, project string, params *types.Re
 	return types.ParseResponseBody[types.VPCList](httpResp)
 }
 
-// GetVPC retrieves a specific VPC by ID
-func (s *Service) GetVPC(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.VPCResponse], error) {
-	s.client.Logger().Debugf("Getting VPC: %s in project: %s", vpcId, project)
+// Get retrieves a specific VPC by ID
+func (c *vpcsClientImpl) Get(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.VPCResponse], error) {
+	c.client.Logger().Debugf("Getting VPC: %s in project: %s", vpcId, project)
 
 	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
@@ -62,7 +74,7 @@ func (s *Service) GetVPC(ctx context.Context, project string, vpcId string, para
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +83,9 @@ func (s *Service) GetVPC(ctx context.Context, project string, vpcId string, para
 	return types.ParseResponseBody[types.VPCResponse](httpResp)
 }
 
-// CreateVPC creates a new VPC
-func (s *Service) CreateVPC(ctx context.Context, project string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error) {
-	s.client.Logger().Debugf("Creating VPC in project: %s", project)
+// Create creates a new VPC
+func (c *vpcsClientImpl) Create(ctx context.Context, project string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error) {
+	c.client.Logger().Debugf("Creating VPC in project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -97,7 +109,7 @@ func (s *Service) CreateVPC(ctx context.Context, project string, body types.VPCR
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -131,9 +143,9 @@ func (s *Service) CreateVPC(ctx context.Context, project string, body types.VPCR
 	return response, nil
 }
 
-// UpdateVPC updates an existing VPC
-func (s *Service) UpdateVPC(ctx context.Context, project string, vpcId string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error) {
-	s.client.Logger().Debugf("Updating VPC: %s in project: %s", vpcId, project)
+// Update updates an existing VPC
+func (c *vpcsClientImpl) Update(ctx context.Context, project string, vpcId string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error) {
+	c.client.Logger().Debugf("Updating VPC: %s in project: %s", vpcId, project)
 
 	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
@@ -157,7 +169,7 @@ func (s *Service) UpdateVPC(ctx context.Context, project string, vpcId string, b
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -191,9 +203,9 @@ func (s *Service) UpdateVPC(ctx context.Context, project string, vpcId string, b
 	return response, nil
 }
 
-// DeleteVPC deletes a VPC by ID
-func (s *Service) DeleteVPC(ctx context.Context, projectId string, vpcId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting VPC: %s in project: %s", vpcId, projectId)
+// Delete deletes a VPC by ID
+func (c *vpcsClientImpl) Delete(ctx context.Context, projectId string, vpcId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting VPC: %s in project: %s", vpcId, projectId)
 
 	if err := types.ValidateProjectAndResource(projectId, vpcId, "VPC ID"); err != nil {
 		return nil, err
@@ -212,7 +224,7 @@ func (s *Service) DeleteVPC(ctx context.Context, projectId string, vpcId string,
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

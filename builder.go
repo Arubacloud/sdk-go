@@ -7,8 +7,8 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/container"
 	"github.com/Arubacloud/sdk-go/internal/clients/database"
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
+	"github.com/Arubacloud/sdk-go/internal/clients/network"
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/network"
 	"github.com/Arubacloud/sdk-go/pkg/spec/project"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schedule"
 	"github.com/Arubacloud/sdk-go/pkg/spec/security"
@@ -47,14 +47,19 @@ func buildClient(config *restclient.Config) (Client, error) {
 		return nil, err // TODO: better error handling
 	}
 
+	networkClient, err := buildNetworkClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
 	return &clientImpl{
 		auditClient:     auditClient,
 		computeClient:   computeClient,
 		containerClient: containerClient,
 		databaseClient:  databaseClient,
 		metricsClient:   metricClient,
+		networkClient:   networkClient,
 		// TODO: Replace all below for refactored servers
-		networkClient:  network.NewService(restClient),
 		projectClient:  project.NewService(restClient),
 		scheduleClient: schedule.NewService(restClient),
 		securityClient: security.NewService(restClient),
@@ -213,4 +218,124 @@ func buildAlertsClient(restClient *restclient.Client) (AlertsClient, error) {
 
 func buildMetricsClient(restClient *restclient.Client) (MetricsClient, error) {
 	return metric.NewMetricsClientImpl(restClient), nil
+}
+
+//
+// Network domain clients
+
+func buildNetworkClient(restClient *restclient.Client) (NetworkClient, error) {
+	elasticIPsClient, err := buildElasticIPsClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	loadBalancersClient, err := buildLoadBalancersClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	securityGroupRulesClient, err := buildSecurityGroupRulesClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	securityGroupsClient, err := buildSecurityGroupsClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	subnetsClient, err := buildSubnetsClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	vpcPeeringRoutesClient, err := buildVPCPeeringRoutesClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	vpcPeeringsClient, err := buildVPCPeeringsClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	vpcsClient, err := buildVPCsClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	vpnRoutesClient, err := buildVPNRoutesClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	vpnTunnelsClient, err := buildVPNTunnelsClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	return &networkClientImpl{
+		elasticIPsClient:         elasticIPsClient,
+		loadBalancersClient:      loadBalancersClient,
+		securityGroupRulesClient: securityGroupRulesClient,
+		securityGroupsClient:     securityGroupsClient,
+		subnetsClient:            subnetsClient,
+		vpcPeeringRoutesClient:   vpcPeeringRoutesClient,
+		vpcPeeringsClient:        vpcPeeringsClient,
+		vpcsClient:               vpcsClient,
+		vpnRoutesClient:          vpnRoutesClient,
+		vpnTunnelsClient:         vpnTunnelsClient,
+	}, nil
+}
+
+func buildElasticIPsClient(restClient *restclient.Client) (ElasticIPsClient, error) {
+	return network.NewElasticIPsClientImpl(restClient), nil
+}
+
+func buildLoadBalancersClient(restClient *restclient.Client) (LoadBalancersClient, error) {
+	return network.NewLoadBalancersClientImpl(restClient), nil
+}
+
+func buildSecurityGroupRulesClient(restClient *restclient.Client) (SecurityGroupRulesClient, error) {
+	return network.NewSecurityGroupRulesClientImpl(
+		restClient,
+		network.NewSecurityGroupsClientImpl(
+			restClient,
+			network.NewVPCsClientImpl(restClient),
+		),
+	), nil
+}
+
+func buildSecurityGroupsClient(restClient *restclient.Client) (SecurityGroupsClient, error) {
+	return network.NewSecurityGroupsClientImpl(
+		restClient,
+		network.NewVPCsClientImpl(restClient),
+	), nil
+}
+
+func buildSubnetsClient(restClient *restclient.Client) (SubnetsClient, error) {
+	return network.NewSubnetsClientImpl(
+		restClient,
+		network.NewVPCsClientImpl(restClient),
+	), nil
+}
+
+func buildVPCPeeringRoutesClient(restClient *restclient.Client) (VPCPeeringRoutesClient, error) {
+	return network.NewVPCPeeringRoutesClientImpl(restClient), nil
+}
+
+func buildVPCPeeringsClient(restClient *restclient.Client) (VPCPeeringsClient, error) {
+	return network.NewVPCPeeringsClientImpl(restClient), nil
+}
+
+func buildVPCsClient(restClient *restclient.Client) (VPCsClient, error) {
+	return network.NewVPCsClientImpl(restClient), nil
+}
+
+func buildVPNRoutesClient(restClient *restclient.Client) (VPNRoutesClient, error) {
+	return network.NewVPNRoutesClientImpl(restClient), nil
+}
+
+func buildVPNTunnelsClient(restClient *restclient.Client) (VPNTunnelsClient, error) {
+	return network.NewVPNTunnelsClientImpl(restClient), nil
 }

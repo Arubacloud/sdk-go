@@ -8,12 +8,24 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListVpnRoutes retrieves all VPN routes for a VPN tunnel
-func (s *Service) ListVpnRoutes(ctx context.Context, project string, vpnTunnelId string, params *types.RequestParameters) (*types.Response[types.VPNRouteList], error) {
-	s.client.Logger().Debugf("Listing VPN routes for VPN tunnel: %s in project: %s", vpnTunnelId, project)
+type vpnRoutesClientImpl struct {
+	client *restclient.Client
+}
+
+// NewService creates a new unified Network service
+func NewVPNRoutesClientImpl(client *restclient.Client) *vpnRoutesClientImpl {
+	return &vpnRoutesClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all VPN routes for a VPN tunnel
+func (c *vpnRoutesClientImpl) List(ctx context.Context, project string, vpnTunnelId string, params *types.RequestParameters) (*types.Response[types.VPNRouteList], error) {
+	c.client.Logger().Debugf("Listing VPN routes for VPN tunnel: %s in project: %s", vpnTunnelId, project)
 
 	if err := types.ValidateProjectAndResource(project, vpnTunnelId, "VPN tunnel ID"); err != nil {
 		return nil, err
@@ -32,7 +44,7 @@ func (s *Service) ListVpnRoutes(ctx context.Context, project string, vpnTunnelId
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +53,9 @@ func (s *Service) ListVpnRoutes(ctx context.Context, project string, vpnTunnelId
 	return types.ParseResponseBody[types.VPNRouteList](httpResp)
 }
 
-// GetVpnRoute retrieves a specific VPN route by ID
-func (s *Service) GetVpnRoute(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, params *types.RequestParameters) (*types.Response[types.VPNRouteResponse], error) {
-	s.client.Logger().Debugf("Getting VPN route: %s from VPN tunnel: %s in project: %s", vpnRouteId, vpnTunnelId, project)
+// Get retrieves a specific VPN route by ID
+func (c *vpnRoutesClientImpl) Get(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, params *types.RequestParameters) (*types.Response[types.VPNRouteResponse], error) {
+	c.client.Logger().Debugf("Getting VPN route: %s from VPN tunnel: %s in project: %s", vpnRouteId, vpnTunnelId, project)
 
 	if err := types.ValidateVPNRoute(project, vpnTunnelId, vpnRouteId); err != nil {
 		return nil, err
@@ -62,7 +74,7 @@ func (s *Service) GetVpnRoute(ctx context.Context, project string, vpnTunnelId s
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +83,9 @@ func (s *Service) GetVpnRoute(ctx context.Context, project string, vpnTunnelId s
 	return types.ParseResponseBody[types.VPNRouteResponse](httpResp)
 }
 
-// CreateVpnRoute creates a new VPN route in a VPN tunnel
-func (s *Service) CreateVpnRoute(ctx context.Context, project string, vpnTunnelId string, body types.VPNRouteRequest, params *types.RequestParameters) (*types.Response[types.VPNRouteResponse], error) {
-	s.client.Logger().Debugf("Creating VPN route in VPN tunnel: %s in project: %s", vpnTunnelId, project)
+// Create creates a new VPN route in a VPN tunnel
+func (c *vpnRoutesClientImpl) Create(ctx context.Context, project string, vpnTunnelId string, body types.VPNRouteRequest, params *types.RequestParameters) (*types.Response[types.VPNRouteResponse], error) {
+	c.client.Logger().Debugf("Creating VPN route in VPN tunnel: %s in project: %s", vpnTunnelId, project)
 
 	if err := types.ValidateProjectAndResource(project, vpnTunnelId, "VPN tunnel ID"); err != nil {
 		return nil, err
@@ -97,7 +109,7 @@ func (s *Service) CreateVpnRoute(ctx context.Context, project string, vpnTunnelI
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -131,9 +143,9 @@ func (s *Service) CreateVpnRoute(ctx context.Context, project string, vpnTunnelI
 	return response, nil
 }
 
-// UpdateVpnRoute updates an existing VPN route
-func (s *Service) UpdateVpnRoute(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, body types.VPNRouteRequest, params *types.RequestParameters) (*types.Response[types.VPNRouteResponse], error) {
-	s.client.Logger().Debugf("Updating VPN route: %s in VPN tunnel: %s in project: %s", vpnRouteId, vpnTunnelId, project)
+// Update updates an existing VPN route
+func (c *vpnRoutesClientImpl) Update(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, body types.VPNRouteRequest, params *types.RequestParameters) (*types.Response[types.VPNRouteResponse], error) {
+	c.client.Logger().Debugf("Updating VPN route: %s in VPN tunnel: %s in project: %s", vpnRouteId, vpnTunnelId, project)
 
 	if err := types.ValidateVPNRoute(project, vpnTunnelId, vpnRouteId); err != nil {
 		return nil, err
@@ -157,7 +169,7 @@ func (s *Service) UpdateVpnRoute(ctx context.Context, project string, vpnTunnelI
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -191,9 +203,9 @@ func (s *Service) UpdateVpnRoute(ctx context.Context, project string, vpnTunnelI
 	return response, nil
 }
 
-// DeleteVpnRoute deletes a VPN route by ID
-func (s *Service) DeleteVpnRoute(ctx context.Context, projectId string, vpnTunnelId string, vpnRouteId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting VPN route: %s from VPN tunnel: %s in project: %s", vpnRouteId, vpnTunnelId, projectId)
+// Delete deletes a VPN route by ID
+func (c *vpnRoutesClientImpl) Delete(ctx context.Context, projectId string, vpnTunnelId string, vpnRouteId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting VPN route: %s from VPN tunnel: %s in project: %s", vpnRouteId, vpnTunnelId, projectId)
 
 	if err := types.ValidateVPNRoute(projectId, vpnTunnelId, vpnRouteId); err != nil {
 		return nil, err
@@ -212,7 +224,7 @@ func (s *Service) DeleteVpnRoute(ctx context.Context, projectId string, vpnTunne
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

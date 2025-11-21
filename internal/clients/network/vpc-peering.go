@@ -8,12 +8,24 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListVpcPeerings retrieves all VPC peerings for a VPC
-func (s *Service) ListVpcPeerings(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.VPCPeeringList], error) {
-	s.client.Logger().Debugf("Listing VPC peerings for VPC: %s in project: %s", vpcId, project)
+type vpcPeeringsClientImpl struct {
+	client *restclient.Client
+}
+
+// NewService creates a new unified Network service
+func NewVPCPeeringsClientImpl(client *restclient.Client) *vpcPeeringsClientImpl {
+	return &vpcPeeringsClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all VPC peerings for a VPC
+func (c *vpcPeeringsClientImpl) List(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.VPCPeeringList], error) {
+	c.client.Logger().Debugf("Listing VPC peerings for VPC: %s in project: %s", vpcId, project)
 
 	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
@@ -32,7 +44,7 @@ func (s *Service) ListVpcPeerings(ctx context.Context, project string, vpcId str
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +53,9 @@ func (s *Service) ListVpcPeerings(ctx context.Context, project string, vpcId str
 	return types.ParseResponseBody[types.VPCPeeringList](httpResp)
 }
 
-// GetVpcPeering retrieves a specific VPC peering by ID
-func (s *Service) GetVpcPeering(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error) {
-	s.client.Logger().Debugf("Getting VPC peering: %s from VPC: %s in project: %s", vpcPeeringId, vpcId, project)
+// Get retrieves a specific VPC peering by ID
+func (c *vpcPeeringsClientImpl) Get(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error) {
+	c.client.Logger().Debugf("Getting VPC peering: %s from VPC: %s in project: %s", vpcPeeringId, vpcId, project)
 
 	if err := types.ValidateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
 		return nil, err
@@ -62,7 +74,7 @@ func (s *Service) GetVpcPeering(ctx context.Context, project string, vpcId strin
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +83,9 @@ func (s *Service) GetVpcPeering(ctx context.Context, project string, vpcId strin
 	return types.ParseResponseBody[types.VPCPeeringResponse](httpResp)
 }
 
-// CreateVpcPeering creates a new VPC peering
-func (s *Service) CreateVpcPeering(ctx context.Context, project string, vpcId string, body types.VPCPeeringRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error) {
-	s.client.Logger().Debugf("Creating VPC peering in VPC: %s in project: %s", vpcId, project)
+// Create creates a new VPC peering
+func (c *vpcPeeringsClientImpl) Create(ctx context.Context, project string, vpcId string, body types.VPCPeeringRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error) {
+	c.client.Logger().Debugf("Creating VPC peering in VPC: %s in project: %s", vpcId, project)
 
 	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
@@ -97,7 +109,7 @@ func (s *Service) CreateVpcPeering(ctx context.Context, project string, vpcId st
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -131,9 +143,9 @@ func (s *Service) CreateVpcPeering(ctx context.Context, project string, vpcId st
 	return response, nil
 }
 
-// UpdateVpcPeering updates an existing VPC peering
-func (s *Service) UpdateVpcPeering(ctx context.Context, project string, vpcId string, vpcPeeringId string, body types.VPCPeeringRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error) {
-	s.client.Logger().Debugf("Updating VPC peering: %s in VPC: %s in project: %s", vpcPeeringId, vpcId, project)
+// Update updates an existing VPC peering
+func (c *vpcPeeringsClientImpl) Update(ctx context.Context, project string, vpcId string, vpcPeeringId string, body types.VPCPeeringRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error) {
+	c.client.Logger().Debugf("Updating VPC peering: %s in VPC: %s in project: %s", vpcPeeringId, vpcId, project)
 
 	if err := types.ValidateVPCResource(project, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
 		return nil, err
@@ -157,7 +169,7 @@ func (s *Service) UpdateVpcPeering(ctx context.Context, project string, vpcId st
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -191,9 +203,9 @@ func (s *Service) UpdateVpcPeering(ctx context.Context, project string, vpcId st
 	return response, nil
 }
 
-// DeleteVpcPeering deletes a VPC peering by ID
-func (s *Service) DeleteVpcPeering(ctx context.Context, projectId string, vpcId string, vpcPeeringId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting VPC peering: %s from VPC: %s in project: %s", vpcPeeringId, vpcId, projectId)
+// Delete deletes a VPC peering by ID
+func (c *vpcPeeringsClientImpl) Delete(ctx context.Context, projectId string, vpcId string, vpcPeeringId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting VPC peering: %s from VPC: %s in project: %s", vpcPeeringId, vpcId, projectId)
 
 	if err := types.ValidateVPCResource(projectId, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
 		return nil, err
@@ -212,7 +224,7 @@ func (s *Service) DeleteVpcPeering(ctx context.Context, projectId string, vpcId 
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

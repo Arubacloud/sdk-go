@@ -8,12 +8,26 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListSubnets retrieves all subnets for a VPC
-func (s *Service) ListSubnets(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.SubnetList], error) {
-	s.client.Logger().Debugf("Listing subnets for VPC: %s in project: %s", vpcId, project)
+type subnetsClientImpl struct {
+	client    *restclient.Client
+	vpcClient *vpcsClientImpl
+}
+
+// NewService creates a new unified Network service
+func NewSubnetsClientImpl(client *restclient.Client, vpcClient *vpcsClientImpl) *subnetsClientImpl {
+	return &subnetsClientImpl{
+		client:    client,
+		vpcClient: vpcClient,
+	}
+}
+
+// List retrieves all subnets for a VPC
+func (c *subnetsClientImpl) List(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.SubnetList], error) {
+	c.client.Logger().Debugf("Listing subnets for VPC: %s in project: %s", vpcId, project)
 
 	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
@@ -32,7 +46,7 @@ func (s *Service) ListSubnets(ctx context.Context, project string, vpcId string,
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +55,9 @@ func (s *Service) ListSubnets(ctx context.Context, project string, vpcId string,
 	return types.ParseResponseBody[types.SubnetList](httpResp)
 }
 
-// GetSubnet retrieves a specific subnet by ID
-func (s *Service) GetSubnet(ctx context.Context, project string, vpcId string, subnetId string, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error) {
-	s.client.Logger().Debugf("Getting subnet: %s from VPC: %s in project: %s", subnetId, vpcId, project)
+// Get retrieves a specific subnet by ID
+func (c *subnetsClientImpl) Get(ctx context.Context, project string, vpcId string, subnetId string, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error) {
+	c.client.Logger().Debugf("Getting subnet: %s from VPC: %s in project: %s", subnetId, vpcId, project)
 
 	if err := types.ValidateVPCResource(project, vpcId, subnetId, "subnet ID"); err != nil {
 		return nil, err
@@ -62,7 +76,7 @@ func (s *Service) GetSubnet(ctx context.Context, project string, vpcId string, s
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -71,17 +85,17 @@ func (s *Service) GetSubnet(ctx context.Context, project string, vpcId string, s
 	return types.ParseResponseBody[types.SubnetResponse](httpResp)
 }
 
-// CreateSubnet creates a new subnet in a VPC
+// Create creates a new subnet in a VPC
 // The SDK automatically waits for the VPC to become Active before creating the subnet
-func (s *Service) CreateSubnet(ctx context.Context, project string, vpcId string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error) {
-	s.client.Logger().Debugf("Creating subnet in VPC: %s in project: %s", vpcId, project)
+func (c *subnetsClientImpl) Create(ctx context.Context, project string, vpcId string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error) {
+	c.client.Logger().Debugf("Creating subnet in VPC: %s in project: %s", vpcId, project)
 
 	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
 	// Wait for VPC to become Active before creating subnet
-	err := s.waitForVPCActive(ctx, project, vpcId)
+	err := waitForVPCActive(ctx, c.vpcClient, project, vpcId)
 	if err != nil {
 		return nil, fmt.Errorf("failed waiting for VPC to become active: %w", err)
 	}
@@ -103,7 +117,7 @@ func (s *Service) CreateSubnet(ctx context.Context, project string, vpcId string
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -137,9 +151,9 @@ func (s *Service) CreateSubnet(ctx context.Context, project string, vpcId string
 	return response, nil
 }
 
-// UpdateSubnet updates an existing subnet
-func (s *Service) UpdateSubnet(ctx context.Context, project string, vpcId string, subnetId string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error) {
-	s.client.Logger().Debugf("Updating subnet: %s in VPC: %s in project: %s", subnetId, vpcId, project)
+// Update updates an existing subnet
+func (c *subnetsClientImpl) Update(ctx context.Context, project string, vpcId string, subnetId string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error) {
+	c.client.Logger().Debugf("Updating subnet: %s in VPC: %s in project: %s", subnetId, vpcId, project)
 
 	if err := types.ValidateVPCResource(project, vpcId, subnetId, "subnet ID"); err != nil {
 		return nil, err
@@ -163,7 +177,7 @@ func (s *Service) UpdateSubnet(ctx context.Context, project string, vpcId string
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -197,9 +211,9 @@ func (s *Service) UpdateSubnet(ctx context.Context, project string, vpcId string
 	return response, nil
 }
 
-// DeleteSubnet deletes a subnet by ID
-func (s *Service) DeleteSubnet(ctx context.Context, projectId string, vpcId string, subnetId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting subnet: %s from VPC: %s in project: %s", subnetId, vpcId, projectId)
+// Delete deletes a subnet by ID
+func (c *subnetsClientImpl) Delete(ctx context.Context, projectId string, vpcId string, subnetId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting subnet: %s from VPC: %s in project: %s", subnetId, vpcId, projectId)
 
 	if err := types.ValidateVPCResource(projectId, vpcId, subnetId, "subnet ID"); err != nil {
 		return nil, err
@@ -218,7 +232,7 @@ func (s *Service) DeleteSubnet(ctx context.Context, projectId string, vpcId stri
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

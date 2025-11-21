@@ -44,9 +44,9 @@ func TestListSecurityGroupRules(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewSecurityGroupRulesClientImpl(c, NewSecurityGroupsClientImpl(c, NewVPCsClientImpl(c)))
 
-		resp, err := svc.ListSecurityGroupRules(context.Background(), "test-project", "vpc-123", "sg-456", nil)
+		resp, err := svc.List(context.Background(), "test-project", "vpc-123", "sg-456", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -86,9 +86,9 @@ func TestGetSecurityGroupRule(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewSecurityGroupRulesClientImpl(c, NewSecurityGroupsClientImpl(c, NewVPCsClientImpl(c)))
 
-		resp, err := svc.GetSecurityGroupRule(context.Background(), "test-project", "vpc-123", "sg-456", "rule-789", nil)
+		resp, err := svc.Get(context.Background(), "test-project", "vpc-123", "sg-456", "rule-789", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -130,9 +130,9 @@ func TestDeleteSecurityGroupRule(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewSecurityGroupRulesClientImpl(c, NewSecurityGroupsClientImpl(c, NewVPCsClientImpl(c)))
 
-		_, err = svc.DeleteSecurityGroupRule(context.Background(), "test-project", "vpc-123", "sg-456", "rule-789", nil)
+		_, err = svc.Delete(context.Background(), "test-project", "vpc-123", "sg-456", "rule-789", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

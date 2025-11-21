@@ -7,12 +7,24 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListElasticIPs retrieves all elastic IPs for a project
-func (s *Service) ListElasticIPs(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.ElasticList], error) {
-	s.client.Logger().Debugf("Listing elastic IPs for project: %s", project)
+type elasticIPsClientImpl struct {
+	client *restclient.Client
+}
+
+// NewService creates a new unified Network service
+func NewElasticIPsClientImpl(client *restclient.Client) *elasticIPsClientImpl {
+	return &elasticIPsClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all elastic IPs for a project
+func (c *elasticIPsClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.ElasticList], error) {
+	c.client.Logger().Debugf("Listing elastic IPs for project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -31,7 +43,7 @@ func (s *Service) ListElasticIPs(ctx context.Context, project string, params *ty
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -40,9 +52,9 @@ func (s *Service) ListElasticIPs(ctx context.Context, project string, params *ty
 	return types.ParseResponseBody[types.ElasticList](httpResp)
 }
 
-// GetElasticIP retrieves a specific elastic IP by ID
-func (s *Service) GetElasticIP(ctx context.Context, project string, elasticIPId string, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error) {
-	s.client.Logger().Debugf("Getting elastic IP: %s in project: %s", elasticIPId, project)
+// Get retrieves a specific elastic IP by ID
+func (c *elasticIPsClientImpl) Get(ctx context.Context, project string, elasticIPId string, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error) {
+	c.client.Logger().Debugf("Getting elastic IP: %s in project: %s", elasticIPId, project)
 
 	if err := types.ValidateProjectAndResource(project, elasticIPId, "elastic IP ID"); err != nil {
 		return nil, err
@@ -61,7 +73,7 @@ func (s *Service) GetElasticIP(ctx context.Context, project string, elasticIPId 
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -70,9 +82,9 @@ func (s *Service) GetElasticIP(ctx context.Context, project string, elasticIPId 
 	return types.ParseResponseBody[types.ElasticIPResponse](httpResp)
 }
 
-// CreateElasticIP creates a new elastic IP
-func (s *Service) CreateElasticIP(ctx context.Context, project string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error) {
-	s.client.Logger().Debugf("Creating elastic IP in project: %s", project)
+// Create creates a new elastic IP
+func (c *elasticIPsClientImpl) Create(ctx context.Context, project string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error) {
+	c.client.Logger().Debugf("Creating elastic IP in project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -97,7 +109,7 @@ func (s *Service) CreateElasticIP(ctx context.Context, project string, body type
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -106,9 +118,9 @@ func (s *Service) CreateElasticIP(ctx context.Context, project string, body type
 	return types.ParseResponseBody[types.ElasticIPResponse](httpResp)
 }
 
-// UpdateElasticIP updates an existing elastic IP
-func (s *Service) UpdateElasticIP(ctx context.Context, project string, elasticIPId string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error) {
-	s.client.Logger().Debugf("Updating elastic IP: %s in project: %s", elasticIPId, project)
+// Update updates an existing elastic IP
+func (c *elasticIPsClientImpl) Update(ctx context.Context, project string, elasticIPId string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error) {
+	c.client.Logger().Debugf("Updating elastic IP: %s in project: %s", elasticIPId, project)
 
 	if err := types.ValidateProjectAndResource(project, elasticIPId, "elastic IP ID"); err != nil {
 		return nil, err
@@ -133,7 +145,7 @@ func (s *Service) UpdateElasticIP(ctx context.Context, project string, elasticIP
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -142,9 +154,9 @@ func (s *Service) UpdateElasticIP(ctx context.Context, project string, elasticIP
 	return types.ParseResponseBody[types.ElasticIPResponse](httpResp)
 }
 
-// DeleteElasticIP deletes an elastic IP by ID
-func (s *Service) DeleteElasticIP(ctx context.Context, projectId string, elasticIPId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting elastic IP: %s in project: %s", elasticIPId, projectId)
+// Delete deletes an elastic IP by ID
+func (c *elasticIPsClientImpl) Delete(ctx context.Context, projectId string, elasticIPId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting elastic IP: %s in project: %s", elasticIPId, projectId)
 
 	if err := types.ValidateProjectAndResource(projectId, elasticIPId, "elastic IP ID"); err != nil {
 		return nil, err
@@ -163,7 +175,7 @@ func (s *Service) DeleteElasticIP(ctx context.Context, projectId string, elastic
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

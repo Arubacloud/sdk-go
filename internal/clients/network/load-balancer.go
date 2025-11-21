@@ -5,11 +5,23 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListLoadBalancers retrieves all load balancers for a project
-func (s *Service) ListLoadBalancers(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.LoadBalancerList], error) {
+type loadBalancersClientImpl struct {
+	client *restclient.Client
+}
+
+// NewService creates a new unified Network service
+func NewLoadBalancersClientImpl(client *restclient.Client) *loadBalancersClientImpl {
+	return &loadBalancersClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all load balancers for a project
+func (c *loadBalancersClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.LoadBalancerList], error) {
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
 	}
@@ -27,7 +39,7 @@ func (s *Service) ListLoadBalancers(ctx context.Context, project string, params 
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -36,8 +48,8 @@ func (s *Service) ListLoadBalancers(ctx context.Context, project string, params 
 	return types.ParseResponseBody[types.LoadBalancerList](httpResp)
 }
 
-// GetLoadBalancer retrieves a specific load balancer by ID
-func (s *Service) GetLoadBalancer(ctx context.Context, project string, loadBalancerId string, params *types.RequestParameters) (*types.Response[types.LoadBalancerResponse], error) {
+// Get retrieves a specific load balancer by ID
+func (c *loadBalancersClientImpl) Get(ctx context.Context, project string, loadBalancerId string, params *types.RequestParameters) (*types.Response[types.LoadBalancerResponse], error) {
 	if err := types.ValidateProjectAndResource(project, loadBalancerId, "load balancer ID"); err != nil {
 		return nil, err
 	}
@@ -55,7 +67,7 @@ func (s *Service) GetLoadBalancer(ctx context.Context, project string, loadBalan
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

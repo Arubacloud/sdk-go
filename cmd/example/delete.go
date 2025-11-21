@@ -115,28 +115,28 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, projectID 
 	}
 
 	// Fetch VPCs and their resources
-	vpcList, err := arubaClient.FromNetwork().ListVPCs(ctx, projectID, nil)
+	vpcList, err := arubaClient.FromNetwork().VPCs().List(ctx, projectID, nil)
 	if err == nil && vpcList.IsSuccess() && len(vpcList.Data.Values) > 0 {
 		vpcID := *vpcList.Data.Values[0].Metadata.ID
-		vpcResp, err := arubaClient.FromNetwork().GetVPC(ctx, projectID, vpcID, nil)
+		vpcResp, err := arubaClient.FromNetwork().VPCs().Get(ctx, projectID, vpcID, nil)
 		if err == nil && vpcResp.IsSuccess() {
 			resources.VPCResp = vpcResp
 			fmt.Printf("✓ Found VPC: %s\n", *vpcResp.Data.Metadata.Name)
 
 			// Fetch Security Groups in VPC
-			sgList, err := arubaClient.FromNetwork().ListSecurityGroups(ctx, projectID, vpcID, nil)
+			sgList, err := arubaClient.FromNetwork().SecurityGroups().List(ctx, projectID, vpcID, nil)
 			if err == nil && sgList.IsSuccess() && len(sgList.Data.Values) > 0 {
 				sgID := *sgList.Data.Values[0].Metadata.ID
-				sgResp, err := arubaClient.FromNetwork().GetSecurityGroup(ctx, projectID, vpcID, sgID, nil)
+				sgResp, err := arubaClient.FromNetwork().SecurityGroups().Get(ctx, projectID, vpcID, sgID, nil)
 				if err == nil && sgResp.IsSuccess() {
 					resources.SecurityGroupResp = sgResp
 					fmt.Printf("✓ Found Security Group: %s\n", *sgResp.Data.Metadata.Name)
 
 					// Fetch Security Group Rules
-					ruleList, err := arubaClient.FromNetwork().ListSecurityGroupRules(ctx, projectID, vpcID, sgID, nil)
+					ruleList, err := arubaClient.FromNetwork().SecurityGroupRules().List(ctx, projectID, vpcID, sgID, nil)
 					if err == nil && ruleList.IsSuccess() && len(ruleList.Data.Values) > 0 {
 						ruleID := *ruleList.Data.Values[0].Metadata.ID
-						ruleResp, err := arubaClient.FromNetwork().GetSecurityGroupRule(ctx, projectID, vpcID, sgID, ruleID, nil)
+						ruleResp, err := arubaClient.FromNetwork().SecurityGroupRules().Get(ctx, projectID, vpcID, sgID, ruleID, nil)
 						if err == nil && ruleResp.IsSuccess() {
 							resources.SecurityRuleResp = ruleResp
 							fmt.Printf("✓ Found Security Rule: %s\n", *ruleResp.Data.Metadata.Name)
@@ -146,10 +146,10 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, projectID 
 			}
 
 			// Fetch Subnets in VPC
-			subnetList, err := arubaClient.FromNetwork().ListSubnets(ctx, projectID, vpcID, nil)
+			subnetList, err := arubaClient.FromNetwork().Subnets().List(ctx, projectID, vpcID, nil)
 			if err == nil && subnetList.IsSuccess() && len(subnetList.Data.Values) > 0 {
 				subnetID := *subnetList.Data.Values[0].Metadata.ID
-				subnetResp, err := arubaClient.FromNetwork().GetSubnet(ctx, projectID, vpcID, subnetID, nil)
+				subnetResp, err := arubaClient.FromNetwork().Subnets().Get(ctx, projectID, vpcID, subnetID, nil)
 				if err == nil && subnetResp.IsSuccess() {
 					resources.SubnetResp = subnetResp
 					fmt.Printf("✓ Found Subnet: %s\n", *subnetResp.Data.Metadata.Name)
@@ -181,10 +181,10 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, projectID 
 	}
 
 	// Fetch Elastic IPs
-	elasticIPList, err := arubaClient.FromNetwork().ListElasticIPs(ctx, projectID, nil)
+	elasticIPList, err := arubaClient.FromNetwork().ElasticIPs().List(ctx, projectID, nil)
 	if err == nil && elasticIPList.IsSuccess() && len(elasticIPList.Data.Values) > 0 {
 		elasticIPID := *elasticIPList.Data.Values[0].Metadata.ID
-		elasticIPResp, err := arubaClient.FromNetwork().GetElasticIP(ctx, projectID, elasticIPID, nil)
+		elasticIPResp, err := arubaClient.FromNetwork().ElasticIPs().Get(ctx, projectID, elasticIPID, nil)
 		if err == nil && elasticIPResp.IsSuccess() {
 			resources.ElasticIPResp = elasticIPResp
 			fmt.Printf("✓ Found Elastic IP: %s\n", *elasticIPResp.Data.Metadata.Name)
@@ -288,7 +288,7 @@ func deleteProject(ctx context.Context, arubaClient aruba.Client, projectID stri
 func deleteElasticIP(ctx context.Context, arubaClient aruba.Client, projectID, elasticIPID string) {
 	fmt.Println("--- Deleting Elastic IP ---")
 
-	deleteResp, err := arubaClient.FromNetwork().DeleteElasticIP(ctx, projectID, elasticIPID, nil)
+	deleteResp, err := arubaClient.FromNetwork().ElasticIPs().Delete(ctx, projectID, elasticIPID, nil)
 	if err != nil {
 		log.Printf("Error deleting Elastic IP: %v", err)
 		return
@@ -339,7 +339,7 @@ func deleteSnapshot(ctx context.Context, arubaClient aruba.Client, projectID, sn
 func deleteVPC(ctx context.Context, arubaClient aruba.Client, projectID, vpcID string) {
 	fmt.Println("--- Deleting VPC ---")
 
-	deleteResp, err := arubaClient.FromNetwork().DeleteVPC(ctx, projectID, vpcID, nil)
+	deleteResp, err := arubaClient.FromNetwork().VPCs().Delete(ctx, projectID, vpcID, nil)
 	if err != nil {
 		log.Printf("Error deleting VPC: %v", err)
 		return
@@ -356,7 +356,7 @@ func deleteVPC(ctx context.Context, arubaClient aruba.Client, projectID, vpcID s
 func deleteSubnet(ctx context.Context, arubaClient aruba.Client, projectID, vpcID, subnetID string) {
 	fmt.Println("--- Deleting Subnet ---")
 
-	deleteResp, err := arubaClient.FromNetwork().DeleteSubnet(ctx, projectID, vpcID, subnetID, nil)
+	deleteResp, err := arubaClient.FromNetwork().Subnets().Delete(ctx, projectID, vpcID, subnetID, nil)
 	if err != nil {
 		log.Printf("Error deleting subnet: %v", err)
 		return
@@ -373,7 +373,7 @@ func deleteSubnet(ctx context.Context, arubaClient aruba.Client, projectID, vpcI
 func deleteSecurityGroup(ctx context.Context, arubaClient aruba.Client, projectID, vpcID, securityGroupID string) {
 	fmt.Println("--- Deleting Security Group ---")
 
-	deleteResp, err := arubaClient.FromNetwork().DeleteSecurityGroup(ctx, projectID, vpcID, securityGroupID, nil)
+	deleteResp, err := arubaClient.FromNetwork().SecurityGroups().Delete(ctx, projectID, vpcID, securityGroupID, nil)
 	if err != nil {
 		log.Printf("Error deleting security group: %v", err)
 		return
@@ -390,7 +390,7 @@ func deleteSecurityGroup(ctx context.Context, arubaClient aruba.Client, projectI
 func deleteSecurityGroupRule(ctx context.Context, arubaClient aruba.Client, projectID, vpcID, securityGroupID, ruleID string) {
 	fmt.Println("--- Deleting Security Group Rule ---")
 
-	deleteResp, err := arubaClient.FromNetwork().DeleteSecurityGroupRule(ctx, projectID, vpcID, securityGroupID, ruleID, nil)
+	deleteResp, err := arubaClient.FromNetwork().SecurityGroupRules().Delete(ctx, projectID, vpcID, securityGroupID, ruleID, nil)
 	if err != nil {
 		log.Printf("Error deleting security rule: %v", err)
 		return

@@ -11,7 +11,7 @@ import (
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-func TestListVpcPeerings(t *testing.T) {
+func TestListVpcPeeringRoutes(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/token" {
 			w.Header().Set("Content-Type", "application/json")
@@ -20,12 +20,22 @@ func TestListVpcPeerings(t *testing.T) {
 			return
 		}
 
-		if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings" {
+		if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1/routes" {
 			w.WriteHeader(http.StatusOK)
-			resp := types.VPCPeeringList{
+			resp := types.VPCPeeringRouteList{
 				ListResponse: types.ListResponse{Total: 1},
-				Values: []types.VPCPeeringResponse{
-					{Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("test-peering")}},
+				Values: []types.VPCPeeringRouteResponse{
+					{
+						Metadata: types.RegionalResourceMetadataRequest{
+							ResourceMetadataRequest: types.ResourceMetadataRequest{
+								Name: "route-1",
+							},
+						},
+						Properties: types.VPCPeeringRoutePropertiesResponse{
+							LocalNetworkAddress:  "10.0.0.0/16",
+							RemoteNetworkAddress: "10.1.0.0/16",
+						},
+					},
 				},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -48,18 +58,18 @@ func TestListVpcPeerings(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}
-	svc := NewService(c)
+	svc := NewVPCPeeringRoutesClientImpl(c)
 
-	resp, err := svc.ListVpcPeerings(context.Background(), "test-project", "vpc-123", nil)
+	resp, err := svc.List(context.Background(), "test-project", "vpc-123", "peering-1", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if resp == nil || resp.Data == nil || len(resp.Data.Values) != 1 {
-		t.Errorf("expected 1 peering")
+		t.Errorf("expected 1 vpc peering route")
 	}
 }
 
-func TestGetVpcPeering(t *testing.T) {
+func TestGetVpcPeeringRoute(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/token" {
 			w.Header().Set("Content-Type", "application/json")
@@ -68,10 +78,18 @@ func TestGetVpcPeering(t *testing.T) {
 			return
 		}
 
-		if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1" {
+		if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1/routes/route-1" {
 			w.WriteHeader(http.StatusOK)
-			resp := types.VPCPeeringResponse{
-				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("test-peering")},
+			resp := types.VPCPeeringRouteResponse{
+				Metadata: types.RegionalResourceMetadataRequest{
+					ResourceMetadataRequest: types.ResourceMetadataRequest{
+						Name: "route-1",
+					},
+				},
+				Properties: types.VPCPeeringRoutePropertiesResponse{
+					LocalNetworkAddress:  "10.0.0.0/16",
+					RemoteNetworkAddress: "10.1.0.0/16",
+				},
 			}
 			json.NewEncoder(w).Encode(resp)
 			return
@@ -93,18 +111,18 @@ func TestGetVpcPeering(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}
-	svc := NewService(c)
+	svc := NewVPCPeeringRoutesClientImpl(c)
 
-	resp, err := svc.GetVpcPeering(context.Background(), "test-project", "vpc-123", "peering-1", nil)
+	resp, err := svc.Get(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if resp == nil || resp.Data == nil || resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "test-peering" {
-		t.Errorf("expected peering name 'test-peering'")
+	if resp == nil || resp.Data == nil || resp.Data.Metadata.Name != "route-1" {
+		t.Errorf("expected route name 'route-1'")
 	}
 }
 
-func TestDeleteVpcPeering(t *testing.T) {
+func TestDeleteVpcPeeringRoute(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/token" {
 			w.Header().Set("Content-Type", "application/json")
@@ -113,7 +131,7 @@ func TestDeleteVpcPeering(t *testing.T) {
 			return
 		}
 
-		if r.Method == "DELETE" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1" {
+		if r.Method == "DELETE" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1/routes/route-1" {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
@@ -134,9 +152,9 @@ func TestDeleteVpcPeering(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}
-	svc := NewService(c)
+	svc := NewVPCPeeringRoutesClientImpl(c)
 
-	_, err = svc.DeleteVpcPeering(context.Background(), "test-project", "vpc-123", "peering-1", nil)
+	_, err = svc.Delete(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

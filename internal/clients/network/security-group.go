@@ -8,12 +8,26 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListSecurityGroups retrieves all security groups for a VPC
-func (s *Service) ListSecurityGroups(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.SecurityGroupList], error) {
-	s.client.Logger().Debugf("Listing security groups for VPC: %s in project: %s", vpcId, project)
+type securityGroupsClientImpl struct {
+	client    *restclient.Client
+	vpcClient *vpcsClientImpl
+}
+
+// NewService creates a new unified Network service
+func NewSecurityGroupsClientImpl(client *restclient.Client, vpcClient *vpcsClientImpl) *securityGroupsClientImpl {
+	return &securityGroupsClientImpl{
+		client:    client,
+		vpcClient: vpcClient,
+	}
+}
+
+// List retrieves all security groups for a VPC
+func (c *securityGroupsClientImpl) List(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.SecurityGroupList], error) {
+	c.client.Logger().Debugf("Listing security groups for VPC: %s in project: %s", vpcId, project)
 
 	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
@@ -32,7 +46,7 @@ func (s *Service) ListSecurityGroups(ctx context.Context, project string, vpcId 
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +55,9 @@ func (s *Service) ListSecurityGroups(ctx context.Context, project string, vpcId 
 	return types.ParseResponseBody[types.SecurityGroupList](httpResp)
 }
 
-// GetSecurityGroup retrieves a specific security group by ID
-func (s *Service) GetSecurityGroup(ctx context.Context, project string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error) {
-	s.client.Logger().Debugf("Getting security group: %s from VPC: %s in project: %s", securityGroupId, vpcId, project)
+// Get retrieves a specific security group by ID
+func (c *securityGroupsClientImpl) Get(ctx context.Context, project string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error) {
+	c.client.Logger().Debugf("Getting security group: %s from VPC: %s in project: %s", securityGroupId, vpcId, project)
 
 	if err := types.ValidateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
 		return nil, err
@@ -62,7 +76,7 @@ func (s *Service) GetSecurityGroup(ctx context.Context, project string, vpcId st
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -71,17 +85,17 @@ func (s *Service) GetSecurityGroup(ctx context.Context, project string, vpcId st
 	return types.ParseResponseBody[types.SecurityGroupResponse](httpResp)
 }
 
-// CreateSecurityGroup creates a new security group in a VPC
+// Create creates a new security group in a VPC
 // The SDK automatically waits for the VPC to become Active before creating the security group
-func (s *Service) CreateSecurityGroup(ctx context.Context, project string, vpcId string, body types.SecurityGroupRequest, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error) {
-	s.client.Logger().Debugf("Creating security group in VPC: %s in project: %s", vpcId, project)
+func (c *securityGroupsClientImpl) Create(ctx context.Context, project string, vpcId string, body types.SecurityGroupRequest, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error) {
+	c.client.Logger().Debugf("Creating security group in VPC: %s in project: %s", vpcId, project)
 
 	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
 	// Wait for VPC to become Active before creating security group
-	err := s.waitForVPCActive(ctx, project, vpcId)
+	err := waitForVPCActive(ctx, c.vpcClient, project, vpcId)
 	if err != nil {
 		return nil, fmt.Errorf("failed waiting for VPC to become active: %w", err)
 	}
@@ -104,7 +118,7 @@ func (s *Service) CreateSecurityGroup(ctx context.Context, project string, vpcId
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -138,9 +152,9 @@ func (s *Service) CreateSecurityGroup(ctx context.Context, project string, vpcId
 	return response, nil
 }
 
-// UpdateSecurityGroup updates an existing security group
-func (s *Service) UpdateSecurityGroup(ctx context.Context, project string, vpcId string, securityGroupId string, body types.SecurityGroupRequest, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error) {
-	s.client.Logger().Debugf("Updating security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, project)
+// Update updates an existing security group
+func (c *securityGroupsClientImpl) Update(ctx context.Context, project string, vpcId string, securityGroupId string, body types.SecurityGroupRequest, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error) {
+	c.client.Logger().Debugf("Updating security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, project)
 
 	if err := types.ValidateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
 		return nil, err
@@ -164,7 +178,7 @@ func (s *Service) UpdateSecurityGroup(ctx context.Context, project string, vpcId
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -198,9 +212,9 @@ func (s *Service) UpdateSecurityGroup(ctx context.Context, project string, vpcId
 	return response, nil
 }
 
-// DeleteSecurityGroup deletes a security group by ID
-func (s *Service) DeleteSecurityGroup(ctx context.Context, projectId string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting security group: %s from VPC: %s in project: %s", securityGroupId, vpcId, projectId)
+// Delete deletes a security group by ID
+func (c *securityGroupsClientImpl) Delete(ctx context.Context, projectId string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting security group: %s from VPC: %s in project: %s", securityGroupId, vpcId, projectId)
 
 	if err := types.ValidateVPCResource(projectId, vpcId, securityGroupId, "security group ID"); err != nil {
 		return nil, err
@@ -219,7 +233,7 @@ func (s *Service) DeleteSecurityGroup(ctx context.Context, projectId string, vpc
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

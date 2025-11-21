@@ -56,9 +56,9 @@ func TestListVpnRoutes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}
-	svc := NewService(c)
+	svc := NewVPNRoutesClientImpl(c)
 
-	resp, err := svc.ListVpnRoutes(context.Background(), "test-project", "tunnel-123", nil)
+	resp, err := svc.List(context.Background(), "test-project", "tunnel-123", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -107,9 +107,9 @@ func TestGetVpnRoute(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}
-	svc := NewService(c)
+	svc := NewVPNRoutesClientImpl(c)
 
-	resp, err := svc.GetVpnRoute(context.Background(), "test-project", "tunnel-123", "route-1", nil)
+	resp, err := svc.Get(context.Background(), "test-project", "tunnel-123", "route-1", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -148,9 +148,9 @@ func TestDeleteVpnRoute(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}
-	svc := NewService(c)
+	svc := NewVPNRoutesClientImpl(c)
 
-	_, err = svc.DeleteVpnRoute(context.Background(), "test-project", "tunnel-123", "route-1", nil)
+	_, err = svc.Delete(context.Background(), "test-project", "tunnel-123", "route-1", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

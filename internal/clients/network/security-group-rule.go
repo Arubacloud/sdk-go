@@ -8,12 +8,26 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListSecurityGroupRules retrieves all security group rules for a security group
-func (s *Service) ListSecurityGroupRules(ctx context.Context, project string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[types.SecurityRuleList], error) {
-	s.client.Logger().Debugf("Listing security group rules for security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, project)
+type securityGroupRulesClientImpl struct {
+	client               *restclient.Client
+	securityGroupsClient *securityGroupsClientImpl
+}
+
+// NewService creates a new unified Network service
+func NewSecurityGroupRulesClientImpl(client *restclient.Client, securityGroupsClient *securityGroupsClientImpl) *securityGroupRulesClientImpl {
+	return &securityGroupRulesClientImpl{
+		client:               client,
+		securityGroupsClient: securityGroupsClient,
+	}
+}
+
+// List retrieves all security group rules for a security group
+func (c *securityGroupRulesClientImpl) List(ctx context.Context, project string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[types.SecurityRuleList], error) {
+	c.client.Logger().Debugf("Listing security group rules for security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, project)
 
 	if err := types.ValidateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
 		return nil, err
@@ -32,7 +46,7 @@ func (s *Service) ListSecurityGroupRules(ctx context.Context, project string, vp
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +55,9 @@ func (s *Service) ListSecurityGroupRules(ctx context.Context, project string, vp
 	return types.ParseResponseBody[types.SecurityRuleList](httpResp)
 }
 
-// GetSecurityGroupRule retrieves a specific security group rule by ID
-func (s *Service) GetSecurityGroupRule(ctx context.Context, project string, vpcId string, securityGroupId string, securityGroupRuleId string, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error) {
-	s.client.Logger().Debugf("Getting security group rule: %s from security group: %s in VPC: %s in project: %s", securityGroupRuleId, securityGroupId, vpcId, project)
+// Get retrieves a specific security group rule by ID
+func (c *securityGroupRulesClientImpl) Get(ctx context.Context, project string, vpcId string, securityGroupId string, securityGroupRuleId string, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error) {
+	c.client.Logger().Debugf("Getting security group rule: %s from security group: %s in VPC: %s in project: %s", securityGroupRuleId, securityGroupId, vpcId, project)
 
 	if err := types.ValidateSecurityGroupRule(project, vpcId, securityGroupId, securityGroupRuleId); err != nil {
 		return nil, err
@@ -62,7 +76,7 @@ func (s *Service) GetSecurityGroupRule(ctx context.Context, project string, vpcI
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -71,17 +85,17 @@ func (s *Service) GetSecurityGroupRule(ctx context.Context, project string, vpcI
 	return types.ParseResponseBody[types.SecurityRuleResponse](httpResp)
 }
 
-// CreateSecurityGroupRule creates a new security group rule
+// Create creates a new security group rule
 // The SDK automatically waits for the SecurityGroup to become Active before creating the rule
-func (s *Service) CreateSecurityGroupRule(ctx context.Context, project string, vpcId string, securityGroupId string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error) {
-	s.client.Logger().Debugf("Creating security group rule in security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, project)
+func (c *securityGroupRulesClientImpl) Create(ctx context.Context, project string, vpcId string, securityGroupId string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error) {
+	c.client.Logger().Debugf("Creating security group rule in security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, project)
 
 	if err := types.ValidateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
 		return nil, err
 	}
 
 	// Wait for SecurityGroup to become Active before creating rule
-	err := s.waitForSecurityGroupActive(ctx, project, vpcId, securityGroupId)
+	err := waitForSecurityGroupActive(ctx, *c.securityGroupsClient, project, vpcId, securityGroupId)
 	if err != nil {
 		return nil, fmt.Errorf("failed waiting for SecurityGroup to become active: %w", err)
 	}
@@ -104,7 +118,7 @@ func (s *Service) CreateSecurityGroupRule(ctx context.Context, project string, v
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -138,9 +152,9 @@ func (s *Service) CreateSecurityGroupRule(ctx context.Context, project string, v
 	return response, nil
 }
 
-// UpdateSecurityGroupRule updates an existing security group rule
-func (s *Service) UpdateSecurityGroupRule(ctx context.Context, project string, vpcId string, securityGroupId string, securityGroupRuleId string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error) {
-	s.client.Logger().Debugf("Updating security group rule: %s in security group: %s in VPC: %s in project: %s", securityGroupRuleId, securityGroupId, vpcId, project)
+// Update updates an existing security group rule
+func (c *securityGroupRulesClientImpl) Update(ctx context.Context, project string, vpcId string, securityGroupId string, securityGroupRuleId string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error) {
+	c.client.Logger().Debugf("Updating security group rule: %s in security group: %s in VPC: %s in project: %s", securityGroupRuleId, securityGroupId, vpcId, project)
 
 	if err := types.ValidateSecurityGroupRule(project, vpcId, securityGroupId, securityGroupRuleId); err != nil {
 		return nil, err
@@ -164,7 +178,7 @@ func (s *Service) UpdateSecurityGroupRule(ctx context.Context, project string, v
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -198,9 +212,9 @@ func (s *Service) UpdateSecurityGroupRule(ctx context.Context, project string, v
 	return response, nil
 }
 
-// DeleteSecurityGroupRule deletes a security group rule by ID
-func (s *Service) DeleteSecurityGroupRule(ctx context.Context, projectId string, vpcId string, securityGroupId string, securityGroupRuleId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting security group rule: %s from security group: %s in VPC: %s in project: %s", securityGroupRuleId, securityGroupId, vpcId, projectId)
+// Delete deletes a security group rule by ID
+func (c *securityGroupRulesClientImpl) Delete(ctx context.Context, projectId string, vpcId string, securityGroupId string, securityGroupRuleId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting security group rule: %s from security group: %s in VPC: %s in project: %s", securityGroupRuleId, securityGroupId, vpcId, projectId)
 
 	if err := types.ValidateSecurityGroupRule(projectId, vpcId, securityGroupId, securityGroupRuleId); err != nil {
 		return nil, err
@@ -219,7 +233,7 @@ func (s *Service) DeleteSecurityGroupRule(ctx context.Context, projectId string,
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

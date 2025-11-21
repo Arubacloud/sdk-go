@@ -11,7 +11,7 @@ import (
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-func TestListVPCs(t *testing.T) {
+func TestListElasticIPs(t *testing.T) {
 	t.Run("successful list", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/token" {
@@ -22,10 +22,10 @@ func TestListVPCs(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := types.VPCList{
+			resp := types.ElasticList{
 				ListResponse: types.ListResponse{Total: 1},
-				Values: []types.VPCResponse{
-					{Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("vpc-1")}},
+				Values: []types.ElasticIPResponse{
+					{Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("eip-1")}},
 				},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -44,9 +44,9 @@ func TestListVPCs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewElasticIPsClientImpl(c)
 
-		resp, err := svc.ListVPCs(context.Background(), "test-project", nil)
+		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -56,7 +56,7 @@ func TestListVPCs(t *testing.T) {
 	})
 }
 
-func TestGetVPC(t *testing.T) {
+func TestGetElasticIP(t *testing.T) {
 	t.Run("successful get", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/token" {
@@ -67,8 +67,8 @@ func TestGetVPC(t *testing.T) {
 			}
 
 			w.WriteHeader(http.StatusOK)
-			resp := types.VPCResponse{
-				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("my-vpc")},
+			resp := types.ElasticIPResponse{
+				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("my-eip")},
 			}
 			json.NewEncoder(w).Encode(resp)
 		}))
@@ -86,20 +86,19 @@ func TestGetVPC(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewElasticIPsClientImpl(c)
 
-		resp, err := svc.GetVPC(context.Background(), "test-project", "vpc-123", nil)
+		resp, err := svc.Get(context.Background(), "test-project", "eip-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "my-vpc" {
-			t.Errorf("expected name 'my-vpc', got '%v'", resp.Data.Metadata.Name)
+		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "my-eip" {
+			t.Errorf("expected name 'my-eip', got '%v'", resp.Data.Metadata.Name)
 		}
 	})
 }
 
-func TestCreateVPC(t *testing.T) {
-	// VPC Create doesn't require waiting, so this test should work fine
+func TestCreateElasticIP(t *testing.T) {
 	t.Run("successful create", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/token" {
@@ -113,8 +112,8 @@ func TestCreateVPC(t *testing.T) {
 				t.Errorf("expected POST, got %s", r.Method)
 			}
 			w.WriteHeader(http.StatusCreated)
-			resp := types.VPCResponse{
-				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("new-vpc")},
+			resp := types.ElasticIPResponse{
+				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("new-eip")},
 			}
 			json.NewEncoder(w).Encode(resp)
 		}))
@@ -132,16 +131,19 @@ func TestCreateVPC(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewElasticIPsClientImpl(c)
 
-		req := types.VPCRequest{
+		req := types.ElasticIPRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-vpc"},
+				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-eip"},
 				Location:                types.LocationRequest{Value: "ITBG-Bergamo"},
+			},
+			Properties: types.ElasticIPPropertiesRequest{
+				BillingPlan: types.BillingPeriodResource{BillingPeriod: "monthly"},
 			},
 		}
 
-		resp, err := svc.CreateVPC(context.Background(), "test-project", req, nil)
+		resp, err := svc.Create(context.Background(), "test-project", req, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -151,7 +153,7 @@ func TestCreateVPC(t *testing.T) {
 	})
 }
 
-func TestDeleteVPC(t *testing.T) {
+func TestDeleteElasticIP(t *testing.T) {
 	t.Run("successful delete", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/token" {
@@ -180,9 +182,9 @@ func TestDeleteVPC(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewElasticIPsClientImpl(c)
 
-		_, err = svc.DeleteVPC(context.Background(), "test-project", "vpc-123", nil)
+		_, err = svc.Delete(context.Background(), "test-project", "eip-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

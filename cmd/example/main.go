@@ -193,7 +193,7 @@ func createElasticIP(ctx context.Context, arubaClient aruba.Client, projectID st
 		},
 	}
 
-	elasticIPResp, err := arubaClient.FromNetwork().CreateElasticIP(ctx, projectID, elasticIPReq, nil)
+	elasticIPResp, err := arubaClient.FromNetwork().ElasticIPs().Create(ctx, projectID, elasticIPReq, nil)
 	if err != nil {
 		log.Printf("Error creating Elastic IP: %v", err)
 		os.Exit(1)
@@ -323,7 +323,7 @@ func createVPC(ctx context.Context, arubaClient aruba.Client, projectID string) 
 		},
 	}
 
-	vpcResp, err := arubaClient.FromNetwork().CreateVPC(ctx, projectID, vpcReq, nil)
+	vpcResp, err := arubaClient.FromNetwork().VPCs().Create(ctx, projectID, vpcReq, nil)
 	if err != nil {
 		log.Printf("Error creating VPC: %v", err)
 		os.Exit(1)
@@ -374,7 +374,7 @@ func createSubnet(ctx context.Context, arubaClient aruba.Client, projectID strin
 		},
 	}
 
-	subnetResp, err := arubaClient.FromNetwork().CreateSubnet(ctx, projectID, vpcID, subnetReq, nil)
+	subnetResp, err := arubaClient.FromNetwork().Subnets().Create(ctx, projectID, vpcID, subnetReq, nil)
 	if err != nil {
 		log.Printf("Error creating subnet: %v", err)
 	} else if subnetResp.IsError() && subnetResp.Error != nil {
@@ -409,7 +409,7 @@ func createSecurityGroup(ctx context.Context, arubaClient aruba.Client, projectI
 		},
 	}
 
-	sgResp, err := arubaClient.FromNetwork().CreateSecurityGroup(ctx, projectID, vpcID, sgReq, nil)
+	sgResp, err := arubaClient.FromNetwork().SecurityGroups().Create(ctx, projectID, vpcID, sgReq, nil)
 	if err != nil {
 		log.Printf("Error creating security group: %v", err)
 		return nil
@@ -461,7 +461,7 @@ func createSecurityGroupRule(ctx context.Context, arubaClient aruba.Client, proj
 		},
 	}
 
-	ruleResp, err := arubaClient.FromNetwork().CreateSecurityGroupRule(ctx, projectID, vpcID, sgID, ruleReq, nil)
+	ruleResp, err := arubaClient.FromNetwork().SecurityGroupRules().Create(ctx, projectID, vpcID, sgID, ruleReq, nil)
 	if err != nil {
 		log.Printf("Error creating security rule: %v", err)
 	} else if ruleResp.IsError() && ruleResp.Error != nil {
@@ -609,7 +609,7 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, projectID string,
 	// Create a simple polling loop to check Subnet state
 	maxAttempts := 30
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		subnetCheckResp, err := arubaClient.FromNetwork().GetSubnet(ctx, projectID, vpcID, subnetID, nil)
+		subnetCheckResp, err := arubaClient.FromNetwork().Subnets().Get(ctx, projectID, vpcID, subnetID, nil)
 		if err != nil {
 			log.Printf("Error checking Subnet state: %v", err)
 			break

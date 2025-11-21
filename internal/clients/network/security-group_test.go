@@ -44,9 +44,9 @@ func TestListSecurityGroups(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewSecurityGroupsClientImpl(c, NewVPCsClientImpl(c))
 
-		resp, err := svc.ListSecurityGroups(context.Background(), "test-project", "vpc-123", nil)
+		resp, err := svc.List(context.Background(), "test-project", "vpc-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -86,9 +86,9 @@ func TestGetSecurityGroup(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewSecurityGroupsClientImpl(c, NewVPCsClientImpl(c))
 
-		resp, err := svc.GetSecurityGroup(context.Background(), "test-project", "vpc-123", "sg-123", nil)
+		resp, err := svc.Get(context.Background(), "test-project", "vpc-123", "sg-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -133,13 +133,13 @@ func TestCreateSecurityGroup(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewSecurityGroupsClientImpl(c, NewVPCsClientImpl(c))
 
 		req := types.SecurityGroupRequest{
 			Metadata: types.ResourceMetadataRequest{Name: "new-sg"},
 		}
 
-		resp, err := svc.CreateSecurityGroup(context.Background(), "test-project", "vpc-123", req, nil)
+		resp, err := svc.Create(context.Background(), "test-project", "vpc-123", req, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -178,9 +178,9 @@ func TestDeleteSecurityGroup(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewSecurityGroupsClientImpl(c, NewVPCsClientImpl(c))
 
-		_, err = svc.DeleteSecurityGroup(context.Background(), "test-project", "vpc-123", "sg-123", nil)
+		_, err = svc.Delete(context.Background(), "test-project", "vpc-123", "sg-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
