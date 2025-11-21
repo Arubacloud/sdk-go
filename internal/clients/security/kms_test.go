@@ -76,9 +76,9 @@ func TestListKMSKeys(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewKMSKeysClientImpl(c)
 
-		resp, err := svc.ListKMSKeys(context.Background(), "test-project", nil)
+		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -137,9 +137,9 @@ func TestGetKMSKey(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewKMSKeysClientImpl(c)
 
-		resp, err := svc.GetKMSKey(context.Background(), "test-project", "kms-123", nil)
+		resp, err := svc.Get(context.Background(), "test-project", "kms-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -201,7 +201,7 @@ func TestCreateKMSKey(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewKMSKeysClientImpl(c)
 
 		body := types.KmsRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
@@ -217,7 +217,7 @@ func TestCreateKMSKey(t *testing.T) {
 			},
 		}
 
-		resp, err := svc.CreateKMSKey(context.Background(), "test-project", body, nil)
+		resp, err := svc.Create(context.Background(), "test-project", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -279,7 +279,7 @@ func TestUpdateKMSKey(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewKMSKeysClientImpl(c)
 
 		body := types.KmsRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
@@ -295,7 +295,7 @@ func TestUpdateKMSKey(t *testing.T) {
 			},
 		}
 
-		resp, err := svc.UpdateKMSKey(context.Background(), "test-project", "kms-123", body, nil)
+		resp, err := svc.Update(context.Background(), "test-project", "kms-123", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -342,9 +342,9 @@ func TestDeleteKMSKey(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewKMSKeysClientImpl(c)
 
-		_, err = svc.DeleteKMSKey(context.Background(), "test-project", "kms-123", nil)
+		_, err = svc.Delete(context.Background(), "test-project", "kms-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

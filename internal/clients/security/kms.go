@@ -8,12 +8,24 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListKMSKeys retrieves all KMS keys for a project
-func (s *Service) ListKMSKeys(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.KmsList], error) {
-	s.client.Logger().Debugf("Listing KMS keys for project: %s", project)
+type kmsKeysClientImpl struct {
+	client *restclient.Client
+}
+
+// NewKMSKeysClientImpl creates a new unified Security service
+func NewKMSKeysClientImpl(client *restclient.Client) *kmsKeysClientImpl {
+	return &kmsKeysClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all KMS keys for a project
+func (c *kmsKeysClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.KmsList], error) {
+	c.client.Logger().Debugf("Listing KMS keys for project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -32,7 +44,7 @@ func (s *Service) ListKMSKeys(ctx context.Context, project string, params *types
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +53,9 @@ func (s *Service) ListKMSKeys(ctx context.Context, project string, params *types
 	return types.ParseResponseBody[types.KmsList](httpResp)
 }
 
-// GetKMSKey retrieves a specific KMS key by ID
-func (s *Service) GetKMSKey(ctx context.Context, project string, kmsKeyId string, params *types.RequestParameters) (*types.Response[types.KmsResponse], error) {
-	s.client.Logger().Debugf("Getting KMS key: %s in project: %s", kmsKeyId, project)
+// Get retrieves a specific KMS key by ID
+func (c *kmsKeysClientImpl) Get(ctx context.Context, project string, kmsKeyId string, params *types.RequestParameters) (*types.Response[types.KmsResponse], error) {
+	c.client.Logger().Debugf("Getting KMS key: %s in project: %s", kmsKeyId, project)
 
 	if err := types.ValidateProjectAndResource(project, kmsKeyId, "KMS key ID"); err != nil {
 		return nil, err
@@ -62,7 +74,7 @@ func (s *Service) GetKMSKey(ctx context.Context, project string, kmsKeyId string
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +83,9 @@ func (s *Service) GetKMSKey(ctx context.Context, project string, kmsKeyId string
 	return types.ParseResponseBody[types.KmsResponse](httpResp)
 }
 
-// CreateKMSKey creates a new KMS key
-func (s *Service) CreateKMSKey(ctx context.Context, project string, body types.KmsRequest, params *types.RequestParameters) (*types.Response[types.KmsResponse], error) {
-	s.client.Logger().Debugf("Creating KMS key in project: %s", project)
+// Create creates a new KMS key
+func (c *kmsKeysClientImpl) Create(ctx context.Context, project string, body types.KmsRequest, params *types.RequestParameters) (*types.Response[types.KmsResponse], error) {
+	c.client.Logger().Debugf("Creating KMS key in project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -97,7 +109,7 @@ func (s *Service) CreateKMSKey(ctx context.Context, project string, body types.K
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -131,9 +143,9 @@ func (s *Service) CreateKMSKey(ctx context.Context, project string, body types.K
 	return response, nil
 }
 
-// UpdateKMSKey updates an existing KMS key
-func (s *Service) UpdateKMSKey(ctx context.Context, project string, kmsKeyId string, body types.KmsRequest, params *types.RequestParameters) (*types.Response[types.KmsResponse], error) {
-	s.client.Logger().Debugf("Updating KMS key: %s in project: %s", kmsKeyId, project)
+// Update updates an existing KMS key
+func (c *kmsKeysClientImpl) Update(ctx context.Context, project string, kmsKeyId string, body types.KmsRequest, params *types.RequestParameters) (*types.Response[types.KmsResponse], error) {
+	c.client.Logger().Debugf("Updating KMS key: %s in project: %s", kmsKeyId, project)
 
 	if err := types.ValidateProjectAndResource(project, kmsKeyId, "KMS key ID"); err != nil {
 		return nil, err
@@ -157,7 +169,7 @@ func (s *Service) UpdateKMSKey(ctx context.Context, project string, kmsKeyId str
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -191,9 +203,9 @@ func (s *Service) UpdateKMSKey(ctx context.Context, project string, kmsKeyId str
 	return response, nil
 }
 
-// DeleteKMSKey deletes a KMS key by ID
-func (s *Service) DeleteKMSKey(ctx context.Context, projectId string, kmsKeyId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting KMS key: %s in project: %s", kmsKeyId, projectId)
+// Delete deletes a KMS key by ID
+func (c *kmsKeysClientImpl) Delete(ctx context.Context, projectId string, kmsKeyId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting KMS key: %s in project: %s", kmsKeyId, projectId)
 
 	if err := types.ValidateProjectAndResource(projectId, kmsKeyId, "KMS key ID"); err != nil {
 		return nil, err
@@ -212,7 +224,7 @@ func (s *Service) DeleteKMSKey(ctx context.Context, projectId string, kmsKeyId s
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

@@ -10,8 +10,8 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/network"
 	"github.com/Arubacloud/sdk-go/internal/clients/project"
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
+	"github.com/Arubacloud/sdk-go/internal/clients/security"
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/security"
 	"github.com/Arubacloud/sdk-go/pkg/spec/storage"
 )
 
@@ -62,6 +62,11 @@ func buildClient(config *restclient.Config) (Client, error) {
 		return nil, err // TODO: better error handling
 	}
 
+	securityClient, err := buildSecurityClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
 	return &clientImpl{
 		auditClient:     auditClient,
 		computeClient:   computeClient,
@@ -71,9 +76,9 @@ func buildClient(config *restclient.Config) (Client, error) {
 		networkClient:   networkClient,
 		projectClient:   projectClient,
 		scheduleClient:  scheduleClient,
+		securityClient:  securityClient,
 		// TODO: Replace all below for refactored servers
-		securityClient: security.NewService(restClient),
-		storageClient:  storage.NewService(restClient),
+		storageClient: storage.NewService(restClient),
 	}, nil
 }
 
@@ -373,4 +378,22 @@ func buildScheduleClient(restClient *restclient.Client) (ScheduleClient, error) 
 
 func buildJobsClient(restClient *restclient.Client) (JobsClient, error) {
 	return schedule.NewJobsClientImpl(restClient), nil
+}
+
+//
+// Security domain clients
+
+func buildSecurityClient(restClient *restclient.Client) (SecurityClient, error) {
+	kmsKeysClient, err := buildKMSKeysClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	return &securityClientImpl{
+		kmsKeysClient: kmsKeysClient,
+	}, nil
+}
+
+func buildKMSKeysClient(restClient *restclient.Client) (KMSKeysClient, error) {
+	return security.NewKMSKeysClientImpl(restClient), nil
 }
