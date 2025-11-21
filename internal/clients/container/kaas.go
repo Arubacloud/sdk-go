@@ -55,14 +55,14 @@ func (c *kaasClientImpl) List(ctx context.Context, projectID string, params *typ
 }
 
 // Get retrieves a specific KaaS cluster by ID
-func (c *kaasClientImpl) Get(ctx context.Context, projectID string, kaasId string, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
-	c.client.Logger().Debugf("Getting KaaS cluster: %s in project: %s", kaasId, projectID)
+func (c *kaasClientImpl) Get(ctx context.Context, projectID string, kaasID string, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
+	c.client.Logger().Debugf("Getting KaaS cluster: %s in project: %s", kaasID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, kaasId, "KaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, kaasID, "KaaS ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KaaSItemPath, projectID, kaasId)
+	path := fmt.Sprintf(KaaSItemPath, projectID, kaasID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -149,14 +149,14 @@ func (c *kaasClientImpl) Create(ctx context.Context, projectID string, body type
 }
 
 // Update updates an existing KaaS cluster
-func (c *kaasClientImpl) Update(ctx context.Context, projectID string, kaasId string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
-	c.client.Logger().Debugf("Updating KaaS cluster: %s in project: %s", kaasId, projectID)
+func (c *kaasClientImpl) Update(ctx context.Context, projectID string, kaasID string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
+	c.client.Logger().Debugf("Updating KaaS cluster: %s in project: %s", kaasID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, kaasId, "KaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, kaasID, "KaaS ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KaaSItemPath, projectID, kaasId)
+	path := fmt.Sprintf(KaaSItemPath, projectID, kaasID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -213,14 +213,14 @@ func (c *kaasClientImpl) Update(ctx context.Context, projectID string, kaasId st
 }
 
 // Delete deletes a KaaS cluster by ID
-func (c *kaasClientImpl) Delete(ctx context.Context, projectID string, kaasId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting KaaS cluster: %s in project: %s", kaasId, projectID)
+func (c *kaasClientImpl) Delete(ctx context.Context, projectID string, kaasID string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting KaaS cluster: %s in project: %s", kaasID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, kaasId, "KaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, kaasID, "KaaS ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KaaSItemPath, projectID, kaasId)
+	path := fmt.Sprintf(KaaSItemPath, projectID, kaasID)
 
 	if params == nil {
 		params = &types.RequestParameters{

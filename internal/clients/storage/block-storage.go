@@ -53,14 +53,14 @@ func (c *volumesClientImpl) List(ctx context.Context, projectID string, params *
 }
 
 // Get retrieves a specific block storage volume by ID
-func (c *volumesClientImpl) Get(ctx context.Context, projectID string, volumeId string, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error) {
-	c.client.Logger().Debugf("Getting block storage volume: %s in project: %s", volumeId, projectID)
+func (c *volumesClientImpl) Get(ctx context.Context, projectID string, volumeID string, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error) {
+	c.client.Logger().Debugf("Getting block storage volume: %s in project: %s", volumeID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, volumeId, "block storage ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, volumeID, "block storage ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(BlockStoragePath, projectID, volumeId)
+	path := fmt.Sprintf(BlockStoragePath, projectID, volumeID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -119,14 +119,14 @@ func (c *volumesClientImpl) Create(ctx context.Context, projectID string, body t
 }
 
 // Delete deletes a block storage volume by ID
-func (c *volumesClientImpl) Delete(ctx context.Context, projectID string, volumeId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting block storage volume: %s in project: %s", volumeId, projectID)
+func (c *volumesClientImpl) Delete(ctx context.Context, projectID string, volumeID string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting block storage volume: %s in project: %s", volumeID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, volumeId, "block storage ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, volumeID, "block storage ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(BlockStoragePath, projectID, volumeId)
+	path := fmt.Sprintf(BlockStoragePath, projectID, volumeID)
 
 	if params == nil {
 		params = &types.RequestParameters{

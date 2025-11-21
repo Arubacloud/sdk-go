@@ -26,14 +26,14 @@ func NewSecurityGroupRulesClientImpl(client *restclient.Client, securityGroupsCl
 }
 
 // List retrieves all security group rules for a security group
-func (c *securityGroupRulesClientImpl) List(ctx context.Context, projectID string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[types.SecurityRuleList], error) {
-	c.client.Logger().Debugf("Listing security group rules for security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, projectID)
+func (c *securityGroupRulesClientImpl) List(ctx context.Context, projectID string, vpcID string, securityGroupID string, params *types.RequestParameters) (*types.Response[types.SecurityRuleList], error) {
+	c.client.Logger().Debugf("Listing security group rules for security group: %s in VPC: %s in project: %s", securityGroupID, vpcID, projectID)
 
-	if err := types.ValidateVPCResource(projectID, vpcId, securityGroupId, "security group ID"); err != nil {
+	if err := types.ValidateVPCResource(projectID, vpcID, securityGroupID, "security group ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SecurityGroupRulesPath, projectID, vpcId, securityGroupId)
+	path := fmt.Sprintf(SecurityGroupRulesPath, projectID, vpcID, securityGroupID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -56,14 +56,14 @@ func (c *securityGroupRulesClientImpl) List(ctx context.Context, projectID strin
 }
 
 // Get retrieves a specific security group rule by ID
-func (c *securityGroupRulesClientImpl) Get(ctx context.Context, projectID string, vpcId string, securityGroupId string, securityGroupRuleId string, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error) {
-	c.client.Logger().Debugf("Getting security group rule: %s from security group: %s in VPC: %s in project: %s", securityGroupRuleId, securityGroupId, vpcId, projectID)
+func (c *securityGroupRulesClientImpl) Get(ctx context.Context, projectID string, vpcID string, securityGroupID string, securityGroupRuleID string, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error) {
+	c.client.Logger().Debugf("Getting security group rule: %s from security group: %s in VPC: %s in project: %s", securityGroupRuleID, securityGroupID, vpcID, projectID)
 
-	if err := types.ValidateSecurityGroupRule(projectID, vpcId, securityGroupId, securityGroupRuleId); err != nil {
+	if err := types.ValidateSecurityGroupRule(projectID, vpcID, securityGroupID, securityGroupRuleID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SecurityGroupRulePath, projectID, vpcId, securityGroupId, securityGroupRuleId)
+	path := fmt.Sprintf(SecurityGroupRulePath, projectID, vpcID, securityGroupID, securityGroupRuleID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -87,20 +87,20 @@ func (c *securityGroupRulesClientImpl) Get(ctx context.Context, projectID string
 
 // Create creates a new security group rule
 // The SDK automatically waits for the SecurityGroup to become Active before creating the rule
-func (c *securityGroupRulesClientImpl) Create(ctx context.Context, projectID string, vpcId string, securityGroupId string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error) {
-	c.client.Logger().Debugf("Creating security group rule in security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, projectID)
+func (c *securityGroupRulesClientImpl) Create(ctx context.Context, projectID string, vpcID string, securityGroupID string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error) {
+	c.client.Logger().Debugf("Creating security group rule in security group: %s in VPC: %s in project: %s", securityGroupID, vpcID, projectID)
 
-	if err := types.ValidateVPCResource(projectID, vpcId, securityGroupId, "security group ID"); err != nil {
+	if err := types.ValidateVPCResource(projectID, vpcID, securityGroupID, "security group ID"); err != nil {
 		return nil, err
 	}
 
 	// Wait for SecurityGroup to become Active before creating rule
-	err := waitForSecurityGroupActive(ctx, *c.securityGroupsClient, projectID, vpcId, securityGroupId)
+	err := waitForSecurityGroupActive(ctx, *c.securityGroupsClient, projectID, vpcID, securityGroupID)
 	if err != nil {
 		return nil, fmt.Errorf("failed waiting for SecurityGroup to become active: %w", err)
 	}
 
-	path := fmt.Sprintf(SecurityGroupRulesPath, projectID, vpcId, securityGroupId)
+	path := fmt.Sprintf(SecurityGroupRulesPath, projectID, vpcID, securityGroupID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -153,14 +153,14 @@ func (c *securityGroupRulesClientImpl) Create(ctx context.Context, projectID str
 }
 
 // Update updates an existing security group rule
-func (c *securityGroupRulesClientImpl) Update(ctx context.Context, projectID string, vpcId string, securityGroupId string, securityGroupRuleId string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error) {
-	c.client.Logger().Debugf("Updating security group rule: %s in security group: %s in VPC: %s in project: %s", securityGroupRuleId, securityGroupId, vpcId, projectID)
+func (c *securityGroupRulesClientImpl) Update(ctx context.Context, projectID string, vpcID string, securityGroupID string, securityGroupRuleID string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error) {
+	c.client.Logger().Debugf("Updating security group rule: %s in security group: %s in VPC: %s in project: %s", securityGroupRuleID, securityGroupID, vpcID, projectID)
 
-	if err := types.ValidateSecurityGroupRule(projectID, vpcId, securityGroupId, securityGroupRuleId); err != nil {
+	if err := types.ValidateSecurityGroupRule(projectID, vpcID, securityGroupID, securityGroupRuleID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SecurityGroupRulePath, projectID, vpcId, securityGroupId, securityGroupRuleId)
+	path := fmt.Sprintf(SecurityGroupRulePath, projectID, vpcID, securityGroupID, securityGroupRuleID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -213,14 +213,14 @@ func (c *securityGroupRulesClientImpl) Update(ctx context.Context, projectID str
 }
 
 // Delete deletes a security group rule by ID
-func (c *securityGroupRulesClientImpl) Delete(ctx context.Context, projectID string, vpcId string, securityGroupId string, securityGroupRuleId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting security group rule: %s from security group: %s in VPC: %s in project: %s", securityGroupRuleId, securityGroupId, vpcId, projectID)
+func (c *securityGroupRulesClientImpl) Delete(ctx context.Context, projectID string, vpcID string, securityGroupID string, securityGroupRuleID string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting security group rule: %s from security group: %s in VPC: %s in project: %s", securityGroupRuleID, securityGroupID, vpcID, projectID)
 
-	if err := types.ValidateSecurityGroupRule(projectID, vpcId, securityGroupId, securityGroupRuleId); err != nil {
+	if err := types.ValidateSecurityGroupRule(projectID, vpcID, securityGroupID, securityGroupRuleID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SecurityGroupRulePath, projectID, vpcId, securityGroupId, securityGroupRuleId)
+	path := fmt.Sprintf(SecurityGroupRulePath, projectID, vpcID, securityGroupID, securityGroupRuleID)
 
 	if params == nil {
 		params = &types.RequestParameters{

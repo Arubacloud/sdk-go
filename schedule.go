@@ -22,8 +22,8 @@ func (c *scheduleClientImpl) Jobs() JobsClient {
 
 type JobsClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.JobList], error)
-	Get(ctx context.Context, projectID string, scheduleJobId string, params *types.RequestParameters) (*types.Response[types.JobResponse], error)
+	Get(ctx context.Context, projectID string, scheduleJobID string, params *types.RequestParameters) (*types.Response[types.JobResponse], error)
 	Create(ctx context.Context, projectID string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error)
-	Update(ctx context.Context, projectID string, scheduleJobId string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error)
-	Delete(ctx context.Context, projectID string, scheduleJobId string, params *types.RequestParameters) (*types.Response[any], error)
+	Update(ctx context.Context, projectID string, scheduleJobID string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error)
+	Delete(ctx context.Context, projectID string, scheduleJobID string, params *types.RequestParameters) (*types.Response[any], error)
 }

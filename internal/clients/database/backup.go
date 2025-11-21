@@ -53,14 +53,14 @@ func (c *backupsClientImpl) List(ctx context.Context, projectID string, params *
 }
 
 // Get retrieves a specific backup by ID
-func (c *backupsClientImpl) Get(ctx context.Context, projectID string, backupId string, params *types.RequestParameters) (*types.Response[types.BackupResponse], error) {
-	c.client.Logger().Debugf("Getting backup: %s in project: %s", backupId, projectID)
+func (c *backupsClientImpl) Get(ctx context.Context, projectID string, backupID string, params *types.RequestParameters) (*types.Response[types.BackupResponse], error) {
+	c.client.Logger().Debugf("Getting backup: %s in project: %s", backupID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, backupId, "backup ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, backupID, "backup ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(BackupPath, projectID, backupId)
+	path := fmt.Sprintf(BackupPath, projectID, backupID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -119,14 +119,14 @@ func (c *backupsClientImpl) Create(ctx context.Context, projectID string, body t
 }
 
 // Delete deletes a backup by ID
-func (c *backupsClientImpl) Delete(ctx context.Context, projectID string, backupId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting backup: %s in project: %s", backupId, projectID)
+func (c *backupsClientImpl) Delete(ctx context.Context, projectID string, backupID string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting backup: %s in project: %s", backupID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, backupId, "backup ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, backupID, "backup ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(BackupPath, projectID, backupId)
+	path := fmt.Sprintf(BackupPath, projectID, backupID)
 
 	if params == nil {
 		params = &types.RequestParameters{

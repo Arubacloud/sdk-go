@@ -57,14 +57,14 @@ func (c *snapshotsClientImpl) List(ctx context.Context, projectID string, params
 }
 
 // Get retrieves a specific snapshot by ID
-func (c *snapshotsClientImpl) Get(ctx context.Context, projectID string, snapshotId string, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error) {
-	c.client.Logger().Debugf("Getting snapshot: %s in project: %s", snapshotId, projectID)
+func (c *snapshotsClientImpl) Get(ctx context.Context, projectID string, snapshotID string, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error) {
+	c.client.Logger().Debugf("Getting snapshot: %s in project: %s", snapshotID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, snapshotId, "snapshot ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, snapshotID, "snapshot ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SnapshotPath, projectID, snapshotId)
+	path := fmt.Sprintf(SnapshotPath, projectID, snapshotID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -97,7 +97,7 @@ func (c *snapshotsClientImpl) Create(ctx context.Context, projectID string, body
 
 	// Extract volume ID from the Volume URI if present
 	if body.Properties.Volume.URI != "" {
-		// Parse URI to get volume ID: /projects/{project}/providers/Aruba.Storage/blockstorages/{volumeId}
+		// Parse URI to get volume ID: /projects/{project}/providers/Aruba.Storage/blockstorages/{volumeID}
 		volumeID, err := extractVolumeIDFromURI(body.Properties.Volume.URI)
 		if err == nil && volumeID != "" {
 			// Wait for BlockStorage to become Active or NotUsed before creating snapshot
@@ -137,14 +137,14 @@ func (c *snapshotsClientImpl) Create(ctx context.Context, projectID string, body
 }
 
 // Delete deletes a snapshot by ID
-func (c *snapshotsClientImpl) Delete(ctx context.Context, projectID string, snapshotId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting snapshot: %s in project: %s", snapshotId, projectID)
+func (c *snapshotsClientImpl) Delete(ctx context.Context, projectID string, snapshotID string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting snapshot: %s in project: %s", snapshotID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, snapshotId, "snapshot ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, snapshotID, "snapshot ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SnapshotPath, projectID, snapshotId)
+	path := fmt.Sprintf(SnapshotPath, projectID, snapshotID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -167,7 +167,7 @@ func (c *snapshotsClientImpl) Delete(ctx context.Context, projectID string, snap
 }
 
 // extractVolumeIDFromURI extracts the volume ID from a volume URI
-// URI format: /projects/{project}/providers/Aruba.Storage/blockstorages/{volumeId}
+// URI format: /projects/{project}/providers/Aruba.Storage/blockstorages/{volumeID}
 func extractVolumeIDFromURI(uri string) (string, error) {
 	parts := strings.Split(uri, "/")
 	if len(parts) < 2 {

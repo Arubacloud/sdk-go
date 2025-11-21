@@ -343,8 +343,8 @@ func TestListAlerts(t *testing.T) {
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Insight/alerts" {
 				// Verify filter parameters were passed
 				filter := r.URL.Query().Get("filter")
-				if filter != "resourceId eq 'vm-789'" {
-					t.Errorf("expected filter 'resourceId eq 'vm-789'', got %s", filter)
+				if filter != "resourceID eq 'vm-789'" {
+					t.Errorf("expected filter 'resourceID eq 'vm-789'', got %s", filter)
 				}
 
 				w.WriteHeader(http.StatusOK)
@@ -385,7 +385,7 @@ func TestListAlerts(t *testing.T) {
 		svc := NewAlertsClientImpl(c)
 
 		params := &types.RequestParameters{
-			Filter: types.StringPtr("resourceId eq 'vm-789'"),
+			Filter: types.StringPtr("resourceID eq 'vm-789'"),
 		}
 
 		resp, err := svc.List(context.Background(), "test-project", params)

@@ -24,14 +24,14 @@ func NewDatabasesClientImpl(client *restclient.Client) *databasesClientImpl {
 }
 
 // List retrieves all databases for a DBaaS instance
-func (c *databasesClientImpl) List(ctx context.Context, projectID string, dbaasId string, params *types.RequestParameters) (*types.Response[types.DatabaseList], error) {
-	c.client.Logger().Debugf("Listing databases for DBaaS: %s in project: %s", dbaasId, projectID)
+func (c *databasesClientImpl) List(ctx context.Context, projectID string, dbaasID string, params *types.RequestParameters) (*types.Response[types.DatabaseList], error) {
+	c.client.Logger().Debugf("Listing databases for DBaaS: %s in project: %s", dbaasID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, dbaasId, "DBaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, dbaasID, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(DatabaseInstancesPath, projectID, dbaasId)
+	path := fmt.Sprintf(DatabaseInstancesPath, projectID, dbaasID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -54,14 +54,14 @@ func (c *databasesClientImpl) List(ctx context.Context, projectID string, dbaasI
 }
 
 // Get retrieves a specific database by ID
-func (c *databasesClientImpl) Get(ctx context.Context, projectID string, dbaasId string, databaseId string, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error) {
-	c.client.Logger().Debugf("Getting database: %s from DBaaS: %s in project: %s", databaseId, dbaasId, projectID)
+func (c *databasesClientImpl) Get(ctx context.Context, projectID string, dbaasID string, databaseID string, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error) {
+	c.client.Logger().Debugf("Getting database: %s from DBaaS: %s in project: %s", databaseID, dbaasID, projectID)
 
-	if err := types.ValidateDBaaSResource(projectID, dbaasId, databaseId, "database ID"); err != nil {
+	if err := types.ValidateDBaaSResource(projectID, dbaasID, databaseID, "database ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(DatabaseInstancePath, projectID, dbaasId, databaseId)
+	path := fmt.Sprintf(DatabaseInstancePath, projectID, dbaasID, databaseID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -84,14 +84,14 @@ func (c *databasesClientImpl) Get(ctx context.Context, projectID string, dbaasId
 }
 
 // Create creates a new database
-func (c *databasesClientImpl) Create(ctx context.Context, projectID string, dbaasId string, body types.DatabaseRequest, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error) {
-	c.client.Logger().Debugf("Creating database in DBaaS: %s in project: %s", dbaasId, projectID)
+func (c *databasesClientImpl) Create(ctx context.Context, projectID string, dbaasID string, body types.DatabaseRequest, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error) {
+	c.client.Logger().Debugf("Creating database in DBaaS: %s in project: %s", dbaasID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, dbaasId, "DBaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, dbaasID, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(DatabaseInstancesPath, projectID, dbaasId)
+	path := fmt.Sprintf(DatabaseInstancesPath, projectID, dbaasID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -148,14 +148,14 @@ func (c *databasesClientImpl) Create(ctx context.Context, projectID string, dbaa
 }
 
 // Update updates an existing database
-func (c *databasesClientImpl) Update(ctx context.Context, projectID string, dbaasId string, databaseId string, body types.DatabaseRequest, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error) {
-	c.client.Logger().Debugf("Updating database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, projectID)
+func (c *databasesClientImpl) Update(ctx context.Context, projectID string, dbaasID string, databaseID string, body types.DatabaseRequest, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error) {
+	c.client.Logger().Debugf("Updating database: %s in DBaaS: %s in project: %s", databaseID, dbaasID, projectID)
 
-	if err := types.ValidateDBaaSResource(projectID, dbaasId, databaseId, "database ID"); err != nil {
+	if err := types.ValidateDBaaSResource(projectID, dbaasID, databaseID, "database ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(DatabaseInstancePath, projectID, dbaasId, databaseId)
+	path := fmt.Sprintf(DatabaseInstancePath, projectID, dbaasID, databaseID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -212,14 +212,14 @@ func (c *databasesClientImpl) Update(ctx context.Context, projectID string, dbaa
 }
 
 // Delete deletes a database by ID
-func (c *databasesClientImpl) Delete(ctx context.Context, projectID string, dbaasId string, databaseId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting database: %s from DBaaS: %s in project: %s", databaseId, dbaasId, projectID)
+func (c *databasesClientImpl) Delete(ctx context.Context, projectID string, dbaasID string, databaseID string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting database: %s from DBaaS: %s in project: %s", databaseID, dbaasID, projectID)
 
-	if err := types.ValidateDBaaSResource(projectID, dbaasId, databaseId, "database ID"); err != nil {
+	if err := types.ValidateDBaaSResource(projectID, dbaasID, databaseID, "database ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(DatabaseInstancePath, projectID, dbaasId, databaseId)
+	path := fmt.Sprintf(DatabaseInstancePath, projectID, dbaasID, databaseID)
 
 	if params == nil {
 		params = &types.RequestParameters{

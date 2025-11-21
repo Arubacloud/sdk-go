@@ -54,14 +54,14 @@ func (c *kmsKeysClientImpl) List(ctx context.Context, projectID string, params *
 }
 
 // Get retrieves a specific KMS key by ID
-func (c *kmsKeysClientImpl) Get(ctx context.Context, projectID string, kmsKeyId string, params *types.RequestParameters) (*types.Response[types.KmsResponse], error) {
-	c.client.Logger().Debugf("Getting KMS key: %s in project: %s", kmsKeyId, projectID)
+func (c *kmsKeysClientImpl) Get(ctx context.Context, projectID string, kmsKeyID string, params *types.RequestParameters) (*types.Response[types.KmsResponse], error) {
+	c.client.Logger().Debugf("Getting KMS key: %s in project: %s", kmsKeyID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, kmsKeyId, "KMS key ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, kmsKeyID, "KMS key ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KMSKeyPath, projectID, kmsKeyId)
+	path := fmt.Sprintf(KMSKeyPath, projectID, kmsKeyID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -144,14 +144,14 @@ func (c *kmsKeysClientImpl) Create(ctx context.Context, projectID string, body t
 }
 
 // Update updates an existing KMS key
-func (c *kmsKeysClientImpl) Update(ctx context.Context, projectID string, kmsKeyId string, body types.KmsRequest, params *types.RequestParameters) (*types.Response[types.KmsResponse], error) {
-	c.client.Logger().Debugf("Updating KMS key: %s in project: %s", kmsKeyId, projectID)
+func (c *kmsKeysClientImpl) Update(ctx context.Context, projectID string, kmsKeyID string, body types.KmsRequest, params *types.RequestParameters) (*types.Response[types.KmsResponse], error) {
+	c.client.Logger().Debugf("Updating KMS key: %s in project: %s", kmsKeyID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, kmsKeyId, "KMS key ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, kmsKeyID, "KMS key ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KMSKeyPath, projectID, kmsKeyId)
+	path := fmt.Sprintf(KMSKeyPath, projectID, kmsKeyID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -204,14 +204,14 @@ func (c *kmsKeysClientImpl) Update(ctx context.Context, projectID string, kmsKey
 }
 
 // Delete deletes a KMS key by ID
-func (c *kmsKeysClientImpl) Delete(ctx context.Context, projectID string, kmsKeyId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting KMS key: %s in project: %s", kmsKeyId, projectID)
+func (c *kmsKeysClientImpl) Delete(ctx context.Context, projectID string, kmsKeyID string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting KMS key: %s in project: %s", kmsKeyID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, kmsKeyId, "KMS key ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, kmsKeyID, "KMS key ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KMSKeyPath, projectID, kmsKeyId)
+	path := fmt.Sprintf(KMSKeyPath, projectID, kmsKeyID)
 
 	if params == nil {
 		params = &types.RequestParameters{

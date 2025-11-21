@@ -46,39 +46,39 @@ func (c databaseClientImpl) Grants() GrantsClient {
 
 type DBaaSClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.DBaaSList], error)
-	Get(ctx context.Context, projectID string, databaseId string, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error)
+	Get(ctx context.Context, projectID string, databaseID string, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error)
 	Create(ctx context.Context, projectID string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error)
-	Update(ctx context.Context, projectID string, databaseId string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error)
-	Delete(ctx context.Context, projectID string, databaseId string, params *types.RequestParameters) (*types.Response[any], error)
+	Update(ctx context.Context, projectID string, databaseID string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error)
+	Delete(ctx context.Context, projectID string, databaseID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
 type DatabasesClient interface {
-	List(ctx context.Context, projectID string, dbaasId string, params *types.RequestParameters) (*types.Response[types.DatabaseList], error)
-	Get(ctx context.Context, projectID string, dbaasId string, databaseId string, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error)
-	Create(ctx context.Context, projectID string, dbaasId string, body types.DatabaseRequest, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error)
-	Update(ctx context.Context, projectID string, dbaasId string, databaseId string, body types.DatabaseRequest, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error)
-	Delete(ctx context.Context, projectID string, dbaasId string, databaseId string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, projectID string, dbaasID string, params *types.RequestParameters) (*types.Response[types.DatabaseList], error)
+	Get(ctx context.Context, projectID string, dbaasID string, databaseID string, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error)
+	Create(ctx context.Context, projectID string, dbaasID string, body types.DatabaseRequest, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error)
+	Update(ctx context.Context, projectID string, dbaasID string, databaseID string, body types.DatabaseRequest, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error)
+	Delete(ctx context.Context, projectID string, dbaasID string, databaseID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
 type BackupsClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.BackupList], error)
-	Get(ctx context.Context, projectID string, backupId string, params *types.RequestParameters) (*types.Response[types.BackupResponse], error)
+	Get(ctx context.Context, projectID string, backupID string, params *types.RequestParameters) (*types.Response[types.BackupResponse], error)
 	Create(ctx context.Context, projectID string, body types.BackupRequest, params *types.RequestParameters) (*types.Response[types.BackupResponse], error)
-	Delete(ctx context.Context, projectID string, backupId string, params *types.RequestParameters) (*types.Response[any], error)
+	Delete(ctx context.Context, projectID string, backupID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
 type UsersClient interface {
-	List(ctx context.Context, projectID string, dbaasId string, params *types.RequestParameters) (*types.Response[types.UserList], error)
-	Get(ctx context.Context, projectID string, dbaasId string, userId string, params *types.RequestParameters) (*types.Response[types.UserResponse], error)
-	Create(ctx context.Context, projectID string, dbaasId string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error)
-	Update(ctx context.Context, projectID string, dbaasId string, userId string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error)
-	Delete(ctx context.Context, projectID string, dbaasId string, userId string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, projectID string, dbaasID string, params *types.RequestParameters) (*types.Response[types.UserList], error)
+	Get(ctx context.Context, projectID string, dbaasID string, userID string, params *types.RequestParameters) (*types.Response[types.UserResponse], error)
+	Create(ctx context.Context, projectID string, dbaasID string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error)
+	Update(ctx context.Context, projectID string, dbaasID string, userID string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error)
+	Delete(ctx context.Context, projectID string, dbaasID string, userID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
 type GrantsClient interface {
-	List(ctx context.Context, projectID string, dbaasId string, databaseId string, params *types.RequestParameters) (*types.Response[types.GrantList], error)
-	Get(ctx context.Context, projectID string, dbaasId string, databaseId string, grantId string, params *types.RequestParameters) (*types.Response[types.GrantResponse], error)
-	Create(ctx context.Context, projectID string, dbaasId string, databaseId string, body types.GrantRequest, params *types.RequestParameters) (*types.Response[types.GrantResponse], error)
-	Update(ctx context.Context, projectID string, dbaasId string, databaseId string, grantId string, body types.GrantRequest, params *types.RequestParameters) (*types.Response[types.GrantResponse], error)
-	Delete(ctx context.Context, projectID string, dbaasId string, databaseId string, grantId string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, projectID string, dbaasID string, databaseID string, params *types.RequestParameters) (*types.Response[types.GrantList], error)
+	Get(ctx context.Context, projectID string, dbaasID string, databaseID string, grantID string, params *types.RequestParameters) (*types.Response[types.GrantResponse], error)
+	Create(ctx context.Context, projectID string, dbaasID string, databaseID string, body types.GrantRequest, params *types.RequestParameters) (*types.Response[types.GrantResponse], error)
+	Update(ctx context.Context, projectID string, dbaasID string, databaseID string, grantID string, body types.GrantRequest, params *types.RequestParameters) (*types.Response[types.GrantResponse], error)
+	Delete(ctx context.Context, projectID string, dbaasID string, databaseID string, grantID string, params *types.RequestParameters) (*types.Response[any], error)
 }

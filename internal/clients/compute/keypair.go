@@ -53,14 +53,14 @@ func (c *keyPairsClientImpl) List(ctx context.Context, projectID string, params 
 }
 
 // Get retrieves a specific key pair by ID
-func (c *keyPairsClientImpl) Get(ctx context.Context, projectID string, keyPairId string, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error) {
-	c.client.Logger().Debugf("Getting key pair: %s in project: %s", keyPairId, projectID)
+func (c *keyPairsClientImpl) Get(ctx context.Context, projectID string, keyPairID string, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error) {
+	c.client.Logger().Debugf("Getting key pair: %s in project: %s", keyPairID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, keyPairId, "key pair ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, keyPairID, "key pair ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KeyPairPath, projectID, keyPairId)
+	path := fmt.Sprintf(KeyPairPath, projectID, keyPairID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -147,14 +147,14 @@ func (c *keyPairsClientImpl) Create(ctx context.Context, projectID string, body 
 }
 
 // Delete deletes a key pair by ID
-func (c *keyPairsClientImpl) Delete(ctx context.Context, projectID string, keyPairId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting key pair: %s in project: %s", keyPairId, projectID)
+func (c *keyPairsClientImpl) Delete(ctx context.Context, projectID string, keyPairID string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting key pair: %s in project: %s", keyPairID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, keyPairId, "key pair ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, keyPairID, "key pair ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KeyPairPath, projectID, keyPairId)
+	path := fmt.Sprintf(KeyPairPath, projectID, keyPairID)
 
 	if params == nil {
 		params = &types.RequestParameters{

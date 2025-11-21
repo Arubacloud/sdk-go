@@ -24,14 +24,14 @@ func NewUsersClientImpl(client *restclient.Client) *usersClientImpl {
 }
 
 // List retrieves all users for a DBaaS instance
-func (c *usersClientImpl) List(ctx context.Context, projectID string, dbaasId string, params *types.RequestParameters) (*types.Response[types.UserList], error) {
-	c.client.Logger().Debugf("Listing users for DBaaS: %s in project: %s", dbaasId, projectID)
+func (c *usersClientImpl) List(ctx context.Context, projectID string, dbaasID string, params *types.RequestParameters) (*types.Response[types.UserList], error) {
+	c.client.Logger().Debugf("Listing users for DBaaS: %s in project: %s", dbaasID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, dbaasId, "DBaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, dbaasID, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(UsersPath, projectID, dbaasId)
+	path := fmt.Sprintf(UsersPath, projectID, dbaasID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -54,14 +54,14 @@ func (c *usersClientImpl) List(ctx context.Context, projectID string, dbaasId st
 }
 
 // Get retrieves a specific user by ID
-func (c *usersClientImpl) Get(ctx context.Context, projectID string, dbaasId string, userId string, params *types.RequestParameters) (*types.Response[types.UserResponse], error) {
-	c.client.Logger().Debugf("Getting user: %s from DBaaS: %s in project: %s", userId, dbaasId, projectID)
+func (c *usersClientImpl) Get(ctx context.Context, projectID string, dbaasID string, userID string, params *types.RequestParameters) (*types.Response[types.UserResponse], error) {
+	c.client.Logger().Debugf("Getting user: %s from DBaaS: %s in project: %s", userID, dbaasID, projectID)
 
-	if err := types.ValidateDBaaSResource(projectID, dbaasId, userId, "user ID"); err != nil {
+	if err := types.ValidateDBaaSResource(projectID, dbaasID, userID, "user ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(UserItemPath, projectID, dbaasId, userId)
+	path := fmt.Sprintf(UserItemPath, projectID, dbaasID, userID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -84,14 +84,14 @@ func (c *usersClientImpl) Get(ctx context.Context, projectID string, dbaasId str
 }
 
 // Create creates a new user in a DBaaS instance
-func (c *usersClientImpl) Create(ctx context.Context, projectID string, dbaasId string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error) {
-	c.client.Logger().Debugf("Creating user in DBaaS: %s in project: %s", dbaasId, projectID)
+func (c *usersClientImpl) Create(ctx context.Context, projectID string, dbaasID string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error) {
+	c.client.Logger().Debugf("Creating user in DBaaS: %s in project: %s", dbaasID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, dbaasId, "DBaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, dbaasID, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(UsersPath, projectID, dbaasId)
+	path := fmt.Sprintf(UsersPath, projectID, dbaasID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -148,14 +148,14 @@ func (c *usersClientImpl) Create(ctx context.Context, projectID string, dbaasId 
 }
 
 // Update updates an existing user
-func (c *usersClientImpl) Update(ctx context.Context, projectID string, dbaasId string, userId string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error) {
-	c.client.Logger().Debugf("Updating user: %s in DBaaS: %s in project: %s", userId, dbaasId, projectID)
+func (c *usersClientImpl) Update(ctx context.Context, projectID string, dbaasID string, userID string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error) {
+	c.client.Logger().Debugf("Updating user: %s in DBaaS: %s in project: %s", userID, dbaasID, projectID)
 
-	if err := types.ValidateDBaaSResource(projectID, dbaasId, userId, "user ID"); err != nil {
+	if err := types.ValidateDBaaSResource(projectID, dbaasID, userID, "user ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(UserItemPath, projectID, dbaasId, userId)
+	path := fmt.Sprintf(UserItemPath, projectID, dbaasID, userID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -212,14 +212,14 @@ func (c *usersClientImpl) Update(ctx context.Context, projectID string, dbaasId 
 }
 
 // Delete deletes a user by ID
-func (c *usersClientImpl) Delete(ctx context.Context, projectID string, dbaasId string, userId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting user: %s from DBaaS: %s in project: %s", userId, dbaasId, projectID)
+func (c *usersClientImpl) Delete(ctx context.Context, projectID string, dbaasID string, userID string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting user: %s from DBaaS: %s in project: %s", userID, dbaasID, projectID)
 
-	if err := types.ValidateDBaaSResource(projectID, dbaasId, userId, "user ID"); err != nil {
+	if err := types.ValidateDBaaSResource(projectID, dbaasID, userID, "user ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(UserItemPath, projectID, dbaasId, userId)
+	path := fmt.Sprintf(UserItemPath, projectID, dbaasID, userID)
 
 	if params == nil {
 		params = &types.RequestParameters{

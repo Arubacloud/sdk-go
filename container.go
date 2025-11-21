@@ -22,8 +22,8 @@ func (c *containerClientImpl) KaaS() KaaSClient {
 
 type KaaSClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KaaSList], error)
-	Get(ctx context.Context, projectID string, kaasId string, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
+	Get(ctx context.Context, projectID string, kaasID string, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
 	Create(ctx context.Context, projectID string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
-	Update(ctx context.Context, projectID string, kaasId string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
-	Delete(ctx context.Context, projectID string, kaasId string, params *types.RequestParameters) (*types.Response[any], error)
+	Update(ctx context.Context, projectID string, kaasID string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
+	Delete(ctx context.Context, projectID string, kaasID string, params *types.RequestParameters) (*types.Response[any], error)
 }

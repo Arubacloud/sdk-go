@@ -54,14 +54,14 @@ func (c *vpnTunnelsClientImpl) List(ctx context.Context, projectID string, param
 }
 
 // Get retrieves a specific VPN tunnel by ID
-func (c *vpnTunnelsClientImpl) Get(ctx context.Context, projectID string, vpnTunnelId string, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error) {
-	c.client.Logger().Debugf("Getting VPN tunnel: %s in project: %s", vpnTunnelId, projectID)
+func (c *vpnTunnelsClientImpl) Get(ctx context.Context, projectID string, vpnTunnelID string, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error) {
+	c.client.Logger().Debugf("Getting VPN tunnel: %s in project: %s", vpnTunnelID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, vpnTunnelId, "VPN tunnel ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, vpnTunnelID, "VPN tunnel ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VPNTunnelPath, projectID, vpnTunnelId)
+	path := fmt.Sprintf(VPNTunnelPath, projectID, vpnTunnelID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -144,14 +144,14 @@ func (c *vpnTunnelsClientImpl) Create(ctx context.Context, projectID string, bod
 }
 
 // Update updates an existing VPN tunnel
-func (c *vpnTunnelsClientImpl) Update(ctx context.Context, projectID string, vpnTunnelId string, body types.VPNTunnelRequest, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error) {
-	c.client.Logger().Debugf("Updating VPN tunnel: %s in project: %s", vpnTunnelId, projectID)
+func (c *vpnTunnelsClientImpl) Update(ctx context.Context, projectID string, vpnTunnelID string, body types.VPNTunnelRequest, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error) {
+	c.client.Logger().Debugf("Updating VPN tunnel: %s in project: %s", vpnTunnelID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, vpnTunnelId, "VPN tunnel ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, vpnTunnelID, "VPN tunnel ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VPNTunnelPath, projectID, vpnTunnelId)
+	path := fmt.Sprintf(VPNTunnelPath, projectID, vpnTunnelID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -204,14 +204,14 @@ func (c *vpnTunnelsClientImpl) Update(ctx context.Context, projectID string, vpn
 }
 
 // Delete deletes a VPN tunnel by ID
-func (c *vpnTunnelsClientImpl) Delete(ctx context.Context, projectID string, vpnTunnelId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting VPN tunnel: %s in project: %s", vpnTunnelId, projectID)
+func (c *vpnTunnelsClientImpl) Delete(ctx context.Context, projectID string, vpnTunnelID string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting VPN tunnel: %s in project: %s", vpnTunnelID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, vpnTunnelId, "VPN tunnel ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, vpnTunnelID, "VPN tunnel ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VPNTunnelPath, projectID, vpnTunnelId)
+	path := fmt.Sprintf(VPNTunnelPath, projectID, vpnTunnelID)
 
 	if params == nil {
 		params = &types.RequestParameters{

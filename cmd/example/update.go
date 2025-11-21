@@ -17,7 +17,7 @@ import (
 // To run: PROJECT_ID=your-project go run . -mode=update
 func runUpdateExample() {
 	config := &restclient.Config{
-		ClientID:     "clientId",
+		ClientID:     "clientID",
 		ClientSecret: "clientSecret",
 		HTTPClient:   &http.Client{Timeout: 30 * time.Second},
 		Debug:        true,

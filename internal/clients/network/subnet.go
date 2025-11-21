@@ -26,14 +26,14 @@ func NewSubnetsClientImpl(client *restclient.Client, vpcClient *vpcsClientImpl) 
 }
 
 // List retrieves all subnets for a VPC
-func (c *subnetsClientImpl) List(ctx context.Context, projectID string, vpcId string, params *types.RequestParameters) (*types.Response[types.SubnetList], error) {
-	c.client.Logger().Debugf("Listing subnets for VPC: %s in project: %s", vpcId, projectID)
+func (c *subnetsClientImpl) List(ctx context.Context, projectID string, vpcID string, params *types.RequestParameters) (*types.Response[types.SubnetList], error) {
+	c.client.Logger().Debugf("Listing subnets for VPC: %s in project: %s", vpcID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, vpcId, "VPC ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, vpcID, "VPC ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SubnetsPath, projectID, vpcId)
+	path := fmt.Sprintf(SubnetsPath, projectID, vpcID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -56,14 +56,14 @@ func (c *subnetsClientImpl) List(ctx context.Context, projectID string, vpcId st
 }
 
 // Get retrieves a specific subnet by ID
-func (c *subnetsClientImpl) Get(ctx context.Context, projectID string, vpcId string, subnetId string, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error) {
-	c.client.Logger().Debugf("Getting subnet: %s from VPC: %s in project: %s", subnetId, vpcId, projectID)
+func (c *subnetsClientImpl) Get(ctx context.Context, projectID string, vpcID string, subnetID string, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error) {
+	c.client.Logger().Debugf("Getting subnet: %s from VPC: %s in project: %s", subnetID, vpcID, projectID)
 
-	if err := types.ValidateVPCResource(projectID, vpcId, subnetId, "subnet ID"); err != nil {
+	if err := types.ValidateVPCResource(projectID, vpcID, subnetID, "subnet ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SubnetPath, projectID, vpcId, subnetId)
+	path := fmt.Sprintf(SubnetPath, projectID, vpcID, subnetID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -87,20 +87,20 @@ func (c *subnetsClientImpl) Get(ctx context.Context, projectID string, vpcId str
 
 // Create creates a new subnet in a VPC
 // The SDK automatically waits for the VPC to become Active before creating the subnet
-func (c *subnetsClientImpl) Create(ctx context.Context, projectID string, vpcId string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error) {
-	c.client.Logger().Debugf("Creating subnet in VPC: %s in project: %s", vpcId, projectID)
+func (c *subnetsClientImpl) Create(ctx context.Context, projectID string, vpcID string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error) {
+	c.client.Logger().Debugf("Creating subnet in VPC: %s in project: %s", vpcID, projectID)
 
-	if err := types.ValidateProjectAndResource(projectID, vpcId, "VPC ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, vpcID, "VPC ID"); err != nil {
 		return nil, err
 	}
 
 	// Wait for VPC to become Active before creating subnet
-	err := waitForVPCActive(ctx, c.vpcClient, projectID, vpcId)
+	err := waitForVPCActive(ctx, c.vpcClient, projectID, vpcID)
 	if err != nil {
 		return nil, fmt.Errorf("failed waiting for VPC to become active: %w", err)
 	}
 
-	path := fmt.Sprintf(SubnetsPath, projectID, vpcId)
+	path := fmt.Sprintf(SubnetsPath, projectID, vpcID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -152,14 +152,14 @@ func (c *subnetsClientImpl) Create(ctx context.Context, projectID string, vpcId 
 }
 
 // Update updates an existing subnet
-func (c *subnetsClientImpl) Update(ctx context.Context, projectID string, vpcId string, subnetId string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error) {
-	c.client.Logger().Debugf("Updating subnet: %s in VPC: %s in project: %s", subnetId, vpcId, projectID)
+func (c *subnetsClientImpl) Update(ctx context.Context, projectID string, vpcID string, subnetID string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error) {
+	c.client.Logger().Debugf("Updating subnet: %s in VPC: %s in project: %s", subnetID, vpcID, projectID)
 
-	if err := types.ValidateVPCResource(projectID, vpcId, subnetId, "subnet ID"); err != nil {
+	if err := types.ValidateVPCResource(projectID, vpcID, subnetID, "subnet ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SubnetPath, projectID, vpcId, subnetId)
+	path := fmt.Sprintf(SubnetPath, projectID, vpcID, subnetID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -212,14 +212,14 @@ func (c *subnetsClientImpl) Update(ctx context.Context, projectID string, vpcId 
 }
 
 // Delete deletes a subnet by ID
-func (c *subnetsClientImpl) Delete(ctx context.Context, projectID string, vpcId string, subnetId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting subnet: %s from VPC: %s in project: %s", subnetId, vpcId, projectID)
+func (c *subnetsClientImpl) Delete(ctx context.Context, projectID string, vpcID string, subnetID string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting subnet: %s from VPC: %s in project: %s", subnetID, vpcID, projectID)
 
-	if err := types.ValidateVPCResource(projectID, vpcId, subnetId, "subnet ID"); err != nil {
+	if err := types.ValidateVPCResource(projectID, vpcID, subnetID, "subnet ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SubnetPath, projectID, vpcId, subnetId)
+	path := fmt.Sprintf(SubnetPath, projectID, vpcID, subnetID)
 
 	if params == nil {
 		params = &types.RequestParameters{

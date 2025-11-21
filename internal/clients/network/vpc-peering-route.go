@@ -24,14 +24,14 @@ func NewVPCPeeringRoutesClientImpl(client *restclient.Client) *vpcPeeringRoutesC
 }
 
 // List retrieves all VPC peering routes for a VPC peering connection
-func (c *vpcPeeringRoutesClientImpl) List(ctx context.Context, projectID string, vpcId string, vpcPeeringId string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteList], error) {
-	c.client.Logger().Debugf("Listing VPC peering routes for VPC peering: %s in VPC: %s in project: %s", vpcPeeringId, vpcId, projectID)
+func (c *vpcPeeringRoutesClientImpl) List(ctx context.Context, projectID string, vpcID string, vpcPeeringID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteList], error) {
+	c.client.Logger().Debugf("Listing VPC peering routes for VPC peering: %s in VPC: %s in project: %s", vpcPeeringID, vpcID, projectID)
 
-	if err := types.ValidateVPCResource(projectID, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
+	if err := types.ValidateVPCResource(projectID, vpcID, vpcPeeringID, "VPC peering ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VPCPeeringRoutesPath, projectID, vpcId, vpcPeeringId)
+	path := fmt.Sprintf(VPCPeeringRoutesPath, projectID, vpcID, vpcPeeringID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -54,14 +54,14 @@ func (c *vpcPeeringRoutesClientImpl) List(ctx context.Context, projectID string,
 }
 
 // Get retrieves a specific VPC peering route by ID
-func (c *vpcPeeringRoutesClientImpl) Get(ctx context.Context, projectID string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error) {
-	c.client.Logger().Debugf("Getting VPC peering route: %s from VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteId, vpcPeeringId, vpcId, projectID)
+func (c *vpcPeeringRoutesClientImpl) Get(ctx context.Context, projectID string, vpcID string, vpcPeeringID string, vpcPeeringRouteID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error) {
+	c.client.Logger().Debugf("Getting VPC peering route: %s from VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteID, vpcPeeringID, vpcID, projectID)
 
-	if err := types.ValidateVPCPeeringRoute(projectID, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {
+	if err := types.ValidateVPCPeeringRoute(projectID, vpcID, vpcPeeringID, vpcPeeringRouteID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VPCPeeringRoutePath, projectID, vpcId, vpcPeeringId, vpcPeeringRouteId)
+	path := fmt.Sprintf(VPCPeeringRoutePath, projectID, vpcID, vpcPeeringID, vpcPeeringRouteID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -84,14 +84,14 @@ func (c *vpcPeeringRoutesClientImpl) Get(ctx context.Context, projectID string, 
 }
 
 // Create creates a new VPC peering route
-func (c *vpcPeeringRoutesClientImpl) Create(ctx context.Context, projectID string, vpcId string, vpcPeeringId string, body types.VPCPeeringRouteRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error) {
-	c.client.Logger().Debugf("Creating VPC peering route in VPC peering: %s in VPC: %s in project: %s", vpcPeeringId, vpcId, projectID)
+func (c *vpcPeeringRoutesClientImpl) Create(ctx context.Context, projectID string, vpcID string, vpcPeeringID string, body types.VPCPeeringRouteRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error) {
+	c.client.Logger().Debugf("Creating VPC peering route in VPC peering: %s in VPC: %s in project: %s", vpcPeeringID, vpcID, projectID)
 
-	if err := types.ValidateVPCResource(projectID, vpcId, vpcPeeringId, "VPC peering ID"); err != nil {
+	if err := types.ValidateVPCResource(projectID, vpcID, vpcPeeringID, "VPC peering ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VPCPeeringRoutesPath, projectID, vpcId, vpcPeeringId)
+	path := fmt.Sprintf(VPCPeeringRoutesPath, projectID, vpcID, vpcPeeringID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -144,14 +144,14 @@ func (c *vpcPeeringRoutesClientImpl) Create(ctx context.Context, projectID strin
 }
 
 // Update updates an existing VPC peering route
-func (c *vpcPeeringRoutesClientImpl) Update(ctx context.Context, projectID string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, body types.VPCPeeringRouteRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error) {
-	c.client.Logger().Debugf("Updating VPC peering route: %s in VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteId, vpcPeeringId, vpcId, projectID)
+func (c *vpcPeeringRoutesClientImpl) Update(ctx context.Context, projectID string, vpcID string, vpcPeeringID string, vpcPeeringRouteID string, body types.VPCPeeringRouteRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error) {
+	c.client.Logger().Debugf("Updating VPC peering route: %s in VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteID, vpcPeeringID, vpcID, projectID)
 
-	if err := types.ValidateVPCPeeringRoute(projectID, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {
+	if err := types.ValidateVPCPeeringRoute(projectID, vpcID, vpcPeeringID, vpcPeeringRouteID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VPCPeeringRoutePath, projectID, vpcId, vpcPeeringId, vpcPeeringRouteId)
+	path := fmt.Sprintf(VPCPeeringRoutePath, projectID, vpcID, vpcPeeringID, vpcPeeringRouteID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -204,14 +204,14 @@ func (c *vpcPeeringRoutesClientImpl) Update(ctx context.Context, projectID strin
 }
 
 // Delete deletes a VPC peering route by ID
-func (c *vpcPeeringRoutesClientImpl) Delete(ctx context.Context, projectID string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting VPC peering route: %s from VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteId, vpcPeeringId, vpcId, projectID)
+func (c *vpcPeeringRoutesClientImpl) Delete(ctx context.Context, projectID string, vpcID string, vpcPeeringID string, vpcPeeringRouteID string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting VPC peering route: %s from VPC peering: %s in VPC: %s in project: %s", vpcPeeringRouteID, vpcPeeringID, vpcID, projectID)
 
-	if err := types.ValidateVPCPeeringRoute(projectID, vpcId, vpcPeeringId, vpcPeeringRouteId); err != nil {
+	if err := types.ValidateVPCPeeringRoute(projectID, vpcID, vpcPeeringID, vpcPeeringRouteID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VPCPeeringRoutePath, projectID, vpcId, vpcPeeringId, vpcPeeringRouteId)
+	path := fmt.Sprintf(VPCPeeringRoutePath, projectID, vpcID, vpcPeeringID, vpcPeeringRouteID)
 
 	if params == nil {
 		params = &types.RequestParameters{

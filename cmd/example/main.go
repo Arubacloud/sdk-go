@@ -49,7 +49,7 @@ func main() {
 
 func runCreateExample() {
 	config := &restclient.Config{
-		ClientID:     "clientId",
+		ClientID:     "clientID",
 		ClientSecret: "clientSecret",
 		HTTPClient:   &http.Client{Timeout: 30 * time.Second},
 		Debug:        true,
@@ -204,7 +204,7 @@ func createElasticIP(ctx context.Context, arubaClient aruba.Client, projectID st
 			stringValue(elasticIPResp.Error.Detail))
 		os.Exit(1)
 	}
-	fmt.Printf("✓ Created Elastic IP: %s (ObjectId: %s)\n", *elasticIPResp.Data.Metadata.Name, *elasticIPResp.Data.Metadata.ID)
+	fmt.Printf("✓ Created Elastic IP: %s (ObjectID: %s)\n", *elasticIPResp.Data.Metadata.Name, *elasticIPResp.Data.Metadata.ID)
 
 	return elasticIPResp
 }
@@ -485,7 +485,7 @@ func createSecurityGroupRule(ctx context.Context, arubaClient aruba.Client, proj
 func createKeyPair(ctx context.Context, arubaClient aruba.Client, projectID string) *types.Response[types.KeyPairResponse] {
 	fmt.Println("--- SSH Key Pair ---")
 
-	sshPublicKey := "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEA2No7At0tgHrcZTL0kGWyLLUqPKfOhD9hGdNV9PbJxhjOGNFxcwdQ9wCXsJ3RQaRHBuGIgVodDurrlqzxFK86yCHMgXT2YLHF0j9P4m9GDiCfOK6msbFb89p5xZExjwD2zK+w68r7iOKZeRB2yrznW5TD3KDemSPIQQIVcyLF+yxft49HWBTI3PVQ4rBVOBJ2PdC9SAOf7CYnptW24CRrC0h85szIdwMA+Kmasfl3YGzk4MxheHrTO8C40aXXpieJ9S2VQA4VJAMRyAboptIK0cKjBYrbt5YkEL0AlyBGPIu6MPYr5K/MHyDunDi9yc7VYRYRR0f46MBOSqMUiGPnMw=="
+	sshPublicKey := "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEA2No7At0tgHrcZTL0kGWyLLUqPKfOhD9hGdNV9PbJxhjOGNFxcwdQ9wCXsJ3RQaRHBuGIgVodDurrlqzxFK86yCHMgXT2YLHF0j9P4m9GDiCfOK6msbFb89p5xZExjwD2zK+w68r7iOKZeRB2yrznW5TD3KDemSPIQQIVcyLF+yxft49HWBTI3PVQ4rBVOBJ2PdC9SAOf7CYnptW24CRrC0h85szIDwMA+Kmasfl3YGzk4MxheHrTO8C40aXXpieJ9S2VQA4VJAMRyAboptIK0cKjBYrbt5YkEL0AlyBGPIu6MPYr5K/MHyDunDi9yc7VYRYRR0f46MBOSqMUiGPnMw=="
 
 	keyPairReq := types.KeyPairRequest{
 		Metadata: types.RegionalResourceMetadataRequest{

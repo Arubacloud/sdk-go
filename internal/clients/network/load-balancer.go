@@ -49,12 +49,12 @@ func (c *loadBalancersClientImpl) List(ctx context.Context, projectID string, pa
 }
 
 // Get retrieves a specific load balancer by ID
-func (c *loadBalancersClientImpl) Get(ctx context.Context, projectID string, loadBalancerId string, params *types.RequestParameters) (*types.Response[types.LoadBalancerResponse], error) {
-	if err := types.ValidateProjectAndResource(projectID, loadBalancerId, "load balancer ID"); err != nil {
+func (c *loadBalancersClientImpl) Get(ctx context.Context, projectID string, loadBalancerID string, params *types.RequestParameters) (*types.Response[types.LoadBalancerResponse], error) {
+	if err := types.ValidateProjectAndResource(projectID, loadBalancerID, "load balancer ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(LoadBalancerPath, projectID, loadBalancerId)
+	path := fmt.Sprintf(LoadBalancerPath, projectID, loadBalancerID)
 
 	if params == nil {
 		params = &types.RequestParameters{
