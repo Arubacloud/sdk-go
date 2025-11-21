@@ -3,7 +3,7 @@ package aruba
 import (
 	"context"
 
-	"github.com/Arubacloud/sdk-go/types"
+	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
 type StorageClient interface {

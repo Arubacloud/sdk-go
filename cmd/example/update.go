@@ -10,7 +10,7 @@ import (
 
 	aruba "github.com/Arubacloud/sdk-go"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
-	"github.com/Arubacloud/sdk-go/types"
+	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
 // runUpdateExample demonstrates how to update existing resources

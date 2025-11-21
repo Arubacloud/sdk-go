@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/internal/restclient"
-	"github.com/Arubacloud/sdk-go/types"
+	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
 func TestListSecurityGroupRules(t *testing.T) {

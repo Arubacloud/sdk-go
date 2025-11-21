@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/Arubacloud/sdk-go/internal/restclient"
-	"github.com/Arubacloud/sdk-go/types"
+	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
 // eventsClientImpl implements the AuditAPI interface for all Audit operations

@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	"github.com/Arubacloud/sdk-go/internal/restclient"
-	"github.com/Arubacloud/sdk-go/types"
+	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
 // projectsClientImpl implements the ProjectAPI interface for all Project operations
