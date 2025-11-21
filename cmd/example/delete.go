@@ -271,7 +271,7 @@ func deleteAllResources(ctx context.Context, arubaClient aruba.Client, resources
 func deleteProject(ctx context.Context, arubaClient aruba.Client, projectID string) {
 	fmt.Println("--- Deleting Project ---")
 
-	deleteResp, err := arubaClient.FromProject().DeleteProject(ctx, projectID, nil)
+	deleteResp, err := arubaClient.FromProject().Delete(ctx, projectID, nil)
 	if err != nil {
 		log.Printf("Error deleting project: %v", err)
 		return

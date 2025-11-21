@@ -76,9 +76,9 @@ func TestListProjects(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewProjectsClientImpl(c)
 
-		resp, err := svc.ListProjects(context.Background(), nil)
+		resp, err := svc.List(context.Background(), nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -143,9 +143,9 @@ func TestGetProject(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewProjectsClientImpl(c)
 
-		resp, err := svc.GetProject(context.Background(), "project-123", nil)
+		resp, err := svc.Get(context.Background(), "project-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -210,7 +210,7 @@ func TestCreateProject(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewProjectsClientImpl(c)
 
 		body := types.ProjectRequest{
 			Metadata: types.ResourceMetadataRequest{
@@ -222,7 +222,7 @@ func TestCreateProject(t *testing.T) {
 			},
 		}
 
-		resp, err := svc.CreateProject(context.Background(), body, nil)
+		resp, err := svc.Create(context.Background(), body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -284,7 +284,7 @@ func TestUpdateProject(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewProjectsClientImpl(c)
 
 		body := types.ProjectRequest{
 			Metadata: types.ResourceMetadataRequest{
@@ -296,7 +296,7 @@ func TestUpdateProject(t *testing.T) {
 			},
 		}
 
-		resp, err := svc.UpdateProject(context.Background(), "project-123", body, nil)
+		resp, err := svc.Update(context.Background(), "project-123", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -343,9 +343,9 @@ func TestDeleteProject(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewProjectsClientImpl(c)
 
-		_, err = svc.DeleteProject(context.Background(), "project-123", nil)
+		_, err = svc.Delete(context.Background(), "project-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

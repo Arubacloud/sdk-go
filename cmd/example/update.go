@@ -122,7 +122,7 @@ func updateProject(ctx context.Context, arubaClient aruba.Client, projectID stri
 		},
 	}
 
-	updateResp, err := arubaClient.FromProject().UpdateProject(ctx, projectID, projectReq, nil)
+	updateResp, err := arubaClient.FromProject().Update(ctx, projectID, projectReq, nil)
 	if err != nil {
 		log.Printf("Error updating project: %v", err)
 		return

@@ -149,7 +149,7 @@ func createProject(ctx context.Context, arubaClient aruba.Client) string {
 		},
 	}
 
-	createResp, err := arubaClient.FromProject().CreateProject(ctx, projectReq, nil)
+	createResp, err := arubaClient.FromProject().Create(ctx, projectReq, nil)
 	if err != nil {
 		log.Fatalf("Error creating project: %v", err)
 	} else if !createResp.IsSuccess() {
@@ -159,7 +159,7 @@ func createProject(ctx context.Context, arubaClient aruba.Client) string {
 	fmt.Printf("✓ Created project with ID: %s\n", projectID)
 
 	// Update the project
-	updateResp, err := arubaClient.FromProject().UpdateProject(ctx, projectID, projectReq, nil)
+	updateResp, err := arubaClient.FromProject().Update(ctx, projectID, projectReq, nil)
 	if err != nil {
 		log.Printf("Error updating project: %v", err)
 		os.Exit(1)

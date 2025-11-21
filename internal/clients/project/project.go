@@ -8,12 +8,25 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListProjects retrieves all projects
-func (s *Service) ListProjects(ctx context.Context, params *types.RequestParameters) (*types.Response[types.ProjectList], error) {
-	s.client.Logger().Debugf("Listing projects")
+// projectsClientImpl implements the ProjectAPI interface for all Project operations
+type projectsClientImpl struct {
+	client *restclient.Client
+}
+
+// NewProjectsClientImpl creates a new unified Project service
+func NewProjectsClientImpl(client *restclient.Client) *projectsClientImpl {
+	return &projectsClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all projects
+func (c *projectsClientImpl) List(ctx context.Context, params *types.RequestParameters) (*types.Response[types.ProjectList], error) {
+	c.client.Logger().Debugf("Listing projects")
 
 	path := ProjectsPath
 
@@ -28,7 +41,7 @@ func (s *Service) ListProjects(ctx context.Context, params *types.RequestParamet
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -37,9 +50,9 @@ func (s *Service) ListProjects(ctx context.Context, params *types.RequestParamet
 	return types.ParseResponseBody[types.ProjectList](httpResp)
 }
 
-// GetProject retrieves a specific project by ID
-func (s *Service) GetProject(ctx context.Context, projectId string, params *types.RequestParameters) (*types.Response[types.ProjectResponse], error) {
-	s.client.Logger().Debugf("Getting project: %s", projectId)
+// Get retrieves a specific project by ID
+func (c *projectsClientImpl) Get(ctx context.Context, projectId string, params *types.RequestParameters) (*types.Response[types.ProjectResponse], error) {
+	c.client.Logger().Debugf("Getting project: %s", projectId)
 
 	if err := types.ValidateProject(projectId); err != nil {
 		return nil, err
@@ -58,7 +71,7 @@ func (s *Service) GetProject(ctx context.Context, projectId string, params *type
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -67,9 +80,9 @@ func (s *Service) GetProject(ctx context.Context, projectId string, params *type
 	return types.ParseResponseBody[types.ProjectResponse](httpResp)
 }
 
-// CreateProject creates a new project
-func (s *Service) CreateProject(ctx context.Context, body types.ProjectRequest, params *types.RequestParameters) (*types.Response[types.ProjectResponse], error) {
-	s.client.Logger().Debugf("Creating project")
+// Create creates a new project
+func (c *projectsClientImpl) Create(ctx context.Context, body types.ProjectRequest, params *types.RequestParameters) (*types.Response[types.ProjectResponse], error) {
+	c.client.Logger().Debugf("Creating project")
 
 	path := ProjectsPath
 
@@ -89,7 +102,7 @@ func (s *Service) CreateProject(ctx context.Context, body types.ProjectRequest, 
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -123,9 +136,9 @@ func (s *Service) CreateProject(ctx context.Context, body types.ProjectRequest, 
 	return response, nil
 }
 
-// UpdateProject updates an existing project
-func (s *Service) UpdateProject(ctx context.Context, projectId string, body types.ProjectRequest, params *types.RequestParameters) (*types.Response[types.ProjectResponse], error) {
-	s.client.Logger().Debugf("Updating project: %s", projectId)
+// Update updates an existing project
+func (c *projectsClientImpl) Update(ctx context.Context, projectId string, body types.ProjectRequest, params *types.RequestParameters) (*types.Response[types.ProjectResponse], error) {
+	c.client.Logger().Debugf("Updating project: %s", projectId)
 
 	if err := types.ValidateProject(projectId); err != nil {
 		return nil, err
@@ -149,7 +162,7 @@ func (s *Service) UpdateProject(ctx context.Context, projectId string, body type
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -183,9 +196,9 @@ func (s *Service) UpdateProject(ctx context.Context, projectId string, body type
 	return response, nil
 }
 
-// DeleteProject deletes a project by ID
-func (s *Service) DeleteProject(ctx context.Context, projectId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting project: %s", projectId)
+// Delete deletes a project by ID
+func (c *projectsClientImpl) Delete(ctx context.Context, projectId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting project: %s", projectId)
 
 	if err := types.ValidateProject(projectId); err != nil {
 		return nil, err
@@ -204,7 +217,7 @@ func (s *Service) DeleteProject(ctx context.Context, projectId string, params *t
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

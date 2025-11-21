@@ -2,7 +2,6 @@
 package aruba
 
 import (
-	"github.com/Arubacloud/sdk-go/pkg/spec/project"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schedule"
 	"github.com/Arubacloud/sdk-go/pkg/spec/security"
 	"github.com/Arubacloud/sdk-go/pkg/spec/storage"
@@ -15,7 +14,7 @@ type Client interface {
 	FromDatabase() DatabaseClient
 	FromMetric() MetricClient
 	FromNetwork() NetworkClient
-	FromProject() project.ProjectAPI
+	FromProject() ProjectClient
 	FromSchedule() schedule.ScheduleAPI
 	FromSecurity() security.SecurityAPI
 	FromStorage() storage.StorageAPI
@@ -28,7 +27,7 @@ type clientImpl struct {
 	databaseClient  DatabaseClient
 	metricsClient   MetricClient
 	networkClient   NetworkClient
-	projectClient   project.ProjectAPI
+	projectClient   ProjectClient
 	scheduleClient  schedule.ScheduleAPI
 	securityClient  security.SecurityAPI
 	storageClient   storage.StorageAPI
@@ -54,7 +53,7 @@ func (c *clientImpl) FromMetric() MetricClient {
 func (c *clientImpl) FromNetwork() NetworkClient {
 	return c.networkClient
 }
-func (c *clientImpl) FromProject() project.ProjectAPI {
+func (c *clientImpl) FromProject() ProjectClient {
 	return c.projectClient
 }
 func (c *clientImpl) FromSchedule() schedule.ScheduleAPI {
