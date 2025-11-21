@@ -94,9 +94,9 @@ func TestListScheduleJobs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewJobsClientImpl(c)
 
-		resp, err := svc.ListScheduleJobs(context.Background(), "test-project", nil)
+		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -149,9 +149,9 @@ func TestListScheduleJobs(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewJobsClientImpl(c)
 
-		resp, err := svc.ListScheduleJobs(context.Background(), "test-project", nil)
+		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -222,9 +222,9 @@ func TestGetScheduleJob(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewJobsClientImpl(c)
 
-		resp, err := svc.GetScheduleJob(context.Background(), "test-project", "job-123", nil)
+		resp, err := svc.Get(context.Background(), "test-project", "job-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -303,7 +303,7 @@ func TestCreateScheduleJob(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewJobsClientImpl(c)
 
 		body := types.JobRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
@@ -328,7 +328,7 @@ func TestCreateScheduleJob(t *testing.T) {
 			},
 		}
 
-		resp, err := svc.CreateScheduleJob(context.Background(), "test-project", body, nil)
+		resp, err := svc.Create(context.Background(), "test-project", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -396,7 +396,7 @@ func TestCreateScheduleJob(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewJobsClientImpl(c)
 
 		body := types.JobRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
@@ -420,7 +420,7 @@ func TestCreateScheduleJob(t *testing.T) {
 			},
 		}
 
-		resp, err := svc.CreateScheduleJob(context.Background(), "test-project", body, nil)
+		resp, err := svc.Create(context.Background(), "test-project", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -496,7 +496,7 @@ func TestUpdateScheduleJob(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewJobsClientImpl(c)
 
 		body := types.JobRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
@@ -521,7 +521,7 @@ func TestUpdateScheduleJob(t *testing.T) {
 			},
 		}
 
-		resp, err := svc.UpdateScheduleJob(context.Background(), "test-project", "job-123", body, nil)
+		resp, err := svc.Update(context.Background(), "test-project", "job-123", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -571,9 +571,9 @@ func TestDeleteScheduleJob(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewJobsClientImpl(c)
 
-		_, err = svc.DeleteScheduleJob(context.Background(), "test-project", "job-123", nil)
+		_, err = svc.Delete(context.Background(), "test-project", "job-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

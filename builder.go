@@ -9,8 +9,8 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
 	"github.com/Arubacloud/sdk-go/internal/clients/network"
 	"github.com/Arubacloud/sdk-go/internal/clients/project"
+	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/schedule"
 	"github.com/Arubacloud/sdk-go/pkg/spec/security"
 	"github.com/Arubacloud/sdk-go/pkg/spec/storage"
 )
@@ -57,6 +57,11 @@ func buildClient(config *restclient.Config) (Client, error) {
 		return nil, err // TODO: better error handling
 	}
 
+	scheduleClient, err := buildScheduleClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
 	return &clientImpl{
 		auditClient:     auditClient,
 		computeClient:   computeClient,
@@ -65,8 +70,8 @@ func buildClient(config *restclient.Config) (Client, error) {
 		metricsClient:   metricClient,
 		networkClient:   networkClient,
 		projectClient:   projectClient,
+		scheduleClient:  scheduleClient,
 		// TODO: Replace all below for refactored servers
-		scheduleClient: schedule.NewService(restClient),
 		securityClient: security.NewService(restClient),
 		storageClient:  storage.NewService(restClient),
 	}, nil
@@ -350,4 +355,22 @@ func buildVPNTunnelsClient(restClient *restclient.Client) (VPNTunnelsClient, err
 
 func buildProjectClient(restClient *restclient.Client) (ProjectClient, error) {
 	return project.NewProjectsClientImpl(restClient), nil
+}
+
+//
+// Schedule domain clients
+
+func buildScheduleClient(restClient *restclient.Client) (ScheduleClient, error) {
+	jobsClient, err := buildJobsClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	return &scheduleClientImpl{
+		jobsClient: jobsClient,
+	}, nil
+}
+
+func buildJobsClient(restClient *restclient.Client) (JobsClient, error) {
+	return schedule.NewJobsClientImpl(restClient), nil
 }

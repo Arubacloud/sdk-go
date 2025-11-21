@@ -8,12 +8,24 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListScheduleJobs retrieves all schedule jobs for a project
-func (s *Service) ListScheduleJobs(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.JobList], error) {
-	s.client.Logger().Debugf("Listing schedule jobs for project: %s", project)
+type jobsClientImpl struct {
+	client *restclient.Client
+}
+
+// NewJobsClientImpl creates a new unified Schedule service
+func NewJobsClientImpl(client *restclient.Client) *jobsClientImpl {
+	return &jobsClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all schedule jobs for a project
+func (c *jobsClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.JobList], error) {
+	c.client.Logger().Debugf("Listing schedule jobs for project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -32,7 +44,7 @@ func (s *Service) ListScheduleJobs(ctx context.Context, project string, params *
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +53,9 @@ func (s *Service) ListScheduleJobs(ctx context.Context, project string, params *
 	return types.ParseResponseBody[types.JobList](httpResp)
 }
 
-// GetScheduleJob retrieves a specific schedule job by ID
-func (s *Service) GetScheduleJob(ctx context.Context, project string, scheduleJobId string, params *types.RequestParameters) (*types.Response[types.JobResponse], error) {
-	s.client.Logger().Debugf("Getting schedule job: %s in project: %s", scheduleJobId, project)
+// Get retrieves a specific schedule job by ID
+func (c *jobsClientImpl) Get(ctx context.Context, project string, scheduleJobId string, params *types.RequestParameters) (*types.Response[types.JobResponse], error) {
+	c.client.Logger().Debugf("Getting schedule job: %s in project: %s", scheduleJobId, project)
 
 	if err := types.ValidateProjectAndResource(project, scheduleJobId, "job ID"); err != nil {
 		return nil, err
@@ -62,7 +74,7 @@ func (s *Service) GetScheduleJob(ctx context.Context, project string, scheduleJo
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +83,9 @@ func (s *Service) GetScheduleJob(ctx context.Context, project string, scheduleJo
 	return types.ParseResponseBody[types.JobResponse](httpResp)
 }
 
-// CreateScheduleJob creates a new schedule job
-func (s *Service) CreateScheduleJob(ctx context.Context, project string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error) {
-	s.client.Logger().Debugf("Creating schedule job in project: %s", project)
+// Create creates a new schedule job
+func (c *jobsClientImpl) Create(ctx context.Context, project string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error) {
+	c.client.Logger().Debugf("Creating schedule job in project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -97,7 +109,7 @@ func (s *Service) CreateScheduleJob(ctx context.Context, project string, body ty
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -131,9 +143,9 @@ func (s *Service) CreateScheduleJob(ctx context.Context, project string, body ty
 	return response, nil
 }
 
-// UpdateScheduleJob updates an existing schedule job
-func (s *Service) UpdateScheduleJob(ctx context.Context, project string, scheduleJobId string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error) {
-	s.client.Logger().Debugf("Updating schedule job: %s in project: %s", scheduleJobId, project)
+// Update updates an existing schedule job
+func (c *jobsClientImpl) Update(ctx context.Context, project string, scheduleJobId string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error) {
+	c.client.Logger().Debugf("Updating schedule job: %s in project: %s", scheduleJobId, project)
 
 	if err := types.ValidateProjectAndResource(project, scheduleJobId, "job ID"); err != nil {
 		return nil, err
@@ -157,7 +169,7 @@ func (s *Service) UpdateScheduleJob(ctx context.Context, project string, schedul
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -191,9 +203,9 @@ func (s *Service) UpdateScheduleJob(ctx context.Context, project string, schedul
 	return response, nil
 }
 
-// DeleteScheduleJob deletes a schedule job by ID
-func (s *Service) DeleteScheduleJob(ctx context.Context, projectId string, scheduleJobId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting schedule job: %s in project: %s", scheduleJobId, projectId)
+// Delete deletes a schedule job by ID
+func (c *jobsClientImpl) Delete(ctx context.Context, projectId string, scheduleJobId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting schedule job: %s in project: %s", scheduleJobId, projectId)
 
 	if err := types.ValidateProjectAndResource(projectId, scheduleJobId, "job ID"); err != nil {
 		return nil, err
@@ -212,7 +224,7 @@ func (s *Service) DeleteScheduleJob(ctx context.Context, projectId string, sched
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
