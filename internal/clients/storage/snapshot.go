@@ -27,14 +27,14 @@ func NewSnapshotsClientImpl(client *restclient.Client, volumesClient *volumesCli
 }
 
 // List retrieves all snapshots for a project
-func (c *snapshotsClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.SnapshotList], error) {
-	c.client.Logger().Debugf("Listing snapshots for project: %s", project)
+func (c *snapshotsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.SnapshotList], error) {
+	c.client.Logger().Debugf("Listing snapshots for project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SnapshotsPath, project)
+	path := fmt.Sprintf(SnapshotsPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -57,14 +57,14 @@ func (c *snapshotsClientImpl) List(ctx context.Context, project string, params *
 }
 
 // Get retrieves a specific snapshot by ID
-func (c *snapshotsClientImpl) Get(ctx context.Context, project string, snapshotId string, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error) {
-	c.client.Logger().Debugf("Getting snapshot: %s in project: %s", snapshotId, project)
+func (c *snapshotsClientImpl) Get(ctx context.Context, projectID string, snapshotId string, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error) {
+	c.client.Logger().Debugf("Getting snapshot: %s in project: %s", snapshotId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, snapshotId, "snapshot ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, snapshotId, "snapshot ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SnapshotPath, project, snapshotId)
+	path := fmt.Sprintf(SnapshotPath, projectID, snapshotId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -88,10 +88,10 @@ func (c *snapshotsClientImpl) Get(ctx context.Context, project string, snapshotI
 
 // Create creates a new snapshot
 // The SDK automatically waits for the source BlockStorage volume to become Active or NotUsed before creating the snapshot
-func (c *snapshotsClientImpl) Create(ctx context.Context, project string, body types.SnapshotRequest, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error) {
-	c.client.Logger().Debugf("Creating snapshot in project: %s", project)
+func (c *snapshotsClientImpl) Create(ctx context.Context, projectID string, body types.SnapshotRequest, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error) {
+	c.client.Logger().Debugf("Creating snapshot in project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
@@ -101,14 +101,14 @@ func (c *snapshotsClientImpl) Create(ctx context.Context, project string, body t
 		volumeID, err := extractVolumeIDFromURI(body.Properties.Volume.URI)
 		if err == nil && volumeID != "" {
 			// Wait for BlockStorage to become Active or NotUsed before creating snapshot
-			err := waitForBlockStorageActive(ctx, c.volumesClient, project, volumeID)
+			err := waitForBlockStorageActive(ctx, c.volumesClient, projectID, volumeID)
 			if err != nil {
 				return nil, fmt.Errorf("failed waiting for BlockStorage to become ready: %w", err)
 			}
 		}
 	}
 
-	path := fmt.Sprintf(SnapshotsPath, project)
+	path := fmt.Sprintf(SnapshotsPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -137,14 +137,14 @@ func (c *snapshotsClientImpl) Create(ctx context.Context, project string, body t
 }
 
 // Delete deletes a snapshot by ID
-func (c *snapshotsClientImpl) Delete(ctx context.Context, project string, snapshotId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting snapshot: %s in project: %s", snapshotId, project)
+func (c *snapshotsClientImpl) Delete(ctx context.Context, projectID string, snapshotId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting snapshot: %s in project: %s", snapshotId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, snapshotId, "snapshot ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, snapshotId, "snapshot ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SnapshotPath, project, snapshotId)
+	path := fmt.Sprintf(SnapshotPath, projectID, snapshotId)
 
 	if params == nil {
 		params = &types.RequestParameters{

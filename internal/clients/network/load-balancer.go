@@ -21,12 +21,12 @@ func NewLoadBalancersClientImpl(client *restclient.Client) *loadBalancersClientI
 }
 
 // List retrieves all load balancers for a project
-func (c *loadBalancersClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.LoadBalancerList], error) {
-	if err := types.ValidateProject(project); err != nil {
+func (c *loadBalancersClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.LoadBalancerList], error) {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(LoadBalancersPath, project)
+	path := fmt.Sprintf(LoadBalancersPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -49,12 +49,12 @@ func (c *loadBalancersClientImpl) List(ctx context.Context, project string, para
 }
 
 // Get retrieves a specific load balancer by ID
-func (c *loadBalancersClientImpl) Get(ctx context.Context, project string, loadBalancerId string, params *types.RequestParameters) (*types.Response[types.LoadBalancerResponse], error) {
-	if err := types.ValidateProjectAndResource(project, loadBalancerId, "load balancer ID"); err != nil {
+func (c *loadBalancersClientImpl) Get(ctx context.Context, projectID string, loadBalancerId string, params *types.RequestParameters) (*types.Response[types.LoadBalancerResponse], error) {
+	if err := types.ValidateProjectAndResource(projectID, loadBalancerId, "load balancer ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(LoadBalancerPath, project, loadBalancerId)
+	path := fmt.Sprintf(LoadBalancerPath, projectID, loadBalancerId)
 
 	if params == nil {
 		params = &types.RequestParameters{

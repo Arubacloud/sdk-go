@@ -46,8 +46,8 @@ func ParseResponseBody[T any](httpResp *http.Response) (*Response[T], error) {
 // Validation helper functions
 
 // ValidateProject checks if project ID is not empty
-func ValidateProject(project string) error {
-	if project == "" {
+func ValidateProject(projectID string) error {
+	if projectID == "" {
 		return fmt.Errorf("project cannot be empty")
 	}
 	return nil

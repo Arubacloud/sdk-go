@@ -22,14 +22,14 @@ func NewEventsClientImpl(client *restclient.Client) *eventsClientImpl {
 }
 
 // List retrieves all audit events for a project
-func (s *eventsClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.AuditEventListResponse], error) {
-	s.client.Logger().Debugf("Listing audit events for project: %s", project)
+func (s *eventsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.AuditEventListResponse], error) {
+	s.client.Logger().Debugf("Listing audit events for project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(EventsPath, project)
+	path := fmt.Sprintf(EventsPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{

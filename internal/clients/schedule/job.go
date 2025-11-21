@@ -24,14 +24,14 @@ func NewJobsClientImpl(client *restclient.Client) *jobsClientImpl {
 }
 
 // List retrieves all schedule jobs for a project
-func (c *jobsClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.JobList], error) {
-	c.client.Logger().Debugf("Listing schedule jobs for project: %s", project)
+func (c *jobsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.JobList], error) {
+	c.client.Logger().Debugf("Listing schedule jobs for project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(JobsPath, project)
+	path := fmt.Sprintf(JobsPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -54,14 +54,14 @@ func (c *jobsClientImpl) List(ctx context.Context, project string, params *types
 }
 
 // Get retrieves a specific schedule job by ID
-func (c *jobsClientImpl) Get(ctx context.Context, project string, scheduleJobId string, params *types.RequestParameters) (*types.Response[types.JobResponse], error) {
-	c.client.Logger().Debugf("Getting schedule job: %s in project: %s", scheduleJobId, project)
+func (c *jobsClientImpl) Get(ctx context.Context, projectID string, scheduleJobId string, params *types.RequestParameters) (*types.Response[types.JobResponse], error) {
+	c.client.Logger().Debugf("Getting schedule job: %s in project: %s", scheduleJobId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, scheduleJobId, "job ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, scheduleJobId, "job ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(JobPath, project, scheduleJobId)
+	path := fmt.Sprintf(JobPath, projectID, scheduleJobId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -84,14 +84,14 @@ func (c *jobsClientImpl) Get(ctx context.Context, project string, scheduleJobId 
 }
 
 // Create creates a new schedule job
-func (c *jobsClientImpl) Create(ctx context.Context, project string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error) {
-	c.client.Logger().Debugf("Creating schedule job in project: %s", project)
+func (c *jobsClientImpl) Create(ctx context.Context, projectID string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error) {
+	c.client.Logger().Debugf("Creating schedule job in project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(JobsPath, project)
+	path := fmt.Sprintf(JobsPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -144,14 +144,14 @@ func (c *jobsClientImpl) Create(ctx context.Context, project string, body types.
 }
 
 // Update updates an existing schedule job
-func (c *jobsClientImpl) Update(ctx context.Context, project string, scheduleJobId string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error) {
-	c.client.Logger().Debugf("Updating schedule job: %s in project: %s", scheduleJobId, project)
+func (c *jobsClientImpl) Update(ctx context.Context, projectID string, scheduleJobId string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error) {
+	c.client.Logger().Debugf("Updating schedule job: %s in project: %s", scheduleJobId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, scheduleJobId, "job ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, scheduleJobId, "job ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(JobPath, project, scheduleJobId)
+	path := fmt.Sprintf(JobPath, projectID, scheduleJobId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -204,14 +204,14 @@ func (c *jobsClientImpl) Update(ctx context.Context, project string, scheduleJob
 }
 
 // Delete deletes a schedule job by ID
-func (c *jobsClientImpl) Delete(ctx context.Context, projectId string, scheduleJobId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting schedule job: %s in project: %s", scheduleJobId, projectId)
+func (c *jobsClientImpl) Delete(ctx context.Context, projectID string, scheduleJobId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting schedule job: %s in project: %s", scheduleJobId, projectID)
 
-	if err := types.ValidateProjectAndResource(projectId, scheduleJobId, "job ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, scheduleJobId, "job ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(JobPath, projectId, scheduleJobId)
+	path := fmt.Sprintf(JobPath, projectID, scheduleJobId)
 
 	if params == nil {
 		params = &types.RequestParameters{

@@ -24,14 +24,14 @@ func NewDBaaSClientImpl(client *restclient.Client) *dbaasClientImpl {
 }
 
 // List retrieves all DBaaS instances for a project
-func (c *dbaasClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.DBaaSList], error) {
-	c.client.Logger().Debugf("Listing DBaaS instances for project: %s", project)
+func (c *dbaasClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.DBaaSList], error) {
+	c.client.Logger().Debugf("Listing DBaaS instances for project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(DBaaSPath, project)
+	path := fmt.Sprintf(DBaaSPath, projectID)
 	if params == nil {
 		params = &types.RequestParameters{
 			APIVersion: &DatabaseDBaaSListVersion,
@@ -53,14 +53,14 @@ func (c *dbaasClientImpl) List(ctx context.Context, project string, params *type
 }
 
 // Get retrieves a specific DBaaS instance by ID
-func (c *dbaasClientImpl) Get(ctx context.Context, project string, dbaasId string, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error) {
-	c.client.Logger().Debugf("Getting DBaaS instance: %s in project: %s", dbaasId, project)
+func (c *dbaasClientImpl) Get(ctx context.Context, projectID string, dbaasId string, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error) {
+	c.client.Logger().Debugf("Getting DBaaS instance: %s in project: %s", dbaasId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, dbaasId, "DBaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, dbaasId, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(DBaaSItemPath, project, dbaasId)
+	path := fmt.Sprintf(DBaaSItemPath, projectID, dbaasId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -83,14 +83,14 @@ func (c *dbaasClientImpl) Get(ctx context.Context, project string, dbaasId strin
 }
 
 // Create creates a new DBaaS instance
-func (c *dbaasClientImpl) Create(ctx context.Context, project string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error) {
-	c.client.Logger().Debugf("Creating DBaaS instance in project: %s", project)
+func (c *dbaasClientImpl) Create(ctx context.Context, projectID string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error) {
+	c.client.Logger().Debugf("Creating DBaaS instance in project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(DBaaSPath, project)
+	path := fmt.Sprintf(DBaaSPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -147,14 +147,14 @@ func (c *dbaasClientImpl) Create(ctx context.Context, project string, body types
 }
 
 // Update updates an existing DBaaS instance
-func (c *dbaasClientImpl) Update(ctx context.Context, project string, databaseId string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error) {
-	c.client.Logger().Debugf("Updating DBaaS instance: %s in project: %s", databaseId, project)
+func (c *dbaasClientImpl) Update(ctx context.Context, projectID string, databaseId string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error) {
+	c.client.Logger().Debugf("Updating DBaaS instance: %s in project: %s", databaseId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, databaseId, "DBaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, databaseId, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(DBaaSItemPath, project, databaseId)
+	path := fmt.Sprintf(DBaaSItemPath, projectID, databaseId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -211,14 +211,14 @@ func (c *dbaasClientImpl) Update(ctx context.Context, project string, databaseId
 }
 
 // Delete deletes a DBaaS instance by ID
-func (c *dbaasClientImpl) Delete(ctx context.Context, projectId string, dbaasId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting DBaaS instance: %s in project: %s", dbaasId, projectId)
+func (c *dbaasClientImpl) Delete(ctx context.Context, projectID string, dbaasId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting DBaaS instance: %s in project: %s", dbaasId, projectID)
 
-	if err := types.ValidateProjectAndResource(projectId, dbaasId, "DBaaS ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, dbaasId, "DBaaS ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(DBaaSItemPath, projectId, dbaasId)
+	path := fmt.Sprintf(DBaaSItemPath, projectID, dbaasId)
 
 	if params == nil {
 		params = &types.RequestParameters{

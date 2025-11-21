@@ -7,7 +7,7 @@ import (
 )
 
 type EventsClient interface {
-	List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.AuditEventListResponse], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.AuditEventListResponse], error)
 }
 
 type AuditClient interface {

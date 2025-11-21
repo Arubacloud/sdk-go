@@ -21,14 +21,14 @@ func NewAlertsClientImpl(client *restclient.Client) *alertsClientImpl {
 }
 
 // List retrieves all alerts for a project
-func (c *alertsClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.AlertsListResponse], error) {
-	c.client.Logger().Debugf("Listing alerts for project: %s", project)
+func (c *alertsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.AlertsListResponse], error) {
+	c.client.Logger().Debugf("Listing alerts for project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(AlertsPath, project)
+	path := fmt.Sprintf(AlertsPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{

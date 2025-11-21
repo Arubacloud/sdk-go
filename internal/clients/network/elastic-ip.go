@@ -23,14 +23,14 @@ func NewElasticIPsClientImpl(client *restclient.Client) *elasticIPsClientImpl {
 }
 
 // List retrieves all elastic IPs for a project
-func (c *elasticIPsClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.ElasticList], error) {
-	c.client.Logger().Debugf("Listing elastic IPs for project: %s", project)
+func (c *elasticIPsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ElasticList], error) {
+	c.client.Logger().Debugf("Listing elastic IPs for project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(ElasticIPsPath, project)
+	path := fmt.Sprintf(ElasticIPsPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -53,14 +53,14 @@ func (c *elasticIPsClientImpl) List(ctx context.Context, project string, params 
 }
 
 // Get retrieves a specific elastic IP by ID
-func (c *elasticIPsClientImpl) Get(ctx context.Context, project string, elasticIPId string, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error) {
-	c.client.Logger().Debugf("Getting elastic IP: %s in project: %s", elasticIPId, project)
+func (c *elasticIPsClientImpl) Get(ctx context.Context, projectID string, elasticIPId string, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error) {
+	c.client.Logger().Debugf("Getting elastic IP: %s in project: %s", elasticIPId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, elasticIPId, "elastic IP ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, elasticIPId, "elastic IP ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(ElasticIPPath, project, elasticIPId)
+	path := fmt.Sprintf(ElasticIPPath, projectID, elasticIPId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -83,14 +83,14 @@ func (c *elasticIPsClientImpl) Get(ctx context.Context, project string, elasticI
 }
 
 // Create creates a new elastic IP
-func (c *elasticIPsClientImpl) Create(ctx context.Context, project string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error) {
-	c.client.Logger().Debugf("Creating elastic IP in project: %s", project)
+func (c *elasticIPsClientImpl) Create(ctx context.Context, projectID string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error) {
+	c.client.Logger().Debugf("Creating elastic IP in project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(ElasticIPsPath, project)
+	path := fmt.Sprintf(ElasticIPsPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -119,14 +119,14 @@ func (c *elasticIPsClientImpl) Create(ctx context.Context, project string, body 
 }
 
 // Update updates an existing elastic IP
-func (c *elasticIPsClientImpl) Update(ctx context.Context, project string, elasticIPId string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error) {
-	c.client.Logger().Debugf("Updating elastic IP: %s in project: %s", elasticIPId, project)
+func (c *elasticIPsClientImpl) Update(ctx context.Context, projectID string, elasticIPId string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error) {
+	c.client.Logger().Debugf("Updating elastic IP: %s in project: %s", elasticIPId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, elasticIPId, "elastic IP ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, elasticIPId, "elastic IP ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(ElasticIPPath, project, elasticIPId)
+	path := fmt.Sprintf(ElasticIPPath, projectID, elasticIPId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -155,14 +155,14 @@ func (c *elasticIPsClientImpl) Update(ctx context.Context, project string, elast
 }
 
 // Delete deletes an elastic IP by ID
-func (c *elasticIPsClientImpl) Delete(ctx context.Context, projectId string, elasticIPId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting elastic IP: %s in project: %s", elasticIPId, projectId)
+func (c *elasticIPsClientImpl) Delete(ctx context.Context, projectID string, elasticIPId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting elastic IP: %s in project: %s", elasticIPId, projectID)
 
-	if err := types.ValidateProjectAndResource(projectId, elasticIPId, "elastic IP ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, elasticIPId, "elastic IP ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(ElasticIPPath, projectId, elasticIPId)
+	path := fmt.Sprintf(ElasticIPPath, projectID, elasticIPId)
 
 	if params == nil {
 		params = &types.RequestParameters{

@@ -21,9 +21,9 @@ func (c *securityClientImpl) KMSKeys() KMSKeysClient {
 }
 
 type KMSKeysClient interface {
-	List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.KmsList], error)
-	Get(ctx context.Context, project string, kmsKeyId string, params *types.RequestParameters) (*types.Response[types.KmsResponse], error)
-	Create(ctx context.Context, project string, body types.KmsRequest, params *types.RequestParameters) (*types.Response[types.KmsResponse], error)
-	Update(ctx context.Context, project string, kmsKeyId string, body types.KmsRequest, params *types.RequestParameters) (*types.Response[types.KmsResponse], error)
-	Delete(ctx context.Context, projectId string, kmsKeyId string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KmsList], error)
+	Get(ctx context.Context, projectID string, kmsKeyId string, params *types.RequestParameters) (*types.Response[types.KmsResponse], error)
+	Create(ctx context.Context, projectID string, body types.KmsRequest, params *types.RequestParameters) (*types.Response[types.KmsResponse], error)
+	Update(ctx context.Context, projectID string, kmsKeyId string, body types.KmsRequest, params *types.RequestParameters) (*types.Response[types.KmsResponse], error)
+	Delete(ctx context.Context, projectID string, kmsKeyId string, params *types.RequestParameters) (*types.Response[any], error)
 }

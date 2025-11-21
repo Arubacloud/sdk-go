@@ -27,9 +27,9 @@ func (c metricClientImpl) Metrics() MetricsClient {
 }
 
 type AlertsClient interface {
-	List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.AlertsListResponse], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.AlertsListResponse], error)
 }
 
 type MetricsClient interface {
-	List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.MetricListResponse], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.MetricListResponse], error)
 }

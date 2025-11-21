@@ -23,14 +23,14 @@ func NewCloudServersClientImpl(client *restclient.Client) *cloudServersClientImp
 }
 
 // List retrieves all cloud servers for a project
-func (c *cloudServersClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.CloudServerList], error) {
-	c.client.Logger().Debugf("Listing cloud servers for project: %s", project)
+func (c *cloudServersClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.CloudServerList], error) {
+	c.client.Logger().Debugf("Listing cloud servers for project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(CloudServersPath, project)
+	path := fmt.Sprintf(CloudServersPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -53,14 +53,14 @@ func (c *cloudServersClientImpl) List(ctx context.Context, project string, param
 }
 
 // Get retrieves a specific cloud server by ID
-func (c *cloudServersClientImpl) Get(ctx context.Context, project string, cloudServerId string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
-	c.client.Logger().Debugf("Getting cloud server: %s in project: %s", cloudServerId, project)
+func (c *cloudServersClientImpl) Get(ctx context.Context, projectID string, cloudServerId string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
+	c.client.Logger().Debugf("Getting cloud server: %s in project: %s", cloudServerId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, cloudServerId, "cloud server ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, cloudServerId, "cloud server ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(CloudServerPath, project, cloudServerId)
+	path := fmt.Sprintf(CloudServerPath, projectID, cloudServerId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -83,14 +83,14 @@ func (c *cloudServersClientImpl) Get(ctx context.Context, project string, cloudS
 }
 
 // Create creates a new cloud server
-func (c *cloudServersClientImpl) Create(ctx context.Context, project string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
-	c.client.Logger().Debugf("Creating cloud server in project: %s", project)
+func (c *cloudServersClientImpl) Create(ctx context.Context, projectID string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
+	c.client.Logger().Debugf("Creating cloud server in project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(CloudServersPath, project)
+	path := fmt.Sprintf(CloudServersPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -147,14 +147,14 @@ func (c *cloudServersClientImpl) Create(ctx context.Context, project string, bod
 }
 
 // Update updates an existing cloud server
-func (c *cloudServersClientImpl) Update(ctx context.Context, project string, cloudServerId string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
-	c.client.Logger().Debugf("Updating cloud server: %s in project: %s", cloudServerId, project)
+func (c *cloudServersClientImpl) Update(ctx context.Context, projectID string, cloudServerId string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
+	c.client.Logger().Debugf("Updating cloud server: %s in project: %s", cloudServerId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, cloudServerId, "cloud server ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, cloudServerId, "cloud server ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(CloudServerPath, project, cloudServerId)
+	path := fmt.Sprintf(CloudServerPath, projectID, cloudServerId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -211,14 +211,14 @@ func (c *cloudServersClientImpl) Update(ctx context.Context, project string, clo
 }
 
 // Delete deletes a cloud server by ID
-func (c *cloudServersClientImpl) Delete(ctx context.Context, projectId string, cloudServerId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting cloud server: %s in project: %s", cloudServerId, projectId)
+func (c *cloudServersClientImpl) Delete(ctx context.Context, projectID string, cloudServerId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting cloud server: %s in project: %s", cloudServerId, projectID)
 
-	if err := types.ValidateProjectAndResource(projectId, cloudServerId, "cloud server ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, cloudServerId, "cloud server ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(CloudServerPath, projectId, cloudServerId)
+	path := fmt.Sprintf(CloudServerPath, projectID, cloudServerId)
 
 	if params == nil {
 		params = &types.RequestParameters{

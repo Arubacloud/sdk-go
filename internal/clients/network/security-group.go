@@ -26,14 +26,14 @@ func NewSecurityGroupsClientImpl(client *restclient.Client, vpcClient *vpcsClien
 }
 
 // List retrieves all security groups for a VPC
-func (c *securityGroupsClientImpl) List(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.SecurityGroupList], error) {
-	c.client.Logger().Debugf("Listing security groups for VPC: %s in project: %s", vpcId, project)
+func (c *securityGroupsClientImpl) List(ctx context.Context, projectID string, vpcId string, params *types.RequestParameters) (*types.Response[types.SecurityGroupList], error) {
+	c.client.Logger().Debugf("Listing security groups for VPC: %s in project: %s", vpcId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SecurityGroupsPath, project, vpcId)
+	path := fmt.Sprintf(SecurityGroupsPath, projectID, vpcId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -56,14 +56,14 @@ func (c *securityGroupsClientImpl) List(ctx context.Context, project string, vpc
 }
 
 // Get retrieves a specific security group by ID
-func (c *securityGroupsClientImpl) Get(ctx context.Context, project string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error) {
-	c.client.Logger().Debugf("Getting security group: %s from VPC: %s in project: %s", securityGroupId, vpcId, project)
+func (c *securityGroupsClientImpl) Get(ctx context.Context, projectID string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error) {
+	c.client.Logger().Debugf("Getting security group: %s from VPC: %s in project: %s", securityGroupId, vpcId, projectID)
 
-	if err := types.ValidateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
+	if err := types.ValidateVPCResource(projectID, vpcId, securityGroupId, "security group ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SecurityGroupPath, project, vpcId, securityGroupId)
+	path := fmt.Sprintf(SecurityGroupPath, projectID, vpcId, securityGroupId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -87,20 +87,20 @@ func (c *securityGroupsClientImpl) Get(ctx context.Context, project string, vpcI
 
 // Create creates a new security group in a VPC
 // The SDK automatically waits for the VPC to become Active before creating the security group
-func (c *securityGroupsClientImpl) Create(ctx context.Context, project string, vpcId string, body types.SecurityGroupRequest, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error) {
-	c.client.Logger().Debugf("Creating security group in VPC: %s in project: %s", vpcId, project)
+func (c *securityGroupsClientImpl) Create(ctx context.Context, projectID string, vpcId string, body types.SecurityGroupRequest, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error) {
+	c.client.Logger().Debugf("Creating security group in VPC: %s in project: %s", vpcId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
 	// Wait for VPC to become Active before creating security group
-	err := waitForVPCActive(ctx, c.vpcClient, project, vpcId)
+	err := waitForVPCActive(ctx, c.vpcClient, projectID, vpcId)
 	if err != nil {
 		return nil, fmt.Errorf("failed waiting for VPC to become active: %w", err)
 	}
 
-	path := fmt.Sprintf(SecurityGroupsPath, project, vpcId)
+	path := fmt.Sprintf(SecurityGroupsPath, projectID, vpcId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -153,14 +153,14 @@ func (c *securityGroupsClientImpl) Create(ctx context.Context, project string, v
 }
 
 // Update updates an existing security group
-func (c *securityGroupsClientImpl) Update(ctx context.Context, project string, vpcId string, securityGroupId string, body types.SecurityGroupRequest, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error) {
-	c.client.Logger().Debugf("Updating security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, project)
+func (c *securityGroupsClientImpl) Update(ctx context.Context, projectID string, vpcId string, securityGroupId string, body types.SecurityGroupRequest, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error) {
+	c.client.Logger().Debugf("Updating security group: %s in VPC: %s in project: %s", securityGroupId, vpcId, projectID)
 
-	if err := types.ValidateVPCResource(project, vpcId, securityGroupId, "security group ID"); err != nil {
+	if err := types.ValidateVPCResource(projectID, vpcId, securityGroupId, "security group ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SecurityGroupPath, project, vpcId, securityGroupId)
+	path := fmt.Sprintf(SecurityGroupPath, projectID, vpcId, securityGroupId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -213,14 +213,14 @@ func (c *securityGroupsClientImpl) Update(ctx context.Context, project string, v
 }
 
 // Delete deletes a security group by ID
-func (c *securityGroupsClientImpl) Delete(ctx context.Context, projectId string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting security group: %s from VPC: %s in project: %s", securityGroupId, vpcId, projectId)
+func (c *securityGroupsClientImpl) Delete(ctx context.Context, projectID string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting security group: %s from VPC: %s in project: %s", securityGroupId, vpcId, projectID)
 
-	if err := types.ValidateVPCResource(projectId, vpcId, securityGroupId, "security group ID"); err != nil {
+	if err := types.ValidateVPCResource(projectID, vpcId, securityGroupId, "security group ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(SecurityGroupPath, projectId, vpcId, securityGroupId)
+	path := fmt.Sprintf(SecurityGroupPath, projectID, vpcId, securityGroupId)
 
 	if params == nil {
 		params = &types.RequestParameters{

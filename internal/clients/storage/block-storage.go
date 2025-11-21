@@ -23,14 +23,14 @@ func NewVolumesClientImpl(client *restclient.Client) *volumesClientImpl {
 }
 
 // List retrieves all block storage volumes for a project
-func (c *volumesClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.BlockStorageList], error) {
-	c.client.Logger().Debugf("Listing block storage volumes for project: %s", project)
+func (c *volumesClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.BlockStorageList], error) {
+	c.client.Logger().Debugf("Listing block storage volumes for project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(BlockStoragesPath, project)
+	path := fmt.Sprintf(BlockStoragesPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -53,14 +53,14 @@ func (c *volumesClientImpl) List(ctx context.Context, project string, params *ty
 }
 
 // Get retrieves a specific block storage volume by ID
-func (c *volumesClientImpl) Get(ctx context.Context, project string, volumeId string, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error) {
-	c.client.Logger().Debugf("Getting block storage volume: %s in project: %s", volumeId, project)
+func (c *volumesClientImpl) Get(ctx context.Context, projectID string, volumeId string, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error) {
+	c.client.Logger().Debugf("Getting block storage volume: %s in project: %s", volumeId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, volumeId, "block storage ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, volumeId, "block storage ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(BlockStoragePath, project, volumeId)
+	path := fmt.Sprintf(BlockStoragePath, projectID, volumeId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -83,14 +83,14 @@ func (c *volumesClientImpl) Get(ctx context.Context, project string, volumeId st
 }
 
 // Create creates a new block storage volume
-func (c *volumesClientImpl) Create(ctx context.Context, project string, body types.BlockStorageRequest, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error) {
-	c.client.Logger().Debugf("Creating block storage volume in project: %s", project)
+func (c *volumesClientImpl) Create(ctx context.Context, projectID string, body types.BlockStorageRequest, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error) {
+	c.client.Logger().Debugf("Creating block storage volume in project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(BlockStoragesPath, project)
+	path := fmt.Sprintf(BlockStoragesPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -119,14 +119,14 @@ func (c *volumesClientImpl) Create(ctx context.Context, project string, body typ
 }
 
 // Delete deletes a block storage volume by ID
-func (c *volumesClientImpl) Delete(ctx context.Context, project string, volumeId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting block storage volume: %s in project: %s", volumeId, project)
+func (c *volumesClientImpl) Delete(ctx context.Context, projectID string, volumeId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting block storage volume: %s in project: %s", volumeId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, volumeId, "block storage ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, volumeId, "block storage ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(BlockStoragePath, project, volumeId)
+	path := fmt.Sprintf(BlockStoragePath, projectID, volumeId)
 
 	if params == nil {
 		params = &types.RequestParameters{

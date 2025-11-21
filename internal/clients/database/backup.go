@@ -23,14 +23,14 @@ func NewBackupsClientImpl(client *restclient.Client) *backupsClientImpl {
 }
 
 // List retrieves all backups for a project
-func (c *backupsClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.BackupList], error) {
-	c.client.Logger().Debugf("Listing backups for project: %s", project)
+func (c *backupsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.BackupList], error) {
+	c.client.Logger().Debugf("Listing backups for project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(BackupsPath, project)
+	path := fmt.Sprintf(BackupsPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -53,14 +53,14 @@ func (c *backupsClientImpl) List(ctx context.Context, project string, params *ty
 }
 
 // Get retrieves a specific backup by ID
-func (c *backupsClientImpl) Get(ctx context.Context, project string, backupId string, params *types.RequestParameters) (*types.Response[types.BackupResponse], error) {
-	c.client.Logger().Debugf("Getting backup: %s in project: %s", backupId, project)
+func (c *backupsClientImpl) Get(ctx context.Context, projectID string, backupId string, params *types.RequestParameters) (*types.Response[types.BackupResponse], error) {
+	c.client.Logger().Debugf("Getting backup: %s in project: %s", backupId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, backupId, "backup ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, backupId, "backup ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(BackupPath, project, backupId)
+	path := fmt.Sprintf(BackupPath, projectID, backupId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -83,14 +83,14 @@ func (c *backupsClientImpl) Get(ctx context.Context, project string, backupId st
 }
 
 // Create creates a new backup
-func (c *backupsClientImpl) Create(ctx context.Context, project string, body types.BackupRequest, params *types.RequestParameters) (*types.Response[types.BackupResponse], error) {
-	c.client.Logger().Debugf("Creating backup in project: %s", project)
+func (c *backupsClientImpl) Create(ctx context.Context, projectID string, body types.BackupRequest, params *types.RequestParameters) (*types.Response[types.BackupResponse], error) {
+	c.client.Logger().Debugf("Creating backup in project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(BackupsPath, project)
+	path := fmt.Sprintf(BackupsPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -119,14 +119,14 @@ func (c *backupsClientImpl) Create(ctx context.Context, project string, body typ
 }
 
 // Delete deletes a backup by ID
-func (c *backupsClientImpl) Delete(ctx context.Context, projectId string, backupId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting backup: %s in project: %s", backupId, projectId)
+func (c *backupsClientImpl) Delete(ctx context.Context, projectID string, backupId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting backup: %s in project: %s", backupId, projectID)
 
-	if err := types.ValidateProjectAndResource(projectId, backupId, "backup ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, backupId, "backup ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(BackupPath, projectId, backupId)
+	path := fmt.Sprintf(BackupPath, projectID, backupId)
 
 	if params == nil {
 		params = &types.RequestParameters{

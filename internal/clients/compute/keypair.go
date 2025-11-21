@@ -23,14 +23,14 @@ func NewKeyPairsClientImpl(client *restclient.Client) *keyPairsClientImpl {
 }
 
 // List retrieves all key pairs for a project
-func (c *keyPairsClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.KeyPairListResponse], error) {
-	c.client.Logger().Debugf("Listing key pairs for project: %s", project)
+func (c *keyPairsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KeyPairListResponse], error) {
+	c.client.Logger().Debugf("Listing key pairs for project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KeyPairsPath, project)
+	path := fmt.Sprintf(KeyPairsPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -53,14 +53,14 @@ func (c *keyPairsClientImpl) List(ctx context.Context, project string, params *t
 }
 
 // Get retrieves a specific key pair by ID
-func (c *keyPairsClientImpl) Get(ctx context.Context, project string, keyPairId string, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error) {
-	c.client.Logger().Debugf("Getting key pair: %s in project: %s", keyPairId, project)
+func (c *keyPairsClientImpl) Get(ctx context.Context, projectID string, keyPairId string, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error) {
+	c.client.Logger().Debugf("Getting key pair: %s in project: %s", keyPairId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, keyPairId, "key pair ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, keyPairId, "key pair ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KeyPairPath, project, keyPairId)
+	path := fmt.Sprintf(KeyPairPath, projectID, keyPairId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -83,14 +83,14 @@ func (c *keyPairsClientImpl) Get(ctx context.Context, project string, keyPairId 
 }
 
 // Create creates a new key pair
-func (c *keyPairsClientImpl) Create(ctx context.Context, project string, body types.KeyPairRequest, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error) {
-	c.client.Logger().Debugf("Creating key pair in project: %s", project)
+func (c *keyPairsClientImpl) Create(ctx context.Context, projectID string, body types.KeyPairRequest, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error) {
+	c.client.Logger().Debugf("Creating key pair in project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KeyPairsPath, project)
+	path := fmt.Sprintf(KeyPairsPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -147,14 +147,14 @@ func (c *keyPairsClientImpl) Create(ctx context.Context, project string, body ty
 }
 
 // Delete deletes a key pair by ID
-func (c *keyPairsClientImpl) Delete(ctx context.Context, projectId string, keyPairId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting key pair: %s in project: %s", keyPairId, projectId)
+func (c *keyPairsClientImpl) Delete(ctx context.Context, projectID string, keyPairId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting key pair: %s in project: %s", keyPairId, projectID)
 
-	if err := types.ValidateProjectAndResource(projectId, keyPairId, "key pair ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, keyPairId, "key pair ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(KeyPairPath, projectId, keyPairId)
+	path := fmt.Sprintf(KeyPairPath, projectID, keyPairId)
 
 	if params == nil {
 		params = &types.RequestParameters{

@@ -24,14 +24,14 @@ func NewGrantsClientImpl(client *restclient.Client) *grantsClientImpl {
 }
 
 // List retrieves all grants for a database
-func (c *grantsClientImpl) List(ctx context.Context, project string, dbaasId string, databaseId string, params *types.RequestParameters) (*types.Response[types.GrantList], error) {
-	c.client.Logger().Debugf("Listing grants for database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, project)
+func (c *grantsClientImpl) List(ctx context.Context, projectID string, dbaasId string, databaseId string, params *types.RequestParameters) (*types.Response[types.GrantList], error) {
+	c.client.Logger().Debugf("Listing grants for database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, projectID)
 
-	if err := types.ValidateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
+	if err := types.ValidateDBaaSResource(projectID, dbaasId, databaseId, "database ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(GrantsPath, project, dbaasId, databaseId)
+	path := fmt.Sprintf(GrantsPath, projectID, dbaasId, databaseId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -54,14 +54,14 @@ func (c *grantsClientImpl) List(ctx context.Context, project string, dbaasId str
 }
 
 // Get retrieves a specific grant by ID
-func (c *grantsClientImpl) Get(ctx context.Context, project string, dbaasId string, databaseId string, grantId string, params *types.RequestParameters) (*types.Response[types.GrantResponse], error) {
-	c.client.Logger().Debugf("Getting grant: %s from database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, project)
+func (c *grantsClientImpl) Get(ctx context.Context, projectID string, dbaasId string, databaseId string, grantId string, params *types.RequestParameters) (*types.Response[types.GrantResponse], error) {
+	c.client.Logger().Debugf("Getting grant: %s from database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, projectID)
 
-	if err := types.ValidateDatabaseGrant(project, dbaasId, databaseId, grantId); err != nil {
+	if err := types.ValidateDatabaseGrant(projectID, dbaasId, databaseId, grantId); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(GrantItemPath, project, dbaasId, databaseId, grantId)
+	path := fmt.Sprintf(GrantItemPath, projectID, dbaasId, databaseId, grantId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -84,14 +84,14 @@ func (c *grantsClientImpl) Get(ctx context.Context, project string, dbaasId stri
 }
 
 // Create creates a new grant for a database
-func (c *grantsClientImpl) Create(ctx context.Context, project string, dbaasId string, databaseId string, body types.GrantRequest, params *types.RequestParameters) (*types.Response[types.GrantResponse], error) {
-	c.client.Logger().Debugf("Creating grant in database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, project)
+func (c *grantsClientImpl) Create(ctx context.Context, projectID string, dbaasId string, databaseId string, body types.GrantRequest, params *types.RequestParameters) (*types.Response[types.GrantResponse], error) {
+	c.client.Logger().Debugf("Creating grant in database: %s in DBaaS: %s in project: %s", databaseId, dbaasId, projectID)
 
-	if err := types.ValidateDBaaSResource(project, dbaasId, databaseId, "database ID"); err != nil {
+	if err := types.ValidateDBaaSResource(projectID, dbaasId, databaseId, "database ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(GrantsPath, project, dbaasId, databaseId)
+	path := fmt.Sprintf(GrantsPath, projectID, dbaasId, databaseId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -148,14 +148,14 @@ func (c *grantsClientImpl) Create(ctx context.Context, project string, dbaasId s
 }
 
 // Update updates an existing grant
-func (c *grantsClientImpl) Update(ctx context.Context, project string, dbaasId string, databaseId string, grantId string, body types.GrantRequest, params *types.RequestParameters) (*types.Response[types.GrantResponse], error) {
-	c.client.Logger().Debugf("Updating grant: %s in database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, project)
+func (c *grantsClientImpl) Update(ctx context.Context, projectID string, dbaasId string, databaseId string, grantId string, body types.GrantRequest, params *types.RequestParameters) (*types.Response[types.GrantResponse], error) {
+	c.client.Logger().Debugf("Updating grant: %s in database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, projectID)
 
-	if err := types.ValidateDatabaseGrant(project, dbaasId, databaseId, grantId); err != nil {
+	if err := types.ValidateDatabaseGrant(projectID, dbaasId, databaseId, grantId); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(GrantItemPath, project, dbaasId, databaseId, grantId)
+	path := fmt.Sprintf(GrantItemPath, projectID, dbaasId, databaseId, grantId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -212,14 +212,14 @@ func (c *grantsClientImpl) Update(ctx context.Context, project string, dbaasId s
 }
 
 // Delete deletes a grant by ID
-func (c *grantsClientImpl) Delete(ctx context.Context, projectId string, dbaasId string, databaseId string, grantId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting grant: %s from database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, projectId)
+func (c *grantsClientImpl) Delete(ctx context.Context, projectID string, dbaasId string, databaseId string, grantId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting grant: %s from database: %s in DBaaS: %s in project: %s", grantId, databaseId, dbaasId, projectID)
 
-	if err := types.ValidateDatabaseGrant(projectId, dbaasId, databaseId, grantId); err != nil {
+	if err := types.ValidateDatabaseGrant(projectID, dbaasId, databaseId, grantId); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(GrantItemPath, projectId, dbaasId, databaseId, grantId)
+	path := fmt.Sprintf(GrantItemPath, projectID, dbaasId, databaseId, grantId)
 
 	if params == nil {
 		params = &types.RequestParameters{

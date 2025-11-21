@@ -21,14 +21,14 @@ func NewMetricsClientImpl(client *restclient.Client) *metricssClientImpl {
 }
 
 // List retrieves all metrics for a project
-func (c *metricssClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.MetricListResponse], error) {
-	c.client.Logger().Debugf("Listing metrics for project: %s", project)
+func (c *metricssClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.MetricListResponse], error) {
+	c.client.Logger().Debugf("Listing metrics for project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(MetricsPath, project)
+	path := fmt.Sprintf(MetricsPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{

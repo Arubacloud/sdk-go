@@ -51,14 +51,14 @@ func (c *projectsClientImpl) List(ctx context.Context, params *types.RequestPara
 }
 
 // Get retrieves a specific project by ID
-func (c *projectsClientImpl) Get(ctx context.Context, projectId string, params *types.RequestParameters) (*types.Response[types.ProjectResponse], error) {
-	c.client.Logger().Debugf("Getting project: %s", projectId)
+func (c *projectsClientImpl) Get(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ProjectResponse], error) {
+	c.client.Logger().Debugf("Getting project: %s", projectID)
 
-	if err := types.ValidateProject(projectId); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(ProjectPath, projectId)
+	path := fmt.Sprintf(ProjectPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -137,14 +137,14 @@ func (c *projectsClientImpl) Create(ctx context.Context, body types.ProjectReque
 }
 
 // Update updates an existing project
-func (c *projectsClientImpl) Update(ctx context.Context, projectId string, body types.ProjectRequest, params *types.RequestParameters) (*types.Response[types.ProjectResponse], error) {
-	c.client.Logger().Debugf("Updating project: %s", projectId)
+func (c *projectsClientImpl) Update(ctx context.Context, projectID string, body types.ProjectRequest, params *types.RequestParameters) (*types.Response[types.ProjectResponse], error) {
+	c.client.Logger().Debugf("Updating project: %s", projectID)
 
-	if err := types.ValidateProject(projectId); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(ProjectPath, projectId)
+	path := fmt.Sprintf(ProjectPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -197,14 +197,14 @@ func (c *projectsClientImpl) Update(ctx context.Context, projectId string, body 
 }
 
 // Delete deletes a project by ID
-func (c *projectsClientImpl) Delete(ctx context.Context, projectId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting project: %s", projectId)
+func (c *projectsClientImpl) Delete(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting project: %s", projectID)
 
-	if err := types.ValidateProject(projectId); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(ProjectPath, projectId)
+	path := fmt.Sprintf(ProjectPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{

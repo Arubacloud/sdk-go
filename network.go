@@ -66,78 +66,78 @@ func (c *networkClientImpl) VPNTunnels() VPNTunnelsClient {
 }
 
 type ElasticIPsClient interface {
-	List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.ElasticList], error)
-	Get(ctx context.Context, project string, elasticIPId string, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error)
-	Create(ctx context.Context, project string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error)
-	Update(ctx context.Context, project string, elasticIPId string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error)
-	Delete(ctx context.Context, projectId string, elasticIPId string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ElasticList], error)
+	Get(ctx context.Context, projectID string, elasticIPId string, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error)
+	Create(ctx context.Context, projectID string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error)
+	Update(ctx context.Context, projectID string, elasticIPId string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error)
+	Delete(ctx context.Context, projectID string, elasticIPId string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
 type LoadBalancersClient interface {
-	List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.LoadBalancerList], error)
-	Get(ctx context.Context, project string, loadBalancerId string, params *types.RequestParameters) (*types.Response[types.LoadBalancerResponse], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.LoadBalancerList], error)
+	Get(ctx context.Context, projectID string, loadBalancerId string, params *types.RequestParameters) (*types.Response[types.LoadBalancerResponse], error)
 }
 
 type SecurityGroupRulesClient interface {
-	List(ctx context.Context, project string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[types.SecurityRuleList], error)
-	Get(ctx context.Context, project string, vpcId string, securityGroupId string, securityGroupRuleId string, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error)
-	Create(ctx context.Context, project string, vpcId string, securityGroupId string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error)
-	Update(ctx context.Context, project string, vpcId string, securityGroupId string, securityGroupRuleId string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error)
-	Delete(ctx context.Context, projectId string, vpcId string, securityGroupId string, securityGroupRuleId string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, projectID string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[types.SecurityRuleList], error)
+	Get(ctx context.Context, projectID string, vpcId string, securityGroupId string, securityGroupRuleId string, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error)
+	Create(ctx context.Context, projectID string, vpcId string, securityGroupId string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error)
+	Update(ctx context.Context, projectID string, vpcId string, securityGroupId string, securityGroupRuleId string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error)
+	Delete(ctx context.Context, projectID string, vpcId string, securityGroupId string, securityGroupRuleId string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
 type SecurityGroupsClient interface {
-	List(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.SecurityGroupList], error)
-	Get(ctx context.Context, project string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error)
-	Create(ctx context.Context, project string, vpcId string, body types.SecurityGroupRequest, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error)
-	Update(ctx context.Context, project string, vpcId string, securityGroupId string, body types.SecurityGroupRequest, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error)
-	Delete(ctx context.Context, projectId string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, projectID string, vpcId string, params *types.RequestParameters) (*types.Response[types.SecurityGroupList], error)
+	Get(ctx context.Context, projectID string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error)
+	Create(ctx context.Context, projectID string, vpcId string, body types.SecurityGroupRequest, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error)
+	Update(ctx context.Context, projectID string, vpcId string, securityGroupId string, body types.SecurityGroupRequest, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error)
+	Delete(ctx context.Context, projectID string, vpcId string, securityGroupId string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
 type SubnetsClient interface {
-	List(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.SubnetList], error)
-	Get(ctx context.Context, project string, vpcId string, subnetId string, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error)
-	Create(ctx context.Context, project string, vpcId string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error)
-	Update(ctx context.Context, project string, vpcId string, subnetId string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error)
-	Delete(ctx context.Context, projectId string, vpcId string, subnetId string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, projectID string, vpcId string, params *types.RequestParameters) (*types.Response[types.SubnetList], error)
+	Get(ctx context.Context, projectID string, vpcId string, subnetId string, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error)
+	Create(ctx context.Context, projectID string, vpcId string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error)
+	Update(ctx context.Context, projectID string, vpcId string, subnetId string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error)
+	Delete(ctx context.Context, projectID string, vpcId string, subnetId string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
 type VPCPeeringRoutesClient interface {
-	List(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteList], error)
-	Get(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error)
-	Create(ctx context.Context, project string, vpcId string, vpcPeeringId string, body types.VPCPeeringRouteRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error)
-	Update(ctx context.Context, project string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, body types.VPCPeeringRouteRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error)
-	Delete(ctx context.Context, projectId string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, projectID string, vpcId string, vpcPeeringId string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteList], error)
+	Get(ctx context.Context, projectID string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error)
+	Create(ctx context.Context, projectID string, vpcId string, vpcPeeringId string, body types.VPCPeeringRouteRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error)
+	Update(ctx context.Context, projectID string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, body types.VPCPeeringRouteRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error)
+	Delete(ctx context.Context, projectID string, vpcId string, vpcPeeringId string, vpcPeeringRouteId string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
 type VPCPeeringsClient interface {
-	List(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.VPCPeeringList], error)
-	Get(ctx context.Context, project string, vpcId string, vpcPeeringId string, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error)
-	Create(ctx context.Context, project string, vpcId string, body types.VPCPeeringRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error)
-	Update(ctx context.Context, project string, vpcId string, vpcPeeringId string, body types.VPCPeeringRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error)
-	Delete(ctx context.Context, projectId string, vpcId string, vpcPeeringId string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, projectID string, vpcId string, params *types.RequestParameters) (*types.Response[types.VPCPeeringList], error)
+	Get(ctx context.Context, projectID string, vpcId string, vpcPeeringId string, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error)
+	Create(ctx context.Context, projectID string, vpcId string, body types.VPCPeeringRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error)
+	Update(ctx context.Context, projectID string, vpcId string, vpcPeeringId string, body types.VPCPeeringRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error)
+	Delete(ctx context.Context, projectID string, vpcId string, vpcPeeringId string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
 type VPCsClient interface {
-	List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.VPCList], error)
-	Get(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.VPCResponse], error)
-	Create(ctx context.Context, project string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error)
-	Update(ctx context.Context, project string, vpcId string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error)
-	Delete(ctx context.Context, projectId string, vpcId string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.VPCList], error)
+	Get(ctx context.Context, projectID string, vpcId string, params *types.RequestParameters) (*types.Response[types.VPCResponse], error)
+	Create(ctx context.Context, projectID string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error)
+	Update(ctx context.Context, projectID string, vpcId string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error)
+	Delete(ctx context.Context, projectID string, vpcId string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
 type VPNRoutesClient interface {
-	List(ctx context.Context, project string, vpnTunnelId string, params *types.RequestParameters) (*types.Response[types.VPNRouteList], error)
-	Get(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, params *types.RequestParameters) (*types.Response[types.VPNRouteResponse], error)
-	Create(ctx context.Context, project string, vpnTunnelId string, body types.VPNRouteRequest, params *types.RequestParameters) (*types.Response[types.VPNRouteResponse], error)
-	Update(ctx context.Context, project string, vpnTunnelId string, vpnRouteId string, body types.VPNRouteRequest, params *types.RequestParameters) (*types.Response[types.VPNRouteResponse], error)
-	Delete(ctx context.Context, projectId string, vpnTunnelId string, vpnRouteId string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, projectID string, vpnTunnelId string, params *types.RequestParameters) (*types.Response[types.VPNRouteList], error)
+	Get(ctx context.Context, projectID string, vpnTunnelId string, vpnRouteId string, params *types.RequestParameters) (*types.Response[types.VPNRouteResponse], error)
+	Create(ctx context.Context, projectID string, vpnTunnelId string, body types.VPNRouteRequest, params *types.RequestParameters) (*types.Response[types.VPNRouteResponse], error)
+	Update(ctx context.Context, projectID string, vpnTunnelId string, vpnRouteId string, body types.VPNRouteRequest, params *types.RequestParameters) (*types.Response[types.VPNRouteResponse], error)
+	Delete(ctx context.Context, projectID string, vpnTunnelId string, vpnRouteId string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
 type VPNTunnelsClient interface {
-	List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.VPNTunnelList], error)
-	Get(ctx context.Context, project string, vpnTunnelId string, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error)
-	Create(ctx context.Context, project string, body types.VPNTunnelRequest, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error)
-	Update(ctx context.Context, project string, vpnTunnelId string, body types.VPNTunnelRequest, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error)
-	Delete(ctx context.Context, projectId string, vpnTunnelId string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.VPNTunnelList], error)
+	Get(ctx context.Context, projectID string, vpnTunnelId string, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error)
+	Create(ctx context.Context, projectID string, body types.VPNTunnelRequest, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error)
+	Update(ctx context.Context, projectID string, vpnTunnelId string, body types.VPNTunnelRequest, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error)
+	Delete(ctx context.Context, projectID string, vpnTunnelId string, params *types.RequestParameters) (*types.Response[any], error)
 }

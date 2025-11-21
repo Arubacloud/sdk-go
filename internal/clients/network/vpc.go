@@ -24,14 +24,14 @@ func NewVPCsClientImpl(client *restclient.Client) *vpcsClientImpl {
 }
 
 // List retrieves all VPCs for a project
-func (c *vpcsClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.VPCList], error) {
-	c.client.Logger().Debugf("Listing VPCs for project: %s", project)
+func (c *vpcsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.VPCList], error) {
+	c.client.Logger().Debugf("Listing VPCs for project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VPCNetworksPath, project)
+	path := fmt.Sprintf(VPCNetworksPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -54,14 +54,14 @@ func (c *vpcsClientImpl) List(ctx context.Context, project string, params *types
 }
 
 // Get retrieves a specific VPC by ID
-func (c *vpcsClientImpl) Get(ctx context.Context, project string, vpcId string, params *types.RequestParameters) (*types.Response[types.VPCResponse], error) {
-	c.client.Logger().Debugf("Getting VPC: %s in project: %s", vpcId, project)
+func (c *vpcsClientImpl) Get(ctx context.Context, projectID string, vpcId string, params *types.RequestParameters) (*types.Response[types.VPCResponse], error) {
+	c.client.Logger().Debugf("Getting VPC: %s in project: %s", vpcId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VPCNetworkPath, project, vpcId)
+	path := fmt.Sprintf(VPCNetworkPath, projectID, vpcId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -84,14 +84,14 @@ func (c *vpcsClientImpl) Get(ctx context.Context, project string, vpcId string, 
 }
 
 // Create creates a new VPC
-func (c *vpcsClientImpl) Create(ctx context.Context, project string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error) {
-	c.client.Logger().Debugf("Creating VPC in project: %s", project)
+func (c *vpcsClientImpl) Create(ctx context.Context, projectID string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error) {
+	c.client.Logger().Debugf("Creating VPC in project: %s", projectID)
 
-	if err := types.ValidateProject(project); err != nil {
+	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VPCNetworksPath, project)
+	path := fmt.Sprintf(VPCNetworksPath, projectID)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -144,14 +144,14 @@ func (c *vpcsClientImpl) Create(ctx context.Context, project string, body types.
 }
 
 // Update updates an existing VPC
-func (c *vpcsClientImpl) Update(ctx context.Context, project string, vpcId string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error) {
-	c.client.Logger().Debugf("Updating VPC: %s in project: %s", vpcId, project)
+func (c *vpcsClientImpl) Update(ctx context.Context, projectID string, vpcId string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error) {
+	c.client.Logger().Debugf("Updating VPC: %s in project: %s", vpcId, projectID)
 
-	if err := types.ValidateProjectAndResource(project, vpcId, "VPC ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VPCNetworkPath, project, vpcId)
+	path := fmt.Sprintf(VPCNetworkPath, projectID, vpcId)
 
 	if params == nil {
 		params = &types.RequestParameters{
@@ -204,14 +204,14 @@ func (c *vpcsClientImpl) Update(ctx context.Context, project string, vpcId strin
 }
 
 // Delete deletes a VPC by ID
-func (c *vpcsClientImpl) Delete(ctx context.Context, projectId string, vpcId string, params *types.RequestParameters) (*types.Response[any], error) {
-	c.client.Logger().Debugf("Deleting VPC: %s in project: %s", vpcId, projectId)
+func (c *vpcsClientImpl) Delete(ctx context.Context, projectID string, vpcId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting VPC: %s in project: %s", vpcId, projectID)
 
-	if err := types.ValidateProjectAndResource(projectId, vpcId, "VPC ID"); err != nil {
+	if err := types.ValidateProjectAndResource(projectID, vpcId, "VPC ID"); err != nil {
 		return nil, err
 	}
 
-	path := fmt.Sprintf(VPCNetworkPath, projectId, vpcId)
+	path := fmt.Sprintf(VPCNetworkPath, projectID, vpcId)
 
 	if params == nil {
 		params = &types.RequestParameters{
