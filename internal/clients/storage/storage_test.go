@@ -78,9 +78,9 @@ func TestListBlockStorageVolumes(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewVolumesClientImpl(c)
 
-		resp, err := svc.ListBlockStorageVolumes(context.Background(), "test-project", nil)
+		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -144,9 +144,9 @@ func TestGetBlockStorageVolume(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewVolumesClientImpl(c)
 
-		resp, err := svc.GetBlockStorageVolume(context.Background(), "test-project", "vol-123", nil)
+		resp, err := svc.Get(context.Background(), "test-project", "vol-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -209,7 +209,7 @@ func TestCreateBlockStorageVolume(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewVolumesClientImpl(c)
 
 		body := types.BlockStorageRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
@@ -226,7 +226,7 @@ func TestCreateBlockStorageVolume(t *testing.T) {
 			},
 		}
 
-		resp, err := svc.CreateBlockStorageVolume(context.Background(), "test-project", body, nil)
+		resp, err := svc.Create(context.Background(), "test-project", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -273,9 +273,9 @@ func TestDeleteBlockStorageVolume(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewVolumesClientImpl(c)
 
-		_, err = svc.DeleteBlockStorageVolume(context.Background(), "test-project", "vol-123", nil)
+		_, err = svc.Delete(context.Background(), "test-project", "vol-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -349,9 +349,9 @@ func TestListSnapshots(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewSnapshotsClientImpl(c, NewVolumesClientImpl(c))
 
-		resp, err := svc.ListSnapshots(context.Background(), "test-project", nil)
+		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -415,9 +415,9 @@ func TestGetSnapshot(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewSnapshotsClientImpl(c, NewVolumesClientImpl(c))
 
-		resp, err := svc.GetSnapshot(context.Background(), "test-project", "snap-123", nil)
+		resp, err := svc.Get(context.Background(), "test-project", "snap-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -499,7 +499,7 @@ func TestCreateSnapshot(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewSnapshotsClientImpl(c, NewVolumesClientImpl(c))
 
 		body := types.SnapshotRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
@@ -516,7 +516,7 @@ func TestCreateSnapshot(t *testing.T) {
 			},
 		}
 
-		resp, err := svc.CreateSnapshot(context.Background(), "test-project", body, nil)
+		resp, err := svc.Create(context.Background(), "test-project", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -563,9 +563,9 @@ func TestDeleteSnapshot(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewSnapshotsClientImpl(c, NewVolumesClientImpl(c))
 
-		_, err = svc.DeleteSnapshot(context.Background(), "test-project", "snap-123", nil)
+		_, err = svc.Delete(context.Background(), "test-project", "snap-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

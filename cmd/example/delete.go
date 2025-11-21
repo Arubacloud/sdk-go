@@ -159,10 +159,10 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, projectID 
 	}
 
 	// Fetch Snapshots
-	snapshotList, err := arubaClient.FromStorage().ListSnapshots(ctx, projectID, nil)
+	snapshotList, err := arubaClient.FromStorage().Snapshots().List(ctx, projectID, nil)
 	if err == nil && snapshotList.IsSuccess() && len(snapshotList.Data.Values) > 0 {
 		snapshotID := *snapshotList.Data.Values[0].Metadata.ID
-		snapshotResp, err := arubaClient.FromStorage().GetSnapshot(ctx, projectID, snapshotID, nil)
+		snapshotResp, err := arubaClient.FromStorage().Snapshots().Get(ctx, projectID, snapshotID, nil)
 		if err == nil && snapshotResp.IsSuccess() {
 			resources.SnapshotResp = snapshotResp
 			fmt.Printf("✓ Found Snapshot: %s\n", *snapshotResp.Data.Metadata.Name)
@@ -170,10 +170,10 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, projectID 
 	}
 
 	// Fetch Block Storage
-	blockStorageList, err := arubaClient.FromStorage().ListBlockStorageVolumes(ctx, projectID, nil)
+	blockStorageList, err := arubaClient.FromStorage().Volumes().List(ctx, projectID, nil)
 	if err == nil && blockStorageList.IsSuccess() && len(blockStorageList.Data.Values) > 0 {
 		blockStorageID := *blockStorageList.Data.Values[0].Metadata.ID
-		blockStorageResp, err := arubaClient.FromStorage().GetBlockStorageVolume(ctx, projectID, blockStorageID, nil)
+		blockStorageResp, err := arubaClient.FromStorage().Volumes().Get(ctx, projectID, blockStorageID, nil)
 		if err == nil && blockStorageResp.IsSuccess() {
 			resources.BlockStorageResp = blockStorageResp
 			fmt.Printf("✓ Found Block Storage: %s\n", *blockStorageResp.Data.Metadata.Name)
@@ -305,7 +305,7 @@ func deleteElasticIP(ctx context.Context, arubaClient aruba.Client, projectID, e
 func deleteBlockStorage(ctx context.Context, arubaClient aruba.Client, projectID, blockStorageID string) {
 	fmt.Println("--- Deleting Block Storage ---")
 
-	deleteResp, err := arubaClient.FromStorage().DeleteBlockStorageVolume(ctx, projectID, blockStorageID, nil)
+	deleteResp, err := arubaClient.FromStorage().Volumes().Delete(ctx, projectID, blockStorageID, nil)
 	if err != nil {
 		log.Printf("Error deleting block storage: %v", err)
 		return
@@ -322,7 +322,7 @@ func deleteBlockStorage(ctx context.Context, arubaClient aruba.Client, projectID
 func deleteSnapshot(ctx context.Context, arubaClient aruba.Client, projectID, snapshotID string) {
 	fmt.Println("--- Deleting Snapshot ---")
 
-	deleteResp, err := arubaClient.FromStorage().DeleteSnapshot(ctx, projectID, snapshotID, nil)
+	deleteResp, err := arubaClient.FromStorage().Snapshots().Delete(ctx, projectID, snapshotID, nil)
 	if err != nil {
 		log.Printf("Error deleting snapshot: %v", err)
 		return

@@ -7,12 +7,24 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/pkg/restclient"
 	"github.com/Arubacloud/sdk-go/types"
 )
 
-// ListBlockStorageVolumes retrieves all block storage volumes for a project
-func (s *Service) ListBlockStorageVolumes(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.BlockStorageList], error) {
-	s.client.Logger().Debugf("Listing block storage volumes for project: %s", project)
+type volumesClientImpl struct {
+	client *restclient.Client
+}
+
+// NewVolumesClientImpl creates a new unified Storage service
+func NewVolumesClientImpl(client *restclient.Client) *volumesClientImpl {
+	return &volumesClientImpl{
+		client: client,
+	}
+}
+
+// List retrieves all block storage volumes for a project
+func (c *volumesClientImpl) List(ctx context.Context, project string, params *types.RequestParameters) (*types.Response[types.BlockStorageList], error) {
+	c.client.Logger().Debugf("Listing block storage volumes for project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -31,7 +43,7 @@ func (s *Service) ListBlockStorageVolumes(ctx context.Context, project string, p
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -40,9 +52,9 @@ func (s *Service) ListBlockStorageVolumes(ctx context.Context, project string, p
 	return types.ParseResponseBody[types.BlockStorageList](httpResp)
 }
 
-// GetBlockStorageVolume retrieves a specific block storage volume by ID
-func (s *Service) GetBlockStorageVolume(ctx context.Context, project string, volumeId string, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error) {
-	s.client.Logger().Debugf("Getting block storage volume: %s in project: %s", volumeId, project)
+// Get retrieves a specific block storage volume by ID
+func (c *volumesClientImpl) Get(ctx context.Context, project string, volumeId string, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error) {
+	c.client.Logger().Debugf("Getting block storage volume: %s in project: %s", volumeId, project)
 
 	if err := types.ValidateProjectAndResource(project, volumeId, "block storage ID"); err != nil {
 		return nil, err
@@ -61,7 +73,7 @@ func (s *Service) GetBlockStorageVolume(ctx context.Context, project string, vol
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -70,9 +82,9 @@ func (s *Service) GetBlockStorageVolume(ctx context.Context, project string, vol
 	return types.ParseResponseBody[types.BlockStorageResponse](httpResp)
 }
 
-// CreateBlockStorageVolume creates a new block storage volume
-func (s *Service) CreateBlockStorageVolume(ctx context.Context, project string, body types.BlockStorageRequest, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error) {
-	s.client.Logger().Debugf("Creating block storage volume in project: %s", project)
+// Create creates a new block storage volume
+func (c *volumesClientImpl) Create(ctx context.Context, project string, body types.BlockStorageRequest, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error) {
+	c.client.Logger().Debugf("Creating block storage volume in project: %s", project)
 
 	if err := types.ValidateProject(project); err != nil {
 		return nil, err
@@ -97,7 +109,7 @@ func (s *Service) CreateBlockStorageVolume(ctx context.Context, project string, 
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -106,9 +118,9 @@ func (s *Service) CreateBlockStorageVolume(ctx context.Context, project string, 
 	return types.ParseResponseBody[types.BlockStorageResponse](httpResp)
 }
 
-// DeleteBlockStorageVolume deletes a block storage volume by ID
-func (s *Service) DeleteBlockStorageVolume(ctx context.Context, project string, volumeId string, params *types.RequestParameters) (*types.Response[any], error) {
-	s.client.Logger().Debugf("Deleting block storage volume: %s in project: %s", volumeId, project)
+// Delete deletes a block storage volume by ID
+func (c *volumesClientImpl) Delete(ctx context.Context, project string, volumeId string, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Deleting block storage volume: %s in project: %s", volumeId, project)
 
 	if err := types.ValidateProjectAndResource(project, volumeId, "block storage ID"); err != nil {
 		return nil, err
@@ -127,7 +139,7 @@ func (s *Service) DeleteBlockStorageVolume(ctx context.Context, project string, 
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := s.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}

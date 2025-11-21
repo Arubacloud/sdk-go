@@ -7,22 +7,10 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
 )
 
-// Service implements the StorageAPI interface for all Storage operations
-type Service struct {
-	client *restclient.Client
-}
-
-// NewService creates a new unified Storage service
-func NewService(client *restclient.Client) *Service {
-	return &Service{
-		client: client,
-	}
-}
-
 // waitForBlockStorageActive waits for a Block Storage volume to become Active or NotUsed before proceeding
-func (s *Service) waitForBlockStorageActive(ctx context.Context, projectID, volumeID string) error {
+func waitForBlockStorageActive(ctx context.Context, volumeClient *volumesClientImpl, projectID, volumeID string) error {
 	getter := func(ctx context.Context) (string, error) {
-		resp, err := s.GetBlockStorageVolume(ctx, projectID, volumeID, nil)
+		resp, err := volumeClient.Get(ctx, projectID, volumeID, nil)
 		if err != nil {
 			return "", err
 		}
@@ -36,5 +24,5 @@ func (s *Service) waitForBlockStorageActive(ctx context.Context, projectID, volu
 	// BlockStorage can be "Active" (attached) or "NotUsed" (unattached but ready)
 	config.SuccessStates = []string{"Active", "NotUsed"}
 
-	return s.client.WaitForResourceState(ctx, "BlockStorage", volumeID, getter, config)
+	return volumeClient.client.WaitForResourceState(ctx, "BlockStorage", volumeID, getter, config)
 }

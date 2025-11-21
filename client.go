@@ -1,10 +1,6 @@
 // Package sdkgo provides the main entry point for the Aruba Cloud SDK
 package aruba
 
-import (
-	"github.com/Arubacloud/sdk-go/pkg/spec/storage"
-)
-
 type Client interface {
 	FromAudit() AuditClient
 	FromCompute() ComputeClient
@@ -15,7 +11,7 @@ type Client interface {
 	FromProject() ProjectClient
 	FromSchedule() ScheduleClient
 	FromSecurity() SecurityClient
-	FromStorage() storage.StorageAPI
+	FromStorage() StorageClient
 }
 
 type clientImpl struct {
@@ -28,7 +24,7 @@ type clientImpl struct {
 	projectClient   ProjectClient
 	scheduleClient  ScheduleClient
 	securityClient  SecurityClient
-	storageClient   storage.StorageAPI
+	storageClient   StorageClient
 }
 
 var _ Client = (*clientImpl)(nil)
@@ -60,6 +56,6 @@ func (c *clientImpl) FromSchedule() ScheduleClient {
 func (c *clientImpl) FromSecurity() SecurityClient {
 	return c.securityClient
 }
-func (c *clientImpl) FromStorage() storage.StorageAPI {
+func (c *clientImpl) FromStorage() StorageClient {
 	return c.storageClient
 }

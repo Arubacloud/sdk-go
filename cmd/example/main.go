@@ -234,7 +234,7 @@ func createBlockStorage(ctx context.Context, arubaClient aruba.Client, projectID
 		},
 	}
 
-	blockStorageResp, err := arubaClient.FromStorage().CreateBlockStorageVolume(ctx, projectID, blockStorageReq, nil)
+	blockStorageResp, err := arubaClient.FromStorage().Volumes().Create(ctx, projectID, blockStorageReq, nil)
 	if err != nil {
 		log.Printf("Error creating block storage: %v", err)
 		os.Exit(1)
@@ -278,7 +278,7 @@ func createSnapshot(ctx context.Context, arubaClient aruba.Client, projectID str
 		},
 	}
 
-	snapshotResp, err := arubaClient.FromStorage().CreateSnapshot(ctx, projectID, snapshotReq, nil)
+	snapshotResp, err := arubaClient.FromStorage().Snapshots().Create(ctx, projectID, snapshotReq, nil)
 	if err != nil {
 		log.Printf("Error creating snapshot: %v", err)
 		os.Exit(1)

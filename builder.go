@@ -11,8 +11,8 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/project"
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 	"github.com/Arubacloud/sdk-go/internal/clients/security"
+	"github.com/Arubacloud/sdk-go/internal/clients/storage"
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/storage"
 )
 
 // Client
@@ -67,6 +67,11 @@ func buildClient(config *restclient.Config) (Client, error) {
 		return nil, err // TODO: better error handling
 	}
 
+	storageClient, err := buildStorageClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
 	return &clientImpl{
 		auditClient:     auditClient,
 		computeClient:   computeClient,
@@ -77,8 +82,7 @@ func buildClient(config *restclient.Config) (Client, error) {
 		projectClient:   projectClient,
 		scheduleClient:  scheduleClient,
 		securityClient:  securityClient,
-		// TODO: Replace all below for refactored servers
-		storageClient: storage.NewService(restClient),
+		storageClient:   storageClient,
 	}, nil
 }
 
@@ -396,4 +400,35 @@ func buildSecurityClient(restClient *restclient.Client) (SecurityClient, error) 
 
 func buildKMSKeysClient(restClient *restclient.Client) (KMSKeysClient, error) {
 	return security.NewKMSKeysClientImpl(restClient), nil
+}
+
+//
+// Storage domain clients
+
+func buildStorageClient(restClient *restclient.Client) (StorageClient, error) {
+	snapshotsClient, err := buildSnapshotsClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	volumesClient, err := buildVolumesClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	return &storageClientImpl{
+		snapshotsClient: snapshotsClient,
+		volumesClient:   volumesClient,
+	}, nil
+}
+
+func buildSnapshotsClient(restClient *restclient.Client) (SnapshotsClient, error) {
+	return storage.NewSnapshotsClientImpl(
+		restClient,
+		storage.NewVolumesClientImpl(restClient),
+	), nil
+}
+
+func buildVolumesClient(restClient *restclient.Client) (VolumesClient, error) {
+	return storage.NewVolumesClientImpl(restClient), nil
 }
