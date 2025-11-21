@@ -87,9 +87,9 @@ func TestListMetrics(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewMetricsClientImpl(c)
 
-		resp, err := svc.ListMetrics(context.Background(), "test-project", nil)
+		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -145,9 +145,9 @@ func TestListMetrics(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewMetricsClientImpl(c)
 
-		resp, err := svc.ListMetrics(context.Background(), "test-project", nil)
+		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -253,9 +253,9 @@ func TestListAlerts(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewAlertsClientImpl(c)
 
-		resp, err := svc.ListAlerts(context.Background(), "test-project", nil)
+		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -320,9 +320,9 @@ func TestListAlerts(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewAlertsClientImpl(c)
 
-		resp, err := svc.ListAlerts(context.Background(), "test-project", nil)
+		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -382,13 +382,13 @@ func TestListAlerts(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
-		svc := NewService(c)
+		svc := NewAlertsClientImpl(c)
 
 		params := &types.RequestParameters{
 			Filter: types.StringPtr("resourceId eq 'vm-789'"),
 		}
 
-		resp, err := svc.ListAlerts(context.Background(), "test-project", params)
+		resp, err := svc.List(context.Background(), "test-project", params)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

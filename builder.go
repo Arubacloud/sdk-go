@@ -6,8 +6,8 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/compute"
 	"github.com/Arubacloud/sdk-go/internal/clients/container"
 	"github.com/Arubacloud/sdk-go/internal/clients/database"
+	"github.com/Arubacloud/sdk-go/internal/clients/metric"
 	"github.com/Arubacloud/sdk-go/pkg/restclient"
-	"github.com/Arubacloud/sdk-go/pkg/spec/metric"
 	"github.com/Arubacloud/sdk-go/pkg/spec/network"
 	"github.com/Arubacloud/sdk-go/pkg/spec/project"
 	"github.com/Arubacloud/sdk-go/pkg/spec/schedule"
@@ -42,13 +42,18 @@ func buildClient(config *restclient.Config) (Client, error) {
 		return nil, err // TODO: better error handling
 	}
 
+	metricClient, err := buildMetricClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
 	return &clientImpl{
 		auditClient:     auditClient,
 		computeClient:   computeClient,
 		containerClient: containerClient,
 		databaseClient:  databaseClient,
+		metricsClient:   metricClient,
 		// TODO: Replace all below for refactored servers
-		metricsClient:  metric.NewService(restClient),
 		networkClient:  network.NewService(restClient),
 		projectClient:  project.NewService(restClient),
 		scheduleClient: schedule.NewService(restClient),
@@ -180,4 +185,32 @@ func buildUsersClient(restClient *restclient.Client) (UsersClient, error) {
 
 func buildGrantsClient(restClient *restclient.Client) (GrantsClient, error) {
 	return database.NewGrantsClientImpl(restClient), nil
+}
+
+//
+// Metric domain clients
+
+func buildMetricClient(restClient *restclient.Client) (MetricClient, error) {
+	alertsClient, err := buildAlertsClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	metricsClient, err := buildMetricsClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	return &metricClientImpl{
+		alertsClient:  alertsClient,
+		metricsClient: metricsClient,
+	}, nil
+}
+
+func buildAlertsClient(restClient *restclient.Client) (AlertsClient, error) {
+	return metric.NewAlertsClientImpl(restClient), nil
+}
+
+func buildMetricsClient(restClient *restclient.Client) (MetricsClient, error) {
+	return metric.NewMetricsClientImpl(restClient), nil
 }
