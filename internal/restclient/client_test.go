@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
 )
 
 func setupMockTokenServer(t *testing.T) *httptest.Server {
@@ -92,7 +94,7 @@ func TestNewClient(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, err := NewClient(tt.config)
+			client, err := NewClient(tt.config, &noop.NoOpLogger{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewClient() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -119,7 +121,7 @@ func TestClient_RequestEditorFn(t *testing.T) {
 		},
 	}
 
-	client, err := NewClient(config)
+	client, err := NewClient(config, &noop.NoOpLogger{})
 	if err != nil {
 		t.Fatalf("NewClient() error = %v", err)
 	}
