@@ -12,8 +12,10 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 	"github.com/Arubacloud/sdk-go/internal/clients/security"
 	"github.com/Arubacloud/sdk-go/internal/clients/storage"
+	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
 	"github.com/Arubacloud/sdk-go/internal/impl/logger/native"
 	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
+	"github.com/Arubacloud/sdk-go/internal/ports/interceptor"
 	"github.com/Arubacloud/sdk-go/internal/ports/logger"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
 )
@@ -98,7 +100,12 @@ func buildRESTClient(config *restclient.Config) (*restclient.Client, error) {
 		return nil, err // TODO: better error handling
 	}
 
-	return restclient.NewClient(config, logger)
+	middleware, err := buildMiddleware(config)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	return restclient.NewClient(config, logger, middleware)
 }
 
 func buildLogger(config *restclient.Config) (logger.Logger, error) {
@@ -111,6 +118,10 @@ func buildLogger(config *restclient.Config) (logger.Logger, error) {
 	}
 
 	return &noop.NoOpLogger{}, nil
+}
+
+func buildMiddleware(config *restclient.Config) (interceptor.Interceptor, error) {
+	return standard.NewInterceptor(), nil
 }
 
 //

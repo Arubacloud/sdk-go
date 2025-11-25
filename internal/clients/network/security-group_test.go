@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
 	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
 	"github.com/Arubacloud/sdk-go/pkg/types"
@@ -41,7 +42,7 @@ func TestListSecurityGroups(t *testing.T) {
 			ClientSecret:   "test-secret",
 			Logger:         &noop.NoOpLogger{},
 		}
-		c, err := restclient.NewClient(cfg, cfg.Logger)
+		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
@@ -83,7 +84,7 @@ func TestGetSecurityGroup(t *testing.T) {
 			ClientSecret:   "test-secret",
 			Logger:         &noop.NoOpLogger{},
 		}
-		c, err := restclient.NewClient(cfg, cfg.Logger)
+		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
@@ -130,7 +131,7 @@ func TestCreateSecurityGroup(t *testing.T) {
 			ClientSecret:   "test-secret",
 			Logger:         &noop.NoOpLogger{},
 		}
-		c, err := restclient.NewClient(cfg, cfg.Logger)
+		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
@@ -175,7 +176,7 @@ func TestDeleteSecurityGroup(t *testing.T) {
 			ClientSecret:   "test-secret",
 			Logger:         &noop.NoOpLogger{},
 		}
-		c, err := restclient.NewClient(cfg, cfg.Logger)
+		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}

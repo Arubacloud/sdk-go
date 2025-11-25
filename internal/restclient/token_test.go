@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
 	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
 )
 
@@ -218,7 +219,7 @@ func TestNewClient_WithTokenManager(t *testing.T) {
 		HTTPClient:     http.DefaultClient,
 	}
 
-	client, err := NewClient(config, &noop.NoOpLogger{})
+	client, err := NewClient(config, &noop.NoOpLogger{}, standard.NewInterceptor())
 	if err != nil {
 		t.Fatalf("NewClient() error = %v", err)
 	}

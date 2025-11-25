@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/Arubacloud/sdk-go/internal/ports/interceptor"
 	"github.com/Arubacloud/sdk-go/internal/ports/logger"
 )
 
@@ -65,6 +66,7 @@ type Client struct {
 	config       *Config
 	tokenManager *TokenManager
 	logger       logger.Logger
+	middleware   interceptor.Interceptor
 
 	// Service interfaces for all API categories - these will be initialized by the services themselves
 	// using a providers pattern to avoid import cycles
@@ -72,7 +74,7 @@ type Client struct {
 }
 
 // NewClient creates a new SDK client with the given configuration
-func NewClient(config *Config, logger logger.Logger) (*Client, error) {
+func NewClient(config *Config, logger logger.Logger, middleware interceptor.Interceptor) (*Client, error) {
 	if config == nil {
 		config = DefaultConfig()
 	}
@@ -93,6 +95,7 @@ func NewClient(config *Config, logger logger.Logger) (*Client, error) {
 		config:       config,
 		tokenManager: tokenManager,
 		logger:       logger,
+		middleware:   middleware,
 		services:     make(map[string]interface{}),
 	}
 
@@ -180,9 +183,8 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body io.Rea
 	// Log request headers (before auth)
 	c.logger.Debugf("Request headers (pre-auth): %v", headers)
 
-	// Use RequestEditorFn to add authentication and custom headers from config
-	editorFn := c.RequestEditorFn()
-	if err := editorFn(ctx, req); err != nil {
+	// Use middleware
+	if err := c.middleware.Intercept(ctx, req); err != nil {
 		c.logger.Errorf("Failed to prepare request: %v", err)
 		return nil, fmt.Errorf("failed to prepare request: %w", err)
 	}
@@ -223,22 +225,4 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body io.Rea
 	}
 
 	return resp, nil
-}
-
-// RequestEditorFn returns a function that adds the Bearer token to requests
-func (c *Client) RequestEditorFn() func(ctx context.Context, req *http.Request) error {
-	return func(ctx context.Context, req *http.Request) error {
-		token, err := c.GetToken(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to get token: %w", err)
-		}
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-
-		// Add custom headers
-		for k, v := range c.config.Headers {
-			req.Header.Set(k, v)
-		}
-
-		return nil
-	}
 }

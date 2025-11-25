@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
 	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
 	"github.com/Arubacloud/sdk-go/pkg/types"
@@ -45,7 +46,7 @@ func TestListVpcPeerings(t *testing.T) {
 		ClientSecret:   "test-secret",
 		Logger:         &noop.NoOpLogger{},
 	}
-	c, err := restclient.NewClient(cfg, cfg.Logger)
+	c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}
@@ -90,7 +91,7 @@ func TestGetVpcPeering(t *testing.T) {
 		ClientSecret:   "test-secret",
 		Logger:         &noop.NoOpLogger{},
 	}
-	c, err := restclient.NewClient(cfg, cfg.Logger)
+	c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}
@@ -131,7 +132,7 @@ func TestDeleteVpcPeering(t *testing.T) {
 		ClientSecret:   "test-secret",
 		Logger:         &noop.NoOpLogger{},
 	}
-	c, err := restclient.NewClient(cfg, cfg.Logger)
+	c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
 	if err != nil {
 		t.Fatalf("failed to create client: %v", err)
 	}

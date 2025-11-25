@@ -3,10 +3,12 @@ package restclient
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
 	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
 )
 
@@ -94,7 +96,7 @@ func TestNewClient(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, err := NewClient(tt.config, &noop.NoOpLogger{})
+			client, err := NewClient(tt.config, &noop.NoOpLogger{}, standard.NewInterceptor())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewClient() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -121,9 +123,47 @@ func TestClient_RequestEditorFn(t *testing.T) {
 		},
 	}
 
-	client, err := NewClient(config, &noop.NoOpLogger{})
+	// Create middleware
+	middleware, err := standard.NewInterceptorWithFuncs()
+
+	if err != nil {
+		t.Fatalf("NewInterceptorWithFuncs() error = %v", err)
+	}
+
+	client, err := NewClient(config, &noop.NoOpLogger{}, middleware)
 	if err != nil {
 		t.Fatalf("NewClient() error = %v", err)
+	}
+
+	// Create a intercept function to set the bearer token
+	err = middleware.Bind(func(ctx context.Context, r *http.Request) error {
+		client := client
+
+		token, err := client.GetToken(ctx)
+		if err != nil {
+			return err
+		}
+
+		r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("middleware.Bind(tokenInterceptFunc) error = %v", err)
+	}
+
+	// Create a intercept function to set custom headers
+	err = middleware.Bind(func(ctx context.Context, r *http.Request) error {
+		client := client
+
+		for k, v := range client.config.Headers {
+			r.Header.Add(k, v)
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("middleware.Bind(customHeadersInterceptFunc) error = %v", err)
 	}
 
 	// Create a test request
@@ -133,8 +173,7 @@ func TestClient_RequestEditorFn(t *testing.T) {
 	}
 
 	// Apply the request editor
-	editorFn := client.RequestEditorFn()
-	if err := editorFn(context.Background(), req); err != nil {
+	if err := client.middleware.Intercept(context.Background(), req); err != nil {
 		t.Fatalf("RequestEditorFn() error = %v", err)
 	}
 
