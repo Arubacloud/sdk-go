@@ -11,6 +11,8 @@ import (
 type TokenRepository struct {
 	token                  *auth.Token
 	locker                 sync.RWMutex
+	fetchTicket            uint64
+	saveTicket             uint64
 	persistentRepository   auth.TokenRepository
 	expirationDriftSeconds uint32
 }
@@ -36,10 +38,40 @@ func NewTokenProxyWithRandonExpirationDriftSeconds(persistentRepository auth.Tok
 
 func (r *TokenRepository) FetchToken(ctx context.Context) (*auth.Token, error) {
 	r.locker.RLock()
-	defer r.locker.RUnlock()
 
-	if r.token == nil {
+	currentFetchTicket := r.fetchTicket
+	currentSaveTicket := r.saveTicket
+
+	var tokenCopy *auth.Token
+
+	if r.token != nil {
+		tokenCopy = r.token.Copy()
+	}
+
+	r.locker.RUnlock()
+
+	if tokenCopy != nil && tokenCopy.IsValid() {
+		return tokenCopy, nil
+	}
+
+	if r.persistentRepository == nil {
+		if tokenCopy != nil {
+			return tokenCopy, nil
+		}
+
 		return nil, auth.ErrTokenNotFound
+	}
+
+	r.locker.Lock()
+	defer r.locker.Unlock()
+
+	if currentFetchTicket == r.fetchTicket && currentSaveTicket == r.saveTicket {
+		token, err := r.persistentRepository.FetchToken(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		r.token = token.Copy()
 	}
 
 	return r.token.Copy(), nil

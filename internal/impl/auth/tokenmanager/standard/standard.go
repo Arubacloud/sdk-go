@@ -19,11 +19,11 @@ type TokenManager struct {
 	repository auth.TokenRepository
 	connector  auth.ProviderConnector
 
-	// tokenLock guards access to the token storage logic and the ticket counter.
-	tokenLock sync.RWMutex
-	// tokenTicket is a counter used to detect if a token refresh has occurred
+	// locker guards access to the token storage logic and the ticket counter.
+	locker sync.RWMutex
+	// ticket is a counter used to detect if a token refresh has occurred
 	// between the time a read lock was released and a write lock was acquired.
-	tokenTicket uint64
+	ticket uint64
 }
 
 // Verify at compile-time that TokenManager implements auth.TokenManager.
@@ -58,32 +58,32 @@ func (m *TokenManager) BindTo(interceptable interceptor.Interceptable) error {
 //     use the newly refreshed token.
 func (m *TokenManager) InjectToken(ctx context.Context, r *http.Request) error {
 	// Step 1: Optimistic Read
-	m.tokenLock.RLock()
+	m.locker.RLock()
 
 	// Capture the current "version" (ticket) of the token state.
-	currentTicket := m.tokenTicket
+	currentTicket := m.ticket
 
 	token, err := m.repository.FetchToken(ctx)
 	if err != nil && !errors.Is(err, auth.ErrTokenNotFound) {
-		m.tokenLock.RUnlock()
+		m.locker.RUnlock()
 		return fmt.Errorf("unexpected error: %w", err)
 	}
 
-	m.tokenLock.RUnlock()
+	m.locker.RUnlock()
 
 	// Step 2: Validation & Refresh (if needed)
 	// If we have no token, or the token is invalid/expired, we need to refresh.
 	if errors.Is(err, auth.ErrTokenNotFound) || !token.IsValid() {
-		m.tokenLock.Lock()
-		defer m.tokenLock.Unlock()
+		m.locker.Lock()
+		defer m.locker.Unlock()
 
 		// Double-Checked Locking with Ticket:
 		// Check if the ticket hasn't changed since we released the read lock.
 		// If currentTicket == m.tokenTicket, it means we are the first to grab the
 		// write lock, and we are responsible for the refresh.
-		if currentTicket == m.tokenTicket {
+		if currentTicket == m.ticket {
 			// Increment ticket so pending readers know a change happened.
-			m.tokenTicket++
+			m.ticket++
 
 			token, err = m.connector.RequestToken(ctx)
 			if err != nil {
