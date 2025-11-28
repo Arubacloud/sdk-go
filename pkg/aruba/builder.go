@@ -12,6 +12,11 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 	"github.com/Arubacloud/sdk-go/internal/clients/security"
 	"github.com/Arubacloud/sdk-go/internal/clients/storage"
+	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
+	"github.com/Arubacloud/sdk-go/internal/impl/logger/native"
+	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
+	"github.com/Arubacloud/sdk-go/internal/ports/interceptor"
+	"github.com/Arubacloud/sdk-go/internal/ports/logger"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
 )
 
@@ -90,7 +95,33 @@ func buildClient(config *restclient.Config) (Client, error) {
 // Dependencies
 
 func buildRESTClient(config *restclient.Config) (*restclient.Client, error) {
-	return restclient.NewClient(config)
+	logger, err := buildLogger(config)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	middleware, err := buildMiddleware(config)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	return restclient.NewClient(config, logger, middleware)
+}
+
+func buildLogger(config *restclient.Config) (logger.Logger, error) {
+	if config.Logger != nil {
+		return config.Logger, nil
+	}
+
+	if config.Debug {
+		return native.NewDefaultLogger(), nil
+	}
+
+	return &noop.NoOpLogger{}, nil
+}
+
+func buildMiddleware(config *restclient.Config) (interceptor.Interceptor, error) {
+	return standard.NewInterceptor(), nil
 }
 
 //

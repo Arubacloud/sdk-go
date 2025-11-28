@@ -7,6 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
+	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
 )
 
 // testContext returns a context for testing
@@ -216,7 +219,7 @@ func TestNewClient_WithTokenManager(t *testing.T) {
 		HTTPClient:     http.DefaultClient,
 	}
 
-	client, err := NewClient(config)
+	client, err := NewClient(config, &noop.NoOpLogger{}, standard.NewInterceptor())
 	if err != nil {
 		t.Fatalf("NewClient() error = %v", err)
 	}

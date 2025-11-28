@@ -5,64 +5,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
-	"os"
+
+	"github.com/Arubacloud/sdk-go/internal/ports/interceptor"
+	"github.com/Arubacloud/sdk-go/internal/ports/logger"
 )
-
-// Logger is the interface for logging within the SDK
-type Logger interface {
-	// Debugf logs a debug message with formatting
-	Debugf(format string, args ...interface{})
-	// Infof logs an info message with formatting
-	Infof(format string, args ...interface{})
-	// Warnf logs a warning message with formatting
-	Warnf(format string, args ...interface{})
-	// Errorf logs an error message with formatting
-	Errorf(format string, args ...interface{})
-}
-
-// DefaultLogger is a simple logger implementation using standard log package
-type DefaultLogger struct {
-	debug *log.Logger
-	info  *log.Logger
-	warn  *log.Logger
-	err   *log.Logger
-}
-
-// NewDefaultLogger creates a new default logger
-func NewDefaultLogger() *DefaultLogger {
-	return &DefaultLogger{
-		debug: log.New(os.Stdout, "[DEBUG] ", log.LstdFlags),
-		info:  log.New(os.Stdout, "[INFO] ", log.LstdFlags),
-		warn:  log.New(os.Stdout, "[WARN] ", log.LstdFlags),
-		err:   log.New(os.Stderr, "[ERROR] ", log.LstdFlags),
-	}
-}
-
-func (l *DefaultLogger) Debugf(format string, args ...interface{}) {
-	l.debug.Printf(format, args...)
-}
-
-func (l *DefaultLogger) Infof(format string, args ...interface{}) {
-	l.info.Printf(format, args...)
-}
-
-func (l *DefaultLogger) Warnf(format string, args ...interface{}) {
-	l.warn.Printf(format, args...)
-}
-
-func (l *DefaultLogger) Errorf(format string, args ...interface{}) {
-	l.err.Printf(format, args...)
-}
-
-// NoOpLogger is a logger that does nothing
-type NoOpLogger struct{}
-
-func (l *NoOpLogger) Debugf(format string, args ...interface{}) {}
-func (l *NoOpLogger) Infof(format string, args ...interface{})  {}
-func (l *NoOpLogger) Warnf(format string, args ...interface{})  {}
-func (l *NoOpLogger) Errorf(format string, args ...interface{}) {}
 
 // Config holds the configuration for the SDK client
 type Config struct {
@@ -79,7 +26,7 @@ type Config struct {
 	// Headers are additional headers to include in all requests
 	Headers map[string]string
 	// Logger is the logger to use for debug/info messages. If nil, no logging is performed.
-	Logger Logger
+	Logger logger.Logger
 	// Debug enables debug logging when set to true
 	Debug bool
 }
@@ -118,7 +65,8 @@ func (c *Config) Validate() error {
 type Client struct {
 	config       *Config
 	tokenManager *TokenManager
-	logger       Logger
+	logger       logger.Logger
+	middleware   interceptor.Interceptor
 
 	// Service interfaces for all API categories - these will be initialized by the services themselves
 	// using a providers pattern to avoid import cycles
@@ -126,29 +74,13 @@ type Client struct {
 }
 
 // NewClient creates a new SDK client with the given configuration
-func NewClient(config *Config) (*Client, error) {
+func NewClient(config *Config, logger logger.Logger, middleware interceptor.Interceptor) (*Client, error) {
 	if config == nil {
 		config = DefaultConfig()
 	}
 
 	if err := config.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid configuration: %w", err)
-	}
-
-	// Setup logger
-	var logger Logger
-	if config.Debug {
-		if config.Logger != nil {
-			logger = config.Logger
-		} else {
-			logger = NewDefaultLogger()
-		}
-	} else {
-		if config.Logger != nil {
-			logger = config.Logger
-		} else {
-			logger = &NoOpLogger{}
-		}
 	}
 
 	// Initialize token manager
@@ -163,6 +95,7 @@ func NewClient(config *Config) (*Client, error) {
 		config:       config,
 		tokenManager: tokenManager,
 		logger:       logger,
+		middleware:   middleware,
 		services:     make(map[string]interface{}),
 	}
 
@@ -190,7 +123,7 @@ func (c *Client) HTTPClient() *http.Client {
 }
 
 // Logger returns the client logger
-func (c *Client) Logger() Logger {
+func (c *Client) Logger() logger.Logger {
 	return c.logger
 }
 
@@ -250,9 +183,8 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body io.Rea
 	// Log request headers (before auth)
 	c.logger.Debugf("Request headers (pre-auth): %v", headers)
 
-	// Use RequestEditorFn to add authentication and custom headers from config
-	editorFn := c.RequestEditorFn()
-	if err := editorFn(ctx, req); err != nil {
+	// Use middleware
+	if err := c.middleware.Intercept(ctx, req); err != nil {
 		c.logger.Errorf("Failed to prepare request: %v", err)
 		return nil, fmt.Errorf("failed to prepare request: %w", err)
 	}
@@ -293,22 +225,4 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body io.Rea
 	}
 
 	return resp, nil
-}
-
-// RequestEditorFn returns a function that adds the Bearer token to requests
-func (c *Client) RequestEditorFn() func(ctx context.Context, req *http.Request) error {
-	return func(ctx context.Context, req *http.Request) error {
-		token, err := c.GetToken(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to get token: %w", err)
-		}
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-
-		// Add custom headers
-		for k, v := range c.config.Headers {
-			req.Header.Set(k, v)
-		}
-
-		return nil
-	}
 }

@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
+	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
@@ -38,9 +40,9 @@ func TestListElasticIPs(t *testing.T) {
 			TokenIssuerURL: server.URL + "/token",
 			ClientID:       "test-client",
 			ClientSecret:   "test-secret",
-			Logger:         &restclient.NoOpLogger{},
+			Logger:         &noop.NoOpLogger{},
 		}
-		c, err := restclient.NewClient(cfg)
+		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
@@ -80,9 +82,9 @@ func TestGetElasticIP(t *testing.T) {
 			TokenIssuerURL: server.URL + "/token",
 			ClientID:       "test-client",
 			ClientSecret:   "test-secret",
-			Logger:         &restclient.NoOpLogger{},
+			Logger:         &noop.NoOpLogger{},
 		}
-		c, err := restclient.NewClient(cfg)
+		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
@@ -125,9 +127,9 @@ func TestCreateElasticIP(t *testing.T) {
 			TokenIssuerURL: server.URL + "/token",
 			ClientID:       "test-client",
 			ClientSecret:   "test-secret",
-			Logger:         &restclient.NoOpLogger{},
+			Logger:         &noop.NoOpLogger{},
 		}
-		c, err := restclient.NewClient(cfg)
+		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
@@ -176,9 +178,9 @@ func TestDeleteElasticIP(t *testing.T) {
 			TokenIssuerURL: server.URL + "/token",
 			ClientID:       "test-client",
 			ClientSecret:   "test-secret",
-			Logger:         &restclient.NoOpLogger{},
+			Logger:         &noop.NoOpLogger{},
 		}
-		c, err := restclient.NewClient(cfg)
+		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
 		if err != nil {
 			t.Fatalf("failed to create client: %v", err)
 		}
