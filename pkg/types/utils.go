@@ -156,3 +156,21 @@ func ValidateVPNRoute(project, vpnTunnelID, vpnRouteID string) error {
 	}
 	return nil
 }
+
+func ValidateStorageRestore(projectID, backupID string, restoreID *string) error {
+	if projectID == "" {
+		return fmt.Errorf("project cannot be empty")
+	}
+	if backupID == "" {
+		return fmt.Errorf("backup ID cannot be empty")
+	}
+
+	if restoreID == nil {
+		return nil
+	}
+
+	if *restoreID == "" {
+		return fmt.Errorf("restore ID cannot be empty")
+	}
+	return nil
+}

@@ -7,6 +7,11 @@ func StringPtr(s string) *string {
 	return &s
 }
 
+// IntPtr returns a pointer to the given int value
+func IntPtr(i int) *int {
+	return &i
+}
+
 // Int32Ptr returns a pointer to the given int32 value
 func Int32Ptr(i int32) *int32 {
 	return &i

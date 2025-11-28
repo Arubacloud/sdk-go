@@ -18,6 +18,41 @@ type snapshotsClientImpl struct {
 	volumesClient *volumesClientImpl
 }
 
+// Update updates an existing snapshot
+func (c *snapshotsClientImpl) Update(ctx context.Context, projectID string, snapshotID string, body types.SnapshotRequest, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error) {
+	c.client.Logger().Debugf("Updating snapshot: %s in project: %s", snapshotID, projectID)
+
+	if err := types.ValidateProjectAndResource(projectID, snapshotID, "snapshot ID"); err != nil {
+		return nil, err
+	}
+
+	path := fmt.Sprintf(SnapshotPath, projectID, snapshotID)
+
+	if params == nil {
+		params = &types.RequestParameters{
+			APIVersion: &SnapshotUpdateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &SnapshotUpdateAPIVersion
+	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	return types.ParseResponseBody[types.SnapshotResponse](httpResp)
+}
+
 // NewSnapshotsClientImpl creates a new unified Storage service
 func NewSnapshotsClientImpl(client *restclient.Client, volumesClient *volumesClientImpl) *snapshotsClientImpl {
 	return &snapshotsClientImpl{
