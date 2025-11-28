@@ -10,6 +10,7 @@ type StorageClient interface {
 	Snapshots() SnapshotsClient
 	Volumes() VolumesClient
 	Backups() StorageBackupsClient
+	Restores() StorageRestoreClient
 }
 
 type storageClientImpl struct {

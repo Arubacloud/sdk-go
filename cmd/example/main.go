@@ -81,6 +81,9 @@ type ResourceCollection struct {
 	ElasticIPResp     *types.Response[types.ElasticIPResponse]
 	BlockStorageResp  *types.Response[types.BlockStorageResponse]
 	SnapshotResp      *types.Response[types.SnapshotResponse]
+	BackupResp        *types.Response[types.StorageBackupResponse]
+	RestoreResp       *types.Response[types.RestoreResponse]
+	ContainerRegistry *types.Response[types.ContainerRegistryResponse]
 	VPCResp           *types.Response[types.VPCResponse]
 	SubnetResp        *types.Response[types.SubnetResponse]
 	SecurityGroupResp *types.Response[types.SecurityGroupResponse]
@@ -131,7 +134,135 @@ func createAllResources(ctx context.Context, arubaClient aruba.Client) *Resource
 	// 12. Create Cloud Server (commented out)
 	resources.CloudServerResp = createCloudServer(ctx, arubaClient, resources)
 
+	// 13. Create Container Registry
+	resources.ContainerRegistry = createContainerRegistry(ctx, arubaClient, resources.ProjectID)
+
+	// 14. Create Storage Backup
+	resources.BackupResp = createStorageBackup(ctx, arubaClient, resources.ProjectID, stringValue(resources.BlockStorageResp.Data.Metadata.ID))
+
+	// 15. Create Restore from Backup
+	resources.RestoreResp = createRestore(ctx, arubaClient, resources.ProjectID, resources.BackupResp)
+
 	return resources
+}
+
+func createContainerRegistry(ctx context.Context, arubaClient aruba.Client, projectID string) *types.Response[types.ContainerRegistryResponse] {
+	fmt.Println("--- Container Registry ---")
+
+	req := types.ContainerRegistryRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
+				Name: "test-registry",
+			},
+		},
+		Properties: types.ContainerRegistryPropertiesRequest{
+			VPC:             types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"},
+			Subnet:          types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"},
+			SecurityGroup:   types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"},
+			PublicIp:        types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"},
+			BlockStorage:    types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"},
+			BillingPlan:     &types.BillingPeriodResource{BillingPeriod: "Hour"},
+			AdminUser:       &types.UserCredential{Username: "admin"},
+			ConcurrentUsers: types.IntPtr(100),
+		},
+	}
+
+	resp, err := arubaClient.FromContainer().ContainerRegistry().Create(ctx, projectID, req, nil)
+	if err != nil {
+		log.Printf("Error creating container registry: %v", err)
+		os.Exit(1)
+	} else if !resp.IsSuccess() {
+		log.Printf("Failed to create container registry - Status: %d, Error: %s, Detail: %s",
+			resp.StatusCode,
+			stringValue(resp.Error.Title),
+			stringValue(resp.Error.Detail))
+		os.Exit(1)
+	}
+	if resp.Data != nil {
+		fmt.Printf("✓ Created container registry: %s\n", *resp.Data.Metadata.Name)
+	} else {
+		fmt.Println("Warning: resp.Data is nil")
+	}
+
+	return resp
+}
+
+func createRestore(ctx context.Context, arubaClient aruba.Client, s string, storageBackupResponse *types.Response[types.StorageBackupResponse]) *types.Response[types.RestoreResponse] {
+	fmt.Println("--- Restore ---")
+
+	if storageBackupResponse == nil || storageBackupResponse.Data == nil || storageBackupResponse.Data.Metadata.ID == nil {
+		fmt.Println("⚠ Skipping Restore creation - Backup not available")
+		return nil
+	}
+
+	backupID := *storageBackupResponse.Data.Metadata.ID
+
+	req := types.RestoreRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
+				Name: "test-restore",
+			},
+		},
+		Properties: types.RestorePropertiesRequest{
+			Target: types.ReferenceResource{URI: storageBackupResponse.Data.Properties.Origin.URI},
+		},
+	}
+
+	resp, err := arubaClient.FromStorage().Restores().Create(ctx, s, backupID, req, nil)
+	if err != nil {
+		log.Printf("Error creating restore: %v", err)
+		os.Exit(1)
+	} else if !resp.IsSuccess() {
+		log.Printf("Failed to create restore - Status: %d, Error: %s, Detail: %s",
+			resp.StatusCode,
+			stringValue(resp.Error.Title),
+			stringValue(resp.Error.Detail))
+		os.Exit(1)
+	}
+	if resp.Data != nil {
+		fmt.Printf("✓ Created restore: %s\n", *resp.Data.Metadata.Name)
+	} else {
+		fmt.Println("Warning: resp.Data is nil")
+	}
+
+	return resp
+}
+
+func createStorageBackup(ctx context.Context, arubaClient aruba.Client, projectID string, blockStorageID string) *types.Response[types.StorageBackupResponse] {
+	fmt.Println("--- Storage Backup ---")
+
+	req := types.StorageBackupRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
+				Name: "test-backup",
+			},
+		},
+		Properties: types.StorageBackupPropertiesRequest{
+			StorageBackupType: types.StorageBackupTypeFull,
+			Origin:            types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/" + blockStorageID},
+			RetentionDays:     types.IntPtr(10),
+			BillingPeriod:     types.StringPtr("Monthly"),
+		},
+	}
+
+	resp, err := arubaClient.FromStorage().Backups().Create(ctx, projectID, req, nil)
+	if err != nil {
+		log.Printf("Error creating storage backup: %v", err)
+		os.Exit(1)
+	} else if !resp.IsSuccess() {
+		log.Printf("Failed to create storage backup - Status: %d, Error: %s, Detail: %s",
+			resp.StatusCode,
+			stringValue(resp.Error.Title),
+			stringValue(resp.Error.Detail))
+		os.Exit(1)
+	}
+	if resp.Data != nil {
+		fmt.Printf("✓ Created storage backup: %s\n", *resp.Data.Metadata.Name)
+	} else {
+		fmt.Println("Warning: resp.Data is nil")
+	}
+
+	return resp
 }
 
 // createProject creates and updates a project
