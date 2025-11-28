@@ -2,10 +2,12 @@ package memory
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	gomock "go.uber.org/mock/gomock"
 
 	"github.com/Arubacloud/sdk-go/internal/ports/auth"
 )
@@ -176,17 +178,155 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 }
 
 func TestTokenProxy_FetchToken(t *testing.T) {
+	t.Run("should forward errors from the persistent repository", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
 
+		// Given a persistent repository which still not has a token
+		persistentRepository := NewMockTokenRepository(ctrl)
+
+		errConnection := errors.New("connection error")
+
+		persistentRepository.EXPECT().FetchToken(
+			gomock.AssignableToTypeOf(context.TODO()),
+		).Return(nil, errConnection).Times(1)
+
+		//
+		// And a fresh new proxy using that last
+		proxy := NewTokenProxy(persistentRepository)
+
+		// When we try to fetch the token from the proxy
+		token, err := proxy.FetchToken(context.TODO())
+
+		// Then the same error obtained from the persistent repository should be reported
+		require.ErrorIs(t, err, errConnection)
+
+		// And no token should be returned
+		require.Nil(t, token)
+	})
+
+	t.Run("should fetch the token from the persistent repository when it has no token", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		// Given a persistent repository which already has a token
+		persistentRepository := NewMockTokenRepository(ctrl)
+
+		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).Return(
+			&auth.Token{
+				AccessToken: accessToken,
+				Expiry:      expiry,
+			}, nil).Times(1)
+
+		//
+		// And a fresh new proxy using that last
+		proxy := NewTokenProxy(persistentRepository)
+
+		// When we try to fetch the token from the proxy
+		token, err := proxy.FetchToken(context.TODO())
+
+		// Then no error should be reported
+		require.NoError(t, err)
+
+		// And the token should be stored on memory by the proxy
+		require.NotNil(t, proxy.token)
+
+		// And the token should match the one returned from the persistent repository
+		require.Equal(t, accessToken, token.AccessToken)
+		require.Equal(t, expiry, token.Expiry)
+
+		// And the tokens should not be the same
+		require.NotSame(t, token, proxy.token)
+	})
+
+	t.Run("should fetch the token from the persistent repository when its own is not valid", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		// Given a persistent repository which has a valid token
+		persistentRepository := NewMockTokenRepository(ctrl)
+
+		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).Return(
+			&auth.Token{
+				AccessToken: accessToken,
+				Expiry:      expiry,
+			}, nil).Times(1)
+
+		//
+		// And a proxy using that last which contains an expired token
+		proxy := NewTokenProxy(persistentRepository)
+
+		proxy.token = &auth.Token{
+			AccessToken: "this is an expired access token",
+			Expiry:      time.Now().Add(-1 * time.Hour),
+		}
+
+		//
+		// When we try to fetch the token from the proxy
+		token, err := proxy.FetchToken(context.TODO())
+
+		// Then no error should be reported
+		require.NoError(t, err)
+
+		// And the token should be stored on memory by the proxy
+		require.NotNil(t, proxy.token)
+
+		// And the token should match the one returned from the persistent repository
+		require.Equal(t, accessToken, token.AccessToken)
+		require.Equal(t, expiry, token.Expiry)
+
+		// And the tokens should not be the same
+		require.NotSame(t, token, proxy.token)
+	})
+
+	t.Run("should not overlap persistent repository calls", func(t *testing.T) {
+
+	})
+
+	t.Run("should return its own token when it is valid", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		// Given a persistent repository which has a valid token
+		persistentRepository := NewMockTokenRepository(ctrl)
+
+		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).Return(
+			&auth.Token{
+				AccessToken: accessToken,
+				Expiry:      expiry,
+			}, nil).Times(0)
+
+		//
+		// And a proxy using that last which contains a different valid token
+		proxy := NewTokenProxy(persistentRepository)
+
+		proxy.token = &auth.Token{
+			AccessToken: "this is a different but valid access token",
+			Expiry:      time.Now().Add(1 * time.Hour),
+		}
+
+		//
+		// When we try to fetch the token from the proxy
+		token, err := proxy.FetchToken(context.TODO())
+
+		// Then no error should be reported
+		require.NoError(t, err)
+
+		// And the token should match the one already on memory
+		require.Equal(t, proxy.token.AccessToken, token.AccessToken)
+		require.Equal(t, proxy.token.Expiry, token.Expiry)
+
+		// And the tokens should not be the same
+		require.NotSame(t, token, proxy.token)
+	})
 }
 
 func TestTokenProxy_SaveToken(t *testing.T) {
+	t.Run("should not be overwriten by fetch calls", func(t *testing.T) {
 
+	})
 }
 
 func TestTokenProxyWithRandonExpirationDriftSeconds_FetchToken(t *testing.T) {
-
-}
-
-func TestTokenProxyWithRandonExpirationDriftSeconds_SaveToken(t *testing.T) {
 
 }

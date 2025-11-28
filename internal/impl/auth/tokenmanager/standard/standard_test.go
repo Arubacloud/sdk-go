@@ -333,7 +333,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		require.Equal(t, expiry, savedToken.Expiry)
 
 		// And the token ticket must be 1
-		require.Equal(t, uint64(1), tokenManager.tokenTicket)
+		require.Equal(t, uint64(1), tokenManager.ticket)
 	})
 
 	t.Run("should return an error when fetch token fail in unexpected way", func(t *testing.T) {
