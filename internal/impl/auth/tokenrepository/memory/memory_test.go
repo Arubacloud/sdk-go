@@ -553,5 +553,82 @@ func TestTokenProxy_SaveToken(t *testing.T) {
 }
 
 func TestTokenProxyWithRandonExpirationDriftSeconds_FetchToken(t *testing.T) {
+	t.Run("should apply the drift to its im-memory token", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
 
+		// Given a persistent repository which already has a token
+		persistentRepository := NewMockTokenRepository(ctrl)
+
+		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).Times(0)
+
+		//
+		// And a proxy using that last which already contains a token
+		proxy := NewTokenProxyWithRandomExpirationDriftSeconds(persistentRepository, 300)
+
+		proxy.token = &auth.Token{
+			AccessToken: accessToken,
+			Expiry:      expiry,
+		}
+
+		// When we try to fetch the token from the proxy
+		token, err := proxy.FetchToken(context.TODO())
+
+		// Then no error should be reported
+		require.NoError(t, err)
+
+		// And the token should be stored on memory by the proxy
+		require.NotNil(t, proxy.token)
+
+		// And the token should match the one returned from the persistent repository
+		require.Equal(t, accessToken, token.AccessToken)
+
+		// And the drift should be correctly applied to the returned token
+		require.Equal(t, expiry.Add(-1*time.Duration(proxy.expirationDriftSeconds)*time.Second), token.Expiry)
+
+		// And the drift should not be applied to the token in-memory
+		require.Equal(t, expiry, proxy.token.Expiry)
+
+		// And the tokens should not be the same
+		require.NotSame(t, token, proxy.token)
+	})
+
+	t.Run("should apply the drift to the token fetch from the persistent repository", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		// Given a persistent repository which already has a token
+		persistentRepository := NewMockTokenRepository(ctrl)
+
+		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).Return(
+			&auth.Token{
+				AccessToken: accessToken,
+				Expiry:      expiry,
+			}, nil).Times(1)
+
+		//
+		// And a fresh new proxy using that last
+		proxy := NewTokenProxyWithRandomExpirationDriftSeconds(persistentRepository, 300)
+
+		// When we try to fetch the token from the proxy
+		token, err := proxy.FetchToken(context.TODO())
+
+		// Then no error should be reported
+		require.NoError(t, err)
+
+		// And the token should be stored on memory by the proxy
+		require.NotNil(t, proxy.token)
+
+		// And the token should match the one returned from the persistent repository
+		require.Equal(t, accessToken, token.AccessToken)
+
+		// And the drift should be correctly applied to the returned token
+		require.Equal(t, expiry.Add(-1*time.Duration(proxy.expirationDriftSeconds)*time.Second), token.Expiry)
+
+		// And the drift should not be applied to the token in-memory
+		require.Equal(t, expiry, proxy.token.Expiry)
+
+		// And the tokens should not be the same
+		require.NotSame(t, token, proxy.token)
+	})
 }
