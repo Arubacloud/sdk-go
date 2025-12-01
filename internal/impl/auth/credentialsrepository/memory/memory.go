@@ -32,7 +32,28 @@ func NewCredentialsProxy(persistentRepository auth.CredentialsRepository) *Crede
 
 func (r *CredentialsRepository) FetchCredentials(ctx context.Context) (*auth.Credentials, error) {
 	r.locker.RLock()
-	defer r.locker.RUnlock()
 
-	return r.credentials.Copy(), nil
+	var credentialsCopy *auth.Credentials
+
+	if r.credentials != nil {
+		credentialsCopy = r.credentials.Copy()
+	}
+
+	r.locker.RUnlock()
+
+	if credentialsCopy == nil && r.persistentRepository != nil {
+		r.locker.Lock()
+		defer r.locker.Unlock()
+
+		credentials, err := r.persistentRepository.FetchCredentials(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		r.credentials = credentials.Copy()
+
+		credentialsCopy = credentials.Copy()
+	}
+
+	return credentialsCopy, nil
 }
