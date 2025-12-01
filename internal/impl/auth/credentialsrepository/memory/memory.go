@@ -2,7 +2,6 @@ package memory
 
 import (
 	"context"
-	"errors"
 	"sync"
 
 	"github.com/Arubacloud/sdk-go/internal/ports/auth"
@@ -35,5 +34,5 @@ func (r *CredentialsRepository) FetchCredentials(ctx context.Context) (*auth.Cre
 	r.locker.RLock()
 	defer r.locker.RUnlock()
 
-	return nil, errors.New("not implemented")
+	return r.credentials.Copy(), nil
 }
