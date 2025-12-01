@@ -71,6 +71,8 @@ func (r *TokenRepository) FetchToken(ctx context.Context) (*auth.Token, error) {
 			return nil, err
 		}
 
+		r.fetchTicket++
+
 		r.token = token.Copy()
 	}
 
@@ -80,6 +82,14 @@ func (r *TokenRepository) FetchToken(ctx context.Context) (*auth.Token, error) {
 func (r *TokenRepository) SaveToken(ctx context.Context, token *auth.Token) error {
 	r.locker.Lock()
 	defer r.locker.Unlock()
+
+	r.saveTicket++
+
+	if r.persistentRepository != nil {
+		if err := r.persistentRepository.SaveToken(ctx, token.Copy()); err != nil {
+			return err
+		}
+	}
 
 	r.token = token.Copy()
 

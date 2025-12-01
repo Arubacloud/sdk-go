@@ -3,6 +3,8 @@ package memory
 import (
 	"context"
 	"errors"
+	"math/rand/v2"
+	"sync"
 	"testing"
 	"time"
 
@@ -182,7 +184,7 @@ func TestTokenProxy_FetchToken(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		// Given a persistent repository which still not has a token
+		// Given a persistent repository which experience some connection error
 		persistentRepository := NewMockTokenRepository(ctrl)
 
 		errConnection := errors.New("connection error")
@@ -280,7 +282,75 @@ func TestTokenProxy_FetchToken(t *testing.T) {
 	})
 
 	t.Run("should not overlap persistent repository calls", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
 
+		// Given a persistent repository which has a valid token
+		persistentRepository := NewMockTokenRepository(ctrl)
+
+		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).DoAndReturn(
+			func(ctx context.Context) (*auth.Token, error) {
+				time.Sleep(time.Duration(100+rand.IntN(100)) * time.Microsecond)
+
+				return &auth.Token{
+					AccessToken: accessToken,
+					Expiry:      expiry,
+				}, nil
+			}).Times(1)
+
+		//
+		// And a proxy using that last which contains an expired token
+		proxy := NewTokenProxy(persistentRepository)
+
+		proxy.token = &auth.Token{
+			AccessToken: "this is an expired access token",
+			Expiry:      time.Now().Add(-1 * time.Hour),
+		}
+
+		//
+		// When we try to fetch the token 100 times simultaneously
+		type result struct { // to carry the results of each simultaneous call
+			token *auth.Token
+			err   error
+		}
+
+		resultChan := make(chan *result, 100) // to carry the results of all simultaneous calls
+
+		var wg sync.WaitGroup // to wait all calls to finish
+
+		var bell sync.RWMutex // to make the calls to run closed as possible to be really simultaneous
+
+		bell.Lock() // make sure to block all calls
+
+		for i := 0; i < 100; i++ { // launch the simultaneous go routines
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				bell.RLock()
+				defer bell.RUnlock()
+
+				token, err := proxy.FetchToken(context.TODO())
+
+				resultChan <- &result{token, err}
+			}()
+		}
+
+		bell.Unlock() // unblock all calls at the same time
+
+		wg.Wait() // wait all calls to be finished
+
+		close(resultChan)
+
+		for returned := range resultChan {
+			//
+			// Then no error should be reported
+			require.NoError(t, returned.err)
+
+			// And the token data should match the one from the persistent repository
+			require.Equal(t, accessToken, returned.token.AccessToken)
+			require.Equal(t, expiry, returned.token.Expiry)
+		}
 	})
 
 	t.Run("should return its own token when it is valid", func(t *testing.T) {
@@ -322,8 +392,163 @@ func TestTokenProxy_FetchToken(t *testing.T) {
 }
 
 func TestTokenProxy_SaveToken(t *testing.T) {
-	t.Run("should not be overwriten by fetch calls", func(t *testing.T) {
+	t.Run("should save the token on the persistent repository", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
 
+		// Given a persistent repository which does not have any token
+		persistentRepository := NewMockTokenRepository(ctrl)
+
+		var tokenPtr **auth.Token
+
+		persistentRepository.EXPECT().SaveToken(gomock.AssignableToTypeOf(context.TODO()), gomock.AssignableToTypeOf(&auth.Token{})).DoAndReturn(
+			func(ctx context.Context, token *auth.Token) error {
+				tokenPtr = &token
+				return nil
+			}).Times(1)
+
+		//
+		// And a proxy using that last and that also contains no token yet
+		proxy := NewTokenProxy(persistentRepository)
+
+		// When we try to save a token
+		err := proxy.SaveToken(context.TODO(), &auth.Token{AccessToken: accessToken, Expiry: expiry})
+
+		// Then no error should be reported
+		require.NoError(t, err)
+
+		// And the token on the proxy should match the given data
+		require.Equal(t, accessToken, proxy.token.AccessToken)
+		require.Equal(t, expiry, proxy.token.Expiry)
+
+		// And the token on the persistent repository should match the given data
+		require.Equal(t, accessToken, (*tokenPtr).AccessToken)
+		require.Equal(t, expiry, (*tokenPtr).Expiry)
+
+		// And the tokens on both repositories should not be the same
+		require.NotSame(t, proxy.token, *tokenPtr)
+	})
+
+	t.Run("should not update its token when the persistent repository reports some error", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		// Given a persistent repository which experience some connection error
+		persistentRepository := NewMockTokenRepository(ctrl)
+
+		errConnection := errors.New("connection error")
+
+		persistentRepository.EXPECT().SaveToken(
+			gomock.AssignableToTypeOf(context.TODO()),
+			gomock.AssignableToTypeOf(&auth.Token{}),
+		).Return(errConnection).Times(1)
+
+		//
+		// And a proxy using that last and that also contains no token yet
+		proxy := NewTokenProxy(persistentRepository)
+
+		// When we try to save a token
+		err := proxy.SaveToken(context.TODO(), &auth.Token{AccessToken: accessToken, Expiry: expiry})
+
+		// Then the same error should be reported
+		require.ErrorIs(t, err, errConnection)
+
+		// And the token on the proxy should not be set
+		require.Nil(t, proxy.token)
+	})
+
+	t.Run("should not be overwriten by fetch calls", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		// Given a persistent repository which has a valid token
+		persistentRepository := NewMockTokenRepository(ctrl)
+
+		persistentToken := &auth.Token{
+			AccessToken: "another access token",
+			Expiry:      time.Now().Add(1 * time.Hour),
+		}
+
+		tokenPtr := &persistentToken
+
+		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).DoAndReturn(
+			func(ctx context.Context) (*auth.Token, error) {
+				time.Sleep(time.Duration(100+rand.IntN(100)) * time.Microsecond)
+
+				return *tokenPtr, nil
+			}).Times(1)
+
+		persistentRepository.EXPECT().SaveToken(gomock.AssignableToTypeOf(context.TODO()), gomock.AssignableToTypeOf(&auth.Token{})).DoAndReturn(
+			func(ctx context.Context, token *auth.Token) error {
+				time.Sleep(time.Duration(100+rand.IntN(100)) * time.Microsecond)
+
+				tokenPtr = &token
+				return nil
+			}).Times(1)
+
+		//
+		// And a proxy using that last and that also contains no token yet
+		proxy := NewTokenProxy(persistentRepository)
+
+		// When we try to save a token during a bunch of simultaneous call to fetch the token
+		errChan := make(chan error, 1000) // to carry the results of all simultaneous calls
+
+		var wg sync.WaitGroup // to wait all calls to finish
+
+		var bell sync.RWMutex // to make the calls to run closed as possible to be really simultaneous
+
+		bell.Lock() // make sure to block all calls
+
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			bell.RLock()
+			defer bell.RUnlock()
+
+			err := proxy.SaveToken(context.TODO(), &auth.Token{AccessToken: accessToken, Expiry: expiry})
+
+			errChan <- err
+		}()
+
+		for i := 0; i < 999; i++ { // launch the simultaneous go routines
+			wg.Add(1)
+
+			go func() {
+				defer wg.Done()
+
+				bell.RLock()
+				defer bell.RUnlock()
+
+				_, err := proxy.FetchToken(context.TODO())
+
+				errChan <- err
+			}()
+		}
+
+		bell.Unlock() // unblock all calls at the same time
+
+		wg.Wait() // wait all calls to be finished
+
+		close(errChan)
+
+		//
+		// Then no error should be reported
+		for err := range errChan {
+			require.NoError(t, err)
+		}
+
+		// And the token on the proxy should match the given data
+		require.Equal(t, accessToken, proxy.token.AccessToken)
+		require.Equal(t, expiry, proxy.token.Expiry)
+
+		// And the token on the persistent repository should match the given data
+		require.Equal(t, accessToken, (*tokenPtr).AccessToken)
+		require.Equal(t, expiry, (*tokenPtr).Expiry)
+
+		// And the tokens on both repositories should not be the same
+		require.NotSame(t, proxy.token, *tokenPtr)
 	})
 }
 
