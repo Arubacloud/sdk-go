@@ -62,7 +62,7 @@ func TestInterceptor_Intercept(t *testing.T) {
 		instance := NewInterceptor()
 
 		// When we try to intercept a nil http request
-		err := instance.Intercept(context.TODO(), nil)
+		err := instance.Intercept(t.Context(), nil)
 
 		// Then an invalid http request error is reported
 		require.ErrorIs(t, err, interceptor.ErrInvalidHTTPRequest)
@@ -79,7 +79,7 @@ func TestInterceptor_Intercept(t *testing.T) {
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
 
 		// When we try to intercept the request
-		err := instance.Intercept(context.TODO(), r)
+		err := instance.Intercept(t.Context(), r)
 
 		// Then no error should be reported
 		require.NoError(t, err)
@@ -94,7 +94,7 @@ func TestInterceptor_Intercept(t *testing.T) {
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
 
 		// When we try to intercept the request
-		err := instance.Intercept(context.TODO(), r)
+		err := instance.Intercept(t.Context(), r)
 
 		// Then no error should be reported
 		require.NoError(t, err)
@@ -111,7 +111,7 @@ func TestInterceptor_Intercept(t *testing.T) {
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
 
 		// When we try to intercept the request
-		err := instance.Intercept(context.TODO(), r)
+		err := instance.Intercept(t.Context(), r)
 
 		// Then an intercept function failure error is reported
 		require.ErrorIs(t, err, interceptor.ErrInterceptFuncFailed)
