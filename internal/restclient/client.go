@@ -25,10 +25,17 @@ type Config struct {
 	ClientSecret string
 	// Headers are additional headers to include in all requests
 	Headers map[string]string
+	// Redis configuration for token storage
+	Redis RedisConfig
 	// Logger is the logger to use for debug/info messages. If nil, no logging is performed.
 	Logger logger.Logger
 	// Debug enables debug logging when set to true
 	Debug bool
+}
+
+type RedisConfig struct {
+	//"redis://<user>:<pass>@localhost:6379/<db>"
+	RedisURI string
 }
 
 // DefaultConfig returns a default configuration
@@ -38,7 +45,11 @@ func DefaultConfig() *Config {
 		Headers:        make(map[string]string),
 		BaseURL:        DefaultBaseURL,
 		TokenIssuerURL: DefaultTokenIssuerURL,
+		Redis: RedisConfig{
+			RedisURI: DefaultRedisURI,
+		},
 	}
+
 }
 
 // Validate checks if the configuration is valid
