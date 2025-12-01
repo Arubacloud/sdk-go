@@ -447,9 +447,21 @@ func buildStorageClient(restClient *restclient.Client) (StorageClient, error) {
 		return nil, err // TODO: better error handling
 	}
 
+	restoresClient, err := buildStorageRestoresClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	backupsClient, err := buildStorageBackupsClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
 	return &storageClientImpl{
 		snapshotsClient: snapshotsClient,
 		volumesClient:   volumesClient,
+		backupsClient:   backupsClient,
+		restoresClient:  restoresClient,
 	}, nil
 }
 
@@ -462,4 +474,15 @@ func buildSnapshotsClient(restClient *restclient.Client) (SnapshotsClient, error
 
 func buildVolumesClient(restClient *restclient.Client) (VolumesClient, error) {
 	return storage.NewVolumesClientImpl(restClient), nil
+}
+
+func buildStorageBackupsClient(restClient *restclient.Client) (StorageBackupsClient, error) {
+	return storage.NewBackupClientImpl(restClient), nil
+}
+
+func buildStorageRestoresClient(restClient *restclient.Client) (StorageRestoreClient, error) {
+	return storage.NewRestoreClientImpl(
+		restClient,
+		storage.NewBackupClientImpl(restClient),
+	), nil
 }

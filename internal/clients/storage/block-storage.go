@@ -15,6 +15,11 @@ type volumesClientImpl struct {
 	client *restclient.Client
 }
 
+// Update implements aruba.VolumesClient.
+func (c *volumesClientImpl) Update(ctx context.Context, projectID string, volumeID string, body types.BlockStorageRequest, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error) {
+	panic("unimplemented")
+}
+
 // NewVolumesClientImpl creates a new unified Storage service
 func NewVolumesClientImpl(client *restclient.Client) *volumesClientImpl {
 	return &volumesClientImpl{

@@ -191,6 +191,38 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, projectID 
 		}
 	}
 
+	//Fetch Backup
+	backupList, err := arubaClient.FromStorage().Backups().List(ctx, projectID, nil)
+	if err == nil && backupList.IsSuccess() && len(backupList.Data.Values) > 0 {
+		backupID := *backupList.Data.Values[0].Metadata.ID
+		backupResp, err := arubaClient.FromStorage().Backups().Get(ctx, projectID, backupID, nil)
+		if err == nil && backupResp.IsSuccess() {
+			resources.BackupResp = backupResp
+			fmt.Printf("✓ Found Backup: %s\n", *backupResp.Data.Metadata.Name)
+		}
+		//Fetch Restore
+		restoreList, err := arubaClient.FromStorage().Restores().List(ctx, projectID, backupID, nil)
+		if err == nil && restoreList.IsSuccess() && len(restoreList.Data.Values) > 0 {
+			restoreID := *restoreList.Data.Values[0].Metadata.ID
+			restoreResp, err := arubaClient.FromStorage().Restores().Get(ctx, projectID, restoreID, backupID, nil)
+			if err == nil && restoreResp.IsSuccess() {
+				resources.RestoreResp = restoreResp
+				fmt.Printf("✓ Found Restore: %s\n", *restoreResp.Data.Metadata.Name)
+			}
+		}
+	}
+
+	// Fetch ContainerRegistry
+	containerRegistryList, err := arubaClient.FromContainer().ContainerRegistry().List(ctx, projectID, nil)
+	if err == nil && containerRegistryList.IsSuccess() && len(containerRegistryList.Data.Values) > 0 {
+		containerRegistryID := *containerRegistryList.Data.Values[0].Metadata.ID
+		containerRegistryResp, err := arubaClient.FromContainer().ContainerRegistry().Get(ctx, projectID, containerRegistryID, nil)
+		if err == nil && containerRegistryResp.IsSuccess() {
+			resources.ContainerRegistry = containerRegistryResp
+			fmt.Printf("✓ Found Container Registry: %s\n", *containerRegistryResp.Data.Metadata.Name)
+		}
+	}
+
 	return resources
 }
 
@@ -200,6 +232,21 @@ func deleteAllResources(ctx context.Context, arubaClient aruba.Client, resources
 	fmt.Println("\n=== Deleting Resources ===")
 
 	// Delete in reverse order of creation to respect dependencies
+
+	// 15. Delete Restore (if created)
+	if resources.RestoreResp != nil && resources.RestoreResp.Data != nil && resources.BackupResp != nil && resources.BackupResp.Data != nil && resources.BackupResp.Data.Metadata.ID != nil {
+		deleteRestore(ctx, arubaClient, resources.ProjectID, *resources.BackupResp.Data.Metadata.ID, *resources.RestoreResp.Data.Metadata.ID)
+	}
+
+	// 14. Delete Backup (if created)
+	if resources.BackupResp != nil && resources.BackupResp.Data != nil {
+		deleteBackup(ctx, arubaClient, resources.ProjectID, *resources.BackupResp.Data.Metadata.ID)
+	}
+
+	// 13. Delete Container Registry (if created)
+	if resources.ContainerRegistry != nil && resources.ContainerRegistry.Data != nil {
+		deleteContainerRegistry(ctx, arubaClient, resources.ProjectID, *resources.ContainerRegistry.Data.Metadata.ID)
+	}
 
 	// 12. Delete Cloud Server (if created)
 	if resources.CloudServerResp != nil && resources.CloudServerResp.Data != nil && resources.CloudServerResp.Data.Metadata.Name != "" {
@@ -265,6 +312,58 @@ func deleteAllResources(ctx context.Context, arubaClient aruba.Client, resources
 	}
 
 	fmt.Println("\n=== Delete Complete ===")
+}
+
+func deleteContainerRegistry(ctx context.Context, arubaClient aruba.Client, s1, s2 string) {
+	fmt.Println("--- Deleting Container Registry ---")
+	deleteResp, err := arubaClient.FromContainer().ContainerRegistry().Delete(ctx, s1, s2, nil)
+	if err != nil {
+		log.Printf("Error deleting container registry: %v", err)
+		return
+	} else if !deleteResp.IsSuccess() {
+		log.Printf("Failed to delete container registry - Status: %d, Error: %s",
+			deleteResp.StatusCode,
+			stringValue(deleteResp.Error.Title))
+		return
+	}
+	fmt.Printf("✓ Deleted Container Registry: %s\n", s2)
+}
+
+func deleteBackup(ctx context.Context, arubaClient aruba.Client, s1, s2 string) {
+	fmt.Println("--- Deleting Backup ---")
+	deleteResp, err := arubaClient.FromStorage().Backups().Delete(ctx, s1, s2, nil)
+	if err != nil {
+		log.Printf("Error deleting backup: %v", err)
+		return
+	} else if !deleteResp.IsSuccess() {
+		log.Printf("Failed to delete backup - Status: %d, Error: %s",
+			deleteResp.StatusCode,
+			stringValue(deleteResp.Error.Title))
+		return
+	}
+	fmt.Printf("✓ Deleted Backup: %s\n", s2)
+}
+
+// deleteRestore deletes a restore resource
+// s1: projectID, s2: restoreID
+// To get backupID, fetch from resources.BackupResp.Data.Metadata.ID
+func deleteRestore(ctx context.Context, arubaClient aruba.Client, projectID, backupID, restoreID string) {
+	fmt.Println("--- Deleting Restore ---")
+	if backupID == "" {
+		log.Printf("Error: backupID required for restore deletion, but not found.")
+		return
+	}
+	deleteResp, err := arubaClient.FromStorage().Restores().Delete(ctx, projectID, backupID, restoreID, nil)
+	if err != nil {
+		log.Printf("Error deleting restore: %v", err)
+		return
+	} else if !deleteResp.IsSuccess() {
+		log.Printf("Failed to delete restore - Status: %d, Error: %s",
+			deleteResp.StatusCode,
+			stringValue(deleteResp.Error.Title))
+		return
+	}
+	fmt.Printf("✓ Deleted Restore: %s\n", restoreID)
 }
 
 // deleteProject deletes a project
