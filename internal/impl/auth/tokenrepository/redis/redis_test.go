@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/Arubacloud/sdk-go/internal/ports/auth"
-	"github.com/Arubacloud/sdk-go/internal/restclient"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 	gomock "go.uber.org/mock/gomock"
@@ -23,19 +22,11 @@ var (
 
 func TestTokenRepository_FetchToken(t *testing.T) {
 	t.Run("should report a token not found error when it has not a token", func(t *testing.T) {
-		// Given a fresh new TokenRepository which contains no token
-
-		cfg := restclient.Config{
-			ClientID: "user-123",
-			Redis: restclient.RedisConfig{
-				RedisURI: "redis://localhost:6379",
-			}}
-
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
 		mockRedis := NewMockIRedis(ctrl)
-		tokenRepository := NewTokenRepositoryWithRedis(cfg, mockRedis)
+		tokenRepository := NeWRedisTokenRepository("user-123", mockRedis)
 		mockRedis.
 			EXPECT().
 			Get(gomock.Any(), "user-123").
@@ -52,19 +43,11 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 	})
 
 	t.Run("should report a token not found error when it has empty token", func(t *testing.T) {
-		// Given a fresh new TokenRepository which contains no token
-
-		cfg := restclient.Config{
-			ClientID: "user-123",
-			Redis: restclient.RedisConfig{
-				RedisURI: "redis://localhost:6379",
-			}}
-
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
 		mockRedis := NewMockIRedis(ctrl)
-		tokenRepository := NewTokenRepositoryWithRedis(cfg, mockRedis)
+		tokenRepository := NeWRedisTokenRepository("user-123", mockRedis)
 
 		cmd := redis.NewStringCmd(context.Background())
 		cmd.SetVal("") // Empty value to simulate no token
@@ -85,19 +68,11 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 	})
 
 	t.Run("should report a token not found error when it has no jwt token", func(t *testing.T) {
-		// Given a fresh new TokenRepository which contains no token
-
-		cfg := restclient.Config{
-			ClientID: "user-123",
-			Redis: restclient.RedisConfig{
-				RedisURI: "redis://localhost:6379",
-			}}
-
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
 		mockRedis := NewMockIRedis(ctrl)
-		tokenRepository := NewTokenRepositoryWithRedis(cfg, mockRedis)
+		tokenRepository := NeWRedisTokenRepository("user-123", mockRedis)
 
 		cmd := redis.NewStringCmd(context.Background())
 		cmd.SetVal("token") // Empty value to simulate no token
@@ -116,19 +91,11 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 	})
 
 	t.Run("should report a token when it has a jwt token on redis", func(t *testing.T) {
-		// Given a fresh new TokenRepository which contains no token
-
-		cfg := restclient.Config{
-			ClientID: "user-123",
-			Redis: restclient.RedisConfig{
-				RedisURI: "redis://localhost:6379",
-			}}
-
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
 		mockRedis := NewMockIRedis(ctrl)
-		tokenRepository := NewTokenRepositoryWithRedis(cfg, mockRedis)
+		tokenRepository := NeWRedisTokenRepository("user-123", mockRedis)
 
 		cmd := redis.NewStringCmd(context.Background())
 
@@ -159,13 +126,6 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 func TestTokenRepository_SaveToken(t *testing.T) {
 
 	t.Run("should save a token if not nil", func(t *testing.T) {
-		// Given a fresh new TokenRepository which contains no token
-		cfg := restclient.Config{
-			ClientID: "user-123",
-			Redis: restclient.RedisConfig{
-				RedisURI: "redis://localhost:6379",
-			}}
-
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -173,7 +133,7 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 
 		// And a valid token
 		token := &auth.Token{AccessToken: accessToken, Expiry: expiry}
-		tokenRepository := NewTokenRepositoryWithRedis(cfg, mockRedis)
+		tokenRepository := NeWRedisTokenRepository("user-123", mockRedis)
 		tokenJSON, _ := json.Marshal(token)
 
 		cmd := redis.NewStatusCmd(context.Background())
@@ -191,13 +151,6 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 	})
 
 	t.Run("should not save token if malformed", func(t *testing.T) {
-		// Given a fresh new TokenRepository which contains no token
-		cfg := restclient.Config{
-			ClientID: "user-123",
-			Redis: restclient.RedisConfig{
-				RedisURI: "redis://localhost:6379",
-			}}
-
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -208,7 +161,7 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 			AccessToken: string([]byte{0xff, 0xfe, 0xfd}), // Invalid UTF-8
 			Expiry:      expiry,
 		}
-		tokenRepository := NewTokenRepositoryWithRedis(cfg, mockRedis)
+		tokenRepository := NeWRedisTokenRepository("user-123", mockRedis)
 
 		tokenJSON, _ := json.Marshal(token)
 

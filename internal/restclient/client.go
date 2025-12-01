@@ -26,7 +26,9 @@ type Config struct {
 	// Headers are additional headers to include in all requests
 	Headers map[string]string
 	// Redis configuration for token storage
-	Redis RedisConfig
+	Redis *RedisConfig
+	// File Basedir where are stored token json file
+	File *FileConfig
 	// Logger is the logger to use for debug/info messages. If nil, no logging is performed.
 	Logger logger.Logger
 	// Debug enables debug logging when set to true
@@ -38,6 +40,11 @@ type RedisConfig struct {
 	RedisURI string
 }
 
+type FileConfig struct {
+	//directory where stored token json files are located
+	BaseDir string
+}
+
 // DefaultConfig returns a default configuration
 func DefaultConfig() *Config {
 	return &Config{
@@ -45,8 +52,11 @@ func DefaultConfig() *Config {
 		Headers:        make(map[string]string),
 		BaseURL:        DefaultBaseURL,
 		TokenIssuerURL: DefaultTokenIssuerURL,
-		Redis: RedisConfig{
+		Redis: &RedisConfig{
 			RedisURI: DefaultRedisURI,
+		},
+		File: &FileConfig{
+			BaseDir: DefaultFileBaseDir,
 		},
 	}
 

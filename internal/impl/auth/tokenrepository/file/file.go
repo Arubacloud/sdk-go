@@ -1,38 +1,40 @@
-package redis
+package file
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/Arubacloud/sdk-go/internal/ports/auth"
-	"github.com/redis/go-redis/v9"
 )
 
 type TokenRepository struct {
-	redisClient IRedis
-	clientId    string
+	baseDir string
+	path    string
 }
 
 var _ auth.TokenRepository = (*TokenRepository)(nil)
 
-func NeWRedisTokenRepository(clientID string, r IRedis) *TokenRepository {
+func NeWFileTokenRepository(baseDir, clientID string) *TokenRepository {
+	name := fmt.Sprintf("%s.token.json", clientID)
 	return &TokenRepository{
-		redisClient: r,
-		clientId:    clientID,
+		baseDir: baseDir,
+
+		path: filepath.Join(baseDir, name),
 	}
 }
 
 func (r *TokenRepository) FetchToken(ctx context.Context) (*auth.Token, error) {
-	x, err := r.redisClient.Get(ctx, r.clientId).Result()
-
-	if err != nil || x == "" {
-		return nil, auth.ErrTokenNotFound
+	data, err := os.ReadFile(r.path)
+	if err != nil {
+		return nil, err
 	}
 
 	var token auth.Token
-	if err := json.Unmarshal([]byte(x), &token); err != nil {
+	if err := json.Unmarshal(data, &token); err != nil {
 		return nil, err
 	}
 
@@ -48,18 +50,15 @@ func (r *TokenRepository) SaveToken(ctx context.Context, token *auth.Token) erro
 	if token == nil {
 		return fmt.Errorf("token cannot be nil")
 	}
-
 	tokenJSON, err := json.Marshal(token)
 	if err != nil {
 		return err
 	}
 
-	cmd := r.redisClient.Set(ctx, r.clientId, tokenJSON, time.Until(token.Expiry))
+	// Ensure directory exists
+	if err := os.MkdirAll(r.baseDir, 0o755); err != nil {
+		return err
+	}
 
-	return cmd.Err()
-}
-
-type IRedis interface {
-	Get(ctx context.Context, key string) *redis.StringCmd
-	Set(ctx context.Context, key string, value any, expiration time.Duration) *redis.StatusCmd
+	return os.WriteFile(r.path, tokenJSON, 0o600)
 }

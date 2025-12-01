@@ -7,3 +7,4 @@ const DefaultBaseURL = "https://api.arubacloud.com"
 const DefaultTokenIssuerURL = "https://login.aruba.it/auth/realms/cmp-new-apikey/protocol/openid-connect/token"
 
 const DefaultRedisURI = "redis://admin:admin@localhost:6379/0"
+const DefaultFileBaseDir = "/tmp/sdk-go"
