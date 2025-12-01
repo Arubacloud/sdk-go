@@ -38,7 +38,7 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 		require.NotEmpty(t, fetchedToken.Expiry)
 	})
 
-	t.Run("should return error for expired token", func(t *testing.T) {
+	t.Run("should return token for expired token", func(t *testing.T) {
 		dir := t.TempDir()
 		repo := NeWFileTokenRepository(dir, "user-123")
 
@@ -47,8 +47,8 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 		require.NoError(t, err)
 
 		fetchedToken, err := repo.FetchToken(t.Context())
-		require.Error(t, err)
-		require.Nil(t, fetchedToken)
+		require.NoError(t, err)
+		require.NotNil(t, fetchedToken)
 	})
 }
 

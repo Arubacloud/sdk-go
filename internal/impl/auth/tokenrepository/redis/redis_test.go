@@ -1,7 +1,6 @@
 package redis
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -21,19 +20,43 @@ var (
 )
 
 func TestTokenRepository_FetchToken(t *testing.T) {
-	t.Run("should report a token not found error when it has not a token", func(t *testing.T) {
+
+	t.Run("should report a token not found error when get gives no result", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
 		mockRedis := NewMockIRedis(ctrl)
 		tokenRepository := NeWRedisTokenRepository("user-123", mockRedis)
+
 		mockRedis.
 			EXPECT().
 			Get(gomock.Any(), "user-123").
 			Return(nil)
 
 		// When we try to fetch the token
-		token, err := tokenRepository.FetchToken(context.Background())
+		token, err := tokenRepository.FetchToken(t.Context())
+
+		// And no token should be returned
+		require.Error(t, err)
+		require.ErrorIs(t, err, auth.ErrTokenNotFound)
+
+		require.Nil(t, token)
+	})
+	t.Run("should report a token not found error when it has not a token", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockRedis := NewMockIRedis(ctrl)
+		tokenRepository := NeWRedisTokenRepository("user-123", mockRedis)
+		cmd := redis.NewStringCmd(t.Context())
+		cmd.Result() // Simulate no token found
+		mockRedis.
+			EXPECT().
+			Get(gomock.Any(), "user-123").
+			Return(cmd)
+
+		// When we try to fetch the token
+		token, err := tokenRepository.FetchToken(t.Context())
 
 		// And no token should be returned
 		require.Error(t, err)
@@ -49,7 +72,7 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 		mockRedis := NewMockIRedis(ctrl)
 		tokenRepository := NeWRedisTokenRepository("user-123", mockRedis)
 
-		cmd := redis.NewStringCmd(context.Background())
+		cmd := redis.NewStringCmd(t.Context())
 		cmd.SetVal("") // Empty value to simulate no token
 
 		mockRedis.
@@ -58,7 +81,7 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 			Return(cmd)
 
 		// When we try to fetch the token
-		token, err := tokenRepository.FetchToken(context.Background())
+		token, err := tokenRepository.FetchToken(t.Context())
 
 		// And no token should be returned
 		require.Error(t, err)
@@ -74,7 +97,7 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 		mockRedis := NewMockIRedis(ctrl)
 		tokenRepository := NeWRedisTokenRepository("user-123", mockRedis)
 
-		cmd := redis.NewStringCmd(context.Background())
+		cmd := redis.NewStringCmd(t.Context())
 		cmd.SetVal("token") // Empty value to simulate no token
 
 		mockRedis.
@@ -83,7 +106,7 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 			Return(cmd)
 
 		// When we try to fetch the token
-		token, err := tokenRepository.FetchToken(context.Background())
+		token, err := tokenRepository.FetchToken(t.Context())
 
 		// And no token should be returned
 		require.Error(t, err)
@@ -97,7 +120,7 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 		mockRedis := NewMockIRedis(ctrl)
 		tokenRepository := NeWRedisTokenRepository("user-123", mockRedis)
 
-		cmd := redis.NewStringCmd(context.Background())
+		cmd := redis.NewStringCmd(t.Context())
 
 		authToken := &auth.Token{
 			AccessToken: accessToken,
@@ -113,7 +136,7 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 			Return(cmd)
 
 		// When we try to fetch the token
-		token, err := tokenRepository.FetchToken(context.Background())
+		token, err := tokenRepository.FetchToken(t.Context())
 
 		// And no token should be returned
 		require.NoError(t, err)
@@ -136,7 +159,7 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 		tokenRepository := NeWRedisTokenRepository("user-123", mockRedis)
 		tokenJSON, _ := json.Marshal(token)
 
-		cmd := redis.NewStatusCmd(context.Background())
+		cmd := redis.NewStatusCmd(t.Context())
 		cmd.SetErr(nil)
 
 		mockRedis.
@@ -144,7 +167,7 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 			Set(gomock.Any(), "user-123", tokenJSON, gomock.Any()).
 			Return(cmd)
 		// When we try to save the token
-		err := tokenRepository.SaveToken(context.TODO(), token)
+		err := tokenRepository.SaveToken(t.Context(), token)
 
 		// Then no error should be reported
 		require.NoError(t, err)
@@ -165,7 +188,7 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 
 		tokenJSON, _ := json.Marshal(token)
 
-		cmd := redis.NewStatusCmd(context.Background())
+		cmd := redis.NewStatusCmd(t.Context())
 		cmd.SetErr(errors.New("malformed token"))
 
 		mockRedis.
@@ -175,7 +198,7 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 		// When we try to
 
 		// When we try to save the token
-		err := tokenRepository.SaveToken(context.TODO(), token)
+		err := tokenRepository.SaveToken(t.Context(), token)
 
 		// Then no error should be reported
 		require.Error(t, err)

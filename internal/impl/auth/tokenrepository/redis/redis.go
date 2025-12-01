@@ -25,20 +25,21 @@ func NeWRedisTokenRepository(clientID string, r IRedis) *TokenRepository {
 }
 
 func (r *TokenRepository) FetchToken(ctx context.Context) (*auth.Token, error) {
-	x, err := r.redisClient.Get(ctx, r.clientId).Result()
+	x := r.redisClient.Get(ctx, r.clientId)
 
-	if err != nil || x == "" {
+	if x == nil {
+		return nil, auth.ErrTokenNotFound
+	}
+
+	val, err := x.Result()
+
+	if err != nil || val == "" {
 		return nil, auth.ErrTokenNotFound
 	}
 
 	var token auth.Token
-	if err := json.Unmarshal([]byte(x), &token); err != nil {
+	if err := json.Unmarshal([]byte(val), &token); err != nil {
 		return nil, err
-	}
-
-	// Optional: check if token expired
-	if time.Now().After(token.Expiry) {
-		return nil, fmt.Errorf("token expired")
 	}
 
 	return &token, nil

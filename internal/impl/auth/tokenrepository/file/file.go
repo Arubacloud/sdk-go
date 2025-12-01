@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/Arubacloud/sdk-go/internal/ports/auth"
 )
@@ -36,11 +35,6 @@ func (r *TokenRepository) FetchToken(ctx context.Context) (*auth.Token, error) {
 	var token auth.Token
 	if err := json.Unmarshal(data, &token); err != nil {
 		return nil, err
-	}
-
-	// Optional: check if token expired
-	if time.Now().After(token.Expiry) {
-		return nil, fmt.Errorf("token expired")
 	}
 
 	return &token, nil
