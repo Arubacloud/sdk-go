@@ -28,7 +28,7 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 		tokenRepository := NewTokenRepository()
 
 		// When we try to fetch the token
-		token, err := tokenRepository.FetchToken(context.TODO())
+		token, err := tokenRepository.FetchToken(t.Context())
 
 		// Then a token not found error should be reported
 		require.ErrorIs(t, err, auth.ErrTokenNotFound)
@@ -50,7 +50,7 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 
 		//
 		// When we try to fetch the token
-		token, err := tokenRepository.FetchToken(context.TODO())
+		token, err := tokenRepository.FetchToken(t.Context())
 
 		// Then no error shoudt be reported
 		require.NoError(t, err)
@@ -78,7 +78,7 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 
 		//
 		// When we try to fetch the token
-		token, err := tokenRepository.FetchToken(context.TODO())
+		token, err := tokenRepository.FetchToken(t.Context())
 
 		// Then no error shoudt be reported
 		require.NoError(t, err)
@@ -105,7 +105,7 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 		token := &auth.Token{AccessToken: accessToken, Expiry: expiry}
 
 		// When we try to save the token
-		err := tokenRepository.SaveToken(context.TODO(), token)
+		err := tokenRepository.SaveToken(t.Context(), token)
 
 		// Then no error should be reported
 		require.NoError(t, err)
@@ -134,7 +134,7 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 		token := &auth.Token{AccessToken: accessToken, Expiry: expiry}
 
 		// When we try to save the token
-		err := tokenRepository.SaveToken(context.TODO(), token)
+		err := tokenRepository.SaveToken(t.Context(), token)
 
 		// Then no error should be reported
 		require.NoError(t, err)
@@ -164,7 +164,7 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 		token := &auth.Token{AccessToken: accessToken, Expiry: expiry}
 
 		// When we try to save the token
-		err := tokenRepository.SaveToken(context.TODO(), token)
+		err := tokenRepository.SaveToken(t.Context(), token)
 
 		// Then no error should be reported
 		require.NoError(t, err)
@@ -190,7 +190,7 @@ func TestTokenProxy_FetchToken(t *testing.T) {
 		errConnection := errors.New("connection error")
 
 		persistentRepository.EXPECT().FetchToken(
-			gomock.AssignableToTypeOf(context.TODO()),
+			gomock.AssignableToTypeOf(t.Context()),
 		).Return(nil, errConnection).Times(1)
 
 		//
@@ -198,7 +198,7 @@ func TestTokenProxy_FetchToken(t *testing.T) {
 		proxy := NewTokenProxy(persistentRepository)
 
 		// When we try to fetch the token from the proxy
-		token, err := proxy.FetchToken(context.TODO())
+		token, err := proxy.FetchToken(t.Context())
 
 		// Then the same error obtained from the persistent repository should be reported
 		require.ErrorIs(t, err, errConnection)
@@ -214,7 +214,7 @@ func TestTokenProxy_FetchToken(t *testing.T) {
 		// Given a persistent repository which already has a token
 		persistentRepository := NewMockTokenRepository(ctrl)
 
-		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).Return(
+		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(t.Context())).Return(
 			&auth.Token{
 				AccessToken: accessToken,
 				Expiry:      expiry,
@@ -225,7 +225,7 @@ func TestTokenProxy_FetchToken(t *testing.T) {
 		proxy := NewTokenProxy(persistentRepository)
 
 		// When we try to fetch the token from the proxy
-		token, err := proxy.FetchToken(context.TODO())
+		token, err := proxy.FetchToken(t.Context())
 
 		// Then no error should be reported
 		require.NoError(t, err)
@@ -248,7 +248,7 @@ func TestTokenProxy_FetchToken(t *testing.T) {
 		// Given a persistent repository which has a valid token
 		persistentRepository := NewMockTokenRepository(ctrl)
 
-		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).Return(
+		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(t.Context())).Return(
 			&auth.Token{
 				AccessToken: accessToken,
 				Expiry:      expiry,
@@ -265,7 +265,7 @@ func TestTokenProxy_FetchToken(t *testing.T) {
 
 		//
 		// When we try to fetch the token from the proxy
-		token, err := proxy.FetchToken(context.TODO())
+		token, err := proxy.FetchToken(t.Context())
 
 		// Then no error should be reported
 		require.NoError(t, err)
@@ -288,7 +288,7 @@ func TestTokenProxy_FetchToken(t *testing.T) {
 		// Given a persistent repository which has a valid token
 		persistentRepository := NewMockTokenRepository(ctrl)
 
-		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).DoAndReturn(
+		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(t.Context())).DoAndReturn(
 			func(ctx context.Context) (*auth.Token, error) {
 				time.Sleep(time.Duration(100+rand.IntN(100)) * time.Microsecond)
 
@@ -330,7 +330,7 @@ func TestTokenProxy_FetchToken(t *testing.T) {
 				bell.RLock()
 				defer bell.RUnlock()
 
-				token, err := proxy.FetchToken(context.TODO())
+				token, err := proxy.FetchToken(t.Context())
 
 				resultChan <- &result{token, err}
 			}()
@@ -360,7 +360,7 @@ func TestTokenProxy_FetchToken(t *testing.T) {
 		// Given a persistent repository which has a valid token
 		persistentRepository := NewMockTokenRepository(ctrl)
 
-		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).Return(
+		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(t.Context())).Return(
 			&auth.Token{
 				AccessToken: accessToken,
 				Expiry:      expiry,
@@ -377,7 +377,7 @@ func TestTokenProxy_FetchToken(t *testing.T) {
 
 		//
 		// When we try to fetch the token from the proxy
-		token, err := proxy.FetchToken(context.TODO())
+		token, err := proxy.FetchToken(t.Context())
 
 		// Then no error should be reported
 		require.NoError(t, err)
@@ -401,7 +401,7 @@ func TestTokenProxy_SaveToken(t *testing.T) {
 
 		var tokenPtr **auth.Token
 
-		persistentRepository.EXPECT().SaveToken(gomock.AssignableToTypeOf(context.TODO()), gomock.AssignableToTypeOf(&auth.Token{})).DoAndReturn(
+		persistentRepository.EXPECT().SaveToken(gomock.AssignableToTypeOf(t.Context()), gomock.AssignableToTypeOf(&auth.Token{})).DoAndReturn(
 			func(ctx context.Context, token *auth.Token) error {
 				tokenPtr = &token
 				return nil
@@ -412,7 +412,7 @@ func TestTokenProxy_SaveToken(t *testing.T) {
 		proxy := NewTokenProxy(persistentRepository)
 
 		// When we try to save a token
-		err := proxy.SaveToken(context.TODO(), &auth.Token{AccessToken: accessToken, Expiry: expiry})
+		err := proxy.SaveToken(t.Context(), &auth.Token{AccessToken: accessToken, Expiry: expiry})
 
 		// Then no error should be reported
 		require.NoError(t, err)
@@ -439,7 +439,7 @@ func TestTokenProxy_SaveToken(t *testing.T) {
 		errConnection := errors.New("connection error")
 
 		persistentRepository.EXPECT().SaveToken(
-			gomock.AssignableToTypeOf(context.TODO()),
+			gomock.AssignableToTypeOf(t.Context()),
 			gomock.AssignableToTypeOf(&auth.Token{}),
 		).Return(errConnection).Times(1)
 
@@ -448,7 +448,7 @@ func TestTokenProxy_SaveToken(t *testing.T) {
 		proxy := NewTokenProxy(persistentRepository)
 
 		// When we try to save a token
-		err := proxy.SaveToken(context.TODO(), &auth.Token{AccessToken: accessToken, Expiry: expiry})
+		err := proxy.SaveToken(t.Context(), &auth.Token{AccessToken: accessToken, Expiry: expiry})
 
 		// Then the same error should be reported
 		require.ErrorIs(t, err, errConnection)
@@ -471,14 +471,14 @@ func TestTokenProxy_SaveToken(t *testing.T) {
 
 		tokenPtr := &persistentToken
 
-		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).DoAndReturn(
+		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(t.Context())).DoAndReturn(
 			func(ctx context.Context) (*auth.Token, error) {
 				time.Sleep(time.Duration(100+rand.IntN(100)) * time.Microsecond)
 
 				return *tokenPtr, nil
 			}).Times(1)
 
-		persistentRepository.EXPECT().SaveToken(gomock.AssignableToTypeOf(context.TODO()), gomock.AssignableToTypeOf(&auth.Token{})).DoAndReturn(
+		persistentRepository.EXPECT().SaveToken(gomock.AssignableToTypeOf(t.Context()), gomock.AssignableToTypeOf(&auth.Token{})).DoAndReturn(
 			func(ctx context.Context, token *auth.Token) error {
 				time.Sleep(time.Duration(100+rand.IntN(100)) * time.Microsecond)
 
@@ -507,7 +507,7 @@ func TestTokenProxy_SaveToken(t *testing.T) {
 			bell.RLock()
 			defer bell.RUnlock()
 
-			err := proxy.SaveToken(context.TODO(), &auth.Token{AccessToken: accessToken, Expiry: expiry})
+			err := proxy.SaveToken(t.Context(), &auth.Token{AccessToken: accessToken, Expiry: expiry})
 
 			errChan <- err
 		}()
@@ -521,7 +521,7 @@ func TestTokenProxy_SaveToken(t *testing.T) {
 				bell.RLock()
 				defer bell.RUnlock()
 
-				_, err := proxy.FetchToken(context.TODO())
+				_, err := proxy.FetchToken(t.Context())
 
 				errChan <- err
 			}()
@@ -560,7 +560,7 @@ func TestTokenProxyWithRandonExpirationDriftSeconds_FetchToken(t *testing.T) {
 		// Given a persistent repository which already has a token
 		persistentRepository := NewMockTokenRepository(ctrl)
 
-		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).Times(0)
+		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(t.Context())).Times(0)
 
 		//
 		// And a proxy using that last which already contains a token
@@ -572,7 +572,7 @@ func TestTokenProxyWithRandonExpirationDriftSeconds_FetchToken(t *testing.T) {
 		}
 
 		// When we try to fetch the token from the proxy
-		token, err := proxy.FetchToken(context.TODO())
+		token, err := proxy.FetchToken(t.Context())
 
 		// Then no error should be reported
 		require.NoError(t, err)
@@ -600,7 +600,7 @@ func TestTokenProxyWithRandonExpirationDriftSeconds_FetchToken(t *testing.T) {
 		// Given a persistent repository which already has a token
 		persistentRepository := NewMockTokenRepository(ctrl)
 
-		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).Return(
+		persistentRepository.EXPECT().FetchToken(gomock.AssignableToTypeOf(t.Context())).Return(
 			&auth.Token{
 				AccessToken: accessToken,
 				Expiry:      expiry,
@@ -611,7 +611,7 @@ func TestTokenProxyWithRandonExpirationDriftSeconds_FetchToken(t *testing.T) {
 		proxy := NewTokenProxyWithRandomExpirationDriftSeconds(persistentRepository, 300)
 
 		// When we try to fetch the token from the proxy
-		token, err := proxy.FetchToken(context.TODO())
+		token, err := proxy.FetchToken(t.Context())
 
 		// Then no error should be reported
 		require.NoError(t, err)

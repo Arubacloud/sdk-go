@@ -89,7 +89,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		// When we try to inject a token into the request
 		// Then it should panic
 		require.Panics(t, func() {
-			tokenManager.InjectToken(context.TODO(), r)
+			tokenManager.InjectToken(t.Context(), r)
 		})
 	})
 
@@ -101,7 +101,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		repository := NewMockTokenRepository(ctrl)
 
 		repository.EXPECT().FetchToken(
-			gomock.AssignableToTypeOf(context.TODO()),
+			gomock.AssignableToTypeOf(t.Context()),
 		).Return(nil, auth.ErrTokenNotFound).Times(1)
 
 		repository.EXPECT().SaveToken(gomock.Any(), gomock.Any()).Times(0)
@@ -116,7 +116,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		// When we try to inject a token into the request
 		// Then it should panic
 		require.Panics(t, func() {
-			tokenManager.InjectToken(context.TODO(), r)
+			tokenManager.InjectToken(t.Context(), r)
 		})
 	})
 
@@ -128,13 +128,13 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		repository := NewMockTokenRepository(ctrl)
 
 		repository.EXPECT().FetchToken(
-			gomock.AssignableToTypeOf(context.TODO()),
+			gomock.AssignableToTypeOf(t.Context()),
 		).Return(nil, auth.ErrTokenNotFound).Times(1)
 
 		var savedToken *auth.Token
 
 		repository.EXPECT().SaveToken(
-			gomock.AssignableToTypeOf(context.TODO()),
+			gomock.AssignableToTypeOf(t.Context()),
 			gomock.AssignableToTypeOf(savedToken),
 		).DoAndReturn(
 			func(ctx context.Context, token *auth.Token) error {
@@ -147,7 +147,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		// And a valid connector connector capable to return a token
 		connector := NewMockProviderConnector(ctrl)
 
-		connector.EXPECT().RequestToken(gomock.AssignableToTypeOf(context.TODO())).Return(
+		connector.EXPECT().RequestToken(gomock.AssignableToTypeOf(t.Context())).Return(
 			&auth.Token{
 				AccessToken: accessToken,
 				Expiry:      expiry,
@@ -161,7 +161,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
 
 		// When we try to inject a token into the request
-		err := tokenManager.InjectToken(context.TODO(), r)
+		err := tokenManager.InjectToken(t.Context(), r)
 
 		// Then no error should be reported
 		require.NoError(t, err)
@@ -182,7 +182,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		// Given a repository which contains an expired token
 		repository := NewMockTokenRepository(ctrl)
 
-		repository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).Return(
+		repository.EXPECT().FetchToken(gomock.AssignableToTypeOf(t.Context())).Return(
 			&auth.Token{
 				AccessToken: accessToken,
 				Expiry:      time.Now().Add(-24 * time.Hour),
@@ -191,7 +191,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		var savedToken *auth.Token
 
 		repository.EXPECT().SaveToken(
-			gomock.AssignableToTypeOf(context.TODO()),
+			gomock.AssignableToTypeOf(t.Context()),
 			gomock.AssignableToTypeOf(savedToken),
 		).DoAndReturn(
 			func(ctx context.Context, token *auth.Token) error {
@@ -204,7 +204,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		// And a valid connector connector capable to return a token
 		connector := NewMockProviderConnector(ctrl)
 
-		connector.EXPECT().RequestToken(gomock.AssignableToTypeOf(context.TODO())).Return(
+		connector.EXPECT().RequestToken(gomock.AssignableToTypeOf(t.Context())).Return(
 			&auth.Token{
 				AccessToken: accessToken,
 				Expiry:      expiry,
@@ -218,7 +218,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
 
 		// When we try to inject a token into the request
-		err := tokenManager.InjectToken(context.TODO(), r)
+		err := tokenManager.InjectToken(t.Context(), r)
 
 		// Then no error should be reported
 		require.NoError(t, err)
@@ -246,7 +246,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 
 		savedTokenPtr := &savedToken
 
-		repository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).DoAndReturn(
+		repository.EXPECT().FetchToken(gomock.AssignableToTypeOf(t.Context())).DoAndReturn(
 			func(ctx context.Context) (*auth.Token, error) {
 				time.Sleep(time.Duration(100+rand.IntN(100)) * time.Microsecond)
 
@@ -254,7 +254,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 			}).MaxTimes(199)
 
 		repository.EXPECT().SaveToken(
-			gomock.AssignableToTypeOf(context.TODO()),
+			gomock.AssignableToTypeOf(t.Context()),
 			gomock.AssignableToTypeOf(savedToken),
 		).DoAndReturn(
 			func(ctx context.Context, token *auth.Token) error {
@@ -269,7 +269,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		// And a valid connector connector capable to return a token
 		connector := NewMockProviderConnector(ctrl)
 
-		connector.EXPECT().RequestToken(gomock.AssignableToTypeOf(context.TODO())).DoAndReturn(
+		connector.EXPECT().RequestToken(gomock.AssignableToTypeOf(t.Context())).DoAndReturn(
 			func(ctx context.Context) (*auth.Token, error) {
 				time.Sleep(time.Duration(100+rand.IntN(100)) * time.Microsecond)
 
@@ -306,7 +306,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 				defer bell.RUnlock()
 
 				r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
-				err := tokenManager.InjectToken(context.TODO(), r)
+				err := tokenManager.InjectToken(t.Context(), r)
 
 				resultChan <- &result{r, err}
 			}()
@@ -343,7 +343,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		// Given a repository which a connection error leads fetch token to fail
 		repository := NewMockTokenRepository(ctrl)
 
-		repository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).Return(
+		repository.EXPECT().FetchToken(gomock.AssignableToTypeOf(t.Context())).Return(
 			nil,
 			errors.New("connection error"),
 		).Times(1)
@@ -364,7 +364,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
 
 		// When we try to inject a token into the request
-		err := tokenManager.InjectToken(context.TODO(), r)
+		err := tokenManager.InjectToken(t.Context(), r)
 
 		// Then an error should be reported
 		require.Error(t, err)
@@ -377,7 +377,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		// Given a repository which contains an expired token
 		repository := NewMockTokenRepository(ctrl)
 
-		repository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).Return(
+		repository.EXPECT().FetchToken(gomock.AssignableToTypeOf(t.Context())).Return(
 			&auth.Token{
 				AccessToken: accessToken,
 				Expiry:      time.Now().Add(-24 * time.Hour),
@@ -390,7 +390,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		connector := NewMockProviderConnector(ctrl)
 
 		connector.EXPECT().RequestToken(
-			gomock.AssignableToTypeOf(context.TODO()),
+			gomock.AssignableToTypeOf(t.Context()),
 		).Return(nil, errors.New("connection error")).Times(1)
 
 		//
@@ -401,7 +401,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
 
 		// When we try to inject a token into the request
-		err := tokenManager.InjectToken(context.TODO(), r)
+		err := tokenManager.InjectToken(t.Context(), r)
 
 		// Then an error should be reported
 		require.Error(t, err)
@@ -414,14 +414,14 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		// Given a repository which a permission problem leads save token to fail
 		repository := NewMockTokenRepository(ctrl)
 
-		repository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).Return(
+		repository.EXPECT().FetchToken(gomock.AssignableToTypeOf(t.Context())).Return(
 			&auth.Token{
 				AccessToken: accessToken,
 				Expiry:      time.Now().Add(-24 * time.Hour),
 			}, nil).Times(1)
 
 		repository.EXPECT().SaveToken(
-			gomock.AssignableToTypeOf(context.TODO()),
+			gomock.AssignableToTypeOf(t.Context()),
 			gomock.AssignableToTypeOf(&auth.Token{}),
 		).Return(errors.New("permission error")).Times(1)
 
@@ -429,7 +429,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		// And a valid connector connector capable to return a token
 		connector := NewMockProviderConnector(ctrl)
 
-		connector.EXPECT().RequestToken(gomock.AssignableToTypeOf(context.TODO())).Return(
+		connector.EXPECT().RequestToken(gomock.AssignableToTypeOf(t.Context())).Return(
 			&auth.Token{
 				AccessToken: accessToken,
 				Expiry:      expiry,
@@ -443,7 +443,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
 
 		// When we try to inject a token into the request
-		err := tokenManager.InjectToken(context.TODO(), r)
+		err := tokenManager.InjectToken(t.Context(), r)
 
 		// Then an error should be reported
 		require.Error(t, err)
@@ -456,7 +456,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		// Given a repository which contains a valid token
 		repository := NewMockTokenRepository(ctrl)
 
-		repository.EXPECT().FetchToken(gomock.AssignableToTypeOf(context.TODO())).Return(
+		repository.EXPECT().FetchToken(gomock.AssignableToTypeOf(t.Context())).Return(
 			&auth.Token{
 				AccessToken: accessToken,
 				Expiry:      expiry,
@@ -477,7 +477,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
 
 		// When we try to inject a token into the request
-		err := tokenManager.InjectToken(context.TODO(), r)
+		err := tokenManager.InjectToken(t.Context(), r)
 
 		// Then no error should be reported
 		require.NoError(t, err)
