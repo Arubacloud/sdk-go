@@ -152,11 +152,12 @@ func buildTokenManager(config *restclient.Config) (*std.TokenManager, error) {
 		}
 
 		rdb := redis_client.NewClient(opt)
+		adapter := redis.NewRedisAdapter(rdb)
 
-		tr = redis.NeWRedisTokenRepository(config.ClientID, rdb)
+		tr = redis.NewRedisTokenRepository(config.ClientID, adapter)
 
 	} else if config.File != nil {
-		tr = file.NeWFileTokenRepository(config.File.BaseDir, config.ClientID)
+		tr = file.NewFileTokenRepository(config.File.BaseDir, config.ClientID)
 	} else {
 		tr = nil
 	}
