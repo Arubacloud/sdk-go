@@ -2,7 +2,6 @@
 package aruba
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/Arubacloud/sdk-go/internal/clients/audit"
@@ -159,16 +158,12 @@ func buildTokenManager(config *restclient.Config) (*std.TokenManager, error) {
 	} else if config.File != nil {
 		tr = file.NeWFileTokenRepository(config.File.BaseDir, config.ClientID)
 	} else {
-		return nil, fmt.Errorf("no token repository configuration provided")
+		tr = nil
 	}
 
-	if tr != nil {
-		log.Printf("Using Token Repository: %T", tr)
-		tm := std.NewTokenManager(tr, nil)
-		return tm, nil
-	}
+	tm := std.NewTokenManager(tr, nil)
 
-	return nil, fmt.Errorf("unable to build token manager")
+	return tm, nil
 
 }
 

@@ -1,7 +1,6 @@
 package file
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -61,7 +60,7 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 
 		token := &auth.Token{AccessToken: accessToken, Expiry: expiry}
 		// Test fetching a token when none exists	// Test saving a token
-		err := repo.SaveToken(context.Background(), token)
+		err := repo.SaveToken(t.Context(), token)
 		require.NoError(t, err)
 	})
 	t.Run("should return error when token is nil", func(t *testing.T) {
@@ -69,7 +68,7 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 		repo := NeWFileTokenRepository(dir, "user-123")
 
 		// Test fetching a token when none exists	// Test saving a token
-		err := repo.SaveToken(context.Background(), nil)
+		err := repo.SaveToken(t.Context(), nil)
 		require.Error(t, err)
 	})
 
@@ -79,7 +78,7 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 		token := &auth.Token{AccessToken: accessToken, Expiry: expiry}
 
 		// Test fetching a token when none exists	// Test saving a token
-		err := repo.SaveToken(context.Background(), token)
+		err := repo.SaveToken(t.Context(), token)
 		require.Error(t, err)
 	})
 }
