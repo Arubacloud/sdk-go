@@ -12,10 +12,11 @@ import (
 )
 
 var (
-	ErrInvalidInterceptable = errors.New("invalid interceptable")
-	ErrTokenNotFound        = errors.New("token not found")
-	ErrCredentialsNotFound  = errors.New("credentials not found")
-	ErrInvalidCredentials   = errors.New("invalid credentials")
+	ErrInvalidInterceptable   = errors.New("invalid interceptable")
+	ErrTokenNotFound          = errors.New("token not found")
+	ErrCredentialsNotFound    = errors.New("credentials not found")
+	ErrAuthenticationFailed   = errors.New("authentication failed")
+	ErrInsufficientPrivileges = errors.New("insufficient privileges")
 )
 
 // TokenManager defines the behavior for a component that manages the lifecycle
