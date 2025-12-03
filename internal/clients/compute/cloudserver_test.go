@@ -16,13 +16,11 @@ import (
 // TestListCloudServers tests the ListCloudServers method
 func TestListCloudServers(t *testing.T) {
 	t.Run("successful list", func(t *testing.T) {
-		tokenCalled := false
 		apiCalled := false
 
 		// Create mock server that handles both token and API calls
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/token" {
-				tokenCalled = true
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
@@ -43,26 +41,19 @@ func TestListCloudServers(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewCloudServersClientImpl(c)
 
 		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
-		}
-		if !tokenCalled {
-			t.Error("token endpoint was not called")
 		}
 		if !apiCalled {
 			t.Error("API endpoint was not called")
@@ -83,21 +74,17 @@ func TestListCloudServers(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewCloudServersClientImpl(c)
 
-		_, err = svc.List(context.Background(), "", nil)
+		_, err := svc.List(context.Background(), "", nil)
 		if err == nil {
 			t.Error("expected error for empty project ID")
 		}
@@ -124,18 +111,14 @@ func TestGetCloudServer(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewCloudServersClientImpl(c)
 
 		resp, err := svc.Get(context.Background(), "test-project", "server-123", nil)
@@ -158,21 +141,17 @@ func TestGetCloudServer(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewCloudServersClientImpl(c)
 
-		_, err = svc.Get(context.Background(), "", "server-123", nil)
+		_, err := svc.Get(context.Background(), "", "server-123", nil)
 		if err == nil {
 			t.Error("expected error for empty project ID")
 		}
@@ -203,18 +182,14 @@ func TestCreateCloudServer(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewCloudServersClientImpl(c)
 
 		req := types.CloudServerRequest{
@@ -253,21 +228,17 @@ func TestDeleteCloudServer(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewCloudServersClientImpl(c)
 
-		_, err = svc.Delete(context.Background(), "test-project", "server-123", nil)
+		_, err := svc.Delete(context.Background(), "test-project", "server-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -284,21 +255,17 @@ func TestDeleteCloudServer(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewCloudServersClientImpl(c)
 
-		_, err = svc.Delete(context.Background(), "", "server-123", nil)
+		_, err := svc.Delete(context.Background(), "", "server-123", nil)
 		if err == nil {
 			t.Error("expected error for empty project ID")
 		}

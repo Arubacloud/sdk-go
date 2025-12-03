@@ -5,11 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
-	"github.com/Arubacloud/sdk-go/internal/restclient"
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
@@ -48,15 +46,8 @@ func main() {
 }
 
 func runCreateExample() {
-	config := &restclient.Config{
-		ClientID:     "clientID",
-		ClientSecret: "clientSecret",
-		HTTPClient:   &http.Client{Timeout: 30 * time.Second},
-		Debug:        true,
-	}
-
 	// Initialize the SDK (automatically obtains JWT token)
-	arubaClient, err := aruba.NewClient(config)
+	arubaClient, err := aruba.NewClient(aruba.DefaultOptions())
 	if err != nil {
 		log.Fatalf("Failed to create SDK client: %v", err)
 	}

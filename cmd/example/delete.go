@@ -4,26 +4,17 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
-	"github.com/Arubacloud/sdk-go/internal/restclient"
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
 // runDeleteExample demonstrates how to delete all resources
 // To run: PROJECT_ID=your-project go run . -mode=delete
 func runDeleteExample() {
-	config := &restclient.Config{
-		ClientID:     "clientID",
-		ClientSecret: "clientSecret",
-		HTTPClient:   &http.Client{Timeout: 30 * time.Second},
-		Debug:        true,
-	}
-
 	// Initialize the SDK
-	arubaClient, err := aruba.NewClient(config)
+	arubaClient, err := aruba.NewClient(aruba.DefaultOptions())
 	if err != nil {
 		log.Fatalf("Failed to create SDK client: %v", err)
 	}

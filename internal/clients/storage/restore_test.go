@@ -46,20 +46,19 @@ func TestListRestores(t *testing.T) {
 			http.NotFound(w, r)
 		}))
 		defer server.Close()
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		backupClient := NewBackupClientImpl(c)
+
 		svc := NewRestoreClientImpl(c, backupClient)
+
 		resp, err := svc.List(context.Background(), "test-project", "backup-123", &types.RequestParameters{})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -114,20 +113,19 @@ func TestGetRestore(t *testing.T) {
 			http.NotFound(w, r)
 		}))
 		defer server.Close()
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		backupClient := NewBackupClientImpl(c)
+
 		svc := NewRestoreClientImpl(c, backupClient)
+
 		resp, err := svc.Get(context.Background(), "test-project", "backup-123", "restore-123", &types.RequestParameters{})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -176,20 +174,19 @@ func TestCreateRestore(t *testing.T) {
 			http.NotFound(w, r)
 		}))
 		defer server.Close()
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		backupClient := NewBackupClientImpl(c)
+
 		svc := NewRestoreClientImpl(c, backupClient)
+
 		body := types.RestoreRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
 				ResourceMetadataRequest: types.ResourceMetadataRequest{
@@ -251,20 +248,19 @@ func TestUpdateRestore(t *testing.T) {
 			http.NotFound(w, r)
 		}))
 		defer server.Close()
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		backupClient := NewBackupClientImpl(c)
+
 		svc := NewRestoreClientImpl(c, backupClient)
+
 		body := types.RestoreRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
 				ResourceMetadataRequest: types.ResourceMetadataRequest{
@@ -311,21 +307,20 @@ func TestDeleteRestore(t *testing.T) {
 			http.NotFound(w, r)
 		}))
 		defer server.Close()
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		backupClient := NewBackupClientImpl(c)
+
 		svc := NewRestoreClientImpl(c, backupClient)
-		_, err = svc.Delete(context.Background(), "test-project", "backup-123", "restore-123", &types.RequestParameters{})
+
+		_, err := svc.Delete(context.Background(), "test-project", "backup-123", "restore-123", &types.RequestParameters{})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

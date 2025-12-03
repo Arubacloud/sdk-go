@@ -34,18 +34,14 @@ func TestListSecurityGroups(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewSecurityGroupsClientImpl(c, NewVPCsClientImpl(c))
 
 		resp, err := svc.List(context.Background(), "test-project", "vpc-123", nil)
@@ -76,18 +72,14 @@ func TestGetSecurityGroup(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewSecurityGroupsClientImpl(c, NewVPCsClientImpl(c))
 
 		resp, err := svc.Get(context.Background(), "test-project", "vpc-123", "sg-123", nil)
@@ -123,18 +115,14 @@ func TestCreateSecurityGroup(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewSecurityGroupsClientImpl(c, NewVPCsClientImpl(c))
 
 		req := types.SecurityGroupRequest{
@@ -168,21 +156,17 @@ func TestDeleteSecurityGroup(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewSecurityGroupsClientImpl(c, NewVPCsClientImpl(c))
 
-		_, err = svc.Delete(context.Background(), "test-project", "vpc-123", "sg-123", nil)
+		_, err := svc.Delete(context.Background(), "test-project", "vpc-123", "sg-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

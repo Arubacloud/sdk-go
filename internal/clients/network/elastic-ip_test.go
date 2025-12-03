@@ -34,18 +34,14 @@ func TestListElasticIPs(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewElasticIPsClientImpl(c)
 
 		resp, err := svc.List(context.Background(), "test-project", nil)
@@ -76,18 +72,14 @@ func TestGetElasticIP(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewElasticIPsClientImpl(c)
 
 		resp, err := svc.Get(context.Background(), "test-project", "eip-123", nil)
@@ -121,18 +113,14 @@ func TestCreateElasticIP(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewElasticIPsClientImpl(c)
 
 		req := types.ElasticIPRequest{
@@ -172,21 +160,17 @@ func TestDeleteElasticIP(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewElasticIPsClientImpl(c)
 
-		_, err = svc.Delete(context.Background(), "test-project", "eip-123", nil)
+		_, err := svc.Delete(context.Background(), "test-project", "eip-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

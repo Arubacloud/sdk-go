@@ -66,18 +66,14 @@ func TestListProjects(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewProjectsClientImpl(c)
 
 		resp, err := svc.List(context.Background(), nil)
@@ -133,18 +129,14 @@ func TestGetProject(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewProjectsClientImpl(c)
 
 		resp, err := svc.Get(context.Background(), "project-123", nil)
@@ -200,18 +192,14 @@ func TestCreateProject(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewProjectsClientImpl(c)
 
 		body := types.ProjectRequest{
@@ -274,18 +262,14 @@ func TestUpdateProject(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewProjectsClientImpl(c)
 
 		body := types.ProjectRequest{
@@ -333,21 +317,17 @@ func TestDeleteProject(t *testing.T) {
 		}))
 		defer server.Close()
 
-		cfg := &restclient.Config{
-			BaseURL:        server.URL,
-			HTTPClient:     http.DefaultClient,
-			TokenIssuerURL: server.URL + "/token",
-			ClientID:       "test-client",
-			ClientSecret:   "test-secret",
-			Logger:         &noop.NoOpLogger{},
-		}
-		c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-		if err != nil {
-			t.Fatalf("failed to create client: %v", err)
-		}
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 		svc := NewProjectsClientImpl(c)
 
-		_, err = svc.Delete(context.Background(), "project-123", nil)
+		_, err := svc.Delete(context.Background(), "project-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
