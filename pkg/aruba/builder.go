@@ -2,6 +2,8 @@
 package aruba
 
 import (
+	"log"
+
 	"github.com/Arubacloud/sdk-go/internal/clients/audit"
 	"github.com/Arubacloud/sdk-go/internal/clients/compute"
 	"github.com/Arubacloud/sdk-go/internal/clients/container"
@@ -12,12 +14,17 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 	"github.com/Arubacloud/sdk-go/internal/clients/security"
 	"github.com/Arubacloud/sdk-go/internal/clients/storage"
+	std "github.com/Arubacloud/sdk-go/internal/impl/auth/tokenmanager/standard"
+	"github.com/Arubacloud/sdk-go/internal/impl/auth/tokenrepository/file"
+	"github.com/Arubacloud/sdk-go/internal/impl/auth/tokenrepository/redis"
 	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
 	"github.com/Arubacloud/sdk-go/internal/impl/logger/native"
 	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
+	"github.com/Arubacloud/sdk-go/internal/ports/auth"
 	"github.com/Arubacloud/sdk-go/internal/ports/interceptor"
 	"github.com/Arubacloud/sdk-go/internal/ports/logger"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
+	redis_client "github.com/redis/go-redis/v9"
 )
 
 // Client
@@ -26,6 +33,13 @@ func buildClient(config *restclient.Config) (Client, error) {
 	if err != nil {
 		return nil, err // TODO: better error handling
 	}
+
+	tokenManager, err := buildTokenManager(config)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	restClient.Logger().Debugf("Using Token Manager: %T", tokenManager)
 
 	auditClient, err := buildAuditClient(restClient)
 	if err != nil {
@@ -122,6 +136,36 @@ func buildLogger(config *restclient.Config) (logger.Logger, error) {
 
 func buildMiddleware(config *restclient.Config) (interceptor.Interceptor, error) {
 	return standard.NewInterceptor(), nil
+}
+
+//
+// Token Manager
+
+func buildTokenManager(config *restclient.Config) (*std.TokenManager, error) {
+
+	var tr auth.TokenRepository
+	if config.Redis != nil {
+		opt, err := redis_client.ParseURL(config.Redis.RedisURI)
+
+		if err != nil {
+			log.Fatal("Cannot parse Redis URI", err)
+		}
+
+		rdb := redis_client.NewClient(opt)
+		adapter := redis.NewRedisAdapter(rdb)
+
+		tr = redis.NewRedisTokenRepository(config.ClientID, adapter)
+
+	} else if config.File != nil {
+		tr = file.NewFileTokenRepository(config.File.BaseDir, config.ClientID)
+	} else {
+		tr = nil
+	}
+
+	tm := std.NewTokenManager(tr, nil)
+
+	return tm, nil
+
 }
 
 //
