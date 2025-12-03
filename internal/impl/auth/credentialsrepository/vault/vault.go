@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Arubacloud/sdk-go/internal/ports/auth"
-	"github.com/Arubacloud/sdk-go/internal/restclient"
 	vaultapi "github.com/hashicorp/vault/api"
+
+	"github.com/Arubacloud/sdk-go/internal/ports/auth"
 )
 
 // CredentialsRepository implements auth.CredentialsRepository and is
@@ -81,21 +81,30 @@ func NewVaultClientAdapter(c *vaultapi.Client) *VaultClientAdapter {
 	return &VaultClientAdapter{c: c}
 }
 
-// NewCredentialsRepository constructs a CredentialsRepository using provided config.
-
-func NewCredentialsRepository(v VaultClient, cfg restclient.VaultConfig) *CredentialsRepository {
+// NewCredentialsRepository creates a new CredentialsRepository that fetches
+// credentials from a Vault backend.
+func NewCredentialsRepository(
+	client VaultClient,
+	kvMount string,
+	kvPath string,
+	namespace string,
+	rolePath string,
+	roleID string,
+	secretID string,
+) *CredentialsRepository {
 	return &CredentialsRepository{
-		client:     v,
-		kvMount:    cfg.KVMount,
-		kvPath:     cfg.KVPath,
-		namespace:  cfg.Namespace,
-		rolePath:   cfg.RolePath,
-		roleID:     cfg.RoleID,
-		secretID:   cfg.SecretID,
+		client:     client,
+		kvMount:    kvMount,
+		kvPath:     kvPath,
+		namespace:  namespace,
+		rolePath:   rolePath,
+		roleID:     roleID,
+		secretID:   secretID,
 		tokenExist: false,
 		renewable:  false,
 		expiration: time.Time{},
-		ttl:        0}
+		ttl:        0,
+	}
 }
 
 // isTokenExpired returns true if the token should be refreshed.

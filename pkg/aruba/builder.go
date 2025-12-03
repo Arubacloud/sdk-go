@@ -2,7 +2,12 @@
 package aruba
 
 import (
+	"fmt"
 	"log"
+	"net/http"
+
+	vaultapi "github.com/hashicorp/vault/api"
+	redis_client "github.com/redis/go-redis/v9"
 
 	"github.com/Arubacloud/sdk-go/internal/clients/audit"
 	"github.com/Arubacloud/sdk-go/internal/clients/compute"
@@ -17,6 +22,7 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/vault"
 	std "github.com/Arubacloud/sdk-go/internal/impl/auth/tokenmanager/standard"
 	"github.com/Arubacloud/sdk-go/internal/impl/auth/tokenrepository/file"
+	memory_token_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/tokenrepository/memory"
 	"github.com/Arubacloud/sdk-go/internal/impl/auth/tokenrepository/redis"
 	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
 	"github.com/Arubacloud/sdk-go/internal/impl/logger/native"
@@ -25,23 +31,14 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/ports/interceptor"
 	"github.com/Arubacloud/sdk-go/internal/ports/logger"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
-	vaultapi "github.com/hashicorp/vault/api"
-	redis_client "github.com/redis/go-redis/v9"
 )
 
 // Client
-func buildClient(config *restclient.Config) (Client, error) {
-	restClient, err := buildRESTClient(config)
+func buildClient(options *options) (Client, error) {
+	restClient, err := buildRESTClient(options)
 	if err != nil {
 		return nil, err // TODO: better error handling
 	}
-
-	tokenManager, err := buildTokenManager(config)
-	if err != nil {
-		return nil, err // TODO: better error handling
-	}
-
-	restClient.Logger().Debugf("Using Token Manager: %T", tokenManager)
 
 	auditClient, err := buildAuditClient(restClient)
 	if err != nil {
@@ -110,44 +107,74 @@ func buildClient(config *restclient.Config) (Client, error) {
 //
 // Dependencies
 
-func buildRESTClient(config *restclient.Config) (*restclient.Client, error) {
-	logger, err := buildLogger(config)
+func buildRESTClient(options *options) (*restclient.Client, error) {
+	httpClient, err := buildHTTPClient(options)
 	if err != nil {
 		return nil, err // TODO: better error handling
 	}
 
-	middleware, err := buildMiddleware(config)
+	logger, err := buildLogger(options)
 	if err != nil {
 		return nil, err // TODO: better error handling
 	}
 
-	return restclient.NewClient(config, logger, middleware)
+	middleware, err := buildMiddleware(options)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	return restclient.NewClient(options.baseURL, httpClient, middleware, logger), nil
 }
 
-func buildLogger(config *restclient.Config) (logger.Logger, error) {
-	if config.Logger != nil {
-		return config.Logger, nil
+func buildHTTPClient(options *options) (*http.Client, error) {
+	if options.httpClient != nil {
+		return options.httpClient, nil
 	}
 
-	if config.Debug {
+	return http.DefaultClient, nil
+}
+
+func buildLogger(options *options) (logger.Logger, error) {
+	switch options.loggerType {
+	case LoggerNoLog:
+		return &noop.NoOpLogger{}, nil
+
+	case LoggerNative:
 		return native.NewDefaultLogger(), nil
+
+	case loggerCustom:
+		return options.logger, nil
 	}
 
-	return &noop.NoOpLogger{}, nil
+	return nil, fmt.Errorf("unknown logging type: %d", options.loggerType)
 }
 
-func buildMiddleware(config *restclient.Config) (interceptor.Interceptor, error) {
-	return standard.NewInterceptor(), nil
+func buildMiddleware(options *options) (interceptor.Interceptor, error) {
+	if options.middleware != nil {
+		return options.middleware, nil
+	}
+
+	middleware := standard.NewInterceptor()
+
+	// The token manager must be always the last to be bound
+	tokenManager, err := buildTokenManager(options.authOptions)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	tokenManager.BindTo(middleware)
+
+	return middleware, nil
 }
 
 //
 // Token Manager
 
-func buildTokenManager(config *restclient.Config) (*std.TokenManager, error) {
+func buildTokenManager(options *authOptions) (*std.TokenManager, error) {
 
 	var tr auth.TokenRepository
-	if config.Redis != nil {
-		opt, err := redis_client.ParseURL(config.Redis.RedisURI)
+	if options.redisTokenRepositoryOptions != nil {
+		opt, err := redis_client.ParseURL(options.redisTokenRepositoryOptions.redisURI)
 
 		if err != nil {
 			log.Fatal("Cannot parse Redis URI", err)
@@ -156,32 +183,37 @@ func buildTokenManager(config *restclient.Config) (*std.TokenManager, error) {
 		rdb := redis_client.NewClient(opt)
 		adapter := redis.NewRedisAdapter(rdb)
 
-		tr = redis.NewRedisTokenRepository(config.ClientID, adapter)
+		tr = redis.NewRedisTokenRepository(options.clientID, adapter)
 
-	} else if config.File != nil {
-		tr = file.NewFileTokenRepository(config.File.BaseDir, config.ClientID)
+	} else if options.fileTokenRepositoryOptions != nil {
+		tr = file.NewFileTokenRepository(options.fileTokenRepositoryOptions.baseDir, options.clientID)
 	} else {
 		tr = nil
 	}
 
-	if config.Vault != nil {
-
+	if options.vaultCredentialsRepositoryOptions != nil {
 		cfg := vaultapi.DefaultConfig()
-		cfg.Address = config.Vault.VaultURI
+		cfg.Address = options.vaultCredentialsRepositoryOptions.vaultURI
 		client, err := vaultapi.NewClient(cfg)
 		if err != nil {
 			log.Fatal("Vault client initialization failed", err)
 		}
 
 		vaultClient := vault.NewVaultClientAdapter(client)
-		_ = vault.NewCredentialsRepository(vaultClient, *config.Vault)
-
+		_ = vault.NewCredentialsRepository(
+			vaultClient,
+			options.vaultCredentialsRepositoryOptions.kvMount,
+			options.vaultCredentialsRepositoryOptions.kvPath,
+			options.vaultCredentialsRepositoryOptions.namespace,
+			options.vaultCredentialsRepositoryOptions.rolePath,
+			options.vaultCredentialsRepositoryOptions.roleID,
+			options.vaultCredentialsRepositoryOptions.secretID,
+		)
 	}
 
-	tm := std.NewTokenManager(tr, nil)
+	tm := std.NewTokenManager(memory_token_repo.NewTokenProxy(tr), nil)
 
 	return tm, nil
-
 }
 
 //

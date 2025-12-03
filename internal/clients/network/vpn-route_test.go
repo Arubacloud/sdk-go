@@ -46,18 +46,14 @@ func TestListVpnRoutes(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cfg := &restclient.Config{
-		BaseURL:        server.URL,
-		HTTPClient:     http.DefaultClient,
-		TokenIssuerURL: server.URL + "/token",
-		ClientID:       "test-client",
-		ClientSecret:   "test-secret",
-		Logger:         &noop.NoOpLogger{},
-	}
-	c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-	if err != nil {
-		t.Fatalf("failed to create client: %v", err)
-	}
+	var (
+		baseURL    = server.URL
+		httpClient = http.DefaultClient
+		logger     = &noop.NoOpLogger{}
+	)
+
+	c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 	svc := NewVPNRoutesClientImpl(c)
 
 	resp, err := svc.List(context.Background(), "test-project", "tunnel-123", nil)
@@ -97,18 +93,14 @@ func TestGetVpnRoute(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cfg := &restclient.Config{
-		BaseURL:        server.URL,
-		HTTPClient:     http.DefaultClient,
-		TokenIssuerURL: server.URL + "/token",
-		ClientID:       "test-client",
-		ClientSecret:   "test-secret",
-		Logger:         &noop.NoOpLogger{},
-	}
-	c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-	if err != nil {
-		t.Fatalf("failed to create client: %v", err)
-	}
+	var (
+		baseURL    = server.URL
+		httpClient = http.DefaultClient
+		logger     = &noop.NoOpLogger{}
+	)
+
+	c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 	svc := NewVPNRoutesClientImpl(c)
 
 	resp, err := svc.Get(context.Background(), "test-project", "tunnel-123", "route-1", nil)
@@ -138,21 +130,17 @@ func TestDeleteVpnRoute(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cfg := &restclient.Config{
-		BaseURL:        server.URL,
-		HTTPClient:     http.DefaultClient,
-		TokenIssuerURL: server.URL + "/token",
-		ClientID:       "test-client",
-		ClientSecret:   "test-secret",
-		Logger:         &noop.NoOpLogger{},
-	}
-	c, err := restclient.NewClient(cfg, cfg.Logger, standard.NewInterceptor())
-	if err != nil {
-		t.Fatalf("failed to create client: %v", err)
-	}
+	var (
+		baseURL    = server.URL
+		httpClient = http.DefaultClient
+		logger     = &noop.NoOpLogger{}
+	)
+
+	c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
 	svc := NewVPNRoutesClientImpl(c)
 
-	_, err = svc.Delete(context.Background(), "test-project", "tunnel-123", "route-1", nil)
+	_, err := svc.Delete(context.Background(), "test-project", "tunnel-123", "route-1", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
