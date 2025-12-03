@@ -34,7 +34,13 @@ import (
 )
 
 // Client
-func buildClient(options *options) (Client, error) {
+
+func buildClient(options *Options) (Client, error) {
+	err := options.validate()
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
 	restClient, err := buildRESTClient(options)
 	if err != nil {
 		return nil, err // TODO: better error handling
@@ -107,7 +113,7 @@ func buildClient(options *options) (Client, error) {
 //
 // Dependencies
 
-func buildRESTClient(options *options) (*restclient.Client, error) {
+func buildRESTClient(options *Options) (*restclient.Client, error) {
 	httpClient, err := buildHTTPClient(options)
 	if err != nil {
 		return nil, err // TODO: better error handling
@@ -126,15 +132,15 @@ func buildRESTClient(options *options) (*restclient.Client, error) {
 	return restclient.NewClient(options.baseURL, httpClient, middleware, logger), nil
 }
 
-func buildHTTPClient(options *options) (*http.Client, error) {
-	if options.httpClient != nil {
-		return options.httpClient, nil
+func buildHTTPClient(options *Options) (*http.Client, error) {
+	if options.userDefinedDependencies.httpClient != nil {
+		return options.userDefinedDependencies.httpClient, nil
 	}
 
 	return http.DefaultClient, nil
 }
 
-func buildLogger(options *options) (logger.Logger, error) {
+func buildLogger(options *Options) (logger.Logger, error) {
 	switch options.loggerType {
 	case LoggerNoLog:
 		return &noop.NoOpLogger{}, nil
@@ -143,26 +149,29 @@ func buildLogger(options *options) (logger.Logger, error) {
 		return native.NewDefaultLogger(), nil
 
 	case loggerCustom:
-		return options.logger, nil
+		return options.userDefinedDependencies.logger, nil
 	}
 
 	return nil, fmt.Errorf("unknown logging type: %d", options.loggerType)
 }
 
-func buildMiddleware(options *options) (interceptor.Interceptor, error) {
-	if options.middleware != nil {
-		return options.middleware, nil
+func buildMiddleware(options *Options) (interceptor.Interceptor, error) {
+	if options.userDefinedDependencies.middleware != nil {
+		return options.userDefinedDependencies.middleware, nil
 	}
 
 	middleware := standard.NewInterceptor()
 
 	// The token manager must be always the last to be bound
-	tokenManager, err := buildTokenManager(options.authOptions)
+	tokenManager, err := buildTokenManager(&options.tokenManager)
 	if err != nil {
 		return nil, err // TODO: better error handling
 	}
 
-	tokenManager.BindTo(middleware)
+	err = tokenManager.BindTo(middleware)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
 
 	return middleware, nil
 }
@@ -170,12 +179,11 @@ func buildMiddleware(options *options) (interceptor.Interceptor, error) {
 //
 // Token Manager
 
-func buildTokenManager(options *authOptions) (*std.TokenManager, error) {
-
+func buildTokenManager(options *tokenManagerOptions) (*std.TokenManager, error) {
 	var tr auth.TokenRepository
+
 	if options.redisTokenRepositoryOptions != nil {
 		opt, err := redis_client.ParseURL(options.redisTokenRepositoryOptions.redisURI)
-
 		if err != nil {
 			log.Fatal("Cannot parse Redis URI", err)
 		}
@@ -194,6 +202,7 @@ func buildTokenManager(options *authOptions) (*std.TokenManager, error) {
 	if options.vaultCredentialsRepositoryOptions != nil {
 		cfg := vaultapi.DefaultConfig()
 		cfg.Address = options.vaultCredentialsRepositoryOptions.vaultURI
+
 		client, err := vaultapi.NewClient(cfg)
 		if err != nil {
 			log.Fatal("Vault client initialization failed", err)
@@ -428,6 +437,7 @@ func buildNetworkClient(restClient *restclient.Client) (NetworkClient, error) {
 		vpnRoutesClient:          vpnRoutesClient,
 		vpnTunnelsClient:         vpnTunnelsClient,
 	}, nil
+
 }
 
 func buildElasticIPsClient(restClient *restclient.Client) (ElasticIPsClient, error) {

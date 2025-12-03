@@ -12,9 +12,9 @@ import (
 
 // runDeleteExample demonstrates how to delete all resources
 // To run: PROJECT_ID=your-project go run . -mode=delete
-func runDeleteExample() {
+func runDeleteExample(clientID, clientSecret string) {
 	// Initialize the SDK
-	arubaClient, err := aruba.NewClient(aruba.DefaultOptions())
+	arubaClient, err := aruba.NewClient(aruba.DefaultOptions(clientID, clientSecret))
 	if err != nil {
 		log.Fatalf("Failed to create SDK client: %v", err)
 	}
