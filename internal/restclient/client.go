@@ -29,17 +29,33 @@ type Config struct {
 	Redis *RedisConfig
 	// File Basedir where are stored token json file
 	File *FileConfig
+	// Vault configuration for credentials retrieval
+	Vault *VaultConfig
 	// Logger is the logger to use for debug/info messages. If nil, no logging is performed.
 	Logger logger.Logger
 	// Debug enables debug logging when set to true
 	Debug bool
 }
 
+// VaultConfig holds the configuration for Vault credentials retrieval
+type VaultConfig struct {
+	//address:port
+	VaultURI  string
+	KVMount   string
+	KVPath    string
+	Namespace string
+	RolePath  string
+	RoleID    string
+	SecretID  string
+}
+
+// RedisConfig holds the configuration for Redis token storage
 type RedisConfig struct {
 	//"redis://<user>:<pass>@localhost:6379/<db>"
 	RedisURI string
 }
 
+// FileConfig holds the configuration for file-based token storage
 type FileConfig struct {
 	//directory where stored token json files are located
 	BaseDir string
