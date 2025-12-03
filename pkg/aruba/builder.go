@@ -14,6 +14,7 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 	"github.com/Arubacloud/sdk-go/internal/clients/security"
 	"github.com/Arubacloud/sdk-go/internal/clients/storage"
+	"github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/vault"
 	std "github.com/Arubacloud/sdk-go/internal/impl/auth/tokenmanager/standard"
 	"github.com/Arubacloud/sdk-go/internal/impl/auth/tokenrepository/file"
 	"github.com/Arubacloud/sdk-go/internal/impl/auth/tokenrepository/redis"
@@ -24,6 +25,7 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/ports/interceptor"
 	"github.com/Arubacloud/sdk-go/internal/ports/logger"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
+	vaultapi "github.com/hashicorp/vault/api"
 	redis_client "github.com/redis/go-redis/v9"
 )
 
@@ -160,6 +162,20 @@ func buildTokenManager(config *restclient.Config) (*std.TokenManager, error) {
 		tr = file.NewFileTokenRepository(config.File.BaseDir, config.ClientID)
 	} else {
 		tr = nil
+	}
+
+	if config.Vault != nil {
+
+		cfg := vaultapi.DefaultConfig()
+		cfg.Address = config.Vault.VaultURI
+		client, err := vaultapi.NewClient(cfg)
+		if err != nil {
+			log.Fatal("Vault client initialization failed", err)
+		}
+
+		vaultClient := vault.NewVaultClientAdapter(client)
+		_ = vault.NewCredentialsRepository(vaultClient, *config.Vault)
+
 	}
 
 	tm := std.NewTokenManager(tr, nil)
