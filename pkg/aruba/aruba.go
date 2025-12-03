@@ -1,6 +1,6 @@
 package aruba
 
-func NewClient(options *options) (Client, error) {
+func NewClient(options *Options) (Client, error) {
 	return buildClient(options)
 }
 

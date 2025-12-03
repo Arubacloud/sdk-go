@@ -13,9 +13,9 @@ import (
 
 // runUpdateExample demonstrates how to update existing resources
 // To run: PROJECT_ID=your-project go run . -mode=update
-func runUpdateExample() {
+func runUpdateExample(clientID, clientSecret string) {
 	// Initialize the SDK
-	arubaClient, err := aruba.NewClient(aruba.DefaultOptions())
+	arubaClient, err := aruba.NewClient(aruba.DefaultOptions(clientID, clientSecret))
 	if err != nil {
 		log.Fatalf("Failed to create SDK client: %v", err)
 	}

@@ -29,25 +29,31 @@ import (
 //   PROJECT_ID=my-project go run . -mode=update    # Update resources
 //   PROJECT_ID=my-project go run . -mode=delete    # Delete resources
 /*******  916ef78b-f0e3-4a8d-8711-6783ddf0996d  *******/
+
+const (
+	defaultClientID     = "client_id"
+	defaultClientSecret = "client_secret"
+)
+
 func main() {
 	mode := flag.String("mode", "create", "Operation mode: create, update, or delete")
 	flag.Parse()
 
 	switch *mode {
 	case "create":
-		runCreateExample()
+		runCreateExample(defaultClientID, defaultClientSecret)
 	case "update":
-		runUpdateExample()
+		runUpdateExample(defaultClientID, defaultClientSecret)
 	case "delete":
-		runDeleteExample()
+		runDeleteExample(defaultClientID, defaultClientSecret)
 	default:
 		log.Fatalf("Unknown mode: %s. Use 'create', 'update', or 'delete'", *mode)
 	}
 }
 
-func runCreateExample() {
+func runCreateExample(clientID, clientSecret string) {
 	// Initialize the SDK (automatically obtains JWT token)
-	arubaClient, err := aruba.NewClient(aruba.DefaultOptions())
+	arubaClient, err := aruba.NewClient(aruba.DefaultOptions(clientID, clientSecret))
 	if err != nil {
 		log.Fatalf("Failed to create SDK client: %v", err)
 	}
