@@ -109,17 +109,17 @@ func (r *CredentialsRepository) FetchCredentials(ctx context.Context) (*auth.Cre
 	return nil, nil
 }
 
-// renewTokenIfNeeded attempts to renew the current Vault token if the repository
-// is configured to use a renewable token.
-func (r *CredentialsRepository) renewTokenIfNeeded(ctx context.Context) error {
-	if r.renewable {
-		_, err := r.client.Auth().Token().RenewSelfWithContext(ctx, int(r.ttl.Seconds()))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
+// // renewTokenIfNeeded attempts to renew the current Vault token if the repository
+// // is configured to use a renewable token.
+// func (r *CredentialsRepository) renewTokenIfNeeded(ctx context.Context) error {
+// 	if r.renewable {
+// 		_, err := r.client.Auth().Token().RenewSelfWithContext(ctx, int(r.ttl.Seconds()))
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
+// 	return nil
+// }
 
 // implement VaultClientAdapter methods
 func (v *VaultClientAdapter) SetNamespace(namespace string) {
