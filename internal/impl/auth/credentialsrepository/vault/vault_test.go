@@ -21,7 +21,7 @@ func TestCredentialsRepository_ensureAuthenticated(t *testing.T) {
 			expiration: time.Now().Add(24 * time.Hour),
 		}
 
-		err := repo.ensureAuthenticated(t.Context())
+		err := repo.ensureAuthenticated()
 
 		require.NoError(t, err)
 		require.True(t, repo.tokenExist)
@@ -41,7 +41,7 @@ func TestCredentialsRepository_ensureAuthenticated(t *testing.T) {
 			EXPECT().Write("test-role-path", data).
 			Return(nil, fmt.Errorf("mock error"))
 
-		err := repo.ensureAuthenticated(t.Context())
+		err := repo.ensureAuthenticated()
 
 		require.Error(t, err)
 		require.False(t, repo.tokenExist)
@@ -79,7 +79,7 @@ func TestCredentialsRepository_ensureAuthenticated(t *testing.T) {
 				},
 			}, nil)
 
-		err := repo.ensureAuthenticated(t.Context())
+		err := repo.ensureAuthenticated()
 
 		require.NoError(t, err)
 		require.True(t, repo.tokenExist)
@@ -120,7 +120,7 @@ func TestCredentialsRepository_ensureAuthenticated(t *testing.T) {
 				},
 			}, nil)
 
-		err := repo.ensureAuthenticated(t.Context())
+		err := repo.ensureAuthenticated()
 
 		require.NoError(t, err)
 		require.True(t, repo.tokenExist)

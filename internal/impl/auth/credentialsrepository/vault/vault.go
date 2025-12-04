@@ -114,7 +114,7 @@ func isTokenExpired(expiration time.Time) bool {
 // then fetches client credentials from KVv2.
 func (r *CredentialsRepository) FetchCredentials(ctx context.Context) (*auth.Credentials, error) {
 	// Ensure we have a valid token (AppRole login)
-	if err := r.ensureAuthenticated(ctx); err != nil {
+	if err := r.ensureAuthenticated(); err != nil {
 		return nil, auth.ErrAuthenticationFailed
 	}
 
@@ -130,7 +130,7 @@ func (r *CredentialsRepository) FetchCredentials(ctx context.Context) (*auth.Cre
 
 // loginWithAppRole performs AppRole authentication to obtain a Vault token. Only one
 // goroutine can perform login at a time.
-func (r *CredentialsRepository) ensureAuthenticated(ctx context.Context) error {
+func (r *CredentialsRepository) ensureAuthenticated() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
