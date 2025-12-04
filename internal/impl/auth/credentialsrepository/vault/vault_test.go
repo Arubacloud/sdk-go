@@ -1,9 +1,7 @@
 package vault
 
 import (
-	"context"
 	"fmt"
-	"sync"
 	"testing"
 	"time"
 
@@ -13,16 +11,17 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-//go:generate mockgen -package vault -destination=zz_mock_vault_test.go github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/vault VaultClient,LogicalAPI,KvAPI,AuthAPI,AuthTokenAPI
+//go:generate mockgen -package vault -destination=zz_mock_vault_test.go github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/vault VaultClient,LogicalAPI,KvAPI
 
-func TestCredentialsRepository_LoginWithAppRole(t *testing.T) {
+func TestCredentialsRepository_ensureAuthenticated(t *testing.T) {
 	t.Run("do nothing if token is already set", func(t *testing.T) {
 
 		repo := &CredentialsRepository{
 			tokenExist: true,
+			expiration: time.Now().Add(24 * time.Hour),
 		}
 
-		err := repo.loginWithAppRole(t.Context())
+		err := repo.ensureAuthenticated(t.Context())
 
 		require.NoError(t, err)
 		require.True(t, repo.tokenExist)
@@ -35,24 +34,14 @@ func TestCredentialsRepository_LoginWithAppRole(t *testing.T) {
 		mockLogicalAPI := NewMockLogicalAPI(ctrl)
 
 		mockClient.EXPECT().Logical().Return(mockLogicalAPI)
-
-		data := map[string]interface{}{
-			"role_id":   "test-role-id",
-			"secret_id": "test-secret-id",
-		}
+		repo := newRepo(mockClient, false, 0, time.Time{})
+		data := loginData(repo.roleID, repo.secretID)
 
 		mockLogicalAPI.
 			EXPECT().Write("test-role-path", data).
 			Return(nil, fmt.Errorf("mock error"))
 
-		repo := &CredentialsRepository{
-			client:   mockClient,
-			rolePath: "test-role-path",
-			roleID:   "test-role-id",
-			secretID: "test-secret-id",
-		}
-
-		err := repo.loginWithAppRole(t.Context())
+		err := repo.ensureAuthenticated(t.Context())
 
 		require.Error(t, err)
 		require.False(t, repo.tokenExist)
@@ -73,18 +62,15 @@ func TestCredentialsRepository_LoginWithAppRole(t *testing.T) {
 			SetToken("mock-token").
 			Do(func(token string) {
 				calls = append(calls, token)
-			}).
-			AnyTimes().MinTimes(1)
+			}).Times(1)
 
 		mockClient.EXPECT().Logical().Return(mockLogicalAPI)
 
-		data := map[string]interface{}{
-			"role_id":   "test-role-id",
-			"secret_id": "test-secret-id",
-		}
+		repo := newRepo(mockClient, false, 0, time.Time{})
+		data := loginData(repo.roleID, repo.secretID)
 
 		mockLogicalAPI.
-			EXPECT().Write("test-role-path", data).
+			EXPECT().Write(repo.rolePath, data).
 			Return(&vaultapi.Secret{
 				Auth: &vaultapi.SecretAuth{
 					ClientToken:   "mock-token",
@@ -93,14 +79,7 @@ func TestCredentialsRepository_LoginWithAppRole(t *testing.T) {
 				},
 			}, nil)
 
-		repo := &CredentialsRepository{
-			client:   mockClient,
-			rolePath: "test-role-path",
-			roleID:   "test-role-id",
-			secretID: "test-secret-id",
-		}
-
-		err := repo.loginWithAppRole(t.Context())
+		err := repo.ensureAuthenticated(t.Context())
 
 		require.NoError(t, err)
 		require.True(t, repo.tokenExist)
@@ -111,32 +90,28 @@ func TestCredentialsRepository_LoginWithAppRole(t *testing.T) {
 	t.Run("successful login sets token and namespace", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		ctx, cancel := context.WithCancel(t.Context())
-		defer cancel()
 
 		mockClient := NewMockVaultClient(ctrl)
 		mockLogicalAPI := NewMockLogicalAPI(ctrl)
 
 		// Setup the mock responses
-
+		repo := newRepo(mockClient, false, 0, time.Time{})
+		repo.namespace = "test-namespace"
 		mockClient.
 			EXPECT().
 			SetToken("mock-token").
 			Return()
 
 		mockClient.EXPECT().
-			SetNamespace("test-namespace").
+			SetNamespace(repo.namespace).
 			Return()
 
 		mockClient.EXPECT().Logical().Return(mockLogicalAPI)
 
-		data := map[string]interface{}{
-			"role_id":   "test-role-id",
-			"secret_id": "test-secret-id",
-		}
+		data := loginData(repo.roleID, repo.secretID)
 
 		mockLogicalAPI.
-			EXPECT().Write("test-role-path", data).
+			EXPECT().Write(repo.rolePath, data).
 			Return(&vaultapi.Secret{
 				Auth: &vaultapi.SecretAuth{
 					ClientToken:   "mock-token",
@@ -145,24 +120,8 @@ func TestCredentialsRepository_LoginWithAppRole(t *testing.T) {
 				},
 			}, nil)
 
-		repo := &CredentialsRepository{
-			client:    mockClient,
-			rolePath:  "test-role-path",
-			roleID:    "test-role-id",
-			secretID:  "test-secret-id",
-			namespace: "test-namespace",
-		}
+		err := repo.ensureAuthenticated(t.Context())
 
-		var wg sync.WaitGroup
-		wg.Add(1)
-
-		var err error
-		go func() {
-			defer wg.Done()
-			err = repo.loginWithAppRole(ctx)
-		}()
-		wg.Wait()
-		cancel()
 		require.NoError(t, err)
 		require.True(t, repo.tokenExist)
 		require.Equal(t, true, repo.renewable)
@@ -247,83 +206,119 @@ func TestCredentialsRepository_FetchCredentials(t *testing.T) {
 	t.Run("should report credentials not found error when vault returns nil", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		mockVaultClient := NewMockVaultClient(ctrl)
+		mockClient := NewMockVaultClient(ctrl)
 		mockKvAPI := NewMockKvAPI(ctrl)
 
-		tokenRepository := &CredentialsRepository{
-			client:     mockVaultClient,
-			tokenExist: true,
-			ttl:        time.Until(time.Now()),
-			kvMount:    "test-kv",
-			kvPath:     "test-path",
-		}
+		repo := newRepo(mockClient, true, time.Until(time.Now()), time.Now().Add(24*time.Hour))
 
-		mockVaultClient.EXPECT().
-			KVv2(tokenRepository.kvMount).Return(mockKvAPI)
+		mockClient.EXPECT().
+			KVv2(repo.kvMount).Return(mockKvAPI)
 
 		mockKvAPI.EXPECT().
-			Get(gomock.Any(), tokenRepository.kvPath).
+			Get(gomock.Any(), repo.kvPath).
 			Return(nil, fmt.Errorf("vault: secret not found"))
 
 		// When we try to fetch the token
-		data, err := tokenRepository.FetchCredentials(t.Context())
+		secretData, err := repo.FetchCredentials(t.Context())
 
 		// And no token should be returned
 		require.Error(t, err)
 		require.ErrorIs(t, err, auth.ErrCredentialsNotFound)
-		require.Nil(t, data)
+		require.Nil(t, secretData)
 	})
 
 	t.Run("should report credentials not found error when vault secret is missing data", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		mockVaultClient := NewMockVaultClient(ctrl)
+		mockClient := NewMockVaultClient(ctrl)
 		mockKvAPI := NewMockKvAPI(ctrl)
 
-		tokenRepository := &CredentialsRepository{
-			client:     mockVaultClient,
-			tokenExist: true,
-			ttl:        time.Until(time.Now()),
-			kvMount:    "test-kv",
-			kvPath:     "test-path",
-		}
+		repo := newRepo(mockClient, true, time.Until(time.Now()), time.Now().Add(24*time.Hour))
 
-		mockVaultClient.EXPECT().
-			KVv2(tokenRepository.kvMount).Return(mockKvAPI)
+		mockClient.EXPECT().
+			KVv2(repo.kvMount).Return(mockKvAPI)
 
 		mockKvAPI.EXPECT().
-			Get(gomock.Any(), tokenRepository.kvPath).
+			Get(gomock.Any(), repo.kvPath).
 			Return(&vaultapi.KVSecret{
-				Data: map[string]interface{}{},
+				Data: map[string]any{},
 			}, nil)
 
 		// When we try to fetch the token
-		data, err := tokenRepository.FetchCredentials(t.Context())
+		secretData, err := repo.FetchCredentials(t.Context())
 
 		// And no token should be returned
 		require.Error(t, err)
 		require.ErrorIs(t, err, auth.ErrCredentialsNotFound)
-		require.Nil(t, data)
+		require.Nil(t, secretData)
 	})
 	t.Run("Run ok when vault secret contains credentials", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		mockVaultClient := NewMockVaultClient(ctrl)
+		mockClient := NewMockVaultClient(ctrl)
 		mockKvAPI := NewMockKvAPI(ctrl)
 
-		tokenRepository := &CredentialsRepository{
-			client:     mockVaultClient,
-			tokenExist: true,
-			ttl:        time.Until(time.Now()),
-			kvMount:    "test-kv",
-			kvPath:     "test-path",
-		}
+		repo := newRepo(mockClient, true, time.Until(time.Now()), time.Now().Add(24*time.Hour))
 
-		mockVaultClient.EXPECT().
-			KVv2(tokenRepository.kvMount).Return(mockKvAPI)
+		mockClient.EXPECT().
+			KVv2(repo.kvMount).Return(mockKvAPI)
 
 		mockKvAPI.EXPECT().
-			Get(gomock.Any(), tokenRepository.kvPath).
+			Get(gomock.Any(), repo.kvPath).
+			Return(&vaultapi.KVSecret{
+				Data: map[string]any{
+					"client_id":     "test-client-id",
+					"client_secret": "test-client-secret",
+				},
+			}, nil)
+
+		// When we try to fetch the token
+		secretData, err := repo.FetchCredentials(t.Context())
+
+		// And no token should be returned
+		require.NoError(t, err)
+		require.NotNil(t, secretData)
+		require.Equal(t, "test-client-id", secretData.ClientID)
+		require.Equal(t, "test-client-secret", secretData.ClientSecret)
+	})
+
+	t.Run("should authenticate when no token exists", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockClient := NewMockVaultClient(ctrl)
+		mockKvAPI := NewMockKvAPI(ctrl)
+		mockLogicalAPI := NewMockLogicalAPI(ctrl)
+
+		repo := newRepo(mockClient, false, time.Until(time.Now()), time.Time{})
+
+		// Expect loginWithAppRole to be called
+		mockClient.EXPECT().
+			Logical().
+			Return(mockLogicalAPI)
+
+		loginData := loginData(repo.roleID, repo.secretID)
+
+		mockLogicalAPI.
+			EXPECT().
+			Write(repo.rolePath, loginData).
+			Return(&vaultapi.Secret{
+				Auth: &vaultapi.SecretAuth{
+					ClientToken:   "mock-token",
+					Renewable:     false,
+					LeaseDuration: 3600,
+				},
+			}, nil)
+
+		mockClient.
+			EXPECT().
+			SetToken("mock-token").
+			Return()
+
+		mockClient.EXPECT().
+			KVv2(repo.kvMount).Return(mockKvAPI)
+
+		mockKvAPI.EXPECT().
+			Get(gomock.Any(), repo.kvPath).
 			Return(&vaultapi.KVSecret{
 				Data: map[string]interface{}{
 					"client_id":     "test-client-id",
@@ -332,120 +327,147 @@ func TestCredentialsRepository_FetchCredentials(t *testing.T) {
 			}, nil)
 
 		// When we try to fetch the token
-		data, err := tokenRepository.FetchCredentials(t.Context())
+		secretData, err := repo.FetchCredentials(t.Context())
 
 		// And no token should be returned
 		require.NoError(t, err)
-		require.NotNil(t, data)
-		require.Equal(t, "test-client-id", data.ClientID)
-		require.Equal(t, "test-client-secret", data.ClientSecret)
+		require.NotNil(t, secretData)
+		require.Equal(t, "test-client-id", secretData.ClientID)
+		require.Equal(t, "test-client-secret", secretData.ClientSecret)
+	})
+	t.Run("should authenticate when token exist but is expired", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockClient := NewMockVaultClient(ctrl)
+		mockKvAPI := NewMockKvAPI(ctrl)
+		mockLogicalAPI := NewMockLogicalAPI(ctrl)
+
+		repo := newRepo(mockClient, true, time.Until(time.Now().Add(-1*time.Hour)), time.Now().Add(-1*time.Hour))
+
+		// Expect loginWithAppRole to be called
+		mockClient.EXPECT().
+			Logical().
+			Return(mockLogicalAPI)
+
+		loginData := loginData(repo.roleID, repo.secretID)
+
+		mockLogicalAPI.
+			EXPECT().
+			Write(repo.rolePath, loginData).
+			Return(&vaultapi.Secret{
+				Auth: &vaultapi.SecretAuth{
+					ClientToken:   "mock-token",
+					Renewable:     false,
+					LeaseDuration: 3600,
+				},
+			}, nil).Times(1)
+		mockClient.
+			EXPECT().
+			SetToken("mock-token").
+			Return().Times(1)
+
+		mockClient.EXPECT().
+			KVv2(repo.kvMount).Return(mockKvAPI)
+
+		mockKvAPI.EXPECT().
+			Get(gomock.Any(), repo.kvPath).
+			Return(&vaultapi.KVSecret{
+				Data: map[string]interface{}{
+					"client_id":     "test-client-id",
+					"client_secret": "test-client-secret",
+				},
+			}, nil)
+		// When we try to fetch the token
+		secretData, err := repo.FetchCredentials(t.Context())
+
+		// And no token should be returned
+		require.NoError(t, err)
+		require.NotNil(t, secretData)
+		require.Equal(t, "test-client-id", secretData.ClientID)
+		require.Equal(t, "test-client-secret", secretData.ClientSecret)
 	})
 
 }
 
-func TestCredentialsRepository_RenewTokenBeforeExpiration(t *testing.T) {
-	t.Run("token renewal success", func(t *testing.T) {
+func TestCredentialsRepository_performLoginAppRole(t *testing.T) {
+	t.Run("should perform AppRole login and return token secret", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		ctx, cancel := context.WithCancel(t.Context())
-		defer cancel()
-
 		mockClient := NewMockVaultClient(ctrl)
-		mockAuthAPI := NewMockAuthAPI(ctrl)
-		mockAuthTokenAPI := NewMockAuthTokenAPI(ctrl)
-		repo := &CredentialsRepository{
+		mockLogicalAPI := NewMockLogicalAPI(ctrl)
 
-			client:     mockClient,
-			tokenExist: true,
-			ttl:        2 * time.Millisecond,
-			renewable:  true,
+		mockClient.EXPECT().Logical().Return(mockLogicalAPI)
+		repo := newRepo(mockClient, false, 0, time.Time{})
+		data := loginData(repo.roleID, repo.secretID)
+
+		expectedSecret := &vaultapi.Secret{
+			Auth: &vaultapi.SecretAuth{
+				ClientToken:   "mock-token",
+				Renewable:     true,
+				LeaseDuration: 7200,
+			},
 		}
 
-		mockClient.EXPECT().
-			Auth().
-			Return(mockAuthAPI).
-			AnyTimes()
+		mockLogicalAPI.
+			EXPECT().Write("test-role-path", data).
+			Return(expectedSecret, nil)
 
-		calls := []string{}
-		mockClient.EXPECT().SetToken(gomock.Any()).
-			Do(func(token string) {
-				calls = append(calls, token)
-			}).Return().MinTimes(1)
+		secret, err := repo.performAppRoleLogin(t.Context())
 
-		mockAuthAPI.EXPECT().Token().Return(mockAuthTokenAPI).AnyTimes()
-
-		mockAuthTokenAPI.EXPECT().
-			RenewSelfWithContext(ctx, gomock.Any()).
-			Return(&vaultapi.Secret{
-				Auth: &vaultapi.SecretAuth{
-					ClientToken:   "renewed-token",
-					Renewable:     true,
-					LeaseDuration: 5,
-				},
-			}, nil).
-			AnyTimes()
-
-		var wg sync.WaitGroup
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-			repo.renewTokenBeforeExpiration(ctx)
-		}()
-
-		// Wait enough time for the token to be renewed at least once
-		time.Sleep(100 * time.Millisecond)
-		cancel()
-		wg.Wait()
-
-		require.True(t, repo.tokenExist)
-		require.Equal(t, 5*time.Second, repo.ttl)
+		require.NoError(t, err)
+		require.Equal(t, expectedSecret, secret)
 	})
-	t.Run("token renewal failure", func(t *testing.T) {
+	t.Run("setting namespace also", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		ctx, cancel := context.WithCancel(t.Context())
-		defer cancel()
+
 		mockClient := NewMockVaultClient(ctrl)
-		mockAuthAPI := NewMockAuthAPI(ctrl)
-		mockAuthTokenAPI := NewMockAuthTokenAPI(ctrl)
-		repo := &CredentialsRepository{
-
-			client:     mockClient,
-			tokenExist: true,
-			ttl:        2 * time.Millisecond,
-			renewable:  true,
-		}
-
+		mockLogicalAPI := NewMockLogicalAPI(ctrl)
 		mockClient.EXPECT().
-			Auth().
-			Return(mockAuthAPI).
-			AnyTimes()
+			SetNamespace("test-namespace").
+			Return().Times(1)
 
-		mockClient.EXPECT().SetToken(gomock.Any()).Return().MaxTimes(0)
+		mockClient.EXPECT().Logical().Return(mockLogicalAPI)
+		repo := newRepo(mockClient, false, 0, time.Time{})
 
-		mockAuthAPI.EXPECT().Token().Return(mockAuthTokenAPI).AnyTimes()
+		data := loginData(repo.roleID, repo.secretID)
+		expectedSecret := &vaultapi.Secret{
+			Auth: &vaultapi.SecretAuth{
+				ClientToken:   "mock-token",
+				Renewable:     true,
+				LeaseDuration: 7200,
+			},
+		}
+		mockLogicalAPI.
+			EXPECT().Write("test-role-path", data).
+			Return(expectedSecret, nil)
 
-		mockAuthTokenAPI.EXPECT().
-			RenewSelfWithContext(ctx, gomock.Any()).
-			Return(nil, fmt.Errorf("renewal error")).
-			Times(1)
+		repo.namespace = "test-namespace"
+		secret, err := repo.performAppRoleLogin(t.Context())
 
-		var wg sync.WaitGroup
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-			repo.renewTokenBeforeExpiration(ctx)
-		}()
-
-		// Wait enough time for the token to be attempted to renew at least once
-		time.Sleep(100 * time.Millisecond)
-
-		cancel()
-		wg.Wait()
-
-		require.False(t, repo.tokenExist)
+		require.NoError(t, err)
+		require.Equal(t, expectedSecret, secret)
 	})
+}
+
+func loginData(role, secret string) map[string]interface{} {
+	return map[string]interface{}{
+		"role_id":   role,
+		"secret_id": secret,
+	}
+}
+
+func newRepo(mock VaultClient, token bool, ttl time.Duration, exp time.Time) *CredentialsRepository {
+	return &CredentialsRepository{
+		client:     mock,
+		kvMount:    "test-kv",
+		kvPath:     "test-path",
+		rolePath:   "test-role-path",
+		roleID:     "test-role-id",
+		secretID:   "test-secret-id",
+		tokenExist: token,
+		ttl:        ttl,
+		expiration: exp,
+	}
 }
