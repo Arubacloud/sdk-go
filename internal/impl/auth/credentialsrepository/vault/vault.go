@@ -2,6 +2,7 @@ package vault
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/Arubacloud/sdk-go/internal/ports/auth"
@@ -9,8 +10,13 @@ import (
 	vaultapi "github.com/hashicorp/vault/api"
 )
 
-// CredentialsRepository implements the auth.CredentialsRepository interface.
-// It is responsible for fetching credentials from a HashiCorp Vault backend.
+// CredentialsRepository implements auth.CredentialsRepository and is
+// responsible for authenticating to Vault (via AppRole) and fetching
+// credential secrets from a KVv2 backend.
+//
+// Thread-safety:
+// * loginWithAppRole uses a write-lock to prevent concurrent token refresh.
+// * FetchCredentials is safe to call concurrently.
 type CredentialsRepository struct {
 	// Implementation details would go here
 	client    VaultClient
@@ -20,11 +26,19 @@ type CredentialsRepository struct {
 	rolePath  string
 	roleID    string
 	secretID  string
-	renewable bool
-	ttl       time.Duration
+
+	tokenExist bool
+	renewable  bool
+	expiration time.Time
+	ttl        time.Duration
+
+	mu sync.Mutex // protects tokenExist, expiration, ttl, renewable
 }
 
 var _ auth.CredentialsRepository = (*CredentialsRepository)(nil)
+
+// Tokens will be renewed when within this duration of expiration.
+const renewTokenBeforeExpirationDuration = 20 * time.Second
 
 // VaultClient is the main interface abstracting the *vaultapi.Client.
 // This allows the business logic (CredentialsRepository) to be decoupled from
@@ -34,7 +48,6 @@ type VaultClient interface {
 	SetToken(token string)
 	KVv2(mount string) KvAPI
 	SetNamespace(namespace string)
-	Auth() AuthAPI
 }
 
 // VaultClientAdapter wraps *vaultapi.Client to conform to the VaultClient interface.
@@ -43,91 +56,163 @@ type VaultClientAdapter struct {
 	c *vaultapi.Client
 }
 
-// Adapter types for the various sub-components of the Vault API.
+// logicalAPIAdapter adapts *vaultapi.Logical for our logical API interface.
 type logicalAPIAdapter struct {
 	l *vaultapi.Logical
 }
 
+// kvAPIAdapter adapts *vaultapi.KVv2.
 type kvAPIAdapter struct {
 	kv *vaultapi.KVv2
 }
 
-type authAPIAdapter struct {
-	auth *vaultapi.Auth
-}
-
-type authTokenAPIAdapter struct {
-	token *vaultapi.TokenAuth
-}
-
-// LogicalAPI defines the required methods for interacting with Vault's logical backend.
-// This adheres to the Interface Segregation Principle (ISP) by exposing only
-// the necessary methods (e.g., Write).
+// LogicalAPI exposes only the methods we actually need from Vault's logical API.
 type LogicalAPI interface {
 	Write(path string, data map[string]any) (*vaultapi.Secret, error)
 }
 
-// KvAPI defines the required methods for interacting with Vault's KVv2 secrets engine.
+// KvAPI exposes only the methods we actually need from Vault's KVv2 secrets engine.
 type KvAPI interface {
 	Get(ctx context.Context, path string) (*vaultapi.KVSecret, error)
 }
 
-// AuthAPI defines the required methods for interacting with Vault's authentication methods.
-type AuthAPI interface {
-	Token() AuthTokenAPI
-}
-
-// AuthTokenAPI defines the methods for managing tokens (e.g., renewal).
-type AuthTokenAPI interface {
-	RenewSelfWithContext(ctx context.Context, increment int) (*vaultapi.Secret, error)
-}
-
-// NewVaultClientAdapter is the constructor for the VaultClientAdapter.
+// NewVaultClientAdapter returns a new adapter around *vaultapi.Client.
 func NewVaultClientAdapter(c *vaultapi.Client) *VaultClientAdapter {
 	return &VaultClientAdapter{c: c}
 }
 
-// NewCredentialsRepository creates a new CredentialsRepository that fetches
-// credentials from a Vault backend.
+// NewCredentialsRepository constructs a CredentialsRepository using provided config.
+
 func NewCredentialsRepository(v VaultClient, cfg restclient.VaultConfig) *CredentialsRepository {
 	return &CredentialsRepository{
-		client:    v,
-		kvMount:   cfg.KVMount,
-		kvPath:    cfg.KVPath,
-		namespace: cfg.Namespace,
-		rolePath:  cfg.RolePath,
-		roleID:    cfg.RoleID,
-		secretID:  cfg.SecretID,
-		renewable: false,
-		ttl:       0}
+		client:     v,
+		kvMount:    cfg.KVMount,
+		kvPath:     cfg.KVPath,
+		namespace:  cfg.Namespace,
+		rolePath:   cfg.RolePath,
+		roleID:     cfg.RoleID,
+		secretID:   cfg.SecretID,
+		tokenExist: false,
+		renewable:  false,
+		expiration: time.Time{},
+		ttl:        0}
 }
 
-// FetchCredentials retrieves the Client ID and Secret from Vault.
+// isTokenExpired returns true if the token should be refreshed.
+// expiration==zero -> treat as expired.
+func isTokenExpired(expiration time.Time) bool {
+	// Check if the current time is after the expiration time minus the renew duration
+	if expiration.IsZero() {
+		return true
+	}
+	// Renew before the expiration threshold
+	checkDate := expiration.Add(-renewTokenBeforeExpirationDuration)
+	return time.Now().After(checkDate)
+}
+
+// FetchCredentials ensures an authenticated Vault token is available,
+// then fetches client credentials from KVv2.
 func (r *CredentialsRepository) FetchCredentials(ctx context.Context) (*auth.Credentials, error) {
+	// Ensure we have a valid token (AppRole login)
+	if err := r.ensureAuthenticated(); err != nil {
+		return nil, auth.ErrAuthenticationFailed
+	}
 
-	// Implementation to fetch credentials from Vault would go here
-	return nil, nil
+	// Read from KV v2
+	secret, err := r.client.KVv2(r.kvMount).Get(ctx, r.kvPath)
+	if err != nil {
+		return nil, auth.ErrCredentialsNotFound
+	}
+
+	// Extract credentials from the Vault secret
+	return getCredentialsFromVaultSecret(secret)
 }
 
-// // renewTokenIfNeeded attempts to renew the current Vault token if the repository
-// // is configured to use a renewable token.
-// func (r *CredentialsRepository) renewTokenIfNeeded(ctx context.Context) error {
-// 	if r.renewable {
-// 		_, err := r.client.Auth().Token().RenewSelfWithContext(ctx, int(r.ttl.Seconds()))
-// 		if err != nil {
-// 			return err
-// 		}
-// 	}
-// 	return nil
-// }
+// loginWithAppRole performs AppRole authentication to obtain a Vault token. Only one
+// goroutine can perform login at a time.
+func (r *CredentialsRepository) ensureAuthenticated() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
-// implement VaultClientAdapter methods
+	// If we already have a token and it's not expired, do nothing.
+	if r.tokenExist && !isTokenExpired(r.expiration) {
+		return nil
+	}
+
+	// Namespace support (Enterprise Vault)
+	token, err := r.performAppRoleLogin()
+	if err != nil {
+		return auth.ErrAuthenticationFailed
+	}
+
+	// Validate token response
+	if token == nil || token.Auth == nil || token.Auth.ClientToken == "" {
+		return auth.ErrAuthenticationFailed
+	}
+
+	clientToken := token.Auth.ClientToken
+
+	r.client.SetToken(clientToken)
+	r.tokenExist = true
+
+	r.ttl = time.Duration(token.Auth.LeaseDuration) * time.Second
+	// Compute expiration time
+	r.expiration = time.Now().Add(r.ttl)
+	// Track whether the token is renewable
+	r.renewable = token.Auth.Renewable
+
+	return nil
+}
+
+// performAppRoleLogin executes the AppRole login against Vault and returns the token secret.
+func (r *CredentialsRepository) performAppRoleLogin() (*vaultapi.Secret, error) {
+	if r.namespace != "" {
+		r.client.SetNamespace(r.namespace)
+	}
+
+	payload := map[string]any{
+		"role_id":   r.roleID,
+		"secret_id": r.secretID,
+	}
+
+	// Perform AppRole auth
+	token, err := r.client.Logical().Write(r.rolePath, payload)
+	return token, err
+}
+
+// getCredentialsFromVaultSecret extracts Client ID and Secret from a Vault KV secret.
+// It assumes the secret data contains "client_id" and "client_secret" keys.
+func getCredentialsFromVaultSecret(secret *vaultapi.KVSecret) (*auth.Credentials, error) {
+	get := func(key string) (string, error) {
+		v, ok := secret.Data[key].(string)
+		if !ok {
+			return "", auth.ErrCredentialsNotFound
+		}
+		return v, nil
+	}
+
+	clientID, err := get("client_id")
+	if err != nil {
+		return nil, err
+	}
+
+	clientSecret, err := get("client_secret")
+	if err != nil {
+		return nil, err
+	}
+
+	creds := &auth.Credentials{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+	}
+	return creds, nil
+}
+
+// ---------------- Adapter Implementations ----------------
+
+// VaultClientAdapter methods
 func (v *VaultClientAdapter) SetNamespace(namespace string) {
 	v.c.SetNamespace(namespace)
-}
-
-func (v *VaultClientAdapter) Auth() AuthAPI {
-	return &authAPIAdapter{auth: v.c.Auth()}
 }
 
 func (v *VaultClientAdapter) SetToken(token string) {
@@ -141,22 +226,12 @@ func (v *VaultClientAdapter) KVv2(mount string) KvAPI {
 	return &kvAPIAdapter{kv: v.c.KVv2(mount)}
 }
 
-// implement AuthAPIAdapter methods
-func (a *authAPIAdapter) Token() AuthTokenAPI {
-	return &authTokenAPIAdapter{token: a.auth.Token()}
-}
-
-// implement AuthTokenAPIAdapter methods
-func (a *authTokenAPIAdapter) RenewSelfWithContext(ctx context.Context, increment int) (*vaultapi.Secret, error) {
-	return a.token.RenewSelfWithContext(ctx, increment)
-}
-
-// implement KVAPIAdapter methods
+// KvAPIAdapter methods
 func (k *kvAPIAdapter) Get(ctx context.Context, path string) (*vaultapi.KVSecret, error) {
 	return k.kv.Get(ctx, path)
 }
 
-// implement LogicalAPIAdapter methods
+// LogicalAPIAdapter methods
 func (la *logicalAPIAdapter) Write(path string, data map[string]any) (*vaultapi.Secret, error) {
 	return la.l.Write(path, data)
 }
