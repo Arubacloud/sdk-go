@@ -66,16 +66,6 @@ type kvAPIAdapter struct {
 	kv *vaultapi.KVv2
 }
 
-// authAPIAdapter adapts *vaultapi.Auth.
-type authAPIAdapter struct {
-	auth *vaultapi.Auth
-}
-
-// authTokenAPIAdapter adapts *vaultapi.TokenAuth.
-type authTokenAPIAdapter struct {
-	token *vaultapi.TokenAuth
-}
-
 // LogicalAPI exposes only the methods we actually need from Vault's logical API.
 type LogicalAPI interface {
 	Write(path string, data map[string]any) (*vaultapi.Secret, error)
@@ -150,7 +140,7 @@ func (r *CredentialsRepository) ensureAuthenticated(ctx context.Context) error {
 	}
 
 	// Namespace support (Enterprise Vault)
-	token, err := r.performAppRoleLogin(ctx)
+	token, err := r.performAppRoleLogin()
 	if err != nil {
 		return auth.ErrAuthenticationFailed
 	}
@@ -175,7 +165,7 @@ func (r *CredentialsRepository) ensureAuthenticated(ctx context.Context) error {
 }
 
 // performAppRoleLogin executes the AppRole login against Vault and returns the token secret.
-func (r *CredentialsRepository) performAppRoleLogin(ctx context.Context) (*vaultapi.Secret, error) {
+func (r *CredentialsRepository) performAppRoleLogin() (*vaultapi.Secret, error) {
 	if r.namespace != "" {
 		r.client.SetNamespace(r.namespace)
 	}

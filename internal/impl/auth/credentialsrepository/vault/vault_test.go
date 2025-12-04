@@ -413,7 +413,7 @@ func TestCredentialsRepository_performLoginAppRole(t *testing.T) {
 			EXPECT().Write("test-role-path", data).
 			Return(expectedSecret, nil)
 
-		secret, err := repo.performAppRoleLogin(t.Context())
+		secret, err := repo.performAppRoleLogin()
 
 		require.NoError(t, err)
 		require.Equal(t, expectedSecret, secret)
@@ -444,7 +444,7 @@ func TestCredentialsRepository_performLoginAppRole(t *testing.T) {
 			Return(expectedSecret, nil)
 
 		repo.namespace = "test-namespace"
-		secret, err := repo.performAppRoleLogin(t.Context())
+		secret, err := repo.performAppRoleLogin()
 
 		require.NoError(t, err)
 		require.Equal(t, expectedSecret, secret)
