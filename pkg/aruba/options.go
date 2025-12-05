@@ -82,6 +82,50 @@ func (l LoggerType) validate() error {
 
 // tokenManagerOptions holds internal configuration for the authentication subsystem.
 type tokenManagerOptions struct {
+	// token holds a string-encoded JWT OAuth2 access token.
+	// This token is not aimed to be renewed: once expired, the current client
+	// should be discarded and a new one should be set-up.
+	// Mutually exclusive with tokenIssuerOptions.
+	token *string
+
+	// tokenIssuerOptions contains the configuration to manage the tokens
+	// obtained from an OAuth2 token issuer. It also include the nenewal
+	// process.
+	// Mutually exclusive with token.
+	tokenIssuerOptions *tokenIssuerOptions
+}
+
+func (tm *tokenManagerOptions) useTokenIssuer() {
+	if tm.tokenIssuerOptions == nil {
+		tm.token = nil
+
+		tm.tokenIssuerOptions = &tokenIssuerOptions{}
+	}
+}
+
+func (tm *tokenManagerOptions) validate() error {
+	if tm.token != nil && tm.tokenIssuerOptions != nil {
+		return errors.New("configuration conflict: cannot have both Token and Token Issuer set; please choose one")
+	}
+
+	if tm.token == nil && tm.tokenIssuerOptions == nil {
+		return errors.New("missing token source: must provide either a Token or Token Issuer configuration")
+	}
+
+	if tm.token != nil {
+		if strings.TrimSpace(*tm.token) == "" {
+			return errors.New("invalid token")
+		}
+	}
+
+	if tm.tokenIssuerOptions != nil {
+		return tm.tokenIssuerOptions.validate()
+	}
+
+	return nil
+}
+
+type tokenIssuerOptions struct {
 	// issuerURL is the Aruba OAuth2 token endpoint URL.
 	issuerURL string
 
@@ -111,21 +155,21 @@ type tokenManagerOptions struct {
 	fileTokenRepositoryOptions *fileTokenRepositoryOptions
 }
 
-func (tm *tokenManagerOptions) validate() error {
+func (ti *tokenIssuerOptions) validate() error {
 	var errs []error
 
 	//
 	// Basic Fields
 
-	if err := validateURL(tm.issuerURL, "token issuer URL"); err != nil {
+	if err := validateURL(ti.issuerURL, "token issuer URL"); err != nil {
 		errs = append(errs, err)
 	}
 
 	//
 	// Credentials Mutual Exclusion & Validity
 
-	hasClientCredentials := tm.clientCredentialOptions != nil
-	hasVault := tm.vaultCredentialsRepositoryOptions != nil
+	hasClientCredentials := ti.clientCredentialOptions != nil
+	hasVault := ti.vaultCredentialsRepositoryOptions != nil
 
 	if hasClientCredentials && hasVault {
 		errs = append(
@@ -144,11 +188,11 @@ func (tm *tokenManagerOptions) validate() error {
 		)
 
 	} else if hasClientCredentials {
-		if err := tm.clientCredentialOptions.validate(); err != nil {
+		if err := ti.clientCredentialOptions.validate(); err != nil {
 			errs = append(errs, fmt.Errorf("client credentials configuration error: %w", err))
 		}
 	} else if hasVault {
-		if err := tm.vaultCredentialsRepositoryOptions.validate(); err != nil {
+		if err := ti.vaultCredentialsRepositoryOptions.validate(); err != nil {
 			errs = append(errs, fmt.Errorf("vault configuration error: %w", err))
 		}
 	}
@@ -158,8 +202,8 @@ func (tm *tokenManagerOptions) validate() error {
 
 	// Note: It is Valid for both Redis and File to be nil: implies no
 	// persistence/caching.
-	hasRedis := tm.redisTokenRepositoryOptions != nil
-	hasFile := tm.fileTokenRepositoryOptions != nil
+	hasRedis := ti.redisTokenRepositoryOptions != nil
+	hasFile := ti.fileTokenRepositoryOptions != nil
 
 	if hasRedis && hasFile {
 		errs = append(
@@ -171,13 +215,13 @@ func (tm *tokenManagerOptions) validate() error {
 	}
 
 	if hasRedis {
-		if err := tm.redisTokenRepositoryOptions.validate(); err != nil {
+		if err := ti.redisTokenRepositoryOptions.validate(); err != nil {
 			errs = append(errs, fmt.Errorf("redis configuration error: %w", err))
 		}
 	}
 
 	if hasFile {
-		if err := tm.fileTokenRepositoryOptions.validate(); err != nil {
+		if err := ti.fileTokenRepositoryOptions.validate(); err != nil {
 			errs = append(errs, fmt.Errorf("file repository configuration error: %w", err))
 		}
 	}
@@ -318,17 +362,37 @@ func (o *Options) WithBaseURL(baseURL string) *Options {
 	return o
 }
 
+// WithToken set the OAuth2 JWT Access Token to be used in order to get access
+// to the Aruba REST API. This token is not aimed to be renewed by the client,
+// so the client needs to be discarded when the token expires.
+// Usage of that option is recommended only for atomic short-period scenarios.
+// Side Effect: Removes any token issuer configuration previously set.
+func (o *Options) WithToken(token string) *Options {
+	o.tokenManager.tokenIssuerOptions = nil
+
+	o.tokenManager.token = &token
+
+	return o
+}
+
 // WithTokenIssuerURL overrides the default OAuth2 token endpoint.
+// Side Effect: Removes the token if previously set.
 func (o *Options) WithTokenIssuerURL(tokenIssuerURL string) *Options {
-	o.tokenManager.issuerURL = tokenIssuerURL
+	o.tokenManager.useTokenIssuer()
+
+	o.tokenManager.tokenIssuerOptions.issuerURL = tokenIssuerURL
 	return o
 }
 
 // WithClientCredentials is a helper to set both Client ID and Secret.
+// Side Effect: Removes the token if previously set.
+// Side Effect: Disable Vault credentials repository.
 func (o *Options) WithClientCredentials(clientID string, clientSecret string) *Options {
-	o.tokenManager.vaultCredentialsRepositoryOptions = nil
+	o.tokenManager.useTokenIssuer()
 
-	o.tokenManager.clientCredentialOptions = &clientCredentialOptions{
+	o.tokenManager.tokenIssuerOptions.vaultCredentialsRepositoryOptions = nil
+
+	o.tokenManager.tokenIssuerOptions.clientCredentialOptions = &clientCredentialOptions{
 		clientID:     clientID,
 		clientSecret: clientSecret,
 	}
@@ -353,24 +417,46 @@ const (
 	defaultTokenIssuerURL = "https://login.aruba.it/auth/realms/cmp-new-apikey/protocol/openid-connect/token"
 )
 
+// DefaultOptions creates a ready-to-use configuration for the production environment
+// using Client Credentials.
+// Side Effect: Removes the token if previously set.
+// Side Effect: Disable the File token repository if previously set.
+// Side Effect: Disable the Redis token repository if previously set.
+func DefaultOptions(clientID string, clientSecret string) *Options {
+	return NewOptions().
+		WithDefaultBaseURL().
+		WithDefaultLogger().
+		WithDefaultTokenManagerSchema(clientID, clientSecret)
+}
+
 // WithDefaultBaseURL sets the URL to the production Aruba Cloud API.
 func (o *Options) WithDefaultBaseURL() *Options {
 	o.baseURL = defaultBaseURL
 	return o
 }
 
-// WithDefaultTokenIssuerURL sets the URL to the production IDP.
-func (o *Options) WithDefaultTokenIssuerURL() *Options {
-	o.tokenManager.issuerURL = defaultTokenIssuerURL
-	return o
-}
-
 // WithDefaultTokenManagerSchema configures standard Client Credentials auth
 // without any persistent caching (Redis/File).
+// Side Effect: Removes the token if previously set.
+// Side Effect: Disable the File token repository if previously set.
+// Side Effect: Disable the Redis token repository if previously set.
 func (o *Options) WithDefaultTokenManagerSchema(clientID string, clientSecret string) *Options {
-	o.tokenManager.fileTokenRepositoryOptions = nil
-	o.tokenManager.redisTokenRepositoryOptions = nil
+	o.tokenManager.useTokenIssuer()
+
+	o.tokenManager.tokenIssuerOptions.fileTokenRepositoryOptions = nil
+	o.tokenManager.tokenIssuerOptions.redisTokenRepositoryOptions = nil
+
 	return o.WithDefaultTokenIssuerURL().WithClientCredentials(clientID, clientSecret)
+}
+
+// WithDefaultTokenIssuerURL sets the URL to the production IDP.
+// Side Effect: Removes the token if previously set.
+func (o *Options) WithDefaultTokenIssuerURL() *Options {
+	o.tokenManager.useTokenIssuer()
+
+	o.tokenManager.tokenIssuerOptions.issuerURL = defaultTokenIssuerURL
+
+	return o
 }
 
 // WithDefaultLogger sets the logger type to "NoLog".
@@ -378,15 +464,6 @@ func (o *Options) WithDefaultLogger() *Options {
 	o.loggerType = defaultLoggerType
 	o.userDefinedDependencies.logger = nil
 	return o
-}
-
-// DefaultOptions creates a ready-to-use configuration for the production environment
-// using Client Credentials.
-func DefaultOptions(clientID string, clientSecret string) *Options {
-	return NewOptions().
-		WithDefaultBaseURL().
-		WithDefaultLogger().
-		WithDefaultTokenManagerSchema(clientID, clientSecret)
 }
 
 //
@@ -415,22 +492,29 @@ const (
 
 // WithSecurityScopes set the security scopes to be claimed during the
 // authentication.
+// Side Effect: Removes the token if previously set.
 // Side Effect: All previous defined scopes will be erased.
 func (o *Options) WithSecurityScopes(scopes ...string) *Options {
-	o.tokenManager.scopes = scopes
+	o.tokenManager.useTokenIssuer()
+
+	o.tokenManager.tokenIssuerOptions.scopes = scopes
 
 	return o
 }
 
 // WithAdditionalSecurityScopes append the list security scopes to be claimed
 // during the authentication.
+// Side Effect: Removes the token if previously set.
 func (o *Options) WithAdditionalSecurityScopes(scopes ...string) *Options {
-	o.tokenManager.scopes = append(o.tokenManager.scopes, scopes...)
+	o.tokenManager.useTokenIssuer()
+
+	o.tokenManager.tokenIssuerOptions.scopes = append(o.tokenManager.tokenIssuerOptions.scopes, scopes...)
 
 	return o
 }
 
 // WithVaultCredentialsRepository configures the SDK to fetch secrets from HashiCorp Vault.
+// Side Effect: Removes the token if previously set.
 // Side Effect: Clears any manually set Client Secret.
 func (o *Options) WithVaultCredentialsRepository(
 	vaultURI string,
@@ -441,9 +525,11 @@ func (o *Options) WithVaultCredentialsRepository(
 	roleID string,
 	secretID string,
 ) *Options {
-	o.tokenManager.clientCredentialOptions = nil
+	o.tokenManager.useTokenIssuer()
 
-	o.tokenManager.vaultCredentialsRepositoryOptions = &vaultCredentialsRepositoryOptions{
+	o.tokenManager.tokenIssuerOptions.clientCredentialOptions = nil
+
+	o.tokenManager.tokenIssuerOptions.vaultCredentialsRepositoryOptions = &vaultCredentialsRepositoryOptions{
 		vaultURI:  vaultURI,
 		kvMount:   kvMount,
 		kvPath:    kvPath,
@@ -457,8 +543,12 @@ func (o *Options) WithVaultCredentialsRepository(
 }
 
 // WithTokenExpirationDriftSeconds sets the safety buffer for token expiration.
+// Side Effect: Removes the token if previously set.
 func (o *Options) WithTokenExpirationDriftSeconds(tokenExpirationDriftSeconds uint32) *Options {
-	o.tokenManager.expirationDriftSeconds = tokenExpirationDriftSeconds
+	o.tokenManager.useTokenIssuer()
+
+	o.tokenManager.tokenIssuerOptions.expirationDriftSeconds = tokenExpirationDriftSeconds
+
 	return o
 }
 
@@ -468,41 +558,59 @@ func (o *Options) WithStandardTokenExpirationDriftSeconds() *Options {
 }
 
 // WithRedisTokenRepositoryFromURI configures a Redis cluster for token caching.
+// Side Effect: Removes the token if previously set.
 // Side Effect: Disables File Token Repository.
 func (o *Options) WithRedisTokenRepositoryFromURI(redisURI string) *Options {
-	o.tokenManager.redisTokenRepositoryOptions = &redisTokenRepositoryOptions{
+	o.tokenManager.useTokenIssuer()
+
+	o.tokenManager.tokenIssuerOptions.redisTokenRepositoryOptions = &redisTokenRepositoryOptions{
 		redisURI: redisURI,
 	}
-	o.tokenManager.fileTokenRepositoryOptions = nil
+
+	o.tokenManager.tokenIssuerOptions.fileTokenRepositoryOptions = nil
+
 	return o
 }
 
 // WithRedisTokenRepositoryFromStandardURI configures Redis using localhost defaults.
+// Side Effect: Removes the token if previously set.
+// Side Effect: Disables File Token Repository.
 func (o *Options) WithRedisTokenRepositoryFromStandardURI() *Options {
 	return o.WithRedisTokenRepositoryFromURI(stdRedisURI)
 }
 
 // WithStandardRedisTokenRepository configures localhost Redis with standard drift settings.
+// Side Effect: Removes the token if previously set.
+// Side Effect: Disables File Token Repository.
 func (o *Options) WithStandardRedisTokenRepository() *Options {
 	return o.WithRedisTokenRepositoryFromStandardURI().WithStandardTokenExpirationDriftSeconds()
 }
 
 // WithFileTokenRepositoryFromBaseDir configures a directory for storing token files.
+// Side Effect: Removes the token if previously set.
 // Side Effect: Disables Redis Token Repository.
 func (o *Options) WithFileTokenRepositoryFromBaseDir(baseDir string) *Options {
-	o.tokenManager.fileTokenRepositoryOptions = &fileTokenRepositoryOptions{
+	o.tokenManager.useTokenIssuer()
+
+	o.tokenManager.tokenIssuerOptions.fileTokenRepositoryOptions = &fileTokenRepositoryOptions{
 		baseDir: baseDir,
 	}
-	o.tokenManager.redisTokenRepositoryOptions = nil
+
+	o.tokenManager.tokenIssuerOptions.redisTokenRepositoryOptions = nil
+
 	return o
 }
 
 // WithFileTokenRepositoryFromStandardBaseDir configures file storage in /tmp/sdk-go.
+// Side Effect: Removes the token if previously set.
+// Side Effect: Disables Redis Token Repository.
 func (o *Options) WithFileTokenRepositoryFromStandardBaseDir() *Options {
 	return o.WithFileTokenRepositoryFromBaseDir(stdFileBaseDir)
 }
 
 // WithStandardFileTokenRepository configures /tmp storage with standard drift settings.
+// Side Effect: Removes the token if previously set.
+// Side Effect: Disables Redis Token Repository.
 func (o *Options) WithStandardFileTokenRepository() *Options {
 	return o.WithFileTokenRepositoryFromStandardBaseDir().WithStandardTokenExpirationDriftSeconds()
 }

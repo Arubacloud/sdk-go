@@ -38,6 +38,12 @@ func NewTokenManager(connector auth.ProviderConnector, repository auth.TokenRepo
 	}
 }
 
+// NewTokenManager creates a new instance of TokenManager without a provider
+// connector.
+func NewStaticTokenManager(repository auth.TokenRepository) *TokenManager {
+	return &TokenManager{repository: repository}
+}
+
 // BindTo registers the InjectToken method as a callback function within the
 // provided Interceptable (e.g., an HTTP client middleware chain).
 func (m *TokenManager) BindTo(interceptable interceptor.Interceptable) error {
@@ -73,7 +79,7 @@ func (m *TokenManager) InjectToken(ctx context.Context, r *http.Request) error {
 
 	// Step 2: Validation & Refresh (if needed)
 	// If we have no token, or the token is invalid/expired, we need to refresh.
-	if errors.Is(err, auth.ErrTokenNotFound) || !token.IsValid() {
+	if m.connector != nil && (errors.Is(err, auth.ErrTokenNotFound) || !token.IsValid()) {
 		m.locker.Lock()
 		defer m.locker.Unlock()
 
