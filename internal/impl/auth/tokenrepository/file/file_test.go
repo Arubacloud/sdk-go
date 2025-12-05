@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Arubacloud/sdk-go/internal/ports/auth"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Arubacloud/sdk-go/internal/ports/auth"
 )
 
 var (
@@ -16,7 +17,7 @@ var (
 func TestTokenRepository_FetchToken(t *testing.T) {
 	t.Run("should return nil when no token file", func(t *testing.T) {
 		dir := t.TempDir()
-		repo := NewFileTokenRepository(dir, "user-123")
+		repo := NewFileTokenRepository("user-123", dir)
 
 		token, err := repo.FetchToken(t.Context())
 		require.Error(t, err)
@@ -25,7 +26,7 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 
 	t.Run("should return saved token", func(t *testing.T) {
 		dir := t.TempDir()
-		repo := NewFileTokenRepository(dir, "user-123")
+		repo := NewFileTokenRepository("user-123", dir)
 
 		savedToken := &auth.Token{AccessToken: accessToken, Expiry: expiry}
 		err := repo.SaveToken(t.Context(), savedToken)
@@ -40,7 +41,7 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 
 	t.Run("should return token for expired token", func(t *testing.T) {
 		dir := t.TempDir()
-		repo := NewFileTokenRepository(dir, "user-123")
+		repo := NewFileTokenRepository("user-123", dir)
 
 		expiredToken := &auth.Token{AccessToken: accessToken, Expiry: time.Now().Add(-1 * time.Hour)}
 		err := repo.SaveToken(t.Context(), expiredToken)
@@ -56,7 +57,7 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 
 	t.Run("should save file without problem", func(t *testing.T) {
 		dir := t.TempDir()
-		repo := NewFileTokenRepository(dir, "user-123")
+		repo := NewFileTokenRepository("user-123", dir)
 
 		token := &auth.Token{AccessToken: accessToken, Expiry: expiry}
 		// Test fetching a token when none exists	// Test saving a token
@@ -65,7 +66,7 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 	})
 	t.Run("should return error when token is nil", func(t *testing.T) {
 		dir := t.TempDir()
-		repo := NewFileTokenRepository(dir, "user-123")
+		repo := NewFileTokenRepository("user-123", dir)
 
 		// Test fetching a token when none exists	// Test saving a token
 		err := repo.SaveToken(t.Context(), nil)
@@ -74,7 +75,7 @@ func TestTokenRepository_SaveToken(t *testing.T) {
 
 	t.Run("should return error for not existing dir", func(t *testing.T) {
 		dir := "/non/existing\\*path\\*/dir"
-		repo := NewFileTokenRepository(dir, "user-123")
+		repo := NewFileTokenRepository("user-123", dir)
 		token := &auth.Token{AccessToken: accessToken, Expiry: expiry}
 
 		// Test fetching a token when none exists	// Test saving a token
