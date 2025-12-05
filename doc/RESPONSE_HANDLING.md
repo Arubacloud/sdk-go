@@ -300,12 +300,3 @@ func TestResourceCreation(t *testing.T) {
     }
 }
 ```
-
-## Complete Example
-
-See `cmd/example/main.go` for a complete working example demonstrating:
-- Project creation
-- Resource creation (Elastic IP, Block Storage, VPC)
-- Success and error handling
-- Accessing typed response data
-- Accessing error details
