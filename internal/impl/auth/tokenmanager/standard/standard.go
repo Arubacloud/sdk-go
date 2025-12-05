@@ -16,8 +16,8 @@ import (
 // It handles token storage, retrieval, and automatic refreshing using a
 // thread-safe mechanism to prevent race conditions during updates.
 type TokenManager struct {
-	repository auth.TokenRepository
 	connector  auth.ProviderConnector
+	repository auth.TokenRepository
 
 	// locker guards access to the token storage logic and the ticket counter.
 	locker sync.RWMutex
@@ -31,7 +31,7 @@ var _ auth.TokenManager = (*TokenManager)(nil)
 
 // NewTokenManager creates a new instance of TokenManager with the provided
 // repository (for caching) and connector (for fetching fresh tokens).
-func NewTokenManager(repository auth.TokenRepository, connector auth.ProviderConnector) *TokenManager {
+func NewTokenManager(connector auth.ProviderConnector, repository auth.TokenRepository) *TokenManager {
 	return &TokenManager{
 		repository: repository,
 		connector:  connector,

@@ -35,7 +35,7 @@ func TestTokenManager_BindTo(t *testing.T) {
 		defer ctrl.Finish()
 
 		// Given a fresh token manager
-		tokenManager := NewTokenManager(NewMockTokenRepository(ctrl), NewMockProviderConnector(ctrl))
+		tokenManager := NewTokenManager(NewMockProviderConnector(ctrl), NewMockTokenRepository(ctrl))
 
 		// When we try to bind to a nill intercaptable
 		err := tokenManager.BindTo(nil)
@@ -52,7 +52,7 @@ func TestTokenManager_BindTo(t *testing.T) {
 		defer ctrl.Finish()
 
 		// Given a fresh token manager
-		tokenManager := NewTokenManager(NewMockTokenRepository(ctrl), NewMockProviderConnector(ctrl))
+		tokenManager := NewTokenManager(NewMockProviderConnector(ctrl), NewMockTokenRepository(ctrl))
 
 		// And a valid interceptable
 		interceptable := NewMockInterceptable(ctrl)
@@ -81,7 +81,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		defer ctrl.Finish()
 
 		// Given a fresh token manager which received a nil repository
-		tokenManager := NewTokenManager(nil, NewMockProviderConnector(ctrl))
+		tokenManager := NewTokenManager(NewMockProviderConnector(ctrl), nil)
 
 		// And a fresh valid http request
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
@@ -108,7 +108,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 
 		//
 		// And a fresh token manager which received a nil connector
-		tokenManager := NewTokenManager(repository, nil)
+		tokenManager := NewTokenManager(nil, repository)
 
 		// And a fresh valid http request
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
@@ -155,7 +155,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 
 		//
 		// And a fresh token manager using both repository and connector
-		tokenManager := NewTokenManager(repository, connector)
+		tokenManager := NewTokenManager(connector, repository)
 
 		// And a fresh valid http request
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
@@ -212,7 +212,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 
 		//
 		// And a fresh token manager using both repository and connector
-		tokenManager := NewTokenManager(repository, connector)
+		tokenManager := NewTokenManager(connector, repository)
 
 		// And a fresh valid http request
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
@@ -281,7 +281,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 
 		//
 		// And a fresh token manager using both repository and connector
-		tokenManager := NewTokenManager(repository, connector)
+		tokenManager := NewTokenManager(connector, repository)
 
 		// When we try to inject token 100 times simultaneously
 		type result struct { // to carry the results of each simultaneous call
@@ -358,7 +358,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 
 		//
 		// And a fresh token manager using both repository and connector
-		tokenManager := NewTokenManager(repository, connector)
+		tokenManager := NewTokenManager(connector, repository)
 
 		// And a fresh valid http request
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
@@ -395,7 +395,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 
 		//
 		// And a fresh token manager using both repository and connector
-		tokenManager := NewTokenManager(repository, connector)
+		tokenManager := NewTokenManager(connector, repository)
 
 		// And a fresh valid http request
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
@@ -437,7 +437,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 
 		//
 		// And a fresh token manager using both repository and connector
-		tokenManager := NewTokenManager(repository, connector)
+		tokenManager := NewTokenManager(connector, repository)
 
 		// And a fresh valid http request
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
@@ -471,7 +471,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 		connector.EXPECT().RequestToken(gomock.Any()).Times(0)
 
 		// And a fresh token manager using both repository and connector
-		tokenManager := NewTokenManager(repository, connector)
+		tokenManager := NewTokenManager(connector, repository)
 
 		// And a fresh valid http request
 		r, _ := http.NewRequest(http.MethodGet, "https://www.aruba.it/", nil)
