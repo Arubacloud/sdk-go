@@ -2,8 +2,8 @@
 package aruba
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"net/http"
 
 	vaultapi "github.com/hashicorp/vault/api"
@@ -19,14 +19,16 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 	"github.com/Arubacloud/sdk-go/internal/clients/security"
 	"github.com/Arubacloud/sdk-go/internal/clients/storage"
-	"github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/vault"
-	std "github.com/Arubacloud/sdk-go/internal/impl/auth/tokenmanager/standard"
-	"github.com/Arubacloud/sdk-go/internal/impl/auth/tokenrepository/file"
+	memory_creds_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/memory"
+	vault_creds_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/vault"
+	oauth2_connector "github.com/Arubacloud/sdk-go/internal/impl/auth/providerconnector/oauth2"
+	std_tokenManager "github.com/Arubacloud/sdk-go/internal/impl/auth/tokenmanager/standard"
+	file_token_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/tokenrepository/file"
 	memory_token_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/tokenrepository/memory"
-	"github.com/Arubacloud/sdk-go/internal/impl/auth/tokenrepository/redis"
-	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
-	"github.com/Arubacloud/sdk-go/internal/impl/logger/native"
-	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
+	redis_token_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/tokenrepository/redis"
+	std_interceptor "github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
+	native_logger "github.com/Arubacloud/sdk-go/internal/impl/logger/native"
+	noop_logger "github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
 	"github.com/Arubacloud/sdk-go/internal/ports/auth"
 	"github.com/Arubacloud/sdk-go/internal/ports/interceptor"
 	"github.com/Arubacloud/sdk-go/internal/ports/logger"
@@ -143,10 +145,10 @@ func buildHTTPClient(options *Options) (*http.Client, error) {
 func buildLogger(options *Options) (logger.Logger, error) {
 	switch options.loggerType {
 	case LoggerNoLog:
-		return &noop.NoOpLogger{}, nil
+		return &noop_logger.NoOpLogger{}, nil
 
 	case LoggerNative:
-		return native.NewDefaultLogger(), nil
+		return native_logger.NewDefaultLogger(), nil
 
 	case loggerCustom:
 		return options.userDefinedDependencies.logger, nil
@@ -156,19 +158,38 @@ func buildLogger(options *Options) (logger.Logger, error) {
 }
 
 func buildMiddleware(options *Options) (interceptor.Interceptor, error) {
-	if options.userDefinedDependencies.middleware != nil {
-		return options.userDefinedDependencies.middleware, nil
-	}
-
-	middleware := standard.NewInterceptor()
-
 	// The token manager must be always the last to be bound
 	tokenManager, err := buildTokenManager(&options.tokenManager)
 	if err != nil {
 		return nil, err // TODO: better error handling
 	}
 
+	if options.userDefinedDependencies.middleware != nil {
+		middleware, err := buildUserDefinedMiddleware(options.userDefinedDependencies.middleware, tokenManager)
+		if err != nil {
+			return nil, err // TODO: better error handling
+		}
+
+		return middleware, nil
+	}
+
+	middleware := std_interceptor.NewInterceptor()
 	err = tokenManager.BindTo(middleware)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	return middleware, nil
+}
+
+func buildUserDefinedMiddleware(middleware interceptor.Interceptor, tokenManager auth.TokenManager) (interceptor.Interceptor, error) {
+	interceptable, ok := middleware.(interceptor.Interceptable)
+	if !ok {
+		// TODO: better error handling
+		return nil, errors.New("failed to bind the token manager to the user-defined middleware")
+	}
+
+	err := tokenManager.BindTo(interceptable)
 	if err != nil {
 		return nil, err // TODO: better error handling
 	}
@@ -179,50 +200,122 @@ func buildMiddleware(options *Options) (interceptor.Interceptor, error) {
 //
 // Token Manager
 
-func buildTokenManager(options *tokenManagerOptions) (*std.TokenManager, error) {
-	var tr auth.TokenRepository
+func buildTokenManager(options *tokenManagerOptions) (*std_tokenManager.TokenManager, error) {
+	providerConnector, err := buildProviderConnector(options)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
 
-	if options.redisTokenRepositoryOptions != nil {
-		opt, err := redis_client.ParseURL(options.redisTokenRepositoryOptions.redisURI)
-		if err != nil {
-			log.Fatal("Cannot parse Redis URI", err)
-		}
+	tokenRepository, err := buildTokenRepository(options)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
 
-		rdb := redis_client.NewClient(opt)
-		adapter := redis.NewRedisAdapter(rdb)
+	tokenManager := std_tokenManager.NewTokenManager(providerConnector, tokenRepository)
 
-		tr = redis.NewRedisTokenRepository(options.clientID, adapter)
+	return tokenManager, nil
+}
 
-	} else if options.fileTokenRepositoryOptions != nil {
-		tr = file.NewFileTokenRepository(options.fileTokenRepositoryOptions.baseDir, options.clientID)
-	} else {
-		tr = nil
+func buildProviderConnector(options *tokenManagerOptions) (*oauth2_connector.ProviderConnector, error) {
+	credentialsRepository, err := buildCredentialsRepository(options)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	return oauth2_connector.NewProviderConnector(credentialsRepository, options.issuerURL, options.scopes), nil
+}
+
+func buildCredentialsRepository(options *tokenManagerOptions) (auth.CredentialsRepository, error) {
+	if options.clientCredentialOptions != nil {
+		return memory_creds_repo.NewCredentialsRepository(
+			options.clientCredentialOptions.clientID,
+			options.clientCredentialOptions.clientSecret,
+		), nil
 	}
 
 	if options.vaultCredentialsRepositoryOptions != nil {
-		cfg := vaultapi.DefaultConfig()
-		cfg.Address = options.vaultCredentialsRepositoryOptions.vaultURI
-
-		client, err := vaultapi.NewClient(cfg)
+		vaultCredentialsRepository, err := buildVaultCredentialsRepository(options.vaultCredentialsRepositoryOptions)
 		if err != nil {
-			log.Fatal("Vault client initialization failed", err)
+			return nil, err // TODO: better error handling
 		}
 
-		vaultClient := vault.NewVaultClientAdapter(client)
-		_ = vault.NewCredentialsRepository(
-			vaultClient,
-			options.vaultCredentialsRepositoryOptions.kvMount,
-			options.vaultCredentialsRepositoryOptions.kvPath,
-			options.vaultCredentialsRepositoryOptions.namespace,
-			options.vaultCredentialsRepositoryOptions.rolePath,
-			options.vaultCredentialsRepositoryOptions.roleID,
-			options.vaultCredentialsRepositoryOptions.secretID,
-		)
+		return memory_creds_repo.NewCredentialsProxy(vaultCredentialsRepository), nil
 	}
 
-	tm := std.NewTokenManager(memory_token_repo.NewTokenProxy(tr), nil)
+	return nil, errors.New("no credentials repository defined")
+}
 
-	return tm, nil
+func buildVaultCredentialsRepository(options *vaultCredentialsRepositoryOptions) (*vault_creds_repo.CredentialsRepository, error) {
+	cfg := vaultapi.DefaultConfig()
+	cfg.Address = options.vaultURI
+
+	client, err := vaultapi.NewClient(cfg)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	return vault_creds_repo.NewCredentialsRepository(
+		vault_creds_repo.NewVaultClientAdapter(client),
+		options.kvMount,
+		options.kvPath,
+		options.namespace,
+		options.rolePath,
+		options.roleID,
+		options.secretID,
+	), nil
+}
+
+func buildTokenRepository(options *tokenManagerOptions) (auth.TokenRepository, error) {
+	var keyIDComponent string
+	if options.clientCredentialOptions != nil {
+		keyIDComponent = options.clientCredentialOptions.clientID
+	} else if options.vaultCredentialsRepositoryOptions != nil {
+		keyIDComponent = options.vaultCredentialsRepositoryOptions.secretID
+	}
+
+	var persistentTokenRepository auth.TokenRepository
+	var err error
+
+	if options.redisTokenRepositoryOptions != nil {
+		persistentTokenRepository, err = buildRedisTokenRepository(
+			keyIDComponent,
+			options.redisTokenRepositoryOptions,
+		)
+		if err != nil {
+			return nil, err // TODO: better error handling
+		}
+
+	} else if options.fileTokenRepositoryOptions != nil {
+		persistentTokenRepository, err = buildFileTokenRepository(
+			keyIDComponent,
+			options.fileTokenRepositoryOptions,
+		)
+		if err != nil {
+			return nil, err // TODO: better error handling
+		}
+	}
+
+	if persistentTokenRepository != nil {
+		return memory_token_repo.NewTokenProxy(persistentTokenRepository), nil
+	}
+
+	return memory_token_repo.NewTokenRepository(), nil
+}
+
+func buildRedisTokenRepository(clientID string, options *redisTokenRepositoryOptions) (*redis_token_repo.TokenRepository, error) {
+	opt, err := redis_client.ParseURL(options.redisURI)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	rdb := redis_client.NewClient(opt)
+	adapter := redis_token_repo.NewRedisAdapter(rdb)
+
+	return redis_token_repo.NewRedisTokenRepository(clientID, adapter), nil
+}
+
+func buildFileTokenRepository(clientID string, options *fileTokenRepositoryOptions) (*file_token_repo.TokenRepository, error) {
+	return file_token_repo.NewFileTokenRepository(options.baseDir, clientID), nil
 }
 
 //
