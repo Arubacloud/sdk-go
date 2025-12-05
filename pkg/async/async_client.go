@@ -94,7 +94,12 @@ func WaitFor[T any](
 	if check == nil {
 		// default check: consider any non-nil response as "done"
 		check = func(resp *types.Response[T]) (bool, error) {
-			return resp != nil, nil
+			checkResource := resp != nil && resp.Data != nil
+			if !checkResource {
+				return false, fmt.Errorf("response nil")
+			}
+
+			return checkResource, nil
 		}
 	}
 
