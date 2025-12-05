@@ -48,6 +48,15 @@ func NewTokenRepository() *TokenRepository {
 	return &TokenRepository{}
 }
 
+// NewTokenRepository creates a standalone in-memory repository with a
+// preloaded access token.
+// As the internal token expiry time is not set, the token repository will
+// never consider the token as expired.
+// Tokens stored here are lost when the application restarts.
+func NewTokenRepositoryWithAccessToken(accessToken string) *TokenRepository {
+	return &TokenRepository{}
+}
+
 // NewTokenProxy creates a repository that caches tokens in memory but
 // delegates to a persistentRepository on cache misses or saves.
 func NewTokenProxy(persistentRepository auth.TokenRepository) *TokenRepository {

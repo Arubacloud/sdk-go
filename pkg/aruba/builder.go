@@ -22,7 +22,7 @@ import (
 	memory_creds_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/memory"
 	vault_creds_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/vault"
 	oauth2_connector "github.com/Arubacloud/sdk-go/internal/impl/auth/providerconnector/oauth2"
-	std_tokenManager "github.com/Arubacloud/sdk-go/internal/impl/auth/tokenmanager/standard"
+	std_token_manager "github.com/Arubacloud/sdk-go/internal/impl/auth/tokenmanager/standard"
 	file_token_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/tokenrepository/file"
 	memory_token_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/tokenrepository/memory"
 	redis_token_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/tokenrepository/redis"
@@ -200,23 +200,29 @@ func buildUserDefinedMiddleware(middleware interceptor.Interceptor, tokenManager
 //
 // Token Manager
 
-func buildTokenManager(options *tokenManagerOptions) (*std_tokenManager.TokenManager, error) {
-	providerConnector, err := buildProviderConnector(options)
+func buildTokenManager(options *tokenManagerOptions) (*std_token_manager.TokenManager, error) {
+	if options.token != nil {
+		return std_token_manager.NewStaticTokenManager(
+			memory_token_repo.NewTokenRepositoryWithAccessToken(*options.token),
+		), nil
+	}
+
+	providerConnector, err := buildProviderConnector(options.tokenIssuerOptions)
 	if err != nil {
 		return nil, err // TODO: better error handling
 	}
 
-	tokenRepository, err := buildTokenRepository(options)
+	tokenRepository, err := buildTokenRepository(options.tokenIssuerOptions)
 	if err != nil {
 		return nil, err // TODO: better error handling
 	}
 
-	tokenManager := std_tokenManager.NewTokenManager(providerConnector, tokenRepository)
+	tokenManager := std_token_manager.NewTokenManager(providerConnector, tokenRepository)
 
 	return tokenManager, nil
 }
 
-func buildProviderConnector(options *tokenManagerOptions) (*oauth2_connector.ProviderConnector, error) {
+func buildProviderConnector(options *tokenIssuerOptions) (*oauth2_connector.ProviderConnector, error) {
 	credentialsRepository, err := buildCredentialsRepository(options)
 	if err != nil {
 		return nil, err // TODO: better error handling
@@ -225,7 +231,7 @@ func buildProviderConnector(options *tokenManagerOptions) (*oauth2_connector.Pro
 	return oauth2_connector.NewProviderConnector(credentialsRepository, options.issuerURL, options.scopes), nil
 }
 
-func buildCredentialsRepository(options *tokenManagerOptions) (auth.CredentialsRepository, error) {
+func buildCredentialsRepository(options *tokenIssuerOptions) (auth.CredentialsRepository, error) {
 	if options.clientCredentialOptions != nil {
 		return memory_creds_repo.NewCredentialsRepository(
 			options.clientCredentialOptions.clientID,
@@ -265,7 +271,7 @@ func buildVaultCredentialsRepository(options *vaultCredentialsRepositoryOptions)
 	), nil
 }
 
-func buildTokenRepository(options *tokenManagerOptions) (auth.TokenRepository, error) {
+func buildTokenRepository(options *tokenIssuerOptions) (auth.TokenRepository, error) {
 	var keyIDComponent string
 	if options.clientCredentialOptions != nil {
 		keyIDComponent = options.clientCredentialOptions.clientID
