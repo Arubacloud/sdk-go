@@ -22,7 +22,7 @@ var _ auth.TokenRepository = (*TokenRepository)(nil)
 
 // NewFileTokenRepository is the constructor for TokenRepository.
 // It constructs the full file path where the token will be stored.
-func NewFileTokenRepository(baseDir, clientID string) *TokenRepository {
+func NewFileTokenRepository(clientID, baseDir string) *TokenRepository {
 	// Construct the file name using the client ID.
 	name := fmt.Sprintf("%s.token.json", clientID)
 	return &TokenRepository{
