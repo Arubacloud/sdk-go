@@ -123,7 +123,13 @@ func WaitFor[T any](
 			} else {
 				// Check if the response satisfies the done condition
 				// ignore errors from check() and continue retrying
-				result, _ := check(resp)
+				result, err := check(resp)
+
+				// if the check itself errors, record and continue
+				if err != nil {
+					lastErr = err
+					continue
+				}
 
 				if result {
 					asyncClient.resultCh <- Result[T]{Response: resp, Error: nil}
