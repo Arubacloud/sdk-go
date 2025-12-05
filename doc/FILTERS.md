@@ -464,8 +464,3 @@ filter := schema.NewFilterBuilder().
 
 For complete API documentation and additional filter options, see:
 - [Aruba Cloud API - Filters](https://api.arubacloud.com/docs/filters)
-- [SDK Filter Package Documentation](./pkg/spec/schema/filters.go)
-
-## Examples Repository
-
-For more examples, see the [examples directory](./examples/) in the SDK repository.
