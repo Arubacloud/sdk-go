@@ -111,7 +111,13 @@ func (c *kaasClientImpl) Create(ctx context.Context, projectID string, body type
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	futureResp := restclient.AsyncCallDefault(ctx, func(ctx context.Context) (*http.Response, error) {
+		return c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	})
+
+	httpResp, err := futureResp.Await(ctx)
+	//	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +181,12 @@ func (c *kaasClientImpl) Update(ctx context.Context, projectID string, kaasID st
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	futureResp := restclient.AsyncCallDefault(ctx, func(ctx context.Context) (*http.Response, error) {
+		return c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	})
+
+	httpResp, err := futureResp.Await(ctx)
+	//	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +244,12 @@ func (c *kaasClientImpl) Delete(ctx context.Context, projectID string, kaasID st
 	queryParams := params.ToQueryParams()
 	headers := params.ToHeaders()
 
-	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	futureResp := restclient.AsyncCallDefault(ctx, func(ctx context.Context) (*http.Response, error) {
+		return c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
+	})
+
+	httpResp, err := futureResp.Await(ctx)
+	//	httpResp, err := c.client.DoRequest(ctx, http.MethodDelete, path, nil, queryParams, headers)
 	if err != nil {
 		return nil, err
 	}
