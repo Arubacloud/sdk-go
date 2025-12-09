@@ -1,5 +1,17 @@
 # Aruba Cloud SDK for Go
 
+> **Note**: This SDK is currently in its **Alpha** stage. The API is not yet stable, and breaking changes may be introduced in future releases without prior notice. Please use with caution and be prepared for updates.
+
+### Table of Contents
+
+- [1. Quick Start](#1-quick-start)
+- [2. Usage Details](#2-usage-details)
+  - [2.1. Config Options](#21-config-options)
+  - [2.2. Performing Calls, Setting Filters, and Handling Responses](#22-performing-calls-setting-filters-and-handling-responses)
+  - [2.3. SDK Client API Reference](#23-sdk-client-api-reference)
+  - [2.4. Handling Asynchronous Operations](#24-handling-asynchronous-operations)
+  - [2.5. Data Types](#25-data-types)
+
 Welcome to the official Go SDK for the Aruba Cloud API. This SDK provides a convenient and powerful way for Go developers to interact with the Aruba Cloud API. The primary goal is to simplify the management of cloud resources, allowing you to programmatically create, read, update, and delete resources such as compute instances, virtual private clouds (VPCs), block storage, and more.
 
 ## 1. Quick Start
@@ -235,7 +247,104 @@ Each resource client provides methods for CRUD operations (`Create`, `List`, `Ge
 
 For a comprehensive guide on all API groups, resource clients, and their available operations, please refer to the [API Groups and Resources Documentation](./doc/RESOURCES.md).
 
-#### Data Types
+### 2.4. Handling Asynchronous Operations
+
+Many operations in a cloud environment are asynchronous. For instance, when you create a new Cloud Server, the API call might return successfully, but the server itself takes a few minutes to be provisioned and ready. The SDK provides helpers in the `pkg/async` package to manage these scenarios by polling for a desired state.
+
+The primary tool for this is the `async.WaitFor` function. It repeatedly executes an API call until a specific condition is met or a timeout is reached. A simpler `async.DefaultWaitFor` is also available for common use cases.
+
+**Example: Waiting for a Cloud Server to be 'running'**
+
+Let's say you've just created a Cloud Server and want to wait until it is fully provisioned and has a status of `"running"`.
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/Arubacloud/sdk-go/pkg/aruba"
+	"github.com/Arubacloud/sdk-go/pkg/async"
+	aruba_types "github.com/Arubacloud/sdk-go/pkg/types"
+)
+
+// Assume arubaClient is initialized and projectID and serverID are available.
+var arubaClient *aruba.Client
+var projectID = "your-project-id"
+var serverID = "your-server-id"
+
+func main() {
+	// Initialize client, create server, etc.
+	// ...
+
+	fmt.Printf("Waiting for server %s to become ready...\n", serverID)
+
+	// Use DefaultWaitFor for simple polling with default settings.
+	// It will retry every 10s for up to 10 times with a total timeout of 60s.
+	waitFuture := async.DefaultWaitFor(
+		context.Background(),
+		// This is the function that will be called repeatedly.
+		// It should fetch the resource's current state.
+		func(ctx context.Context) (*aruba_types.Response[aruba_types.CloudServerResponse], error) {
+			return arubaClient.FromCompute().CloudServers().Get(ctx, projectID, serverID, nil)
+		},
+		// This function checks if the desired state has been reached.
+		// It returns 'true' to stop waiting, or 'false' to continue.
+		func(resp *aruba_types.Response[aruba_types.CloudServerResponse]) (bool, error) {
+			if resp.IsSuccess() {
+				// Replace "running" with the actual desired status of the resource.
+				isReady := resp.Data.Properties.Status == "running"
+				if isReady {
+					fmt.Println("✓ Server is now running.")
+				}
+				return isReady, nil
+			}
+			// Continue waiting if the resource isn't ready or if there's a temporary API issue.
+			return false, nil
+		},
+	)
+
+	// Await blocks until the wait operation is complete (or fails).
+	finalResp, err := waitFuture.Await(context.Background())
+	if err != nil {
+		log.Fatalf("Error waiting for server: %v", err)
+	}
+
+	// Now you can safely work with the resource, knowing it is in the desired state.
+	fmt.Printf("Server %s is ready. Status: %s\n", *finalResp.Data.Metadata.ID, finalResp.Data.Properties.Status)
+}
+```
+
+For more control over the polling behavior, you can use the `async.WaitFor` function directly. This allows you to specify custom retry counts, delays, and a total timeout.
+
+```go
+// Example with custom parameters
+waitFutureCustom := async.WaitFor(
+    context.Background(),
+    15,                 // retries
+    5*time.Second,      // delay between retries
+    2*time.Minute,      // total timeout
+    func(ctx context.Context) (*aruba_types.Response[aruba_types.CloudServerResponse], error) {
+		return arubaClient.FromCompute().CloudServers().Get(ctx, projectID, serverID, nil)
+    },
+    func(resp *aruba_types.Response[aruba_types.CloudServerResponse]) (bool, error) {
+        // The check function returns true when the desired state is reached.
+		return resp.IsSuccess() && resp.Data.Properties.Status == "running", nil
+    },
+)
+
+// Await the result
+finalRespCustom, err := waitFutureCustom.Await(context.Background())
+if err != nil {
+    log.Fatalf("Error waiting for server with custom settings: %v", err)
+}
+fmt.Printf("Server %s is ready after custom wait. Status: %s\n", *finalRespCustom.Data.Metadata.ID, finalRespCustom.Data.Properties.Status)
+```
+
+### 2.5. Data Types
 
 All request bodies, response objects, and data models are defined in the `pkg/types` package. They are named to correspond with the resources they represent.
 
