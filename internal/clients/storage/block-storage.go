@@ -15,7 +15,7 @@ type volumesClientImpl struct {
 	client *restclient.Client
 }
 
-// Update updates an existing block storage volume
+// Updates an existing block storage volume
 func (c *volumesClientImpl) Update(ctx context.Context, projectID string, volumeID string, body types.BlockStorageRequest, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error) {
 	c.client.Logger().Debugf("Updating block storage volume: %s in project: %s", volumeID, projectID)
 
