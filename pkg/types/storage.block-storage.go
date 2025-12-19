@@ -16,8 +16,9 @@ type BlockStoragePropertiesRequest struct {
 	// BillingPeriod of the block storage
 	BillingPeriod string `json:"billingPeriod"`
 
-	//Zone where blockstorage will be created
-	Zone string `json:"dataCenter"`
+	// Zone where blockstorage will be created (optional).
+	// If specified, the resource is zonal; otherwise, it is regional.
+	Zone *string `json:"dataCenter,omitempty"`
 
 	// Type of block storage. Admissible values: Standard, Performance
 	Type BlockStorageType `json:"type"`
