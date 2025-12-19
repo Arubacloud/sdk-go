@@ -122,7 +122,7 @@ func (c *snapshotsClientImpl) Get(ctx context.Context, projectID string, snapsho
 }
 
 // Create creates a new snapshot
-// The SDK automatically waits for the source BlockStorage volume to become Active or NotUsed before creating the snapshot
+// The SDK automatically waits for the source BlockStorage volume to become Used or NotUsed before creating the snapshot
 func (c *snapshotsClientImpl) Create(ctx context.Context, projectID string, body types.SnapshotRequest, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error) {
 	c.client.Logger().Debugf("Creating snapshot in project: %s", projectID)
 
@@ -135,7 +135,7 @@ func (c *snapshotsClientImpl) Create(ctx context.Context, projectID string, body
 		// Parse URI to get volume ID: /projects/{project}/providers/Aruba.Storage/blockstorages/{volumeID}
 		volumeID, err := extractVolumeIDFromURI(body.Properties.Volume.URI)
 		if err == nil && volumeID != "" {
-			// Wait for BlockStorage to become Active or NotUsed before creating snapshot
+			// Wait for BlockStorage to become Used or NotUsed before creating snapshot
 			err := waitForBlockStorageActive(ctx, c.volumesClient, projectID, volumeID)
 			if err != nil {
 				return nil, fmt.Errorf("failed waiting for BlockStorage to become ready: %w", err)
