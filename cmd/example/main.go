@@ -355,7 +355,7 @@ func createBlockStorage(ctx context.Context, arubaClient aruba.Client, projectID
 		Properties: types.BlockStoragePropertiesRequest{
 			SizeGB:        20,
 			Type:          types.BlockStorageTypeStandard,
-			Zone:          "ITBG-1",
+			Zone:          stringPtr("ITBG-1"),
 			BillingPeriod: "Hour",
 			Bootable:      boolPtr(true),
 			Image:         stringPtr("LU22-001"),

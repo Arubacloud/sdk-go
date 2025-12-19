@@ -38,9 +38,6 @@ func TestListProjects(t *testing.T) {
 								Default:         true,
 								ResourcesNumber: 10,
 							},
-							Status: types.ResourceStatus{
-								State: types.StringPtr("active"),
-							},
 						},
 						{
 							Metadata: types.ResourceMetadataResponse{
@@ -51,9 +48,6 @@ func TestListProjects(t *testing.T) {
 								Description:     types.StringPtr("Test project"),
 								Default:         false,
 								ResourcesNumber: 5,
-							},
-							Status: types.ResourceStatus{
-								State: types.StringPtr("active"),
 							},
 						},
 					},
@@ -117,9 +111,6 @@ func TestGetProject(t *testing.T) {
 						Default:         false,
 						ResourcesNumber: 15,
 					},
-					Status: types.ResourceStatus{
-						State: types.StringPtr("active"),
-					},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return
@@ -180,9 +171,6 @@ func TestCreateProject(t *testing.T) {
 						Default:         false,
 						ResourcesNumber: 0,
 					},
-					Status: types.ResourceStatus{
-						State: types.StringPtr("creating"),
-					},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return
@@ -222,9 +210,6 @@ func TestCreateProject(t *testing.T) {
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "new-project" {
 			t.Errorf("expected name 'new-project'")
 		}
-		if resp.Data.Status.State == nil || *resp.Data.Status.State != "creating" {
-			t.Errorf("expected state 'creating'")
-		}
 	})
 }
 
@@ -249,9 +234,6 @@ func TestUpdateProject(t *testing.T) {
 						Description:     types.StringPtr("Updated description"),
 						Default:         false,
 						ResourcesNumber: 15,
-					},
-					Status: types.ResourceStatus{
-						State: types.StringPtr("active"),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)

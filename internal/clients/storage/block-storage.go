@@ -15,9 +15,40 @@ type volumesClientImpl struct {
 	client *restclient.Client
 }
 
-// Update implements aruba.VolumesClient.
+// Updates an existing block storage volume
 func (c *volumesClientImpl) Update(ctx context.Context, projectID string, volumeID string, body types.BlockStorageRequest, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error) {
-	panic("unimplemented")
+	c.client.Logger().Debugf("Updating block storage volume: %s in project: %s", volumeID, projectID)
+
+	if err := types.ValidateProjectAndResource(projectID, volumeID, "block storage ID"); err != nil {
+		return nil, err
+	}
+
+	path := fmt.Sprintf(BlockStoragePath, projectID, volumeID)
+
+	if params == nil {
+		params = &types.RequestParameters{
+			APIVersion: &BlockStorageUpdateAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &BlockStorageUpdateAPIVersion
+	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
+
+	// Marshal the request body to JSON
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPut, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	return types.ParseResponseBody[types.BlockStorageResponse](httpResp)
 }
 
 // NewVolumesClientImpl creates a new unified Storage service
