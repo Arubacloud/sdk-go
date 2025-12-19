@@ -21,8 +21,8 @@ func waitForBlockStorageActive(ctx context.Context, volumeClient *volumesClientI
 	}
 
 	config := restclient.DefaultPollingConfig()
-	// BlockStorage can be "Active" (attached) or "NotUsed" (unattached but ready)
-	config.SuccessStates = []string{"Active", "NotUsed"}
+	// BlockStorage can be "Used" (attached) or "NotUsed" (unattached but ready)
+	config.SuccessStates = []string{"Used", "NotUsed"}
 
 	return volumeClient.client.WaitForResourceState(ctx, "BlockStorage", volumeID, getter, config)
 }
