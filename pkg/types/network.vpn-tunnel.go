@@ -1,12 +1,19 @@
 package types
 
 // IPConfigurations contains network configuration of the VPN tunnel
+// SubnetInfo contains subnet CIDR and name for VPN tunnel IP configuration
+type SubnetInfo struct {
+	CIDR string `json:"cidr,omitempty"`
+	Name string `json:"name,omitempty"`
+}
+
+// IPConfigurations contains network configuration of the VPN tunnel
 type IPConfigurations struct {
 	// VPC reference to the VPC (nullable)
 	VPC *ReferenceResource `json:"vpc,omitempty"`
 
-	// Subnet reference to the subnet (nullable)
-	Subnet *ReferenceResource `json:"subnet,omitempty"`
+	// Subnet info (nullable)
+	Subnet *SubnetInfo `json:"subnet,omitempty"`
 
 	// PublicIP reference to the public IP (nullable)
 	PublicIP *ReferenceResource `json:"publicIp,omitempty"`
@@ -73,6 +80,9 @@ type VPNClientSettings struct {
 
 	// PSK Pre-Shared Key settings (nullable)
 	PSK *PSKSettings `json:"psk,omitempty"`
+
+	// PeerClientPublicIP Peer client public IP address (nullable)
+	PeerClientPublicIP *string `json:"peerClientPublicIp,omitempty"`
 }
 
 // VPNTunnelPropertiesRequest contains properties of a VPN tunnel
@@ -88,9 +98,6 @@ type VPNTunnelPropertiesRequest struct {
 
 	// VPNClientSettings Client settings of the VPN tunnel (nullable)
 	VPNClientSettings *VPNClientSettings `json:"vpnClientSettings,omitempty"`
-
-	// PeerClientPublicIP Peer client public IP address (nullable)
-	PeerClientPublicIP *string `json:"peerClientPublicIp,omitempty"`
 
 	// BillingPlan Billing plan
 	BillingPlan *BillingPeriodResource `json:"billingPlan,omitempty"`
@@ -109,9 +116,6 @@ type VPNTunnelPropertiesResponse struct {
 
 	// VPNClientSettings Client settings of the VPN tunnel (nullable)
 	VPNClientSettings *VPNClientSettings `json:"vpnClientSettings,omitempty"`
-
-	// PeerClientPublicIP Peer client public IP address (nullable)
-	PeerClientPublicIP *string `json:"peerClientPublicIp,omitempty"`
 
 	// RoutesNumber Number of valid VPN routes of the VPN tunnel
 	RoutesNumber int32 `json:"routesNumber,omitempty"`
