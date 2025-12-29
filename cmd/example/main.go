@@ -768,7 +768,7 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, projectID string,
 			},
 		},
 		Properties: types.KaaSPropertiesRequest{
-			Preset: false,
+			Preset: boolPtr(false),
 			VPC: types.ReferenceResource{
 				URI: *vpcResp.Data.Metadata.URI,
 			},
@@ -793,7 +793,7 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, projectID string,
 					Zone:     "ITBG-1",
 				},
 			},
-			HA: true,
+			HA: boolPtr(true),
 			BillingPlan: types.BillingPeriodResource{
 				BillingPeriod: "Hour",
 			},
@@ -813,11 +813,23 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, projectID string,
 	}
 
 	if kaasResp.Data != nil && kaasResp.Data.Metadata.Name != nil {
+		nodeCount := 0
+		if kaasResp.Data.Properties.NodePools != nil {
+			nodeCount = len(*kaasResp.Data.Properties.NodePools)
+		}
+		haValue := false
+		if kaasResp.Data.Properties.HA != nil {
+			haValue = *kaasResp.Data.Properties.HA
+		}
+		k8sVersion := ""
+		if kaasResp.Data.Properties.KubernetesVersion.Value != nil {
+			k8sVersion = *kaasResp.Data.Properties.KubernetesVersion.Value
+		}
 		fmt.Printf("✓ Created KaaS cluster: %s (K8s: %s, Nodes: %d, HA: %t)\n",
 			*kaasResp.Data.Metadata.Name,
-			kaasResp.Data.Properties.KubernetesVersion.Value,
-			len(kaasResp.Data.Properties.NodePools),
-			kaasResp.Data.Properties.HA)
+			k8sVersion,
+			nodeCount,
+			haValue)
 	}
 
 	return kaasResp

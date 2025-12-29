@@ -149,7 +149,7 @@ func (c *kaasClientImpl) Create(ctx context.Context, projectID string, body type
 }
 
 // Update updates an existing KaaS cluster
-func (c *kaasClientImpl) Update(ctx context.Context, projectID string, kaasID string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
+func (c *kaasClientImpl) Update(ctx context.Context, projectID string, kaasID string, body types.KaaSUpdateRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
 	c.client.Logger().Debugf("Updating KaaS cluster: %s in project: %s", kaasID, projectID)
 
 	if err := types.ValidateProjectAndResource(projectID, kaasID, "KaaS ID"); err != nil {

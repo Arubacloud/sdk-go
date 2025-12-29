@@ -13,8 +13,13 @@ type KubernetesVersionInfo struct {
 	Value string `json:"value"`
 }
 
+type KubernetesVersionInfoUpdate struct {
+	Value       string  `json:"value"`
+	UpgradeDate *string `json:"upgradeDate,omitempty"`
+}
+
 type StorageKubernetes struct {
-	MaxCumulativeVolumeSize int32 `json:"maxCumulativeVolumeSize,omitempty"`
+	MaxCumulativeVolumeSize *int32 `json:"maxCumulativeVolumeSize,omitempty"`
 }
 
 type NodePoolProperties struct {
@@ -34,10 +39,50 @@ type NodePoolProperties struct {
 	// See metadata section of the API documentation for an updated list of admissible values.
 	// For more information, check the documentation.
 	Zone string `json:"dataCenter"`
+
+	// MinCount Minimum number of nodes for autoscaling
+	MinCount *int32 `json:"minCount,omitempty"`
+
+	// MaxCount Maximum number of nodes for autoscaling
+	MaxCount *int32 `json:"maxCount,omitempty"`
+
+	// Autoscaling Indicates if autoscaling is enabled for this node pool
+	Autoscaling bool `json:"autoscaling"`
 }
 
 type SecurityGroupProperties struct {
 	Name string `json:"name"`
+}
+
+type IdentityProperties struct {
+	ClientID     *string `json:"clientId,omitempty"`
+	ClientSecret *string `json:"clientSecret,omitempty"`
+}
+
+type IdentityPropertiesResponse struct {
+	ClientID *string `json:"clientId,omitempty"`
+}
+
+type APIServerAccessProfileProperties struct {
+	AuthorizedIPRanges   *[]string `json:"authorizedIpRanges,omitempty"`
+	EnablePrivateCluster bool      `json:"enablePrivateCluster"`
+}
+
+type APIServerAccessProfilePropertiesResponse struct {
+	AuthorizedIPRanges   *[]string `json:"authorizedIpRanges,omitempty"`
+	EnablePrivateCluster bool      `json:"enablePrivateCluster"`
+}
+
+type ReferenceResourceResponse struct {
+	URI *string `json:"uri,omitempty"`
+}
+
+type OpenstackProjectResponse struct {
+	ID *string `json:"id,omitempty"`
+}
+
+type BillingPeriodResourceResponse struct {
+	BillingPeriod *string `json:"billingPeriod,omitempty"`
 }
 
 type KaaSPropertiesRequest struct {
@@ -45,7 +90,7 @@ type KaaSPropertiesRequest struct {
 	//LinkedResources linked resources to the KaaS cluster
 	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
 
-	Preset bool `json:"preset"`
+	Preset *bool `json:"preset,omitempty"`
 
 	VPC ReferenceResource `json:"vpc"`
 
@@ -53,17 +98,23 @@ type KaaSPropertiesRequest struct {
 
 	NodeCIDR NodeCIDRProperties `json:"nodeCidr"`
 
+	PodCIDR *string `json:"podCidr,omitempty"`
+
 	SecurityGroup SecurityGroupProperties `json:"securityGroup"`
 
 	KubernetesVersion KubernetesVersionInfo `json:"kubernetesVersion"`
 
 	NodePools []NodePoolProperties `json:"nodePools"`
 
-	HA bool `json:"ha"`
+	HA *bool `json:"ha,omitempty"`
 
 	Storage StorageKubernetes `json:"storage,omitempty"`
 
 	BillingPlan BillingPeriodResource `json:"billingPlan"`
+
+	Identity *IdentityProperties `json:"identity,omitempty"`
+
+	APIServerAccessProfile *APIServerAccessProfileProperties `json:"apiServerAccessProfile,omitempty"`
 }
 
 type KubernetesVersionInfoUpgradeResponse struct {
@@ -73,11 +124,43 @@ type KubernetesVersionInfoUpgradeResponse struct {
 	ScheduledAt *string `json:"scheduledAt,omitempty"`
 }
 
+type InstanceResponse struct {
+	// ID Instance identifier (nullable)
+	ID *string `json:"id,omitempty"`
+
+	// Name Instance name (nullable)
+	Name *string `json:"name,omitempty"`
+}
+
+type DataCenterResponse struct {
+	// Code Data center code (nullable)
+	Code *string `json:"code,omitempty"`
+
+	// Name Data center name (nullable)
+	Name *string `json:"name,omitempty"`
+}
+
 type NodePoolPropertiesResponse struct {
-	NodePoolProperties // Embedded struct - inherits the Value field
+	// Name Nodepool name (nullable)
+	Name *string `json:"name,omitempty"`
+
+	// Nodes Number of nodes (nullable)
+	Nodes *int32 `json:"nodes,omitempty"`
+
+	// Instance Configuration of the nodes
+	Instance *InstanceResponse `json:"instance,omitempty"`
+
+	// DataCenter Datacenter in which the nodes of the pool will be located
+	DataCenter *DataCenterResponse `json:"dataCenter,omitempty"`
+
+	// MinCount Minimum number of nodes for autoscaling (nullable)
+	MinCount *int32 `json:"minCount,omitempty"`
+
+	// MaxCount Maximum number of nodes for autoscaling (nullable)
+	MaxCount *int32 `json:"maxCount,omitempty"`
 
 	// Autoscaling Indicates if autoscaling is enabled for this node pool
-	Autoscaling bool `json:"autoscaling,omitempty"`
+	Autoscaling bool `json:"autoscaling"`
 
 	// CreationDate Creation date and time (nullable)
 	CreationDate *string `json:"creationDate,omitempty"`
@@ -85,7 +168,8 @@ type NodePoolPropertiesResponse struct {
 
 // KubernetesVersionInfoResponse extends KubernetesVersionInfo with additional response fields
 type KubernetesVersionInfoResponse struct {
-	KubernetesVersionInfo // Embedded struct - inherits the Value field
+	// Value Value of the version (nullable)
+	Value *string `json:"value,omitempty"`
 
 	// EndOfSupportDate End of support date for this version (nullable)
 	EndOfSupportDate *string `json:"endOfSupportDate,omitempty"`
@@ -98,28 +182,31 @@ type KubernetesVersionInfoResponse struct {
 
 	// Recommended Indicates if this is the recommended version
 	Recommended bool `json:"recommended,omitempty"`
+
+	// UpgradeTo Information about available upgrade
+	UpgradeTo *KubernetesVersionInfoUpgradeResponse `json:"upgradeTo,omitempty"`
 }
 
 type PodCIDRPropertiesResponse struct {
 
 	// Address in CIDR notation The IP range must be between
-	Address string `json:"address,omitempty"`
+	Address *string `json:"address,omitempty"`
 }
 
 type NodeCIDRPropertiesResponse struct {
 
 	// Address in CIDR notation The IP range must be between
-	Address string `json:"address,omitempty"`
+	Address *string `json:"address,omitempty"`
 
-	Name string `json:"name,omitempty"`
+	Name *string `json:"name,omitempty"`
 
-	URI string `json:"uri,omitempty"`
+	URI *string `json:"uri,omitempty"`
 }
 
 type KaasSecurityGroupPropertiesResponse struct {
-	Name string `json:"name,omitempty"`
+	Name *string `json:"name,omitempty"`
 
-	URI string `json:"uri,omitempty"`
+	URI *string `json:"uri,omitempty"`
 }
 
 type KaaSPropertiesResponse struct {
@@ -129,32 +216,54 @@ type KaaSPropertiesResponse struct {
 
 	Preset bool `json:"preset"`
 
-	VPC ReferenceResource `json:"vpc"`
+	VPC ReferenceResourceResponse `json:"vpc"`
 
-	Subnet ReferenceResource `json:"subnet"`
+	Subnet ReferenceResourceResponse `json:"subnet"`
 
 	KubernetesVersion KubernetesVersionInfoResponse `json:"kubernetesVersion"`
 
-	NodePools []NodePoolPropertiesResponse `json:"nodesPool"`
+	NodePools *[]NodePoolPropertiesResponse `json:"nodesPool,omitempty"`
 
-	PodCIDR PodCIDRPropertiesResponse `json:"podCidr,omitempty"`
+	PodCIDR *PodCIDRPropertiesResponse `json:"podcidr,omitempty"`
 
-	NodeCIDR NodeCIDRPropertiesResponse `json:"nodeCidr"`
+	NodeCIDR NodeCIDRPropertiesResponse `json:"nodecidr"`
 
 	SecurityGroup KaasSecurityGroupPropertiesResponse `json:"securityGroup"`
 
-	HA bool `json:"ha"`
+	HA *bool `json:"ha,omitempty"`
 
-	Storage StorageKubernetes `json:"storage,omitempty"`
+	Storage *StorageKubernetes `json:"storage,omitempty"`
 
-	BillingPlan BillingPeriodResource `json:"billingPlan"`
+	BillingPlan *BillingPeriodResourceResponse `json:"billingPlan,omitempty"`
 
 	ManagementIP *string `json:"managementIp,omitempty"`
+
+	OpenstackProject *OpenstackProjectResponse `json:"openstackProject,omitempty"`
+
+	Identity *IdentityPropertiesResponse `json:"identity,omitempty"`
+
+	APIServerAccessProfile *APIServerAccessProfilePropertiesResponse `json:"apiServerAccessProfile,omitempty"`
+}
+
+type KaaSPropertiesUpdateRequest struct {
+	KubernetesVersion KubernetesVersionInfoUpdate `json:"kubernetesVersion"`
+
+	NodePools []NodePoolProperties `json:"nodePools"`
+
+	HA *bool `json:"ha,omitempty"`
+
+	Storage *StorageKubernetes `json:"storage,omitempty"`
+
+	BillingPlan *BillingPeriodResource `json:"billingPlan,omitempty"`
 }
 
 type KaaSRequest struct {
 	Metadata   RegionalResourceMetadataRequest `json:"metadata"`
 	Properties KaaSPropertiesRequest           `json:"properties"`
+}
+
+type KaaSUpdateRequest struct {
+	Properties KaaSPropertiesUpdateRequest `json:"properties"`
 }
 
 type KaaSResponse struct {
