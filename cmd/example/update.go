@@ -193,34 +193,11 @@ func updateKaaS(ctx context.Context, arubaClient aruba.Client, projectID string,
 
 	kaasID := *kaasResp.Data.Metadata.ID
 
-	// Update with modified node pool
-	kaasReq := types.KaaSRequest{
-		Metadata: types.RegionalResourceMetadataRequest{
-			ResourceMetadataRequest: types.ResourceMetadataRequest{
-				Name: "my-kaas-cluster-updated",
-				Tags: []string{"kubernetes", "container", "updated"},
-			},
-			Location: types.LocationRequest{
-				Value: "ITBG-Bergamo",
-			},
-		},
-		Properties: types.KaaSPropertiesRequest{
-			Preset: false,
-			VPC: types.ReferenceResource{
-				URI: kaasResp.Data.Properties.VPC.URI,
-			},
-			Subnet: types.ReferenceResource{
-				URI: kaasResp.Data.Properties.Subnet.URI,
-			},
-			SecurityGroup: types.SecurityGroupProperties{
-				Name: kaasResp.Data.Properties.SecurityGroup.Name,
-			},
-			NodeCIDR: types.NodeCIDRProperties{
-				Name:    kaasResp.Data.Properties.NodeCIDR.Name,
-				Address: kaasResp.Data.Properties.NodeCIDR.Address,
-			},
-			KubernetesVersion: types.KubernetesVersionInfo{
-				Value: kaasResp.Data.Properties.KubernetesVersion.Value,
+	// Update with modified node pool and Kubernetes version
+	kaasUpdateReq := types.KaaSUpdateRequest{
+		Properties: types.KaaSPropertiesUpdateRequest{
+			KubernetesVersion: types.KubernetesVersionInfoUpdate{
+				Value: stringValue(kaasResp.Data.Properties.KubernetesVersion.Value),
 			},
 			NodePools: []types.NodePoolProperties{
 				{
@@ -230,14 +207,17 @@ func updateKaaS(ctx context.Context, arubaClient aruba.Client, projectID string,
 					Zone:     "ITBG-1",
 				},
 			},
-			HA: true,
-			BillingPlan: types.BillingPeriodResource{
+			HA: boolPtr(true),
+			Storage: &types.StorageKubernetes{
+				MaxCumulativeVolumeSize: int32Ptr(100),
+			},
+			BillingPlan: &types.BillingPeriodResource{
 				BillingPeriod: "Hour",
 			},
 		},
 	}
 
-	updateResp, err := arubaClient.FromContainer().KaaS().Update(ctx, projectID, kaasID, kaasReq, nil)
+	updateResp, err := arubaClient.FromContainer().KaaS().Update(ctx, projectID, kaasID, kaasUpdateReq, nil)
 	if err != nil {
 		log.Printf("Error updating KaaS cluster: %v", err)
 		return
@@ -251,8 +231,12 @@ func updateKaaS(ctx context.Context, arubaClient aruba.Client, projectID string,
 
 	if updateResp.Data != nil && updateResp.Data.Metadata.Name != nil {
 		totalNodes := int32(0)
-		for _, pool := range updateResp.Data.Properties.NodePools {
-			totalNodes += pool.Nodes
+		if updateResp.Data.Properties.NodePools != nil {
+			for _, pool := range *updateResp.Data.Properties.NodePools {
+				if pool.Nodes != nil {
+					totalNodes += *pool.Nodes
+				}
+			}
 		}
 		fmt.Printf("✓ Updated KaaS cluster: %s (Total Nodes: %d)\n",
 			*updateResp.Data.Metadata.Name,

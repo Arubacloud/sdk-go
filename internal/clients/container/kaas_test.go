@@ -34,11 +34,9 @@ func TestListKaaS(t *testing.T) {
 							},
 							Properties: types.KaaSPropertiesResponse{
 								Preset: false,
-								HA:     true,
+								HA:     types.BoolPtr(true),
 								KubernetesVersion: types.KubernetesVersionInfoResponse{
-									KubernetesVersionInfo: types.KubernetesVersionInfo{
-										Value: "1.28.0",
-									},
+									Value:       types.StringPtr("1.28.0"),
 									Recommended: true,
 								},
 							},
@@ -76,7 +74,7 @@ func TestListKaaS(t *testing.T) {
 		if resp.Data.Values[0].Metadata.Name == nil || *resp.Data.Values[0].Metadata.Name != "test-kaas" {
 			t.Errorf("expected name 'test-kaas'")
 		}
-		if !resp.Data.Values[0].Properties.HA {
+		if resp.Data.Values[0].Properties.HA == nil || !*resp.Data.Values[0].Properties.HA {
 			t.Errorf("expected HA to be true")
 		}
 	})
@@ -101,24 +99,23 @@ func TestGetKaaS(t *testing.T) {
 					},
 					Properties: types.KaaSPropertiesResponse{
 						Preset: false,
-						HA:     true,
+						HA:     types.BoolPtr(true),
 						KubernetesVersion: types.KubernetesVersionInfoResponse{
-							KubernetesVersionInfo: types.KubernetesVersionInfo{
-								Value: "1.28.0",
-							},
+							Value:       types.StringPtr("1.28.0"),
 							Recommended: true,
 						},
-						NodePools: []types.NodePoolPropertiesResponse{
-							{
-								NodePoolProperties: types.NodePoolProperties{
-									Name:     "default-pool",
-									Nodes:    3,
-									Instance: "small",
-									Zone:     "dc-01",
+						NodePools: func() *[]types.NodePoolPropertiesResponse {
+							pools := []types.NodePoolPropertiesResponse{
+								{
+									Name:        types.StringPtr("default-pool"),
+									Nodes:       types.Int32Ptr(3),
+									Instance:    &types.InstanceResponse{Name: types.StringPtr("small")},
+									DataCenter:  &types.DataCenterResponse{Code: types.StringPtr("dc-01")},
+									Autoscaling: false,
 								},
-								Autoscaling: false,
-							},
-						},
+							}
+							return &pools
+						}(),
 						ManagementIP: types.StringPtr("10.0.0.100"),
 					},
 					Status: types.ResourceStatus{
@@ -153,10 +150,14 @@ func TestGetKaaS(t *testing.T) {
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "test-kaas" {
 			t.Errorf("expected name 'test-kaas'")
 		}
-		if resp.Data.Properties.KubernetesVersion.Value != "1.28.0" {
-			t.Errorf("expected Kubernetes version '1.28.0', got %s", resp.Data.Properties.KubernetesVersion.Value)
+		if resp.Data.Properties.KubernetesVersion.Value == nil || *resp.Data.Properties.KubernetesVersion.Value != "1.28.0" {
+			val := ""
+			if resp.Data.Properties.KubernetesVersion.Value != nil {
+				val = *resp.Data.Properties.KubernetesVersion.Value
+			}
+			t.Errorf("expected Kubernetes version '1.28.0', got %s", val)
 		}
-		if len(resp.Data.Properties.NodePools) != 1 {
+		if resp.Data.Properties.NodePools == nil || len(*resp.Data.Properties.NodePools) != 1 {
 			t.Errorf("expected 1 node pool")
 		}
 		if resp.Data.Properties.ManagementIP == nil || *resp.Data.Properties.ManagementIP != "10.0.0.100" {
@@ -184,11 +185,9 @@ func TestCreateKaaS(t *testing.T) {
 					},
 					Properties: types.KaaSPropertiesResponse{
 						Preset: false,
-						HA:     true,
+						HA:     types.BoolPtr(true),
 						KubernetesVersion: types.KubernetesVersionInfoResponse{
-							KubernetesVersionInfo: types.KubernetesVersionInfo{
-								Value: "1.28.0",
-							},
+							Value: types.StringPtr("1.28.0"),
 						},
 					},
 					Status: types.ResourceStatus{
@@ -220,8 +219,8 @@ func TestCreateKaaS(t *testing.T) {
 				},
 			},
 			Properties: types.KaaSPropertiesRequest{
-				Preset: false,
-				HA:     true,
+				Preset: types.BoolPtr(false),
+				HA:     types.BoolPtr(true),
 				KubernetesVersion: types.KubernetesVersionInfo{
 					Value: "1.28.0",
 				},
@@ -263,11 +262,9 @@ func TestUpdateKaaS(t *testing.T) {
 					},
 					Properties: types.KaaSPropertiesResponse{
 						Preset: false,
-						HA:     true,
+						HA:     types.BoolPtr(true),
 						KubernetesVersion: types.KubernetesVersionInfoResponse{
-							KubernetesVersionInfo: types.KubernetesVersionInfo{
-								Value: "1.29.0",
-							},
+							Value: types.StringPtr("1.29.0"),
 						},
 					},
 					Status: types.ResourceStatus{
@@ -292,18 +289,20 @@ func TestUpdateKaaS(t *testing.T) {
 
 		svc := NewKaaSClientImpl(c)
 
-		body := types.KaaSRequest{
-			Metadata: types.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: types.ResourceMetadataRequest{
-					Name: "updated-kaas",
-				},
-			},
-			Properties: types.KaaSPropertiesRequest{
-				Preset: false,
-				HA:     true,
-				KubernetesVersion: types.KubernetesVersionInfo{
+		body := types.KaaSUpdateRequest{
+			Properties: types.KaaSPropertiesUpdateRequest{
+				KubernetesVersion: types.KubernetesVersionInfoUpdate{
 					Value: "1.29.0",
 				},
+				NodePools: []types.NodePoolProperties{
+					{
+						Name:     "default-pool",
+						Nodes:    3,
+						Instance: "K4A8",
+						Zone:     "ITBG-1",
+					},
+				},
+				HA: types.BoolPtr(true),
 			},
 		}
 
@@ -317,7 +316,7 @@ func TestUpdateKaaS(t *testing.T) {
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "updated-kaas" {
 			t.Errorf("expected name 'updated-kaas'")
 		}
-		if resp.Data.Properties.KubernetesVersion.Value != "1.29.0" {
+		if resp.Data.Properties.KubernetesVersion.Value == nil || *resp.Data.Properties.KubernetesVersion.Value != "1.29.0" {
 			t.Errorf("expected Kubernetes version '1.29.0'")
 		}
 	})
