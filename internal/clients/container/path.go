@@ -7,6 +7,9 @@ const (
 	// KaaSItemPath is the path for a specific KaaS cluster
 	KaaSItemPath = "/projects/%s/providers/Aruba.Container/kaas/%s"
 
+	// KaaSKubeconfigPath is the path for downloading KaaS kubeconfig
+	KaaSKubeconfigPath = "/projects/%s/providers/Aruba.Container/kaas/%s/download"
+
 	// ContainerRegistryPath is the base path for container registry operations
 	ContainerRegistryPath = "/projects/%s/providers/Aruba.Container/registries"
 

@@ -33,6 +33,7 @@ type KaaSClient interface {
 	Create(ctx context.Context, projectID string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
 	Update(ctx context.Context, projectID string, kaasID string, body types.KaaSUpdateRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
 	Delete(ctx context.Context, projectID string, kaasID string, params *types.RequestParameters) (*types.Response[any], error)
+	DownloadKubeconfig(ctx context.Context, projectID string, kaasID string, params *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error)
 }
 
 type ContainerRegistryClient interface {
