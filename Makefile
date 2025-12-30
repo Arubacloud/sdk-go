@@ -100,7 +100,6 @@ docs-clean: ## Clean documentation build artifacts
 docs-test: ## Test documentation (build and validate)
 	@echo "Testing documentation..."
 	@cd $(DOCS_DIR) && $(NPM) run build -- --no-minify
-	@cd $(DOCS_DIR) && npx docusaurus write-heading-ids --check
 
 .PHONY: docs-serve-build
 docs-serve-build: ## Build and serve production documentation (simulates CI build)

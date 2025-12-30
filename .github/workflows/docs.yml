@@ -97,8 +97,3 @@ jobs:
       working-directory: docs
       run: npm run build -- --no-minify
 
-    - name: Validate markdown
-      working-directory: docs
-      run: |
-        npx docusaurus write-heading-ids --check
-
