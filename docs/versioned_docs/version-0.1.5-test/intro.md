@@ -1,8 +1,3 @@
----
-sidebar_position: 1
-slug: /
----
-
 # Quick Start
 
 > **Note**: This SDK is currently in its **Alpha** stage. The API is not yet stable, and breaking changes may be introduced in future releases without prior notice. Please use with caution and be prepared for updates.

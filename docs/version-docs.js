@@ -50,14 +50,32 @@ if (!fs.existsSync(versionDir)) {
   process.exit(1);
 }
 
-// Copy only markdown files
+// Helper function to remove all front matter from versioned docs
+// Versioned docs should not have front matter to avoid Docusaurus warnings
+function removeFrontMatter(content) {
+  // Match front matter (YAML between --- markers)
+  const frontMatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n/;
+  const match = content.match(frontMatterRegex);
+  
+  if (!match) {
+    return content; // No front matter, return as-is
+  }
+  
+  // Remove the entire front matter block
+  const restOfContent = content.substring(match[0].length);
+  return restOfContent;
+}
+
+// Copy only markdown files, processing front matter
 let copiedCount = 0;
 markdownFiles.forEach(file => {
   const srcPath = path.join(docsDir, file);
   if (fs.existsSync(srcPath)) {
     const destPath = path.join(versionDir, file);
-    fs.copyFileSync(srcPath, destPath);
-    console.log(`  ✓ Copied ${file}`);
+    const content = fs.readFileSync(srcPath, 'utf8');
+    const processedContent = removeFrontMatter(content);
+    fs.writeFileSync(destPath, processedContent, 'utf8');
+    console.log(`  ✓ Copied ${file} (removed front matter)`);
     copiedCount++;
   } else {
     console.warn(`  ⚠ File ${file} not found, skipping`);

@@ -45,6 +45,10 @@ jobs:
       working-directory: docs
       run: npm ci
 
+    - name: Fix versioned docs front matter
+      working-directory: docs
+      run: npm run fix:versioned
+
     - name: Build documentation
       working-directory: docs
       run: npm run build
@@ -92,6 +96,10 @@ jobs:
     - name: Install dependencies
       working-directory: docs
       run: npm ci
+
+    - name: Fix versioned docs front matter
+      working-directory: docs
+      run: npm run fix:versioned
 
     - name: Check for broken links
       working-directory: docs
