@@ -48,14 +48,12 @@ const config = {
           editUrl: 'https://github.com/Arubacloud/sdk-go/tree/main/docs/website/',
           routeBasePath: '/',
           // Enable versioning (disabled during PR checks via DISABLE_VERSIONING env var)
-          ...(process.env.DISABLE_VERSIONING !== 'true' && {
-            versions: {
-              current: {
-                label: 'Next 🚧',
-                path: 'next',
-              },
+          versions: process.env.DISABLE_VERSIONING === 'true' ? {} : {
+            current: {
+              label: 'Next 🚧',
+              path: 'next',
             },
-          }),
+          },
           // Show last update time
           showLastUpdateTime: true,
           showLastUpdateAuthor: true,
@@ -86,10 +84,11 @@ const config = {
             position: 'left',
             label: 'Docs',
           },
-          {
+          // Only show version dropdown when versioning is enabled
+          ...(process.env.DISABLE_VERSIONING !== 'true' ? [{
             type: 'docsVersionDropdown',
             position: 'right',
-          },
+          }] : []),
           {
             href: 'https://github.com/Arubacloud/sdk-go',
             position: 'right',
