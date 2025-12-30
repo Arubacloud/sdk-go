@@ -60,6 +60,44 @@ jobs:
         run: |
           npm run version ${{ steps.extract_version.outputs.version }}
 
+      - name: Cleanup old versions (keep last 5)
+        working-directory: docs/website
+        run: |
+          # Get all releases from GitHub API, sorted by published_at (newest first)
+          echo "Fetching releases from GitHub..."
+          RELEASES_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases" | \
+            jq 'sort_by(.published_at) | reverse | .[].tag_name' | sed 's/"//g' | sed 's/^v//')
+          
+          if [ -z "$RELEASES_JSON" ] || [ "$RELEASES_JSON" = "null" ]; then
+            echo "Could not fetch releases, skipping cleanup"
+            exit 0
+          fi
+          
+          # Keep only the last 5 releases
+          KEEP_LAST=5
+          RELEASES_TO_KEEP=$(echo "$RELEASES_JSON" | head -n $KEEP_LAST | tr '\n' ' ')
+          echo "Keeping last $KEEP_LAST release(s): $RELEASES_TO_KEEP"
+          
+          # Get current versions
+          if [ -f "versions.json" ]; then
+            CURRENT_VERSIONS=$(cat versions.json | jq -r '.[]' || echo "")
+            
+            # Remove versions that are not in the last 5 releases
+            echo "$CURRENT_VERSIONS" | while read -r version; do
+              if [ -n "$version" ] && ! echo "$RELEASES_TO_KEEP" | grep -qw "$version"; then
+                echo "Removing old version: $version"
+                rm -rf "versioned_docs/version-${version}" || true
+                rm -f "versioned_sidebars/version-${version}-sidebars.json" || true
+              fi
+            done
+            
+            # Update versions.json to only include versions to keep
+            echo "$RELEASES_TO_KEEP" | tr ' ' '\n' | grep -v '^$' | jq -R . | jq -s . > versions.json
+            echo "✓ Updated versions.json to keep only last $KEEP_LAST releases"
+          fi
+        continue-on-error: true
+
       - name: Commit versioned docs
         run: |
           git config --local user.email "action@github.com"

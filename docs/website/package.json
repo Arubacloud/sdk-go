@@ -12,7 +12,9 @@
     "serve": "docusaurus serve",
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
-    "version": "docusaurus docs:version"
+    "version": "docusaurus docs:version",
+    "cleanup-versions": "node cleanup-versions.js",
+    "cleanup-versions:dry-run": "node cleanup-versions.js --dry-run"
   },
   "dependencies": {
     "@docusaurus/core": "^3.0.0",
