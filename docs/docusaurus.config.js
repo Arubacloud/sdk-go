@@ -24,7 +24,7 @@ const config = {
   onBrokenLinks: 'throw',
   markdown: {
     hooks: {
-      onBrokenMarkdownLinks: 'warn',
+      onBrokenMarkdownLinks: 'ignore',
     },
   },
 
@@ -47,8 +47,15 @@ const config = {
           // Remove this to remove the "edit this page" links.
           editUrl: 'https://github.com/Arubacloud/sdk-go/tree/main/docs/',
           routeBasePath: '/',
-          // Versioning will be automatically enabled when versions are created
-          // No need to configure anything until first version is created
+          // Explicitly set path to current directory (where markdown files are located)
+          // This is needed when config file is in the same directory as the docs
+          path: '.',
+          // Exclude node_modules and other build artifacts
+          exclude: [
+            '**/node_modules/**',
+            '**/.docusaurus/**',
+            '**/build/**',
+          ],
         },
         blog: false,
         theme: {
