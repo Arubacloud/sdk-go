@@ -47,14 +47,36 @@ const config = {
           // Remove this to remove the "edit this page" links.
           editUrl: 'https://github.com/Arubacloud/sdk-go/tree/main/docs/',
           routeBasePath: '/',
-          // Explicitly set path to current directory (where markdown files are located)
-          // This is needed when config file is in the same directory as the docs
+          // Explicitly set path to current directory since config is in docs folder
+          // Without this, Docusaurus looks for docs/docs/ which doesn't exist
           path: '.',
-          // Exclude node_modules and other build artifacts
+          // Exclude everything except markdown files from versioning
+          // This prevents circular copy when versioning (copying docs to docs/versioned_docs)
           exclude: [
+            // Build and cache directories
             '**/node_modules/**',
             '**/.docusaurus/**',
             '**/build/**',
+            '**/.cache/**',
+            // Source and static files
+            '**/src/**',
+            '**/static/**',
+            // Configuration and package files
+            '**/package*.json',
+            '**/babel.config.js',
+            '**/docusaurus.config.js',
+            '**/sidebars.js',
+            '**/.gitignore',
+            '**/.git/**',
+            // Documentation files (except markdown)
+            '**/README.md',
+            '**/TESTING.md',
+            '**/QUICK_TEST.md',
+            '**/test-versioning.sh',
+            // Versioning artifacts (prevent recursion)
+            '**/versioned_docs/**',
+            '**/versioned_sidebars/**',
+            '**/versions.json',
           ],
         },
         blog: false,

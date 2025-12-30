@@ -42,6 +42,12 @@ jobs:
     - name: Create documentation version
       working-directory: docs
       run: |
+        # Remove versioned_docs if it exists to avoid recursion issues
+        if [ -d "versioned_docs" ]; then
+          echo "Removing existing versioned_docs to avoid conflicts"
+          rm -rf versioned_docs versioned_sidebars versions.json
+        fi
+        # Run versioning - exclude patterns in docusaurus.config.js should prevent copying unwanted files
         npm run docs:version ${{ steps.tag.outputs.version }}
 
     - name: Commit versioned docs
