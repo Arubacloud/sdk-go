@@ -271,3 +271,203 @@ func TestDeleteCloudServer(t *testing.T) {
 		}
 	})
 }
+
+// TestPowerOnCloudServer tests the PowerOn method
+func TestPowerOnCloudServer(t *testing.T) {
+	t.Run("successful power on", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/token" {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
+				return
+			}
+
+			if r.Method != http.MethodPost {
+				t.Errorf("expected POST, got %s", r.Method)
+			}
+			if r.URL.Path != "/projects/test-project/providers/Aruba.Compute/cloudServers/server-123/poweron" {
+				t.Errorf("expected poweron path, got %s", r.URL.Path)
+			}
+			w.WriteHeader(http.StatusOK)
+			resp := types.CloudServerResponse{
+				Metadata: types.RegionalResourceMetadataRequest{
+					ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "my-server"},
+				},
+				Properties: types.CloudServerPropertiesResult{Zone: "ITBG-1"},
+				Status: types.ResourceStatus{
+					State: types.StringPtr("active"),
+				},
+			}
+			json.NewEncoder(w).Encode(resp)
+		}))
+		defer server.Close()
+
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
+		svc := NewCloudServersClientImpl(c)
+
+		resp, err := svc.PowerOn(context.Background(), "test-project", "server-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp == nil || resp.Data == nil {
+			t.Fatalf("expected response data")
+		}
+		if resp.Data.Metadata.Name != "my-server" {
+			t.Errorf("expected name 'my-server', got '%s'", resp.Data.Metadata.Name)
+		}
+		if !resp.IsSuccess() {
+			t.Errorf("expected successful response, got status code %d", resp.StatusCode)
+		}
+	})
+}
+
+// TestPowerOffCloudServer tests the PowerOff method
+func TestPowerOffCloudServer(t *testing.T) {
+	t.Run("successful power off", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/token" {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
+				return
+			}
+
+			if r.Method != http.MethodPost {
+				t.Errorf("expected POST, got %s", r.Method)
+			}
+			if r.URL.Path != "/projects/test-project/providers/Aruba.Compute/cloudServers/server-123/poweroff" {
+				t.Errorf("expected poweroff path, got %s", r.URL.Path)
+			}
+			w.WriteHeader(http.StatusOK)
+			resp := types.CloudServerResponse{
+				Metadata: types.RegionalResourceMetadataRequest{
+					ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "my-server"},
+				},
+				Properties: types.CloudServerPropertiesResult{Zone: "ITBG-1"},
+				Status: types.ResourceStatus{
+					State: types.StringPtr("stopped"),
+				},
+			}
+			json.NewEncoder(w).Encode(resp)
+		}))
+		defer server.Close()
+
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
+		svc := NewCloudServersClientImpl(c)
+
+		resp, err := svc.PowerOff(context.Background(), "test-project", "server-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp == nil || resp.Data == nil {
+			t.Fatalf("expected response data")
+		}
+		if resp.Data.Metadata.Name != "my-server" {
+			t.Errorf("expected name 'my-server', got '%s'", resp.Data.Metadata.Name)
+		}
+		if !resp.IsSuccess() {
+			t.Errorf("expected successful response, got status code %d", resp.StatusCode)
+		}
+	})
+}
+
+// TestSetPasswordCloudServer tests the SetPassword method
+func TestSetPasswordCloudServer(t *testing.T) {
+	t.Run("successful set password", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/token" {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
+				return
+			}
+
+			if r.Method != http.MethodPost {
+				t.Errorf("expected POST, got %s", r.Method)
+			}
+			if r.URL.Path != "/projects/test-project/providers/Aruba.Compute/cloudServers/server-123/password" {
+				t.Errorf("expected password path, got %s", r.URL.Path)
+			}
+
+			// Verify request body
+			var reqBody types.CloudServerPasswordRequest
+			if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+				t.Errorf("failed to decode request body: %v", err)
+			}
+			if reqBody.Password != "newPassword123" {
+				t.Errorf("expected password 'newPassword123', got '%s'", reqBody.Password)
+			}
+
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
+		svc := NewCloudServersClientImpl(c)
+
+		req := types.CloudServerPasswordRequest{
+			Password: "newPassword123",
+		}
+
+		resp, err := svc.SetPassword(context.Background(), "test-project", "server-123", req, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !resp.IsSuccess() {
+			t.Errorf("expected successful response, got status code %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("empty project ID", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/token" {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
+				return
+			}
+		}))
+		defer server.Close()
+
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
+		svc := NewCloudServersClientImpl(c)
+
+		req := types.CloudServerPasswordRequest{
+			Password: "newPassword123",
+		}
+
+		_, err := svc.SetPassword(context.Background(), "", "server-123", req, nil)
+		if err == nil {
+			t.Error("expected error for empty project ID")
+		}
+	})
+}

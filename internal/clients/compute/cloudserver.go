@@ -239,3 +239,99 @@ func (c *cloudServersClientImpl) Delete(ctx context.Context, projectID string, c
 
 	return types.ParseResponseBody[any](httpResp)
 }
+
+// PowerOn powers on a cloud server
+func (c *cloudServersClientImpl) PowerOn(ctx context.Context, projectID string, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
+	c.client.Logger().Debugf("Powering on cloud server: %s in project: %s", cloudServerID, projectID)
+
+	if err := types.ValidateProjectAndResource(projectID, cloudServerID, "cloud server ID"); err != nil {
+		return nil, err
+	}
+
+	path := fmt.Sprintf(CloudServerPowerOnPath, projectID, cloudServerID)
+
+	if params == nil {
+		params = &types.RequestParameters{
+			APIVersion: &ComputeCloudServerPowerOn,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ComputeCloudServerPowerOn
+	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
+
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	return types.ParseResponseBody[types.CloudServerResponse](httpResp)
+}
+
+// PowerOff powers off a cloud server
+func (c *cloudServersClientImpl) PowerOff(ctx context.Context, projectID string, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
+	c.client.Logger().Debugf("Powering off cloud server: %s in project: %s", cloudServerID, projectID)
+
+	if err := types.ValidateProjectAndResource(projectID, cloudServerID, "cloud server ID"); err != nil {
+		return nil, err
+	}
+
+	path := fmt.Sprintf(CloudServerPowerOffPath, projectID, cloudServerID)
+
+	if params == nil {
+		params = &types.RequestParameters{
+			APIVersion: &ComputeCloudServerPowerOff,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ComputeCloudServerPowerOff
+	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
+
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	return types.ParseResponseBody[types.CloudServerResponse](httpResp)
+}
+
+// SetPassword sets or changes the password for a cloud server
+func (c *cloudServersClientImpl) SetPassword(ctx context.Context, projectID string, cloudServerID string, body types.CloudServerPasswordRequest, params *types.RequestParameters) (*types.Response[any], error) {
+	c.client.Logger().Debugf("Setting password for cloud server: %s in project: %s", cloudServerID, projectID)
+
+	if err := types.ValidateProjectAndResource(projectID, cloudServerID, "cloud server ID"); err != nil {
+		return nil, err
+	}
+
+	path := fmt.Sprintf(CloudServerPasswordPath, projectID, cloudServerID)
+
+	if params == nil {
+		params = &types.RequestParameters{
+			APIVersion: &ComputeCloudServerPassword,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ComputeCloudServerPassword
+	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
+
+	// Marshal the request body to JSON
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	httpResp, err := c.client.DoRequest(ctx, http.MethodPost, path, bytes.NewReader(bodyBytes), queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	return types.ParseResponseBody[any](httpResp)
+}

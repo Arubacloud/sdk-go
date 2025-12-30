@@ -77,3 +77,7 @@ type CloudServerList struct {
 	ListResponse
 	Values []CloudServerResponse `json:"values"`
 }
+
+type CloudServerPasswordRequest struct {
+	Password string `json:"password"`
+}

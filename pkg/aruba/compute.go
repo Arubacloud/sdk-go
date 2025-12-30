@@ -32,6 +32,9 @@ type CloudServersClient interface {
 	Create(ctx context.Context, projectID string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
 	Update(ctx context.Context, projectID string, cloudServerID string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
 	Delete(ctx context.Context, projectID string, cloudServerID string, params *types.RequestParameters) (*types.Response[any], error)
+	PowerOn(ctx context.Context, projectID string, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
+	PowerOff(ctx context.Context, projectID string, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
+	SetPassword(ctx context.Context, projectID string, cloudServerID string, body types.CloudServerPasswordRequest, params *types.RequestParameters) (*types.Response[any], error)
 }
 
 type KeyPairsClient interface {
