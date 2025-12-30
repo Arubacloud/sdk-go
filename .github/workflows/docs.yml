@@ -50,14 +50,59 @@ jobs:
     - name: Clean up versioned docs for build
       working-directory: docs/website
       run: |
-        # Remove versioned docs if they exist (they should only exist after versioning)
-        # This ensures a clean build
-        if [ -d "versioned_docs" ] && [ ! -f "versions.json" ] || [ "$(cat versions.json 2>/dev/null)" == "[]" ]; then
-          echo "Removing orphaned versioned_docs..."
-          rm -rf versioned_docs versioned_sidebars
+        # Sync versions.json with actual versioned docs directories
+        # This ensures versions.json only references versions that actually exist
+        echo "Checking versioned docs..."
+        
+        if [ ! -d "versioned_docs" ]; then
+          # No versioned docs directory - clear versions.json
+          echo "[]" > versions.json
+          echo "✓ Cleared versions.json (no versioned_docs directory)"
+        else
+          # Get list of actual version directories that exist
+          echo "Scanning for existing version directories..."
+          # Extract version names from directory names and build JSON array
+          if ls versioned_docs/version-* 1> /dev/null 2>&1; then
+            # Found version directories - extract versions and create JSON
+            ls -d versioned_docs/version-* 2>/dev/null | \
+              sed 's|.*/version-||' | \
+              sort -V | \
+              jq -R . | \
+              jq -s . > versions.json
+            echo "✓ Updated versions.json with existing versions:"
+            cat versions.json | jq -r '.[]' | while read -r v; do echo "  - $v"; done
+          else
+            echo "[]" > versions.json
+            echo "✓ Cleared versions.json (no version directories found)"
+          fi
         fi
+        
+        # Verify versions.json is valid JSON
+        if [ -f "versions.json" ]; then
+          if ! jq empty versions.json 2>/dev/null; then
+            echo "⚠️  versions.json is invalid JSON, resetting to empty array"
+            echo "[]" > versions.json
+          else
+            echo "✓ versions.json is valid JSON:"
+            cat versions.json | jq .
+          fi
+        else
+          echo "[]" > versions.json
+          echo "✓ Created empty versions.json"
+        fi
+        
         # Clear cache to ensure clean build
         rm -rf .docusaurus
+
+    - name: Verify versions before build
+      working-directory: docs/website
+      run: |
+        echo "Final check before build:"
+        echo "versions.json contents:"
+        cat versions.json || echo "[]"
+        echo ""
+        echo "Existing version directories:"
+        ls -d versioned_docs/version-* 2>/dev/null || echo "  (none)"
 
     - name: Build documentation
       working-directory: docs/website
