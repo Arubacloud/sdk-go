@@ -53,6 +53,18 @@ jobs:
         run: |
           npm run version ${{ steps.extract_version.outputs.version }}
 
+      - name: Commit versioned docs
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add docs/website/versioned_docs docs/website/versioned_sidebars docs/website/versions.json
+          if ! git diff --staged --quiet; then
+            git commit -m "docs: add version ${{ steps.extract_version.outputs.version }}"
+            git push
+          else
+            echo "No changes to commit"
+          fi
+
       - name: Build documentation
         working-directory: docs/website
         run: npm run build
