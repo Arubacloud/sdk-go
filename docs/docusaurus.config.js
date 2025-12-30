@@ -50,6 +50,8 @@ const config = {
           // Explicitly set path to current directory since config is in docs folder
           // Without this, Docusaurus looks for docs/docs/ which doesn't exist
           path: '.',
+          // Only include the actual doc markdown files (exclude test files and README)
+          include: ['intro.md', 'resources.md', 'types.md', 'options.md', 'response-handling.md', 'filters.md'],
           // Exclude everything except markdown files from versioning
           // This prevents circular copy when versioning (copying docs to docs/versioned_docs)
           exclude: [
