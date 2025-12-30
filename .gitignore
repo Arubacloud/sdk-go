@@ -30,3 +30,19 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Documentation (docs/)
+docs/node_modules/
+docs/build/
+docs/.docusaurus/
+docs/.cache-loader/
+docs/.DS_Store
+docs/.env.local
+docs/npm-debug.log*
+docs/yarn-debug.log*
+docs/yarn-error.log*
+docs/.idea/
+docs/.vscode/
+docs/*.swp
+docs/*.swo
+docs/*~
