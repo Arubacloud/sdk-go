@@ -13,6 +13,7 @@ on:
       - 'docs/website/**'
       - 'docs/**/*.md'
       - '.github/workflows/docs.yml'
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
@@ -28,6 +29,10 @@ jobs:
   build:
     name: Build Documentation
     runs-on: ubuntu-latest
+    # Skip build for version PR branches (they will be built after merge)
+    if: |
+      github.event_name == 'push' || 
+      (github.event_name == 'pull_request' && !startsWith(github.head_ref, 'docs/version-'))
     
     steps:
     - name: Checkout code
@@ -47,62 +52,51 @@ jobs:
       working-directory: docs/website
       run: npm ci
 
-    - name: Clean up versioned docs for build
+    - name: Sync versions.json with existing docs
       working-directory: docs/website
       run: |
         # Sync versions.json with actual versioned docs directories
         # This ensures versions.json only references versions that actually exist
-        echo "Checking versioned docs..."
+        echo "=== Syncing versions.json with existing versioned docs ==="
         
-        if [ ! -d "versioned_docs" ]; then
-          # No versioned docs directory - clear versions.json
-          echo "[]" > versions.json
-          echo "✓ Cleared versions.json (no versioned_docs directory)"
-        else
-          # Get list of actual version directories that exist
-          echo "Scanning for existing version directories..."
-          # Extract version names from directory names and build JSON array
-          if ls versioned_docs/version-* 1> /dev/null 2>&1; then
-            # Found version directories - extract versions and create JSON
-            ls -d versioned_docs/version-* 2>/dev/null | \
-              sed 's|.*/version-||' | \
-              sort -V | \
-              jq -R . | \
-              jq -s . > versions.json
-            echo "✓ Updated versions.json with existing versions:"
-            cat versions.json | jq -r '.[]' | while read -r v; do echo "  - $v"; done
+        # Always start with empty array
+        echo "[]" > versions.json
+        
+        # Check if versioned_docs directory exists and has content
+        if [ -d "versioned_docs" ]; then
+          echo "Checking for version directories..."
+          # Use find to reliably get all version directories (handles empty case)
+          VERSIONS=$(find versioned_docs -maxdepth 1 -type d -name "version-*" 2>/dev/null | sed 's|.*/version-||' | sort -V)
+          
+          if [ -n "$VERSIONS" ]; then
+            # Build JSON array from existing directories
+            echo "$VERSIONS" | jq -R . | jq -s . > versions.json
+            VERSION_COUNT=$(echo "$VERSIONS" | wc -l | tr -d ' ')
+            echo "✓ Updated versions.json with $VERSION_COUNT version(s):"
+            echo "$VERSIONS" | while read -r v; do echo "    - $v"; done
           else
-            echo "[]" > versions.json
-            echo "✓ Cleared versions.json (no version directories found)"
+            echo "✓ No version directories found, keeping empty array"
           fi
+        else
+          echo "✓ No versioned_docs directory, keeping empty array"
         fi
         
-        # Verify versions.json is valid JSON
-        if [ -f "versions.json" ]; then
-          if ! jq empty versions.json 2>/dev/null; then
-            echo "⚠️  versions.json is invalid JSON, resetting to empty array"
-            echo "[]" > versions.json
-          else
-            echo "✓ versions.json is valid JSON:"
-            cat versions.json | jq .
-          fi
-        else
+        # Verify and show final state
+        echo ""
+        echo "Final versions.json:"
+        cat versions.json
+        echo ""
+        
+        # Verify it's valid JSON
+        if ! jq empty versions.json 2>/dev/null; then
+          echo "⚠️  ERROR: versions.json is invalid JSON!"
           echo "[]" > versions.json
-          echo "✓ Created empty versions.json"
+          exit 1
         fi
         
         # Clear cache to ensure clean build
         rm -rf .docusaurus
-
-    - name: Verify versions before build
-      working-directory: docs/website
-      run: |
-        echo "Final check before build:"
-        echo "versions.json contents:"
-        cat versions.json || echo "[]"
-        echo ""
-        echo "Existing version directories:"
-        ls -d versioned_docs/version-* 2>/dev/null || echo "  (none)"
+        echo "✓ Cleared Docusaurus cache"
 
     - name: Build documentation
       working-directory: docs/website
@@ -135,6 +129,10 @@ jobs:
   test:
     name: Test Documentation
     runs-on: ubuntu-latest
+    # Skip test for version PR branches (they will be tested after merge)
+    if: |
+      github.event_name == 'push' || 
+      (github.event_name == 'pull_request' && !startsWith(github.head_ref, 'docs/version-'))
     
     steps:
     - name: Checkout code
