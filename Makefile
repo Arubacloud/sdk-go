@@ -110,6 +110,22 @@ docs-serve-build: ## Build and serve production documentation (simulates CI buil
 	@cd $(DOCS_DIR) && $(NPM) run build
 	@cd $(DOCS_DIR) && $(NPM) run serve
 
+.PHONY: docs-cleanup-version
+docs-cleanup-version: ## Remove a specific documentation version (usage: make docs-cleanup-version VERSION=0.1.5-test)
+	@if [ -z "$(VERSION)" ]; then \
+		echo "Error: VERSION is required. Usage: make docs-cleanup-version VERSION=0.1.5-test"; \
+		exit 1; \
+	fi
+	@echo "Removing documentation version $(VERSION)..."
+	@cd $(DOCS_DIR) && rm -rf versioned_docs/version-$(VERSION) versioned_sidebars/version-$(VERSION)-sidebars.json
+	@cd $(DOCS_DIR) && node -e "const fs=require('fs');const v=JSON.parse(fs.readFileSync('versions.json','utf-8'));fs.writeFileSync('versions.json',JSON.stringify(v.filter(x=>x!='$(VERSION)'),null,2)+'\n');"
+	@echo "✓ Removed version $(VERSION)"
+
+.PHONY: docs-cleanup-old
+docs-cleanup-old: ## Cleanup old documentation versions, keeping only the last 5 releases
+	@echo "Cleaning up old documentation versions (keeping last 5)..."
+	@cd $(DOCS_DIR) && KEEP_LAST=5 npm run cleanup-versions
+
 .PHONY: docs
 docs: docs-serve ## Alias for docs-serve
 
