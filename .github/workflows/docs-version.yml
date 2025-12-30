@@ -17,6 +17,7 @@ jobs:
       contents: write
       pages: write
       id-token: write
+      pull-requests: write
     
     steps:
       - name: Checkout repository
@@ -65,14 +66,65 @@ jobs:
           git config --local user.name "GitHub Action"
           # Pull latest changes to ensure we're up to date
           git pull origin main || true
+          # Create a branch for the versioned docs
+          BRANCH_NAME="docs/version-${{ steps.extract_version.outputs.version }}"
+          git checkout -b "$BRANCH_NAME"
           # Add versioned docs
           git add docs/website/versioned_docs docs/website/versioned_sidebars docs/website/versions.json
           if ! git diff --staged --quiet; then
             git commit -m "docs: add version ${{ steps.extract_version.outputs.version }}"
-            git push origin main
+            git push origin "$BRANCH_NAME"
           else
             echo "No changes to commit"
           fi
+
+      - name: Create Pull Request
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const branchName = `docs/version-${{ steps.extract_version.outputs.version }}`;
+            
+            // Check if branch exists
+            try {
+              await github.rest.repos.getBranch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                branch: branchName
+              });
+            } catch (error) {
+              if (error.status === 404) {
+                console.log('Branch does not exist, skipping PR creation (no changes to commit)');
+                return;
+              }
+              throw error;
+            }
+            
+            const title = `docs: add version ${{ steps.extract_version.outputs.version }}`;
+            const body = `This PR adds versioned documentation for version ${{ steps.extract_version.outputs.version }}.\n\nCreated automatically by the release workflow.`;
+            
+            // Check if PR already exists
+            const { data: existingPRs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${branchName}`,
+              state: 'open'
+            });
+            
+            if (existingPRs.length === 0) {
+              const { data: pr } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                head: branchName,
+                base: 'main'
+              });
+              console.log('Created PR:', pr.html_url);
+            } else {
+              console.log('PR already exists:', existingPRs[0].html_url);
+            }
 
       - name: Build documentation
         working-directory: docs/website
