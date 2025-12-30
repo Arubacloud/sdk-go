@@ -1,0 +1,24 @@
+{
+  "id": "types",
+  "title": "SDK Data Types",
+  "description": "The Aruba Cloud SDK for Go uses a consistent set of data types for requests and responses across all API groups. This document outlines the generic, shared types that form the basis of the SDK's models, followed by a breakdown of the specific types for each API group.",
+  "source": "@site/types.md",
+  "sourceDirName": ".",
+  "slug": "/types",
+  "permalink": "/sdk-go/next/types",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/Arubacloud/sdk-go/tree/main/docs/types.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Resources",
+    "permalink": "/sdk-go/next/resources"
+  },
+  "next": {
+    "title": "Options",
+    "permalink": "/sdk-go/next/options"
+  }
+}

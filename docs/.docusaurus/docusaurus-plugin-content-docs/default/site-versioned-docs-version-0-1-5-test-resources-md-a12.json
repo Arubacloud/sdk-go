@@ -1,0 +1,24 @@
+{
+  "id": "resources",
+  "title": "API Groups and Resources",
+  "description": "The Aruba Cloud SDK is organized into several API groups, each corresponding to a specific service area (e.g., Compute, Network, Storage). You can access these groups from the main arubaClient object. This document provides a comprehensive list of all available groups and the resources they manage.",
+  "source": "@site/versioned_docs/version-0.1.5-test/resources.md",
+  "sourceDirName": ".",
+  "slug": "/resources",
+  "permalink": "/sdk-go/resources",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/Arubacloud/sdk-go/tree/main/docs/versioned_docs/version-0.1.5-test/resources.md",
+  "tags": [],
+  "version": "0.1.5-test",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Quick Start",
+    "permalink": "/sdk-go/intro"
+  },
+  "next": {
+    "title": "Types",
+    "permalink": "/sdk-go/types"
+  }
+}

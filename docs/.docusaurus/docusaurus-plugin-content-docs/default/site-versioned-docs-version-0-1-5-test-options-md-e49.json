@@ -1,0 +1,24 @@
+{
+  "id": "options",
+  "title": "SDK Configuration Options",
+  "description": "The Aruba Cloud SDK for Go is configured using a fluent API that allows you to chain option setters to build a",
+  "source": "@site/versioned_docs/version-0.1.5-test/options.md",
+  "sourceDirName": ".",
+  "slug": "/options",
+  "permalink": "/sdk-go/options",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/Arubacloud/sdk-go/tree/main/docs/versioned_docs/version-0.1.5-test/options.md",
+  "tags": [],
+  "version": "0.1.5-test",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Types",
+    "permalink": "/sdk-go/types"
+  },
+  "next": {
+    "title": "Response Handling",
+    "permalink": "/sdk-go/response-handling"
+  }
+}

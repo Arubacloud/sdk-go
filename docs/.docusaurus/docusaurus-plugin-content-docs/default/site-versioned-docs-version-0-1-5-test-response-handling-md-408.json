@@ -1,0 +1,24 @@
+{
+  "id": "response-handling",
+  "title": "Response Handling Guide",
+  "description": "Overview",
+  "source": "@site/versioned_docs/version-0.1.5-test/response-handling.md",
+  "sourceDirName": ".",
+  "slug": "/response-handling",
+  "permalink": "/sdk-go/response-handling",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/Arubacloud/sdk-go/tree/main/docs/versioned_docs/version-0.1.5-test/response-handling.md",
+  "tags": [],
+  "version": "0.1.5-test",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Options",
+    "permalink": "/sdk-go/options"
+  },
+  "next": {
+    "title": "Filters",
+    "permalink": "/sdk-go/filters"
+  }
+}

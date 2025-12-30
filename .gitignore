@@ -31,18 +31,18 @@ go.work.sum
 # .idea/
 # .vscode/
 
-# Documentation (docs/)
-docs/node_modules/
-docs/build/
-docs/.docusaurus/
-docs/.cache-loader/
-docs/.DS_Store
-docs/.env.local
-docs/npm-debug.log*
-docs/yarn-debug.log*
-docs/yarn-error.log*
-docs/.idea/
-docs/.vscode/
-docs/*.swp
-docs/*.swo
-docs/*~
+# Documentation (docs/website/)
+docs/website/node_modules/
+docs/website/build/
+docs/website/.docusaurus/
+docs/website/.cache-loader/
+docs/website/.DS_Store
+docs/website/.env.local
+docs/website/npm-debug.log*
+docs/website/yarn-debug.log*
+docs/website/yarn-error.log*
+docs/website/.idea/
+docs/website/.vscode/
+docs/website/*.swp
+docs/website/*.swo
+docs/website/*~

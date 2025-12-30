@@ -4,12 +4,14 @@ on:
   push:
     branches: [main]
     paths:
-      - 'docs/**'
+      - 'docs/website/**'
+      - 'docs/**/*.md'
       - '.github/workflows/docs.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'docs/**'
+      - 'docs/website/**'
+      - 'docs/**/*.md'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -39,15 +41,29 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
-        cache-dependency-path: docs/package-lock.json
+        cache-dependency-path: docs/website/package-lock.json
 
     - name: Install dependencies
-      working-directory: docs
+      working-directory: docs/website
       run: npm ci
 
+    - name: Clean up versioned docs for build
+      working-directory: docs/website
+      run: |
+        # Remove versioned docs if they exist (they should only exist after versioning)
+        # This ensures a clean build
+        if [ -d "versioned_docs" ] && [ ! -f "versions.json" ] || [ "$(cat versions.json 2>/dev/null)" == "[]" ]; then
+          echo "Removing orphaned versioned_docs..."
+          rm -rf versioned_docs versioned_sidebars
+        fi
+        # Clear cache to ensure clean build
+        rm -rf .docusaurus
+
     - name: Build documentation
-      working-directory: docs
+      working-directory: docs/website
       run: npm run build
+      env:
+        NODE_ENV: production
 
     - name: Setup Pages
       uses: actions/configure-pages@v4
@@ -55,7 +71,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: docs/build
+        path: docs/website/build
 
   deploy:
     name: Deploy Documentation
@@ -87,13 +103,32 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
-        cache-dependency-path: docs/package-lock.json
+        cache-dependency-path: docs/website/package-lock.json
 
     - name: Install dependencies
-      working-directory: docs
+      working-directory: docs/website
       run: npm ci
 
-    - name: Check for broken links
-      working-directory: docs
-      run: npm run build -- --no-minify
+    - name: Remove versioned docs for PR check
+      working-directory: docs/website
+      run: |
+        # Remove versioned docs to avoid false positives during PR checks
+        # Versioned docs are created during release, not during PR validation
+        echo "Cleaning up versioned docs for PR validation..."
+        rm -rf versioned_docs versioned_sidebars
+        if [ -f "versions.json" ]; then
+          echo "[]" > versions.json
+        fi
+        # Clear Docusaurus cache to ensure clean build
+        rm -rf .docusaurus
+        echo "✅ Versioned docs cleaned up"
 
+    - name: Build and validate documentation
+      working-directory: docs/website
+      run: |
+        echo "Building documentation (versioning disabled for PR check)..."
+        npm run build -- --no-minify
+        echo "✅ Documentation build successful!"
+      env:
+        NODE_ENV: production
+        DISABLE_VERSIONING: 'true'
