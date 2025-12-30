@@ -24,6 +24,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Checkout main branch
+        run: |
+          # Ensure we're on main branch (release events may checkout tag in detached HEAD)
+          git fetch origin
+          git checkout -B main origin/main
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -57,10 +63,13 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          # Pull latest changes to ensure we're up to date
+          git pull origin main || true
+          # Add versioned docs
           git add docs/website/versioned_docs docs/website/versioned_sidebars docs/website/versions.json
           if ! git diff --staged --quiet; then
             git commit -m "docs: add version ${{ steps.extract_version.outputs.version }}"
-            git push
+            git push origin main
           else
             echo "No changes to commit"
           fi
