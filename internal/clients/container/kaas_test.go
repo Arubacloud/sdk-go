@@ -290,6 +290,11 @@ func TestUpdateKaaS(t *testing.T) {
 		svc := NewKaaSClientImpl(c)
 
 		body := types.KaaSUpdateRequest{
+			Metadata: types.RegionalResourceMetadataRequest{
+				ResourceMetadataRequest: types.ResourceMetadataRequest{
+					Name: "updated-kaas",
+				},
+			},
 			Properties: types.KaaSPropertiesUpdateRequest{
 				KubernetesVersion: types.KubernetesVersionInfoUpdate{
 					Value: "1.29.0",
@@ -354,6 +359,59 @@ func TestDeleteKaaS(t *testing.T) {
 		_, err := svc.Delete(context.Background(), "test-project", "kaas-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+}
+
+func TestDownloadKubeconfig(t *testing.T) {
+	t.Run("successful download", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/token" {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
+				return
+			}
+
+			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Container/kaas/kaas-123/download" {
+				w.WriteHeader(http.StatusOK)
+				resp := types.KaaSKubeconfigResponse{
+					Name:    "kubeconfig.yaml",
+					Content: "YXBpVmVyc2lvbjogdjEKa2luZDogQ29uZmlnCmNsdXN0ZXJzOgotIGNsdXN0ZXI6CiAgICBjZXJ0aWZpY2F0ZS1hdXRob3JpdHktZGF0YTogTFMwdExTMUNSVWRKVGlCRFJWSlVTVVpKUTBGVVJTMHRMUzB0Q2sxSlNVUkZVeTB4TlMwdExTMHRDazFKU1VSRlV5MHhOUzB0TFMwdENrMUo=",
+				}
+				json.NewEncoder(w).Encode(resp)
+				return
+			}
+
+			http.NotFound(w, r)
+		}))
+		defer server.Close()
+
+		var (
+			baseURL    = server.URL
+			httpClient = http.DefaultClient
+			logger     = &noop.NoOpLogger{}
+		)
+
+		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+
+		svc := NewKaaSClientImpl(c)
+
+		resp, err := svc.DownloadKubeconfig(context.Background(), "test-project", "kaas-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp == nil || resp.Data == nil {
+			t.Fatalf("expected response data")
+		}
+		if resp.Data.Name != "kubeconfig.yaml" {
+			t.Errorf("expected filename 'kubeconfig.yaml', got %s", resp.Data.Name)
+		}
+		if resp.Data.Content == "" {
+			t.Errorf("expected non-empty content")
+		}
+		if !resp.IsSuccess() {
+			t.Errorf("expected successful response, got status code %d", resp.StatusCode)
 		}
 	})
 }

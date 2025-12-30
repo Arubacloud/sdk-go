@@ -241,3 +241,33 @@ func (c *kaasClientImpl) Delete(ctx context.Context, projectID string, kaasID st
 
 	return types.ParseResponseBody[any](httpResp)
 }
+
+// DownloadKubeconfig downloads the kubeconfig file for a KaaS cluster
+func (c *kaasClientImpl) DownloadKubeconfig(ctx context.Context, projectID string, kaasID string, params *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error) {
+	c.client.Logger().Debugf("Downloading kubeconfig for KaaS cluster: %s in project: %s", kaasID, projectID)
+
+	if err := types.ValidateProjectAndResource(projectID, kaasID, "KaaS ID"); err != nil {
+		return nil, err
+	}
+
+	path := fmt.Sprintf(KaaSKubeconfigPath, projectID, kaasID)
+
+	if params == nil {
+		params = &types.RequestParameters{
+			APIVersion: &ContainerKaaSKubeconfigVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &ContainerKaaSKubeconfigVersion
+	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
+
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	return types.ParseResponseBody[types.KaaSKubeconfigResponse](httpResp)
+}

@@ -263,7 +263,8 @@ type KaaSRequest struct {
 }
 
 type KaaSUpdateRequest struct {
-	Properties KaaSPropertiesUpdateRequest `json:"properties"`
+	Metadata   RegionalResourceMetadataRequest `json:"metadata"`
+	Properties KaaSPropertiesUpdateRequest     `json:"properties"`
 }
 
 type KaaSResponse struct {
@@ -276,4 +277,9 @@ type KaaSResponse struct {
 type KaaSList struct {
 	ListResponse
 	Values []KaaSResponse `json:"values"`
+}
+
+type KaaSKubeconfigResponse struct {
+	Name    string `json:"name"`
+	Content string `json:"content"`
 }

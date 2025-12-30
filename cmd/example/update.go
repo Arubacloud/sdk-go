@@ -195,6 +195,15 @@ func updateKaaS(ctx context.Context, arubaClient aruba.Client, projectID string,
 
 	// Update with modified node pool and Kubernetes version
 	kaasUpdateReq := types.KaaSUpdateRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
+				Name: "my-kaas-cluster-updated",
+				Tags: []string{"kubernetes", "container", "updated"},
+			},
+			Location: types.LocationRequest{
+				Value: "ITBG-Bergamo",
+			},
+		},
 		Properties: types.KaaSPropertiesUpdateRequest{
 			KubernetesVersion: types.KubernetesVersionInfoUpdate{
 				Value: stringValue(kaasResp.Data.Properties.KubernetesVersion.Value),
