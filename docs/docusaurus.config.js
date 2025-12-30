@@ -22,7 +22,11 @@ const config = {
   projectName: 'sdk-go',
 
   onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
+  markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
+  },
 
   // Even if you don't use internalization, you can use this field to set useful
   // metadata like html lang. For example, if your site is Chinese, you may want
@@ -43,9 +47,8 @@ const config = {
           // Remove this to remove the "edit this page" links.
           editUrl: 'https://github.com/Arubacloud/sdk-go/tree/main/docs/',
           routeBasePath: '/',
-          // Disable versioning until versions are created
-          // After running 'npm run docs:version <version>', remove disableVersioning
-          disableVersioning: true,
+          // Versioning will be automatically enabled when versions are created
+          // No need to configure anything until first version is created
         },
         blog: false,
         theme: {
