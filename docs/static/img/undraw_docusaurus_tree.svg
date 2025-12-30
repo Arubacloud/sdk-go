@@ -1,0 +1,7 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" fill="#25c2a0" opacity="0.1"/>
+  <rect x="90" y="120" width="20" height="80" fill="#25c2a0" opacity="0.5"/>
+  <circle cx="100" cy="80" r="40" fill="#25c2a0" opacity="0.3"/>
+  <text x="100" y="100" text-anchor="middle" font-family="Arial" font-size="14" fill="#25c2a0">Types</text>
+</svg>
+

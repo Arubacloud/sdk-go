@@ -1,0 +1,57 @@
+name: Documentation Versioning
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    name: Create Documentation Version
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        ref: main
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: docs/package-lock.json
+
+    - name: Extract version from tag
+      id: tag
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version extracted: $VERSION"
+
+    - name: Install dependencies
+      working-directory: docs
+      run: npm ci
+
+    - name: Create documentation version
+      working-directory: docs
+      run: |
+        npm run docs:version ${{ steps.tag.outputs.version }}
+
+    - name: Commit versioned docs
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add docs/versioned_docs docs/versioned_sidebars docs/versions.json
+        git diff --staged --quiet || git commit -m "docs: version ${{ steps.tag.outputs.version }}"
+        git push origin main
+        echo "⚠️  Note: After the first version is created, manually enable versioning in docs/docusaurus.config.js by:"
+        echo "   1. Remove 'disableVersioning: true,'"
+        echo "   2. Uncomment the docsVersionDropdown in the navbar"
+
