@@ -4,12 +4,14 @@ on:
   push:
     branches: [main]
     paths:
-      - 'docs/**'
+      - 'docs/website/**'
+      - 'docs/**/*.md'
       - '.github/workflows/docs.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'docs/**'
+      - 'docs/website/**'
+      - 'docs/**/*.md'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -39,44 +41,17 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
-        cache-dependency-path: docs/package-lock.json
+        cache-dependency-path: docs/website/package-lock.json
 
     - name: Install dependencies
-      working-directory: docs
+      working-directory: docs/website
       run: npm ci
 
-    - name: Fix versioned docs front matter
-      working-directory: docs
-      run: |
-        # Fix any existing versioned docs
-        if [ -d "versioned_docs" ]; then
-          npm run fix:versioned || echo "No versioned docs to fix or fix script failed"
-        fi
-
-    - name: Temporarily disable versioning for build
-      working-directory: docs
-      run: |
-        # Temporarily rename versioned docs to avoid build issues
-        # This allows the build to work while we fix the versioned docs structure
-        if [ -d "versioned_docs" ]; then
-          mv versioned_docs versioned_docs.backup || true
-          mv versioned_sidebars versioned_sidebars.backup || true
-          mv versions.json versions.json.backup || true
-        fi
-
     - name: Build documentation
-      working-directory: docs
+      working-directory: docs/website
       run: npm run build
-
-    - name: Restore versioned docs
-      working-directory: docs
-      run: |
-        # Restore versioned docs after build
-        if [ -d "versioned_docs.backup" ]; then
-          mv versioned_docs.backup versioned_docs || true
-          mv versioned_sidebars.backup versioned_sidebars || true
-          mv versions.json.backup versions.json || true
-        fi
+      env:
+        NODE_ENV: production
 
     - name: Setup Pages
       uses: actions/configure-pages@v4
@@ -84,7 +59,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: docs/build
+        path: docs/website/build
 
   deploy:
     name: Deploy Documentation
@@ -116,42 +91,32 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
-        cache-dependency-path: docs/package-lock.json
+        cache-dependency-path: docs/website/package-lock.json
 
     - name: Install dependencies
-      working-directory: docs
+      working-directory: docs/website
       run: npm ci
 
-    - name: Fix versioned docs front matter
-      working-directory: docs
+    - name: Remove versioned docs for PR check
+      working-directory: docs/website
       run: |
-        # Fix any existing versioned docs
+        # Remove versioned docs to avoid false positives during PR checks
+        # Versioned docs are created during release, not during PR validation
         if [ -d "versioned_docs" ]; then
-          npm run fix:versioned || echo "No versioned docs to fix or fix script failed"
+          echo "Removing versioned_docs for PR validation..."
+          rm -rf versioned_docs
+        fi
+        if [ -f "versions.json" ] && [ "$(cat versions.json)" != "[]" ]; then
+          echo "Clearing versions.json for PR validation..."
+          echo "[]" > versions.json
         fi
 
-    - name: Temporarily disable versioning for build
-      working-directory: docs
+    - name: Build and validate documentation
+      working-directory: docs/website
       run: |
-        # Temporarily rename versioned docs to avoid build issues
-        # This allows the build to work while we fix the versioned docs structure
-        if [ -d "versioned_docs" ]; then
-          mv versioned_docs versioned_docs.backup || true
-          mv versioned_sidebars versioned_sidebars.backup || true
-          mv versions.json versions.json.backup || true
-        fi
-
-    - name: Check for broken links
-      working-directory: docs
-      run: npm run build -- --no-minify
-
-    - name: Restore versioned docs
-      working-directory: docs
-      run: |
-        # Restore versioned docs after build
-        if [ -d "versioned_docs.backup" ]; then
-          mv versioned_docs.backup versioned_docs || true
-          mv versioned_sidebars.backup versioned_sidebars || true
-          mv versions.json.backup versions.json || true
-        fi
-
+        echo "Building documentation (versioning disabled for PR check)..."
+        npm run build -- --no-minify
+        echo "✅ Documentation build successful!"
+      env:
+        NODE_ENV: production
+        DISABLE_VERSIONING: 'true'

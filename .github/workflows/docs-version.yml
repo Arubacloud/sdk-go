@@ -1,63 +1,72 @@
-name: Documentation Versioning
+name: Deploy Documentation Version
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
-
-permissions:
-  contents: write
+  release:
+    types: [published, edited]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., 1.0.0)'
+        required: true
+        type: string
 
 jobs:
-  version:
-    name: Create Documentation Version
+  deploy-docs:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        ref: main
-        token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-        cache-dependency-path: docs/package-lock.json
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: docs/website/package-lock.json
 
-    - name: Extract version from tag
-      id: tag
-      run: |
-        VERSION=${GITHUB_REF#refs/tags/v}
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "Version extracted: $VERSION"
+      - name: Install dependencies
+        working-directory: docs/website
+        run: npm ci
 
-    - name: Install dependencies
-      working-directory: docs
-      run: npm ci
+      - name: Extract version from release
+        id: extract_version
+        run: |
+          if [ "${{ github.event_name }}" == "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            # Remove 'v' prefix if present
+            VERSION=${VERSION#v}
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Deploying documentation for version: $VERSION"
 
-    - name: Create documentation version
-      working-directory: docs
-      run: |
-        # Remove versioned_docs if it exists to avoid recursion issues
-        if [ -d "versioned_docs" ]; then
-          echo "Removing existing versioned_docs to avoid conflicts"
-          rm -rf versioned_docs versioned_sidebars versions.json
-        fi
-        # Run versioning - exclude patterns in docusaurus.config.js should prevent copying unwanted files
-        npm run docs:version ${{ steps.tag.outputs.version }}
+      - name: Create versioned docs
+        working-directory: docs/website
+        run: |
+          npm run version ${{ steps.extract_version.outputs.version }}
 
-    - name: Commit versioned docs
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add docs/versioned_docs docs/versioned_sidebars docs/versions.json
-        git diff --staged --quiet || git commit -m "docs: version ${{ steps.tag.outputs.version }}"
-        git push origin main
-        echo "⚠️  Note: After the first version is created, manually enable versioning in docs/docusaurus.config.js by:"
-        echo "   1. Remove 'disableVersioning: true,'"
-        echo "   2. Uncomment the docsVersionDropdown in the navbar"
+      - name: Build documentation
+        working-directory: docs/website
+        run: npm run build
+        env:
+          NODE_ENV: production
 
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/website/build
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

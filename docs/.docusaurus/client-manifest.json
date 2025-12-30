@@ -1,0 +1,295 @@
+{
+  "entrypoints": [
+    "main"
+  ],
+  "origins": {
+    "237": [
+      237
+    ],
+    "17896441": [
+      869,
+      401
+    ],
+    "main": [
+      354,
+      869,
+      792
+    ],
+    "runtime~main": [
+      792,
+      869,
+      354
+    ],
+    "297d9f5d": [
+      871
+    ],
+    "2e5b4b03": [
+      680
+    ],
+    "401eb506": [
+      980
+    ],
+    "4085e326": [
+      270
+    ],
+    "52c79d4f": [
+      989
+    ],
+    "5e4b392a": [
+      172
+    ],
+    "5e95c892": [
+      647
+    ],
+    "68507f06": [
+      835
+    ],
+    "a120d581": [
+      439
+    ],
+    "a448f611": [
+      994
+    ],
+    "a7bd4aaa": [
+      98
+    ],
+    "a94703ab": [
+      869,
+      48
+    ],
+    "a9937268": [
+      532
+    ],
+    "aba21aa0": [
+      742
+    ],
+    "b3aa1f98": [
+      538
+    ],
+    "b4f19217": [
+      39
+    ],
+    "e1e6189b": [
+      798
+    ],
+    "e496f0c1": [
+      163
+    ],
+    "styles": [
+      48,
+      354,
+      401,
+      792,
+      869
+    ]
+  },
+  "assets": {
+    "39": {
+      "js": [
+        {
+          "file": "assets/js/b4f19217.ff384dc8.js",
+          "hash": "291d1e819d26ecc9",
+          "publicPath": "/sdk-go/assets/js/b4f19217.ff384dc8.js"
+        }
+      ]
+    },
+    "48": {
+      "js": [
+        {
+          "file": "assets/js/a94703ab.645feb7c.js",
+          "hash": "13d5e44ae5623c64",
+          "publicPath": "/sdk-go/assets/js/a94703ab.645feb7c.js"
+        }
+      ]
+    },
+    "98": {
+      "js": [
+        {
+          "file": "assets/js/a7bd4aaa.a96c30d9.js",
+          "hash": "e98d106c653ea28a",
+          "publicPath": "/sdk-go/assets/js/a7bd4aaa.a96c30d9.js"
+        }
+      ]
+    },
+    "163": {
+      "js": [
+        {
+          "file": "assets/js/e496f0c1.f0a2379a.js",
+          "hash": "3c616edbb011bfc0",
+          "publicPath": "/sdk-go/assets/js/e496f0c1.f0a2379a.js"
+        }
+      ]
+    },
+    "172": {
+      "js": [
+        {
+          "file": "assets/js/5e4b392a.f36a2673.js",
+          "hash": "851a0b4c15477156",
+          "publicPath": "/sdk-go/assets/js/5e4b392a.f36a2673.js"
+        }
+      ]
+    },
+    "237": {
+      "js": [
+        {
+          "file": "assets/js/237.1aac847f.js",
+          "hash": "2488c83fe72273ea",
+          "publicPath": "/sdk-go/assets/js/237.1aac847f.js"
+        }
+      ]
+    },
+    "270": {
+      "js": [
+        {
+          "file": "assets/js/4085e326.6f607477.js",
+          "hash": "04170d29b984a52e",
+          "publicPath": "/sdk-go/assets/js/4085e326.6f607477.js"
+        }
+      ]
+    },
+    "354": {
+      "js": [
+        {
+          "file": "assets/js/runtime~main.01686873.js",
+          "hash": "3b13eb2a44984708",
+          "publicPath": "/sdk-go/assets/js/runtime~main.01686873.js"
+        }
+      ]
+    },
+    "401": {
+      "js": [
+        {
+          "file": "assets/js/17896441.ea259cb7.js",
+          "hash": "b2d7e7e3df926120",
+          "publicPath": "/sdk-go/assets/js/17896441.ea259cb7.js"
+        }
+      ]
+    },
+    "439": {
+      "js": [
+        {
+          "file": "assets/js/a120d581.b2022e70.js",
+          "hash": "ced067c49441a7cf",
+          "publicPath": "/sdk-go/assets/js/a120d581.b2022e70.js"
+        }
+      ]
+    },
+    "532": {
+      "js": [
+        {
+          "file": "assets/js/a9937268.776376e6.js",
+          "hash": "62e3ff27bf93a66e",
+          "publicPath": "/sdk-go/assets/js/a9937268.776376e6.js"
+        }
+      ]
+    },
+    "538": {
+      "js": [
+        {
+          "file": "assets/js/b3aa1f98.24cc1b11.js",
+          "hash": "d2832e5de5f67292",
+          "publicPath": "/sdk-go/assets/js/b3aa1f98.24cc1b11.js"
+        }
+      ]
+    },
+    "647": {
+      "js": [
+        {
+          "file": "assets/js/5e95c892.2d7d0903.js",
+          "hash": "24f6e2bccccd14ea",
+          "publicPath": "/sdk-go/assets/js/5e95c892.2d7d0903.js"
+        }
+      ]
+    },
+    "680": {
+      "js": [
+        {
+          "file": "assets/js/2e5b4b03.ba8cab5f.js",
+          "hash": "4ee3efa3fe8fcd13",
+          "publicPath": "/sdk-go/assets/js/2e5b4b03.ba8cab5f.js"
+        }
+      ]
+    },
+    "742": {
+      "js": [
+        {
+          "file": "assets/js/aba21aa0.9dc6513a.js",
+          "hash": "1d27379618abeb1f",
+          "publicPath": "/sdk-go/assets/js/aba21aa0.9dc6513a.js"
+        }
+      ]
+    },
+    "792": {
+      "js": [
+        {
+          "file": "assets/js/main.ad75809d.js",
+          "hash": "ab2b957c9f6f3126",
+          "publicPath": "/sdk-go/assets/js/main.ad75809d.js"
+        }
+      ]
+    },
+    "798": {
+      "js": [
+        {
+          "file": "assets/js/e1e6189b.99b4d5bb.js",
+          "hash": "63f77edb8af23ce0",
+          "publicPath": "/sdk-go/assets/js/e1e6189b.99b4d5bb.js"
+        }
+      ]
+    },
+    "835": {
+      "js": [
+        {
+          "file": "assets/js/68507f06.e1710d4b.js",
+          "hash": "b7dd4a969bccae33",
+          "publicPath": "/sdk-go/assets/js/68507f06.e1710d4b.js"
+        }
+      ]
+    },
+    "869": {
+      "css": [
+        {
+          "file": "assets/css/styles.ac916c48.css",
+          "hash": "0936d1a78c9a8097",
+          "publicPath": "/sdk-go/assets/css/styles.ac916c48.css"
+        }
+      ]
+    },
+    "871": {
+      "js": [
+        {
+          "file": "assets/js/297d9f5d.bae96a9d.js",
+          "hash": "da5e129390b54c0d",
+          "publicPath": "/sdk-go/assets/js/297d9f5d.bae96a9d.js"
+        }
+      ]
+    },
+    "980": {
+      "js": [
+        {
+          "file": "assets/js/401eb506.890ac142.js",
+          "hash": "89f683ba32fdf2a5",
+          "publicPath": "/sdk-go/assets/js/401eb506.890ac142.js"
+        }
+      ]
+    },
+    "989": {
+      "js": [
+        {
+          "file": "assets/js/52c79d4f.8fdc8358.js",
+          "hash": "f4229f47d2f5f5ee",
+          "publicPath": "/sdk-go/assets/js/52c79d4f.8fdc8358.js"
+        }
+      ]
+    },
+    "994": {
+      "js": [
+        {
+          "file": "assets/js/a448f611.56923554.js",
+          "hash": "91763c3e4ab0f6ab",
+          "publicPath": "/sdk-go/assets/js/a448f611.56923554.js"
+        }
+      ]
+    }
+  }
+}

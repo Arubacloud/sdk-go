@@ -1,0 +1,20 @@
+{
+  "id": "filters",
+  "title": "Filtering Guide",
+  "description": "This guide explains how to use filters with the Aruba Cloud Go SDK to query and filter resources based on various criteria.",
+  "source": "@site/filters.md",
+  "sourceDirName": ".",
+  "slug": "/filters",
+  "permalink": "/sdk-go/next/filters",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/Arubacloud/sdk-go/tree/main/docs/filters.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "tutorialSidebar",
+  "previous": {
+    "title": "Response Handling",
+    "permalink": "/sdk-go/next/response-handling"
+  }
+}

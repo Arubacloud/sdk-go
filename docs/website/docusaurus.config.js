@@ -45,41 +45,20 @@ const config = {
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl: 'https://github.com/Arubacloud/sdk-go/tree/main/docs/',
+          editUrl: 'https://github.com/Arubacloud/sdk-go/tree/main/docs/website/',
           routeBasePath: '/',
-          // Explicitly set path to current directory since config is in docs folder
-          // Without this, Docusaurus looks for docs/docs/ which doesn't exist
-          path: '.',
-          // Only include the actual doc markdown files (exclude test files and README)
-          include: ['intro.md', 'resources.md', 'types.md', 'options.md', 'response-handling.md', 'filters.md'],
-          // Exclude everything except markdown files from versioning
-          // This prevents circular copy when versioning (copying docs to docs/versioned_docs)
-          exclude: [
-            // Build and cache directories
-            '**/node_modules/**',
-            '**/.docusaurus/**',
-            '**/build/**',
-            '**/.cache/**',
-            // Source and static files
-            '**/src/**',
-            '**/static/**',
-            // Configuration and package files
-            '**/package*.json',
-            '**/babel.config.js',
-            '**/docusaurus.config.js',
-            '**/sidebars.js',
-            '**/.gitignore',
-            '**/.git/**',
-            // Documentation files (except markdown)
-            '**/README.md',
-            '**/TESTING.md',
-            '**/QUICK_TEST.md',
-            '**/test-versioning.sh',
-            // Versioning artifacts (prevent recursion)
-            '**/versioned_docs/**',
-            '**/versioned_sidebars/**',
-            '**/versions.json',
-          ],
+          // Enable versioning (disabled during PR checks via DISABLE_VERSIONING env var)
+          ...(process.env.DISABLE_VERSIONING !== 'true' && {
+            versions: {
+              current: {
+                label: 'Next 🚧',
+                path: 'next',
+              },
+            },
+          }),
+          // Show last update time
+          showLastUpdateTime: true,
+          showLastUpdateAuthor: true,
         },
         blog: false,
         theme: {
@@ -107,12 +86,10 @@ const config = {
             position: 'left',
             label: 'Docs',
           },
-          // Version dropdown - uncomment after creating first version
-          // {
-          //   type: 'docsVersionDropdown',
-          //   position: 'right',
-          //   dropdownActiveClassDisabled: true,
-          // },
+          {
+            type: 'docsVersionDropdown',
+            position: 'right',
+          },
           {
             href: 'https://github.com/Arubacloud/sdk-go',
             position: 'right',

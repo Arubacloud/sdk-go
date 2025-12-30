@@ -1,0 +1,24 @@
+{
+  "id": "intro",
+  "title": "Quick Start",
+  "description": "Note: This SDK is currently in its Alpha stage. The API is not yet stable, and breaking changes may be introduced in future releases without prior notice. Please use with caution and be prepared for updates.",
+  "source": "@site/intro.md",
+  "sourceDirName": ".",
+  "slug": "/",
+  "permalink": "/sdk-go/next/",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/Arubacloud/sdk-go/tree/main/docs/intro.md",
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 1,
+  "frontMatter": {
+    "sidebar_position": 1,
+    "slug": "/"
+  },
+  "sidebar": "tutorialSidebar",
+  "next": {
+    "title": "Resources",
+    "permalink": "/sdk-go/next/resources"
+  }
+}

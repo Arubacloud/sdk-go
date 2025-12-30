@@ -1,7 +1,7 @@
 # Go SDK Makefile
 GO := go
 NPM := npm
-DOCS_DIR := docs
+DOCS_DIR := docs/website
 
 .PHONY: help
 help: ## Display this help message
@@ -50,6 +50,9 @@ clean: ## Clean build artifacts
 	@$(GO) clean -cache -testcache
 	@rm -rf $(DOCS_DIR)/build
 	@rm -rf $(DOCS_DIR)/.docusaurus
+	@rm -rf $(DOCS_DIR)/versioned_docs
+	@rm -rf $(DOCS_DIR)/versioned_sidebars
+	@rm -f $(DOCS_DIR)/versions.json
 
 .PHONY: install
 install: ## Install SDK dependencies
@@ -87,7 +90,7 @@ docs-version: ## Create a new documentation version (usage: make docs-version VE
 		exit 1; \
 	fi
 	@echo "Creating documentation version $(VERSION)..."
-	@cd $(DOCS_DIR) && $(NPM) run docs:version $(VERSION)
+	@cd $(DOCS_DIR) && $(NPM) run version $(VERSION)
 
 .PHONY: docs-clean
 docs-clean: ## Clean documentation build artifacts

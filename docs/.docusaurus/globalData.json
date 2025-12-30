@@ -1,0 +1,106 @@
+{
+  "docusaurus-plugin-content-docs": {
+    "default": {
+      "path": "/sdk-go/",
+      "versions": [
+        {
+          "name": "current",
+          "label": "Next",
+          "isLast": false,
+          "path": "/sdk-go/next",
+          "mainDocId": "intro",
+          "docs": [
+            {
+              "id": "filters",
+              "path": "/sdk-go/next/filters",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "intro",
+              "path": "/sdk-go/next/",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "options",
+              "path": "/sdk-go/next/options",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "resources",
+              "path": "/sdk-go/next/resources",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "response-handling",
+              "path": "/sdk-go/next/response-handling",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "types",
+              "path": "/sdk-go/next/types",
+              "sidebar": "tutorialSidebar"
+            }
+          ],
+          "draftIds": [],
+          "sidebars": {
+            "tutorialSidebar": {
+              "link": {
+                "path": "/sdk-go/next/",
+                "label": "Quick Start"
+              }
+            }
+          }
+        },
+        {
+          "name": "0.1.5-test",
+          "label": "0.1.5-test",
+          "isLast": true,
+          "path": "/sdk-go/",
+          "mainDocId": "intro",
+          "docs": [
+            {
+              "id": "filters",
+              "path": "/sdk-go/filters",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "intro",
+              "path": "/sdk-go/intro",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "options",
+              "path": "/sdk-go/options",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "resources",
+              "path": "/sdk-go/resources",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "response-handling",
+              "path": "/sdk-go/response-handling",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "types",
+              "path": "/sdk-go/types",
+              "sidebar": "tutorialSidebar"
+            }
+          ],
+          "draftIds": [],
+          "sidebars": {
+            "tutorialSidebar": {
+              "link": {
+                "path": "/sdk-go/intro",
+                "label": "Quick Start"
+              }
+            }
+          }
+        }
+      ],
+      "breadcrumbs": true
+    }
+  }
+}
