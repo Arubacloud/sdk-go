@@ -13,14 +13,37 @@
 
 /** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
 const sidebars = {
-  // By default, Docusaurus generates a sidebar from the docs folder structure
   tutorialSidebar: [
-    'intro',
-    'resources',
-    'types',
-    'options',
-    'response-handling',
-    'filters',
+    {
+      type: 'doc',
+      id: 'intro',
+      label: 'Quick Start',
+    },
+    {
+      type: 'doc',
+      id: 'resources',
+      label: 'Resources',
+    },
+    {
+      type: 'doc',
+      id: 'types',
+      label: 'Types',
+    },
+    {
+      type: 'doc',
+      id: 'options',
+      label: 'Options',
+    },
+    {
+      type: 'doc',
+      id: 'response-handling',
+      label: 'Response Handling',
+    },
+    {
+      type: 'doc',
+      id: 'filters',
+      label: 'Filters',
+    },
   ],
 };
 

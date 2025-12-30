@@ -102,40 +102,15 @@ const config = {
         style: 'dark',
         links: [
           {
-            title: 'Docs',
-            items: [
-              {
-                label: 'Quick Start',
-                to: '/',
-              },
-              {
-                label: 'Resources',
-                to: '/resources',
-              },
-              {
-                label: 'Types',
-                to: '/types',
-              },
-              {
-                label: 'Options',
-                to: '/options',
-              },
-              {
-                label: 'Response Handling',
-                to: '/response-handling',
-              },
-              {
-                label: 'Filters',
-                to: '/filters',
-              },
-            ],
-          },
-          {
             title: 'Community',
             items: [
               {
                 label: 'GitHub',
                 href: 'https://github.com/Arubacloud/sdk-go',
+              },
+              {
+                label: 'Issues',
+                href: 'https://github.com/Arubacloud/sdk-go/issues',
               },
             ],
           },
