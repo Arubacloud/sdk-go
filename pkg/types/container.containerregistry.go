@@ -29,7 +29,7 @@ type ContainerRegistryPropertiesRequest struct {
 	AdminUser *UserCredential `json:"adminUser,omitempty"`
 
 	// Size is the number of concurrent users allowed for the container registry
-	ConcurrentUsers *int `json:"size,omitempty"`
+	ConcurrentUsers *string `json:"size,omitempty"`
 }
 
 type ContainerRegistryPropertiesResult struct {
@@ -56,7 +56,7 @@ type ContainerRegistryPropertiesResult struct {
 	AdminUser *UserCredential `json:"adminUser,omitempty"`
 
 	// Size is the number of concurrent users allowed for the container registry
-	ConcurrentUsers *int `json:"size,omitempty"`
+	ConcurrentUsers *string `json:"size,omitempty"`
 }
 
 type ContainerRegistryRequest struct {
