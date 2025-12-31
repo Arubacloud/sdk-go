@@ -160,7 +160,7 @@ func createContainerRegistry(ctx context.Context, arubaClient aruba.Client, proj
 			BlockStorage:    types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"},
 			BillingPlan:     &types.BillingPeriodResource{BillingPeriod: "Hour"},
 			AdminUser:       &types.UserCredential{Username: "admin"},
-			ConcurrentUsers: types.IntPtr(100),
+			ConcurrentUsers: types.StringPtr("100"),
 		},
 	}
 

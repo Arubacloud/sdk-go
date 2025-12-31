@@ -56,7 +56,7 @@ func TestListContainerRegistry(t *testing.T) {
 								AdminUser: &types.UserCredential{
 									Username: "admin",
 								},
-								ConcurrentUsers: types.IntPtr(100),
+								ConcurrentUsers: types.StringPtr("100"),
 							},
 							Status: types.ResourceStatus{
 								State: types.StringPtr("active"),
@@ -122,7 +122,7 @@ func TestListContainerRegistry(t *testing.T) {
 		if resp.Data.Values[0].Properties.AdminUser == nil || resp.Data.Values[0].Properties.AdminUser.Username != "admin" {
 			t.Errorf("expected AdminUser username")
 		}
-		if resp.Data.Values[0].Properties.ConcurrentUsers == nil || *resp.Data.Values[0].Properties.ConcurrentUsers != 100 {
+		if resp.Data.Values[0].Properties.ConcurrentUsers == nil || *resp.Data.Values[0].Properties.ConcurrentUsers != "100" {
 			t.Errorf("expected ConcurrentUsers 100")
 		}
 	})
@@ -169,7 +169,7 @@ func TestGetContainerRegistry(t *testing.T) {
 						AdminUser: &types.UserCredential{
 							Username: "admin",
 						},
-						ConcurrentUsers: types.IntPtr(100),
+						ConcurrentUsers: types.StringPtr("100"),
 					},
 					Status: types.ResourceStatus{
 						State: types.StringPtr("active"),
@@ -224,7 +224,7 @@ func TestGetContainerRegistry(t *testing.T) {
 		if resp.Data.Properties.AdminUser == nil || resp.Data.Properties.AdminUser.Username != "admin" {
 			t.Errorf("expected AdminUser username")
 		}
-		if resp.Data.Properties.ConcurrentUsers == nil || *resp.Data.Properties.ConcurrentUsers != 100 {
+		if resp.Data.Properties.ConcurrentUsers == nil || *resp.Data.Properties.ConcurrentUsers != "100" {
 			t.Errorf("expected ConcurrentUsers 100")
 		}
 	})
@@ -271,7 +271,7 @@ func TestCreateContainerRegistry(t *testing.T) {
 						AdminUser: &types.UserCredential{
 							Username: "admin",
 						},
-						ConcurrentUsers: types.IntPtr(100),
+						ConcurrentUsers: types.StringPtr("100"),
 					},
 					Status: types.ResourceStatus{
 						State: types.StringPtr("creating"),
@@ -309,7 +309,7 @@ func TestCreateContainerRegistry(t *testing.T) {
 				BlockStorage:    types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"},
 				BillingPlan:     &types.BillingPeriodResource{BillingPeriod: "Hour"},
 				AdminUser:       &types.UserCredential{Username: "admin"},
-				ConcurrentUsers: types.IntPtr(100),
+				ConcurrentUsers: types.StringPtr("100"),
 			},
 		}
 
@@ -344,7 +344,7 @@ func TestCreateContainerRegistry(t *testing.T) {
 		if resp.Data.Properties.AdminUser == nil || resp.Data.Properties.AdminUser.Username != "admin" {
 			t.Errorf("expected AdminUser username")
 		}
-		if resp.Data.Properties.ConcurrentUsers == nil || *resp.Data.Properties.ConcurrentUsers != 100 {
+		if resp.Data.Properties.ConcurrentUsers == nil || *resp.Data.Properties.ConcurrentUsers != "100" {
 			t.Errorf("expected ConcurrentUsers 100")
 		}
 		if resp.Data.Status.State == nil || *resp.Data.Status.State != "creating" {
@@ -394,7 +394,7 @@ func TestUpdateContainerRegistry(t *testing.T) {
 						AdminUser: &types.UserCredential{
 							Username: "admin",
 						},
-						ConcurrentUsers: types.IntPtr(100),
+						ConcurrentUsers: types.StringPtr("100"),
 					},
 					Status: types.ResourceStatus{
 						State: types.StringPtr("updating"),
@@ -432,7 +432,7 @@ func TestUpdateContainerRegistry(t *testing.T) {
 				BlockStorage:    types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"},
 				BillingPlan:     &types.BillingPeriodResource{BillingPeriod: "Hour"},
 				AdminUser:       &types.UserCredential{Username: "admin"},
-				ConcurrentUsers: types.IntPtr(100),
+				ConcurrentUsers: types.StringPtr("100"),
 			},
 		}
 
@@ -467,7 +467,7 @@ func TestUpdateContainerRegistry(t *testing.T) {
 		if resp.Data.Properties.AdminUser == nil || resp.Data.Properties.AdminUser.Username != "admin" {
 			t.Errorf("expected AdminUser username")
 		}
-		if resp.Data.Properties.ConcurrentUsers == nil || *resp.Data.Properties.ConcurrentUsers != 100 {
+		if resp.Data.Properties.ConcurrentUsers == nil || *resp.Data.Properties.ConcurrentUsers != "100" {
 			t.Errorf("expected ConcurrentUsers 100")
 		}
 		if resp.Data.Status.State == nil || *resp.Data.Status.State != "updating" {
