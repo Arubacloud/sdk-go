@@ -55,6 +55,52 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Deploying documentation for version: $VERSION"
 
+      - name: Sync versions.json with existing docs
+        working-directory: docs/website
+        run: |
+          # Sync versions.json with actual versioned docs directories
+          # This ensures versions.json only references versions that actually exist
+          echo "=== Syncing versions.json with existing versioned docs ==="
+          
+          # Always start with empty array
+          echo "[]" > versions.json
+          
+          # Check if versioned_docs directory exists and has content
+          if [ -d "versioned_docs" ]; then
+            echo "Checking for version directories..."
+            
+            # Get all version directories and extract version names
+            # Use ls to get directory names, filter for version-* pattern, remove prefix
+            EXISTING_VERSIONS=$(ls -d versioned_docs/version-* 2>/dev/null | \
+                                sed 's|versioned_docs/version-||' | \
+                                sort -V | \
+                                jq -R . | \
+                                jq -s . || echo "[]")
+            
+            if [ "$EXISTING_VERSIONS" != "[]" ] && [ -n "$EXISTING_VERSIONS" ]; then
+              echo "$EXISTING_VERSIONS" > versions.json
+              echo "✓ Updated versions.json with existing versions:"
+              cat versions.json | jq -r '.[]' | while read -r v; do echo "    - $v"; done
+            else
+              echo "✓ No version directories found, keeping empty array"
+            fi
+          else
+            echo "✓ No versioned_docs directory, keeping empty array"
+          fi
+          
+          # Verify and show final state
+          echo ""
+          echo "Final versions.json before creating new version:"
+          cat versions.json
+          echo ""
+          
+          # Verify it's valid JSON
+          if ! jq empty versions.json 2>/dev/null; then
+            echo "⚠️  ERROR: versions.json is invalid JSON! Resetting to empty array."
+            echo "[]" > versions.json
+            exit 1
+          fi
+
       - name: Create versioned docs
         working-directory: docs/website
         run: |
