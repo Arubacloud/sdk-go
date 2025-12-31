@@ -77,7 +77,7 @@ const config = {
         title: 'Aruba Cloud SDK for Go',
         logo: {
           alt: 'Aruba Cloud Logo',
-          src: 'img/logo.svg',
+          src: 'img/logo-cloud.png',
         },
         items: [
           {
@@ -91,6 +91,11 @@ const config = {
             type: 'docsVersionDropdown',
             position: 'right',
           }] : []),
+          {
+            href: 'https://api.arubacloud.com',
+            position: 'right',
+            label: 'API',
+          },
           {
             href: 'https://github.com/Arubacloud/sdk-go',
             position: 'right',
@@ -123,10 +128,14 @@ const config = {
                 label: 'Aruba Cloud',
                 href: 'https://www.arubacloud.com',
               },
+              {
+                label: 'Changelog',
+                href: 'https://github.com/Arubacloud/sdk-go/releases',
+              },
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Aruba Cloud.`,
+        copyright: `Copyright © 2025 Aruba S.p.A. - via San Clemente, 53 - 24036 Ponte San Pietro (BG) P.IVA 01573850516 - C.F. 04552920482 - C.S. € 4.000.000,00 i.v. - Numero REA: BG – 434483 - All rights reserved`,
       },
       prism: {
         theme: lightCodeTheme,
