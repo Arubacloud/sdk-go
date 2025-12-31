@@ -377,11 +377,23 @@ func buildContainerClient(restClient *restclient.Client) (ContainerClient, error
 		return nil, err // TODO: better error handling
 	}
 
-	return &containerClientImpl{kaasClient: kaasClient}, nil
+	containerRegistryClient, err := buildContainerRegistryClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	return &containerClientImpl{
+		kaasClient:              kaasClient,
+		containerRegistryClient: containerRegistryClient,
+	}, nil
 }
 
 func buildKaaSClient(restClient *restclient.Client) (KaaSClient, error) {
 	return container.NewKaaSClientImpl(restClient), nil
+}
+
+func buildContainerRegistryClient(restClient *restclient.Client) (ContainerRegistryClient, error) {
+	return container.NewContainerRegistryClientImpl(restClient), nil
 }
 
 //
