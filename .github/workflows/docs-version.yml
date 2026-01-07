@@ -104,7 +104,16 @@ jobs:
       - name: Create versioned docs
         working-directory: docs/website
         run: |
-          npm run version ${{ steps.extract_version.outputs.version }}
+          VERSION="${{ steps.extract_version.outputs.version }}"
+          echo "Creating versioned docs for version: $VERSION"
+          npm run version "$VERSION"
+          
+          # Verify the version was created
+          if [ ! -d "versioned_docs/version-${VERSION}" ]; then
+            echo "⚠️  ERROR: Version directory was not created: versioned_docs/version-${VERSION}"
+            exit 1
+          fi
+          echo "✓ Versioned docs created successfully: versioned_docs/version-${VERSION}"
 
       - name: Cleanup old versions (keep last 5)
         working-directory: docs/website
@@ -124,34 +133,67 @@ jobs:
           # Keep only the last 5 releases (newest first after semantic sort)
           KEEP_LAST=5
           RELEASES_TO_KEEP=$(echo "$RELEASES_JSON" | head -n $KEEP_LAST)
-          echo "Keeping last $KEEP_LAST release(s) (sorted by semantic version):"
+          echo "Latest $KEEP_LAST release(s) from GitHub (sorted by semantic version):"
           echo "$RELEASES_TO_KEEP" | while read -r v; do [ -n "$v" ] && echo "  - $v"; done
           
           # Get current versions from versions.json
           if [ -f "versions.json" ] && [ -d "versioned_docs" ]; then
+            echo ""
+            echo "Existing versioned docs directories:"
+            ls -d versioned_docs/version-* 2>/dev/null | sed 's|versioned_docs/version-||' | while read -r v; do echo "  - $v"; done || echo "  (none)"
+            
             # Remove versions that are not in the last 5 releases
             for version_dir in versioned_docs/version-*; do
               if [ -d "$version_dir" ]; then
                 version=$(basename "$version_dir" | sed 's/version-//')
                 if [ -n "$version" ] && ! echo "$RELEASES_TO_KEEP" | grep -qx "$version"; then
-                  echo "Removing old version: $version"
+                  echo "Removing old version: $version (not in last $KEEP_LAST releases)"
                   rm -rf "versioned_docs/version-${version}" || true
                   rm -f "versioned_sidebars/version-${version}-sidebars.json" || true
                 fi
               fi
             done
             
-            # Update versions.json to only include versions that exist and are in the last 5
-            # Build array of existing versions from the keep list, sorted by semantic version (newest first)
-            {
-              echo "$RELEASES_TO_KEEP" | while read -r version; do
-                if [ -n "$version" ] && [ -d "versioned_docs/version-${version}" ]; then
-                  echo "$version"
+            # Update versions.json to include only versions that exist AND are in the last 5 releases
+            # This ensures we keep the last 5 that were successfully created
+            echo ""
+            echo "Checking which of the last $KEEP_LAST releases have versioned docs:"
+            VERSIONS_TO_KEEP=""
+            while IFS= read -r version; do
+              if [ -n "$version" ]; then
+                if [ -d "versioned_docs/version-${version}" ]; then
+                  echo "  ✓ $version - exists"
+                  VERSIONS_TO_KEEP="${VERSIONS_TO_KEEP}${version}\n"
+                else
+                  echo "  ✗ $version - MISSING (workflow may not have run for this release)"
                 fi
-              done
-            } | sort -V -r | jq -R . | jq -s . > versions.json.tmp && mv versions.json.tmp versions.json
+              fi
+            done <<< "$RELEASES_TO_KEEP"
             
+            # Build versions.json with only existing versions from the last 5, sorted by semantic version (newest first)
+            if [ -n "$VERSIONS_TO_KEEP" ]; then
+              echo -e "$VERSIONS_TO_KEEP" | grep -v '^$' | sort -V -r | jq -R . | jq -s . > versions.json.tmp && mv versions.json.tmp versions.json
+            else
+              echo "⚠️  No versions found in last $KEEP_LAST releases, keeping current versions.json"
+            fi
+            
+            echo ""
             echo "✓ Updated versions.json to keep only existing versions from last $KEEP_LAST releases"
+            echo "Final versions.json:"
+            cat versions.json
+            
+            # Update main docs folder to match the latest version
+            # This makes the latest release the "current" version in Docusaurus
+            LATEST_VERSION=$(echo -e "$VERSIONS_TO_KEEP" | grep -v '^$' | sort -V -r | head -n 1)
+            if [ -n "$LATEST_VERSION" ] && [ -d "versioned_docs/version-${LATEST_VERSION}" ]; then
+              echo ""
+              echo "Updating main docs folder to match latest version ($LATEST_VERSION)..."
+              # Remove existing markdown files from docs folder (but keep directory structure)
+              find docs -type f -name "*.md" -delete 2>/dev/null || true
+              # Copy all files from the latest version to the main docs folder
+              cp -r "versioned_docs/version-${LATEST_VERSION}"/* docs/ 2>/dev/null || true
+              echo "✓ Main docs folder updated to version $LATEST_VERSION (now the current version)"
+            fi
           fi
         continue-on-error: true
 

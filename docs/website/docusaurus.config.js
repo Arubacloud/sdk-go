@@ -52,7 +52,7 @@ const config = {
           // can cause link checker warnings. This is a known Docusaurus limitation.
           versions: process.env.DISABLE_VERSIONING === 'true' ? {} : {
             current: {
-              label: 'Next 🚧',
+              label: 'Latest',
               path: 'next',
             },
           },
