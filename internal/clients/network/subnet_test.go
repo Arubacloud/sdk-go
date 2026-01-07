@@ -27,7 +27,29 @@ func TestListSubnets(t *testing.T) {
 			resp := types.SubnetList{
 				ListResponse: types.ListResponse{Total: 1},
 				Values: []types.SubnetResponse{
-					{Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("subnet-1")}},
+					{
+						Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("subnet-1")},
+						Properties: types.SubnetPropertiesResponse{
+							Type: types.SubnetTypeBasic,
+							Network: &types.SubnetNetwork{
+								Address: "192.168.1.0/24",
+							},
+							DHCP: &types.SubnetDHCP{
+								Enabled: true,
+								Range: &types.SubnetDHCPRange{
+									Start: "192.168.1.10",
+									Count: 50,
+								},
+								Routes: []types.SubnetDHCPRoute{
+									{
+										Address: "0.0.0.0/0",
+										Gateway: "192.168.1.1",
+									},
+								},
+								DNS: []string{"8.8.8.8"},
+							},
+						},
+					},
 				},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -67,6 +89,26 @@ func TestGetSubnet(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			resp := types.SubnetResponse{
 				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("my-subnet")},
+				Properties: types.SubnetPropertiesResponse{
+					Type: types.SubnetTypeAdvanced,
+					Network: &types.SubnetNetwork{
+						Address: "192.168.1.0/25",
+					},
+					DHCP: &types.SubnetDHCP{
+						Enabled: true,
+						Range: &types.SubnetDHCPRange{
+							Start: "192.168.1.10",
+							Count: 50,
+						},
+						Routes: []types.SubnetDHCPRoute{
+							{
+								Address: "0.0.0.0/0",
+								Gateway: "192.168.1.1",
+							},
+						},
+						DNS: []string{"8.8.8.8", "8.8.4.4"},
+					},
+				},
 			}
 			json.NewEncoder(w).Encode(resp)
 		}))
@@ -139,6 +181,26 @@ func TestCreateSubnet(t *testing.T) {
 				w.WriteHeader(http.StatusCreated)
 				resp := types.SubnetResponse{
 					Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("new-subnet")},
+					Properties: types.SubnetPropertiesResponse{
+						Type: types.SubnetTypeAdvanced,
+						Network: &types.SubnetNetwork{
+							Address: "192.168.1.0/25",
+						},
+						DHCP: &types.SubnetDHCP{
+							Enabled: true,
+							Range: &types.SubnetDHCPRange{
+								Start: "192.168.1.10",
+								Count: 50,
+							},
+							Routes: []types.SubnetDHCPRoute{
+								{
+									Address: "0.0.0.0/0",
+									Gateway: "192.168.1.1",
+								},
+							},
+							DNS: []string{"8.8.8.8", "8.8.4.4"},
+						},
+					},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return

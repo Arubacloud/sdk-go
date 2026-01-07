@@ -109,21 +109,22 @@ jobs:
       - name: Cleanup old versions (keep last 5)
         working-directory: docs/website
         run: |
-          # Get all releases from GitHub API, sorted by published_at (newest first)
+          # Get all releases from GitHub API, sorted by semantic version (newest first)
           echo "Fetching releases from GitHub..."
+          # Extract tag names, remove 'v' prefix, sort by semantic version (newest first)
           RELEASES_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/${{ github.repository }}/releases" | \
-            jq 'sort_by(.published_at) | reverse | .[].tag_name' | sed 's/"//g' | sed 's/^v//')
+            jq -r '.[].tag_name' | sed 's/^v//' | sort -V -r)
           
-          if [ -z "$RELEASES_JSON" ] || [ "$RELEASES_JSON" = "null" ]; then
+          if [ -z "$RELEASES_JSON" ]; then
             echo "Could not fetch releases, skipping cleanup"
             exit 0
           fi
           
-          # Keep only the last 5 releases
+          # Keep only the last 5 releases (newest first after semantic sort)
           KEEP_LAST=5
           RELEASES_TO_KEEP=$(echo "$RELEASES_JSON" | head -n $KEEP_LAST)
-          echo "Keeping last $KEEP_LAST release(s):"
+          echo "Keeping last $KEEP_LAST release(s) (sorted by semantic version):"
           echo "$RELEASES_TO_KEEP" | while read -r v; do [ -n "$v" ] && echo "  - $v"; done
           
           # Get current versions from versions.json
@@ -141,14 +142,14 @@ jobs:
             done
             
             # Update versions.json to only include versions that exist and are in the last 5
-            # Build array of existing versions from the keep list
+            # Build array of existing versions from the keep list, sorted by semantic version (newest first)
             {
               echo "$RELEASES_TO_KEEP" | while read -r version; do
                 if [ -n "$version" ] && [ -d "versioned_docs/version-${version}" ]; then
                   echo "$version"
                 fi
               done
-            } | jq -R . | jq -s . > versions.json.tmp && mv versions.json.tmp versions.json
+            } | sort -V -r | jq -R . | jq -s . > versions.json.tmp && mv versions.json.tmp versions.json
             
             echo "✓ Updated versions.json to keep only existing versions from last $KEEP_LAST releases"
           fi
