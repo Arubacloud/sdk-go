@@ -114,16 +114,6 @@ jobs:
             exit 1
           fi
           echo "✓ Versioned docs created successfully: versioned_docs/version-${VERSION}"
-          
-          # Copy the latest versioned docs to the main docs folder to make it the "current" version
-          # This ensures the latest release is shown as actively maintained
-          echo ""
-          echo "Updating main docs folder to match latest version ($VERSION)..."
-          # Remove existing docs (but keep the directory structure)
-          find docs -type f -name "*.md" -not -path "*/node_modules/*" -delete 2>/dev/null || true
-          # Copy all files from the new version to the main docs folder
-          cp -r "versioned_docs/version-${VERSION}"/* docs/ 2>/dev/null || true
-          echo "✓ Main docs folder updated to version $VERSION"
 
       - name: Cleanup old versions (keep last 5)
         working-directory: docs/website
@@ -191,6 +181,19 @@ jobs:
             echo "✓ Updated versions.json to keep only existing versions from last $KEEP_LAST releases"
             echo "Final versions.json:"
             cat versions.json
+            
+            # Update main docs folder to match the latest version
+            # This makes the latest release the "current" version in Docusaurus
+            LATEST_VERSION=$(echo -e "$VERSIONS_TO_KEEP" | grep -v '^$' | sort -V -r | head -n 1)
+            if [ -n "$LATEST_VERSION" ] && [ -d "versioned_docs/version-${LATEST_VERSION}" ]; then
+              echo ""
+              echo "Updating main docs folder to match latest version ($LATEST_VERSION)..."
+              # Remove existing markdown files from docs folder (but keep directory structure)
+              find docs -type f -name "*.md" -delete 2>/dev/null || true
+              # Copy all files from the latest version to the main docs folder
+              cp -r "versioned_docs/version-${LATEST_VERSION}"/* docs/ 2>/dev/null || true
+              echo "✓ Main docs folder updated to version $LATEST_VERSION (now the current version)"
+            fi
           fi
         continue-on-error: true
 
