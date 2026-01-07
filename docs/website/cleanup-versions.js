@@ -76,11 +76,30 @@ function getGitHubReleases(keepLast = 5) {
         try {
           const releases = JSON.parse(data);
           
-          // Sort by published_at (newest first)
+          // Sort by semantic version (newest first)
+          // Extract version numbers and sort them properly
           const sortedReleases = releases
             .filter(r => r.published_at) // Only published releases
-            .sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
-            .map(r => r.tag_name.replace(/^v/, '')); // Remove 'v' prefix
+            .map(r => ({
+              tag: r.tag_name,
+              version: r.tag_name.replace(/^v/, '') // Remove 'v' prefix
+            }))
+            .sort((a, b) => {
+              // Semantic version comparison
+              const aParts = a.version.split('.').map(Number);
+              const bParts = b.version.split('.').map(Number);
+              
+              // Compare major, minor, patch
+              for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+                const aPart = aParts[i] || 0;
+                const bPart = bParts[i] || 0;
+                if (aPart !== bPart) {
+                  return bPart - aPart; // Descending order (newest first)
+                }
+              }
+              return 0;
+            })
+            .map(r => r.version); // Extract just the version string
           
           // Keep only the last N releases
           const releasesToKeep = sortedReleases.slice(0, keepLast);

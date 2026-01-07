@@ -13,9 +13,32 @@ type SubnetNetwork struct {
 	Address string `json:"address"`
 }
 
+// SubnetDHCPRange contains the DHCP range configuration
+type SubnetDHCPRange struct {
+	// Start is the starting IP address of the DHCP range
+	Start string `json:"start"`
+	// Count is the number of IP addresses in the DHCP range
+	Count int `json:"count"`
+}
+
+// SubnetDHCPRoute contains the DHCP route configuration
+type SubnetDHCPRoute struct {
+	// Address is the destination network address
+	Address string `json:"address"`
+	// Gateway is the gateway IP address for the route
+	Gateway string `json:"gateway"`
+}
+
 // SubnetDHCP contains the DHCP configuration
 type SubnetDHCP struct {
+	// Enabled indicates if DHCP is enabled
 	Enabled bool `json:"enabled"`
+	// Range contains the DHCP IP address range
+	Range *SubnetDHCPRange `json:"range,omitempty"`
+	// Routes contains the DHCP routes configuration
+	Routes []SubnetDHCPRoute `json:"routes,omitempty"`
+	// DNS contains the DNS server addresses
+	DNS []string `json:"dns,omitempty"`
 }
 
 // SubnetPropertiesRequest contains the specification for creating a Subnet

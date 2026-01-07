@@ -498,6 +498,17 @@ func createSubnet(ctx context.Context, arubaClient aruba.Client, projectID strin
 			},
 			DHCP: &types.SubnetDHCP{
 				Enabled: true,
+				Range: &types.SubnetDHCPRange{
+					Start: "192.168.1.10",
+					Count: 50,
+				},
+				Routes: []types.SubnetDHCPRoute{
+					{
+						Address: "0.0.0.0/0",
+						Gateway: "192.168.1.1",
+					},
+				},
+				DNS: []string{"8.8.8.8", "8.8.4.4"},
 			},
 		},
 	}
