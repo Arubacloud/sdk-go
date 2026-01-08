@@ -64,11 +64,13 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, projectID 
 	serverList, err := arubaClient.FromCompute().CloudServers().List(ctx, projectID, nil)
 	if err == nil && serverList.IsSuccess() && len(serverList.Data.Values) > 0 {
 		// Get the first server details
-		serverID := serverList.Data.Values[0].Metadata.Name
+		serverID := *serverList.Data.Values[0].Metadata.ID
 		serverResp, err := arubaClient.FromCompute().CloudServers().Get(ctx, projectID, serverID, nil)
 		if err == nil && serverResp.IsSuccess() {
 			resources.CloudServerResp = serverResp
-			fmt.Printf("✓ Found Cloud Server: %s\n", serverResp.Data.Metadata.Name)
+			if serverResp.Data.Metadata.Name != nil {
+				fmt.Printf("✓ Found Cloud Server: %s\n", *serverResp.Data.Metadata.Name)
+			}
 		}
 	}
 
@@ -240,8 +242,8 @@ func deleteAllResources(ctx context.Context, arubaClient aruba.Client, resources
 	}
 
 	// 12. Delete Cloud Server (if created)
-	if resources.CloudServerResp != nil && resources.CloudServerResp.Data != nil && resources.CloudServerResp.Data.Metadata.Name != "" {
-		deleteCloudServer(ctx, arubaClient, resources.ProjectID, &resources.CloudServerResp.Data.Metadata.Name)
+	if resources.CloudServerResp != nil && resources.CloudServerResp.Data != nil && resources.CloudServerResp.Data.Metadata.ID != nil {
+		deleteCloudServer(ctx, arubaClient, resources.ProjectID, resources.CloudServerResp.Data.Metadata.ID)
 	}
 
 	// 11. Delete KaaS (if created)
