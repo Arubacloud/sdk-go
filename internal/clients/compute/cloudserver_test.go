@@ -32,8 +32,8 @@ func TestListCloudServers(t *testing.T) {
 			resp := types.CloudServerList{
 				ListResponse: types.ListResponse{Total: 2},
 				Values: []types.CloudServerResponse{
-					{Metadata: types.RegionalResourceMetadataRequest{
-						ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "server-1"},
+					{Metadata: types.ResourceMetadataResponse{
+						Name: types.StringPtr("server-1"),
 					}},
 				},
 			}
@@ -102,8 +102,8 @@ func TestGetCloudServer(t *testing.T) {
 
 			w.WriteHeader(http.StatusOK)
 			resp := types.CloudServerResponse{
-				Metadata: types.RegionalResourceMetadataRequest{
-					ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "my-server"},
+				Metadata: types.ResourceMetadataResponse{
+					Name: types.StringPtr("my-server"),
 				},
 				Properties: types.CloudServerPropertiesResult{Zone: "ITBG-1"},
 			}
@@ -125,8 +125,8 @@ func TestGetCloudServer(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp.Data.Metadata.Name != "my-server" {
-			t.Errorf("expected name 'my-server', got '%s'", resp.Data.Metadata.Name)
+		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "my-server" {
+			t.Errorf("expected name 'my-server', got '%v'", resp.Data.Metadata.Name)
 		}
 	})
 
@@ -174,8 +174,8 @@ func TestCreateCloudServer(t *testing.T) {
 			}
 			w.WriteHeader(http.StatusCreated)
 			resp := types.CloudServerResponse{
-				Metadata: types.RegionalResourceMetadataRequest{
-					ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-server"},
+				Metadata: types.ResourceMetadataResponse{
+					Name: types.StringPtr("new-server"),
 				},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -291,8 +291,8 @@ func TestPowerOnCloudServer(t *testing.T) {
 			}
 			w.WriteHeader(http.StatusOK)
 			resp := types.CloudServerResponse{
-				Metadata: types.RegionalResourceMetadataRequest{
-					ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "my-server"},
+				Metadata: types.ResourceMetadataResponse{
+					Name: types.StringPtr("my-server"),
 				},
 				Properties: types.CloudServerPropertiesResult{Zone: "ITBG-1"},
 				Status: types.ResourceStatus{
@@ -320,8 +320,8 @@ func TestPowerOnCloudServer(t *testing.T) {
 		if resp == nil || resp.Data == nil {
 			t.Fatalf("expected response data")
 		}
-		if resp.Data.Metadata.Name != "my-server" {
-			t.Errorf("expected name 'my-server', got '%s'", resp.Data.Metadata.Name)
+		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "my-server" {
+			t.Errorf("expected name 'my-server', got '%v'", resp.Data.Metadata.Name)
 		}
 		if !resp.IsSuccess() {
 			t.Errorf("expected successful response, got status code %d", resp.StatusCode)
@@ -348,8 +348,8 @@ func TestPowerOffCloudServer(t *testing.T) {
 			}
 			w.WriteHeader(http.StatusOK)
 			resp := types.CloudServerResponse{
-				Metadata: types.RegionalResourceMetadataRequest{
-					ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "my-server"},
+				Metadata: types.ResourceMetadataResponse{
+					Name: types.StringPtr("my-server"),
 				},
 				Properties: types.CloudServerPropertiesResult{Zone: "ITBG-1"},
 				Status: types.ResourceStatus{
@@ -377,8 +377,8 @@ func TestPowerOffCloudServer(t *testing.T) {
 		if resp == nil || resp.Data == nil {
 			t.Fatalf("expected response data")
 		}
-		if resp.Data.Metadata.Name != "my-server" {
-			t.Errorf("expected name 'my-server', got '%s'", resp.Data.Metadata.Name)
+		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "my-server" {
+			t.Errorf("expected name 'my-server', got '%v'", resp.Data.Metadata.Name)
 		}
 		if !resp.IsSuccess() {
 			t.Errorf("expected successful response, got status code %d", resp.StatusCode)

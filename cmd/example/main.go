@@ -927,9 +927,9 @@ func createCloudServer(ctx context.Context, arubaClient aruba.Client, resources 
 		return nil
 	}
 
-	if cloudServerResp.Data != nil && cloudServerResp.Data.Metadata.Name != "" {
+	if cloudServerResp.Data != nil && cloudServerResp.Data.Metadata.Name != nil {
 		fmt.Printf("✓ Created Cloud Server: %s (Zone: %s, Flavor: %s)\n",
-			cloudServerResp.Data.Metadata.Name,
+			*cloudServerResp.Data.Metadata.Name,
 			cloudServerResp.Data.Properties.Zone,
 			cloudServerResp.Data.Properties.Flavor.Name)
 	}
@@ -983,8 +983,8 @@ func printResourceSummary(resources *ResourceCollection) {
 		fmt.Println("- KaaS Cluster ID:", *resources.KaaSResp.Data.Metadata.ID)
 	}
 
-	if resources.CloudServerResp != nil && resources.CloudServerResp.Data != nil && resources.CloudServerResp.Data.Metadata.Name != "" {
-		fmt.Println("- Cloud Server:", resources.CloudServerResp.Data.Metadata.Name)
+	if resources.CloudServerResp != nil && resources.CloudServerResp.Data != nil && resources.CloudServerResp.Data.Metadata.Name != nil {
+		fmt.Println("- Cloud Server:", *resources.CloudServerResp.Data.Metadata.Name)
 	}
 }
 
