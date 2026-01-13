@@ -115,6 +115,13 @@ jobs:
           fi
           echo "✓ Versioned docs created successfully: versioned_docs/version-${VERSION}"
 
+      - name: Sync translations for all versions
+        working-directory: docs/website
+        run: |
+          echo "Syncing Italian translations for all versions..."
+          npm run sync-version-translations
+          echo "✓ Translations synced for all versions"
+
       - name: Cleanup old versions (keep last 5)
         working-directory: docs/website
         run: |
