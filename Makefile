@@ -74,9 +74,14 @@ docs-install: ## Install documentation dependencies
 	@cd $(DOCS_DIR) && $(NPM) install
 
 .PHONY: docs-serve
-docs-serve: docs-install ## Start documentation development server
-	@echo "Starting documentation server..."
+docs-serve: docs-install ## Start documentation development server (English locale)
+	@echo "Starting documentation server (English locale)..."
 	@cd $(DOCS_DIR) && $(NPM) start
+
+.PHONY: docs-serve-it
+docs-serve-it: docs-install ## Start documentation development server with Italian locale
+	@echo "Starting documentation server (Italian locale)..."
+	@cd $(DOCS_DIR) && $(NPM) start -- --locale it
 
 .PHONY: docs-build
 docs-build: docs-install ## Build documentation for production
@@ -105,8 +110,8 @@ docs-test: docs-install ## Test documentation (build and validate)
 	@cd $(DOCS_DIR) && $(NPM) run build -- --no-minify
 
 .PHONY: docs-serve-build
-docs-serve-build: docs-install ## Build and serve production documentation (simulates CI build)
-	@echo "Building and serving production documentation..."
+docs-serve-build: docs-install ## Build and serve production documentation with locale dropdown (simulates CI build)
+	@echo "Building and serving production documentation (with locale dropdown)..."
 	@cd $(DOCS_DIR) && $(NPM) run build
 	@cd $(DOCS_DIR) && $(NPM) run serve
 

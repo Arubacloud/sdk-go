@@ -1,0 +1,107 @@
+{
+  "theme.AnnouncementBar.closeButtonAriaLabel": {
+    "message": "Chiudi"
+  },
+  "theme.BackToTopButton.buttonAriaLabel": {
+    "message": "Torna all'inizio"
+  },
+  "theme.CodeBlock.copy": {
+    "message": "Copia"
+  },
+  "theme.CodeBlock.copied": {
+    "message": "Copiato!"
+  },
+  "theme.CodeBlock.copyButtonAriaLabel": {
+    "message": "Copia il codice negli appunti"
+  },
+  "theme.NotFound.title": {
+    "message": "Pagina non trovata"
+  },
+  "theme.NotFound.p1": {
+    "message": "Spiacenti, non siamo riusciti a trovare quella pagina."
+  },
+  "theme.NotFound.p2": {
+    "message": "Torna alla home page."
+  },
+  "theme.NotFound.title2": {
+    "message": "Torna alla home page"
+  },
+  "theme.SearchBar.label": {
+    "message": "Cerca"
+  },
+  "theme.SearchBar.placeholder": {
+    "message": "Cerca nella documentazione..."
+  },
+  "theme.SearchBar.cancelButtonText": {
+    "message": "Annulla"
+  },
+  "theme.SearchBar.cancelButtonAriaLabel": {
+    "message": "Annulla ricerca"
+  },
+  "theme.TOCCollapsible.toggleButtonLabel": {
+    "message": "In questa pagina"
+  },
+  "theme.admonition.note": {
+    "message": "Nota"
+  },
+  "theme.admonition.tip": {
+    "message": "Suggerimento"
+  },
+  "theme.admonition.info": {
+    "message": "Info"
+  },
+  "theme.admonition.caution": {
+    "message": "Attenzione"
+  },
+  "theme.admonition.danger": {
+    "message": "Pericolo"
+  },
+  "theme.lastUpdated.atDate": {
+    "message": "Ultimo aggiornamento il {{date}}"
+  },
+  "theme.lastUpdated.byAuthor": {
+    "message": "da {{author}}"
+  },
+  "theme.lastUpdated.byAuthorAtDate": {
+    "message": "da {{author}} il {{date}}"
+  },
+  "theme.DocSidebarItem.collapseButtonLabel": {
+    "message": "Comprimi sidebar"
+  },
+  "theme.DocSidebarItem.expandButtonLabel": {
+    "message": "Espandi sidebar"
+  },
+  "theme.docs.paginator.navAriaLabel": {
+    "message": "Navigazione pagine documentazione"
+  },
+  "theme.docs.paginator.previous": {
+    "message": "Precedente"
+  },
+  "theme.docs.paginator.next": {
+    "message": "Successivo"
+  },
+  "theme.docs.versions.latestVersionSuggestionLabel": {
+    "message": "Per la documentazione più recente, consulta la {latestVersionLink}."
+  },
+  "theme.docs.versions.latestVersionLinkLabel": {
+    "message": "versione più recente"
+  },
+  "theme.docs.versions.unmaintainedVersionLabel": {
+    "message": "Questa versione non è più mantenuta."
+  },
+  "theme.docs.versions.unreleasedVersionLabel": {
+    "message": "Questa è una versione non rilasciata."
+  },
+  "theme.docs.versions.skipToMainContentLabel": {
+    "message": "Vai al contenuto principale"
+  },
+  "theme.docs.sidebar.toggleSidebarButtonAriaLabel": {
+    "message": "Attiva/disattiva sidebar documentazione"
+  },
+  "theme.docs.sidebar.collapseSidebarButtonTooltip": {
+    "message": "Comprimi sidebar"
+  },
+  "theme.docs.sidebar.expandSidebarButtonTooltip": {
+    "message": "Espandi sidebar"
+  }
+}
