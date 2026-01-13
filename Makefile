@@ -74,17 +74,17 @@ docs-install: ## Install documentation dependencies
 	@cd $(DOCS_DIR) && $(NPM) install
 
 .PHONY: docs-serve
-docs-serve: ## Start documentation development server
+docs-serve: docs-install ## Start documentation development server
 	@echo "Starting documentation server..."
 	@cd $(DOCS_DIR) && $(NPM) start
 
 .PHONY: docs-build
-docs-build: ## Build documentation for production
+docs-build: docs-install ## Build documentation for production
 	@echo "Building documentation..."
 	@cd $(DOCS_DIR) && $(NPM) run build
 
 .PHONY: docs-version
-docs-version: ## Create a new documentation version (usage: make docs-version VERSION=1.0.0)
+docs-version: docs-install ## Create a new documentation version (usage: make docs-version VERSION=1.0.0)
 	@if [ -z "$(VERSION)" ]; then \
 		echo "Error: VERSION is required. Usage: make docs-version VERSION=1.0.0"; \
 		exit 1; \
@@ -93,19 +93,19 @@ docs-version: ## Create a new documentation version (usage: make docs-version VE
 	@cd $(DOCS_DIR) && $(NPM) run version $(VERSION)
 
 .PHONY: docs-clean
-docs-clean: ## Clean documentation build artifacts
+docs-clean: docs-install ## Clean documentation build artifacts
 	@echo "Cleaning documentation..."
 	@rm -rf $(DOCS_DIR)/build
 	@rm -rf $(DOCS_DIR)/.docusaurus
 	@cd $(DOCS_DIR) && $(NPM) run clear
 
 .PHONY: docs-test
-docs-test: ## Test documentation (build and validate)
+docs-test: docs-install ## Test documentation (build and validate)
 	@echo "Testing documentation..."
 	@cd $(DOCS_DIR) && $(NPM) run build -- --no-minify
 
 .PHONY: docs-serve-build
-docs-serve-build: ## Build and serve production documentation (simulates CI build)
+docs-serve-build: docs-install ## Build and serve production documentation (simulates CI build)
 	@echo "Building and serving production documentation..."
 	@cd $(DOCS_DIR) && $(NPM) run build
 	@cd $(DOCS_DIR) && $(NPM) run serve
@@ -122,7 +122,7 @@ docs-cleanup-version: ## Remove a specific documentation version (usage: make do
 	@echo "✓ Removed version $(VERSION)"
 
 .PHONY: docs-cleanup-old
-docs-cleanup-old: ## Cleanup old documentation versions, keeping only the last 5 releases
+docs-cleanup-old: docs-install ## Cleanup old documentation versions, keeping only the last 5 releases
 	@echo "Cleaning up old documentation versions (keeping last 5)..."
 	@cd $(DOCS_DIR) && KEEP_LAST=5 npm run cleanup-versions
 

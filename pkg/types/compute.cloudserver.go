@@ -18,6 +18,8 @@ type CloudServerPropertiesRequest struct {
 	Subnets []ReferenceResource `json:"subnets,omitempty"`
 
 	SecurityGroups []ReferenceResource `json:"securityGroups,omitempty"`
+
+	UserData *string `json:"userData,omitempty"`
 }
 
 type CloudServerFlavorResponse struct {
