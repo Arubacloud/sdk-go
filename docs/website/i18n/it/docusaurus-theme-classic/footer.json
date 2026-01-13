@@ -1,0 +1,26 @@
+{
+  "title.Community": {
+    "message": "Community"
+  },
+  "link.title.Community": {
+    "message": "Community"
+  },
+  "link.item.label.GitHub": {
+    "message": "GitHub"
+  },
+  "link.item.label.Issues": {
+    "message": "Problemi"
+  },
+  "title.More": {
+    "message": "Altro"
+  },
+  "link.title.More": {
+    "message": "Altro"
+  },
+  "link.item.label.Aruba Cloud": {
+    "message": "Aruba Cloud"
+  },
+  "link.item.label.Changelog": {
+    "message": "Changelog"
+  }
+}

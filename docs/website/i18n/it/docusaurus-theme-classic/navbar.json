@@ -1,0 +1,17 @@
+{
+  "title": {
+    "message": "Aruba Cloud SDK for Go"
+  },
+  "logo.alt": {
+    "message": "Logo Aruba Cloud SDK for Go"
+  },
+  "item.label.Docs": {
+    "message": "Documentazione"
+  },
+  "item.label.API": {
+    "message": "API"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub"
+  }
+}

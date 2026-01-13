@@ -33,7 +33,21 @@ const config = {
   // to set "zh-Hans" here.
   i18n: {
     defaultLocale: 'en',
-    locales: ['en'],
+    locales: ['en', 'it'],
+    localeConfigs: {
+      en: {
+        label: 'English',
+        direction: 'ltr',
+        htmlLang: 'en-US',
+        calendar: 'gregory',
+      },
+      it: {
+        label: 'Italiano',
+        direction: 'ltr',
+        htmlLang: 'it-IT',
+        calendar: 'gregory',
+      },
+    },
   },
 
   presets: [
@@ -68,6 +82,19 @@ const config = {
     ],
   ],
 
+  plugins: [
+    [
+      require.resolve('@easyops-cn/docusaurus-search-local'),
+      {
+        // Options for the search plugin
+        hashed: true,
+        language: ['en', 'it'],
+        highlightSearchTermsOnTargetPage: true,
+        explicitSearchResultPath: true,
+      },
+    ],
+  ],
+
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
@@ -91,6 +118,10 @@ const config = {
             type: 'docsVersionDropdown',
             position: 'right',
           }] : []),
+          {
+            type: 'localeDropdown',
+            position: 'right',
+          },
           {
             href: 'https://api.arubacloud.com',
             position: 'right',
