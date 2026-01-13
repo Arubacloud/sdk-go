@@ -134,7 +134,7 @@ The following sections detail the primary request and response types for each AP
     <tr>
       <td><code>CloudServerRequest</code></td>
       <td>Create/Update</td>
-      <td>The payload for creating or updating a Cloud Server.</td>
+      <td>The payload for creating or updating a Cloud Server. The <code>Properties</code> field contains <code>CloudServerPropertiesRequest</code>, which includes an optional <code>UserData</code> field (nullable string) for base64-encoded cloud-init content to initialize the server.</td>
     </tr>
     <tr>
       <td><code>CloudServerResponse</code></td>
