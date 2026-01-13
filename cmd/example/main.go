@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"log"
@@ -876,6 +877,21 @@ func createCloudServer(ctx context.Context, arubaClient aruba.Client, resources 
 		return nil
 	}
 
+	// Example cloud-init content: update packages and create a welcome file
+	cloudInitContent := `#cloud-config
+package_update: true
+package_upgrade: true
+write_files:
+  - path: /etc/motd
+    content: |
+      Welcome to Aruba Cloud Server!
+      This server was initialized with cloud-init.
+    owner: root:root
+    permissions: '0644'
+`
+	// Base64 encode the cloud-init content
+	userData := base64.StdEncoding.EncodeToString([]byte(cloudInitContent))
+
 	cloudServerReq := types.CloudServerRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: types.ResourceMetadataRequest{
@@ -912,6 +928,7 @@ func createCloudServer(ctx context.Context, arubaClient aruba.Client, resources 
 					URI: *resources.SecurityGroupResp.Data.Metadata.URI,
 				},
 			},
+			UserData: stringPtr(userData),
 		},
 	}
 

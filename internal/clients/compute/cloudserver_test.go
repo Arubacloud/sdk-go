@@ -2,6 +2,7 @@ package compute
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -192,12 +193,21 @@ func TestCreateCloudServer(t *testing.T) {
 
 		svc := NewCloudServersClientImpl(c)
 
+		// Example cloud-init content for testing
+		cloudInitContent := `#cloud-config
+package_update: true
+`
+		userData := base64.StdEncoding.EncodeToString([]byte(cloudInitContent))
+
 		req := types.CloudServerRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-server"},
 				Location:                types.LocationRequest{Value: "ITBG-Bergamo"},
 			},
-			Properties: types.CloudServerPropertiesRequest{Zone: "ITBG-1"},
+			Properties: types.CloudServerPropertiesRequest{
+				Zone:     "ITBG-1",
+				UserData: types.StringPtr(userData),
+			},
 		}
 
 		resp, err := svc.Create(context.Background(), "test-project", req, nil)
