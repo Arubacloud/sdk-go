@@ -142,6 +142,7 @@ func updateDBaaS(ctx context.Context, arubaClient aruba.Client, projectID string
 			},
 		},
 		Properties: types.DBaaSPropertiesRequest{
+			Zone: stringPtr("ITBG-1"),
 			Engine: &types.DBaaSEngine{
 				ID:         stringPtr("mysql-8.0"),
 				DataCenter: stringPtr("ITBG-1"),
