@@ -143,6 +143,10 @@ type DBaaSAutoscalingResponse struct {
 
 // DBaaSPropertiesRequest contains properties required to create a DBaaS instance
 type DBaaSPropertiesRequest struct {
+	// Zone where DBaaS will be created (optional).
+	// If specified, the resource is zonal; otherwise, it is regional.
+	Zone *string `json:"dataCenter,omitempty"`
+
 	// Engine Database engine configuration
 	Engine *DBaaSEngine `json:"engine,omitempty"`
 
