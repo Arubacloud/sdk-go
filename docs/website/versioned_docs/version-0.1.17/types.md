@@ -134,7 +134,7 @@ The following sections detail the primary request and response types for each AP
     <tr>
       <td><code>CloudServerRequest</code></td>
       <td>Create/Update</td>
-      <td>The payload for creating or updating a Cloud Server.</td>
+      <td>The payload for creating or updating a Cloud Server. The <code>Properties</code> field contains <code>CloudServerPropertiesRequest</code>, which includes an optional <code>UserData</code> field (nullable string) for base64-encoded cloud-init content to initialize the server.</td>
     </tr>
     <tr>
       <td><code>CloudServerResponse</code></td>
@@ -398,17 +398,47 @@ The following sections detail the primary request and response types for each AP
     <tr>
       <td><code>KmsRequest</code></td>
       <td>Create/Update</td>
-      <td>Payload for creating or updating a KMS key.</td>
+      <td>Payload for creating or updating a KMS instance with regional metadata and billing period.</td>
     </tr>
     <tr>
       <td><code>KmsResponse</code></td>
       <td>Get/List</td>
-      <td>Represents a single KMS key.</td>
+      <td>Represents a single KMS instance.</td>
     </tr>
     <tr>
       <td><code>KmsList</code></td>
       <td>List</td>
-      <td>Represents a paginated list of KMS keys.</td>
+      <td>Represents a paginated list of KMS instances.</td>
+    </tr>
+    <tr>
+      <td><code>KeyRequest</code></td>
+      <td>Create</td>
+      <td>Payload for creating a cryptographic key (name and algorithm: Aes or Rsa).</td>
+    </tr>
+    <tr>
+      <td><code>KeyResponse</code></td>
+      <td>Get/List</td>
+      <td>Represents a cryptographic key with ID, algorithm, type, and status.</td>
+    </tr>
+    <tr>
+      <td><code>KeyList</code></td>
+      <td>List</td>
+      <td>Represents a paginated list of Keys.</td>
+    </tr>
+    <tr>
+      <td><code>KmipRequest</code></td>
+      <td>Create</td>
+      <td>Payload for creating a KMIP service (name only).</td>
+    </tr>
+    <tr>
+      <td><code>KmipResponse</code></td>
+      <td>Get/List</td>
+      <td>Represents a KMIP service with ID, name, type, status, and dates.</td>
+    </tr>
+    <tr>
+      <td><code>KmipList</code></td>
+      <td>List</td>
+      <td>Represents a paginated list of KMIP services.</td>
     </tr>
   </tbody>
 </table>
