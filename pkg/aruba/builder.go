@@ -632,18 +632,18 @@ func buildJobsClient(restClient *restclient.Client) (JobsClient, error) {
 // Security domain clients
 
 func buildSecurityClient(restClient *restclient.Client) (SecurityClient, error) {
-	kmsKeysClient, err := buildKMSKeysClient(restClient)
+	kmsClient, err := buildKMSClient(restClient)
 	if err != nil {
 		return nil, err // TODO: better error handling
 	}
 
 	return &securityClientImpl{
-		kmsKeysClient: kmsKeysClient,
+		kmsClient: kmsClient,
 	}, nil
 }
 
-func buildKMSKeysClient(restClient *restclient.Client) (KMSKeysClient, error) {
-	return security.NewKMSKeysClientImpl(restClient), nil
+func buildKMSClient(restClient *restclient.Client) (KMSClient, error) {
+	return security.NewKMSClientWrapper(restClient), nil
 }
 
 //

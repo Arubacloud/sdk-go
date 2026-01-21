@@ -1,29 +1,26 @@
 package aruba
 
 import (
-	"context"
-
-	"github.com/Arubacloud/sdk-go/pkg/types"
+	"github.com/Arubacloud/sdk-go/internal/clients/security"
 )
 
 type SecurityClient interface {
-	KMSKeys() KMSKeysClient
+	KMS() KMSClient
 }
 
 type securityClientImpl struct {
-	kmsKeysClient KMSKeysClient
+	kmsClient KMSClient
 }
 
 var _ SecurityClient = (*securityClientImpl)(nil)
 
-func (c *securityClientImpl) KMSKeys() KMSKeysClient {
-	return c.kmsKeysClient
+func (c *securityClientImpl) KMS() KMSClient {
+	return c.kmsClient
 }
 
-type KMSKeysClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KmsList], error)
-	Get(ctx context.Context, projectID string, kmsKeyID string, params *types.RequestParameters) (*types.Response[types.KmsResponse], error)
-	Create(ctx context.Context, projectID string, body types.KmsRequest, params *types.RequestParameters) (*types.Response[types.KmsResponse], error)
-	Update(ctx context.Context, projectID string, kmsKeyID string, body types.KmsRequest, params *types.RequestParameters) (*types.Response[types.KmsResponse], error)
-	Delete(ctx context.Context, projectID string, kmsKeyID string, params *types.RequestParameters) (*types.Response[any], error)
-}
+// Type aliases to internal implementations
+type (
+	KMSClient  = *security.KMSClientWrapper
+	KeyClient  = *security.KeyClientImpl
+	KmipClient = *security.KmipClientImpl
+)

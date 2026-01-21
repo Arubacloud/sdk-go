@@ -23,7 +23,7 @@ func TestListKMSKeys(t *testing.T) {
 				return
 			}
 
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Security/kms/keys" {
+			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Security/kms" {
 				w.WriteHeader(http.StatusOK)
 				resp := types.KmsList{
 					ListResponse: types.ListResponse{Total: 2},
@@ -74,7 +74,7 @@ func TestListKMSKeys(t *testing.T) {
 
 		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
 
-		svc := NewKMSKeysClientImpl(c)
+		svc := NewKMSClientImpl(c)
 
 		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
@@ -99,7 +99,7 @@ func TestGetKMSKey(t *testing.T) {
 				return
 			}
 
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Security/kms/keys/kms-123" {
+			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Security/kms/kms-123" {
 				w.WriteHeader(http.StatusOK)
 				resp := types.KmsResponse{
 					Metadata: types.ResourceMetadataResponse{
@@ -131,7 +131,7 @@ func TestGetKMSKey(t *testing.T) {
 
 		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
 
-		svc := NewKMSKeysClientImpl(c)
+		svc := NewKMSClientImpl(c)
 
 		resp, err := svc.Get(context.Background(), "test-project", "kms-123", nil)
 		if err != nil {
@@ -159,7 +159,7 @@ func TestCreateKMSKey(t *testing.T) {
 				return
 			}
 
-			if r.Method == "POST" && r.URL.Path == "/projects/test-project/providers/Aruba.Security/kms/keys" {
+			if r.Method == "POST" && r.URL.Path == "/projects/test-project/providers/Aruba.Security/kms" {
 				w.WriteHeader(http.StatusCreated)
 				resp := types.KmsResponse{
 					Metadata: types.ResourceMetadataResponse{
@@ -191,7 +191,7 @@ func TestCreateKMSKey(t *testing.T) {
 
 		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
 
-		svc := NewKMSKeysClientImpl(c)
+		svc := NewKMSClientImpl(c)
 
 		body := types.KmsRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
@@ -233,7 +233,7 @@ func TestUpdateKMSKey(t *testing.T) {
 				return
 			}
 
-			if r.Method == "PUT" && r.URL.Path == "/projects/test-project/providers/Aruba.Security/kms/keys/kms-123" {
+			if r.Method == "PUT" && r.URL.Path == "/projects/test-project/providers/Aruba.Security/kms/kms-123" {
 				w.WriteHeader(http.StatusOK)
 				resp := types.KmsResponse{
 					Metadata: types.ResourceMetadataResponse{
@@ -265,7 +265,7 @@ func TestUpdateKMSKey(t *testing.T) {
 
 		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
 
-		svc := NewKMSKeysClientImpl(c)
+		svc := NewKMSClientImpl(c)
 
 		body := types.KmsRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
@@ -307,7 +307,7 @@ func TestDeleteKMSKey(t *testing.T) {
 				return
 			}
 
-			if r.Method == "DELETE" && r.URL.Path == "/projects/test-project/providers/Aruba.Security/kms/keys/kms-123" {
+			if r.Method == "DELETE" && r.URL.Path == "/projects/test-project/providers/Aruba.Security/kms/kms-123" {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
@@ -324,7 +324,7 @@ func TestDeleteKMSKey(t *testing.T) {
 
 		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
 
-		svc := NewKMSKeysClientImpl(c)
+		svc := NewKMSClientImpl(c)
 
 		_, err := svc.Delete(context.Background(), "test-project", "kms-123", nil)
 		if err != nil {
