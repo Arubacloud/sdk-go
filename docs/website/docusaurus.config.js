@@ -62,11 +62,7 @@ const config = {
           editUrl: 'https://github.com/Arubacloud/sdk-go/tree/main/docs/website/',
           routeBasePath: '/',
           // Enable versioning (disabled during PR checks via DISABLE_VERSIONING env var)
-          // Note: When routeBasePath is '/' and slug is '/', versioning with path 'next'
-          // can cause link checker warnings. This is a known Docusaurus limitation.
-          // lastVersion automatically uses first entry from versions.json
-          lastVersion: '0.1.17',
-          preferredVersion: '0.1.17',
+          // Docusaurus automatically uses first entry from versions.json as latest
           versions: process.env.DISABLE_VERSIONING === 'true' ? {} : {
             current: {
               label: 'Next',
