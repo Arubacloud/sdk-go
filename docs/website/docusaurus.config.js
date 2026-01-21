@@ -65,6 +65,8 @@ const config = {
           // Note: When routeBasePath is '/' and slug is '/', versioning with path 'next'
           // can cause link checker warnings. This is a known Docusaurus limitation.
           // lastVersion automatically uses first entry from versions.json
+          lastVersion: '0.1.17',
+          preferredVersion: '0.1.17',
           versions: process.env.DISABLE_VERSIONING === 'true' ? {} : {
             current: {
               label: 'Next',
