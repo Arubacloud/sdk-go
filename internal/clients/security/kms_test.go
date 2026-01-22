@@ -34,9 +34,7 @@ func TestListKMSKeys(t *testing.T) {
 								ID:   types.StringPtr("kms-123"),
 							},
 							Properties: types.KmsPropertiesResponse{
-								BillingPeriod: types.BillingPeriodResource{
-									BillingPeriod: "Month",
-								},
+								BillingPeriod: "Month",
 							},
 							Status: types.ResourceStatus{
 								State: types.StringPtr("active"),
@@ -48,9 +46,7 @@ func TestListKMSKeys(t *testing.T) {
 								ID:   types.StringPtr("kms-456"),
 							},
 							Properties: types.KmsPropertiesResponse{
-								BillingPeriod: types.BillingPeriodResource{
-									BillingPeriod: "Month",
-								},
+								BillingPeriod: "Month",
 							},
 							Status: types.ResourceStatus{
 								State: types.StringPtr("active"),
@@ -107,9 +103,7 @@ func TestGetKMSKey(t *testing.T) {
 						ID:   types.StringPtr("kms-123"),
 					},
 					Properties: types.KmsPropertiesResponse{
-						BillingPeriod: types.BillingPeriodResource{
-							BillingPeriod: "Month",
-						},
+						BillingPeriod: "Month",
 					},
 					Status: types.ResourceStatus{
 						State: types.StringPtr("active"),
@@ -143,7 +137,7 @@ func TestGetKMSKey(t *testing.T) {
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "my-encryption-key" {
 			t.Errorf("expected name 'my-encryption-key'")
 		}
-		if resp.Data.Properties.BillingPeriod.BillingPeriod != "Month" {
+		if resp.Data.Properties.BillingPeriod != "Month" {
 			t.Errorf("expected billing period 'Month'")
 		}
 	})
@@ -167,9 +161,7 @@ func TestCreateKMSKey(t *testing.T) {
 						ID:   types.StringPtr("kms-789"),
 					},
 					Properties: types.KmsPropertiesResponse{
-						BillingPeriod: types.BillingPeriodResource{
-							BillingPeriod: "Month",
-						},
+						BillingPeriod: "Month",
 					},
 					Status: types.ResourceStatus{
 						State: types.StringPtr("creating"),
@@ -239,9 +231,7 @@ func TestUpdateKMSKey(t *testing.T) {
 						ID:   types.StringPtr("kms-123"),
 					},
 					Properties: types.KmsPropertiesResponse{
-						BillingPeriod: types.BillingPeriodResource{
-							BillingPeriod: "Year",
-						},
+						BillingPeriod: "Year",
 					},
 					Status: types.ResourceStatus{
 						State: types.StringPtr("active"),
@@ -287,7 +277,7 @@ func TestUpdateKMSKey(t *testing.T) {
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "updated-encryption-key" {
 			t.Errorf("expected name 'updated-encryption-key'")
 		}
-		if resp.Data.Properties.BillingPeriod.BillingPeriod != "Year" {
+		if resp.Data.Properties.BillingPeriod != "Year" {
 			t.Errorf("expected billing period 'Year'")
 		}
 	})
