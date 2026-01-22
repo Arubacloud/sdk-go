@@ -2,7 +2,7 @@ package types
 
 // KMS Properties
 type KmsPropertiesRequest struct {
-	BillingPeriod BillingPeriodResource `json:"billingPeriod"`
+	BillingPeriod string `json:"billingPeriod"`
 }
 
 type KmsPropertiesResponse struct {
@@ -112,4 +112,10 @@ type KmipResponse struct {
 type KmipList struct {
 	ListResponse
 	Values []KmipResponse `json:"values"`
+}
+
+// KMIP Certificate Download Response
+type KmipCertificateResponse struct {
+	Key  string `json:"key"`
+	Cert string `json:"cert"`
 }

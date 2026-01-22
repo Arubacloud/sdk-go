@@ -216,6 +216,39 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, projectID 
 		}
 	}
 
+	// Fetch KMS instances
+	kmsList, err := arubaClient.FromSecurity().KMS().List(ctx, projectID, nil)
+	if err == nil && kmsList.IsSuccess() && len(kmsList.Data.Values) > 0 {
+		kmsID := *kmsList.Data.Values[0].Metadata.ID
+		kmsResp, err := arubaClient.FromSecurity().KMS().Get(ctx, projectID, kmsID, nil)
+		if err == nil && kmsResp.IsSuccess() {
+			resources.KMSResp = kmsResp
+			fmt.Printf("✓ Found KMS: %s\n", *kmsResp.Data.Metadata.Name)
+
+			// Fetch KMS Keys
+			keysList, err := arubaClient.FromSecurity().KMS().Keys().List(ctx, projectID, kmsID, nil)
+			if err == nil && keysList.IsSuccess() && len(keysList.Data.Values) > 0 {
+				keyID := *keysList.Data.Values[0].KeyID
+				keyResp, err := arubaClient.FromSecurity().KMS().Keys().Get(ctx, projectID, kmsID, keyID, nil)
+				if err == nil && keyResp.IsSuccess() {
+					resources.KMSKeyResp = keyResp
+					fmt.Printf("✓ Found KMS Key: %s\n", *keyResp.Data.Name)
+				}
+			}
+
+			// Fetch KMIP services
+			kmipList, err := arubaClient.FromSecurity().KMS().Kmips().List(ctx, projectID, kmsID, nil)
+			if err == nil && kmipList.IsSuccess() && len(kmipList.Data.Values) > 0 {
+				kmipID := *kmipList.Data.Values[0].ID
+				kmipResp, err := arubaClient.FromSecurity().KMS().Kmips().Get(ctx, projectID, kmsID, kmipID, nil)
+				if err == nil && kmipResp.IsSuccess() {
+					resources.KmipResp = kmipResp
+					fmt.Printf("✓ Found KMIP: %s\n", *kmipResp.Data.Name)
+				}
+			}
+		}
+	}
+
 	return resources
 }
 
@@ -239,6 +272,24 @@ func deleteAllResources(ctx context.Context, arubaClient aruba.Client, resources
 	// 13. Delete Container Registry (if created)
 	if resources.ContainerRegistry != nil && resources.ContainerRegistry.Data != nil {
 		deleteContainerRegistry(ctx, arubaClient, resources.ProjectID, *resources.ContainerRegistry.Data.Metadata.ID)
+	}
+
+	// Delete KMS resources (if created)
+	if resources.KMSResp != nil && resources.KMSResp.Data != nil && resources.KMSResp.Data.Metadata.ID != nil {
+		kmsID := *resources.KMSResp.Data.Metadata.ID
+
+		// Delete KMIP service first
+		if resources.KmipResp != nil && resources.KmipResp.Data != nil && resources.KmipResp.Data.ID != nil {
+			deleteKmip(ctx, arubaClient, resources.ProjectID, kmsID, *resources.KmipResp.Data.ID)
+		}
+
+		// Delete KMS Key
+		if resources.KMSKeyResp != nil && resources.KMSKeyResp.Data != nil && resources.KMSKeyResp.Data.KeyID != nil {
+			deleteKMSKey(ctx, arubaClient, resources.ProjectID, kmsID, *resources.KMSKeyResp.Data.KeyID)
+		}
+
+		// Delete KMS instance
+		deleteKMS(ctx, arubaClient, resources.ProjectID, kmsID)
 	}
 
 	// 12. Delete Cloud Server (if created)
@@ -566,4 +617,55 @@ func deleteCloudServer(ctx context.Context, arubaClient aruba.Client, projectID 
 		return
 	}
 	fmt.Printf("✓ Deleted cloud server: %s\n", *cloudServerID)
+}
+
+// deleteKMS deletes a KMS instance
+func deleteKMS(ctx context.Context, arubaClient aruba.Client, projectID, kmsID string) {
+	fmt.Println("--- Deleting KMS Instance ---")
+
+	deleteResp, err := arubaClient.FromSecurity().KMS().Delete(ctx, projectID, kmsID, nil)
+	if err != nil {
+		log.Printf("Error deleting KMS: %v", err)
+		return
+	} else if !deleteResp.IsSuccess() {
+		log.Printf("Failed to delete KMS - Status: %d, Error: %s",
+			deleteResp.StatusCode,
+			stringValue(deleteResp.Error.Title))
+		return
+	}
+	fmt.Printf("✓ Deleted KMS instance: %s\n", kmsID)
+}
+
+// deleteKMSKey deletes a KMS key
+func deleteKMSKey(ctx context.Context, arubaClient aruba.Client, projectID, kmsID, keyID string) {
+	fmt.Println("--- Deleting KMS Key ---")
+
+	deleteResp, err := arubaClient.FromSecurity().KMS().Keys().Delete(ctx, projectID, kmsID, keyID, nil)
+	if err != nil {
+		log.Printf("Error deleting KMS key: %v", err)
+		return
+	} else if !deleteResp.IsSuccess() {
+		log.Printf("Failed to delete KMS key - Status: %d, Error: %s",
+			deleteResp.StatusCode,
+			stringValue(deleteResp.Error.Title))
+		return
+	}
+	fmt.Printf("✓ Deleted KMS key: %s\n", keyID)
+}
+
+// deleteKmip deletes a KMIP service
+func deleteKmip(ctx context.Context, arubaClient aruba.Client, projectID, kmsID, kmipID string) {
+	fmt.Println("--- Deleting KMIP Service ---")
+
+	deleteResp, err := arubaClient.FromSecurity().KMS().Kmips().Delete(ctx, projectID, kmsID, kmipID, nil)
+	if err != nil {
+		log.Printf("Error deleting KMIP service: %v", err)
+		return
+	} else if !deleteResp.IsSuccess() {
+		log.Printf("Failed to delete KMIP service - Status: %d, Error: %s",
+			deleteResp.StatusCode,
+			stringValue(deleteResp.Error.Title))
+		return
+	}
+	fmt.Printf("✓ Deleted KMIP service: %s\n", kmipID)
 }
