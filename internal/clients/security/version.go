@@ -15,8 +15,9 @@ var (
 	KeyListAPIVersion   = "1.0"
 
 	// KMIP API versions
-	KmipCreateAPIVersion = "1.0"
-	KmipDeleteAPIVersion = "1.0"
-	KmipReadAPIVersion   = "1.0"
-	KmipListAPIVersion   = "1.0"
+	KmipCreateAPIVersion   = "1.0"
+	KmipDeleteAPIVersion   = "1.0"
+	KmipReadAPIVersion     = "1.0"
+	KmipListAPIVersion     = "1.0"
+	KmipDownloadAPIVersion = "1.0"
 )

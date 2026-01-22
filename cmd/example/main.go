@@ -90,6 +90,10 @@ type ResourceCollection struct {
 	DBaaSResp         *types.Response[types.DBaaSResponse]
 	KaaSResp          *types.Response[types.KaaSResponse]
 	CloudServerResp   *types.Response[types.CloudServerResponse]
+	KMSResp           *types.Response[types.KmsResponse]
+	KMSKeyResp        *types.Response[types.KeyResponse]
+	KmipResp          *types.Response[types.KmipResponse]
+	KmipCert          *types.Response[types.KmipCertificateResponse]
 }
 
 // createAllResources creates all resources in the correct order
@@ -140,6 +144,23 @@ func createAllResources(ctx context.Context, arubaClient aruba.Client) *Resource
 
 	// 15. Create Restore from Backup
 	resources.RestoreResp = createRestore(ctx, arubaClient, resources.ProjectID, resources.BackupResp)
+
+	// 16. Create KMS Instance
+	resources.KMSResp = createKMS(ctx, arubaClient, resources.ProjectID)
+
+	// 17. Create KMS Key (if KMS was created)
+	if resources.KMSResp != nil && resources.KMSResp.Data != nil && resources.KMSResp.Data.Metadata.ID != nil {
+		kmsID := *resources.KMSResp.Data.Metadata.ID
+		resources.KMSKeyResp = createKMSKey(ctx, arubaClient, resources.ProjectID, kmsID)
+
+		// 18. Create KMIP Service
+		resources.KmipResp = createKmip(ctx, arubaClient, resources.ProjectID, kmsID)
+
+		// 19. Download KMIP Certificate (if KMIP was created)
+		if resources.KmipResp != nil && resources.KmipResp.Data != nil && resources.KmipResp.Data.ID != nil {
+			resources.KmipCert = downloadKmipCertificate(ctx, arubaClient, resources.ProjectID, kmsID, *resources.KmipResp.Data.ID)
+		}
+	}
 
 	return resources
 }
@@ -1004,6 +1025,22 @@ func printResourceSummary(resources *ResourceCollection) {
 	if resources.CloudServerResp != nil && resources.CloudServerResp.Data != nil && resources.CloudServerResp.Data.Metadata.Name != nil {
 		fmt.Println("- Cloud Server:", *resources.CloudServerResp.Data.Metadata.Name)
 	}
+
+	if resources.KMSResp != nil && resources.KMSResp.Data != nil && resources.KMSResp.Data.Metadata.ID != nil {
+		fmt.Println("- KMS Instance ID:", *resources.KMSResp.Data.Metadata.ID)
+	}
+
+	if resources.KMSKeyResp != nil && resources.KMSKeyResp.Data != nil && resources.KMSKeyResp.Data.KeyID != nil {
+		fmt.Println("- KMS Key ID:", *resources.KMSKeyResp.Data.KeyID)
+	}
+
+	if resources.KmipResp != nil && resources.KmipResp.Data != nil && resources.KmipResp.Data.ID != nil {
+		fmt.Println("- KMIP Service ID:", *resources.KmipResp.Data.ID)
+	}
+
+	if resources.KmipCert != nil && resources.KmipCert.Data != nil {
+		fmt.Println("- KMIP Certificate: Downloaded successfully")
+	}
 }
 
 // Helper for pointer types
@@ -1031,4 +1068,163 @@ func int32Value(i *int32) int32 {
 		return 0
 	}
 	return *i
+}
+
+// createKMS creates a new KMS instance
+func createKMS(ctx context.Context, arubaClient aruba.Client, projectID string) *types.Response[types.KmsResponse] {
+	fmt.Println("--- KMS Instance ---")
+
+	kmsReq := types.KmsRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{
+				Name: "my-kms-instance",
+				Tags: []string{"security", "encryption"},
+			},
+			Location: types.LocationRequest{
+				Value: "ITBG-Bergamo",
+			},
+		},
+		Properties: types.KmsPropertiesRequest{
+			BillingPeriod: "Hour",
+		},
+	}
+
+	kmsResp, err := arubaClient.FromSecurity().KMS().Create(ctx, projectID, kmsReq, nil)
+	if err != nil {
+		log.Printf("Error creating KMS: %v", err)
+		return nil
+	}
+
+	if !kmsResp.IsSuccess() {
+		log.Printf("Failed to create KMS - Status: %d, Error: %s, Detail: %s",
+			kmsResp.StatusCode,
+			stringValue(kmsResp.Error.Title),
+			stringValue(kmsResp.Error.Detail))
+		return nil
+	}
+
+	if kmsResp.Data != nil && kmsResp.Data.Metadata.Name != nil {
+		fmt.Printf("✓ Created KMS instance: %s (ID: %s)\n",
+			*kmsResp.Data.Metadata.Name,
+			stringValue(kmsResp.Data.Metadata.ID))
+	}
+
+	return kmsResp
+}
+
+// createKMSKey creates a cryptographic key in the KMS instance
+func createKMSKey(ctx context.Context, arubaClient aruba.Client, projectID, kmsID string) *types.Response[types.KeyResponse] {
+	fmt.Println("--- KMS Cryptographic Key ---")
+
+	keyReq := types.KeyRequest{
+		Name:      "my-encryption-key",
+		Algorithm: types.KeyAlgorithmAes,
+	}
+
+	keyResp, err := arubaClient.FromSecurity().KMS().Keys().Create(ctx, projectID, kmsID, keyReq, nil)
+	if err != nil {
+		log.Printf("Error creating Key: %v", err)
+		return nil
+	}
+
+	if !keyResp.IsSuccess() {
+		log.Printf("Failed to create Key - Status: %d, Error: %s, Detail: %s",
+			keyResp.StatusCode,
+			stringValue(keyResp.Error.Title),
+			stringValue(keyResp.Error.Detail))
+		return nil
+	}
+
+	if keyResp.Data != nil && keyResp.Data.Name != nil {
+		fmt.Printf("✓ Created Key: %s (Algorithm: %s, Type: %s)\n",
+			*keyResp.Data.Name,
+			string(*keyResp.Data.Algorithm),
+			string(*keyResp.Data.Type))
+	}
+
+	return keyResp
+}
+
+// createKmip creates a KMIP service in the KMS instance
+func createKmip(ctx context.Context, arubaClient aruba.Client, projectID, kmsID string) *types.Response[types.KmipResponse] {
+	fmt.Println("--- KMIP Service ---")
+
+	kmipReq := types.KmipRequest{
+		Name: "my-kmip-service",
+	}
+
+	kmipResp, err := arubaClient.FromSecurity().KMS().Kmips().Create(ctx, projectID, kmsID, kmipReq, nil)
+	if err != nil {
+		log.Printf("Error creating KMIP service: %v", err)
+		return nil
+	}
+
+	if !kmipResp.IsSuccess() {
+		log.Printf("Failed to create KMIP service - Status: %d, Error: %s, Detail: %s",
+			kmipResp.StatusCode,
+			stringValue(kmipResp.Error.Title),
+			stringValue(kmipResp.Error.Detail))
+		return nil
+	}
+
+	if kmipResp.Data != nil && kmipResp.Data.Name != nil {
+		fmt.Printf("✓ Created KMIP service: %s (ID: %s, Status: %s)\n",
+			*kmipResp.Data.Name,
+			stringValue(kmipResp.Data.ID),
+			string(*kmipResp.Data.Status))
+	}
+
+	return kmipResp
+}
+
+// downloadKmipCertificate downloads the KMIP certificate (key and cert)
+func downloadKmipCertificate(ctx context.Context, arubaClient aruba.Client, projectID, kmsID, kmipID string) *types.Response[types.KmipCertificateResponse] {
+	fmt.Println("--- KMIP Certificate Download ---")
+
+	// Wait for KMIP service to be in CertificateAvailable state
+	fmt.Println("⏳ Waiting for KMIP certificate to become available...")
+	maxAttempts := 30
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		kmipCheckResp, err := arubaClient.FromSecurity().KMS().Kmips().Get(ctx, projectID, kmsID, kmipID, nil)
+		if err != nil {
+			log.Printf("Error checking KMIP status: %v", err)
+			break
+		}
+
+		if kmipCheckResp.Data != nil && kmipCheckResp.Data.Status != nil {
+			status := string(*kmipCheckResp.Data.Status)
+			if status == "CertificateAvailable" {
+				fmt.Println("✓ KMIP certificate is now available")
+				break
+			}
+			if attempt < maxAttempts {
+				time.Sleep(5 * time.Second)
+			} else {
+				fmt.Printf("⚠ KMIP certificate did not become available after %d attempts (status: %s)\n", maxAttempts, status)
+				return nil
+			}
+		}
+	}
+
+	certResp, err := arubaClient.FromSecurity().KMS().Kmips().Download(ctx, projectID, kmsID, kmipID, nil)
+	if err != nil {
+		log.Printf("Error downloading KMIP certificate: %v", err)
+		return nil
+	}
+
+	if !certResp.IsSuccess() {
+		log.Printf("Failed to download KMIP certificate - Status: %d, Error: %s, Detail: %s",
+			certResp.StatusCode,
+			stringValue(certResp.Error.Title),
+			stringValue(certResp.Error.Detail))
+		return nil
+	}
+
+	if certResp.Data != nil {
+		fmt.Printf("✓ Downloaded KMIP certificate\n")
+		fmt.Printf("  - Key length: %d bytes\n", len(certResp.Data.Key))
+		fmt.Printf("  - Cert length: %d bytes\n", len(certResp.Data.Cert))
+	}
+
+	return certResp
 }

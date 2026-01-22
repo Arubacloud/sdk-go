@@ -181,3 +181,37 @@ func (c *KmipClientImpl) Delete(ctx context.Context, projectID string, kmsID str
 
 	return types.ParseResponseBody[any](httpResp)
 }
+
+// Download downloads the KMIP certificate (key and cert) for a specific KMIP service
+func (c *KmipClientImpl) Download(ctx context.Context, projectID string, kmsID string, kmipID string, params *types.RequestParameters) (*types.Response[types.KmipCertificateResponse], error) {
+	c.client.Logger().Debugf("Downloading KMIP certificate: %s for KMS: %s in project: %s", kmipID, kmsID, projectID)
+
+	if err := types.ValidateProjectAndResource(projectID, kmsID, "KMS ID"); err != nil {
+		return nil, err
+	}
+
+	if kmipID == "" {
+		return nil, fmt.Errorf("KMIP ID cannot be empty")
+	}
+
+	path := fmt.Sprintf(KmipDownloadPath, projectID, kmsID, kmipID)
+
+	if params == nil {
+		params = &types.RequestParameters{
+			APIVersion: &KmipDownloadAPIVersion,
+		}
+	} else if params.APIVersion == nil {
+		params.APIVersion = &KmipDownloadAPIVersion
+	}
+
+	queryParams := params.ToQueryParams()
+	headers := params.ToHeaders()
+
+	httpResp, err := c.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResp.Body.Close()
+
+	return types.ParseResponseBody[types.KmipCertificateResponse](httpResp)
+}

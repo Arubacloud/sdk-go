@@ -201,9 +201,7 @@ func TestCreateKMSKey(t *testing.T) {
 				Location: types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.KmsPropertiesRequest{
-				BillingPeriod: types.BillingPeriodResource{
-					BillingPeriod: "Month",
-				},
+				BillingPeriod: "Month",
 			},
 		}
 
@@ -275,9 +273,7 @@ func TestUpdateKMSKey(t *testing.T) {
 				Location: types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.KmsPropertiesRequest{
-				BillingPeriod: types.BillingPeriodResource{
-					BillingPeriod: "Year",
-				},
+				BillingPeriod: "Year",
 			},
 		}
 
