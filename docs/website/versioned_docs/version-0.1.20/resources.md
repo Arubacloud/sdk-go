@@ -264,9 +264,19 @@ Manages security-related services.
   </thead>
   <tbody>
     <tr>
-      <td><code>.KMSKeys()</code></td>
-      <td>Manages Key Management Service (KMS) keys.</td>
+      <td><code>.KMS()</code></td>
+      <td>Manages Key Management Service (KMS) instances.</td>
       <td><code>Create</code>, <code>List</code>, <code>Get</code>, <code>Update</code>, <code>Delete</code></td>
+    </tr>
+    <tr>
+      <td><code>.KMS().Keys()</code></td>
+      <td>Manages cryptographic keys within a KMS instance.</td>
+      <td><code>Create</code>, <code>List</code>, <code>Get</code>, <code>Delete</code></td>
+    </tr>
+    <tr>
+      <td><code>.KMS().Kmips()</code></td>
+      <td>Manages KMIP services within a KMS instance.</td>
+      <td><code>Create</code>, <code>List</code>, <code>Get</code>, <code>Delete</code>, <code>Download</code></td>
     </tr>
   </tbody>
 </table>
