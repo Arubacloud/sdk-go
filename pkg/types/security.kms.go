@@ -6,7 +6,7 @@ type KmsPropertiesRequest struct {
 }
 
 type KmsPropertiesResponse struct {
-	BillingPeriod BillingPeriodResource `json:"billingPeriod"`
+	BillingPeriod string `json:"billingPeriod"`
 }
 
 // KMS Request/Response
