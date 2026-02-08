@@ -133,6 +133,18 @@ This will:
 
 The navbar includes a version dropdown that allows users to switch between different documentation versions.
 
+### Syncing Italian Translations for All Versions
+
+The site is available in English (default) and Italian. When you add a new version (e.g. after running the release workflow or `npm run docs:version`), Italian content for that version must be created so the Italian locale does not fall back to English.
+
+From the `docs/website` directory, run:
+
+```bash
+npm run sync-version-translations
+```
+
+This copies the current Italian docs from `i18n/it/docusaurus-plugin-content-docs/current/` to each version listed in `versions.json` (e.g. `version-0.1.16`, `version-0.1.17`, …). Run it after adding a new version so every release has Italian content.
+
 ## Deployment
 
 The documentation is automatically deployed to GitHub Pages when changes are pushed to the `main` branch. The deployment is handled by the `.github/workflows/docs.yml` workflow.
