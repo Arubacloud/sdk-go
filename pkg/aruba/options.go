@@ -414,7 +414,7 @@ func (o *Options) WithLoggerType(loggerType LoggerType) *Options {
 const (
 	defaultBaseURL        = "https://api.arubacloud.com"
 	defaultLoggerType     = LoggerNoLog
-	defaultTokenIssuerURL = "https://login.aruba.it/auth/realms/cmp-new-apikey/protocol/openid-connect/token"
+	defaultTokenIssuerURL = "https:///mylogin.aruba.it/auth/realms/cmp-new-apikey/protocol/openid-connect/token"
 )
 
 // DefaultOptions creates a ready-to-use configuration for the production environment
