@@ -1,0 +1,30 @@
+{
+  "version.label": {
+    "message": "0.1.20",
+    "description": "The label for version current"
+  },
+  "sidebar.tutorialSidebar.category.Quick Start": {
+    "message": "Guida Rapida",
+    "description": "The label for category Quick Start in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Resources": {
+    "message": "Risorse",
+    "description": "The label for category Resources in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Types": {
+    "message": "Tipi",
+    "description": "The label for category Types in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Options": {
+    "message": "Opzioni",
+    "description": "The label for category Options in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Response Handling": {
+    "message": "Gestione Risposte",
+    "description": "The label for category Response Handling in sidebar tutorialSidebar"
+  },
+  "sidebar.tutorialSidebar.category.Filters": {
+    "message": "Filtri",
+    "description": "The label for category Filters in sidebar tutorialSidebar"
+  }
+}
