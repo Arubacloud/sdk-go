@@ -931,7 +931,7 @@ write_files:
 			VPC: types.ReferenceResource{
 				URI: *resources.VPCResp.Data.Metadata.URI,
 			},
-			ElastcIP: types.ReferenceResource{
+			ElasticIP: types.ReferenceResource{
 				URI: *resources.ElasticIPResp.Data.Metadata.URI,
 			},
 			BootVolume: types.ReferenceResource{

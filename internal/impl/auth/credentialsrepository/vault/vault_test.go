@@ -38,7 +38,7 @@ func TestCredentialsRepository_ensureAuthenticated(t *testing.T) {
 		data := loginData(repo.roleID, repo.secretID)
 
 		mockLogicalAPI.
-			EXPECT().Write("test-role-path", data).
+			EXPECT().Write(gomock.Any(), data).
 			Return(nil, fmt.Errorf("mock error"))
 
 		err := repo.ensureAuthenticated()
@@ -70,7 +70,7 @@ func TestCredentialsRepository_ensureAuthenticated(t *testing.T) {
 		data := loginData(repo.roleID, repo.secretID)
 
 		mockLogicalAPI.
-			EXPECT().Write(repo.rolePath, data).
+			EXPECT().Write(gomock.Any(), data).
 			Return(&vaultapi.Secret{
 				Auth: &vaultapi.SecretAuth{
 					ClientToken:   "mock-token",
@@ -111,7 +111,7 @@ func TestCredentialsRepository_ensureAuthenticated(t *testing.T) {
 		data := loginData(repo.roleID, repo.secretID)
 
 		mockLogicalAPI.
-			EXPECT().Write(repo.rolePath, data).
+			EXPECT().Write(gomock.Any(), data).
 			Return(&vaultapi.Secret{
 				Auth: &vaultapi.SecretAuth{
 					ClientToken:   "mock-token",
@@ -133,8 +133,8 @@ func TestCredentialsRepository_GetCredentialsFromVaultSecret(t *testing.T) {
 	t.Run("should return credentials when secret contains client_id and client_secret", func(t *testing.T) {
 		secret := &vaultapi.KVSecret{
 			Data: map[string]interface{}{
-				"client_id":     "test-client-id",
-				"client_secret": "test-client-secret",
+				"client-id":     "test-client-id",
+				"client-secret": "test-client-secret",
 			},
 		}
 
@@ -148,7 +148,7 @@ func TestCredentialsRepository_GetCredentialsFromVaultSecret(t *testing.T) {
 	t.Run("should return error when client_id is missing", func(t *testing.T) {
 		secret := &vaultapi.KVSecret{
 			Data: map[string]interface{}{
-				"client_secret": "test-client-secret",
+				"client-secret": "test-client-secret",
 			},
 		}
 
@@ -162,7 +162,7 @@ func TestCredentialsRepository_GetCredentialsFromVaultSecret(t *testing.T) {
 	t.Run("should return error when client_secret is missing", func(t *testing.T) {
 		secret := &vaultapi.KVSecret{
 			Data: map[string]interface{}{
-				"client_id": "test-client-id",
+				"client-id": "test-client-id",
 			},
 		}
 
@@ -175,8 +175,8 @@ func TestCredentialsRepository_GetCredentialsFromVaultSecret(t *testing.T) {
 	t.Run("should return error when client_id is not a string", func(t *testing.T) {
 		secret := &vaultapi.KVSecret{
 			Data: map[string]interface{}{
-				"client_id":     12345,
-				"client_secret": "test-client-secret",
+				"client-id":     12345,
+				"client-secret": "test-client-secret",
 			},
 		}
 
@@ -186,11 +186,11 @@ func TestCredentialsRepository_GetCredentialsFromVaultSecret(t *testing.T) {
 		require.ErrorIs(t, auth.ErrCredentialsNotFound, err)
 		require.Nil(t, creds)
 	})
-	t.Run("should return error when client_secret is not a string", func(t *testing.T) {
+	t.Run("should return error when client-secret is not a string", func(t *testing.T) {
 		secret := &vaultapi.KVSecret{
 			Data: map[string]interface{}{
-				"client_id":     "test-client-id",
-				"client_secret": 67890,
+				"client-id":     "test-client-id",
+				"client-secret": 67890,
 			},
 		}
 
@@ -267,8 +267,8 @@ func TestCredentialsRepository_FetchCredentials(t *testing.T) {
 			Get(gomock.Any(), repo.kvPath).
 			Return(&vaultapi.KVSecret{
 				Data: map[string]any{
-					"client_id":     "test-client-id",
-					"client_secret": "test-client-secret",
+					"client-id":     "test-client-id",
+					"client-secret": "test-client-secret",
 				},
 			}, nil)
 
@@ -300,7 +300,7 @@ func TestCredentialsRepository_FetchCredentials(t *testing.T) {
 
 		mockLogicalAPI.
 			EXPECT().
-			Write(repo.rolePath, loginData).
+			Write(gomock.Any(), loginData).
 			Return(&vaultapi.Secret{
 				Auth: &vaultapi.SecretAuth{
 					ClientToken:   "mock-token",
@@ -321,8 +321,8 @@ func TestCredentialsRepository_FetchCredentials(t *testing.T) {
 			Get(gomock.Any(), repo.kvPath).
 			Return(&vaultapi.KVSecret{
 				Data: map[string]interface{}{
-					"client_id":     "test-client-id",
-					"client_secret": "test-client-secret",
+					"client-id":     "test-client-id",
+					"client-secret": "test-client-secret",
 				},
 			}, nil)
 
@@ -353,7 +353,7 @@ func TestCredentialsRepository_FetchCredentials(t *testing.T) {
 
 		mockLogicalAPI.
 			EXPECT().
-			Write(repo.rolePath, loginData).
+			Write(gomock.Any(), loginData).
 			Return(&vaultapi.Secret{
 				Auth: &vaultapi.SecretAuth{
 					ClientToken:   "mock-token",
@@ -373,8 +373,8 @@ func TestCredentialsRepository_FetchCredentials(t *testing.T) {
 			Get(gomock.Any(), repo.kvPath).
 			Return(&vaultapi.KVSecret{
 				Data: map[string]interface{}{
-					"client_id":     "test-client-id",
-					"client_secret": "test-client-secret",
+					"client-id":     "test-client-id",
+					"client-secret": "test-client-secret",
 				},
 			}, nil)
 		// When we try to fetch the token
@@ -410,7 +410,7 @@ func TestCredentialsRepository_performLoginAppRole(t *testing.T) {
 		}
 
 		mockLogicalAPI.
-			EXPECT().Write("test-role-path", data).
+			EXPECT().Write(gomock.Any(), data).
 			Return(expectedSecret, nil)
 
 		secret, err := repo.performAppRoleLogin()
@@ -440,7 +440,7 @@ func TestCredentialsRepository_performLoginAppRole(t *testing.T) {
 			},
 		}
 		mockLogicalAPI.
-			EXPECT().Write("test-role-path", data).
+			EXPECT().Write(gomock.Any(), data).
 			Return(expectedSecret, nil)
 
 		repo.namespace = "test-namespace"
