@@ -353,6 +353,67 @@ func NewOptions() *Options {
 	return &Options{}
 }
 
+// DeepCopy returns a fully independent copy of the Options.
+// Injected dependencies (HTTPClient, Logger, Middleware) are shallow-copied
+// because they represent external resources meant to be shared.
+func (o *Options) DeepCopy() *Options {
+	if o == nil {
+		return nil
+	}
+
+	cp := &Options{
+		baseURL:    o.baseURL,
+		loggerType: o.loggerType,
+		userDefinedDependencies: userDefinedDependenciesOptions{
+			httpClient: o.userDefinedDependencies.httpClient,
+			logger:     o.userDefinedDependencies.logger,
+			middleware: o.userDefinedDependencies.middleware,
+		},
+	}
+
+	if o.tokenManager.token != nil {
+		t := *o.tokenManager.token
+		cp.tokenManager.token = &t
+	}
+
+	if o.tokenManager.tokenIssuerOptions != nil {
+		ti := o.tokenManager.tokenIssuerOptions
+		tiCp := &tokenIssuerOptions{
+			issuerURL:              ti.issuerURL,
+			expirationDriftSeconds: ti.expirationDriftSeconds,
+		}
+
+		if len(ti.scopes) > 0 {
+			tiCp.scopes = make([]string, len(ti.scopes))
+			copy(tiCp.scopes, ti.scopes)
+		}
+
+		if ti.clientCredentialOptions != nil {
+			cc := *ti.clientCredentialOptions
+			tiCp.clientCredentialOptions = &cc
+		}
+
+		if ti.vaultCredentialsRepositoryOptions != nil {
+			v := *ti.vaultCredentialsRepositoryOptions
+			tiCp.vaultCredentialsRepositoryOptions = &v
+		}
+
+		if ti.redisTokenRepositoryOptions != nil {
+			r := *ti.redisTokenRepositoryOptions
+			tiCp.redisTokenRepositoryOptions = &r
+		}
+
+		if ti.fileTokenRepositoryOptions != nil {
+			f := *ti.fileTokenRepositoryOptions
+			tiCp.fileTokenRepositoryOptions = &f
+		}
+
+		cp.tokenManager.tokenIssuerOptions = tiCp
+	}
+
+	return cp
+}
+
 //
 // Basic Options Helpers
 
