@@ -440,6 +440,11 @@ The following sections detail the primary request and response types for each AP
       <td>List</td>
       <td>Represents a paginated list of KMIP services.</td>
     </tr>
+    <tr>
+      <td><code>KmipCertificateResponse</code></td>
+      <td>Download</td>
+      <td>Contains the KMIP certificate key and cert for download.</td>
+    </tr>
   </tbody>
 </table>
 

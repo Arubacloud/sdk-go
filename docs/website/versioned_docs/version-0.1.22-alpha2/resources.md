@@ -276,7 +276,7 @@ Manages security-related services.
     <tr>
       <td><code>.KMS().Kmips()</code></td>
       <td>Manages KMIP services within a KMS instance.</td>
-      <td><code>Create</code>, <code>List</code>, <code>Get</code>, <code>Delete</code></td>
+      <td><code>Create</code>, <code>List</code>, <code>Get</code>, <code>Delete</code>, <code>Download</code></td>
     </tr>
   </tbody>
 </table>
