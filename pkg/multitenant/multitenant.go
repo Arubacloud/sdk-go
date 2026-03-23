@@ -1,6 +1,7 @@
 package multitenant
 
 import (
+	"errors"
 	"log"
 	"sync"
 	"time"
@@ -15,6 +16,7 @@ type Multitenant interface {
 	Get(tenant string) (aruba.Client, bool)
 	MustGet(tenant string) aruba.Client
 	GetOrNil(tenant string) aruba.Client
+	CleanUp(from time.Duration)
 }
 
 type entry struct {
@@ -23,26 +25,38 @@ type entry struct {
 }
 
 type multitenant struct {
-	clients        map[string]*entry
-	defaultOptions *aruba.Options
+	clients  map[string]*entry
+	template *aruba.Options
 
 	lock sync.RWMutex
 }
 
 var _ Multitenant = (*multitenant)(nil)
 
-func New(options *aruba.Options) Multitenant {
+func New() Multitenant {
 	return &multitenant{
-		clients:        make(map[string]*entry),
-		defaultOptions: options,
+		clients: make(map[string]*entry),
+	}
+}
+
+func NewWithTemplate(template *aruba.Options) Multitenant {
+	return &multitenant{
+		clients:  make(map[string]*entry),
+		template: template,
 	}
 }
 
 func (m *multitenant) New(tenant string) error {
+	if m.template == nil {
+		return errors.New("template is missing - use the `NewFromOptions` method")
+	}
+
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	c, err := aruba.NewClient(m.defaultOptions)
+	template := m.template.DeepCopy()
+
+	c, err := aruba.NewClient(template)
 	if err != nil {
 		return err
 	}
