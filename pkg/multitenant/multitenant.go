@@ -93,9 +93,11 @@ func (m *multitenant) Get(tenant string) (aruba.Client, bool) {
 
 	e, ok := m.clients[tenant]
 
-	if ok {
-		e.lastUsage = time.Now()
+	if !ok {
+		return nil, false
 	}
+
+	e.lastUsage = time.Now()
 
 	return e.client, ok
 }
