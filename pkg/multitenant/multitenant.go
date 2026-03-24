@@ -10,12 +10,21 @@ import (
 )
 
 type Multitenant interface {
+	// New creates and stores a tenant client using the internal template options.
+	// Returns an error if the template is missing or client creation fails.
 	New(tenant string) error
+	// NewFromOptions creates and stores a tenant client using the provided options.
+	// Returns an error if client creation fails.
 	NewFromOptions(tenant string, options *aruba.Options) error
+	// Add stores an already initialized tenant client.
 	Add(tenant string, client aruba.Client)
+	// Get returns the tenant client and true if found, otherwise nil and false.
 	Get(tenant string) (aruba.Client, bool)
+	// MustGet returns the tenant client or terminates the process if not found.
 	MustGet(tenant string) aruba.Client
+	// GetOrNil returns the tenant client if found, otherwise nil.
 	GetOrNil(tenant string) aruba.Client
+	// CleanUp removes clients not used in the provided duration window.
 	CleanUp(from time.Duration)
 }
 
@@ -33,12 +42,15 @@ type multitenant struct {
 
 var _ Multitenant = (*multitenant)(nil)
 
+// New creates an empty multitenant client manager without template options.
 func New() Multitenant {
 	return &multitenant{
 		clients: make(map[string]*entry),
 	}
 }
 
+// NewWithTemplate creates an empty multitenant client manager with template options.
+// The template is used by New to instantiate tenant clients.
 func NewWithTemplate(template *aruba.Options) Multitenant {
 	return &multitenant{
 		clients:  make(map[string]*entry),

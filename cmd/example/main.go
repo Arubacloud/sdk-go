@@ -37,7 +37,7 @@ const (
 )
 
 func main() {
-	mode := flag.String("mode", "create", "Operation mode: create, update, or delete")
+	mode := flag.String("mode", "create", "Operation mode: create, update, delete, or multitenancy")
 	flag.Parse()
 
 	switch *mode {
@@ -47,8 +47,10 @@ func main() {
 		runUpdateExample(defaultClientID, defaultClientSecret)
 	case "delete":
 		runDeleteExample(defaultClientID, defaultClientSecret)
+	case "multitenancy":
+		runMultitenancyExample()
 	default:
-		log.Fatalf("Unknown mode: %s. Use 'create', 'update', or 'delete'", *mode)
+		log.Fatalf("Unknown mode: %s. Use 'create', 'update', 'delete', or 'multitenancy'", *mode)
 	}
 }
 

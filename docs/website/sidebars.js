@@ -31,6 +31,11 @@ const sidebars = {
     },
     {
       type: 'doc',
+      id: 'multitenancy',
+      label: 'Multitenancy',
+    },
+    {
+      type: 'doc',
       id: 'options',
       label: 'Options',
     },
