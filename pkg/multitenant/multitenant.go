@@ -131,12 +131,24 @@ func (m *multitenant) GetOrNil(tenant string) aruba.Client {
 }
 
 func (m *multitenant) CleanUp(from time.Duration) {
+	if m == nil || m.clients == nil {
+		return
+	}
+
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
 	cleanupTime := time.Now().Add(-1 * from)
 
 	for t, e := range m.clients {
+		if e == nil {
+			delete(m.clients, t)
+			continue
+		}
+		if e.client == nil {
+			delete(m.clients, t)
+			continue
+		}
 		if e.lastUsage.Before(cleanupTime) {
 			delete(m.clients, t)
 		}
