@@ -63,13 +63,13 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version-file: go.mod
 
     - name: Run golangci-lint
-      uses: golangci/golangci-lint-action@v4
+      uses: golangci/golangci-lint-action@v6
       with:
-        version: latest
-        args: --timeout=5m
+        version: v2.11.4
+        args: --timeout=5m --max-same-issues=0
 
   build:
     name: Build
