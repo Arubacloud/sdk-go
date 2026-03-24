@@ -21,6 +21,7 @@ import (
 type MockVaultClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockVaultClientMockRecorder
+	isgomock struct{}
 }
 
 // MockVaultClientMockRecorder is the mock recorder for MockVaultClient.
@@ -41,17 +42,17 @@ func (m *MockVaultClient) EXPECT() *MockVaultClientMockRecorder {
 }
 
 // KVv2 mocks base method.
-func (m *MockVaultClient) KVv2(arg0 string) KvAPI {
+func (m *MockVaultClient) KVv2(mount string) KvAPI {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "KVv2", arg0)
+	ret := m.ctrl.Call(m, "KVv2", mount)
 	ret0, _ := ret[0].(KvAPI)
 	return ret0
 }
 
 // KVv2 indicates an expected call of KVv2.
-func (mr *MockVaultClientMockRecorder) KVv2(arg0 any) *gomock.Call {
+func (mr *MockVaultClientMockRecorder) KVv2(mount any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVv2", reflect.TypeOf((*MockVaultClient)(nil).KVv2), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KVv2", reflect.TypeOf((*MockVaultClient)(nil).KVv2), mount)
 }
 
 // Logical mocks base method.
@@ -69,33 +70,34 @@ func (mr *MockVaultClientMockRecorder) Logical() *gomock.Call {
 }
 
 // SetNamespace mocks base method.
-func (m *MockVaultClient) SetNamespace(arg0 string) {
+func (m *MockVaultClient) SetNamespace(namespace string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetNamespace", arg0)
+	m.ctrl.Call(m, "SetNamespace", namespace)
 }
 
 // SetNamespace indicates an expected call of SetNamespace.
-func (mr *MockVaultClientMockRecorder) SetNamespace(arg0 any) *gomock.Call {
+func (mr *MockVaultClientMockRecorder) SetNamespace(namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamespace", reflect.TypeOf((*MockVaultClient)(nil).SetNamespace), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNamespace", reflect.TypeOf((*MockVaultClient)(nil).SetNamespace), namespace)
 }
 
 // SetToken mocks base method.
-func (m *MockVaultClient) SetToken(arg0 string) {
+func (m *MockVaultClient) SetToken(token string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetToken", arg0)
+	m.ctrl.Call(m, "SetToken", token)
 }
 
 // SetToken indicates an expected call of SetToken.
-func (mr *MockVaultClientMockRecorder) SetToken(arg0 any) *gomock.Call {
+func (mr *MockVaultClientMockRecorder) SetToken(token any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetToken", reflect.TypeOf((*MockVaultClient)(nil).SetToken), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetToken", reflect.TypeOf((*MockVaultClient)(nil).SetToken), token)
 }
 
 // MockLogicalAPI is a mock of LogicalAPI interface.
 type MockLogicalAPI struct {
 	ctrl     *gomock.Controller
 	recorder *MockLogicalAPIMockRecorder
+	isgomock struct{}
 }
 
 // MockLogicalAPIMockRecorder is the mock recorder for MockLogicalAPI.
@@ -116,24 +118,25 @@ func (m *MockLogicalAPI) EXPECT() *MockLogicalAPIMockRecorder {
 }
 
 // Write mocks base method.
-func (m *MockLogicalAPI) Write(arg0 string, arg1 map[string]any) (*api.Secret, error) {
+func (m *MockLogicalAPI) Write(path string, data map[string]any) (*api.Secret, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Write", arg0, arg1)
+	ret := m.ctrl.Call(m, "Write", path, data)
 	ret0, _ := ret[0].(*api.Secret)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Write indicates an expected call of Write.
-func (mr *MockLogicalAPIMockRecorder) Write(arg0, arg1 any) *gomock.Call {
+func (mr *MockLogicalAPIMockRecorder) Write(path, data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockLogicalAPI)(nil).Write), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockLogicalAPI)(nil).Write), path, data)
 }
 
 // MockKvAPI is a mock of KvAPI interface.
 type MockKvAPI struct {
 	ctrl     *gomock.Controller
 	recorder *MockKvAPIMockRecorder
+	isgomock struct{}
 }
 
 // MockKvAPIMockRecorder is the mock recorder for MockKvAPI.
@@ -154,16 +157,16 @@ func (m *MockKvAPI) EXPECT() *MockKvAPIMockRecorder {
 }
 
 // Get mocks base method.
-func (m *MockKvAPI) Get(arg0 context.Context, arg1 string) (*api.KVSecret, error) {
+func (m *MockKvAPI) Get(ctx context.Context, path string) (*api.KVSecret, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0, arg1)
+	ret := m.ctrl.Call(m, "Get", ctx, path)
 	ret0, _ := ret[0].(*api.KVSecret)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockKvAPIMockRecorder) Get(arg0, arg1 any) *gomock.Call {
+func (mr *MockKvAPIMockRecorder) Get(ctx, path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockKvAPI)(nil).Get), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockKvAPI)(nil).Get), ctx, path)
 }

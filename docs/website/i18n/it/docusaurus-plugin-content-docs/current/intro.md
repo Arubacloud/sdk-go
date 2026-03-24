@@ -98,4 +98,5 @@ func stringValue(s *string) string {
 - Esplora le [Risorse API](./resources) per vedere cosa puoi gestire
 - Comprendi la [Gestione delle Risposte](./response-handling) per una gestione robusta degli errori
 - Controlla i [Tipi di Dati](./types) per informazioni dettagliate sui tipi
+- Leggi [Multitenancy](./multitenancy) per gestire client specifici per tenant
 - Scopri il [Filtraggio](./filters) per interrogare le risorse in modo efficiente

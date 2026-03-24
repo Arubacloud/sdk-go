@@ -2,6 +2,7 @@ package vault
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -185,7 +186,8 @@ func (r *CredentialsRepository) performAppRoleLogin() (*vaultapi.Secret, error) 
 	}
 
 	// Perform AppRole auth
-	token, err := r.client.Logical().Write(r.rolePath, payload)
+	appRoleURI := fmt.Sprintf("auth/%v/login", r.rolePath)
+	token, err := r.client.Logical().Write(appRoleURI, payload)
 	return token, err
 }
 
@@ -200,12 +202,12 @@ func getCredentialsFromVaultSecret(secret *vaultapi.KVSecret) (*auth.Credentials
 		return v, nil
 	}
 
-	clientID, err := get("client_id")
+	clientID, err := get("client-id")
 	if err != nil {
 		return nil, err
 	}
 
-	clientSecret, err := get("client_secret")
+	clientSecret, err := get("client-secret")
 	if err != nil {
 		return nil, err
 	}
