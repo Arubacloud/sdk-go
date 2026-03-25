@@ -1,4 +1,7 @@
-# Multitenancy
+---
+id: multitenancy
+title: Multitenancy
+---
 
 The `pkg/multitenant` package provides an in-memory tenant-to-client registry for the Aruba Cloud SDK. It is useful when your application serves multiple tenants and each tenant needs its own `aruba.Client`.
 
