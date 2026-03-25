@@ -30,7 +30,7 @@ linters:
         linters:
           - errcheck
           - goconst
-
+          - gocyclo
 formatters:
   enable:
     - gofmt
