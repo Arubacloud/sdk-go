@@ -63,7 +63,7 @@ func (c *KeyClientImpl) Get(ctx context.Context, projectID string, kmsID string,
 	}
 
 	if keyID == "" {
-		return nil, fmt.Errorf("Key ID cannot be empty")
+		return nil, fmt.Errorf("key ID cannot be empty")
 	}
 
 	path := fmt.Sprintf(KeyPath, projectID, kmsID, keyID)
@@ -157,7 +157,7 @@ func (c *KeyClientImpl) Delete(ctx context.Context, projectID string, kmsID stri
 	}
 
 	if keyID == "" {
-		return nil, fmt.Errorf("Key ID cannot be empty")
+		return nil, fmt.Errorf("key ID cannot be empty")
 	}
 
 	path := fmt.Sprintf(KeyPath, projectID, kmsID, keyID)

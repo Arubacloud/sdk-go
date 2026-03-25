@@ -1,34 +1,37 @@
+version: "2"
+
 run:
-  timeout: 5m
   tests: true
-  skip-dirs:
-    - pkg/generated
 
 linters:
   enable:
     - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
     - unused
-    - gofmt
-    - goimports
     - misspell
     - unparam
     - unconvert
     - goconst
-    #- gocyclo # Temporarily disabled: awaiting refactoring.
-
-linters-settings:
-  gocyclo:
-    min-complexity: 15
-  errcheck:
-    check-blank: true
-
-issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - errcheck
-        - goconst
+    - gocyclo
+  settings:
+    errcheck:
+      check-blank: true
+  exclusions:
+    paths:
+      - pkg/generated
+      - cmd/example
+    rules:
+      - linters:
+          - errcheck
+        text: httpResp.Body.Close
+      - path: _test\.go
+        linters:
+          - errcheck
+          - goconst
+          - gocyclo
+formatters:
+  enable:
+    - gofmt
+    - goimports
