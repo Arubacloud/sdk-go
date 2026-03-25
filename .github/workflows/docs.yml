@@ -99,6 +99,26 @@ jobs:
         rm -rf .docusaurus
         echo "✓ Cleared Docusaurus cache"
 
+    - name: Verify English docs for sidebar ids exist
+      working-directory: docs/website
+      run: |
+        set -euo pipefail
+        node <<'EOF'
+        const sidebars = require('./sidebars.js');
+        const ids = sidebars.tutorialSidebar
+          .filter((e) => e.type === 'doc')
+          .map((e) => e.id);
+        const fs = require('fs');
+        const path = require('path');
+        const missing = ids.filter((id) => !fs.existsSync(path.join('docs', `${id}.md`)));
+        if (missing.length) {
+          console.error('Missing docs/website/docs/<id>.md for sidebar ids:', missing.join(', '));
+          console.error('Merge main or add these files; Italian-only copies under i18n/ are not enough for locale en.');
+          process.exit(1);
+        }
+        console.log('OK: English docs for sidebar:', ids.join(', '));
+        EOF
+
     - name: Build documentation
       working-directory: docs/website
       run: npm run build
@@ -166,6 +186,26 @@ jobs:
         # Clear Docusaurus cache to ensure clean build
         rm -rf .docusaurus
         echo "✅ Versioned docs cleaned up"
+
+    - name: Verify English docs for sidebar ids exist
+      working-directory: docs/website
+      run: |
+        set -euo pipefail
+        node <<'EOF'
+        const sidebars = require('./sidebars.js');
+        const ids = sidebars.tutorialSidebar
+          .filter((e) => e.type === 'doc')
+          .map((e) => e.id);
+        const fs = require('fs');
+        const path = require('path');
+        const missing = ids.filter((id) => !fs.existsSync(path.join('docs', `${id}.md`)));
+        if (missing.length) {
+          console.error('Missing docs/website/docs/<id>.md for sidebar ids:', missing.join(', '));
+          console.error('Merge main or add these files; Italian-only copies under i18n/ are not enough for locale en.');
+          process.exit(1);
+        }
+        console.log('OK: English docs for sidebar:', ids.join(', '));
+        EOF
 
     - name: Build and validate documentation
       working-directory: docs/website
