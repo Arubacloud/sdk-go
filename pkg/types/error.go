@@ -2,7 +2,31 @@ package types
 
 import "encoding/json"
 
-// ErrorResponse represents an error response following RFC 7807 Problem Details
+// ValidationError is one field-level validation error (e.g. 400 payloads with an "errors" array).
+type ValidationError struct {
+	Field   string `json:"field,omitempty"`
+	Message string `json:"message,omitempty"`
+}
+
+// ErrorResponse represents API error bodies: RFC 7807-style fields, optional validation errors, trace id,
+// and Extensions for any additional JSON properties.
+//
+// Examples:
+//
+//	// 400 validation
+//	{
+//	  "title": "One or more validation error occurred.",
+//	  "status": 400,
+//	  "errors": [{"field": "Tag", "message": "length must be at least 4"}]
+//	}
+//
+//	// 404 Not Found
+//	{
+//	  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+//	  "title": "Not Found",
+//	  "status": 404,
+//	  "traceId": "00-86dd2c3651e19162ea8007a9c961c43a-a89dcb232bcfacd4-00"
+//	}
 type ErrorResponse struct {
 	// Type A URI reference that identifies the problem type (nullable)
 	Type *string `json:"type,omitempty"`
@@ -19,12 +43,17 @@ type ErrorResponse struct {
 	// Instance A URI reference that identifies the specific occurrence of the problem (nullable)
 	Instance *string `json:"instance,omitempty"`
 
-	// Extensions Additional properties for extensibility
-	// Allows for dynamic properties with any name and value
+	// Errors Field-level validation errors
+	Errors []ValidationError `json:"errors,omitempty"`
+
+	// TraceID Correlation id for support / logging (e.g. W3C trace context), JSON key "traceId"
+	TraceID *string `json:"traceId,omitempty"`
+
+	// Extensions holds JSON properties not mapped to the fields above (forward compatibility).
 	Extensions map[string]interface{} `json:"-"`
 }
 
-// UnmarshalJSON implements custom JSON unmarshaling to handle dynamic properties
+// UnmarshalJSON implements json.Unmarshaler: typed fields plus unknown keys in Extensions.
 func (e *ErrorResponse) UnmarshalJSON(data []byte) error {
 	type Alias ErrorResponse
 	aux := &struct {
@@ -33,18 +62,15 @@ func (e *ErrorResponse) UnmarshalJSON(data []byte) error {
 		Alias: (*Alias)(e),
 	}
 
-	// Unmarshal into a map to capture all fields
 	var raw map[string]interface{}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
 
-	// Unmarshal known fields
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 
-	// Extract unknown fields into Extensions
 	e.Extensions = make(map[string]interface{})
 	knownFields := map[string]bool{
 		"type":     true,
@@ -52,6 +78,8 @@ func (e *ErrorResponse) UnmarshalJSON(data []byte) error {
 		"status":   true,
 		"detail":   true,
 		"instance": true,
+		"errors":   true,
+		"traceId":  true,
 	}
 
 	for key, value := range raw {
@@ -63,7 +91,7 @@ func (e *ErrorResponse) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements custom JSON marshaling to include dynamic properties
+// MarshalJSON implements json.Marshaler: merges Extensions into the output object.
 func (e *ErrorResponse) MarshalJSON() ([]byte, error) {
 	type Alias ErrorResponse
 	aux := &struct {
@@ -72,18 +100,15 @@ func (e *ErrorResponse) MarshalJSON() ([]byte, error) {
 		Alias: (*Alias)(e),
 	}
 
-	// Marshal known fields
 	data, err := json.Marshal(aux)
 	if err != nil {
 		return nil, err
 	}
 
-	// If no extensions, return as-is
 	if len(e.Extensions) == 0 {
 		return data, nil
 	}
 
-	// Merge extensions
 	var result map[string]interface{}
 	if err := json.Unmarshal(data, &result); err != nil {
 		return nil, err
