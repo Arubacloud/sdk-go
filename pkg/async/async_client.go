@@ -11,9 +11,9 @@ import (
 
 // Default parameters for WaitFor
 const (
-	DefaultRetries   = 10
+	DefaultRetries   = 36
 	DefaultBaseDelay = 10 * time.Second
-	DefaultTimeout   = 60 * time.Second
+	DefaultTimeout   = 600 * time.Second
 )
 
 // Result wraps the response from a WaitFor/Async operation and an error, if any.
@@ -53,7 +53,7 @@ func (f *AsyncClient[T]) Await(ctx context.Context) (*types.Response[T], error) 
 }
 
 // DefaultWaitFor is a helper for WaitFor using default parameters:
-// 10 retries, 10 seconds delay between attempts, 60 seconds total timeout.
+// 36 retries, 10 seconds delay between attempts, 600 seconds (10 min) total timeout.
 // Simplifies usage when you want standard retry behavior.
 func DefaultWaitFor[T any](
 	ctx context.Context,
