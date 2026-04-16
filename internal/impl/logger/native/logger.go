@@ -23,7 +23,7 @@ func NewDefaultLogger() *DefaultLogger {
 	return &DefaultLogger{
 		debug: log.New(os.Stdout, "[DEBUG] ", log.LstdFlags),
 		info:  log.New(os.Stdout, "[INFO] ", log.LstdFlags),
-		warn:  log.New(os.Stdout, "[WARN] ", log.LstdFlags),
+		warn:  log.New(os.Stderr, "[WARN] ", log.LstdFlags),
 		err:   log.New(os.Stderr, "[ERROR] ", log.LstdFlags),
 	}
 }
