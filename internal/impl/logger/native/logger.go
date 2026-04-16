@@ -3,7 +3,12 @@ package native
 import (
 	"log"
 	"os"
+
+	"github.com/Arubacloud/sdk-go/internal/ports/logger"
 )
+
+// Compile-time assertion that *DefaultLogger satisfies logger.Logger.
+var _ logger.Logger = (*DefaultLogger)(nil)
 
 // DefaultLogger is a simple logger implementation using standard log package
 type DefaultLogger struct {

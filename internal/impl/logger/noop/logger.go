@@ -1,5 +1,10 @@
 package noop
 
+import "github.com/Arubacloud/sdk-go/internal/ports/logger"
+
+// Compile-time assertion that *NoOpLogger satisfies logger.Logger.
+var _ logger.Logger = (*NoOpLogger)(nil)
+
 // NoOpLogger is a logger that does nothing
 type NoOpLogger struct{}
 
