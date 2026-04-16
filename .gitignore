@@ -31,6 +31,9 @@ go.work.sum
 # .idea/
 # .vscode/
 
+# Claude Code local session data (memory, plans, logs)
+.claude/
+
 # Documentation (docs/website/)
 docs/website/node_modules/
 docs/website/build/
