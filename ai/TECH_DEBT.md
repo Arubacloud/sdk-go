@@ -15,7 +15,6 @@ Issues are grouped by severity. Address Critical items before new features ship;
 | [TD-003](#td-003) | `lastUsage` race under RLock | Critical | S | High |
 | [TD-004](#td-004) | Interceptor not thread-safe | Critical | S | Medium |
 | [TD-005](#td-005) | Typo `buildDetebaseClient` | High | XS | Low |
-| [TD-006](#td-006) | Goroutine leak in `WaitFor` | High | S | High |
 | [TD-007](#td-007) | Variable shadowing in `WaitFor` | High | XS | Low |
 | [TD-008](#td-008) | Polling sleeps before first attempt | High | S | Medium |
 | [TD-009](#td-009) | Caller headers override `Content-Type` | High | XS | Medium |
@@ -35,7 +34,7 @@ Issues are grouped by severity. Address Critical items before new features ship;
 
 **Wave 1 — Quick Wins** (XS effort, ship same PR): TD-001, TD-002, TD-005, TD-007, TD-009, TD-013, TD-014, TD-015, TD-017
 
-**Wave 2 — High-value focused fixes** (S effort, High+ impact): TD-003, TD-006, TD-012
+**Wave 2 — High-value focused fixes** (S effort, High+ impact): TD-003, TD-012
 
 **Wave 3 — Medium fixes** (S effort, Medium/Low impact): TD-004, TD-008, TD-011, TD-018, TD-019
 
@@ -45,7 +44,12 @@ Issues are grouped by severity. Address Critical items before new features ship;
 
 ## Resolved
 
-None yet.
+### TD-006 · Goroutine leak in `WaitFor` on context cancellation — [#116](https://github.com/Arubacloud/sdk-go/issues/116) · **Closed as invalid**
+The original claim was that the goroutine writes to `resultCh` unconditionally without guarding on `ctx.Done()`. Investigation of `pkg/async/async_client.go` shows:
+1. The goroutine checks `ctxTimeout.Done()` via `select` before each retry attempt (lines 115-120) and after each failed attempt before sleeping (lines 146-152).
+2. The result channel is buffered (`make(chan Result[T], 1)`), so the single channel send the goroutine performs can never block.
+
+No goroutine leak exists. Issue #116 closed as invalid.
 
 ---
 
@@ -108,17 +112,6 @@ None yet.
 
 ---
 
-### TD-006 · Goroutine leak in `WaitFor` on context cancellation — [#116](https://github.com/Arubacloud/sdk-go/issues/116)
-`pkg/async/async_client.go` — the goroutine launched by `WaitFor()` writes to `resultCh` unconditionally. If the caller's context is cancelled and `Await()` is never called (or returns early), the goroutine blocks forever on the channel send. The channel buffer is 1, so if the slot is already filled, the goroutine leaks.
-
-**Fix:** Wrap the channel send in a `select` with `ctx.Done()`.
-
-**Effort:** S — add a `select` block in 1 goroutine closure.
-
-**Impact:** High — goroutine leak under cancellation in production; accumulated leaks cause memory exhaustion in long-lived services.
-
----
-
 ### TD-007 · Variable shadowing creates unreachable `AsyncClient` in `WaitFor` nil-call path — [#117](https://github.com/Arubacloud/sdk-go/issues/117)
 `pkg/async/async_client.go` — when `callFunc == nil`, a new inner `asyncClient` variable (`:=`) shadows the outer one. The outer variable is discarded; the inner one is returned. The code works by accident but is fragile and confusing.
 
@@ -131,13 +124,13 @@ None yet.
 ---
 
 ### TD-008 · Polling loop always sleeps before the first attempt — [#118](https://github.com/Arubacloud/sdk-go/issues/118)
-`internal/restclient/polling.go` — `time.Sleep(config.Interval)` is called at the top of each iteration, including the very first one. This adds an unnecessary 5-second delay before the initial state check. Additionally, the last iteration checks `attempt == config.MaxAttempts` and returns a timeout error after having just called `getter`, discarding the final state.
+`internal/restclient/polling.go` — `time.Sleep(config.Interval)` is called at the top of each iteration, including the very first one. This adds an unnecessary 5-second delay before the initial state check.
 
-**Fix:** Move the sleep to the bottom of the loop (or skip when `attempt == 1`) and always check the state before emitting a timeout error.
+**Fix:** Move the sleep to the bottom of the loop (or skip when `attempt == 1`) so the first check is immediate.
 
 **Effort:** S — restructure the loop in 1 function.
 
-**Impact:** Medium — 5 s wasted per poll operation; final state is discarded causing potentially misleading timeout errors.
+**Impact:** Medium — 5 s wasted per poll operation before any work is done.
 
 ---
 
@@ -181,14 +174,17 @@ Replace all manual implementations with calls to this helper.
 
 ---
 
-### TD-012 · Token manager injects expired/nil token after failed refresh — [#122](https://github.com/Arubacloud/sdk-go/issues/122)
-`internal/impl/auth/tokenmanager/standard/standard.go` — in the write-lock branch, if the ticket has already changed (another goroutine refreshed), the code re-fetches from the repository. If that second fetch fails, execution falls through and injects an empty or expired token into the `Authorization` header with no error returned to the caller.
+### TD-012 · Token manager mishandles post-refresh token fetch in the else-branch — [#122](https://github.com/Arubacloud/sdk-go/issues/122)
+`internal/impl/auth/tokenmanager/standard/standard.go` — in the write-lock branch, when the ticket has already changed (another goroutine refreshed), the code re-fetches from the repository. Two failure modes exist:
 
-**Fix:** Check the error from the second `FetchToken()` and return it before reaching the header-injection step.
+1. **Nil pointer panic:** If the second `FetchToken()` returns `auth.ErrTokenNotFound`, the error is filtered out by `!errors.Is(err, auth.ErrTokenNotFound)` and not returned. Execution falls through to `token.AccessToken` at the header-injection step with `token == nil`, causing a panic.
+2. **Silent expired token injection:** If `FetchToken()` returns a token without error but the token is expired, it is injected into the `Authorization` header without expiration validation.
 
-**Effort:** S — add 1 error check and early return in 1 function.
+**Fix:** (1) Return an error (or retry) when `ErrTokenNotFound` is received in the else-branch rather than falling through. (2) Add an expiration check before injecting the token.
 
-**Impact:** High — prevents silent auth failure after a transient token storage error; without the fix, the caller receives a 401 with no indication of the root cause.
+**Effort:** S — add nil/expiry checks in 1 function.
+
+**Impact:** High — the nil pointer panic causes an unrecoverable crash under concurrent token refresh with a temporarily unavailable token store; the expired-token path produces silent 401s.
 
 ---
 
@@ -261,11 +257,16 @@ Replace all manual implementations with calls to this helper.
 ## Low
 
 ### TD-019 · Missing compile-time interface satisfaction checks — [#129](https://github.com/Arubacloud/sdk-go/issues/129)
-Logger implementations (`internal/impl/logger/native/`, `internal/impl/logger/noop/`) and most client `*Impl` types lack `var _ Interface = (*Impl)(nil)` guards. Only the interceptor has this check. A missed method or signature change will only surface at runtime rather than at compile time.
+21 `var _ Interface = (*Impl)(nil)` guards already exist across `pkg/aruba/` (10 service group clients + main `Client`), `pkg/multitenant/`, and `internal/impl/` (auth repositories, connectors, token manager, interceptor). The gap is in two areas:
 
-**Fix:** Add `var _ logger.Logger = (*DefaultLogger)(nil)` (and equivalent for each impl type) at package scope in every implementation file.
+1. **Logger implementations:** `internal/impl/logger/native/` and `internal/impl/logger/noop/` have no `var _ logger.Logger` guard.
+2. **Resource-level client implementations:** All `*Impl` types under `internal/clients/` (e.g., `cloudServersClientImpl`, `vpcsClientImpl`, ~30 types) lack guards.
 
-**Effort:** S — mechanical addition of `var _` lines in ~20 files.
+A missed method or signature change in these types will only surface at runtime rather than at compile time.
+
+**Fix:** Add `var _ logger.Logger = (*DefaultLogger)(nil)` (and equivalent for each resource-level impl) at package scope in the affected files.
+
+**Effort:** S — mechanical addition of `var _` lines in ~32 files.
 
 **Impact:** Low — compile-time safety net; no runtime effect until a signature diverges.
 

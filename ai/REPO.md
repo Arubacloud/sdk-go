@@ -15,7 +15,7 @@ internal/clients/    — Service-specific HTTP client implementations (one dir p
 internal/impl/       — Pluggable subsystems: auth, interceptor, logger
 internal/restclient/ — Low-level HTTP execution layer
 cmd/example/         — Usage examples (excluded from linting)
-doc/                 — Markdown reference guides
+docs/                — Testing docs, versioning scripts, and Docusaurus site
 docs/website/        — Docusaurus documentation site (multi-locale, includes Italian)
 ```
 

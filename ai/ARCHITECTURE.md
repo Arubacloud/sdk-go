@@ -6,10 +6,11 @@ The public entry point is `NewClient(options *Options) (Client, error)` in `pkg/
 
 `buildClient()` performs cascading construction in this order:
 1. Validate options via `options.validate()`
-2. Build logger (`buildLogger()`)
-3. Build REST client (`buildRESTClient()`) — injects logger and HTTP client
-4. Build token manager (`buildTokenManager()`) — binds itself as the last interceptor
-5. Build each of the 10 service group clients sequentially
+2. Build REST client via `buildRESTClient()` — internally constructs:
+   - HTTP client (`buildHTTPClient()`) — defaults to `http.DefaultClient`
+   - Logger (`buildLogger()`)
+   - Middleware (`buildMiddleware()`) — builds the token manager and binds it as the last interceptor
+3. Build each of the 10 service group clients sequentially
 
 `pkg/aruba.Options` is a fluent builder (~40 methods). Key injection points:
 - `WithCustomHTTPClient(*http.Client)` — defaults to `http.DefaultClient`
