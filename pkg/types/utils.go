@@ -12,6 +12,10 @@ import (
 // For 4xx/5xx responses, it unmarshals into Error field.
 // Always stores the raw body in RawBody field.
 func ParseResponseBody[T any](httpResp *http.Response) (*Response[T], error) {
+	if httpResp == nil {
+		return nil, fmt.Errorf("http response is nil")
+	}
+
 	// Read the response body
 	bodyBytes, err := io.ReadAll(httpResp.Body)
 	if err != nil {
