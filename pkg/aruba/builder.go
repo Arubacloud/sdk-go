@@ -63,7 +63,7 @@ func buildClient(options *Options) (Client, error) {
 		return nil, err // TODO: better error handling
 	}
 
-	databaseClient, err := buildDetebaseClient(restClient)
+	databaseClient, err := buildDatabaseClient(restClient)
 	if err != nil {
 		return nil, err // TODO: better error handling
 	}
@@ -399,7 +399,7 @@ func buildContainerRegistryClient(restClient *restclient.Client) (ContainerRegis
 //
 // Database domain clients
 
-func buildDetebaseClient(restClient *restclient.Client) (DatabaseClient, error) {
+func buildDatabaseClient(restClient *restclient.Client) (DatabaseClient, error) {
 	dbaasClient, err := buildDBaaSClient(restClient)
 	if err != nil {
 		return nil, err // TODO: better error handling
