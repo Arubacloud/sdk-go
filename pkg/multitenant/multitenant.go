@@ -31,6 +31,7 @@ type Multitenant interface {
 type entry struct {
 	client    aruba.Client
 	lastUsage time.Time
+	lock      sync.Mutex
 }
 
 type multitenant struct {
@@ -109,6 +110,9 @@ func (m *multitenant) Get(tenant string) (aruba.Client, bool) {
 		return nil, false
 	}
 
+	e.lock.Lock()
+	defer e.lock.Unlock()
+
 	e.lastUsage = time.Now()
 
 	return e.client, ok
@@ -123,6 +127,9 @@ func (m *multitenant) MustGet(tenant string) aruba.Client {
 		log.Fatalf("client for tenant '%s' not found", tenant)
 	}
 
+	e.lock.Lock()
+	defer e.lock.Unlock()
+
 	e.lastUsage = time.Now()
 
 	return e.client
@@ -136,6 +143,9 @@ func (m *multitenant) GetOrNil(tenant string) aruba.Client {
 	if !ok {
 		return nil
 	}
+
+	e.lock.Lock()
+	defer e.lock.Unlock()
 
 	e.lastUsage = time.Now()
 
