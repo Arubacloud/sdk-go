@@ -321,7 +321,7 @@ func buildRedisTokenRepository(clientID string, options *redisTokenRepositoryOpt
 }
 
 func buildFileTokenRepository(clientID string, options *fileTokenRepositoryOptions) (*file_token_repo.TokenRepository, error) {
-	return file_token_repo.NewFileTokenRepository(options.baseDir, clientID), nil
+	return file_token_repo.NewFileTokenRepository(clientID, options.baseDir), nil
 }
 
 //
