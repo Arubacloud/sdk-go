@@ -54,7 +54,9 @@ func NewTokenRepository() *TokenRepository {
 // never consider the token as expired.
 // Tokens stored here are lost when the application restarts.
 func NewTokenRepositoryWithAccessToken(accessToken string) *TokenRepository {
-	return &TokenRepository{}
+	return &TokenRepository{
+		token: &auth.Token{AccessToken: accessToken},
+	}
 }
 
 // NewTokenProxy creates a repository that caches tokens in memory but

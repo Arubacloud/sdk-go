@@ -37,6 +37,30 @@ func TestTokenRepository_FetchToken(t *testing.T) {
 		require.Nil(t, token)
 	})
 
+	t.Run("should return a preloaded access token with no expiry", func(t *testing.T) {
+		// Given a TokenRepository created with a preloaded access token
+		tokenRepository := NewTokenRepositoryWithAccessToken(accessToken)
+
+		// When we try to fetch the token
+		token, err := tokenRepository.FetchToken(t.Context())
+
+		// Then no error should be reported
+		require.NoError(t, err)
+
+		// And a token containing the preloaded access token should be returned
+		require.NotNil(t, token)
+		require.Equal(t, accessToken, token.AccessToken)
+
+		// And the token should have zero expiry (never expires)
+		require.True(t, token.Expiry.IsZero())
+
+		// And the token should be valid (zero expiry means never expires)
+		require.True(t, token.IsValid())
+
+		// And the returned token should be a copy, not the same pointer
+		require.NotSame(t, tokenRepository.token, token)
+	})
+
 	t.Run("should return an expired token with no error", func(t *testing.T) {
 		// Given a fresh new TokenRepository which contains an expired token
 		tokenRepository := NewTokenRepository()
