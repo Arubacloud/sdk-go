@@ -87,7 +87,6 @@ func WaitFor[T any](
 
 	// Validate that call and check are not nil
 	if call == nil {
-		asyncClient := &AsyncClient[T]{resultCh: make(chan Result[T], 1)}
 		asyncClient.resultCh <- Result[T]{Response: nil, Error: fmt.Errorf("call function cannot be nil")}
 		return asyncClient
 	}
