@@ -72,14 +72,14 @@ func (c *Client) DoRequest(ctx context.Context, method, path string, body io.Rea
 		c.logger.Debugf("Added query parameters: %v", queryParams)
 	}
 
-	// Set content type for requests with body
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-
-	// Add additional headers before authentication headers
+	// Add caller-supplied headers first so SDK-controlled headers applied below cannot be overridden
 	for k, v := range headers {
 		req.Header.Set(k, v)
+	}
+
+	// Set content type for requests with body; applied after caller headers to prevent override
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
 	}
 
 	// Log request headers (before auth)
