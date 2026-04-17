@@ -19,6 +19,9 @@ type securityGroupRulesClientImpl struct {
 
 // NewService creates a new unified Network service
 func NewSecurityGroupRulesClientImpl(client *restclient.Client, securityGroupsClient *securityGroupsClientImpl) *securityGroupRulesClientImpl {
+	if securityGroupsClient == nil {
+		panic("securityGroupsClient is required and cannot be nil")
+	}
 	return &securityGroupRulesClientImpl{
 		client:               client,
 		securityGroupsClient: securityGroupsClient,

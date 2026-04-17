@@ -23,7 +23,6 @@ Issues are grouped by severity. Address Critical items before new features ship;
 | [TD-015](#td-015) | `DefaultWaitFor` timeout too short | Medium | XS | Medium |
 | [TD-016](#td-016) | No structured logging | Medium | L | Medium |
 | [TD-017](#td-017) | `WARN` writes to stdout | Medium | XS | Low |
-| [TD-018](#td-018) | Nil deps not checked in constructors | Medium | S | Low |
 | [TD-020](#td-020) | Test coverage gaps | Low | XL | High |
 
 ### Recommended execution order
@@ -32,7 +31,7 @@ Issues are grouped by severity. Address Critical items before new features ship;
 
 **Wave 2 — High-value focused fixes** (S effort, High+ impact): TD-003, TD-012
 
-**Wave 3 — Medium fixes** (S effort, Medium/Low impact): TD-011, TD-018
+**Wave 3 — Medium fixes** (S effort, Medium/Low impact): TD-011
 
 **Wave 4 — Large refactors** (L/XL, plan separately): TD-010, TD-016, TD-020
 
@@ -78,6 +77,15 @@ Guards were missing for all ~24 resource-level client impls under `internal/clie
 The security domain is intentionally excluded: `KMSClient`, `KeyClient`, and `KmipClient` in `pkg/aruba/security.go` are type aliases to concrete pointer types, not interfaces, so satisfaction guards would be degenerate.
 
 The issue description incorrectly identified both logger implementations as missing guards; both already had them (`internal/impl/logger/native/logger.go:11`, `internal/impl/logger/noop/logger.go:6`). Three `for i := 0; i < N; i++` loops in test files were also modernized to `for range N` while in the area. Issue #129 closed.
+
+When TD-018 was subsequently resolved (#146), the multi-arg constructor calls in `assertions.go` were updated to use real (non-nil-dep) sentinel instances to avoid init-time panics.
+
+---
+
+### TD-018 · Injected concrete dependencies not nil-checked in constructors — [#128](https://github.com/Arubacloud/sdk-go/issues/128) · **Resolved**
+The issue named two constructors (`NewSecurityGroupsClientImpl`, `NewSecurityGroupRulesClientImpl`). A repo-wide grep (`^func New\w+ClientImpl\(.*,.*\)` against `internal/clients/`) found five constructors in total that accept injected `*xxxClientImpl` dependencies beyond the standard `*restclient.Client`: the two network ones named in the issue, `NewSubnetsClientImpl` (also network), `NewSnapshotsClientImpl`, and `NewRestoreClientImpl` (storage).
+
+All five now `panic("... is required and cannot be nil")` when the injected dep is nil. Corresponding panic-on-nil tests added to the paired test files. `pkg/aruba/assertions.go` updated to wire real sentinel instances for the affected constructors (avoiding init-time panics). Issue #128 closed.
 
 ---
 
@@ -235,17 +243,6 @@ Replace all manual implementations with calls to this helper.
 **Effort:** XS — change 1 line.
 
 **Impact:** Low — minor log routing correction; no functional impact.
-
----
-
-### TD-018 · Injected concrete dependencies not nil-checked in constructors — [#128](https://github.com/Arubacloud/sdk-go/issues/128)
-`internal/clients/network/security-group.go`, `internal/clients/network/security-group-rule.go` — `SecurityGroupsClientImpl` receives a `*vpcsClientImpl` dependency and `SecurityGroupRulesClientImpl` receives a `*securityGroupsClientImpl`. Neither constructor validates that the injected pointer is non-nil. A nil pointer passed at build time causes a panic deep inside a `Create` call, far from the construction site.
-
-**Fix:** Add explicit nil checks in all constructors that accept dependency pointers.
-
-**Effort:** S — add nil checks to ~4 constructors.
-
-**Impact:** Low — defensive; prevents future wiring bugs from panicking far from their source.
 
 ---
 

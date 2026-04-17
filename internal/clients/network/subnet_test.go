@@ -3,8 +3,10 @@ package network
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
@@ -270,4 +272,17 @@ func TestDeleteSubnet(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
+}
+
+func TestNewSubnetsClientImpl_panicsOnNilVPCClient(t *testing.T) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("expected panic on nil vpcClient but got none")
+		}
+		if !strings.Contains(fmt.Sprint(r), "vpcClient") {
+			t.Fatalf("expected panic message to mention vpcClient, got: %v", r)
+		}
+	}()
+	NewSubnetsClientImpl(nil, nil)
 }

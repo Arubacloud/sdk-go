@@ -55,6 +55,9 @@ func (c *snapshotsClientImpl) Update(ctx context.Context, projectID string, snap
 
 // NewSnapshotsClientImpl creates a new unified Storage service
 func NewSnapshotsClientImpl(client *restclient.Client, volumesClient *volumesClientImpl) *snapshotsClientImpl {
+	if volumesClient == nil {
+		panic("volumesClient is required and cannot be nil")
+	}
 	return &snapshotsClientImpl{
 		client:        client,
 		volumesClient: volumesClient,

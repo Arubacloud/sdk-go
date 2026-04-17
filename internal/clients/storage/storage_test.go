@@ -3,8 +3,10 @@ package storage
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
@@ -540,4 +542,17 @@ func TestDeleteSnapshot(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
+}
+
+func TestNewSnapshotsClientImpl_panicsOnNilVolumesClient(t *testing.T) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("expected panic on nil volumesClient but got none")
+		}
+		if !strings.Contains(fmt.Sprint(r), "volumesClient") {
+			t.Fatalf("expected panic message to mention volumesClient, got: %v", r)
+		}
+	}()
+	NewSnapshotsClientImpl(nil, nil)
 }
