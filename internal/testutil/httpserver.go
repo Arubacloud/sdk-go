@@ -23,7 +23,9 @@ func NewMockServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 		if r.URL.Path == "/token" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			_, _ = fmt.Fprint(w, cannedToken)
+			if _, err := fmt.Fprint(w, cannedToken); err != nil {
+				t.Errorf("mock server: failed to write token: %v", err)
+			}
 			return
 		}
 		handler(w, r)
