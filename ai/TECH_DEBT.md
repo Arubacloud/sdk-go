@@ -24,7 +24,6 @@ Issues are grouped by severity. Address Critical items before new features ship;
 | [TD-016](#td-016) | No structured logging | Medium | L | Medium |
 | [TD-017](#td-017) | `WARN` writes to stdout | Medium | XS | Low |
 | [TD-018](#td-018) | Nil deps not checked in constructors | Medium | S | Low |
-| [TD-019](#td-019) | Missing interface satisfaction checks | Low | S | Low |
 | [TD-020](#td-020) | Test coverage gaps | Low | XL | High |
 
 ### Recommended execution order
@@ -33,7 +32,7 @@ Issues are grouped by severity. Address Critical items before new features ship;
 
 **Wave 2 — High-value focused fixes** (S effort, High+ impact): TD-003, TD-012
 
-**Wave 3 — Medium fixes** (S effort, Medium/Low impact): TD-011, TD-018, TD-019
+**Wave 3 — Medium fixes** (S effort, Medium/Low impact): TD-011, TD-018
 
 **Wave 4 — Large refactors** (L/XL, plan separately): TD-010, TD-016, TD-020
 
@@ -70,6 +69,15 @@ Resolved by restructuring the loop: the sleep moved to the bottom, guarded by `i
 `internal/impl/auth/tokenrepository/memory/memory.go` — `saveTicket++` ran before `r.persistentRepository.SaveToken(...)`, violating the double-checked-locking invariant that "a changed ticket means the cache was successfully refreshed". On a failed persistent write the ticket was already bumped, causing concurrent `FetchToken` calls to skip the persistent re-fetch and serve a stale (or nil) in-memory token.
 
 Resolved by reordering: persistent write first; on success, increment ticket and update cache; on error, return immediately leaving both unchanged. Two regression tests added to `memory_test.go`: a unit assertion on the `saveTicket` counter after a failed save, and a behavioural subtest that verifies a subsequent `FetchToken` still reaches the persistent store. Issue #123 closed.
+
+---
+
+### TD-019 · Missing compile-time interface satisfaction checks — [#129](https://github.com/Arubacloud/sdk-go/issues/129) · **Resolved**
+Guards were missing for all ~24 resource-level client impls under `internal/clients/`. Adding them directly inside those packages would create an import cycle (`pkg/aruba/builder.go` already imports every internal client package). The guards are consolidated in a new file `pkg/aruba/assertions.go`, using each impl's exported constructor with `nil` args to obtain a typed value of the unexported impl type — the exact same assignment the existing `buildXxxClient` return types already checked implicitly.
+
+The security domain is intentionally excluded: `KMSClient`, `KeyClient`, and `KmipClient` in `pkg/aruba/security.go` are type aliases to concrete pointer types, not interfaces, so satisfaction guards would be degenerate.
+
+The issue description incorrectly identified both logger implementations as missing guards; both already had them (`internal/impl/logger/native/logger.go:11`, `internal/impl/logger/noop/logger.go:6`). Three `for i := 0; i < N; i++` loops in test files were also modernized to `for range N` while in the area. Issue #129 closed.
 
 ---
 
@@ -242,22 +250,6 @@ Replace all manual implementations with calls to this helper.
 ---
 
 ## Low
-
-### TD-019 · Missing compile-time interface satisfaction checks — [#129](https://github.com/Arubacloud/sdk-go/issues/129)
-21 `var _ Interface = (*Impl)(nil)` guards already exist across `pkg/aruba/` (10 service group clients + main `Client`), `pkg/multitenant/`, and `internal/impl/` (auth repositories, connectors, token manager, interceptor). The gap is in two areas:
-
-1. **Logger implementations:** `internal/impl/logger/native/` and `internal/impl/logger/noop/` have no `var _ logger.Logger` guard.
-2. **Resource-level client implementations:** All `*Impl` types under `internal/clients/` (e.g., `cloudServersClientImpl`, `vpcsClientImpl`, ~30 types) lack guards.
-
-A missed method or signature change in these types will only surface at runtime rather than at compile time.
-
-**Fix:** Add `var _ logger.Logger = (*DefaultLogger)(nil)` (and equivalent for each resource-level impl) at package scope in the affected files.
-
-**Effort:** S — mechanical addition of `var _` lines in ~32 files.
-
-**Impact:** Low — compile-time safety net; no runtime effect until a signature diverges.
-
----
 
 ### TD-020 · Test coverage limited to happy path and empty-ID validation — [#130](https://github.com/Arubacloud/sdk-go/issues/130)
 All `internal/clients/*/_test.go` files — existing tests cover successful responses and empty project/resource IDs. Missing: HTTP 4xx/5xx error responses, malformed JSON bodies, network-level errors, `nil` params handling, and request body marshaling failures.

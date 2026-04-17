@@ -297,7 +297,7 @@ func TestTokenManager_InjectToken(t *testing.T) {
 
 		bell.Lock() // make sure to block all calls
 
-		for i := 0; i < 100; i++ { // launch the simultaneous go routines
+		for range 100 { // launch the simultaneous go routines
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
