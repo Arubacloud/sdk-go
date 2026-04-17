@@ -19,6 +19,9 @@ type subnetsClientImpl struct {
 
 // NewService creates a new unified Network service
 func NewSubnetsClientImpl(client *restclient.Client, vpcClient *vpcsClientImpl) *subnetsClientImpl {
+	if vpcClient == nil {
+		panic("vpcClient is required and cannot be nil")
+	}
 	return &subnetsClientImpl{
 		client:    client,
 		vpcClient: vpcClient,

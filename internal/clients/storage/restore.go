@@ -20,6 +20,9 @@ type restoreClientImpl struct {
 
 // NewRestoreClientImpl creates a new unified Restore service
 func NewRestoreClientImpl(client *restclient.Client, backupClient *backupClientImpl) *restoreClientImpl {
+	if backupClient == nil {
+		panic("backupClient is required and cannot be nil")
+	}
 	return &restoreClientImpl{
 		client:       client,
 		backupClient: backupClient,

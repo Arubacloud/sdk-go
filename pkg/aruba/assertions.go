@@ -24,6 +24,15 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/storage"
 )
 
+// Sentinel instances wired with a nil restclient. Used only to satisfy the
+// multi-arg constructors that require non-nil dependency pointers (TD-018).
+var (
+	assertVPCsImpl = network.NewVPCsClientImpl(nil)
+	assertSGImpl   = network.NewSecurityGroupsClientImpl(nil, assertVPCsImpl)
+	assertVolImpl  = storage.NewVolumesClientImpl(nil)
+	assertBkpImpl  = storage.NewBackupClientImpl(nil)
+)
+
 var (
 	// Audit
 	_ EventsClient = audit.NewEventsClientImpl(nil)
@@ -50,10 +59,10 @@ var (
 	// Network
 	_ ElasticIPsClient         = network.NewElasticIPsClientImpl(nil)
 	_ LoadBalancersClient      = network.NewLoadBalancersClientImpl(nil)
-	_ VPCsClient               = network.NewVPCsClientImpl(nil)
-	_ SecurityGroupsClient     = network.NewSecurityGroupsClientImpl(nil, nil)
-	_ SecurityGroupRulesClient = network.NewSecurityGroupRulesClientImpl(nil, nil)
-	_ SubnetsClient            = network.NewSubnetsClientImpl(nil, nil)
+	_ VPCsClient               = assertVPCsImpl
+	_ SecurityGroupsClient     = assertSGImpl
+	_ SecurityGroupRulesClient = network.NewSecurityGroupRulesClientImpl(nil, assertSGImpl)
+	_ SubnetsClient            = network.NewSubnetsClientImpl(nil, assertVPCsImpl)
 	_ VPCPeeringsClient        = network.NewVPCPeeringsClientImpl(nil)
 	_ VPCPeeringRoutesClient   = network.NewVPCPeeringRoutesClientImpl(nil)
 	_ VPNRoutesClient          = network.NewVPNRoutesClientImpl(nil)
@@ -66,8 +75,8 @@ var (
 	_ JobsClient = schedule.NewJobsClientImpl(nil)
 
 	// Storage
-	_ VolumesClient        = storage.NewVolumesClientImpl(nil)
-	_ SnapshotsClient      = storage.NewSnapshotsClientImpl(nil, nil)
-	_ StorageBackupsClient = storage.NewBackupClientImpl(nil)
-	_ StorageRestoreClient = storage.NewRestoreClientImpl(nil, nil)
+	_ VolumesClient        = assertVolImpl
+	_ SnapshotsClient      = storage.NewSnapshotsClientImpl(nil, assertVolImpl)
+	_ StorageBackupsClient = assertBkpImpl
+	_ StorageRestoreClient = storage.NewRestoreClientImpl(nil, assertBkpImpl)
 )

@@ -3,8 +3,10 @@ package network
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
@@ -127,4 +129,17 @@ func TestDeleteSecurityGroupRule(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
+}
+
+func TestNewSecurityGroupRulesClientImpl_panicsOnNilSecurityGroupsClient(t *testing.T) {
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("expected panic on nil securityGroupsClient but got none")
+		}
+		if !strings.Contains(fmt.Sprint(r), "securityGroupsClient") {
+			t.Fatalf("expected panic message to mention securityGroupsClient, got: %v", r)
+		}
+	}()
+	NewSecurityGroupRulesClientImpl(nil, nil)
 }
