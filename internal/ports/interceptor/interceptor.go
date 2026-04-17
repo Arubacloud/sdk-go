@@ -30,6 +30,14 @@ type InterceptFunc func(ctx context.Context, r *http.Request) error
 type Interceptable interface {
 	// Bind adds the provided InterceptFuncs to the interceptable component's
 	// execution chain.
+	//
+	// Bind is intended for construction/setup only. It must be called before
+	// any concurrent use of Intercept begins. It is not safe to call Bind
+	// concurrently with Intercept. Callers that require runtime mutation after
+	// the interceptor is in use must provide their own external synchronization.
+	//
+	// When all functions are known at construction time, prefer
+	// NewInterceptorWithFuncs over a separate Bind call.
 	Bind(interceptFuncs ...InterceptFunc) error
 }
 
@@ -37,7 +45,8 @@ type Interceptable interface {
 // logic.
 //
 // Components that implement this interface are responsible for running the
-// bound InterceptFuncs.
+// bound InterceptFuncs. Concurrent calls to Intercept are safe as long as
+// Bind is not called concurrently (see Interceptable.Bind).
 type Interceptor interface {
 	// Intercept executes all bound InterceptFuncs in order.
 	//
