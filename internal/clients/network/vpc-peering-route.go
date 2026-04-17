@@ -50,7 +50,7 @@ func (c *vpcPeeringRoutesClientImpl) List(ctx context.Context, projectID string,
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.VPCPeeringRouteList](httpResp)
+	return types.ParseResponseBody[types.VPCPeeringRouteList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific VPC peering route by ID
@@ -80,7 +80,7 @@ func (c *vpcPeeringRoutesClientImpl) Get(ctx context.Context, projectID string, 
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.VPCPeeringRouteResponse](httpResp)
+	return types.ParseResponseBody[types.VPCPeeringRouteResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new VPC peering route
@@ -230,5 +230,5 @@ func (c *vpcPeeringRoutesClientImpl) Delete(ctx context.Context, projectID strin
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

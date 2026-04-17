@@ -7,11 +7,20 @@ import (
 	"net/http"
 )
 
+// DebugLogger is the minimal logging interface required by ParseResponseBody.
+// It is satisfied by internal/ports/logger.Logger and any type that implements Debugf,
+// so pkg/types does not need to import the internal logger package.
+type DebugLogger interface {
+	Debugf(format string, args ...interface{})
+}
+
 // ParseResponseBody reads and parses the HTTP response body into the Response struct.
 // For 2xx responses, it unmarshals into Data field.
 // For 4xx/5xx responses, it unmarshals into Error field.
 // Always stores the raw body in RawBody field.
-func ParseResponseBody[T any](httpResp *http.Response) (*Response[T], error) {
+// When the error body cannot be parsed as JSON, a DEBUG message is emitted via logger;
+// this is expected behaviour for APIs that return non-JSON bodies (e.g. proxy HTML pages).
+func ParseResponseBody[T any](httpResp *http.Response, logger DebugLogger) (*Response[T], error) {
 	if httpResp == nil {
 		return nil, fmt.Errorf("http response is nil")
 	}
@@ -39,7 +48,9 @@ func ParseResponseBody[T any](httpResp *http.Response) (*Response[T], error) {
 		response.Data = &data
 	} else if response.IsError() && len(bodyBytes) > 0 {
 		var errorResp ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &errorResp); err == nil {
+		if err := json.Unmarshal(bodyBytes, &errorResp); err != nil {
+			logger.Debugf("ParseResponseBody: failed to unmarshal error body (status %d): %v; inspect RawBody for the raw response", httpResp.StatusCode, err)
+		} else {
 			response.Error = &errorResp
 		}
 	}

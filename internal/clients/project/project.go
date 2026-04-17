@@ -47,7 +47,7 @@ func (c *projectsClientImpl) List(ctx context.Context, params *types.RequestPara
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.ProjectList](httpResp)
+	return types.ParseResponseBody[types.ProjectList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific project by ID
@@ -77,7 +77,7 @@ func (c *projectsClientImpl) Get(ctx context.Context, projectID string, params *
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.ProjectResponse](httpResp)
+	return types.ParseResponseBody[types.ProjectResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new project

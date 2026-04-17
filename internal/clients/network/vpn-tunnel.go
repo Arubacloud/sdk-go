@@ -50,7 +50,7 @@ func (c *vpnTunnelsClientImpl) List(ctx context.Context, projectID string, param
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.VPNTunnelList](httpResp)
+	return types.ParseResponseBody[types.VPNTunnelList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific VPN tunnel by ID
@@ -80,7 +80,7 @@ func (c *vpnTunnelsClientImpl) Get(ctx context.Context, projectID string, vpnTun
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.VPNTunnelResponse](httpResp)
+	return types.ParseResponseBody[types.VPNTunnelResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new VPN tunnel
@@ -230,5 +230,5 @@ func (c *vpnTunnelsClientImpl) Delete(ctx context.Context, projectID string, vpn
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

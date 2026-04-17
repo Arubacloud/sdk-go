@@ -50,7 +50,7 @@ func (c *databasesClientImpl) List(ctx context.Context, projectID string, dbaasI
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.DatabaseList](httpResp)
+	return types.ParseResponseBody[types.DatabaseList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific database by ID
@@ -80,7 +80,7 @@ func (c *databasesClientImpl) Get(ctx context.Context, projectID string, dbaasID
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.DatabaseResponse](httpResp)
+	return types.ParseResponseBody[types.DatabaseResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new database
@@ -238,5 +238,5 @@ func (c *databasesClientImpl) Delete(ctx context.Context, projectID string, dbaa
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

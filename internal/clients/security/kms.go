@@ -51,7 +51,7 @@ func (c *kmsClientImpl) List(ctx context.Context, projectID string, params *type
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.KmsList](httpResp)
+	return types.ParseResponseBody[types.KmsList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific KMS instance by ID
@@ -81,7 +81,7 @@ func (c *kmsClientImpl) Get(ctx context.Context, projectID string, kmsID string,
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.KmsResponse](httpResp)
+	return types.ParseResponseBody[types.KmsResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new KMS instance
@@ -231,5 +231,5 @@ func (c *kmsClientImpl) Delete(ctx context.Context, projectID string, kmsID stri
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

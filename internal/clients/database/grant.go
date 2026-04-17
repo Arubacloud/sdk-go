@@ -50,7 +50,7 @@ func (c *grantsClientImpl) List(ctx context.Context, projectID string, dbaasID s
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.GrantList](httpResp)
+	return types.ParseResponseBody[types.GrantList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific grant by ID
@@ -80,7 +80,7 @@ func (c *grantsClientImpl) Get(ctx context.Context, projectID string, dbaasID st
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.GrantResponse](httpResp)
+	return types.ParseResponseBody[types.GrantResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new grant for a database
@@ -238,5 +238,5 @@ func (c *grantsClientImpl) Delete(ctx context.Context, projectID string, dbaasID
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

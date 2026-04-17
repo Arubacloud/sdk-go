@@ -49,7 +49,7 @@ func (c *keyPairsClientImpl) List(ctx context.Context, projectID string, params 
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.KeyPairListResponse](httpResp)
+	return types.ParseResponseBody[types.KeyPairListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific key pair by ID
@@ -79,7 +79,7 @@ func (c *keyPairsClientImpl) Get(ctx context.Context, projectID string, keyPairI
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.KeyPairResponse](httpResp)
+	return types.ParseResponseBody[types.KeyPairResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new key pair
@@ -173,5 +173,5 @@ func (c *keyPairsClientImpl) Delete(ctx context.Context, projectID string, keyPa
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

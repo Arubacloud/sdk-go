@@ -50,7 +50,7 @@ func (c *usersClientImpl) List(ctx context.Context, projectID string, dbaasID st
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.UserList](httpResp)
+	return types.ParseResponseBody[types.UserList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific user by ID
@@ -80,7 +80,7 @@ func (c *usersClientImpl) Get(ctx context.Context, projectID string, dbaasID str
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.UserResponse](httpResp)
+	return types.ParseResponseBody[types.UserResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new user in a DBaaS instance
@@ -238,5 +238,5 @@ func (c *usersClientImpl) Delete(ctx context.Context, projectID string, dbaasID 
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

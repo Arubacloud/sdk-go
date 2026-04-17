@@ -51,7 +51,7 @@ func (c *kaasClientImpl) List(ctx context.Context, projectID string, params *typ
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.KaaSList](httpResp)
+	return types.ParseResponseBody[types.KaaSList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific KaaS cluster by ID
@@ -81,7 +81,7 @@ func (c *kaasClientImpl) Get(ctx context.Context, projectID string, kaasID strin
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.KaaSResponse](httpResp)
+	return types.ParseResponseBody[types.KaaSResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new KaaS cluster
@@ -239,7 +239,7 @@ func (c *kaasClientImpl) Delete(ctx context.Context, projectID string, kaasID st
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }
 
 // DownloadKubeconfig downloads the kubeconfig file for a KaaS cluster
@@ -269,5 +269,5 @@ func (c *kaasClientImpl) DownloadKubeconfig(ctx context.Context, projectID strin
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.KaaSKubeconfigResponse](httpResp)
+	return types.ParseResponseBody[types.KaaSKubeconfigResponse](httpResp, c.client.Logger())
 }

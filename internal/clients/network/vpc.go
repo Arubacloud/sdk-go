@@ -50,7 +50,7 @@ func (c *vpcsClientImpl) List(ctx context.Context, projectID string, params *typ
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.VPCList](httpResp)
+	return types.ParseResponseBody[types.VPCList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific VPC by ID
@@ -80,7 +80,7 @@ func (c *vpcsClientImpl) Get(ctx context.Context, projectID string, vpcID string
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.VPCResponse](httpResp)
+	return types.ParseResponseBody[types.VPCResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new VPC
@@ -230,5 +230,5 @@ func (c *vpcsClientImpl) Delete(ctx context.Context, projectID string, vpcID str
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

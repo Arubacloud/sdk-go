@@ -55,7 +55,7 @@ func (c *subnetsClientImpl) List(ctx context.Context, projectID string, vpcID st
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.SubnetList](httpResp)
+	return types.ParseResponseBody[types.SubnetList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific subnet by ID
@@ -85,7 +85,7 @@ func (c *subnetsClientImpl) Get(ctx context.Context, projectID string, vpcID str
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.SubnetResponse](httpResp)
+	return types.ParseResponseBody[types.SubnetResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new subnet in a VPC
@@ -241,5 +241,5 @@ func (c *subnetsClientImpl) Delete(ctx context.Context, projectID string, vpcID 
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

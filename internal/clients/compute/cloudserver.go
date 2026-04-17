@@ -49,7 +49,7 @@ func (c *cloudServersClientImpl) List(ctx context.Context, projectID string, par
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.CloudServerList](httpResp)
+	return types.ParseResponseBody[types.CloudServerList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific cloud server by ID
@@ -79,7 +79,7 @@ func (c *cloudServersClientImpl) Get(ctx context.Context, projectID string, clou
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.CloudServerResponse](httpResp)
+	return types.ParseResponseBody[types.CloudServerResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new cloud server
@@ -237,7 +237,7 @@ func (c *cloudServersClientImpl) Delete(ctx context.Context, projectID string, c
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }
 
 // PowerOn powers on a cloud server
@@ -267,7 +267,7 @@ func (c *cloudServersClientImpl) PowerOn(ctx context.Context, projectID string, 
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.CloudServerResponse](httpResp)
+	return types.ParseResponseBody[types.CloudServerResponse](httpResp, c.client.Logger())
 }
 
 // PowerOff powers off a cloud server
@@ -297,7 +297,7 @@ func (c *cloudServersClientImpl) PowerOff(ctx context.Context, projectID string,
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.CloudServerResponse](httpResp)
+	return types.ParseResponseBody[types.CloudServerResponse](httpResp, c.client.Logger())
 }
 
 // SetPassword sets or changes the password for a cloud server
@@ -333,5 +333,5 @@ func (c *cloudServersClientImpl) SetPassword(ctx context.Context, projectID stri
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

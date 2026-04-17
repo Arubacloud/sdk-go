@@ -17,7 +17,6 @@ Issues are grouped by severity. Address Critical items before new features ship;
 | [TD-007](#td-007) | Variable shadowing in `WaitFor` | High | XS | Low |
 | [TD-009](#td-009) | Caller headers override `Content-Type` | High | XS | Medium |
 | [TD-010](#td-010) | 2 000+ lines duplicated response parsing | High | L | High |
-| [TD-011](#td-011) | Silent error body parse failure | Medium | S | Medium |
 | [TD-012](#td-012) | Expired token injected after failed refresh | Medium | S | High |
 | [TD-014](#td-014) | `ParseResponseBody` panics on nil response | Medium | XS | Medium |
 | [TD-015](#td-015) | `DefaultWaitFor` timeout too short | Medium | XS | Medium |
@@ -31,7 +30,7 @@ Issues are grouped by severity. Address Critical items before new features ship;
 
 **Wave 2 — High-value focused fixes** (S effort, High+ impact): TD-003, TD-012
 
-**Wave 3 — Medium fixes** (S effort, Medium/Low impact): TD-011
+**Wave 3 — Medium fixes** (S effort, Medium/Low impact): *(all resolved)*
 
 **Wave 4 — Large refactors** (L/XL, plan separately): TD-010, TD-016, TD-020
 
@@ -85,7 +84,14 @@ When TD-018 was subsequently resolved (#146), the multi-arg constructor calls in
 ### TD-018 · Injected concrete dependencies not nil-checked in constructors — [#128](https://github.com/Arubacloud/sdk-go/issues/128) · **Resolved**
 The issue named two constructors (`NewSecurityGroupsClientImpl`, `NewSecurityGroupRulesClientImpl`). A repo-wide grep (`^func New\w+ClientImpl\(.*,.*\)` against `internal/clients/`) found five constructors in total that accept injected `*xxxClientImpl` dependencies beyond the standard `*restclient.Client`: the two network ones named in the issue, `NewSubnetsClientImpl` (also network), `NewSnapshotsClientImpl`, and `NewRestoreClientImpl` (storage).
 
-All five now `panic("... is required and cannot be nil")` when the injected dep is nil. Corresponding panic-on-nil tests added to the paired test files. `pkg/aruba/assertions.go` updated to wire real sentinel instances for the affected constructors (avoiding init-time panics). Issue #128 closed.
+All five now `panic("... is required and cannot be nil")` when the injected dep is nil. Corresponding panic-on-nil tests added to the paired test files. `pkg/aruba/assertions_test.go` updated to wire real sentinel instances for the affected constructors (avoiding init-time panics). Issue #128 closed.
+
+---
+
+### TD-011 · Silent failure when parsing error response body — [#121](https://github.com/Arubacloud/sdk-go/issues/121) · **Resolved**
+`pkg/types/utils.go` — when a 4xx/5xx response body could not be unmarshalled as JSON, the error was silently discarded and `response.Error` remained `nil`.
+
+Resolved by adding a `DebugLogger` interface to `pkg/types` (one method: `Debugf`) and making `ParseResponseBody` accept it as a required parameter. On JSON-unmarshal failure the function now calls `logger.Debugf(...)` naming the HTTP status code, rather than WARN as the issue proposed — non-JSON error bodies are expected behaviour from this API (proxy HTML pages, plain-text 502s). Using a local interface keeps `pkg/types` independent of `internal/ports/logger`. All 31 call-site files across `internal/clients/` were updated to pass `c.client.Logger()`. Four unit tests added in `pkg/types/utils_test.go`. Issue #121 closed.
 
 ---
 
@@ -176,17 +182,6 @@ Replace all manual implementations with calls to this helper.
 ---
 
 ## Medium
-
-### TD-011 · Silent failure when parsing error response body — [#121](https://github.com/Arubacloud/sdk-go/issues/121)
-`pkg/types/utils.go` — in `ParseResponseBody`, when a 4xx/5xx response body cannot be unmarshalled as JSON, the error is swallowed silently (`if err == nil { ... }`). `response.Error` remains `nil`, making it impossible for the caller to understand what the server returned.
-
-**Fix:** Log the unmarshal error at WARN level, or document that `RawBody` should be used as the fallback for non-JSON error bodies.
-
-**Effort:** S — add a logger call or code comment in 1 function.
-
-**Impact:** Medium — improves debuggability of non-JSON error responses (e.g., plain-text 502 from a proxy); no production failure risk.
-
----
 
 ### TD-012 · Token manager mishandles post-refresh token fetch in the else-branch — [#122](https://github.com/Arubacloud/sdk-go/issues/122)
 `internal/impl/auth/tokenmanager/standard/standard.go` — in the write-lock branch, when the ticket has already changed (another goroutine refreshed), the code re-fetches from the repository. Two failure modes exist:
