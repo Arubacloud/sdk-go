@@ -3,6 +3,7 @@ package restclient
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 )
 
@@ -48,43 +49,45 @@ func (c *Client) WaitForResourceState(ctx context.Context, resourceType, resourc
 
 	c.logger.Debugf("Waiting for %s '%s' to become active...", resourceType, resourceID)
 
+	var lastState string
+	var lastErr error
+
 	for attempt := 1; attempt <= config.MaxAttempts; attempt++ {
-		// Check context cancellation
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("context cancelled while waiting for %s '%s'", resourceType, resourceID)
 		default:
 		}
 
-		time.Sleep(config.Interval)
-
 		state, err := getter(ctx)
 		if err != nil {
+			lastErr = err
 			c.logger.Debugf("Error checking %s '%s' status (attempt %d/%d): %v", resourceType, resourceID, attempt, config.MaxAttempts, err)
-			continue
-		}
+		} else {
+			lastState = state
+			lastErr = nil
+			c.logger.Debugf("%s '%s' state: %s (attempt %d/%d)", resourceType, resourceID, state, attempt, config.MaxAttempts)
 
-		c.logger.Debugf("%s '%s' state: %s (attempt %d/%d)", resourceType, resourceID, state, attempt, config.MaxAttempts)
-
-		// Check for success states
-		for _, successState := range config.SuccessStates {
-			if state == successState {
+			if slices.Contains(config.SuccessStates, state) {
 				c.logger.Debugf("%s '%s' is now %s", resourceType, resourceID, state)
 				return nil
 			}
-		}
 
-		// Check for failure states
-		for _, failureState := range config.FailureStates {
-			if state == failureState {
+			if slices.Contains(config.FailureStates, state) {
 				return fmt.Errorf("%s '%s' reached failure state: %s", resourceType, resourceID, state)
 			}
 		}
 
-		if attempt == config.MaxAttempts {
-			return fmt.Errorf("timeout waiting for %s '%s' to become active (last state: %s)", resourceType, resourceID, state)
+		if attempt < config.MaxAttempts {
+			time.Sleep(config.Interval)
 		}
 	}
 
+	if lastState != "" {
+		return fmt.Errorf("timeout waiting for %s '%s' to become active (last state: %s)", resourceType, resourceID, lastState)
+	}
+	if lastErr != nil {
+		return fmt.Errorf("timeout waiting for %s '%s' to become active: %w", resourceType, resourceID, lastErr)
+	}
 	return fmt.Errorf("timeout waiting for %s '%s' to become active", resourceType, resourceID)
 }

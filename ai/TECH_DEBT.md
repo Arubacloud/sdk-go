@@ -15,7 +15,6 @@ Issues are grouped by severity. Address Critical items before new features ship;
 | [TD-003](#td-003) | `lastUsage` race under RLock | Critical | S | High |
 | [TD-005](#td-005) | Typo `buildDetebaseClient` | High | XS | Low |
 | [TD-007](#td-007) | Variable shadowing in `WaitFor` | High | XS | Low |
-| [TD-008](#td-008) | Polling sleeps before first attempt | High | S | Medium |
 | [TD-009](#td-009) | Caller headers override `Content-Type` | High | XS | Medium |
 | [TD-010](#td-010) | 2 000+ lines duplicated response parsing | High | L | High |
 | [TD-011](#td-011) | Silent error body parse failure | Medium | S | Medium |
@@ -35,7 +34,7 @@ Issues are grouped by severity. Address Critical items before new features ship;
 
 **Wave 2 — High-value focused fixes** (S effort, High+ impact): TD-003, TD-012
 
-**Wave 3 — Medium fixes** (S effort, Medium/Low impact): TD-008, TD-011, TD-018, TD-019
+**Wave 3 — Medium fixes** (S effort, Medium/Low impact): TD-011, TD-018, TD-019
 
 **Wave 4 — Large refactors** (L/XL, plan separately): TD-010, TD-016, TD-020
 
@@ -58,6 +57,13 @@ The original claim was that concurrent calls to `Bind()` and `Intercept()` produ
 Investigation shows that `Bind` is a construction/setup method — it is only ever called from `tokenmanager.NewStandard` (`internal/impl/auth/tokenmanager/standard/standard.go:54`) during client bootstrap, before the interceptor enters the hot request path. A sibling constructor `NewInterceptorWithFuncs` exists for fully-initialized construction. The race only materialises if a caller mutates the interceptor after bootstrap, which is not the intended usage.
 
 The root cause was the absence of a documented contract. Resolved by adding godoc to `Interceptable.Bind` (`internal/ports/interceptor/interceptor.go`) and the standard impl (`internal/impl/interceptor/standard/standard.go`) stating that `Bind` is construction-only and not safe for concurrent use with `Intercept`. Adding a mutex to the hot path to defend against an unsupported usage pattern was rejected as an unnecessary tradeoff. Issue #114 closed as working as intended.
+
+---
+
+### TD-008 · Polling loop always sleeps before the first attempt, discards final state — [#118](https://github.com/Arubacloud/sdk-go/issues/118) · **Resolved**
+`internal/restclient/polling.go` — two bugs in `WaitForResourceState`: (1) `time.Sleep(config.Interval)` was called at the top of the loop, wasting a full interval before the first status check; (2) when the last attempt's getter returned an error, the `continue` skipped the timeout-with-state branch, causing the final timeout error to be generic rather than including the last known state.
+
+Resolved by restructuring the loop: the sleep moved to the bottom, guarded by `if attempt < config.MaxAttempts`; a `lastState` / `lastErr` pair is tracked across iterations so the post-loop timeout error always carries the last observed state (or wraps the last getter error when no state was ever retrieved). `slices.Contains` replaces the manual success/failure loops. First polling tests added in `internal/restclient/polling_test.go`. Issue #118 closed.
 
 ---
 
@@ -117,17 +123,6 @@ The root cause was the absence of a documented contract. Resolved by adding godo
 **Effort:** XS — delete 1 `:=` keyword.
 
 **Impact:** Low — works today by accident; purely a correctness and readability cleanup.
-
----
-
-### TD-008 · Polling loop always sleeps before the first attempt — [#118](https://github.com/Arubacloud/sdk-go/issues/118)
-`internal/restclient/polling.go` — `time.Sleep(config.Interval)` is called at the top of each iteration, including the very first one. This adds an unnecessary 5-second delay before the initial state check.
-
-**Fix:** Move the sleep to the bottom of the loop (or skip when `attempt == 1`) so the first check is immediate.
-
-**Effort:** S — restructure the loop in 1 function.
-
-**Impact:** Medium — 5 s wasted per poll operation before any work is done.
 
 ---
 
