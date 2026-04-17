@@ -13,7 +13,6 @@ Issues are grouped by severity. Address Critical items before new features ship;
 | [TD-001](#td-001) | File token repo param order swap | Critical | XS | Critical |
 | [TD-002](#td-002) | Static token silently ignored | Critical | XS | Critical |
 | [TD-003](#td-003) | `lastUsage` race under RLock | Critical | S | High |
-| [TD-004](#td-004) | Interceptor not thread-safe | Critical | S | Medium |
 | [TD-005](#td-005) | Typo `buildDetebaseClient` | High | XS | Low |
 | [TD-007](#td-007) | Variable shadowing in `WaitFor` | High | XS | Low |
 | [TD-008](#td-008) | Polling sleeps before first attempt | High | S | Medium |
@@ -36,7 +35,7 @@ Issues are grouped by severity. Address Critical items before new features ship;
 
 **Wave 2 — High-value focused fixes** (S effort, High+ impact): TD-003, TD-012
 
-**Wave 3 — Medium fixes** (S effort, Medium/Low impact): TD-004, TD-008, TD-011, TD-018, TD-019
+**Wave 3 — Medium fixes** (S effort, Medium/Low impact): TD-008, TD-011, TD-018, TD-019
 
 **Wave 4 — Large refactors** (L/XL, plan separately): TD-010, TD-016, TD-020
 
@@ -50,6 +49,15 @@ The original claim was that the goroutine writes to `resultCh` unconditionally w
 2. The result channel is buffered (`make(chan Result[T], 1)`), so the single channel send the goroutine performs can never block.
 
 No goroutine leak exists. Issue #116 closed as invalid.
+
+---
+
+### TD-004 · Interceptor `Bind()` and `Intercept()` are not thread-safe — [#114](https://github.com/Arubacloud/sdk-go/issues/114) · **Closed as working as intended**
+The original claim was that concurrent calls to `Bind()` and `Intercept()` produce an unsynchronized read/write on the `interceptFuncs` slice. The proposed fix was a `sync.RWMutex` guarding both methods.
+
+Investigation shows that `Bind` is a construction/setup method — it is only ever called from `tokenmanager.NewStandard` (`internal/impl/auth/tokenmanager/standard/standard.go:54`) during client bootstrap, before the interceptor enters the hot request path. A sibling constructor `NewInterceptorWithFuncs` exists for fully-initialized construction. The race only materialises if a caller mutates the interceptor after bootstrap, which is not the intended usage.
+
+The root cause was the absence of a documented contract. Resolved by adding godoc to `Interceptable.Bind` (`internal/ports/interceptor/interceptor.go`) and the standard impl (`internal/impl/interceptor/standard/standard.go`) stating that `Bind` is construction-only and not safe for concurrent use with `Intercept`. Adding a mutex to the hot path to defend against an unsupported usage pattern was rejected as an unnecessary tradeoff. Issue #114 closed as working as intended.
 
 ---
 
@@ -85,17 +93,6 @@ No goroutine leak exists. Issue #116 closed as invalid.
 **Effort:** S — change 3 methods in 1 file; atomic variant needs a small struct change.
 
 **Impact:** High — data race under concurrent multitenant use; triggers the race detector and can cause unpredictable behaviour in production.
-
----
-
-### TD-004 · Interceptor `Bind()` and `Intercept()` are not thread-safe — [#114](https://github.com/Arubacloud/sdk-go/issues/114)
-`internal/impl/interceptor/standard/standard.go` — `Bind()` appends to `interceptFuncs` without any synchronization. Concurrent calls to `Bind()` and `Intercept()` produce an unsynchronized read/write on a slice — a data race. While `Bind` is today called only at construction time, the interface contract does not prevent concurrent use.
-
-**Fix:** Add a `sync.RWMutex` to the struct. `Bind()` takes a write lock; `Intercept()` copies the slice under a read lock then iterates the copy.
-
-**Effort:** S — add a mutex field and guards in 1 file.
-
-**Impact:** Medium — latent race that does not trigger today (Bind is only called at construction), but the public interface offers no guarantee.
 
 ---
 

@@ -13,7 +13,8 @@ import (
 // Interceptor is the concrete type that holds and executes a chain of
 // interceptor.InterceptFunc functions.
 //
-// It embeds the slice of functions to be executed.
+// interceptFuncs is expected to be frozen after construction. See Bind for the
+// concurrency contract.
 type Interceptor struct {
 	interceptFuncs []interceptor.InterceptFunc
 }
@@ -41,6 +42,8 @@ func NewInterceptorWithFuncs(interceptFuncs ...interceptor.InterceptFunc) (*Inte
 	return &Interceptor{interceptFuncs: interceptFuncs}, nil
 }
 
+// Bind implements interceptor.Interceptable. It is intended for
+// construction/setup only and must not be called concurrently with Intercept.
 func (i *Interceptor) Bind(interceptFuncs ...interceptor.InterceptFunc) error {
 	if err := validateInterceptFuncs(interceptFuncs...); err != nil {
 		return err
@@ -51,6 +54,8 @@ func (i *Interceptor) Bind(interceptFuncs ...interceptor.InterceptFunc) error {
 	return nil
 }
 
+// Intercept implements interceptor.Interceptor. Concurrent calls to Intercept
+// are safe as long as Bind is not called concurrently.
 func (i *Interceptor) Intercept(ctx context.Context, r *http.Request) error {
 	if r == nil {
 		return fmt.Errorf("%w: nil http requests are not allowed to be intercepted", interceptor.ErrInvalidHTTPRequest)
