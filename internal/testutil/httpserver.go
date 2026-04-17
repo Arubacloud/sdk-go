@@ -23,7 +23,7 @@ func NewMockServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 		if r.URL.Path == "/token" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, cannedToken)
+			_, _ = fmt.Fprint(w, cannedToken)
 			return
 		}
 		handler(w, r)
@@ -56,10 +56,13 @@ func NewBrokenClient(t *testing.T, baseURL string) *restclient.Client {
 // ErrorBodyJSON returns a well-formed types.ErrorResponse JSON string fixture.
 func ErrorBodyJSON(title, detail string, status int) string {
 	s := int32(status)
-	b, _ := json.Marshal(types.ErrorResponse{
+	b, err := json.Marshal(types.ErrorResponse{
 		Title:  &title,
 		Detail: &detail,
 		Status: &s,
 	})
+	if err != nil {
+		panic(fmt.Sprintf("testutil.ErrorBodyJSON: marshal failed: %v", err))
+	}
 	return string(b)
 }
