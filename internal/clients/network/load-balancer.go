@@ -45,7 +45,7 @@ func (c *loadBalancersClientImpl) List(ctx context.Context, projectID string, pa
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.LoadBalancerList](httpResp)
+	return types.ParseResponseBody[types.LoadBalancerList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific load balancer by ID
@@ -73,5 +73,5 @@ func (c *loadBalancersClientImpl) Get(ctx context.Context, projectID string, loa
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.LoadBalancerResponse](httpResp)
+	return types.ParseResponseBody[types.LoadBalancerResponse](httpResp, c.client.Logger())
 }

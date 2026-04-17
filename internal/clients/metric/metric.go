@@ -47,5 +47,5 @@ func (c *metricssClientImpl) List(ctx context.Context, projectID string, params 
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.MetricListResponse](httpResp)
+	return types.ParseResponseBody[types.MetricListResponse](httpResp, c.client.Logger())
 }

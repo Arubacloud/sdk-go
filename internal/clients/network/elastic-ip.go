@@ -49,7 +49,7 @@ func (c *elasticIPsClientImpl) List(ctx context.Context, projectID string, param
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.ElasticList](httpResp)
+	return types.ParseResponseBody[types.ElasticList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific elastic IP by ID
@@ -79,7 +79,7 @@ func (c *elasticIPsClientImpl) Get(ctx context.Context, projectID string, elasti
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.ElasticIPResponse](httpResp)
+	return types.ParseResponseBody[types.ElasticIPResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new elastic IP
@@ -115,7 +115,7 @@ func (c *elasticIPsClientImpl) Create(ctx context.Context, projectID string, bod
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.ElasticIPResponse](httpResp)
+	return types.ParseResponseBody[types.ElasticIPResponse](httpResp, c.client.Logger())
 }
 
 // Update updates an existing elastic IP
@@ -151,7 +151,7 @@ func (c *elasticIPsClientImpl) Update(ctx context.Context, projectID string, ela
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.ElasticIPResponse](httpResp)
+	return types.ParseResponseBody[types.ElasticIPResponse](httpResp, c.client.Logger())
 }
 
 // Delete deletes an elastic IP by ID
@@ -181,5 +181,5 @@ func (c *elasticIPsClientImpl) Delete(ctx context.Context, projectID string, ela
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

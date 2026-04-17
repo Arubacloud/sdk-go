@@ -51,7 +51,7 @@ func (c *KmipClientImpl) List(ctx context.Context, projectID string, kmsID strin
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.KmipList](httpResp)
+	return types.ParseResponseBody[types.KmipList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific KMIP service by ID
@@ -85,7 +85,7 @@ func (c *KmipClientImpl) Get(ctx context.Context, projectID string, kmsID string
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.KmipResponse](httpResp)
+	return types.ParseResponseBody[types.KmipResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new KMIP service for a KMS instance
@@ -179,7 +179,7 @@ func (c *KmipClientImpl) Delete(ctx context.Context, projectID string, kmsID str
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }
 
 // Download downloads the KMIP certificate (key and cert) for a specific KMIP service
@@ -213,5 +213,5 @@ func (c *KmipClientImpl) Download(ctx context.Context, projectID string, kmsID s
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.KmipCertificateResponse](httpResp)
+	return types.ParseResponseBody[types.KmipCertificateResponse](httpResp, c.client.Logger())
 }

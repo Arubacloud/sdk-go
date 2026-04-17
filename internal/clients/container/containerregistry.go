@@ -51,7 +51,7 @@ func (c *containerRegistryClientImpl) List(ctx context.Context, projectID string
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.ContainerRegistryList](httpResp)
+	return types.ParseResponseBody[types.ContainerRegistryList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific Container Registry by ID
@@ -81,7 +81,7 @@ func (c *containerRegistryClientImpl) Get(ctx context.Context, projectID string,
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.ContainerRegistryResponse](httpResp)
+	return types.ParseResponseBody[types.ContainerRegistryResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new Container Registry
@@ -231,5 +231,5 @@ func (c *containerRegistryClientImpl) Delete(ctx context.Context, projectID stri
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

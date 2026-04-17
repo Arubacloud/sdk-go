@@ -51,7 +51,7 @@ func (c *KeyClientImpl) List(ctx context.Context, projectID string, kmsID string
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.KeyList](httpResp)
+	return types.ParseResponseBody[types.KeyList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific Key by ID
@@ -85,7 +85,7 @@ func (c *KeyClientImpl) Get(ctx context.Context, projectID string, kmsID string,
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.KeyResponse](httpResp)
+	return types.ParseResponseBody[types.KeyResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new Key for a KMS instance
@@ -179,5 +179,5 @@ func (c *KeyClientImpl) Delete(ctx context.Context, projectID string, kmsID stri
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

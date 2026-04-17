@@ -55,7 +55,7 @@ func (c *securityGroupsClientImpl) List(ctx context.Context, projectID string, v
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.SecurityGroupList](httpResp)
+	return types.ParseResponseBody[types.SecurityGroupList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific security group by ID
@@ -85,7 +85,7 @@ func (c *securityGroupsClientImpl) Get(ctx context.Context, projectID string, vp
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.SecurityGroupResponse](httpResp)
+	return types.ParseResponseBody[types.SecurityGroupResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new security group in a VPC
@@ -242,5 +242,5 @@ func (c *securityGroupsClientImpl) Delete(ctx context.Context, projectID string,
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

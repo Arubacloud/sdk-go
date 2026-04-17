@@ -50,7 +50,7 @@ func (c *snapshotsClientImpl) Update(ctx context.Context, projectID string, snap
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.SnapshotResponse](httpResp)
+	return types.ParseResponseBody[types.SnapshotResponse](httpResp, c.client.Logger())
 }
 
 // NewSnapshotsClientImpl creates a new unified Storage service
@@ -91,7 +91,7 @@ func (c *snapshotsClientImpl) List(ctx context.Context, projectID string, params
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.SnapshotList](httpResp)
+	return types.ParseResponseBody[types.SnapshotList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific snapshot by ID
@@ -121,7 +121,7 @@ func (c *snapshotsClientImpl) Get(ctx context.Context, projectID string, snapsho
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.SnapshotResponse](httpResp)
+	return types.ParseResponseBody[types.SnapshotResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new snapshot
@@ -171,7 +171,7 @@ func (c *snapshotsClientImpl) Create(ctx context.Context, projectID string, body
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.SnapshotResponse](httpResp)
+	return types.ParseResponseBody[types.SnapshotResponse](httpResp, c.client.Logger())
 }
 
 // Delete deletes a snapshot by ID
@@ -201,7 +201,7 @@ func (c *snapshotsClientImpl) Delete(ctx context.Context, projectID string, snap
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }
 
 // extractVolumeIDFromURI extracts the volume ID from a volume URI

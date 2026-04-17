@@ -47,5 +47,5 @@ func (c *alertsClientImpl) List(ctx context.Context, projectID string, params *t
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.AlertsListResponse](httpResp)
+	return types.ParseResponseBody[types.AlertsListResponse](httpResp, c.client.Logger())
 }

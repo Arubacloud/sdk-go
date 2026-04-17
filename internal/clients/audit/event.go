@@ -48,5 +48,5 @@ func (s *eventsClientImpl) List(ctx context.Context, projectID string, params *t
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.AuditEventListResponse](httpResp)
+	return types.ParseResponseBody[types.AuditEventListResponse](httpResp, s.client.Logger())
 }

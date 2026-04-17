@@ -50,7 +50,7 @@ func (c *jobsClientImpl) List(ctx context.Context, projectID string, params *typ
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.JobList](httpResp)
+	return types.ParseResponseBody[types.JobList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific schedule job by ID
@@ -80,7 +80,7 @@ func (c *jobsClientImpl) Get(ctx context.Context, projectID string, scheduleJobI
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.JobResponse](httpResp)
+	return types.ParseResponseBody[types.JobResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new schedule job
@@ -230,5 +230,5 @@ func (c *jobsClientImpl) Delete(ctx context.Context, projectID string, scheduleJ
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

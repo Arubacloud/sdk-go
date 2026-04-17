@@ -51,7 +51,7 @@ func (c *backupClientImpl) List(ctx context.Context, projectID string, params *t
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.StorageBackupList](httpResp)
+	return types.ParseResponseBody[types.StorageBackupList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific Storage Backup by ID
@@ -81,7 +81,7 @@ func (c *backupClientImpl) Get(ctx context.Context, projectID string, backupID s
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.StorageBackupResponse](httpResp)
+	return types.ParseResponseBody[types.StorageBackupResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new Storage Backup
@@ -231,5 +231,5 @@ func (c *backupClientImpl) Delete(ctx context.Context, projectID string, backupI
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

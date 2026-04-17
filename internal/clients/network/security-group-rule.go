@@ -55,7 +55,7 @@ func (c *securityGroupRulesClientImpl) List(ctx context.Context, projectID strin
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.SecurityRuleList](httpResp)
+	return types.ParseResponseBody[types.SecurityRuleList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific security group rule by ID
@@ -85,7 +85,7 @@ func (c *securityGroupRulesClientImpl) Get(ctx context.Context, projectID string
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.SecurityRuleResponse](httpResp)
+	return types.ParseResponseBody[types.SecurityRuleResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new security group rule
@@ -242,5 +242,5 @@ func (c *securityGroupRulesClientImpl) Delete(ctx context.Context, projectID str
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

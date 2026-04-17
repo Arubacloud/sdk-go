@@ -55,7 +55,7 @@ func (c *restoreClientImpl) List(ctx context.Context, projectID string, backupID
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.RestoreList](httpResp)
+	return types.ParseResponseBody[types.RestoreList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific Restore by ID
@@ -87,7 +87,7 @@ func (c *restoreClientImpl) Get(ctx context.Context, projectID string, backupID 
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.RestoreResponse](httpResp)
+	return types.ParseResponseBody[types.RestoreResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new Restore
@@ -246,5 +246,5 @@ func (c *restoreClientImpl) Delete(ctx context.Context, projectID string, backup
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }

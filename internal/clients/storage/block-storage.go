@@ -48,7 +48,7 @@ func (c *volumesClientImpl) Update(ctx context.Context, projectID string, volume
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.BlockStorageResponse](httpResp)
+	return types.ParseResponseBody[types.BlockStorageResponse](httpResp, c.client.Logger())
 }
 
 // NewVolumesClientImpl creates a new unified Storage service
@@ -85,7 +85,7 @@ func (c *volumesClientImpl) List(ctx context.Context, projectID string, params *
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.BlockStorageList](httpResp)
+	return types.ParseResponseBody[types.BlockStorageList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific block storage volume by ID
@@ -115,7 +115,7 @@ func (c *volumesClientImpl) Get(ctx context.Context, projectID string, volumeID 
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.BlockStorageResponse](httpResp)
+	return types.ParseResponseBody[types.BlockStorageResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new block storage volume
@@ -151,7 +151,7 @@ func (c *volumesClientImpl) Create(ctx context.Context, projectID string, body t
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.BlockStorageResponse](httpResp)
+	return types.ParseResponseBody[types.BlockStorageResponse](httpResp, c.client.Logger())
 }
 
 // Delete deletes a block storage volume by ID
@@ -181,5 +181,5 @@ func (c *volumesClientImpl) Delete(ctx context.Context, projectID string, volume
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[any](httpResp)
+	return types.ParseResponseBody[any](httpResp, c.client.Logger())
 }
