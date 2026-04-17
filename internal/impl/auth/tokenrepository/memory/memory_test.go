@@ -479,6 +479,57 @@ func TestTokenProxy_SaveToken(t *testing.T) {
 
 		// And the token on the proxy should not be set
 		require.Nil(t, proxy.token)
+
+		// And the saveTicket must not have been incremented — a failed persistent
+		// write must leave the double-checked-locking sentinel unchanged so that
+		// concurrent FetchToken calls are not misled into skipping a re-fetch.
+		require.Equal(t, uint64(0), proxy.saveTicket)
+	})
+
+	t.Run("should not mark the cache as refreshed when the persistent save fails", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		// Given a persistent repository that fails on save but succeeds on fetch
+		persistentRepository := NewMockTokenRepository(ctrl)
+
+		errConnection := errors.New("connection error")
+
+		persistentRepository.EXPECT().SaveToken(
+			gomock.AssignableToTypeOf(t.Context()),
+			gomock.AssignableToTypeOf(&auth.Token{}),
+		).Return(errConnection).Times(1)
+
+		persistentRepository.EXPECT().FetchToken(
+			gomock.AssignableToTypeOf(t.Context()),
+		).Return(&auth.Token{AccessToken: accessToken, Expiry: expiry}, nil).Times(1)
+
+		//
+		// And a proxy with an expired in-memory token
+		proxy := NewTokenProxy(persistentRepository)
+
+		proxy.token = &auth.Token{
+			AccessToken: "expired token",
+			Expiry:      time.Now().Add(-1 * time.Hour),
+		}
+
+		// When the save fails
+		err := proxy.SaveToken(t.Context(), &auth.Token{AccessToken: "new token", Expiry: expiry})
+
+		// Then the connection error should be reported
+		require.ErrorIs(t, err, errConnection)
+
+		// When a subsequent FetchToken is called
+		token, err := proxy.FetchToken(t.Context())
+
+		// Then no error should be reported — the fetch must have gone to the
+		// persistent store, not served the stale in-memory token, because the
+		// failed save must not have bumped saveTicket.
+		require.NoError(t, err)
+
+		// And the returned token should match the one from the persistent repository
+		require.Equal(t, accessToken, token.AccessToken)
+		require.Equal(t, expiry, token.Expiry)
 	})
 
 	t.Run("should not be overwriten by fetch calls", func(t *testing.T) {

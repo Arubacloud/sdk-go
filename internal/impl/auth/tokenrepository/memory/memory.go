@@ -151,17 +151,20 @@ func (r *TokenRepository) SaveToken(ctx context.Context, token *auth.Token) erro
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
-	// Increment saveTicket to invalidate any pending fetches in other goroutines.
-	r.saveTicket++
-
-	// Write-Through: Save to persistent storage first.
+	// Write-Through: Save to persistent storage first. If it fails, the
+	// in-memory cache and saveTicket must remain unchanged so that concurrent
+	// FetchToken calls continue to observe the prior-consistent state and do
+	// not skip the persistent re-fetch due to a spurious ticket change.
 	if r.persistentRepository != nil {
 		if err := r.persistentRepository.SaveToken(ctx, token.Copy()); err != nil {
 			return err
 		}
 	}
 
-	// Update in-memory cache.
+	// Persistent write succeeded (or there is no persistent layer).
+	// Bump saveTicket to invalidate any in-flight FetchToken double-checks
+	// and update the in-memory cache.
+	r.saveTicket++
 	r.token = token.Copy()
 
 	return nil

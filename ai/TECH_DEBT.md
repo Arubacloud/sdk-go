@@ -19,7 +19,6 @@ Issues are grouped by severity. Address Critical items before new features ship;
 | [TD-010](#td-010) | 2 000+ lines duplicated response parsing | High | L | High |
 | [TD-011](#td-011) | Silent error body parse failure | Medium | S | Medium |
 | [TD-012](#td-012) | Expired token injected after failed refresh | Medium | S | High |
-| [TD-013](#td-013) | Memory proxy ticket incremented before write | Medium | XS | Medium |
 | [TD-014](#td-014) | `ParseResponseBody` panics on nil response | Medium | XS | Medium |
 | [TD-015](#td-015) | `DefaultWaitFor` timeout too short | Medium | XS | Medium |
 | [TD-016](#td-016) | No structured logging | Medium | L | Medium |
@@ -30,7 +29,7 @@ Issues are grouped by severity. Address Critical items before new features ship;
 
 ### Recommended execution order
 
-**Wave 1 — Quick Wins** (XS effort, ship same PR): TD-001, TD-002, TD-005, TD-007, TD-009, TD-013, TD-014, TD-015, TD-017
+**Wave 1 — Quick Wins** (XS effort, ship same PR): TD-001, TD-002, TD-005, TD-007, TD-009, TD-014, TD-015, TD-017
 
 **Wave 2 — High-value focused fixes** (S effort, High+ impact): TD-003, TD-012
 
@@ -64,6 +63,13 @@ The root cause was the absence of a documented contract. Resolved by adding godo
 `internal/restclient/polling.go` — two bugs in `WaitForResourceState`: (1) `time.Sleep(config.Interval)` was called at the top of the loop, wasting a full interval before the first status check; (2) when the last attempt's getter returned an error, the `continue` skipped the timeout-with-state branch, causing the final timeout error to be generic rather than including the last known state.
 
 Resolved by restructuring the loop: the sleep moved to the bottom, guarded by `if attempt < config.MaxAttempts`; a `lastState` / `lastErr` pair is tracked across iterations so the post-loop timeout error always carries the last observed state (or wraps the last getter error when no state was ever retrieved). `slices.Contains` replaces the manual success/failure loops. First polling tests added in `internal/restclient/polling_test.go`. Issue #118 closed.
+
+---
+
+### TD-013 · Memory proxy `SaveToken` increments ticket before confirming persistent write — [#123](https://github.com/Arubacloud/sdk-go/issues/123) · **Resolved**
+`internal/impl/auth/tokenrepository/memory/memory.go` — `saveTicket++` ran before `r.persistentRepository.SaveToken(...)`, violating the double-checked-locking invariant that "a changed ticket means the cache was successfully refreshed". On a failed persistent write the ticket was already bumped, causing concurrent `FetchToken` calls to skip the persistent re-fetch and serve a stale (or nil) in-memory token.
+
+Resolved by reordering: persistent write first; on success, increment ticket and update cache; on error, return immediately leaving both unchanged. Two regression tests added to `memory_test.go`: a unit assertion on the `saveTicket` counter after a failed save, and a behavioural subtest that verifies a subsequent `FetchToken` still reaches the persistent store. Issue #123 closed.
 
 ---
 
@@ -177,17 +183,6 @@ Replace all manual implementations with calls to this helper.
 **Effort:** S — add nil/expiry checks in 1 function.
 
 **Impact:** High — the nil pointer panic causes an unrecoverable crash under concurrent token refresh with a temporarily unavailable token store; the expired-token path produces silent 401s.
-
----
-
-### TD-013 · Memory proxy `SaveToken` increments ticket before confirming persistent write — [#123](https://github.com/Arubacloud/sdk-go/issues/123)
-`internal/impl/auth/tokenrepository/memory/memory.go` — `saveTicket++` runs before `r.persistentRepository.SaveToken(...)`. If the persistent write fails, the ticket has already been incremented, invalidating the in-memory cache. Subsequent reads see a miss and re-read from persistent storage, which still has the old token.
-
-**Fix:** Increment the ticket only after a successful persistent write.
-
-**Effort:** XS — move 1 line after the error-check block.
-
-**Impact:** Medium — prevents transient cache corruption when the persistent store is briefly unavailable.
 
 ---
 
