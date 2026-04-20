@@ -20,8 +20,8 @@ func TestListGrants(t *testing.T) {
 					ListResponse: types.ListResponse{Total: 1},
 					Values: []types.GrantResponse{
 						{
-							User: types.GrantUser{Username: "alice"},
-							Role: types.GrantRole{Name: "read"},
+							User:     types.GrantUser{Username: "alice"},
+							Role:     types.GrantRole{Name: "read"},
 							Database: types.GrantDatabaseResponse{Name: "my-db"},
 						},
 					},
