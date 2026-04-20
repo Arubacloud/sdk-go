@@ -2,6 +2,7 @@ package schedule
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -251,7 +252,7 @@ func TestCreateScheduleJob(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"metadata":{"name":"weekly-cleanup","id":"job-789"},"properties":{"enabled":true,"scheduleJobType":"Recurring","cron":"0 3 * * 0"},"status":{"state":"active"}}`)
+			fmt.Fprint(w, `{"metadata":{"name":"weekly-cleanup","id":"job-789","uri":"/projects/test-project/providers/Aruba.Schedule/jobs/job-789"},"properties":{"enabled":true,"scheduleJobType":"Recurring","cron":"0 3 * * 0"},"status":{"state":"active"}}`)
 		})
 		c := testutil.NewClient(t, server.URL)
 		svc := NewJobsClientImpl(c)
@@ -282,6 +283,12 @@ func TestCreateScheduleJob(t *testing.T) {
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "weekly-cleanup" {
 			t.Errorf("expected name 'weekly-cleanup', got %v", resp.Data.Metadata.Name)
 		}
+		if resp.Data.Metadata.ID == nil || *resp.Data.Metadata.ID != "job-789" {
+			t.Errorf("expected ID 'job-789', got %v", resp.Data.Metadata.ID)
+		}
+		if resp.Data.Metadata.URI == nil || *resp.Data.Metadata.URI != "/projects/test-project/providers/Aruba.Schedule/jobs/job-789" {
+			t.Errorf("expected URI, got %v", resp.Data.Metadata.URI)
+		}
 		if resp.Data.Properties.JobType != types.TypeJobRecurring {
 			t.Errorf("expected recurring job type")
 		}
@@ -291,7 +298,7 @@ func TestCreateScheduleJob(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"metadata":{"name":"maintenance-window","id":"job-999"},"properties":{"enabled":true,"scheduleJobType":"OneShot","scheduleAt":"2025-11-20T22:00:00Z"},"status":{"state":"scheduled"}}`)
+			fmt.Fprint(w, `{"metadata":{"name":"maintenance-window","id":"job-999","uri":"/projects/test-project/providers/Aruba.Schedule/jobs/job-999"},"properties":{"enabled":true,"scheduleJobType":"OneShot","scheduleAt":"2025-11-20T22:00:00Z"},"status":{"state":"scheduled"}}`)
 		})
 		c := testutil.NewClient(t, server.URL)
 		svc := NewJobsClientImpl(c)
@@ -320,6 +327,12 @@ func TestCreateScheduleJob(t *testing.T) {
 		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "maintenance-window" {
 			t.Errorf("expected name 'maintenance-window', got %v", resp.Data.Metadata.Name)
+		}
+		if resp.Data.Metadata.ID == nil || *resp.Data.Metadata.ID != "job-999" {
+			t.Errorf("expected ID 'job-999', got %v", resp.Data.Metadata.ID)
+		}
+		if resp.Data.Metadata.URI == nil || *resp.Data.Metadata.URI != "/projects/test-project/providers/Aruba.Schedule/jobs/job-999" {
+			t.Errorf("expected URI, got %v", resp.Data.Metadata.URI)
 		}
 		if resp.Data.Properties.JobType != types.TypeJobOneShot {
 			t.Errorf("expected one-shot job type")
@@ -398,7 +411,7 @@ func TestCreateScheduleJob(t *testing.T) {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+			fmt.Fprint(w, `{"metadata":{"id":"x","uri":"/x","name":"x"}}`)
 		})
 		c := testutil.NewClient(t, server.URL)
 		svc := NewJobsClientImpl(c)
@@ -408,6 +421,78 @@ func TestCreateScheduleJob(t *testing.T) {
 		}
 		if resp.StatusCode != http.StatusCreated {
 			t.Errorf("expected status 201, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("successful create missing id", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"uri":"/projects/test-project/providers/Aruba.Schedule/jobs/res-123","name":"test-name"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.JobRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "id" {
+			t.Errorf("expected missing=[id], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
+		}
+	})
+
+	t.Run("successful create missing uri", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"id":"res-123","name":"test-name"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.JobRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "uri" {
+			t.Errorf("expected missing=[uri], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
+		}
+	})
+
+	t.Run("successful create missing name", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"id":"res-123","uri":"/projects/test-project/providers/Aruba.Schedule/jobs/res-123"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.JobRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "name" {
+			t.Errorf("expected missing=[name], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
 		}
 	})
 }

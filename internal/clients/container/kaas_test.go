@@ -3,6 +3,7 @@ package container
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -280,11 +281,13 @@ func TestCreateKaaS(t *testing.T) {
 	t.Run("successful create", func(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == "POST" && r.URL.Path == "/projects/test-project/providers/Aruba.Container/kaas" {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusCreated)
 				resp := types.KaaSResponse{
 					Metadata: types.ResourceMetadataResponse{
 						Name: types.StringPtr("new-kaas"),
 						ID:   types.StringPtr("kaas-456"),
+						URI:  types.StringPtr("/projects/test-project/providers/Aruba.Container/kaas/kaas-456"),
 					},
 					Properties: types.KaaSPropertiesResponse{
 						Preset: false,
@@ -329,6 +332,12 @@ func TestCreateKaaS(t *testing.T) {
 		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "new-kaas" {
 			t.Errorf("expected name 'new-kaas'")
+		}
+		if resp.Data.Metadata.ID == nil || *resp.Data.Metadata.ID != "kaas-456" {
+			t.Errorf("expected ID 'kaas-456', got %v", resp.Data.Metadata.ID)
+		}
+		if resp.Data.Metadata.URI == nil || *resp.Data.Metadata.URI != "/projects/test-project/providers/Aruba.Container/kaas/kaas-456" {
+			t.Errorf("expected URI, got %v", resp.Data.Metadata.URI)
 		}
 		if resp.Data.Status.State == nil || *resp.Data.Status.State != "creating" {
 			t.Errorf("expected state 'creating'")
@@ -403,7 +412,7 @@ func TestCreateKaaS(t *testing.T) {
 				t.Errorf("expected api-version=1.0, got %q", got)
 			}
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{}`)
+			fmt.Fprint(w, `{"metadata":{"id":"x","uri":"/x","name":"x"}}`)
 		})
 		c := testutil.NewClient(t, server.URL)
 		svc := NewKaaSClientImpl(c)
@@ -411,6 +420,78 @@ func TestCreateKaaS(t *testing.T) {
 		body := types.KaaSRequest{}
 		if _, err := svc.Create(context.Background(), "test-project", body, nil); err != nil {
 			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("successful create missing id", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"uri":"/projects/test-project/providers/Aruba.Container/kaas/res-123","name":"test-name"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.KaaSRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "id" {
+			t.Errorf("expected missing=[id], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
+		}
+	})
+
+	t.Run("successful create missing uri", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"id":"res-123","name":"test-name"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.KaaSRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "uri" {
+			t.Errorf("expected missing=[uri], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
+		}
+	})
+
+	t.Run("successful create missing name", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"id":"res-123","uri":"/projects/test-project/providers/Aruba.Container/kaas/res-123"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.KaaSRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "name" {
+			t.Errorf("expected missing=[name], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
 		}
 	})
 }
