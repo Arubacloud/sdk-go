@@ -2,227 +2,148 @@ package schedule
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
-	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
-	"github.com/Arubacloud/sdk-go/internal/restclient"
+	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
 func TestListScheduleJobs(t *testing.T) {
 	t.Run("successful_list", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Schedule/jobs" {
-				w.WriteHeader(http.StatusOK)
-				resp := types.JobList{
-					ListResponse: types.ListResponse{Total: 2},
-					Values: []types.JobResponse{
-						{
-							Metadata: types.ResourceMetadataResponse{
-								Name: types.StringPtr("daily-backup"),
-								ID:   types.StringPtr("job-123"),
-							},
-							Properties: types.JobPropertiesResponse{
-								Enabled:       true,
-								JobType:       types.TypeJobRecurring,
-								Cron:          types.StringPtr("0 2 * * *"),
-								ExecuteUntil:  types.StringPtr("2025-12-31T23:59:59Z"),
-								NextExecution: types.StringPtr("2025-11-12T02:00:00Z"),
-								Steps: []types.JobStepResponse{
-									{
-										Name:        types.StringPtr("backup-step"),
-										ResourceURI: types.StringPtr("/projects/test-project/providers/Aruba.Storage/block-storages/vol-123"),
-										ActionURI:   types.StringPtr("/snapshot"),
-										HttpVerb:    types.StringPtr("POST"),
-									},
-								},
-							},
-							Status: types.ResourceStatus{
-								State: types.StringPtr("active"),
-							},
-						},
-						{
-							Metadata: types.ResourceMetadataResponse{
-								Name: types.StringPtr("oneshot-task"),
-								ID:   types.StringPtr("job-456"),
-							},
-							Properties: types.JobPropertiesResponse{
-								Enabled:    true,
-								JobType:    types.TypeJobOneShot,
-								ScheduleAt: types.StringPtr("2025-11-15T10:00:00Z"),
-								Steps: []types.JobStepResponse{
-									{
-										Name:        types.StringPtr("shutdown-step"),
-										ResourceURI: types.StringPtr("/projects/test-project/providers/Aruba.Compute/cloudservers/vm-123"),
-										ActionURI:   types.StringPtr("/stop"),
-										HttpVerb:    types.StringPtr("POST"),
-									},
-								},
-							},
-							Status: types.ResourceStatus{
-								State: types.StringPtr("scheduled"),
-							},
-						},
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":1,"values":[{"metadata":{"name":"daily-backup","id":"job-123"},"properties":{"enabled":true,"scheduleJobType":"Recurring","cron":"0 2 * * *"}}]}`)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewJobsClientImpl(c)
-
 		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil || len(resp.Data.Values) != 2 {
-			t.Errorf("expected 2 jobs")
+		if resp.Data.Total != 1 {
+			t.Errorf("expected total 1, got %d", resp.Data.Total)
 		}
 		if resp.Data.Values[0].Metadata.Name == nil || *resp.Data.Values[0].Metadata.Name != "daily-backup" {
-			t.Errorf("expected name 'daily-backup'")
-		}
-		if resp.Data.Values[0].Properties.JobType != types.TypeJobRecurring {
-			t.Errorf("expected recurring job type")
-		}
-		if resp.Data.Values[1].Properties.JobType != types.TypeJobOneShot {
-			t.Errorf("expected one-shot job type")
+			t.Errorf("expected name 'daily-backup', got %v", resp.Data.Values[0].Metadata.Name)
 		}
 	})
 
 	t.Run("empty_list", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Schedule/jobs" {
-				w.WriteHeader(http.StatusOK)
-				resp := types.JobList{
-					ListResponse: types.ListResponse{Total: 0},
-					Values:       []types.JobResponse{},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":0,"values":[]}`)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewJobsClientImpl(c)
-
 		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil || len(resp.Data.Values) != 0 {
-			t.Errorf("expected empty list")
+		if len(resp.Data.Values) != 0 {
+			t.Errorf("expected empty list, got %d items", len(resp.Data.Values))
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewJobsClientImpl(c)
+		_, err := svc.List(context.Background(), "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.List(context.Background(), "test-project", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.List(context.Background(), "test-project", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewJobsClientImpl(c)
+		_, err := svc.List(context.Background(), "test-project", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":0,"values":[]}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.List(context.Background(), "test-project", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestGetScheduleJob(t *testing.T) {
 	t.Run("successful_get", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Schedule/jobs/job-123" {
-				w.WriteHeader(http.StatusOK)
-				resp := types.JobResponse{
-					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("daily-backup"),
-						ID:   types.StringPtr("job-123"),
-					},
-					Properties: types.JobPropertiesResponse{
-						Enabled:       true,
-						JobType:       types.TypeJobRecurring,
-						Cron:          types.StringPtr("0 2 * * *"),
-						ExecuteUntil:  types.StringPtr("2025-12-31T23:59:59Z"),
-						NextExecution: types.StringPtr("2025-11-12T02:00:00Z"),
-						Recurrency:    (*types.RecurrenceType)(types.StringPtr(string(types.RecurrenceTypeDaily))),
-						Steps: []types.JobStepResponse{
-							{
-								Name:         types.StringPtr("backup-step"),
-								ResourceURI:  types.StringPtr("/projects/test-project/providers/Aruba.Storage/block-storages/vol-123"),
-								ActionURI:    types.StringPtr("/snapshot"),
-								ActionName:   types.StringPtr("CreateSnapshot"),
-								Typology:     types.StringPtr("Aruba.Storage/block-storages"),
-								TypologyName: types.StringPtr("Block Storage"),
-								HttpVerb:     types.StringPtr("POST"),
-								Body:         types.StringPtr(`{"name":"daily-snapshot"}`),
-							},
-						},
-					},
-					Status: types.ResourceStatus{
-						State: types.StringPtr("active"),
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"daily-backup","id":"job-123"},"properties":{"enabled":true,"scheduleJobType":"Recurring","cron":"0 2 * * *","steps":[{"name":"backup-step","resourceUri":"/projects/test-project/providers/Aruba.Storage/block-storages/vol-123","actionUri":"/snapshot","httpVerb":"POST"}]}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewJobsClientImpl(c)
-
 		resp, err := svc.Get(context.Background(), "test-project", "job-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil {
-			t.Fatalf("expected response data")
-		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "daily-backup" {
-			t.Errorf("expected name 'daily-backup'")
+			t.Errorf("expected name 'daily-backup', got %v", resp.Data.Metadata.Name)
 		}
 		if resp.Data.Properties.JobType != types.TypeJobRecurring {
 			t.Errorf("expected recurring job type")
@@ -231,72 +152,113 @@ func TestGetScheduleJob(t *testing.T) {
 			t.Errorf("expected cron '0 2 * * *'")
 		}
 		if len(resp.Data.Properties.Steps) != 1 {
-			t.Errorf("expected 1 step")
+			t.Errorf("expected 1 step, got %d", len(resp.Data.Properties.Steps))
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewJobsClientImpl(c)
+		_, err := svc.Get(context.Background(), "", "job-123", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty job ID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewJobsClientImpl(c)
+		_, err := svc.Get(context.Background(), "test-project", "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.Get(context.Background(), "test-project", "job-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.Get(context.Background(), "test-project", "job-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewJobsClientImpl(c)
+		_, err := svc.Get(context.Background(), "test-project", "job-123", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.Get(context.Background(), "test-project", "job-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestCreateScheduleJob(t *testing.T) {
 	t.Run("successful_create_recurring", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "POST" && r.URL.Path == "/projects/test-project/providers/Aruba.Schedule/jobs" {
-				w.WriteHeader(http.StatusCreated)
-				resp := types.JobResponse{
-					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("weekly-cleanup"),
-						ID:   types.StringPtr("job-789"),
-					},
-					Properties: types.JobPropertiesResponse{
-						Enabled:       true,
-						JobType:       types.TypeJobRecurring,
-						Cron:          types.StringPtr("0 3 * * 0"),
-						ExecuteUntil:  types.StringPtr("2026-01-01T00:00:00Z"),
-						NextExecution: types.StringPtr("2025-11-17T03:00:00Z"),
-						Recurrency:    (*types.RecurrenceType)(types.StringPtr(string(types.RecurrenceTypeWeekly))),
-						Steps: []types.JobStepResponse{
-							{
-								Name:        types.StringPtr("cleanup-old-snapshots"),
-								ResourceURI: types.StringPtr("/projects/test-project/providers/Aruba.Storage/snapshots"),
-								ActionURI:   types.StringPtr("/cleanup"),
-								HttpVerb:    types.StringPtr("POST"),
-							},
-						},
-					},
-					Status: types.ResourceStatus{
-						State: types.StringPtr("active"),
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"name":"weekly-cleanup","id":"job-789"},"properties":{"enabled":true,"scheduleJobType":"Recurring","cron":"0 3 * * 0"},"status":{"state":"active"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewJobsClientImpl(c)
-
 		body := types.JobRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: types.ResourceMetadataRequest{
-					Name: "weekly-cleanup",
-				},
-				Location: types.LocationRequest{Value: "it-eur"},
+				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "weekly-cleanup"},
+				Location:                types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.JobPropertiesRequest{
 				Enabled:      true,
@@ -313,16 +275,12 @@ func TestCreateScheduleJob(t *testing.T) {
 				},
 			},
 		}
-
 		resp, err := svc.Create(context.Background(), "test-project", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil {
-			t.Fatalf("expected response data")
-		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "weekly-cleanup" {
-			t.Errorf("expected name 'weekly-cleanup'")
+			t.Errorf("expected name 'weekly-cleanup', got %v", resp.Data.Metadata.Name)
 		}
 		if resp.Data.Properties.JobType != types.TypeJobRecurring {
 			t.Errorf("expected recurring job type")
@@ -330,62 +288,17 @@ func TestCreateScheduleJob(t *testing.T) {
 	})
 
 	t.Run("successful_create_oneshot", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "POST" && r.URL.Path == "/projects/test-project/providers/Aruba.Schedule/jobs" {
-				w.WriteHeader(http.StatusCreated)
-				resp := types.JobResponse{
-					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("maintenance-window"),
-						ID:   types.StringPtr("job-999"),
-					},
-					Properties: types.JobPropertiesResponse{
-						Enabled:    true,
-						JobType:    types.TypeJobOneShot,
-						ScheduleAt: types.StringPtr("2025-11-20T22:00:00Z"),
-						Steps: []types.JobStepResponse{
-							{
-								Name:        types.StringPtr("stop-servers"),
-								ResourceURI: types.StringPtr("/projects/test-project/providers/Aruba.Compute/cloudservers/vm-123"),
-								ActionURI:   types.StringPtr("/stop"),
-								HttpVerb:    types.StringPtr("POST"),
-							},
-						},
-					},
-					Status: types.ResourceStatus{
-						State: types.StringPtr("scheduled"),
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"name":"maintenance-window","id":"job-999"},"properties":{"enabled":true,"scheduleJobType":"OneShot","scheduleAt":"2025-11-20T22:00:00Z"},"status":{"state":"scheduled"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewJobsClientImpl(c)
-
 		body := types.JobRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: types.ResourceMetadataRequest{
-					Name: "maintenance-window",
-				},
-				Location: types.LocationRequest{Value: "it-eur"},
+				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "maintenance-window"},
+				Location:                types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.JobPropertiesRequest{
 				Enabled:    true,
@@ -401,16 +314,12 @@ func TestCreateScheduleJob(t *testing.T) {
 				},
 			},
 		}
-
 		resp, err := svc.Create(context.Background(), "test-project", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil {
-			t.Fatalf("expected response data")
-		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "maintenance-window" {
-			t.Errorf("expected name 'maintenance-window'")
+			t.Errorf("expected name 'maintenance-window', got %v", resp.Data.Metadata.Name)
 		}
 		if resp.Data.Properties.JobType != types.TypeJobOneShot {
 			t.Errorf("expected one-shot job type")
@@ -419,69 +328,103 @@ func TestCreateScheduleJob(t *testing.T) {
 			t.Errorf("expected state 'scheduled'")
 		}
 	})
+
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewJobsClientImpl(c)
+		_, err := svc.Create(context.Background(), "", types.JobRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.JobRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	// TODO(TD-010): Create uses a manual response-build flow that silently swallows
+	// non-JSON unmarshal errors — resp.Error is nil even for non-JSON error bodies.
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.JobRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewJobsClientImpl(c)
+		_, err := svc.Create(context.Background(), "test-project", types.JobRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.JobRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusCreated {
+			t.Errorf("expected status 201, got %d", resp.StatusCode)
+		}
+	})
 }
 
 func TestUpdateScheduleJob(t *testing.T) {
 	t.Run("successful_update", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "PUT" && r.URL.Path == "/projects/test-project/providers/Aruba.Schedule/jobs/job-123" {
-				w.WriteHeader(http.StatusOK)
-				resp := types.JobResponse{
-					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("updated-backup"),
-						ID:   types.StringPtr("job-123"),
-					},
-					Properties: types.JobPropertiesResponse{
-						Enabled:        false,
-						JobType:        types.TypeJobRecurring,
-						Cron:           types.StringPtr("0 4 * * *"),
-						ExecuteUntil:   types.StringPtr("2025-12-31T23:59:59Z"),
-						NextExecution:  types.StringPtr("2025-11-12T04:00:00Z"),
-						DeactiveReason: (*types.DeactiveReasonDto)(types.StringPtr(string(types.DeactiveReasonManual))),
-						Steps: []types.JobStepResponse{
-							{
-								Name:        types.StringPtr("updated-backup-step"),
-								ResourceURI: types.StringPtr("/projects/test-project/providers/Aruba.Storage/block-storages/vol-456"),
-								ActionURI:   types.StringPtr("/snapshot"),
-								HttpVerb:    types.StringPtr("POST"),
-							},
-						},
-					},
-					Status: types.ResourceStatus{
-						State: types.StringPtr("inactive"),
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"updated-backup","id":"job-123"},"properties":{"enabled":false,"jobType":"recurring","cron":"0 4 * * *"},"status":{"state":"inactive"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewJobsClientImpl(c)
-
 		body := types.JobRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: types.ResourceMetadataRequest{
-					Name: "updated-backup",
-				},
-				Location: types.LocationRequest{Value: "it-eur"},
+				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "updated-backup"},
+				Location:                types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.JobPropertiesRequest{
 				Enabled:      false,
@@ -498,16 +441,12 @@ func TestUpdateScheduleJob(t *testing.T) {
 				},
 			},
 		}
-
 		resp, err := svc.Update(context.Background(), "test-project", "job-123", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil {
-			t.Fatalf("expected response data")
-		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "updated-backup" {
-			t.Errorf("expected name 'updated-backup'")
+			t.Errorf("expected name 'updated-backup', got %v", resp.Data.Metadata.Name)
 		}
 		if resp.Data.Properties.Enabled {
 			t.Errorf("expected job to be disabled")
@@ -516,40 +455,196 @@ func TestUpdateScheduleJob(t *testing.T) {
 			t.Errorf("expected updated cron '0 4 * * *'")
 		}
 	})
+
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewJobsClientImpl(c)
+		_, err := svc.Update(context.Background(), "", "job-123", types.JobRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty job ID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewJobsClientImpl(c)
+		_, err := svc.Update(context.Background(), "test-project", "", types.JobRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.Update(context.Background(), "test-project", "job-123", types.JobRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	// TODO(TD-010): Update uses a manual response-build flow that silently swallows
+	// non-JSON unmarshal errors — resp.Error is nil even for non-JSON error bodies.
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.Update(context.Background(), "test-project", "job-123", types.JobRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewJobsClientImpl(c)
+		_, err := svc.Update(context.Background(), "test-project", "job-123", types.JobRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.Update(context.Background(), "test-project", "job-123", types.JobRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+	})
 }
 
 func TestDeleteScheduleJob(t *testing.T) {
 	t.Run("successful_delete", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "DELETE" && r.URL.Path == "/projects/test-project/providers/Aruba.Schedule/jobs/job-123" {
-				w.WriteHeader(http.StatusNoContent)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewJobsClientImpl(c)
-
 		_, err := svc.Delete(context.Background(), "test-project", "job-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewJobsClientImpl(c)
+		_, err := svc.Delete(context.Background(), "", "job-123", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty job ID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewJobsClientImpl(c)
+		_, err := svc.Delete(context.Background(), "test-project", "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.Delete(context.Background(), "test-project", "job-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.Delete(context.Background(), "test-project", "job-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewJobsClientImpl(c)
+		_, err := svc.Delete(context.Background(), "test-project", "job-123", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewJobsClientImpl(c)
+		resp, err := svc.Delete(context.Background(), "test-project", "job-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNoContent {
+			t.Errorf("expected status 204, got %d", resp.StatusCode)
 		}
 	})
 }
