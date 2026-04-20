@@ -2,150 +2,625 @@ package network
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
-	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
-	"github.com/Arubacloud/sdk-go/internal/restclient"
+	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
 func TestListVpcPeeringRoutes(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/token" {
+	t.Run("successful list", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-			return
+			fmt.Fprint(w, `{"total":1,"values":[{"metadata":{"name":"route-1"},"properties":{"localNetworkAddress":"10.0.0.0/16","remoteNetworkAddress":"10.1.0.0/16"}}]}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.List(context.Background(), "test-project", "vpc-123", "peering-1", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
+		if resp == nil || resp.Data == nil || len(resp.Data.Values) != 1 {
+			t.Errorf("expected 1 vpc peering route")
+		}
+	})
 
-		if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1/routes" {
-			w.WriteHeader(http.StatusOK)
-			resp := types.VPCPeeringRouteList{
-				ListResponse: types.ListResponse{Total: 1},
-				Values: []types.VPCPeeringRouteResponse{
-					{
-						Metadata: types.RegionalResourceMetadataRequest{
-							ResourceMetadataRequest: types.ResourceMetadataRequest{
-								Name: "route-1",
-							},
-						},
-						Properties: types.VPCPeeringRoutePropertiesResponse{
-							LocalNetworkAddress:  "10.0.0.0/16",
-							RemoteNetworkAddress: "10.1.0.0/16",
-						},
-					},
-				},
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.List(context.Background(), "", "vpc-123", "peering-1", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty vpcID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.List(context.Background(), "test-project", "", "peering-1", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty vpcPeeringID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.List(context.Background(), "test-project", "vpc-123", "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.List(context.Background(), "test-project", "vpc-123", "peering-1", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.List(context.Background(), "test-project", "vpc-123", "peering-1", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.List(context.Background(), "test-project", "vpc-123", "peering-1", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
 			}
-			json.NewEncoder(w).Encode(resp)
-			return
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":0,"values":[]}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.List(context.Background(), "test-project", "vpc-123", "peering-1", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
-
-		http.NotFound(w, r)
-	}))
-	defer server.Close()
-
-	var (
-		baseURL    = server.URL
-		httpClient = http.DefaultClient
-		logger     = &noop.NoOpLogger{}
-	)
-
-	c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
-	svc := NewVPCPeeringRoutesClientImpl(c)
-
-	resp, err := svc.List(context.Background(), "test-project", "vpc-123", "peering-1", nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if resp == nil || resp.Data == nil || len(resp.Data.Values) != 1 {
-		t.Errorf("expected 1 vpc peering route")
-	}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+	})
 }
 
 func TestGetVpcPeeringRoute(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/token" {
+	t.Run("successful get", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-			return
+			fmt.Fprint(w, `{"metadata":{"name":"route-1"},"properties":{"localNetworkAddress":"10.0.0.0/16","remoteNetworkAddress":"10.1.0.0/16"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.Get(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
+		if resp.Data.Metadata.Name != "route-1" {
+			t.Errorf("expected route name 'route-1', got %q", resp.Data.Metadata.Name)
+		}
+	})
 
-		if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1/routes/route-1" {
-			w.WriteHeader(http.StatusOK)
-			resp := types.VPCPeeringRouteResponse{
-				Metadata: types.RegionalResourceMetadataRequest{
-					ResourceMetadataRequest: types.ResourceMetadataRequest{
-						Name: "route-1",
-					},
-				},
-				Properties: types.VPCPeeringRoutePropertiesResponse{
-					LocalNetworkAddress:  "10.0.0.0/16",
-					RemoteNetworkAddress: "10.1.0.0/16",
-				},
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Get(context.Background(), "", "vpc-123", "peering-1", "route-1", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty vpcID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Get(context.Background(), "test-project", "", "peering-1", "route-1", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty vpcPeeringID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Get(context.Background(), "test-project", "vpc-123", "", "route-1", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty vpcPeeringRouteID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Get(context.Background(), "test-project", "vpc-123", "peering-1", "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.Get(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.Get(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Get(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
 			}
-			json.NewEncoder(w).Encode(resp)
-			return
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.Get(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+	})
+}
 
-		http.NotFound(w, r)
-	}))
-	defer server.Close()
+func TestCreateVpcPeeringRoute(t *testing.T) {
+	t.Run("successful create", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				t.Errorf("expected POST, got %s", r.Method)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"name":"new-route"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", "vpc-123", "peering-1", types.VPCPeeringRouteRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusCreated {
+			t.Errorf("expected status 201, got %d", resp.StatusCode)
+		}
+	})
 
-	var (
-		baseURL    = server.URL
-		httpClient = http.DefaultClient
-		logger     = &noop.NoOpLogger{}
-	)
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Create(context.Background(), "", "vpc-123", "peering-1", types.VPCPeeringRouteRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
 
-	c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+	t.Run("empty vpcID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Create(context.Background(), "test-project", "", "peering-1", types.VPCPeeringRouteRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
 
-	svc := NewVPCPeeringRoutesClientImpl(c)
+	t.Run("empty vpcPeeringID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Create(context.Background(), "test-project", "vpc-123", "", types.VPCPeeringRouteRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
 
-	resp, err := svc.Get(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if resp == nil || resp.Data == nil || resp.Data.Metadata.Name != "route-1" {
-		t.Errorf("expected route name 'route-1'")
-	}
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", "vpc-123", "peering-1", types.VPCPeeringRouteRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		// TODO(TD-010): Create/Update's manual response build silently swallows non-JSON
+		// unmarshal errors (diverges from ParseResponseBody which logs at DEBUG).
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", "vpc-123", "peering-1", types.VPCPeeringRouteRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Create(context.Background(), "test-project", "vpc-123", "peering-1", types.VPCPeeringRouteRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", "vpc-123", "peering-1", types.VPCPeeringRouteRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusCreated {
+			t.Errorf("expected status 201, got %d", resp.StatusCode)
+		}
+	})
+}
+
+func TestUpdateVpcPeeringRoute(t *testing.T) {
+	t.Run("successful update", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPut {
+				t.Errorf("expected PUT, got %s", r.Method)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"updated-route"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.Update(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", types.VPCPeeringRouteRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Update(context.Background(), "", "vpc-123", "peering-1", "route-1", types.VPCPeeringRouteRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty vpcID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Update(context.Background(), "test-project", "", "peering-1", "route-1", types.VPCPeeringRouteRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty vpcPeeringID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Update(context.Background(), "test-project", "vpc-123", "", "route-1", types.VPCPeeringRouteRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty vpcPeeringRouteID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Update(context.Background(), "test-project", "vpc-123", "peering-1", "", types.VPCPeeringRouteRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.Update(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", types.VPCPeeringRouteRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		// TODO(TD-010): Create/Update's manual response build silently swallows non-JSON
+		// unmarshal errors (diverges from ParseResponseBody which logs at DEBUG).
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.Update(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", types.VPCPeeringRouteRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Update(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", types.VPCPeeringRouteRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.Update(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", types.VPCPeeringRouteRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
+		}
+	})
 }
 
 func TestDeleteVpcPeeringRoute(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/token" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-			return
-		}
-
-		if r.Method == "DELETE" && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1/routes/route-1" {
+	t.Run("successful delete", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodDelete {
+				t.Errorf("expected DELETE, got %s", r.Method)
+			}
 			w.WriteHeader(http.StatusNoContent)
-			return
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Delete(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
+	})
 
-		http.NotFound(w, r)
-	}))
-	defer server.Close()
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Delete(context.Background(), "", "vpc-123", "peering-1", "route-1", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
 
-	var (
-		baseURL    = server.URL
-		httpClient = http.DefaultClient
-		logger     = &noop.NoOpLogger{}
-	)
+	t.Run("empty vpcID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Delete(context.Background(), "test-project", "", "peering-1", "route-1", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
 
-	c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
+	t.Run("empty vpcPeeringID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Delete(context.Background(), "test-project", "vpc-123", "", "route-1", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
 
-	svc := NewVPCPeeringRoutesClientImpl(c)
+	t.Run("empty vpcPeeringRouteID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Delete(context.Background(), "test-project", "vpc-123", "peering-1", "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
 
-	_, err := svc.Delete(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.Delete(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.Delete(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Delete(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Delete(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
 }
