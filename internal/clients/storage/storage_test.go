@@ -2,213 +2,252 @@ package storage
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
-	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
-	"github.com/Arubacloud/sdk-go/internal/restclient"
+	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+func newSnapshotSvc(t *testing.T, baseURL string) *snapshotsClientImpl {
+	t.Helper()
+	c := testutil.NewClient(t, baseURL)
+	return NewSnapshotsClientImpl(c, NewVolumesClientImpl(c))
+}
+
+// --- Block Storage Volumes ---
+
 func TestListBlockStorageVolumes(t *testing.T) {
-	t.Run("successful_list", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/blockstorages" {
-				w.WriteHeader(http.StatusOK)
-				resp := types.BlockStorageList{
-					ListResponse: types.ListResponse{Total: 2},
-					Values: []types.BlockStorageResponse{
-						{
-							Metadata: types.ResourceMetadataResponse{
-								Name: types.StringPtr("data-volume"),
-								ID:   types.StringPtr("vol-123"),
-							},
-							Properties: types.BlockStoragePropertiesResponse{
-								SizeGB:        100,
-								BillingPeriod: "Hour",
-								Zone:          "it-eur-1",
-								Type:          types.BlockStorageTypePerformance,
-							},
-							Status: types.ResourceStatus{
-								State: types.StringPtr("active"),
-							},
-						},
-						{
-							Metadata: types.ResourceMetadataResponse{
-								Name: types.StringPtr("backup-volume"),
-								ID:   types.StringPtr("vol-456"),
-							},
-							Properties: types.BlockStoragePropertiesResponse{
-								SizeGB:        200,
-								BillingPeriod: "Hour",
-								Zone:          "it-eur-1",
-								Type:          types.BlockStorageTypeStandard,
-							},
-							Status: types.ResourceStatus{
-								State: types.StringPtr("active"),
-							},
-						},
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+	t.Run("successful list", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":2,"values":[{"metadata":{"name":"data-volume","id":"vol-123"},"properties":{"sizeGb":100,"billingPeriod":"Hour","dataCenter":"it-eur-1","type":"Performance"},"status":{"state":"active"}},{"metadata":{"name":"backup-volume","id":"vol-456"},"properties":{"sizeGb":200,"billingPeriod":"Hour","dataCenter":"it-eur-1","type":"Standard"},"status":{"state":"active"}}]}`)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewVolumesClientImpl(c)
-
 		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil || len(resp.Data.Values) != 2 {
-			t.Errorf("expected 2 volumes")
+		if len(resp.Data.Values) != 2 {
+			t.Errorf("expected 2 volumes, got %d", len(resp.Data.Values))
 		}
 		if resp.Data.Values[0].Metadata.Name == nil || *resp.Data.Values[0].Metadata.Name != "data-volume" {
-			t.Errorf("expected name 'data-volume'")
+			t.Errorf("expected name 'data-volume', got %v", resp.Data.Values[0].Metadata.Name)
 		}
 		if resp.Data.Values[0].Properties.Type != types.BlockStorageTypePerformance {
-			t.Errorf("expected performance type")
+			t.Errorf("expected type 'Performance', got %q", resp.Data.Values[0].Properties.Type)
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVolumesClientImpl(c)
+		_, err := svc.List(context.Background(), "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.List(context.Background(), "test-project", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.List(context.Background(), "test-project", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewVolumesClientImpl(c)
+		_, err := svc.List(context.Background(), "test-project", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":0,"values":[]}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.List(context.Background(), "test-project", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestGetBlockStorageVolume(t *testing.T) {
-	t.Run("successful_get", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123" {
-				w.WriteHeader(http.StatusOK)
-				resp := types.BlockStorageResponse{
-					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("my-volume"),
-						ID:   types.StringPtr("vol-123"),
-					},
-					Properties: types.BlockStoragePropertiesResponse{
-						SizeGB:        150,
-						BillingPeriod: "Hour",
-						Zone:          "it-eur-1",
-						Type:          types.BlockStorageTypePerformance,
-						Bootable:      types.BoolPtr(false),
-					},
-					Status: types.ResourceStatus{
-						State: types.StringPtr("active"),
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+	t.Run("successful get", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"my-volume","id":"vol-123"},"properties":{"sizeGb":150,"billingPeriod":"Hour","dataCenter":"it-eur-1","type":"Performance","bootable":false},"status":{"state":"active"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewVolumesClientImpl(c)
-
 		resp, err := svc.Get(context.Background(), "test-project", "vol-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil {
-			t.Fatalf("expected response data")
-		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "my-volume" {
-			t.Errorf("expected name 'my-volume'")
+			t.Errorf("expected name 'my-volume', got %v", resp.Data.Metadata.Name)
 		}
 		if resp.Data.Properties.SizeGB != 150 {
-			t.Errorf("expected size 150GB")
+			t.Errorf("expected size 150GB, got %d", resp.Data.Properties.SizeGB)
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVolumesClientImpl(c)
+		_, err := svc.Get(context.Background(), "", "vol-123", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty volume ID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVolumesClientImpl(c)
+		_, err := svc.Get(context.Background(), "test-project", "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.Get(context.Background(), "test-project", "vol-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.Get(context.Background(), "test-project", "vol-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewVolumesClientImpl(c)
+		_, err := svc.Get(context.Background(), "test-project", "vol-123", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.Get(context.Background(), "test-project", "vol-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestCreateBlockStorageVolume(t *testing.T) {
-	t.Run("successful_create", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "POST" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/blockstorages" {
-				w.WriteHeader(http.StatusCreated)
-				resp := types.BlockStorageResponse{
-					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("new-volume"),
-						ID:   types.StringPtr("vol-789"),
-					},
-					Properties: types.BlockStoragePropertiesResponse{
-						SizeGB:        50,
-						BillingPeriod: "Hour",
-						Zone:          "it-eur-1",
-						Type:          types.BlockStorageTypeStandard,
-					},
-					Status: types.ResourceStatus{
-						State: types.StringPtr("creating"),
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+	t.Run("successful create", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"name":"new-volume","id":"vol-789"},"properties":{"sizeGb":50,"billingPeriod":"Hour","dataCenter":"it-eur-1","type":"Standard"},"status":{"state":"creating"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewVolumesClientImpl(c)
-
 		body := types.BlockStorageRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: types.ResourceMetadataRequest{
-					Name: "new-volume",
-				},
-				Location: types.LocationRequest{Value: "it-eur"},
+				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-volume"},
+				Location:                types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.BlockStoragePropertiesRequest{
 				SizeGB:        50,
@@ -217,329 +256,809 @@ func TestCreateBlockStorageVolume(t *testing.T) {
 				Type:          types.BlockStorageTypeStandard,
 			},
 		}
-
 		resp, err := svc.Create(context.Background(), "test-project", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil {
-			t.Fatalf("expected response data")
-		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "new-volume" {
-			t.Errorf("expected name 'new-volume'")
+			t.Errorf("expected name 'new-volume', got %v", resp.Data.Metadata.Name)
 		}
 		if resp.Data.Status.State == nil || *resp.Data.Status.State != "creating" {
-			t.Errorf("expected state 'creating'")
+			t.Errorf("expected state 'creating', got %v", resp.Data.Status.State)
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVolumesClientImpl(c)
+		_, err := svc.Create(context.Background(), "", types.BlockStorageRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.BlockStorageRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.BlockStorageRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewVolumesClientImpl(c)
+		_, err := svc.Create(context.Background(), "test-project", types.BlockStorageRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.BlockStorageRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusCreated {
+			t.Errorf("expected status 201, got %d", resp.StatusCode)
+		}
+	})
+}
+
+func TestUpdateBlockStorageVolume(t *testing.T) {
+	t.Run("successful update", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"updated-volume","id":"vol-123"},"properties":{"sizeGb":100,"billingPeriod":"Hour","dataCenter":"it-eur-1","type":"Standard"},"status":{"state":"active"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		body := types.BlockStorageRequest{
+			Metadata: types.RegionalResourceMetadataRequest{
+				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "updated-volume"},
+			},
+			Properties: types.BlockStoragePropertiesRequest{
+				SizeGB:        100,
+				BillingPeriod: "Hour",
+				Type:          types.BlockStorageTypeStandard,
+			},
+		}
+		resp, err := svc.Update(context.Background(), "test-project", "vol-123", body, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "updated-volume" {
+			t.Errorf("expected name 'updated-volume', got %v", resp.Data.Metadata.Name)
+		}
+		if resp.Data.Properties.SizeGB != 100 {
+			t.Errorf("expected size 100GB, got %d", resp.Data.Properties.SizeGB)
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVolumesClientImpl(c)
+		_, err := svc.Update(context.Background(), "", "vol-123", types.BlockStorageRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty volume ID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVolumesClientImpl(c)
+		_, err := svc.Update(context.Background(), "test-project", "", types.BlockStorageRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.Update(context.Background(), "test-project", "vol-123", types.BlockStorageRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.Update(context.Background(), "test-project", "vol-123", types.BlockStorageRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewVolumesClientImpl(c)
+		_, err := svc.Update(context.Background(), "test-project", "vol-123", types.BlockStorageRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.Update(context.Background(), "test-project", "vol-123", types.BlockStorageRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestDeleteBlockStorageVolume(t *testing.T) {
-	t.Run("successful_delete", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "DELETE" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123" {
-				w.WriteHeader(http.StatusNoContent)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+	t.Run("successful delete", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewVolumesClientImpl(c)
-
 		_, err := svc.Delete(context.Background(), "test-project", "vol-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
+
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVolumesClientImpl(c)
+		_, err := svc.Delete(context.Background(), "", "vol-123", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty volume ID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewVolumesClientImpl(c)
+		_, err := svc.Delete(context.Background(), "test-project", "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.Delete(context.Background(), "test-project", "vol-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.Delete(context.Background(), "test-project", "vol-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewVolumesClientImpl(c)
+		_, err := svc.Delete(context.Background(), "test-project", "vol-123", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.Delete(context.Background(), "test-project", "vol-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNoContent {
+			t.Errorf("expected status 204, got %d", resp.StatusCode)
+		}
+	})
 }
 
+// --- Snapshots ---
+
 func TestListSnapshots(t *testing.T) {
-	t.Run("successful_list", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/snapshots" {
-				w.WriteHeader(http.StatusOK)
-				resp := types.SnapshotList{
-					ListResponse: types.ListResponse{Total: 2},
-					Values: []types.SnapshotResponse{
-						{
-							Metadata: types.ResourceMetadataResponse{
-								Name: types.StringPtr("backup-snapshot-1"),
-								ID:   types.StringPtr("snap-123"),
-							},
-							Properties: types.SnapshotPropertiesResponse{
-								SizeGB:        types.Int32Ptr(100),
-								BillingPeriod: types.StringPtr("Hour"),
-								Zone:          "it-eur-1",
-								Type:          types.BlockStorageTypePerformance,
-							},
-							Status: types.ResourceStatus{
-								State: types.StringPtr("available"),
-							},
-						},
-						{
-							Metadata: types.ResourceMetadataResponse{
-								Name: types.StringPtr("backup-snapshot-2"),
-								ID:   types.StringPtr("snap-456"),
-							},
-							Properties: types.SnapshotPropertiesResponse{
-								SizeGB:        types.Int32Ptr(200),
-								BillingPeriod: types.StringPtr("Hour"),
-								Zone:          "it-eur-1",
-								Type:          types.BlockStorageTypeStandard,
-							},
-							Status: types.ResourceStatus{
-								State: types.StringPtr("available"),
-							},
-						},
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
-		svc := NewSnapshotsClientImpl(c, NewVolumesClientImpl(c))
-
+	t.Run("successful list", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":2,"values":[{"metadata":{"name":"backup-snapshot-1","id":"snap-123"},"properties":{"sizeGb":100,"billingPeriod":"Hour","dataCenter":"it-eur-1","type":"Performance"},"status":{"state":"available"}},{"metadata":{"name":"backup-snapshot-2","id":"snap-456"},"properties":{"sizeGb":200,"billingPeriod":"Hour","dataCenter":"it-eur-1","type":"Standard"},"status":{"state":"available"}}]}`)
+		})
+		svc := newSnapshotSvc(t, server.URL)
 		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil || len(resp.Data.Values) != 2 {
-			t.Errorf("expected 2 snapshots")
+		if len(resp.Data.Values) != 2 {
+			t.Errorf("expected 2 snapshots, got %d", len(resp.Data.Values))
 		}
 		if resp.Data.Values[0].Metadata.Name == nil || *resp.Data.Values[0].Metadata.Name != "backup-snapshot-1" {
-			t.Errorf("expected name 'backup-snapshot-1'")
+			t.Errorf("expected name 'backup-snapshot-1', got %v", resp.Data.Values[0].Metadata.Name)
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		svc := newSnapshotSvc(t, "http://unused.invalid")
+		_, err := svc.List(context.Background(), "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.List(context.Background(), "test-project", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.List(context.Background(), "test-project", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewSnapshotsClientImpl(c, NewVolumesClientImpl(c))
+		_, err := svc.List(context.Background(), "test-project", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":0,"values":[]}`)
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.List(context.Background(), "test-project", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestGetSnapshot(t *testing.T) {
-	t.Run("successful_get", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/snapshots/snap-123" {
-				w.WriteHeader(http.StatusOK)
-				resp := types.SnapshotResponse{
-					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("my-snapshot"),
-						ID:   types.StringPtr("snap-123"),
-					},
-					Properties: types.SnapshotPropertiesResponse{
-						SizeGB:        types.Int32Ptr(150),
-						BillingPeriod: types.StringPtr("Hour"),
-						Zone:          "it-eur-1",
-						Type:          types.BlockStorageTypePerformance,
-						Volume: &types.VolumeInfo{
-							URI:  types.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123"),
-							Name: types.StringPtr("source-volume"),
-						},
-					},
-					Status: types.ResourceStatus{
-						State: types.StringPtr("available"),
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
-		svc := NewSnapshotsClientImpl(c, NewVolumesClientImpl(c))
-
+	t.Run("successful get", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"my-snapshot","id":"snap-123"},"properties":{"sizeGb":150,"billingPeriod":"Hour","dataCenter":"it-eur-1","type":"Performance","volume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123","name":"source-volume"}},"status":{"state":"available"}}`)
+		})
+		svc := newSnapshotSvc(t, server.URL)
 		resp, err := svc.Get(context.Background(), "test-project", "snap-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil {
-			t.Fatalf("expected response data")
-		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "my-snapshot" {
-			t.Errorf("expected name 'my-snapshot'")
+			t.Errorf("expected name 'my-snapshot', got %v", resp.Data.Metadata.Name)
 		}
 		if resp.Data.Properties.Volume == nil || resp.Data.Properties.Volume.Name == nil || *resp.Data.Properties.Volume.Name != "source-volume" {
-			t.Errorf("expected volume name 'source-volume'")
+			t.Errorf("expected volume name 'source-volume', got %v", resp.Data.Properties.Volume)
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		svc := newSnapshotSvc(t, "http://unused.invalid")
+		_, err := svc.Get(context.Background(), "", "snap-123", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty snapshot ID", func(t *testing.T) {
+		svc := newSnapshotSvc(t, "http://unused.invalid")
+		_, err := svc.Get(context.Background(), "test-project", "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.Get(context.Background(), "test-project", "snap-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.Get(context.Background(), "test-project", "snap-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewSnapshotsClientImpl(c, NewVolumesClientImpl(c))
+		_, err := svc.Get(context.Background(), "test-project", "snap-123", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.Get(context.Background(), "test-project", "snap-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestCreateSnapshot(t *testing.T) {
-	t.Skip("Skipping test because CreateSnapshot waits for block storage to be active")
-	t.Run("successful_create", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
+	t.Run("successful create", func(t *testing.T) {
+		t.Skip("Skipping: CreateSnapshot polls for volume active state before POST")
+	})
 
-			// Mock the GET request to check volume status (waitForBlockStorageActive)
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123" {
-				w.WriteHeader(http.StatusOK)
-				resp := types.BlockStorageResponse{
-					Metadata: types.ResourceMetadataResponse{
-						ID: types.StringPtr("vol-123"),
-					},
-					Status: types.ResourceStatus{
-						State: types.StringPtr("active"),
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			if r.Method == "POST" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/snapshots" {
-				w.WriteHeader(http.StatusCreated)
-				resp := types.SnapshotResponse{
-					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("new-snapshot"),
-						ID:   types.StringPtr("snap-789"),
-					},
-					Properties: types.SnapshotPropertiesResponse{
-						SizeGB:        types.Int32Ptr(50),
-						BillingPeriod: types.StringPtr("Hour"),
-						Zone:          "it-eur-1",
-						Type:          types.BlockStorageTypeStandard,
-						Volume: &types.VolumeInfo{
-							URI: types.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123"),
-						},
-					},
-					Status: types.ResourceStatus{
-						State: types.StringPtr("creating"),
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
-		svc := NewSnapshotsClientImpl(c, NewVolumesClientImpl(c))
-
-		body := types.SnapshotRequest{
-			Metadata: types.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: types.ResourceMetadataRequest{
-					Name: "new-snapshot",
-				},
-				Location: types.LocationRequest{Value: "it-eur"},
-			},
-			Properties: types.SnapshotPropertiesRequest{
-				BillingPeriod: types.StringPtr("Hour"),
-				Volume: types.ReferenceResource{
-					URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123",
-				},
-			},
+	t.Run("empty project", func(t *testing.T) {
+		svc := newSnapshotSvc(t, "http://unused.invalid")
+		_, err := svc.Create(context.Background(), "", types.SnapshotRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
 		}
+	})
 
-		resp, err := svc.Create(context.Background(), "test-project", body, nil)
+	// Error-matrix subtests use an empty Volume.URI so the volume waiter is bypassed.
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.Create(context.Background(), "test-project", types.SnapshotRequest{}, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil {
-			t.Fatalf("expected response data")
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
 		}
-		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "new-snapshot" {
-			t.Errorf("expected name 'new-snapshot'")
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
 		}
-		if resp.Data.Status.State == nil || *resp.Data.Status.State != "creating" {
-			t.Errorf("expected state 'creating'")
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.Create(context.Background(), "test-project", types.SnapshotRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewSnapshotsClientImpl(c, NewVolumesClientImpl(c))
+		_, err := svc.Create(context.Background(), "test-project", types.SnapshotRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.Create(context.Background(), "test-project", types.SnapshotRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusCreated {
+			t.Errorf("expected status 201, got %d", resp.StatusCode)
+		}
+	})
+}
+
+func TestUpdateSnapshot(t *testing.T) {
+	t.Run("successful update", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"updated-snapshot","id":"snap-123"},"properties":{"sizeGb":200,"billingPeriod":"Hour","dataCenter":"it-eur-1","type":"Standard"},"status":{"state":"available"}}`)
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		body := types.SnapshotRequest{
+			Metadata: types.RegionalResourceMetadataRequest{
+				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "updated-snapshot"},
+			},
+			Properties: types.SnapshotPropertiesRequest{
+				BillingPeriod: types.StringPtr("Hour"),
+			},
+		}
+		resp, err := svc.Update(context.Background(), "test-project", "snap-123", body, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "updated-snapshot" {
+			t.Errorf("expected name 'updated-snapshot', got %v", resp.Data.Metadata.Name)
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		svc := newSnapshotSvc(t, "http://unused.invalid")
+		_, err := svc.Update(context.Background(), "", "snap-123", types.SnapshotRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty snapshot ID", func(t *testing.T) {
+		svc := newSnapshotSvc(t, "http://unused.invalid")
+		_, err := svc.Update(context.Background(), "test-project", "", types.SnapshotRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.Update(context.Background(), "test-project", "snap-123", types.SnapshotRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.Update(context.Background(), "test-project", "snap-123", types.SnapshotRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewSnapshotsClientImpl(c, NewVolumesClientImpl(c))
+		_, err := svc.Update(context.Background(), "test-project", "snap-123", types.SnapshotRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.Update(context.Background(), "test-project", "snap-123", types.SnapshotRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestDeleteSnapshot(t *testing.T) {
-	t.Run("successful_delete", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "DELETE" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/snapshots/snap-123" {
-				w.WriteHeader(http.StatusNoContent)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
-		svc := NewSnapshotsClientImpl(c, NewVolumesClientImpl(c))
-
+	t.Run("successful delete", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		})
+		svc := newSnapshotSvc(t, server.URL)
 		_, err := svc.Delete(context.Background(), "test-project", "snap-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		svc := newSnapshotSvc(t, "http://unused.invalid")
+		_, err := svc.Delete(context.Background(), "", "snap-123", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty snapshot ID", func(t *testing.T) {
+		svc := newSnapshotSvc(t, "http://unused.invalid")
+		_, err := svc.Delete(context.Background(), "test-project", "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.Delete(context.Background(), "test-project", "snap-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.Delete(context.Background(), "test-project", "snap-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewSnapshotsClientImpl(c, NewVolumesClientImpl(c))
+		_, err := svc.Delete(context.Background(), "test-project", "snap-123", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.Delete(context.Background(), "test-project", "snap-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNoContent {
+			t.Errorf("expected status 204, got %d", resp.StatusCode)
 		}
 	})
 }
