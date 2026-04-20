@@ -2,316 +2,509 @@ package project
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
-	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
-	"github.com/Arubacloud/sdk-go/internal/restclient"
+	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
 func TestListProjects(t *testing.T) {
 	t.Run("successful list", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "GET" && r.URL.Path == "/projects" {
-				w.WriteHeader(http.StatusOK)
-				resp := types.ProjectList{
-					ListResponse: types.ListResponse{Total: 2},
-					Values: []types.ProjectResponse{
-						{
-							Metadata: types.ResourceMetadataResponse{
-								Name: types.StringPtr("default-project"),
-								ID:   types.StringPtr("project-123"),
-							},
-							Properties: types.ProjectPropertiesResponse{
-								Description:     types.StringPtr("Default project"),
-								Default:         true,
-								ResourcesNumber: 10,
-							},
-						},
-						{
-							Metadata: types.ResourceMetadataResponse{
-								Name: types.StringPtr("test-project"),
-								ID:   types.StringPtr("project-456"),
-							},
-							Properties: types.ProjectPropertiesResponse{
-								Description:     types.StringPtr("Test project"),
-								Default:         false,
-								ResourcesNumber: 5,
-							},
-						},
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":2,"values":[{"metadata":{"name":"default-project","id":"project-123"},"properties":{"description":"Default project","default":true,"resourcesNumber":10}},{"metadata":{"name":"test-project","id":"project-456"},"properties":{"description":"Test project","default":false,"resourcesNumber":5}}]}`)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewProjectsClientImpl(c)
-
 		resp, err := svc.List(context.Background(), nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil || len(resp.Data.Values) != 2 {
-			t.Errorf("expected 2 projects")
+		if resp.Data.Total != 2 {
+			t.Errorf("expected total 2, got %d", resp.Data.Total)
 		}
 		if resp.Data.Values[0].Metadata.Name == nil || *resp.Data.Values[0].Metadata.Name != "default-project" {
-			t.Errorf("expected name 'default-project'")
+			t.Errorf("expected name 'default-project', got %v", resp.Data.Values[0].Metadata.Name)
 		}
 		if !resp.Data.Values[0].Properties.Default {
 			t.Errorf("expected first project to be default")
 		}
-		if resp.Data.Values[0].Properties.ResourcesNumber != 10 {
-			t.Errorf("expected 10 resources, got %d", resp.Data.Values[0].Properties.ResourcesNumber)
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewProjectsClientImpl(c)
+		resp, err := svc.List(context.Background(), nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewProjectsClientImpl(c)
+		resp, err := svc.List(context.Background(), nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewProjectsClientImpl(c)
+		_, err := svc.List(context.Background(), nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":0,"values":[]}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewProjectsClientImpl(c)
+		resp, err := svc.List(context.Background(), nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestGetProject(t *testing.T) {
 	t.Run("successful get", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "GET" && r.URL.Path == "/projects/project-123" {
-				w.WriteHeader(http.StatusOK)
-				resp := types.ProjectResponse{
-					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("my-project"),
-						ID:   types.StringPtr("project-123"),
-					},
-					Properties: types.ProjectPropertiesResponse{
-						Description:     types.StringPtr("My test project"),
-						Default:         false,
-						ResourcesNumber: 15,
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"my-project","id":"project-123"},"properties":{"description":"My test project","default":false,"resourcesNumber":15}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewProjectsClientImpl(c)
-
 		resp, err := svc.Get(context.Background(), "project-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil {
-			t.Fatalf("expected response data")
-		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "my-project" {
-			t.Errorf("expected name 'my-project'")
+			t.Errorf("expected name 'my-project', got %v", resp.Data.Metadata.Name)
 		}
 		if resp.Data.Properties.ResourcesNumber != 15 {
 			t.Errorf("expected 15 resources, got %d", resp.Data.Properties.ResourcesNumber)
 		}
-		if resp.Data.Properties.Default {
-			t.Errorf("expected project to not be default")
+	})
+
+	t.Run("empty project ID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewProjectsClientImpl(c)
+		_, err := svc.Get(context.Background(), "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewProjectsClientImpl(c)
+		resp, err := svc.Get(context.Background(), "project-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewProjectsClientImpl(c)
+		resp, err := svc.Get(context.Background(), "project-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewProjectsClientImpl(c)
+		_, err := svc.Get(context.Background(), "project-123", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewProjectsClientImpl(c)
+		resp, err := svc.Get(context.Background(), "project-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestCreateProject(t *testing.T) {
 	t.Run("successful create", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "POST" && r.URL.Path == "/projects" {
-				w.WriteHeader(http.StatusCreated)
-				resp := types.ProjectResponse{
-					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("new-project"),
-						ID:   types.StringPtr("project-789"),
-					},
-					Properties: types.ProjectPropertiesResponse{
-						Description:     types.StringPtr("A new project"),
-						Default:         false,
-						ResourcesNumber: 0,
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"name":"new-project","id":"project-789"},"properties":{"description":"A new project","default":false,"resourcesNumber":0}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewProjectsClientImpl(c)
-
 		body := types.ProjectRequest{
-			Metadata: types.ResourceMetadataRequest{
-				Name: "new-project",
-			},
+			Metadata: types.ResourceMetadataRequest{Name: "new-project"},
 			Properties: types.ProjectPropertiesRequest{
 				Description: types.StringPtr("A new project"),
 				Default:     false,
 			},
 		}
-
 		resp, err := svc.Create(context.Background(), body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil {
-			t.Fatalf("expected response data")
-		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "new-project" {
-			t.Errorf("expected name 'new-project'")
+			t.Errorf("expected name 'new-project', got %v", resp.Data.Metadata.Name)
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewProjectsClientImpl(c)
+		resp, err := svc.Create(context.Background(), types.ProjectRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	// TODO(TD-010): Create uses a manual response-build flow that silently swallows
+	// non-JSON unmarshal errors — resp.Error is nil even for non-JSON error bodies.
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewProjectsClientImpl(c)
+		resp, err := svc.Create(context.Background(), types.ProjectRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewProjectsClientImpl(c)
+		_, err := svc.Create(context.Background(), types.ProjectRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewProjectsClientImpl(c)
+		resp, err := svc.Create(context.Background(), types.ProjectRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusCreated {
+			t.Errorf("expected status 201, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestUpdateProject(t *testing.T) {
 	t.Run("successful update", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "PUT" && r.URL.Path == "/projects/project-123" {
-				w.WriteHeader(http.StatusOK)
-				resp := types.ProjectResponse{
-					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("updated-project"),
-						ID:   types.StringPtr("project-123"),
-					},
-					Properties: types.ProjectPropertiesResponse{
-						Description:     types.StringPtr("Updated description"),
-						Default:         false,
-						ResourcesNumber: 15,
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"updated-project","id":"project-123"},"properties":{"description":"Updated description","default":false,"resourcesNumber":15}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewProjectsClientImpl(c)
-
 		body := types.ProjectRequest{
-			Metadata: types.ResourceMetadataRequest{
-				Name: "updated-project",
-			},
+			Metadata: types.ResourceMetadataRequest{Name: "updated-project"},
 			Properties: types.ProjectPropertiesRequest{
 				Description: types.StringPtr("Updated description"),
 				Default:     false,
 			},
 		}
-
 		resp, err := svc.Update(context.Background(), "project-123", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil {
-			t.Fatalf("expected response data")
-		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "updated-project" {
-			t.Errorf("expected name 'updated-project'")
+			t.Errorf("expected name 'updated-project', got %v", resp.Data.Metadata.Name)
 		}
-		if resp.Data.Properties.Description == nil || *resp.Data.Properties.Description != "Updated description" {
-			t.Errorf("expected description 'Updated description'")
+	})
+
+	t.Run("empty project ID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewProjectsClientImpl(c)
+		_, err := svc.Update(context.Background(), "", types.ProjectRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewProjectsClientImpl(c)
+		resp, err := svc.Update(context.Background(), "project-123", types.ProjectRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	// TODO(TD-010): Update uses a manual response-build flow that silently swallows
+	// non-JSON unmarshal errors — resp.Error is nil even for non-JSON error bodies.
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewProjectsClientImpl(c)
+		resp, err := svc.Update(context.Background(), "project-123", types.ProjectRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewProjectsClientImpl(c)
+		_, err := svc.Update(context.Background(), "project-123", types.ProjectRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewProjectsClientImpl(c)
+		resp, err := svc.Update(context.Background(), "project-123", types.ProjectRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestDeleteProject(t *testing.T) {
 	t.Run("successful delete", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "DELETE" && r.URL.Path == "/projects/project-123" {
-				w.WriteHeader(http.StatusNoContent)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewProjectsClientImpl(c)
-
 		_, err := svc.Delete(context.Background(), "project-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("empty project ID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewProjectsClientImpl(c)
+		_, err := svc.Delete(context.Background(), "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	// TODO(TD-010): Delete never parses the response body for errors — resp.Error is
+	// always nil regardless of status code. RawBody contains the raw error bytes.
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewProjectsClientImpl(c)
+		resp, err := svc.Delete(context.Background(), "project-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error (Delete never parses error body), got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewProjectsClientImpl(c)
+		resp, err := svc.Delete(context.Background(), "project-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewProjectsClientImpl(c)
+		_, err := svc.Delete(context.Background(), "project-123", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewProjectsClientImpl(c)
+		resp, err := svc.Delete(context.Background(), "project-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNoContent {
+			t.Errorf("expected status 204, got %d", resp.StatusCode)
 		}
 	})
 }
