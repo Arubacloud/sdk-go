@@ -3,26 +3,17 @@ package container
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
-	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
-	"github.com/Arubacloud/sdk-go/internal/restclient"
+	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
 func TestListKaaS(t *testing.T) {
 	t.Run("successful list", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Container/kaas" {
 				w.WriteHeader(http.StatusOK)
 				resp := types.KaaSList{
@@ -49,19 +40,9 @@ func TestListKaaS(t *testing.T) {
 				json.NewEncoder(w).Encode(resp)
 				return
 			}
-
 			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewKaaSClientImpl(c)
 
 		resp, err := svc.List(context.Background(), "test-project", nil)
@@ -78,18 +59,84 @@ func TestListKaaS(t *testing.T) {
 			t.Errorf("expected HA to be true")
 		}
 	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		resp, err := svc.List(context.Background(), "test-project", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp == nil || resp.StatusCode != http.StatusNotFound {
+			t.Fatalf("expected 404 response")
+		}
+		if resp.Error == nil {
+			t.Fatalf("expected resp.Error to be populated")
+		}
+		if resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected title 'Not Found', got %v", resp.Error.Title)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		resp, err := svc.List(context.Background(), "test-project", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp == nil || resp.StatusCode != http.StatusBadGateway {
+			t.Fatalf("expected 502 response")
+		}
+		if resp.Error != nil {
+			t.Errorf("expected resp.Error to be nil for non-JSON body, got %+v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected RawBody 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewKaaSClientImpl(c)
+
+		_, err := svc.List(context.Background(), "test-project", nil)
+		if err == nil {
+			t.Fatal("expected a network error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":0,"values":[]}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		if _, err := svc.List(context.Background(), "test-project", nil); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
 }
 
 func TestGetKaaS(t *testing.T) {
 	t.Run("successful get", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Container/kaas/kaas-123" {
 				w.WriteHeader(http.StatusOK)
 				resp := types.KaaSResponse{
@@ -125,19 +172,9 @@ func TestGetKaaS(t *testing.T) {
 				json.NewEncoder(w).Encode(resp)
 				return
 			}
-
 			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewKaaSClientImpl(c)
 
 		resp, err := svc.Get(context.Background(), "test-project", "kaas-123", nil)
@@ -164,18 +201,84 @@ func TestGetKaaS(t *testing.T) {
 			t.Errorf("expected management IP '10.0.0.100'")
 		}
 	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		resp, err := svc.Get(context.Background(), "test-project", "kaas-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp == nil || resp.StatusCode != http.StatusNotFound {
+			t.Fatalf("expected 404 response")
+		}
+		if resp.Error == nil {
+			t.Fatalf("expected resp.Error to be populated")
+		}
+		if resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected title 'Not Found', got %v", resp.Error.Title)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		resp, err := svc.Get(context.Background(), "test-project", "kaas-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp == nil || resp.StatusCode != http.StatusBadGateway {
+			t.Fatalf("expected 502 response")
+		}
+		if resp.Error != nil {
+			t.Errorf("expected resp.Error to be nil for non-JSON body, got %+v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected RawBody 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewKaaSClientImpl(c)
+
+		_, err := svc.Get(context.Background(), "test-project", "kaas-123", nil)
+		if err == nil {
+			t.Fatal("expected a network error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		if _, err := svc.Get(context.Background(), "test-project", "kaas-123", nil); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
 }
 
 func TestCreateKaaS(t *testing.T) {
 	t.Run("successful create", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == "POST" && r.URL.Path == "/projects/test-project/providers/Aruba.Container/kaas" {
 				w.WriteHeader(http.StatusCreated)
 				resp := types.KaaSResponse{
@@ -197,19 +300,9 @@ func TestCreateKaaS(t *testing.T) {
 				json.NewEncoder(w).Encode(resp)
 				return
 			}
-
 			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewKaaSClientImpl(c)
 
 		body := types.KaaSRequest{
@@ -241,18 +334,90 @@ func TestCreateKaaS(t *testing.T) {
 			t.Errorf("expected state 'creating'")
 		}
 	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		body := types.KaaSRequest{}
+		resp, err := svc.Create(context.Background(), "test-project", body, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp == nil || resp.StatusCode != http.StatusNotFound {
+			t.Fatalf("expected 404 response")
+		}
+		if resp.Error == nil {
+			t.Fatalf("expected resp.Error to be populated")
+		}
+		if resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected title 'Not Found', got %v", resp.Error.Title)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		// TODO(TD-010): Create's manual response build silently swallows non-JSON
+		// unmarshal errors (diverges from ParseResponseBody which logs at DEBUG).
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		body := types.KaaSRequest{}
+		resp, err := svc.Create(context.Background(), "test-project", body, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp == nil || resp.StatusCode != http.StatusBadGateway {
+			t.Fatalf("expected 502 response")
+		}
+		if resp.Error != nil {
+			t.Errorf("expected resp.Error to be nil for non-JSON body, got %+v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected RawBody 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewKaaSClientImpl(c)
+
+		body := types.KaaSRequest{}
+		_, err := svc.Create(context.Background(), "test-project", body, nil)
+		if err == nil {
+			t.Fatal("expected a network error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		body := types.KaaSRequest{}
+		if _, err := svc.Create(context.Background(), "test-project", body, nil); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
 }
 
 func TestUpdateKaaS(t *testing.T) {
 	t.Run("successful update", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == "PUT" && r.URL.Path == "/projects/test-project/providers/Aruba.Container/kaas/kaas-123" {
 				w.WriteHeader(http.StatusOK)
 				resp := types.KaaSResponse{
@@ -274,19 +439,9 @@ func TestUpdateKaaS(t *testing.T) {
 				json.NewEncoder(w).Encode(resp)
 				return
 			}
-
 			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewKaaSClientImpl(c)
 
 		body := types.KaaSUpdateRequest{
@@ -325,35 +480,97 @@ func TestUpdateKaaS(t *testing.T) {
 			t.Errorf("expected Kubernetes version '1.29.0'")
 		}
 	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		body := types.KaaSUpdateRequest{}
+		resp, err := svc.Update(context.Background(), "test-project", "kaas-123", body, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp == nil || resp.StatusCode != http.StatusNotFound {
+			t.Fatalf("expected 404 response")
+		}
+		if resp.Error == nil {
+			t.Fatalf("expected resp.Error to be populated")
+		}
+		if resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected title 'Not Found', got %v", resp.Error.Title)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		// TODO(TD-010): Update's manual response build silently swallows non-JSON
+		// unmarshal errors (diverges from ParseResponseBody which logs at DEBUG).
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		body := types.KaaSUpdateRequest{}
+		resp, err := svc.Update(context.Background(), "test-project", "kaas-123", body, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp == nil || resp.StatusCode != http.StatusBadGateway {
+			t.Fatalf("expected 502 response")
+		}
+		if resp.Error != nil {
+			t.Errorf("expected resp.Error to be nil for non-JSON body, got %+v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected RawBody 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewKaaSClientImpl(c)
+
+		body := types.KaaSUpdateRequest{}
+		_, err := svc.Update(context.Background(), "test-project", "kaas-123", body, nil)
+		if err == nil {
+			t.Fatal("expected a network error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		body := types.KaaSUpdateRequest{}
+		if _, err := svc.Update(context.Background(), "test-project", "kaas-123", body, nil); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
 }
 
 func TestDeleteKaaS(t *testing.T) {
 	t.Run("successful delete", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == "DELETE" && r.URL.Path == "/projects/test-project/providers/Aruba.Container/kaas/kaas-123" {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
-
 			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewKaaSClientImpl(c)
 
 		_, err := svc.Delete(context.Background(), "test-project", "kaas-123", nil)
@@ -361,18 +578,83 @@ func TestDeleteKaaS(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		resp, err := svc.Delete(context.Background(), "test-project", "kaas-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp == nil || resp.StatusCode != http.StatusNotFound {
+			t.Fatalf("expected 404 response")
+		}
+		if resp.Error == nil {
+			t.Fatalf("expected resp.Error to be populated")
+		}
+		if resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected title 'Not Found', got %v", resp.Error.Title)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		resp, err := svc.Delete(context.Background(), "test-project", "kaas-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp == nil || resp.StatusCode != http.StatusBadGateway {
+			t.Fatalf("expected 502 response")
+		}
+		if resp.Error != nil {
+			t.Errorf("expected resp.Error to be nil for non-JSON body, got %+v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected RawBody 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewKaaSClientImpl(c)
+
+		_, err := svc.Delete(context.Background(), "test-project", "kaas-123", nil)
+		if err == nil {
+			t.Fatal("expected a network error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		if _, err := svc.Delete(context.Background(), "test-project", "kaas-123", nil); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
 }
 
 func TestDownloadKubeconfig(t *testing.T) {
 	t.Run("successful download", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Container/kaas/kaas-123/download" {
 				w.WriteHeader(http.StatusOK)
 				resp := types.KaaSKubeconfigResponse{
@@ -382,19 +664,9 @@ func TestDownloadKubeconfig(t *testing.T) {
 				json.NewEncoder(w).Encode(resp)
 				return
 			}
-
 			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewKaaSClientImpl(c)
 
 		resp, err := svc.DownloadKubeconfig(context.Background(), "test-project", "kaas-123", nil)
@@ -412,6 +684,79 @@ func TestDownloadKubeconfig(t *testing.T) {
 		}
 		if !resp.IsSuccess() {
 			t.Errorf("expected successful response, got status code %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		resp, err := svc.DownloadKubeconfig(context.Background(), "test-project", "kaas-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp == nil || resp.StatusCode != http.StatusNotFound {
+			t.Fatalf("expected 404 response")
+		}
+		if resp.Error == nil {
+			t.Fatalf("expected resp.Error to be populated")
+		}
+		if resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected title 'Not Found', got %v", resp.Error.Title)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		resp, err := svc.DownloadKubeconfig(context.Background(), "test-project", "kaas-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp == nil || resp.StatusCode != http.StatusBadGateway {
+			t.Fatalf("expected 502 response")
+		}
+		if resp.Error != nil {
+			t.Errorf("expected resp.Error to be nil for non-JSON body, got %+v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected RawBody 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewKaaSClientImpl(c)
+
+		_, err := svc.DownloadKubeconfig(context.Background(), "test-project", "kaas-123", nil)
+		if err == nil {
+			t.Fatal("expected a network error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewKaaSClientImpl(c)
+
+		if _, err := svc.DownloadKubeconfig(context.Background(), "test-project", "kaas-123", nil); err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 	})
 }
