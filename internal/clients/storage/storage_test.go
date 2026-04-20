@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -240,7 +241,7 @@ func TestCreateBlockStorageVolume(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"metadata":{"name":"new-volume","id":"vol-789"},"properties":{"sizeGb":50,"billingPeriod":"Hour","dataCenter":"it-eur-1","type":"Standard"},"status":{"state":"creating"}}`)
+			fmt.Fprint(w, `{"metadata":{"name":"new-volume","id":"vol-789","uri":"/projects/test-project/providers/Aruba.Storage/blockStorages/vol-789"},"properties":{"sizeGb":50,"billingPeriod":"Hour","dataCenter":"it-eur-1","type":"Standard"},"status":{"state":"creating"}}`)
 		})
 		c := testutil.NewClient(t, server.URL)
 		svc := NewVolumesClientImpl(c)
@@ -262,6 +263,12 @@ func TestCreateBlockStorageVolume(t *testing.T) {
 		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "new-volume" {
 			t.Errorf("expected name 'new-volume', got %v", resp.Data.Metadata.Name)
+		}
+		if resp.Data.Metadata.ID == nil || *resp.Data.Metadata.ID != "vol-789" {
+			t.Errorf("expected ID 'vol-789', got %v", resp.Data.Metadata.ID)
+		}
+		if resp.Data.Metadata.URI == nil || *resp.Data.Metadata.URI != "/projects/test-project/providers/Aruba.Storage/blockStorages/vol-789" {
+			t.Errorf("expected URI, got %v", resp.Data.Metadata.URI)
 		}
 		if resp.Data.Status.State == nil || *resp.Data.Status.State != "creating" {
 			t.Errorf("expected state 'creating', got %v", resp.Data.Status.State)
@@ -335,7 +342,7 @@ func TestCreateBlockStorageVolume(t *testing.T) {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+			fmt.Fprint(w, `{"metadata":{"id":"x","uri":"/x","name":"x"}}`)
 		})
 		c := testutil.NewClient(t, server.URL)
 		svc := NewVolumesClientImpl(c)
@@ -345,6 +352,78 @@ func TestCreateBlockStorageVolume(t *testing.T) {
 		}
 		if resp.StatusCode != http.StatusCreated {
 			t.Errorf("expected status 201, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("successful create missing id", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"uri":"/projects/test-project/providers/Aruba.Storage/blockStorages/res-123","name":"test-name"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.BlockStorageRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "id" {
+			t.Errorf("expected missing=[id], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
+		}
+	})
+
+	t.Run("successful create missing uri", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"id":"res-123","name":"test-name"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.BlockStorageRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "uri" {
+			t.Errorf("expected missing=[uri], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
+		}
+	})
+
+	t.Run("successful create missing name", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"id":"res-123","uri":"/projects/test-project/providers/Aruba.Storage/blockStorages/res-123"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVolumesClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.BlockStorageRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "name" {
+			t.Errorf("expected missing=[name], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
 		}
 	})
 }
@@ -845,7 +924,7 @@ func TestCreateSnapshot(t *testing.T) {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+			fmt.Fprint(w, `{"metadata":{"id":"x","uri":"/x","name":"x"}}`)
 		})
 		svc := newSnapshotSvc(t, server.URL)
 		resp, err := svc.Create(context.Background(), "test-project", types.SnapshotRequest{}, nil)
@@ -854,6 +933,75 @@ func TestCreateSnapshot(t *testing.T) {
 		}
 		if resp.StatusCode != http.StatusCreated {
 			t.Errorf("expected status 201, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("successful create missing id", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"uri":"/projects/test-project/providers/Aruba.Storage/snapshots/res-123","name":"test-name"}}`)
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.Create(context.Background(), "test-project", types.SnapshotRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "id" {
+			t.Errorf("expected missing=[id], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
+		}
+	})
+
+	t.Run("successful create missing uri", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"id":"res-123","name":"test-name"}}`)
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.Create(context.Background(), "test-project", types.SnapshotRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "uri" {
+			t.Errorf("expected missing=[uri], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
+		}
+	})
+
+	t.Run("successful create missing name", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"id":"res-123","uri":"/projects/test-project/providers/Aruba.Storage/snapshots/res-123"}}`)
+		})
+		svc := newSnapshotSvc(t, server.URL)
+		resp, err := svc.Create(context.Background(), "test-project", types.SnapshotRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "name" {
+			t.Errorf("expected missing=[name], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
 		}
 	})
 }

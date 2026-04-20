@@ -1,7 +1,9 @@
 package types
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -141,6 +143,40 @@ type Response[T any] struct {
 
 	// RawBody contains the raw response body (if requested)
 	RawBody []byte
+}
+
+// MetadataValidationError reports which required identity fields were absent
+// in a successful API response. Callers can use errors.As to branch on this
+// specifically and distinguish API-contract violations from network errors.
+type MetadataValidationError struct {
+	Missing []string
+}
+
+func (e *MetadataValidationError) Error() string {
+	return fmt.Sprintf("response metadata missing required field(s): %s", strings.Join(e.Missing, ", "))
+}
+
+// Validate returns a *MetadataValidationError if any of ID, URI, or Name are
+// absent or empty. The Aruba Cloud API must populate all three on a successful
+// Create response; callers rely on them to identify and reference the resource.
+func (m *ResourceMetadataResponse) Validate() error {
+	if m == nil {
+		return &MetadataValidationError{Missing: []string{"metadata"}}
+	}
+	var missing []string
+	if m.ID == nil || *m.ID == "" {
+		missing = append(missing, "id")
+	}
+	if m.URI == nil || *m.URI == "" {
+		missing = append(missing, "uri")
+	}
+	if m.Name == nil || *m.Name == "" {
+		missing = append(missing, "name")
+	}
+	if len(missing) > 0 {
+		return &MetadataValidationError{Missing: missing}
+	}
+	return nil
 }
 
 // IsSuccess returns true if the status code is 2xx

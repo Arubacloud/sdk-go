@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -275,11 +276,13 @@ func TestCreateBackup(t *testing.T) {
 	t.Run("successful create", func(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == "POST" && r.URL.Path == "/projects/test-project/providers/Aruba.Database/backups" {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusCreated)
 				resp := types.BackupResponse{
 					Metadata: types.ResourceMetadataResponse{
 						Name: types.StringPtr("backup-1"),
 						ID:   types.StringPtr("bk-123"),
+						URI:  types.StringPtr("/projects/test-project/providers/Aruba.Database/backups/bk-123"),
 					},
 					Properties: types.BackupPropertiesResponse{
 						Zone:        "ITBG-1",
@@ -318,6 +321,12 @@ func TestCreateBackup(t *testing.T) {
 		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "backup-1" {
 			t.Errorf("expected name 'backup-1'")
+		}
+		if resp.Data.Metadata.ID == nil || *resp.Data.Metadata.ID != "bk-123" {
+			t.Errorf("expected ID 'bk-123', got %v", resp.Data.Metadata.ID)
+		}
+		if resp.Data.Metadata.URI == nil || *resp.Data.Metadata.URI != "/projects/test-project/providers/Aruba.Database/backups/bk-123" {
+			t.Errorf("expected URI, got %v", resp.Data.Metadata.URI)
 		}
 		if resp.Data.Status.State == nil || *resp.Data.Status.State != "creating" {
 			t.Errorf("expected state 'creating'")
@@ -395,12 +404,84 @@ func TestCreateBackup(t *testing.T) {
 				t.Errorf("expected api-version=1.0, got %q", got)
 			}
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{}`)
+			fmt.Fprint(w, `{"metadata":{"id":"x","uri":"/x","name":"x"}}`)
 		})
 		c := testutil.NewClient(t, server.URL)
 		svc := NewBackupsClientImpl(c)
 		if _, err := svc.Create(context.Background(), "test-project", types.BackupRequest{}, nil); err != nil {
 			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("successful create missing id", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"uri":"/projects/test-project/providers/Aruba.Database/backups/res-123","name":"test-name"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewBackupsClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.BackupRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "id" {
+			t.Errorf("expected missing=[id], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
+		}
+	})
+
+	t.Run("successful create missing uri", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"id":"res-123","name":"test-name"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewBackupsClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.BackupRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "uri" {
+			t.Errorf("expected missing=[uri], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
+		}
+	})
+
+	t.Run("successful create missing name", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"id":"res-123","uri":"/projects/test-project/providers/Aruba.Database/backups/res-123"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewBackupsClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", types.BackupRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "name" {
+			t.Errorf("expected missing=[name], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
 		}
 	})
 }

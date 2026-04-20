@@ -115,7 +115,16 @@ func (c *elasticIPsClientImpl) Create(ctx context.Context, projectID string, bod
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.ElasticIPResponse](httpResp, c.client.Logger())
+	resp, err := types.ParseResponseBody[types.ElasticIPResponse](httpResp, c.client.Logger())
+	if err != nil {
+		return nil, err
+	}
+	if resp.IsSuccess() && resp.Data != nil {
+		if err := resp.Data.Metadata.Validate(); err != nil {
+			return resp, fmt.Errorf("invalid create response: %w", err)
+		}
+	}
+	return resp, nil
 }
 
 // Update updates an existing elastic IP

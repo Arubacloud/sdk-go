@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -243,7 +244,7 @@ func TestCreateRestore(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"metadata":{"name":"new-restore","id":"restore-456"},"properties":{"destinationVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"}},"status":{"state":"creating"}}`)
+			fmt.Fprint(w, `{"metadata":{"name":"new-restore","id":"restore-456","uri":"/projects/test-project/providers/Aruba.Storage/restores/restore-456"},"properties":{"destinationVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"}},"status":{"state":"creating"}}`)
 		})
 		svc := newRestoreSvc(t, server.URL)
 		body := types.RestoreRequest{
@@ -260,6 +261,12 @@ func TestCreateRestore(t *testing.T) {
 		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "new-restore" {
 			t.Errorf("expected name 'new-restore', got %v", resp.Data.Metadata.Name)
+		}
+		if resp.Data.Metadata.ID == nil || *resp.Data.Metadata.ID != "restore-456" {
+			t.Errorf("expected ID 'restore-456', got %v", resp.Data.Metadata.ID)
+		}
+		if resp.Data.Metadata.URI == nil || *resp.Data.Metadata.URI != "/projects/test-project/providers/Aruba.Storage/restores/restore-456" {
+			t.Errorf("expected URI, got %v", resp.Data.Metadata.URI)
 		}
 		if resp.Data.Status.State == nil || *resp.Data.Status.State != "creating" {
 			t.Errorf("expected state 'creating', got %v", resp.Data.Status.State)
@@ -340,7 +347,7 @@ func TestCreateRestore(t *testing.T) {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+			fmt.Fprint(w, `{"metadata":{"id":"x","uri":"/x","name":"x"}}`)
 		})
 		svc := newRestoreSvc(t, server.URL)
 		body := types.RestoreRequest{Properties: types.RestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
@@ -350,6 +357,78 @@ func TestCreateRestore(t *testing.T) {
 		}
 		if resp.StatusCode != http.StatusCreated {
 			t.Errorf("expected status 201, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("successful create missing id", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"uri":"/projects/test-project/providers/Aruba.Storage/restores/res-123","name":"test-name"}}`)
+		})
+		svc := newRestoreSvc(t, server.URL)
+		body := types.RestoreRequest{Properties: types.RestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
+		resp, err := svc.Create(context.Background(), "test-project", "backup-123", body, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "id" {
+			t.Errorf("expected missing=[id], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
+		}
+	})
+
+	t.Run("successful create missing uri", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"id":"res-123","name":"test-name"}}`)
+		})
+		svc := newRestoreSvc(t, server.URL)
+		body := types.RestoreRequest{Properties: types.RestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
+		resp, err := svc.Create(context.Background(), "test-project", "backup-123", body, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "uri" {
+			t.Errorf("expected missing=[uri], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
+		}
+	})
+
+	t.Run("successful create missing name", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"id":"res-123","uri":"/projects/test-project/providers/Aruba.Storage/restores/res-123"}}`)
+		})
+		svc := newRestoreSvc(t, server.URL)
+		body := types.RestoreRequest{Properties: types.RestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
+		resp, err := svc.Create(context.Background(), "test-project", "backup-123", body, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "name" {
+			t.Errorf("expected missing=[name], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
 		}
 	})
 }

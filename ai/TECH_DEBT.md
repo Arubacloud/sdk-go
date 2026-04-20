@@ -23,6 +23,7 @@ Issues are grouped by severity. Address Critical items before new features ship;
 | [TD-016](#td-016) | No structured logging | Medium | L | Medium |
 | [TD-017](#td-017) | `WARN` writes to stdout | Medium | XS | Low |
 | [TD-020](#td-020) | Test coverage gaps | Low | XL | High |
+| [TD-021](#td-021) | Create responses validate metadata ID/URI/Name | Low | M | Medium |
 
 ### Recommended execution order
 
@@ -32,7 +33,7 @@ Issues are grouped by severity. Address Critical items before new features ship;
 
 **Wave 3 — Medium fixes** (S effort, Medium/Low impact): *(all resolved)*
 
-**Wave 4 — Large refactors** (L/XL, plan separately): TD-010, TD-016, TD-020
+**Wave 4 — Large refactors** (L/XL, plan separately): TD-010, TD-016, TD-020, TD-021
 
 ---
 
@@ -242,6 +243,18 @@ Replace all manual implementations with calls to this helper.
 ---
 
 ## Low
+
+### TD-021 · Create responses do not contract-test resource ID exposure (Metadata.ID / URI) — [#175](https://github.com/Arubacloud/sdk-go/issues/175)
+
+All `*.Create` methods returned success even when the API response omitted required identity fields (`metadata.id`, `metadata.uri`, `metadata.name`). Downstream consumers (e.g., acloud-cli) silently received `nil` pointers and fell back to broken workarounds.
+
+**Fix:** Added `ResourceMetadataResponse.Validate()` (returns `*MetadataValidationError` if any of the three fields is absent) and called it in every Create method that returns a `ResourceMetadataResponse`-bearing type. Added `pkg/types/resource_test.go` unit tests for the validator and "missing id/uri/name" subtests in each Create test file.
+
+**Effort:** M — 21 impl files + 21 test files; mechanical but thorough.
+
+**Impact:** Medium — eliminates a class of silent nil-pointer bugs at the API boundary.
+
+---
 
 ### TD-020 · Test coverage limited to happy path and empty-ID validation — [#130](https://github.com/Arubacloud/sdk-go/issues/130)
 All `internal/clients/*/_test.go` files — existing tests cover successful responses and empty project/resource IDs. Missing: HTTP 4xx/5xx error responses, malformed JSON bodies, network-level errors, `nil` params handling, and request body marshaling failures.

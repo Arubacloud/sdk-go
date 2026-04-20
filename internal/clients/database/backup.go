@@ -115,7 +115,16 @@ func (c *backupsClientImpl) Create(ctx context.Context, projectID string, body t
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.BackupResponse](httpResp, c.client.Logger())
+	resp, err := types.ParseResponseBody[types.BackupResponse](httpResp, c.client.Logger())
+	if err != nil {
+		return nil, err
+	}
+	if resp.IsSuccess() && resp.Data != nil {
+		if err := resp.Data.Metadata.Validate(); err != nil {
+			return resp, fmt.Errorf("invalid create response: %w", err)
+		}
+	}
+	return resp, nil
 }
 
 // Delete deletes a backup by ID

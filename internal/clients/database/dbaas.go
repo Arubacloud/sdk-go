@@ -136,6 +136,9 @@ func (c *dbaasClientImpl) Create(ctx context.Context, projectID string, body typ
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
 		response.Data = &data
+		if err := response.Data.Metadata.Validate(); err != nil {
+			return response, fmt.Errorf("invalid create response: %w", err)
+		}
 	} else if response.IsError() && len(respBytes) > 0 {
 		var errorResp types.ErrorResponse
 		if err := json.Unmarshal(respBytes, &errorResp); err == nil {
