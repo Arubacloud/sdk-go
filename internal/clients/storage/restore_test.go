@@ -2,329 +2,577 @@ package storage
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
-	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
-	"github.com/Arubacloud/sdk-go/internal/restclient"
+	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
-// Restore tests
+func newRestoreSvc(t *testing.T, baseURL string) *restoreClientImpl {
+	t.Helper()
+	c := testutil.NewClient(t, baseURL)
+	return NewRestoreClientImpl(c, NewBackupClientImpl(c))
+}
+
 func TestListRestores(t *testing.T) {
 	t.Run("successful list", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/backups/backup-123/restores" {
-				w.WriteHeader(http.StatusOK)
-				resp := map[string]interface{}{
-					"values": []map[string]interface{}{
-						{
-							"metadata": map[string]interface{}{
-								"name": "test-restore",
-							},
-							"properties": map[string]interface{}{
-								"destinationVolume": map[string]interface{}{
-									"uri": "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789",
-								},
-							},
-						},
-					},
-					"total": 1,
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
-		backupClient := NewBackupClientImpl(c)
-
-		svc := NewRestoreClientImpl(c, backupClient)
-
-		resp, err := svc.List(context.Background(), "test-project", "backup-123", &types.RequestParameters{})
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":1,"values":[{"metadata":{"name":"test-restore"},"properties":{"destinationVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"}}}]}`)
+		})
+		svc := newRestoreSvc(t, server.URL)
+		resp, err := svc.List(context.Background(), "test-project", "backup-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil {
-			t.Fatalf("resp is nil")
-		}
-		if resp.Data == nil {
-			t.Logf("Raw response body: %s", string(resp.RawBody))
-			t.Fatalf("resp.Data is nil")
-		}
-		if resp.Data.Values == nil {
-			t.Fatalf("resp.Data.Values is nil")
-		}
 		if len(resp.Data.Values) != 1 {
-			t.Errorf("expected 1 Restore")
+			t.Errorf("expected 1 restore, got %d", len(resp.Data.Values))
 		}
 		if resp.Data.Values[0].Metadata.Name == nil || *resp.Data.Values[0].Metadata.Name != "test-restore" {
-			t.Errorf("expected name 'test-restore'")
+			t.Errorf("expected name 'test-restore', got %v", resp.Data.Values[0].Metadata.Name)
 		}
 		if resp.Data.Values[0].Properties.Destination.URI == "" {
 			t.Errorf("expected Destination URI to be set")
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		svc := newRestoreSvc(t, "http://unused.invalid")
+		_, err := svc.List(context.Background(), "", "backup-123", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty backup ID", func(t *testing.T) {
+		svc := newRestoreSvc(t, "http://unused.invalid")
+		_, err := svc.List(context.Background(), "test-project", "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		svc := newRestoreSvc(t, server.URL)
+		resp, err := svc.List(context.Background(), "test-project", "backup-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		svc := newRestoreSvc(t, server.URL)
+		resp, err := svc.List(context.Background(), "test-project", "backup-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewRestoreClientImpl(c, NewBackupClientImpl(c))
+		_, err := svc.List(context.Background(), "test-project", "backup-123", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":0,"values":[]}`)
+		})
+		svc := newRestoreSvc(t, server.URL)
+		resp, err := svc.List(context.Background(), "test-project", "backup-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestGetRestore(t *testing.T) {
 	t.Run("successful get", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/backups/backup-123/restores/restore-123" {
-				w.WriteHeader(http.StatusOK)
-				resp := map[string]interface{}{
-					"metadata": map[string]interface{}{
-						"name": "test-restore",
-						"id":   "restore-123",
-					},
-					"properties": map[string]interface{}{
-						"destinationVolume": map[string]interface{}{
-							"uri": "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789",
-						},
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
-		backupClient := NewBackupClientImpl(c)
-
-		svc := NewRestoreClientImpl(c, backupClient)
-
-		resp, err := svc.Get(context.Background(), "test-project", "backup-123", "restore-123", &types.RequestParameters{})
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"test-restore","id":"restore-123"},"properties":{"destinationVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"}}}`)
+		})
+		svc := newRestoreSvc(t, server.URL)
+		resp, err := svc.Get(context.Background(), "test-project", "backup-123", "restore-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil {
-			t.Logf("Raw response body: %s", string(resp.RawBody))
-			t.Fatalf("expected response data")
-		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "test-restore" {
-			t.Errorf("expected name 'test-restore'")
+			t.Errorf("expected name 'test-restore', got %v", resp.Data.Metadata.Name)
 		}
 		if resp.Data.Properties.Destination.URI == "" {
 			t.Errorf("expected Destination URI to be set")
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		svc := newRestoreSvc(t, "http://unused.invalid")
+		_, err := svc.Get(context.Background(), "", "backup-123", "restore-123", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty backup ID", func(t *testing.T) {
+		svc := newRestoreSvc(t, "http://unused.invalid")
+		_, err := svc.Get(context.Background(), "test-project", "", "restore-123", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty restore ID", func(t *testing.T) {
+		svc := newRestoreSvc(t, "http://unused.invalid")
+		_, err := svc.Get(context.Background(), "test-project", "backup-123", "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		svc := newRestoreSvc(t, server.URL)
+		resp, err := svc.Get(context.Background(), "test-project", "backup-123", "restore-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		svc := newRestoreSvc(t, server.URL)
+		resp, err := svc.Get(context.Background(), "test-project", "backup-123", "restore-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewRestoreClientImpl(c, NewBackupClientImpl(c))
+		_, err := svc.Get(context.Background(), "test-project", "backup-123", "restore-123", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+		})
+		svc := newRestoreSvc(t, server.URL)
+		resp, err := svc.Get(context.Background(), "test-project", "backup-123", "restore-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestCreateRestore(t *testing.T) {
 	t.Run("successful create", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-			if r.Method == "POST" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/backups/backup-123/restores" {
-				w.WriteHeader(http.StatusCreated)
-				resp := map[string]interface{}{
-					"metadata": map[string]interface{}{
-						"name": "new-restore",
-						"id":   "restore-456",
-					},
-					"properties": map[string]interface{}{
-						"destinationVolume": map[string]interface{}{
-							"uri": "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789",
-						},
-					},
-					"status": map[string]interface{}{
-						"state": "creating",
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
-		backupClient := NewBackupClientImpl(c)
-
-		svc := NewRestoreClientImpl(c, backupClient)
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"name":"new-restore","id":"restore-456"},"properties":{"destinationVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"}},"status":{"state":"creating"}}`)
+		})
+		svc := newRestoreSvc(t, server.URL)
 		body := types.RestoreRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: types.ResourceMetadataRequest{
-					Name: "new-restore",
-				},
+				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-restore"},
 			},
 			Properties: types.RestorePropertiesRequest{
 				Target: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"},
 			},
 		}
-		resp, err := svc.Create(context.Background(), "test-project", "backup-123", body, &types.RequestParameters{})
+		resp, err := svc.Create(context.Background(), "test-project", "backup-123", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil {
-			t.Logf("Raw response body: %s", string(resp.RawBody))
-			t.Fatalf("expected response data")
-		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "new-restore" {
-			t.Errorf("expected name 'new-restore'")
-		}
-		if resp.Data.Properties.Destination.URI == "" {
-			t.Errorf("expected Destination URI to be set")
+			t.Errorf("expected name 'new-restore', got %v", resp.Data.Metadata.Name)
 		}
 		if resp.Data.Status.State == nil || *resp.Data.Status.State != "creating" {
-			t.Errorf("expected state 'creating'")
+			t.Errorf("expected state 'creating', got %v", resp.Data.Status.State)
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		svc := newRestoreSvc(t, "http://unused.invalid")
+		_, err := svc.Create(context.Background(), "", "backup-123", types.RestoreRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty backup ID", func(t *testing.T) {
+		svc := newRestoreSvc(t, "http://unused.invalid")
+		_, err := svc.Create(context.Background(), "test-project", "", types.RestoreRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		svc := newRestoreSvc(t, server.URL)
+		body := types.RestoreRequest{Properties: types.RestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
+		resp, err := svc.Create(context.Background(), "test-project", "backup-123", body, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	// TODO(TD-010): Create uses the manual response-build flow and silently swallows
+	// non-JSON unmarshal errors; resp.Error will be nil even though the body is non-JSON.
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		svc := newRestoreSvc(t, server.URL)
+		body := types.RestoreRequest{Properties: types.RestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
+		resp, err := svc.Create(context.Background(), "test-project", "backup-123", body, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewRestoreClientImpl(c, NewBackupClientImpl(c))
+		body := types.RestoreRequest{Properties: types.RestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
+		_, err := svc.Create(context.Background(), "test-project", "backup-123", body, nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+		})
+		svc := newRestoreSvc(t, server.URL)
+		body := types.RestoreRequest{Properties: types.RestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
+		resp, err := svc.Create(context.Background(), "test-project", "backup-123", body, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusCreated {
+			t.Errorf("expected status 201, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestUpdateRestore(t *testing.T) {
 	t.Run("successful update", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-			if r.Method == "PUT" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/backups/backup-123/restores/restore-123" {
-				w.WriteHeader(http.StatusOK)
-				resp := map[string]interface{}{
-					"metadata": map[string]interface{}{
-						"name": "updated-restore",
-						"id":   "restore-123",
-					},
-					"properties": map[string]interface{}{
-						"destinationVolume": map[string]interface{}{
-							"uri": "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789",
-						},
-					},
-					"status": map[string]interface{}{
-						"state": "updating",
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
-		backupClient := NewBackupClientImpl(c)
-
-		svc := NewRestoreClientImpl(c, backupClient)
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"updated-restore","id":"restore-123"},"properties":{"destinationVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"}},"status":{"state":"updating"}}`)
+		})
+		svc := newRestoreSvc(t, server.URL)
 		body := types.RestoreRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
-				ResourceMetadataRequest: types.ResourceMetadataRequest{
-					Name: "updated-restore",
-				},
+				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "updated-restore"},
 			},
 			Properties: types.RestorePropertiesRequest{
 				Target: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"},
 			},
 		}
-		resp, err := svc.Update(context.Background(), "test-project", "backup-123", "restore-123", body, &types.RequestParameters{})
+		resp, err := svc.Update(context.Background(), "test-project", "backup-123", "restore-123", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil {
-			t.Logf("Raw response body: %s", string(resp.RawBody))
-			t.Fatalf("expected response data")
-		}
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "updated-restore" {
-			t.Errorf("expected name 'updated-restore'")
-		}
-		if resp.Data.Properties.Destination.URI == "" {
-			t.Errorf("expected Destination URI to be set")
+			t.Errorf("expected name 'updated-restore', got %v", resp.Data.Metadata.Name)
 		}
 		if resp.Data.Status.State == nil || *resp.Data.Status.State != "updating" {
-			t.Errorf("expected state 'updating'")
+			t.Errorf("expected state 'updating', got %v", resp.Data.Status.State)
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		svc := newRestoreSvc(t, "http://unused.invalid")
+		_, err := svc.Update(context.Background(), "", "backup-123", "restore-123", types.RestoreRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty backup ID", func(t *testing.T) {
+		svc := newRestoreSvc(t, "http://unused.invalid")
+		_, err := svc.Update(context.Background(), "test-project", "", "restore-123", types.RestoreRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty restore ID", func(t *testing.T) {
+		svc := newRestoreSvc(t, "http://unused.invalid")
+		_, err := svc.Update(context.Background(), "test-project", "backup-123", "", types.RestoreRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		svc := newRestoreSvc(t, server.URL)
+		resp, err := svc.Update(context.Background(), "test-project", "backup-123", "restore-123", types.RestoreRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	// TODO(TD-010): Update uses the manual response-build flow and silently swallows
+	// non-JSON unmarshal errors; resp.Error will be nil even though the body is non-JSON.
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		svc := newRestoreSvc(t, server.URL)
+		resp, err := svc.Update(context.Background(), "test-project", "backup-123", "restore-123", types.RestoreRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewRestoreClientImpl(c, NewBackupClientImpl(c))
+		_, err := svc.Update(context.Background(), "test-project", "backup-123", "restore-123", types.RestoreRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
+		})
+		svc := newRestoreSvc(t, server.URL)
+		resp, err := svc.Update(context.Background(), "test-project", "backup-123", "restore-123", types.RestoreRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestDeleteRestore(t *testing.T) {
 	t.Run("successful delete", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-			if r.Method == "DELETE" && r.URL.Path == "/projects/test-project/providers/Aruba.Storage/backups/backup-123/restores/restore-123" {
-				w.WriteHeader(http.StatusNoContent)
-				return
-			}
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
-		backupClient := NewBackupClientImpl(c)
-
-		svc := NewRestoreClientImpl(c, backupClient)
-
-		_, err := svc.Delete(context.Background(), "test-project", "backup-123", "restore-123", &types.RequestParameters{})
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		})
+		svc := newRestoreSvc(t, server.URL)
+		_, err := svc.Delete(context.Background(), "test-project", "backup-123", "restore-123", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		svc := newRestoreSvc(t, "http://unused.invalid")
+		_, err := svc.Delete(context.Background(), "", "backup-123", "restore-123", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty backup ID", func(t *testing.T) {
+		svc := newRestoreSvc(t, "http://unused.invalid")
+		_, err := svc.Delete(context.Background(), "test-project", "", "restore-123", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("empty restore ID", func(t *testing.T) {
+		svc := newRestoreSvc(t, "http://unused.invalid")
+		_, err := svc.Delete(context.Background(), "test-project", "backup-123", "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		svc := newRestoreSvc(t, server.URL)
+		resp, err := svc.Delete(context.Background(), "test-project", "backup-123", "restore-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		svc := newRestoreSvc(t, server.URL)
+		resp, err := svc.Delete(context.Background(), "test-project", "backup-123", "restore-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewRestoreClientImpl(c, NewBackupClientImpl(c))
+		_, err := svc.Delete(context.Background(), "test-project", "backup-123", "restore-123", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.WriteHeader(http.StatusNoContent)
+		})
+		svc := newRestoreSvc(t, server.URL)
+		resp, err := svc.Delete(context.Background(), "test-project", "backup-123", "restore-123", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusNoContent {
+			t.Errorf("expected status 204, got %d", resp.StatusCode)
 		}
 	})
 }
@@ -340,4 +588,41 @@ func TestNewRestoreClientImpl_panicsOnNilBackupClient(t *testing.T) {
 		}
 	}()
 	NewRestoreClientImpl(nil, nil)
+}
+
+func TestValidateStorageRestore(t *testing.T) {
+	t.Run("empty project", func(t *testing.T) {
+		err := types.ValidateStorageRestore("", "backup-123", nil)
+		if err == nil {
+			t.Fatal("expected error for empty project, got nil")
+		}
+	})
+
+	t.Run("empty backup ID", func(t *testing.T) {
+		err := types.ValidateStorageRestore("test-project", "", nil)
+		if err == nil {
+			t.Fatal("expected error for empty backup ID, got nil")
+		}
+	})
+
+	t.Run("nil restoreID is valid", func(t *testing.T) {
+		err := types.ValidateStorageRestore("test-project", "backup-123", nil)
+		if err != nil {
+			t.Fatalf("expected nil error for nil restoreID, got %v", err)
+		}
+	})
+
+	t.Run("empty-string-pointer restoreID", func(t *testing.T) {
+		err := types.ValidateStorageRestore("test-project", "backup-123", types.StringPtr(""))
+		if err == nil {
+			t.Fatal("expected error for empty-string-pointer restoreID, got nil")
+		}
+	})
+
+	t.Run("non-empty restoreID is valid", func(t *testing.T) {
+		err := types.ValidateStorageRestore("test-project", "backup-123", types.StringPtr("restore-123"))
+		if err != nil {
+			t.Fatalf("expected nil error for non-empty restoreID, got %v", err)
+		}
+	})
 }
