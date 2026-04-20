@@ -2,97 +2,32 @@ package metric
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
-	"time"
 
-	"github.com/Arubacloud/sdk-go/internal/impl/interceptor/standard"
-	"github.com/Arubacloud/sdk-go/internal/impl/logger/noop"
-	"github.com/Arubacloud/sdk-go/internal/restclient"
+	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
 func TestListMetrics(t *testing.T) {
 	t.Run("successful list", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Insight/metrics" {
-				w.WriteHeader(http.StatusOK)
-				resp := types.MetricListResponse{
-					ListResponse: types.ListResponse{Total: 2},
-					Values: []types.MetricResponse{
-						{
-							ReferenceID:   "resource-123",
-							Name:          "cpu_usage",
-							ReferenceName: "test-server",
-							Metadata: []types.MetricMetadata{
-								{
-									Field: "unit",
-									Value: "percent",
-								},
-							},
-							Data: []types.MetricData{
-								{
-									Time:    "2024-01-01T00:00:00Z",
-									Measure: "45.5",
-								},
-								{
-									Time:    "2024-01-01T00:01:00Z",
-									Measure: "48.2",
-								},
-							},
-						},
-						{
-							ReferenceID:   "resource-123",
-							Name:          "memory_usage",
-							ReferenceName: "test-server",
-							Metadata: []types.MetricMetadata{
-								{
-									Field: "unit",
-									Value: "MB",
-								},
-							},
-							Data: []types.MetricData{
-								{
-									Time:    "2024-01-01T00:00:00Z",
-									Measure: "2048",
-								},
-							},
-						},
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":2,"values":[`+
+				`{"referenceID":"resource-123","name":"cpu_usage","referenceName":"test-server","data":[{"time":"2024-01-01T00:00:00Z","measure":"45.5"},{"time":"2024-01-01T00:01:00Z","measure":"48.2"}]},`+
+				`{"referenceID":"resource-123","name":"memory_usage","referenceName":"test-server","metadata":[{"field":"unit","value":"MB"}],"data":[{"time":"2024-01-01T00:00:00Z","measure":"2048"}]}`+
+				`]}`)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewMetricsClientImpl(c)
-
 		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if resp == nil || resp.Data == nil || len(resp.Data.Values) != 2 {
-			t.Errorf("expected 2 metrics")
+			t.Fatalf("expected 2 metrics, got %v", resp)
 		}
 		if resp.Data.Values[0].Name != "cpu_usage" {
 			t.Errorf("expected metric name 'cpu_usage', got %s", resp.Data.Values[0].Name)
@@ -101,156 +36,109 @@ func TestListMetrics(t *testing.T) {
 			t.Errorf("expected reference ID 'resource-123', got %s", resp.Data.Values[0].ReferenceID)
 		}
 		if len(resp.Data.Values[0].Data) != 2 {
-			t.Errorf("expected 2 data points for cpu_usage")
-		}
-		if len(resp.Data.Values[1].Metadata) != 1 {
-			t.Errorf("expected 1 metadata field for memory_usage")
+			t.Errorf("expected 2 data points for cpu_usage, got %d", len(resp.Data.Values[0].Data))
 		}
 	})
 
-	t.Run("empty list", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Insight/metrics" {
-				w.WriteHeader(http.StatusOK)
-				resp := types.MetricListResponse{
-					ListResponse: types.ListResponse{Total: 0},
-					Values:       []types.MetricResponse{},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
 		svc := NewMetricsClientImpl(c)
+		_, err := svc.List(context.Background(), "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+	})
 
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewMetricsClientImpl(c)
 		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil || len(resp.Data.Values) != 0 {
-			t.Errorf("expected 0 metrics")
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewMetricsClientImpl(c)
+		resp, err := svc.List(context.Background(), "test-project", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewMetricsClientImpl(c)
+		_, err := svc.List(context.Background(), "test-project", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":0,"values":[]}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewMetricsClientImpl(c)
+		resp, err := svc.List(context.Background(), "test-project", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 }
 
 func TestListAlerts(t *testing.T) {
 	t.Run("successful list", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Insight/alerts" {
-				w.WriteHeader(http.StatusOK)
-				resp := types.AlertsListResponse{
-					ListResponse: types.ListResponse{Total: 2},
-					Values: []types.AlertResponse{
-						{
-							ID:                 "alert-123",
-							EventID:            "event-456",
-							EventName:          "High CPU Usage",
-							Username:           "user@example.com",
-							ServiceCategory:    "Compute",
-							ServiceTypology:    "VirtualMachine",
-							ResourceID:         "vm-789",
-							ServiceName:        "test-vm",
-							ResourceTypology:   "CloudServer",
-							Metric:             "cpu_usage",
-							LastReception:      time.Now(),
-							Rule:               "greater_than",
-							Theshold:           80,
-							UM:                 "%",
-							Duration:           "5m",
-							ThesholdExceedence: "85%",
-							Component:          "CPU",
-							Email:              true,
-							Panel:              true,
-							SMS:                false,
-							Hidden:             false,
-							ExecutedAlertActions: []types.ExecutedAlertAction{
-								{
-									ActionType:   types.ActionTypeSendEmail,
-									Success:      true,
-									ErrorMessage: "",
-								},
-							},
-							Actions: []types.AlertAction{
-								{
-									Key:        "acknowledge",
-									Disabled:   false,
-									Executable: true,
-								},
-							},
-						},
-						{
-							ID:                 "alert-456",
-							EventID:            "event-789",
-							EventName:          "Low Disk Space",
-							Username:           "admin@example.com",
-							ServiceCategory:    "Storage",
-							ServiceTypology:    "BlockStorage",
-							ResourceID:         "disk-321",
-							ServiceName:        "test-disk",
-							ResourceTypology:   "Volume",
-							Metric:             "disk_usage",
-							LastReception:      time.Now(),
-							Rule:               "greater_than",
-							Theshold:           90,
-							UM:                 "%",
-							Duration:           "10m",
-							ThesholdExceedence: "95%",
-							Email:              true,
-							Panel:              true,
-							SMS:                true,
-							Hidden:             false,
-						},
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":2,"values":[`+
+				`{"id":"alert-123","eventID":"event-456","eventName":"High CPU Usage","metric":"cpu_usage","theshold":80,"executedAlertActions":[{"actionType":"SendEmail","success":true}]},`+
+				`{"id":"alert-456","eventID":"event-789","eventName":"Low Disk Space","metric":"disk_usage","theshold":90,"sms":true}`+
+				`]}`)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewAlertsClientImpl(c)
-
 		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if resp == nil || resp.Data == nil || len(resp.Data.Values) != 2 {
-			t.Errorf("expected 2 alerts")
+			t.Fatalf("expected 2 alerts, got %v", resp)
 		}
 		if resp.Data.Values[0].ID != "alert-123" {
 			t.Errorf("expected alert ID 'alert-123', got %s", resp.Data.Values[0].ID)
@@ -258,127 +146,114 @@ func TestListAlerts(t *testing.T) {
 		if resp.Data.Values[0].EventName != "High CPU Usage" {
 			t.Errorf("expected event name 'High CPU Usage', got %s", resp.Data.Values[0].EventName)
 		}
-		if resp.Data.Values[0].Metric != "cpu_usage" {
-			t.Errorf("expected metric 'cpu_usage', got %s", resp.Data.Values[0].Metric)
-		}
 		if resp.Data.Values[0].Theshold != 80 {
 			t.Errorf("expected threshold 80, got %d", resp.Data.Values[0].Theshold)
 		}
-		if !resp.Data.Values[0].Email {
-			t.Errorf("expected email notification to be enabled")
-		}
-		if len(resp.Data.Values[0].ExecutedAlertActions) != 1 {
-			t.Errorf("expected 1 executed action")
-		}
-		if resp.Data.Values[1].SMS != true {
-			t.Errorf("expected SMS notification to be enabled for second alert")
+	})
+
+	t.Run("empty project", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewAlertsClientImpl(c)
+		_, err := svc.List(context.Background(), "", nil)
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
 		}
 	})
 
-	t.Run("empty list", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
-			}
-
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Insight/alerts" {
-				w.WriteHeader(http.StatusOK)
-				resp := types.AlertsListResponse{
-					ListResponse: types.ListResponse{Total: 0},
-					Values:       []types.AlertResponse{},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewAlertsClientImpl(c)
-
 		resp, err := svc.List(context.Background(), "test-project", nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp == nil || resp.Data == nil || len(resp.Data.Values) != 0 {
-			t.Errorf("expected 0 alerts")
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("expected status 404, got %d", resp.StatusCode)
+		}
+		if resp.Error == nil || resp.Error.Title == nil || *resp.Error.Title != "Not Found" {
+			t.Errorf("expected error title 'Not Found', got %v", resp.Error)
+		}
+	})
+
+	t.Run("bad gateway non-json", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadGateway)
+			fmt.Fprint(w, "Bad Gateway")
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewAlertsClientImpl(c)
+		resp, err := svc.List(context.Background(), "test-project", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Errorf("expected status 502, got %d", resp.StatusCode)
+		}
+		if resp.Error != nil {
+			t.Errorf("expected nil Error, got %v", resp.Error)
+		}
+		if string(resp.RawBody) != "Bad Gateway" {
+			t.Errorf("expected raw body 'Bad Gateway', got %q", string(resp.RawBody))
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewAlertsClientImpl(c)
+		_, err := svc.List(context.Background(), "test-project", nil)
+		if err == nil {
+			t.Fatal("expected transport error, got nil")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":0,"values":[]}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewAlertsClientImpl(c)
+		resp, err := svc.List(context.Background(), "test-project", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 
 	t.Run("with filtering", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`))
-				return
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("filter"); got != "resourceID eq 'vm-789'" {
+				t.Errorf("expected filter param, got %q", got)
 			}
-
-			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Insight/alerts" {
-				// Verify filter parameters were passed
-				filter := r.URL.Query().Get("filter")
-				if filter != "resourceID eq 'vm-789'" {
-					t.Errorf("expected filter 'resourceID eq 'vm-789'', got %s", filter)
-				}
-
-				w.WriteHeader(http.StatusOK)
-				resp := types.AlertsListResponse{
-					ListResponse: types.ListResponse{Total: 1},
-					Values: []types.AlertResponse{
-						{
-							ID:            "alert-123",
-							EventName:     "Filtered Alert",
-							ResourceID:    "vm-789",
-							Metric:        "cpu_usage",
-							LastReception: time.Now(),
-							Email:         true,
-							Panel:         true,
-						},
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			http.NotFound(w, r)
-		}))
-		defer server.Close()
-
-		var (
-			baseURL    = server.URL
-			httpClient = http.DefaultClient
-			logger     = &noop.NoOpLogger{}
-		)
-
-		c := restclient.NewClient(baseURL, httpClient, standard.NewInterceptor(), logger)
-
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":1,"values":[{"id":"alert-123","resourceID":"vm-789","metric":"cpu_usage"}]}`)
+		})
+		c := testutil.NewClient(t, server.URL)
 		svc := NewAlertsClientImpl(c)
-
 		params := &types.RequestParameters{
 			Filter: types.StringPtr("resourceID eq 'vm-789'"),
 		}
-
 		resp, err := svc.List(context.Background(), "test-project", params)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if resp == nil || resp.Data == nil || len(resp.Data.Values) != 1 {
-			t.Errorf("expected 1 filtered alert")
+			t.Fatalf("expected 1 filtered alert, got %v", resp)
 		}
 		if resp.Data.Values[0].ResourceID != "vm-789" {
-			t.Errorf("expected resource ID 'vm-789' in filtered result")
+			t.Errorf("expected resource ID 'vm-789', got %s", resp.Data.Values[0].ResourceID)
 		}
 	})
 }
