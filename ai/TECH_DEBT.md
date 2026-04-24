@@ -248,7 +248,7 @@ Replace all manual implementations with calls to this helper.
 
 All `*.Create` methods returned success even when the API response omitted required identity fields (`metadata.id`, `metadata.uri`, `metadata.name`). Downstream consumers (e.g., acloud-cli) silently received `nil` pointers and fell back to broken workarounds.
 
-**Fix:** Added `ResourceMetadataResponse.Validate()` (returns `*MetadataValidationError` if any of the three fields is absent) and called it in every Create method that returns a `ResourceMetadataResponse`-bearing type. Added `pkg/types/resource_test.go` unit tests for the validator and "missing id/uri/name" subtests in each Create test file.
+**Fix:** Added `ResourceMetadataResponse.Validate()` and called it in every Create method. URI was initially included but later removed: the Aruba Cloud API does not consistently populate `metadata.uri` on Create responses, causing false-positive failures in production (acloud-cli `project create` error). The validator now only requires `id` and `name`. Added `pkg/types/resource_test.go` unit tests and "missing id/name" subtests in each Create test file.
 
 **Effort:** M — 21 impl files + 21 test files; mechanical but thorough.
 

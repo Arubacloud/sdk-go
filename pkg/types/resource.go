@@ -156,9 +156,9 @@ func (e *MetadataValidationError) Error() string {
 	return fmt.Sprintf("response metadata missing required field(s): %s", strings.Join(e.Missing, ", "))
 }
 
-// Validate returns a *MetadataValidationError if any of ID, URI, or Name are
-// absent or empty. The Aruba Cloud API must populate all three on a successful
-// Create response; callers rely on them to identify and reference the resource.
+// Validate returns a *MetadataValidationError if ID or Name are absent or
+// empty. The Aruba Cloud API must populate both on a successful Create
+// response; callers rely on them to identify the resource.
 func (m *ResourceMetadataResponse) Validate() error {
 	if m == nil {
 		return &MetadataValidationError{Missing: []string{"metadata"}}
@@ -166,9 +166,6 @@ func (m *ResourceMetadataResponse) Validate() error {
 	var missing []string
 	if m.ID == nil || *m.ID == "" {
 		missing = append(missing, "id")
-	}
-	if m.URI == nil || *m.URI == "" {
-		missing = append(missing, "uri")
 	}
 	if m.Name == nil || *m.Name == "" {
 		missing = append(missing, "name")

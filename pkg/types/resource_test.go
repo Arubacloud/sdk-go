@@ -66,37 +66,6 @@ func TestResourceMetadataResponse_Validate(t *testing.T) {
 		}
 	})
 
-	t.Run("missing uri nil", func(t *testing.T) {
-		m := &types.ResourceMetadataResponse{ID: &id, Name: &name}
-		err := m.Validate()
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-		var mvErr *types.MetadataValidationError
-		if !errors.As(err, &mvErr) {
-			t.Fatalf("expected MetadataValidationError, got %T", err)
-		}
-		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "uri" {
-			t.Errorf("expected missing=[uri], got %v", mvErr.Missing)
-		}
-	})
-
-	t.Run("missing uri empty string", func(t *testing.T) {
-		empty := ""
-		m := &types.ResourceMetadataResponse{ID: &id, URI: &empty, Name: &name}
-		err := m.Validate()
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-		var mvErr *types.MetadataValidationError
-		if !errors.As(err, &mvErr) {
-			t.Fatalf("expected MetadataValidationError, got %T", err)
-		}
-		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "uri" {
-			t.Errorf("expected missing=[uri], got %v", mvErr.Missing)
-		}
-	})
-
 	t.Run("missing name nil", func(t *testing.T) {
 		m := &types.ResourceMetadataResponse{ID: &id, URI: &uri}
 		err := m.Validate()
@@ -138,8 +107,8 @@ func TestResourceMetadataResponse_Validate(t *testing.T) {
 		if !errors.As(err, &mvErr) {
 			t.Fatalf("expected MetadataValidationError, got %T", err)
 		}
-		if len(mvErr.Missing) != 3 {
-			t.Errorf("expected 3 missing fields, got %v", mvErr.Missing)
+		if len(mvErr.Missing) != 2 {
+			t.Errorf("expected 2 missing fields, got %v", mvErr.Missing)
 		}
 	})
 
