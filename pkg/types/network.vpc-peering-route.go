@@ -31,7 +31,7 @@ type VPCPeeringRouteRequest struct {
 
 type VPCPeeringRouteResponse struct {
 	// Metadata of the VPC Peering Route
-	Metadata RegionalResourceMetadataRequest `json:"metadata"`
+	Metadata ResourceMetadataResponse `json:"metadata"`
 	// Spec contains the VPC Peering Route specification
 	Properties VPCPeeringRoutePropertiesResponse `json:"properties"`
 
