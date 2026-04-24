@@ -104,16 +104,14 @@ _, err       = arubaClient.FromStorage().Volumes().Delete(ctx, projectID, volume
 #### Filters
 
 ```go
-filter := types.NewFilterBuilder().
-    Equal("status", "running").
-    GreaterThan("cpu", 2).
-    Build() // "status:eq:running,cpu:gt:2"
+// Filters follow the format "field:operator:value"; combine with "," (AND) or ";" (OR).
+filter := "status:eq:running,cpu:gt:2"
 
 resp, err := arubaClient.FromCompute().CloudServers().List(ctx, projectID,
     &types.RequestParameters{Filter: &filter})
 ```
 
-Supported operators: `Equal`, `NotEqual`, `GreaterThan`, `LessThan`, `In`, `Contains`, `StartsWith`, `EndsWith`.
+Supported operators: `eq`, `ne`, `gt`, `lt`, `in`, `contains`, `startswith`, `endswith`.
 
 For the full filtering guide see [`docs/website/docs/filters.md`](docs/website/docs/filters.md).
 
@@ -172,6 +170,10 @@ future := async.DefaultWaitFor(
 )
 
 result, err := future.Await(ctx)
+if err != nil {
+    log.Fatalf("wait failed: %v", err)
+}
+fmt.Printf("server status: %s\n", result.Data.Properties.Status)
 ```
 
 `async.DefaultWaitFor` retries 10 times with a 10 s delay and a 60 s total timeout. Use `async.WaitFor` for custom retry counts, delay, and timeout.
