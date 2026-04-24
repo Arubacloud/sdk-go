@@ -2,6 +2,7 @@ package network
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -140,8 +141,8 @@ func TestGetVpcPeeringRoute(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resp.Data.Metadata.Name != "route-1" {
-			t.Errorf("expected route name 'route-1', got %q", resp.Data.Metadata.Name)
+		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "route-1" {
+			t.Errorf("expected route name 'route-1', got %v", resp.Data.Metadata.Name)
 		}
 	})
 
@@ -251,6 +252,24 @@ func TestGetVpcPeeringRoute(t *testing.T) {
 			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
+
+	t.Run("hits expected URL path", func(t *testing.T) {
+		const want = "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1/vpcPeeringRoutes/route-1"
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != want {
+				t.Errorf("expected path %q, got %q", want, r.URL.Path)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.Get(context.Background(), "test-project", "vpc-123", "peering-1", "route-1", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
 }
 
 func TestCreateVpcPeeringRoute(t *testing.T) {
@@ -261,7 +280,7 @@ func TestCreateVpcPeeringRoute(t *testing.T) {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"metadata":{"name":"new-route"}}`)
+			fmt.Fprint(w, `{"metadata":{"id":"res-123","uri":"/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1/vpcPeeringRoutes/res-123","name":"new-route"}}`)
 		})
 		c := testutil.NewClient(t, server.URL)
 		svc := NewVPCPeeringRoutesClientImpl(c)
@@ -271,6 +290,12 @@ func TestCreateVpcPeeringRoute(t *testing.T) {
 		}
 		if resp.StatusCode != http.StatusCreated {
 			t.Errorf("expected status 201, got %d", resp.StatusCode)
+		}
+		if resp.Data.Metadata.ID == nil || *resp.Data.Metadata.ID != "res-123" {
+			t.Errorf("expected ID 'res-123', got %v", resp.Data.Metadata.ID)
+		}
+		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "new-route" {
+			t.Errorf("expected name 'new-route', got %v", resp.Data.Metadata.Name)
 		}
 	})
 
@@ -361,7 +386,7 @@ func TestCreateVpcPeeringRoute(t *testing.T) {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{}`)
+			fmt.Fprint(w, `{"metadata":{"id":"x","uri":"/x","name":"x"}}`)
 		})
 		c := testutil.NewClient(t, server.URL)
 		svc := NewVPCPeeringRoutesClientImpl(c)
@@ -371,6 +396,54 @@ func TestCreateVpcPeeringRoute(t *testing.T) {
 		}
 		if resp.StatusCode != http.StatusCreated {
 			t.Errorf("expected status 201, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("successful create missing id", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"uri":"/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1/vpcPeeringRoutes/res-123","name":"test-name"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", "vpc-123", "peering-1", types.VPCPeeringRouteRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "id" {
+			t.Errorf("expected missing=[id], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
+		}
+	})
+
+	t.Run("successful create missing name", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"id":"res-123","uri":"/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1/vpcPeeringRoutes/res-123"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		resp, err := svc.Create(context.Background(), "test-project", "vpc-123", "peering-1", types.VPCPeeringRouteRequest{}, nil)
+		if err == nil {
+			t.Fatal("expected metadata validation error, got nil")
+		}
+		var mvErr *types.MetadataValidationError
+		if !errors.As(err, &mvErr) {
+			t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+		}
+		if len(mvErr.Missing) != 1 || mvErr.Missing[0] != "name" {
+			t.Errorf("expected missing=[name], got %v", mvErr.Missing)
+		}
+		if resp == nil {
+			t.Fatal("expected partial response alongside error")
 		}
 	})
 }

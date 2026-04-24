@@ -234,6 +234,24 @@ func TestGetVpnRoute(t *testing.T) {
 			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
+
+	t.Run("hits expected URL path", func(t *testing.T) {
+		const want = "/projects/test-project/providers/Aruba.Network/vpnTunnels/tunnel-123/vpnRoutes/route-1"
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != want {
+				t.Errorf("expected path %q, got %q", want, r.URL.Path)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPNRoutesClientImpl(c)
+		_, err := svc.Get(context.Background(), "test-project", "tunnel-123", "route-1", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
 }
 
 func TestCreateVpnRoute(t *testing.T) {
