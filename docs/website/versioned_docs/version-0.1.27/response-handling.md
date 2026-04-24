@@ -58,13 +58,19 @@ func (s *VPCService) GetVPC(ctx context.Context, project string, vpcId string, p
 ## Error Response Structure
 
 ```go
+type ValidationError struct {
+    Field   string `json:"field,omitempty"`
+    Message string `json:"message,omitempty"`
+}
+
 type ErrorResponse struct {
-    Type       *string                 // URI reference for the problem type
-    Title      *string                 // Short, human-readable summary
-    Status     *int32                  // HTTP status code
-    Detail     *string                 // Human-readable explanation
-    Instance   *string                 // URI for this specific occurrence
-    Extensions map[string]interface{}  // Additional dynamic properties
+    Type     *string             // URI reference for the problem type
+    Title    *string             // Short, human-readable summary
+    Status   *int32              // HTTP status code
+    Detail   *string             // Human-readable explanation
+    Instance *string             // URI for this specific occurrence
+    Errors   []ValidationError   // Field-level validation errors (e.g. 400)
+    TraceID  *string             // Correlation id, JSON "traceId" (e.g. 404)
 }
 ```
 
@@ -144,15 +150,9 @@ if resp.IsError() && resp.Error != nil {
     log.Printf("Error Detail: %s", stringValue(resp.Error.Detail))
     log.Printf("Status Code: %d", int32Value(resp.Error.Status))
     
-    // Access custom extensions (e.g., validation errors)
-    if errors, ok := resp.Error.Extensions["errors"].([]interface{}); ok {
-        for _, e := range errors {
-            if errMap, ok := e.(map[string]interface{}); ok {
-                log.Printf("  Field: %s, Message: %s", 
-                    errMap["field"], 
-                    errMap["message"])
-            }
-        }
+    // Field-level validation errors (e.g. 400)
+    for _, ve := range resp.Error.Errors {
+        log.Printf("  Field: %s, Message: %s", ve.Field, ve.Message)
     }
 }
 ```
@@ -209,14 +209,8 @@ if err != nil {
 
 if resp.StatusCode == 400 && resp.Error != nil {
     fmt.Printf("Validation failed: %s\n", stringValue(resp.Error.Title))
-    
-    // Check for field-level errors in Extensions
-    if errors, ok := resp.Error.Extensions["errors"].([]interface{}); ok {
-        for _, e := range errors {
-            if errMap, ok := e.(map[string]interface{}); ok {
-                fmt.Printf("  - %s: %s\n", errMap["field"], errMap["message"])
-            }
-        }
+    for _, ve := range resp.Error.Errors {
+        fmt.Printf("  - %s: %s\n", ve.Field, ve.Message)
     }
 }
 ```
@@ -250,10 +244,10 @@ if resp.StatusCode >= 500 {
         log.Printf("Server error: %s", stringValue(resp.Error.Detail))
     }
     
-    // Log trace ID for support
-    if traceID, ok := resp.Error.Extensions["traceId"].(string); ok {
-        log.Printf("Trace ID: %s", traceID)
+    if resp.Error != nil && resp.Error.TraceID != nil {
+        log.Printf("Trace ID: %s", *resp.Error.TraceID)
     }
+    log.Printf("Raw body: %s", string(resp.RawBody))
 }
 ```
 
@@ -265,7 +259,7 @@ if resp.StatusCode >= 500 {
 4. **Check if `Error` field is non-nil** before dereferencing
 5. **Use helper functions** to safely dereference pointer fields
 6. **Keep `RawBody` available** for debugging and logging
-7. **Log trace IDs** from error responses for support requests
+7. **Use `Error.TraceID`** (JSON `traceId`) for support; keep **`RawBody`** for anything else not modeled
 
 ## Testing Response Handling
 

@@ -98,5 +98,6 @@ func stringValue(s *string) string {
 - Explore [API Resources](./resources) to see what you can manage
 - Understand [Response Handling](./response-handling) for robust error handling
 - Check out [Data Types](./types) for detailed type information
+- Read about [Multitenancy](./multitenancy) to manage tenant-specific clients
 - Learn about [Filtering](./filters) to query resources efficiently
 
