@@ -31,14 +31,14 @@ const (
 	VPCPeeringPath  = "/projects/%s/providers/Aruba.Network/vpcs/%s/vpcPeerings/%s"
 
 	// VPC Peering Route paths
-	VPCPeeringRoutesPath = "/projects/%s/providers/Aruba.Network/vpcs/%s/vpcPeerings/%s/routes"
-	VPCPeeringRoutePath  = "/projects/%s/providers/Aruba.Network/vpcs/%s/vpcPeerings/%s/routes/%s"
+	VPCPeeringRoutesPath = "/projects/%s/providers/Aruba.Network/vpcs/%s/vpcPeerings/%s/vpcPeeringRoutes"
+	VPCPeeringRoutePath  = "/projects/%s/providers/Aruba.Network/vpcs/%s/vpcPeerings/%s/vpcPeeringRoutes/%s"
 
 	// VPN Tunnel paths
-	VPNTunnelsPath = "/projects/%s/providers/Aruba.Network/vpntunnels"
-	VPNTunnelPath  = "/projects/%s/providers/Aruba.Network/vpntunnels/%s"
+	VPNTunnelsPath = "/projects/%s/providers/Aruba.Network/vpnTunnels"
+	VPNTunnelPath  = "/projects/%s/providers/Aruba.Network/vpnTunnels/%s"
 
 	// VPN Route paths
-	VPNRoutesPath = "/projects/%s/providers/Aruba.Network/vpntunnels/%s/routes"
-	VPNRoutePath  = "/projects/%s/providers/Aruba.Network/vpntunnels/%s/routes/%s"
+	VPNRoutesPath = "/projects/%s/providers/Aruba.Network/vpnTunnels/%s/vpnRoutes"
+	VPNRoutePath  = "/projects/%s/providers/Aruba.Network/vpnTunnels/%s/vpnRoutes/%s"
 )
