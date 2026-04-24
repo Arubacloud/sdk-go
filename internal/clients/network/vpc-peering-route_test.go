@@ -126,6 +126,24 @@ func TestListVpcPeeringRoutes(t *testing.T) {
 			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
+
+	t.Run("hits expected URL path", func(t *testing.T) {
+		const want = "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/vpcPeerings/peering-1/vpcPeeringRoutes"
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != want {
+				t.Errorf("expected path %q, got %q", want, r.URL.Path)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"total":0,"values":[]}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewVPCPeeringRoutesClientImpl(c)
+		_, err := svc.List(context.Background(), "test-project", "vpc-123", "peering-1", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
 }
 
 func TestGetVpcPeeringRoute(t *testing.T) {
