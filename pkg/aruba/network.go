@@ -69,11 +69,183 @@ func (c *networkClientImpl) VPNTunnels() VPNTunnelsClient {
 }
 
 type ElasticIPsClient interface {
+	List(ctx context.Context, project Ref, opts ...CallOption) (*List[*ElasticIP], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*ElasticIP, error)
+	Create(ctx context.Context, eip *ElasticIP, opts ...CallOption) (*ElasticIP, error)
+	Update(ctx context.Context, eip *ElasticIP, opts ...CallOption) (*ElasticIP, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
+}
+
+type elasticIPLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ElasticList], error)
-	Get(ctx context.Context, projectID string, elasticIPID string, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error)
+	Get(ctx context.Context, projectID, elasticIPID string, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error)
 	Create(ctx context.Context, projectID string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error)
-	Update(ctx context.Context, projectID string, elasticIPID string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error)
-	Delete(ctx context.Context, projectID string, elasticIPID string, params *types.RequestParameters) (*types.Response[any], error)
+	Update(ctx context.Context, projectID, elasticIPID string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error)
+	Delete(ctx context.Context, projectID, elasticIPID string, params *types.RequestParameters) (*types.Response[any], error)
+}
+
+type elasticIPsClientAdapter struct{ low elasticIPLowLevelClient }
+
+func newElasticIPsClientAdapter(rest *restclient.Client) *elasticIPsClientAdapter {
+	if rest == nil {
+		return &elasticIPsClientAdapter{}
+	}
+	return &elasticIPsClientAdapter{low: network.NewElasticIPsClientImpl(rest)}
+}
+
+func (a *elasticIPsClientAdapter) Create(ctx context.Context, e *ElasticIP, opts ...CallOption) (*ElasticIP, error) {
+	if err := e.Err(); err != nil {
+		return e, err
+	}
+	if e.ProjectID() == "" {
+		return e, fmt.Errorf("Create: elastic IP has no project — call IntoProject first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Create(ctx, e.ProjectID(), e.toRequest(), rp)
+	populateHTTPEnvelope(&e.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		e.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return e, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return e, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return e, nil
+}
+
+func (a *elasticIPsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*ElasticIP, error) {
+	projectID, elasticIPID, err := elasticIPIDsFromRef(ref)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Get(ctx, projectID, elasticIPID, rp)
+	out := &ElasticIP{}
+	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		out.fromResponse(resp.Data)
+	}
+	out.projectID = projectID
+	if err != nil {
+		return out, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return out, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return out, nil
+}
+
+func (a *elasticIPsClientAdapter) Update(ctx context.Context, e *ElasticIP, opts ...CallOption) (*ElasticIP, error) {
+	if err := e.Err(); err != nil {
+		return e, err
+	}
+	if e.ID() == "" {
+		return e, fmt.Errorf("Update: elastic IP has no ID — call Get first or seed from response metadata")
+	}
+	if e.ProjectID() == "" {
+		return e, fmt.Errorf("Update: elastic IP has no project — call IntoProject first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Update(ctx, e.ProjectID(), e.ID(), e.toRequest(), rp)
+	populateHTTPEnvelope(&e.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		e.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return e, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return e, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return e, nil
+}
+
+func (a *elasticIPsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
+	projectID, elasticIPID, err := elasticIPIDsFromRef(ref)
+	if err != nil {
+		return err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Delete(ctx, projectID, elasticIPID, rp)
+	if err != nil {
+		return err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return nil
+}
+
+func (a *elasticIPsClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*ElasticIP], error) {
+	projectID, err := projectIDFromRef(project)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.List(ctx, projectID, rp)
+	if err != nil {
+		return nil, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	var items []*ElasticIP
+	if resp != nil && resp.Data != nil {
+		items = make([]*ElasticIP, 0, len(resp.Data.Values))
+		for i := range resp.Data.Values {
+			e := &ElasticIP{}
+			e.fromResponse(&resp.Data.Values[i])
+			if e.projectID == "" {
+				e.projectID = projectID
+			}
+			items = append(items, e)
+		}
+	}
+	refetch := func(_ context.Context, _ string) (*List[*ElasticIP], error) {
+		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	}
+	var total int64
+	var self, prev, next, first, last string
+	if resp != nil && resp.Data != nil {
+		total = resp.Data.Total
+		self = resp.Data.Self
+		prev = resp.Data.Prev
+		next = resp.Data.Next
+		first = resp.Data.First
+		last = resp.Data.Last
+	}
+	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+}
+
+// elasticIPIDsFromRef extracts (projectID, elasticIPID) from a Ref. Tries typed
+// assertions first, then falls back to URI path parsing.
+func elasticIPIDsFromRef(ref Ref) (projectID, elasticIPID string, err error) {
+	eid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withElasticIPID); ok {
+			return w.ElasticIPID(), true
+		}
+		return "", false
+	}, "elasticIps")
+	if !ok || eid == "" {
+		return "", "", fmt.Errorf("cannot determine elastic IP ID from Ref %q", ref.URI())
+	}
+	pid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withProjectID); ok {
+			return w.ProjectID(), true
+		}
+		return "", false
+	}, "projects")
+	if !ok || pid == "" {
+		return "", "", fmt.Errorf("cannot determine project ID from Ref %q", ref.URI())
+	}
+	return pid, eid, nil
 }
 
 type LoadBalancersClient interface {
