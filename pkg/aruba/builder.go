@@ -576,10 +576,7 @@ func buildSecurityGroupsClient(restClient *restclient.Client) (SecurityGroupsCli
 }
 
 func buildSubnetsClient(restClient *restclient.Client) (SubnetsClient, error) {
-	return network.NewSubnetsClientImpl(
-		restClient,
-		network.NewVPCsClientImpl(restClient),
-	), nil
+	return newSubnetsClientAdapter(restClient), nil
 }
 
 func buildVPCPeeringRoutesClient(restClient *restclient.Client) (VPCPeeringRoutesClient, error) {

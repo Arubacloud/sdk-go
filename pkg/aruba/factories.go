@@ -20,3 +20,11 @@ func NewVPC() *VPC {
 	v.projectScopedMixin = bindProjectScoped(&v.errMixin)
 	return v
 }
+
+// NewSubnet returns a fresh *Subnet ready for fluent setters and a Create call.
+// Binds vpcScopedMixin's error sink so IntoVPC failures surface via Err().
+func NewSubnet() *Subnet {
+	s := &Subnet{}
+	s.vpcScopedMixin = bindVPCScoped(&s.errMixin)
+	return s
+}

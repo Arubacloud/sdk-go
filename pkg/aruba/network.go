@@ -98,11 +98,196 @@ type SecurityGroupsClient interface {
 }
 
 type SubnetsClient interface {
-	List(ctx context.Context, projectID string, vpcID string, params *types.RequestParameters) (*types.Response[types.SubnetList], error)
-	Get(ctx context.Context, projectID string, vpcID string, subnetID string, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error)
-	Create(ctx context.Context, projectID string, vpcID string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error)
-	Update(ctx context.Context, projectID string, vpcID string, subnetID string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error)
-	Delete(ctx context.Context, projectID string, vpcID string, subnetID string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, vpc Ref, opts ...CallOption) (*List[*Subnet], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*Subnet, error)
+	Create(ctx context.Context, subnet *Subnet, opts ...CallOption) (*Subnet, error)
+	Update(ctx context.Context, subnet *Subnet, opts ...CallOption) (*Subnet, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
+}
+
+type subnetLowLevelClient interface {
+	List(ctx context.Context, projectID, vpcID string, params *types.RequestParameters) (*types.Response[types.SubnetList], error)
+	Get(ctx context.Context, projectID, vpcID, subnetID string, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error)
+	Create(ctx context.Context, projectID, vpcID string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error)
+	Update(ctx context.Context, projectID, vpcID, subnetID string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error)
+	Delete(ctx context.Context, projectID, vpcID, subnetID string, params *types.RequestParameters) (*types.Response[any], error)
+}
+
+type subnetsClientAdapter struct{ low subnetLowLevelClient }
+
+func newSubnetsClientAdapter(rest *restclient.Client) *subnetsClientAdapter {
+	if rest == nil {
+		return &subnetsClientAdapter{}
+	}
+	return &subnetsClientAdapter{
+		low: network.NewSubnetsClientImpl(rest, network.NewVPCsClientImpl(rest)),
+	}
+}
+
+func (a *subnetsClientAdapter) Create(ctx context.Context, s *Subnet, opts ...CallOption) (*Subnet, error) {
+	if err := s.Err(); err != nil {
+		return s, err
+	}
+	if s.VPCID() == "" || s.ProjectID() == "" {
+		return s, fmt.Errorf("Create: subnet has no VPC — call IntoVPC first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Create(ctx, s.ProjectID(), s.VPCID(), s.toRequest(), rp)
+	populateHTTPEnvelope(&s.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		s.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return s, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return s, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return s, nil
+}
+
+func (a *subnetsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*Subnet, error) {
+	projectID, vpcID, subnetID, err := subnetIDsFromRef(ref)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Get(ctx, projectID, vpcID, subnetID, rp)
+	out := &Subnet{}
+	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		out.fromResponse(resp.Data)
+	}
+	out.vpcID = vpcID
+	out.projectID = projectID
+	if err != nil {
+		return out, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return out, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return out, nil
+}
+
+func (a *subnetsClientAdapter) Update(ctx context.Context, s *Subnet, opts ...CallOption) (*Subnet, error) {
+	if err := s.Err(); err != nil {
+		return s, err
+	}
+	if s.ID() == "" {
+		return s, fmt.Errorf("Update: subnet has no ID — call Get first or seed from response metadata")
+	}
+	if s.VPCID() == "" || s.ProjectID() == "" {
+		return s, fmt.Errorf("Update: subnet has no VPC — call IntoVPC first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Update(ctx, s.ProjectID(), s.VPCID(), s.ID(), s.toRequest(), rp)
+	populateHTTPEnvelope(&s.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		s.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return s, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return s, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return s, nil
+}
+
+func (a *subnetsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
+	projectID, vpcID, subnetID, err := subnetIDsFromRef(ref)
+	if err != nil {
+		return err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Delete(ctx, projectID, vpcID, subnetID, rp)
+	if err != nil {
+		return err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return nil
+}
+
+func (a *subnetsClientAdapter) List(ctx context.Context, vpc Ref, opts ...CallOption) (*List[*Subnet], error) {
+	projectID, vpcID, err := vpcIDsFromRef(vpc)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.List(ctx, projectID, vpcID, rp)
+	if err != nil {
+		return nil, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	var items []*Subnet
+	if resp != nil && resp.Data != nil {
+		items = make([]*Subnet, 0, len(resp.Data.Values))
+		for i := range resp.Data.Values {
+			s := &Subnet{}
+			s.fromResponse(&resp.Data.Values[i])
+			s.vpcID = vpcID
+			if s.projectID == "" {
+				s.projectID = projectID
+			}
+			items = append(items, s)
+		}
+	}
+	refetch := func(_ context.Context, _ string) (*List[*Subnet], error) {
+		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	}
+	var total int64
+	var self, prev, next, first, last string
+	if resp != nil && resp.Data != nil {
+		total = resp.Data.Total
+		self = resp.Data.Self
+		prev = resp.Data.Prev
+		next = resp.Data.Next
+		first = resp.Data.First
+		last = resp.Data.Last
+	}
+	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+}
+
+// subnetIDsFromRef extracts (projectID, vpcID, subnetID) from a Ref. Tries typed
+// assertions first, then falls back to URI path parsing.
+func subnetIDsFromRef(ref Ref) (projectID, vpcID, subnetID string, err error) {
+	sid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withSubnetID); ok {
+			return w.SubnetID(), true
+		}
+		return "", false
+	}, "subnets")
+	if !ok || sid == "" {
+		return "", "", "", fmt.Errorf("cannot determine subnet ID from Ref %q", ref.URI())
+	}
+	vid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withVPCID); ok {
+			return w.VPCID(), true
+		}
+		return "", false
+	}, "vpcs")
+	if !ok || vid == "" {
+		return "", "", "", fmt.Errorf("cannot determine VPC ID from Ref %q", ref.URI())
+	}
+	pid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withProjectID); ok {
+			return w.ProjectID(), true
+		}
+		return "", false
+	}, "projects")
+	if !ok || pid == "" {
+		return "", "", "", fmt.Errorf("cannot determine project ID from Ref %q", ref.URI())
+	}
+	return pid, vid, sid, nil
 }
 
 type VPCPeeringRoutesClient interface {
