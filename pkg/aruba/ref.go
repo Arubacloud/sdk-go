@@ -81,3 +81,4 @@ type withVPCPeeringID interface{ VPCPeeringID() string }
 type withVPNTunnelID interface{ VPNTunnelID() string }
 type withBackupID interface{ BackupID() string }
 type withKMSID interface{ KMSID() string }
+type withSubnetID interface{ SubnetID() string }
