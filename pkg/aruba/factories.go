@@ -28,3 +28,11 @@ func NewSubnet() *Subnet {
 	s.vpcScopedMixin = bindVPCScoped(&s.errMixin)
 	return s
 }
+
+// NewElasticIP returns a fresh *ElasticIP ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewElasticIP() *ElasticIP {
+	e := &ElasticIP{}
+	e.projectScopedMixin = bindProjectScoped(&e.errMixin)
+	return e
+}
