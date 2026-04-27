@@ -15,7 +15,6 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/database"
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
 	"github.com/Arubacloud/sdk-go/internal/clients/network"
-	"github.com/Arubacloud/sdk-go/internal/clients/project"
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 	"github.com/Arubacloud/sdk-go/internal/clients/security"
 	"github.com/Arubacloud/sdk-go/internal/clients/storage"
@@ -607,7 +606,7 @@ func buildVPNTunnelsClient(restClient *restclient.Client) (VPNTunnelsClient, err
 // Project domain clients
 
 func buildProjectClient(restClient *restclient.Client) (ProjectClient, error) {
-	return project.NewProjectsClientImpl(restClient), nil
+	return newProjectClientAdapter(restClient), nil
 }
 
 //
