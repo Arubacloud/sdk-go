@@ -2,7 +2,10 @@ package aruba
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/Arubacloud/sdk-go/internal/clients/network"
+	"github.com/Arubacloud/sdk-go/internal/restclient"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
@@ -119,11 +122,179 @@ type VPCPeeringsClient interface {
 }
 
 type VPCsClient interface {
+	List(ctx context.Context, project Ref, opts ...CallOption) (*List[*VPC], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*VPC, error)
+	Create(ctx context.Context, vpc *VPC, opts ...CallOption) (*VPC, error)
+	Update(ctx context.Context, vpc *VPC, opts ...CallOption) (*VPC, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
+}
+
+type vpcLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.VPCList], error)
-	Get(ctx context.Context, projectID string, vpcID string, params *types.RequestParameters) (*types.Response[types.VPCResponse], error)
+	Get(ctx context.Context, projectID, vpcID string, params *types.RequestParameters) (*types.Response[types.VPCResponse], error)
 	Create(ctx context.Context, projectID string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error)
-	Update(ctx context.Context, projectID string, vpcID string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error)
-	Delete(ctx context.Context, projectID string, vpcID string, params *types.RequestParameters) (*types.Response[any], error)
+	Update(ctx context.Context, projectID, vpcID string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error)
+	Delete(ctx context.Context, projectID, vpcID string, params *types.RequestParameters) (*types.Response[any], error)
+}
+
+type vpcsClientAdapter struct{ low vpcLowLevelClient }
+
+func newVPCsClientAdapter(rest *restclient.Client) *vpcsClientAdapter {
+	if rest == nil {
+		return &vpcsClientAdapter{}
+	}
+	return &vpcsClientAdapter{low: network.NewVPCsClientImpl(rest)}
+}
+
+func (a *vpcsClientAdapter) Create(ctx context.Context, v *VPC, opts ...CallOption) (*VPC, error) {
+	if err := v.Err(); err != nil {
+		return v, err
+	}
+	if v.ProjectID() == "" {
+		return v, fmt.Errorf("Create: VPC has no project — call IntoProject first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Create(ctx, v.ProjectID(), v.toRequest(), rp)
+	populateHTTPEnvelope(&v.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		v.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return v, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return v, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return v, nil
+}
+
+func (a *vpcsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*VPC, error) {
+	projectID, vpcID, err := vpcIDsFromRef(ref)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Get(ctx, projectID, vpcID, rp)
+	out := &VPC{}
+	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		out.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return out, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return out, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return out, nil
+}
+
+func (a *vpcsClientAdapter) Update(ctx context.Context, v *VPC, opts ...CallOption) (*VPC, error) {
+	if err := v.Err(); err != nil {
+		return v, err
+	}
+	if v.ID() == "" {
+		return v, fmt.Errorf("Update: VPC has no ID — call Get first or seed from response metadata")
+	}
+	if v.ProjectID() == "" {
+		return v, fmt.Errorf("Update: VPC has no project — call IntoProject first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Update(ctx, v.ProjectID(), v.ID(), v.toRequest(), rp)
+	populateHTTPEnvelope(&v.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		v.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return v, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return v, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return v, nil
+}
+
+func (a *vpcsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
+	projectID, vpcID, err := vpcIDsFromRef(ref)
+	if err != nil {
+		return err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Delete(ctx, projectID, vpcID, rp)
+	if err != nil {
+		return err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return nil
+}
+
+func (a *vpcsClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*VPC], error) {
+	projectID, err := projectIDFromRef(project)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.List(ctx, projectID, rp)
+	if err != nil {
+		return nil, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	var items []*VPC
+	if resp != nil && resp.Data != nil {
+		items = make([]*VPC, 0, len(resp.Data.Values))
+		for i := range resp.Data.Values {
+			v := &VPC{}
+			v.fromResponse(&resp.Data.Values[i])
+			items = append(items, v)
+		}
+	}
+	refetch := func(_ context.Context, _ string) (*List[*VPC], error) {
+		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	}
+	var total int64
+	var self, prev, next, first, last string
+	if resp != nil && resp.Data != nil {
+		total = resp.Data.Total
+		self = resp.Data.Self
+		prev = resp.Data.Prev
+		next = resp.Data.Next
+		first = resp.Data.First
+		last = resp.Data.Last
+	}
+	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+}
+
+// vpcIDsFromRef extracts (projectID, vpcID) from a Ref. Tries typed assertions
+// first, then falls back to URI path parsing.
+func vpcIDsFromRef(ref Ref) (projectID, vpcID string, err error) {
+	vid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withVPCID); ok {
+			return w.VPCID(), true
+		}
+		return "", false
+	}, "vpcs")
+	if !ok || vid == "" {
+		return "", "", fmt.Errorf("cannot determine VPC ID from Ref %q", ref.URI())
+	}
+	pid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withProjectID); ok {
+			return w.ProjectID(), true
+		}
+		return "", false
+	}, "projects")
+	if !ok || pid == "" {
+		return "", "", fmt.Errorf("cannot determine project ID from Ref %q", ref.URI())
+	}
+	return pid, vid, nil
 }
 
 type VPNRoutesClient interface {
