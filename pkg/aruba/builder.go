@@ -551,7 +551,7 @@ func buildNetworkClient(restClient *restclient.Client) (NetworkClient, error) {
 }
 
 func buildElasticIPsClient(restClient *restclient.Client) (ElasticIPsClient, error) {
-	return network.NewElasticIPsClientImpl(restClient), nil
+	return newElasticIPsClientAdapter(restClient), nil
 }
 
 func buildLoadBalancersClient(restClient *restclient.Client) (LoadBalancersClient, error) {
