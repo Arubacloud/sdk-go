@@ -8,3 +8,6 @@ package aruba
 func URI(s string) Ref {
 	return uriRef{uri: s}
 }
+
+// NewProject returns a fresh *Project ready for fluent setters and a Create call.
+func NewProject() *Project { return &Project{} }
