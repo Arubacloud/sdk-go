@@ -11,3 +11,12 @@ func URI(s string) Ref {
 
 // NewProject returns a fresh *Project ready for fluent setters and a Create call.
 func NewProject() *Project { return &Project{} }
+
+// NewVPC returns a fresh *VPC ready for fluent setters and a Create call.
+// Binds the projectScopedMixin's error sink to the VPC's errMixin so IntoProject
+// failures surface via Err().
+func NewVPC() *VPC {
+	v := &VPC{}
+	v.projectScopedMixin = bindProjectScoped(&v.errMixin)
+	return v
+}
