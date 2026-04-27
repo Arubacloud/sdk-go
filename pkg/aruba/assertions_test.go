@@ -24,7 +24,6 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/database"
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
 	"github.com/Arubacloud/sdk-go/internal/clients/network"
-	"github.com/Arubacloud/sdk-go/internal/clients/project"
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 	"github.com/Arubacloud/sdk-go/internal/clients/storage"
 )
@@ -74,7 +73,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 		_ VPNTunnelsClient         = network.NewVPNTunnelsClientImpl(nil)
 
 		// Project
-		_ ProjectClient = project.NewProjectsClientImpl(nil)
+		_ ProjectClient = newProjectClientAdapter(nil)
 
 		// Schedule
 		_ JobsClient = schedule.NewJobsClientImpl(nil)
