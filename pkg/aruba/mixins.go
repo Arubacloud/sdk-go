@@ -446,6 +446,13 @@ func (m *vpnTunnelScopedMixin) intoVPNTunnel(parent Ref) {
 		return "", false
 	}, "vpn-tunnels")
 	if !ok {
+		// Production URI uses "vpnTunnels" (camelCase); mixin/test form uses "vpn-tunnels".
+		if v := parseURIIDs(parent.URI())["vpnTunnels"]; v != "" {
+			tunnelID = v
+			ok = true
+		}
+	}
+	if !ok {
 		m.errSink.addErr(fmt.Errorf("IntoVPNTunnel: cannot determine VPN tunnel ID from Ref %q", parent.URI()))
 	}
 
