@@ -85,6 +85,14 @@ func NewVPNRoute() *VPNRoute {
 	return r
 }
 
+// NewBlockStorage returns a fresh *BlockStorage ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewBlockStorage() *BlockStorage {
+	b := &BlockStorage{}
+	b.projectScopedMixin = bindProjectScoped(&b.errMixin)
+	return b
+}
+
 // NewVPNIPConfig returns a fresh *VPNIPConfig sub-builder for configuring IP settings.
 func NewVPNIPConfig() *VPNIPConfig { return &VPNIPConfig{} }
 
