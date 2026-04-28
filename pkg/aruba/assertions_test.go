@@ -23,7 +23,6 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/container"
 	"github.com/Arubacloud/sdk-go/internal/clients/database"
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
-	"github.com/Arubacloud/sdk-go/internal/clients/network"
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 	"github.com/Arubacloud/sdk-go/internal/clients/storage"
 )
@@ -67,7 +66,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 		_ SubnetsClient            = newSubnetsClientAdapter(nil)
 		_ VPCPeeringsClient        = newVPCPeeringsClientAdapter(nil)
 		_ VPCPeeringRoutesClient   = newVPCPeeringRoutesClientAdapter(nil)
-		_ VPNRoutesClient          = network.NewVPNRoutesClientImpl(nil)
+		_ VPNRoutesClient          = newVPNRoutesClientAdapter(nil)
 		_ VPNTunnelsClient         = newVPNTunnelsClientAdapter(nil)
 
 		// Project
