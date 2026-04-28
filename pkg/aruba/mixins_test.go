@@ -331,6 +331,19 @@ func TestVPNTunnelScopedMixin_URIFallback(t *testing.T) {
 	}
 }
 
+func TestVPNTunnelScopedMixin_URIFallback_CamelCase(t *testing.T) {
+	errs := &errMixin{}
+	m := bindVPNTunnelScoped(errs)
+	m.intoVPNTunnel(URI("/projects/proj-1/providers/Aruba.Network/vpnTunnels/t-1"))
+
+	if errs.Err() != nil {
+		t.Fatalf("unexpected error: %v", errs.Err())
+	}
+	if m.VPNTunnelID() != "t-1" || m.ProjectID() != "proj-1" {
+		t.Errorf("got tunnel=%q proj=%q", m.VPNTunnelID(), m.ProjectID())
+	}
+}
+
 // --------------------------------------------------------------------------
 // vpcPeeringScopedMixin
 // --------------------------------------------------------------------------
