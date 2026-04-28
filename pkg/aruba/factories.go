@@ -68,3 +68,23 @@ func NewVPCPeeringRoute() *VPCPeeringRoute {
 	r.vpcPeeringScopedMixin = bindVPCPeeringScoped(&r.errMixin)
 	return r
 }
+
+// NewVPNTunnel returns a fresh *VPNTunnel ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewVPNTunnel() *VPNTunnel {
+	t := &VPNTunnel{}
+	t.projectScopedMixin = bindProjectScoped(&t.errMixin)
+	return t
+}
+
+// NewVPNIPConfig returns a fresh *VPNIPConfig sub-builder for configuring IP settings.
+func NewVPNIPConfig() *VPNIPConfig { return &VPNIPConfig{} }
+
+// NewVPNIKE returns a fresh *VPNIKE sub-builder for configuring IKE settings.
+func NewVPNIKE() *VPNIKE { return &VPNIKE{} }
+
+// NewVPNESP returns a fresh *VPNESP sub-builder for configuring ESP settings.
+func NewVPNESP() *VPNESP { return &VPNESP{} }
+
+// NewVPNPSK returns a fresh *VPNPSK sub-builder for configuring PSK settings.
+func NewVPNPSK() *VPNPSK { return &VPNPSK{} }

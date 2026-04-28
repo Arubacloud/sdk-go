@@ -587,7 +587,7 @@ func buildVPNRoutesClient(restClient *restclient.Client) (VPNRoutesClient, error
 }
 
 func buildVPNTunnelsClient(restClient *restclient.Client) (VPNTunnelsClient, error) {
-	return network.NewVPNTunnelsClientImpl(restClient), nil
+	return newVPNTunnelsClientAdapter(restClient), nil
 }
 
 //
