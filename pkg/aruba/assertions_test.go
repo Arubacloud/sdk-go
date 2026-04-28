@@ -62,7 +62,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 
 		// Network
 		_ ElasticIPsClient         = newElasticIPsClientAdapter(nil)
-		_ LoadBalancersClient      = network.NewLoadBalancersClientImpl(nil)
+		_ LoadBalancersClient      = newLoadBalancersClientAdapter(nil)
 		_ VPCsClient               = newVPCsClientAdapter(nil)
 		_ SecurityGroupsClient     = sgImpl
 		_ SecurityGroupRulesClient = network.NewSecurityGroupRulesClientImpl(nil, sgImpl)
