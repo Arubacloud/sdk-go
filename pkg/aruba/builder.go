@@ -14,7 +14,6 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/container"
 	"github.com/Arubacloud/sdk-go/internal/clients/database"
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
-	"github.com/Arubacloud/sdk-go/internal/clients/network"
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 	"github.com/Arubacloud/sdk-go/internal/clients/security"
 	"github.com/Arubacloud/sdk-go/internal/clients/storage"
@@ -583,7 +582,7 @@ func buildVPCsClient(restClient *restclient.Client) (VPCsClient, error) {
 }
 
 func buildVPNRoutesClient(restClient *restclient.Client) (VPNRoutesClient, error) {
-	return network.NewVPNRoutesClientImpl(restClient), nil
+	return newVPNRoutesClientAdapter(restClient), nil
 }
 
 func buildVPNTunnelsClient(restClient *restclient.Client) (VPNTunnelsClient, error) {
