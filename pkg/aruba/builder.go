@@ -559,13 +559,7 @@ func buildLoadBalancersClient(restClient *restclient.Client) (LoadBalancersClien
 }
 
 func buildSecurityGroupRulesClient(restClient *restclient.Client) (SecurityGroupRulesClient, error) {
-	return network.NewSecurityGroupRulesClientImpl(
-		restClient,
-		network.NewSecurityGroupsClientImpl(
-			restClient,
-			network.NewVPCsClientImpl(restClient),
-		),
-	), nil
+	return newSecurityGroupRulesClientAdapter(restClient), nil
 }
 
 func buildSecurityGroupsClient(restClient *restclient.Client) (SecurityGroupsClient, error) {
