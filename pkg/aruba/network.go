@@ -1599,9 +1599,189 @@ type VPNRoutesClient interface {
 }
 
 type VPNTunnelsClient interface {
+	List(ctx context.Context, project Ref, opts ...CallOption) (*List[*VPNTunnel], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*VPNTunnel, error)
+	Create(ctx context.Context, t *VPNTunnel, opts ...CallOption) (*VPNTunnel, error)
+	Update(ctx context.Context, t *VPNTunnel, opts ...CallOption) (*VPNTunnel, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
+}
+
+type vpnTunnelLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.VPNTunnelList], error)
-	Get(ctx context.Context, projectID string, vpnTunnelID string, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error)
+	Get(ctx context.Context, projectID, vpnTunnelID string, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error)
 	Create(ctx context.Context, projectID string, body types.VPNTunnelRequest, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error)
-	Update(ctx context.Context, projectID string, vpnTunnelID string, body types.VPNTunnelRequest, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error)
-	Delete(ctx context.Context, projectID string, vpnTunnelID string, params *types.RequestParameters) (*types.Response[any], error)
+	Update(ctx context.Context, projectID, vpnTunnelID string, body types.VPNTunnelRequest, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error)
+	Delete(ctx context.Context, projectID, vpnTunnelID string, params *types.RequestParameters) (*types.Response[any], error)
+}
+
+type vpnTunnelsClientAdapter struct{ low vpnTunnelLowLevelClient }
+
+func newVPNTunnelsClientAdapter(rest *restclient.Client) *vpnTunnelsClientAdapter {
+	if rest == nil {
+		return &vpnTunnelsClientAdapter{}
+	}
+	return &vpnTunnelsClientAdapter{low: network.NewVPNTunnelsClientImpl(rest)}
+}
+
+func (a *vpnTunnelsClientAdapter) Create(ctx context.Context, t *VPNTunnel, opts ...CallOption) (*VPNTunnel, error) {
+	if err := t.Err(); err != nil {
+		return t, err
+	}
+	if t.ProjectID() == "" {
+		return t, fmt.Errorf("Create: VPN tunnel has no project — call IntoProject first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Create(ctx, t.ProjectID(), t.toRequest(), rp)
+	populateHTTPEnvelope(&t.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		t.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return t, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return t, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return t, nil
+}
+
+func (a *vpnTunnelsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*VPNTunnel, error) {
+	projectID, vpnTunnelID, err := vpnTunnelIDsFromRef(ref)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Get(ctx, projectID, vpnTunnelID, rp)
+	out := &VPNTunnel{}
+	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		out.fromResponse(resp.Data)
+	}
+	if out.projectID == "" {
+		out.projectID = projectID
+	}
+	if err != nil {
+		return out, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return out, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return out, nil
+}
+
+func (a *vpnTunnelsClientAdapter) Update(ctx context.Context, t *VPNTunnel, opts ...CallOption) (*VPNTunnel, error) {
+	if err := t.Err(); err != nil {
+		return t, err
+	}
+	if t.ID() == "" {
+		return t, fmt.Errorf("Update: VPN tunnel has no ID — call Get first or seed from response metadata")
+	}
+	if t.ProjectID() == "" {
+		return t, fmt.Errorf("Update: VPN tunnel has no project — call IntoProject first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Update(ctx, t.ProjectID(), t.ID(), t.toRequest(), rp)
+	populateHTTPEnvelope(&t.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		t.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return t, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return t, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return t, nil
+}
+
+func (a *vpnTunnelsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
+	projectID, vpnTunnelID, err := vpnTunnelIDsFromRef(ref)
+	if err != nil {
+		return err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Delete(ctx, projectID, vpnTunnelID, rp)
+	if err != nil {
+		return err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return nil
+}
+
+func (a *vpnTunnelsClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*VPNTunnel], error) {
+	projectID, err := projectIDFromRef(project)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.List(ctx, projectID, rp)
+	if err != nil {
+		return nil, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	var items []*VPNTunnel
+	if resp != nil && resp.Data != nil {
+		items = make([]*VPNTunnel, 0, len(resp.Data.Values))
+		for i := range resp.Data.Values {
+			v := &VPNTunnel{}
+			v.fromResponse(&resp.Data.Values[i])
+			if v.projectID == "" {
+				v.projectID = projectID
+			}
+			items = append(items, v)
+		}
+	}
+	refetch := func(_ context.Context, _ string) (*List[*VPNTunnel], error) {
+		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	}
+	var total int64
+	var self, prev, next, first, last string
+	if resp != nil && resp.Data != nil {
+		total = resp.Data.Total
+		self = resp.Data.Self
+		prev = resp.Data.Prev
+		next = resp.Data.Next
+		first = resp.Data.First
+		last = resp.Data.Last
+	}
+	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+}
+
+// vpnTunnelIDsFromRef extracts (projectID, vpnTunnelID) from a Ref.
+// Accepts the production camelCase segment "vpnTunnels" and the mixin/test form "vpn-tunnels".
+func vpnTunnelIDsFromRef(ref Ref) (projectID, vpnTunnelID string, err error) {
+	tid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withVPNTunnelID); ok {
+			return w.VPNTunnelID(), true
+		}
+		return "", false
+	}, "vpnTunnels")
+	if !ok || tid == "" {
+		if v := parseURIIDs(ref.URI())["vpn-tunnels"]; v != "" {
+			tid = v
+			ok = true
+		}
+	}
+	if !ok || tid == "" {
+		return "", "", fmt.Errorf("cannot determine VPN tunnel ID from Ref %q", ref.URI())
+	}
+	pid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withProjectID); ok {
+			return w.ProjectID(), true
+		}
+		return "", false
+	}, "projects")
+	if !ok || pid == "" {
+		return "", "", fmt.Errorf("cannot determine project ID from Ref %q", ref.URI())
+	}
+	return pid, tid, nil
 }
