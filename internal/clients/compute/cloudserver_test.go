@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
@@ -220,6 +221,35 @@ func TestGetCloudServer(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
+}
+
+func TestCloudServerRequestOmitsOptionalFields(t *testing.T) {
+	req := types.CloudServerRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "test-server"},
+			Location:                types.LocationRequest{Value: "ITBG-Bergamo"},
+		},
+		Properties: types.CloudServerPropertiesRequest{
+			Zone: "ITBG-1",
+			VPC:  types.ReferenceResource{URI: "/vpcs/123"},
+			BootVolume: types.ReferenceResource{
+				URI: "/blockStorages/456",
+			},
+		},
+	}
+
+	b, err := json.Marshal(req)
+	if err != nil {
+		t.Fatalf("unexpected marshal error: %v", err)
+	}
+
+	body := string(b)
+	if strings.Contains(body, "elasticIp") {
+		t.Errorf("expected elasticIp to be omitted when nil, got: %s", body)
+	}
+	if strings.Contains(body, "keyPair") {
+		t.Errorf("expected keyPair to be omitted when nil, got: %s", body)
+	}
 }
 
 func TestCreateCloudServer(t *testing.T) {

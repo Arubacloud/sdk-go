@@ -9,11 +9,11 @@ type CloudServerPropertiesRequest struct {
 
 	FlavorName *string `json:"flavorName,omitempty"`
 
-	ElasticIP ReferenceResource `json:"elasticIp,omitempty"`
+	ElasticIP *ReferenceResource `json:"elasticIp,omitempty"`
 
 	BootVolume ReferenceResource `json:"bootVolume"`
 
-	KeyPair ReferenceResource `json:"keyPair,omitempty"`
+	KeyPair *ReferenceResource `json:"keyPair,omitempty"`
 
 	Subnets []ReferenceResource `json:"subnets,omitempty"`
 
