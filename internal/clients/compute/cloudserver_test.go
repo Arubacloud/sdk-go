@@ -222,6 +222,41 @@ func TestGetCloudServer(t *testing.T) {
 	})
 }
 
+func TestCloudServerRequestOmitsOptionalFields(t *testing.T) {
+	t.Run("omits optional fields", func(t *testing.T) {
+		req := types.CloudServerRequest{
+			Metadata: types.RegionalResourceMetadataRequest{
+				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "test-server"},
+				Location:                types.LocationRequest{Value: "ITBG-Bergamo"},
+			},
+			Properties: types.CloudServerPropertiesRequest{
+				Zone: "ITBG-1",
+				VPC:  types.ReferenceResource{URI: "/vpcs/123"},
+				BootVolume: types.ReferenceResource{
+					URI: "/blockStorages/456",
+				},
+			},
+		}
+
+		b, err := json.Marshal(req)
+		if err != nil {
+			t.Fatalf("unexpected marshal error: %v", err)
+		}
+
+		var envelope map[string]any
+		if err := json.Unmarshal(b, &envelope); err != nil {
+			t.Fatalf("unexpected unmarshal error: %v", err)
+		}
+		props, _ := envelope["properties"].(map[string]any)
+		if _, ok := props["elasticIp"]; ok {
+			t.Errorf("expected elasticIp to be omitted when nil, got: %s", b)
+		}
+		if _, ok := props["keyPair"]; ok {
+			t.Errorf("expected keyPair to be omitted when nil, got: %s", b)
+		}
+	})
+}
+
 func TestCreateCloudServer(t *testing.T) {
 	cloudInitContent := "#cloud-config\npackage_update: true\n"
 	userData := base64.StdEncoding.EncodeToString([]byte(cloudInitContent))
