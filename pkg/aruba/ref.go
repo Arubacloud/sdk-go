@@ -79,6 +79,7 @@ type withSecurityRuleID interface{ SecurityRuleID() string }
 type withDBaaSID interface{ DBaaSID() string }
 type withDatabaseID interface{ DatabaseID() string }
 type withVPCPeeringID interface{ VPCPeeringID() string }
+type withVPCPeeringRouteID interface{ VPCPeeringRouteID() string }
 type withVPNTunnelID interface{ VPNTunnelID() string }
 type withBackupID interface{ BackupID() string }
 type withKMSID interface{ KMSID() string }

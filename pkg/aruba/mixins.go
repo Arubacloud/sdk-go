@@ -491,6 +491,13 @@ func (m *vpcPeeringScopedMixin) intoVPCPeering(parent Ref) {
 		return "", false
 	}, "peerings")
 	if !ok {
+		// Production URI uses "vpcPeerings" (camelCase); mixin/test form uses "peerings".
+		if v := parseURIIDs(parent.URI())["vpcPeerings"]; v != "" {
+			peeringID = v
+			ok = true
+		}
+	}
+	if !ok {
 		m.errSink.addErr(fmt.Errorf("IntoVPCPeering: cannot determine VPC peering ID from Ref %q", parent.URI()))
 	}
 
