@@ -76,7 +76,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 		_ JobsClient = schedule.NewJobsClientImpl(nil)
 
 		// Storage
-		_ VolumesClient        = volImpl
+		_ VolumesClient        = newVolumesClientAdapter(nil)
 		_ SnapshotsClient      = storage.NewSnapshotsClientImpl(nil, volImpl)
 		_ StorageBackupsClient = bkpImpl
 		_ StorageRestoreClient = storage.NewRestoreClientImpl(nil, bkpImpl)
