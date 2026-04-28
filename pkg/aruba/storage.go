@@ -2,7 +2,10 @@ package aruba
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/Arubacloud/sdk-go/internal/clients/storage"
+	"github.com/Arubacloud/sdk-go/internal/restclient"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
@@ -47,11 +50,184 @@ type SnapshotsClient interface {
 }
 
 type VolumesClient interface {
+	List(ctx context.Context, project Ref, opts ...CallOption) (*List[*BlockStorage], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*BlockStorage, error)
+	Create(ctx context.Context, vol *BlockStorage, opts ...CallOption) (*BlockStorage, error)
+	Update(ctx context.Context, vol *BlockStorage, opts ...CallOption) (*BlockStorage, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
+}
+
+type volumeLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.BlockStorageList], error)
-	Get(ctx context.Context, projectID string, volumeID string, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error)
-	Update(ctx context.Context, projectID string, volumeID string, body types.BlockStorageRequest, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error)
+	Get(ctx context.Context, projectID, volumeID string, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error)
 	Create(ctx context.Context, projectID string, body types.BlockStorageRequest, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error)
-	Delete(ctx context.Context, projectID string, volumeID string, params *types.RequestParameters) (*types.Response[any], error)
+	Update(ctx context.Context, projectID, volumeID string, body types.BlockStorageRequest, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error)
+	Delete(ctx context.Context, projectID, volumeID string, params *types.RequestParameters) (*types.Response[any], error)
+}
+
+type volumesClientAdapter struct{ low volumeLowLevelClient }
+
+func newVolumesClientAdapter(rest *restclient.Client) *volumesClientAdapter {
+	if rest == nil {
+		return &volumesClientAdapter{}
+	}
+	return &volumesClientAdapter{low: storage.NewVolumesClientImpl(rest)}
+}
+
+func (a *volumesClientAdapter) Create(ctx context.Context, vol *BlockStorage, opts ...CallOption) (*BlockStorage, error) {
+	if err := vol.Err(); err != nil {
+		return vol, err
+	}
+	if vol.ProjectID() == "" {
+		return vol, fmt.Errorf("Create: BlockStorage has no project — call IntoProject first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Create(ctx, vol.ProjectID(), vol.toRequest(), rp)
+	populateHTTPEnvelope(&vol.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		vol.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return vol, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return vol, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return vol, nil
+}
+
+func (a *volumesClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*BlockStorage, error) {
+	projectID, blockStorageID, err := blockStorageIDsFromRef(ref)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Get(ctx, projectID, blockStorageID, rp)
+	out := &BlockStorage{}
+	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		out.fromResponse(resp.Data)
+	}
+	if out.projectID == "" {
+		out.projectID = projectID
+	}
+	if err != nil {
+		return out, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return out, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return out, nil
+}
+
+func (a *volumesClientAdapter) Update(ctx context.Context, vol *BlockStorage, opts ...CallOption) (*BlockStorage, error) {
+	if err := vol.Err(); err != nil {
+		return vol, err
+	}
+	if vol.ID() == "" {
+		return vol, fmt.Errorf("Update: BlockStorage has no ID — call Get first or seed from response metadata")
+	}
+	if vol.ProjectID() == "" {
+		return vol, fmt.Errorf("Update: BlockStorage has no project — call IntoProject first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Update(ctx, vol.ProjectID(), vol.ID(), vol.toRequest(), rp)
+	populateHTTPEnvelope(&vol.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		vol.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return vol, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return vol, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return vol, nil
+}
+
+func (a *volumesClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
+	projectID, blockStorageID, err := blockStorageIDsFromRef(ref)
+	if err != nil {
+		return err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Delete(ctx, projectID, blockStorageID, rp)
+	if err != nil {
+		return err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return nil
+}
+
+func (a *volumesClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*BlockStorage], error) {
+	projectID, err := projectIDFromRef(project)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.List(ctx, projectID, rp)
+	if err != nil {
+		return nil, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	var items []*BlockStorage
+	if resp != nil && resp.Data != nil {
+		items = make([]*BlockStorage, 0, len(resp.Data.Values))
+		for i := range resp.Data.Values {
+			bs := &BlockStorage{}
+			bs.fromResponse(&resp.Data.Values[i])
+			if bs.projectID == "" {
+				bs.projectID = projectID
+			}
+			items = append(items, bs)
+		}
+	}
+	refetch := func(_ context.Context, _ string) (*List[*BlockStorage], error) {
+		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	}
+	var total int64
+	var self, prev, next, first, last string
+	if resp != nil && resp.Data != nil {
+		total = resp.Data.Total
+		self = resp.Data.Self
+		prev = resp.Data.Prev
+		next = resp.Data.Next
+		first = resp.Data.First
+		last = resp.Data.Last
+	}
+	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+}
+
+// blockStorageIDsFromRef extracts (projectID, blockStorageID) from a Ref.
+func blockStorageIDsFromRef(ref Ref) (projectID, blockStorageID string, err error) {
+	bid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withBlockStorageID); ok {
+			return w.BlockStorageID(), true
+		}
+		return "", false
+	}, "blockstorages")
+	if !ok || bid == "" {
+		return "", "", fmt.Errorf("cannot determine BlockStorage ID from Ref %q", ref.URI())
+	}
+	pid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withProjectID); ok {
+			return w.ProjectID(), true
+		}
+		return "", false
+	}, "projects")
+	if !ok || pid == "" {
+		return "", "", fmt.Errorf("cannot determine project ID from Ref %q", ref.URI())
+	}
+	return pid, bid, nil
 }
 
 type StorageBackupsClient interface {
