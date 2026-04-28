@@ -36,3 +36,11 @@ func NewElasticIP() *ElasticIP {
 	e.projectScopedMixin = bindProjectScoped(&e.errMixin)
 	return e
 }
+
+// NewSecurityGroup returns a fresh *SecurityGroup ready for fluent setters and a Create call.
+// Binds vpcScopedMixin's error sink so IntoVPC failures surface via Err().
+func NewSecurityGroup() *SecurityGroup {
+	sg := &SecurityGroup{}
+	sg.vpcScopedMixin = bindVPCScoped(&sg.errMixin)
+	return sg
+}

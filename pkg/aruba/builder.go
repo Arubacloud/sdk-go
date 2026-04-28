@@ -569,10 +569,7 @@ func buildSecurityGroupRulesClient(restClient *restclient.Client) (SecurityGroup
 }
 
 func buildSecurityGroupsClient(restClient *restclient.Client) (SecurityGroupsClient, error) {
-	return network.NewSecurityGroupsClientImpl(
-		restClient,
-		network.NewVPCsClientImpl(restClient),
-	), nil
+	return newSecurityGroupsClientAdapter(restClient), nil
 }
 
 func buildSubnetsClient(restClient *restclient.Client) (SubnetsClient, error) {
