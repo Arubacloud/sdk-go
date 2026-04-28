@@ -933,13 +933,13 @@ write_files:
 			VPC: types.ReferenceResource{
 				URI: *resources.VPCResp.Data.Metadata.URI,
 			},
-			ElasticIP: types.ReferenceResource{
+			ElasticIP: &types.ReferenceResource{
 				URI: *resources.ElasticIPResp.Data.Metadata.URI,
 			},
 			BootVolume: types.ReferenceResource{
 				URI: *resources.BlockStorageResp.Data.Metadata.URI,
 			},
-			KeyPair: types.ReferenceResource{
+			KeyPair: &types.ReferenceResource{
 				URI: *resources.KeyPairResp.Data.Metadata.URI,
 			},
 			Subnets: []types.ReferenceResource{
