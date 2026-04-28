@@ -984,11 +984,213 @@ type VPCPeeringRoutesClient interface {
 }
 
 type VPCPeeringsClient interface {
-	List(ctx context.Context, projectID string, vpcID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringList], error)
-	Get(ctx context.Context, projectID string, vpcID string, vpcPeeringID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error)
-	Create(ctx context.Context, projectID string, vpcID string, body types.VPCPeeringRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error)
-	Update(ctx context.Context, projectID string, vpcID string, vpcPeeringID string, body types.VPCPeeringRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error)
-	Delete(ctx context.Context, projectID string, vpcID string, vpcPeeringID string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, vpc Ref, opts ...CallOption) (*List[*VPCPeering], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*VPCPeering, error)
+	Create(ctx context.Context, peering *VPCPeering, opts ...CallOption) (*VPCPeering, error)
+	Update(ctx context.Context, peering *VPCPeering, opts ...CallOption) (*VPCPeering, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
+}
+
+type vpcPeeringLowLevelClient interface {
+	List(ctx context.Context, projectID, vpcID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringList], error)
+	Get(ctx context.Context, projectID, vpcID, vpcPeeringID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error)
+	Create(ctx context.Context, projectID, vpcID string, body types.VPCPeeringRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error)
+	Update(ctx context.Context, projectID, vpcID, vpcPeeringID string, body types.VPCPeeringRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error)
+	Delete(ctx context.Context, projectID, vpcID, vpcPeeringID string, params *types.RequestParameters) (*types.Response[any], error)
+}
+
+type vpcPeeringsClientAdapter struct{ low vpcPeeringLowLevelClient }
+
+func newVPCPeeringsClientAdapter(rest *restclient.Client) *vpcPeeringsClientAdapter {
+	if rest == nil {
+		return &vpcPeeringsClientAdapter{}
+	}
+	return &vpcPeeringsClientAdapter{low: network.NewVPCPeeringsClientImpl(rest)}
+}
+
+func (a *vpcPeeringsClientAdapter) Create(ctx context.Context, peering *VPCPeering, opts ...CallOption) (*VPCPeering, error) {
+	if err := peering.Err(); err != nil {
+		return peering, err
+	}
+	if peering.VPCID() == "" || peering.ProjectID() == "" {
+		return peering, fmt.Errorf("Create: VPC peering has no VPC — call IntoVPC first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Create(ctx, peering.ProjectID(), peering.VPCID(), peering.toRequest(), rp)
+	populateHTTPEnvelope(&peering.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		peering.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return peering, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return peering, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return peering, nil
+}
+
+func (a *vpcPeeringsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*VPCPeering, error) {
+	projectID, vpcID, vpcPeeringID, err := vpcPeeringIDsFromRef(ref)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Get(ctx, projectID, vpcID, vpcPeeringID, rp)
+	out := &VPCPeering{}
+	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		out.fromResponse(resp.Data)
+	}
+	if out.vpcID == "" {
+		out.vpcID = vpcID
+	}
+	if out.projectID == "" {
+		out.projectID = projectID
+	}
+	if err != nil {
+		return out, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return out, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return out, nil
+}
+
+func (a *vpcPeeringsClientAdapter) Update(ctx context.Context, peering *VPCPeering, opts ...CallOption) (*VPCPeering, error) {
+	if err := peering.Err(); err != nil {
+		return peering, err
+	}
+	if peering.ID() == "" {
+		return peering, fmt.Errorf("Update: VPC peering has no ID — call Get first or seed from response metadata")
+	}
+	if peering.VPCID() == "" || peering.ProjectID() == "" {
+		return peering, fmt.Errorf("Update: VPC peering has no VPC — call IntoVPC first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Update(ctx, peering.ProjectID(), peering.VPCID(), peering.ID(), peering.toRequest(), rp)
+	populateHTTPEnvelope(&peering.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		peering.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return peering, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return peering, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return peering, nil
+}
+
+func (a *vpcPeeringsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
+	projectID, vpcID, vpcPeeringID, err := vpcPeeringIDsFromRef(ref)
+	if err != nil {
+		return err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Delete(ctx, projectID, vpcID, vpcPeeringID, rp)
+	if err != nil {
+		return err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return nil
+}
+
+func (a *vpcPeeringsClientAdapter) List(ctx context.Context, vpc Ref, opts ...CallOption) (*List[*VPCPeering], error) {
+	projectID, vpcID, err := vpcIDsFromRef(vpc)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.List(ctx, projectID, vpcID, rp)
+	if err != nil {
+		return nil, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	var items []*VPCPeering
+	if resp != nil && resp.Data != nil {
+		items = make([]*VPCPeering, 0, len(resp.Data.Values))
+		for i := range resp.Data.Values {
+			p := &VPCPeering{}
+			p.fromResponse(&resp.Data.Values[i])
+			if p.vpcID == "" {
+				p.vpcID = vpcID
+			}
+			if p.projectID == "" {
+				p.projectID = projectID
+			}
+			items = append(items, p)
+		}
+	}
+	refetch := func(_ context.Context, _ string) (*List[*VPCPeering], error) {
+		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	}
+	var total int64
+	var self, prev, next, first, last string
+	if resp != nil && resp.Data != nil {
+		total = resp.Data.Total
+		self = resp.Data.Self
+		prev = resp.Data.Prev
+		next = resp.Data.Next
+		first = resp.Data.First
+		last = resp.Data.Last
+	}
+	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+}
+
+// vpcPeeringIDsFromRef extracts (projectID, vpcID, vpcPeeringID) from a Ref.
+// Accepts the production camelCase segment "vpcPeerings" and the mixin/test form "peerings".
+func vpcPeeringIDsFromRef(ref Ref) (projectID, vpcID, vpcPeeringID string, err error) {
+	pid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withVPCPeeringID); ok {
+			return w.VPCPeeringID(), true
+		}
+		return "", false
+	}, "vpc-peerings")
+	if !ok || pid == "" {
+		m := parseURIIDs(ref.URI())
+		if v := m["vpcPeerings"]; v != "" {
+			pid = v
+			ok = true
+		}
+		if pid == "" {
+			if v := m["peerings"]; v != "" {
+				pid = v
+				ok = true
+			}
+		}
+	}
+	if !ok || pid == "" {
+		return "", "", "", fmt.Errorf("cannot determine VPC peering ID from Ref %q", ref.URI())
+	}
+	vid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withVPCID); ok {
+			return w.VPCID(), true
+		}
+		return "", false
+	}, "vpcs")
+	if !ok || vid == "" {
+		return "", "", "", fmt.Errorf("cannot determine VPC ID from Ref %q", ref.URI())
+	}
+	projID, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withProjectID); ok {
+			return w.ProjectID(), true
+		}
+		return "", false
+	}, "projects")
+	if !ok || projID == "" {
+		return "", "", "", fmt.Errorf("cannot determine project ID from Ref %q", ref.URI())
+	}
+	return projID, vid, pid, nil
 }
 
 type VPCsClient interface {

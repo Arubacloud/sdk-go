@@ -52,3 +52,11 @@ func NewSecurityRule() *SecurityRule {
 	r.securityGroupScopedMixin = bindSecurityGroupScoped(&r.errMixin)
 	return r
 }
+
+// NewVPCPeering returns a fresh *VPCPeering ready for fluent setters and a Create call.
+// Binds vpcScopedMixin's error sink so IntoVPC failures surface via Err().
+func NewVPCPeering() *VPCPeering {
+	p := &VPCPeering{}
+	p.vpcScopedMixin = bindVPCScoped(&p.errMixin)
+	return p
+}
