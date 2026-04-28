@@ -976,11 +976,232 @@ func subnetIDsFromRef(ref Ref) (projectID, vpcID, subnetID string, err error) {
 }
 
 type VPCPeeringRoutesClient interface {
-	List(ctx context.Context, projectID string, vpcID string, vpcPeeringID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteList], error)
-	Get(ctx context.Context, projectID string, vpcID string, vpcPeeringID string, vpcPeeringRouteID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error)
-	Create(ctx context.Context, projectID string, vpcID string, vpcPeeringID string, body types.VPCPeeringRouteRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error)
-	Update(ctx context.Context, projectID string, vpcID string, vpcPeeringID string, vpcPeeringRouteID string, body types.VPCPeeringRouteRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error)
-	Delete(ctx context.Context, projectID string, vpcID string, vpcPeeringID string, vpcPeeringRouteID string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, peering Ref, opts ...CallOption) (*List[*VPCPeeringRoute], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*VPCPeeringRoute, error)
+	Create(ctx context.Context, route *VPCPeeringRoute, opts ...CallOption) (*VPCPeeringRoute, error)
+	Update(ctx context.Context, route *VPCPeeringRoute, opts ...CallOption) (*VPCPeeringRoute, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
+}
+
+type vpcPeeringRouteLowLevelClient interface {
+	List(ctx context.Context, projectID, vpcID, vpcPeeringID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteList], error)
+	Get(ctx context.Context, projectID, vpcID, vpcPeeringID, vpcPeeringRouteID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error)
+	Create(ctx context.Context, projectID, vpcID, vpcPeeringID string, body types.VPCPeeringRouteRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error)
+	Update(ctx context.Context, projectID, vpcID, vpcPeeringID, vpcPeeringRouteID string, body types.VPCPeeringRouteRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error)
+	Delete(ctx context.Context, projectID, vpcID, vpcPeeringID, vpcPeeringRouteID string, params *types.RequestParameters) (*types.Response[any], error)
+}
+
+type vpcPeeringRoutesClientAdapter struct{ low vpcPeeringRouteLowLevelClient }
+
+func newVPCPeeringRoutesClientAdapter(rest *restclient.Client) *vpcPeeringRoutesClientAdapter {
+	if rest == nil {
+		return &vpcPeeringRoutesClientAdapter{}
+	}
+	return &vpcPeeringRoutesClientAdapter{low: network.NewVPCPeeringRoutesClientImpl(rest)}
+}
+
+func (a *vpcPeeringRoutesClientAdapter) Create(ctx context.Context, route *VPCPeeringRoute, opts ...CallOption) (*VPCPeeringRoute, error) {
+	if err := route.Err(); err != nil {
+		return route, err
+	}
+	if route.VPCPeeringID() == "" || route.VPCID() == "" || route.ProjectID() == "" {
+		return route, fmt.Errorf("Create: VPC peering route has no parent peering — call IntoVPCPeering first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Create(ctx, route.ProjectID(), route.VPCID(), route.VPCPeeringID(), route.toRequest(), rp)
+	populateHTTPEnvelope(&route.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		route.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return route, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return route, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return route, nil
+}
+
+func (a *vpcPeeringRoutesClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*VPCPeeringRoute, error) {
+	projectID, vpcID, vpcPeeringID, routeID, err := vpcPeeringRouteIDsFromRef(ref)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Get(ctx, projectID, vpcID, vpcPeeringID, routeID, rp)
+	out := &VPCPeeringRoute{}
+	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		out.fromResponse(resp.Data)
+	}
+	if out.vpcPeeringID == "" {
+		out.vpcPeeringID = vpcPeeringID
+	}
+	if out.vpcID == "" {
+		out.vpcID = vpcID
+	}
+	if out.projectID == "" {
+		out.projectID = projectID
+	}
+	if err != nil {
+		return out, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return out, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return out, nil
+}
+
+func (a *vpcPeeringRoutesClientAdapter) Update(ctx context.Context, route *VPCPeeringRoute, opts ...CallOption) (*VPCPeeringRoute, error) {
+	if err := route.Err(); err != nil {
+		return route, err
+	}
+	if route.ID() == "" {
+		return route, fmt.Errorf("Update: VPC peering route has no ID — call Get first or seed from response metadata")
+	}
+	if route.VPCPeeringID() == "" || route.VPCID() == "" || route.ProjectID() == "" {
+		return route, fmt.Errorf("Update: VPC peering route has no parent peering — call IntoVPCPeering first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Update(ctx, route.ProjectID(), route.VPCID(), route.VPCPeeringID(), route.ID(), route.toRequest(), rp)
+	populateHTTPEnvelope(&route.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		route.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return route, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return route, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return route, nil
+}
+
+func (a *vpcPeeringRoutesClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
+	projectID, vpcID, vpcPeeringID, routeID, err := vpcPeeringRouteIDsFromRef(ref)
+	if err != nil {
+		return err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Delete(ctx, projectID, vpcID, vpcPeeringID, routeID, rp)
+	if err != nil {
+		return err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return nil
+}
+
+func (a *vpcPeeringRoutesClientAdapter) List(ctx context.Context, peering Ref, opts ...CallOption) (*List[*VPCPeeringRoute], error) {
+	projectID, vpcID, vpcPeeringID, err := vpcPeeringIDsFromRef(peering)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.List(ctx, projectID, vpcID, vpcPeeringID, rp)
+	if err != nil {
+		return nil, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	var items []*VPCPeeringRoute
+	if resp != nil && resp.Data != nil {
+		items = make([]*VPCPeeringRoute, 0, len(resp.Data.Values))
+		for i := range resp.Data.Values {
+			r := &VPCPeeringRoute{}
+			r.fromResponse(&resp.Data.Values[i])
+			if r.vpcPeeringID == "" {
+				r.vpcPeeringID = vpcPeeringID
+			}
+			if r.vpcID == "" {
+				r.vpcID = vpcID
+			}
+			if r.projectID == "" {
+				r.projectID = projectID
+			}
+			items = append(items, r)
+		}
+	}
+	refetch := func(_ context.Context, _ string) (*List[*VPCPeeringRoute], error) {
+		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	}
+	var total int64
+	var self, prev, next, first, last string
+	if resp != nil && resp.Data != nil {
+		total = resp.Data.Total
+		self = resp.Data.Self
+		prev = resp.Data.Prev
+		next = resp.Data.Next
+		first = resp.Data.First
+		last = resp.Data.Last
+	}
+	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+}
+
+// vpcPeeringRouteIDsFromRef extracts (projectID, vpcID, vpcPeeringID, vpcPeeringRouteID) from a Ref.
+// Accepts the production camelCase segment "vpcPeeringRoutes" and the test form "vpc-peering-routes".
+// For the peering parent, accepts both "vpcPeerings" and "peerings".
+func vpcPeeringRouteIDsFromRef(ref Ref) (projectID, vpcID, vpcPeeringID, vpcPeeringRouteID string, err error) {
+	rid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withVPCPeeringRouteID); ok {
+			return w.VPCPeeringRouteID(), true
+		}
+		return "", false
+	}, "vpc-peering-routes")
+	if !ok {
+		if v := parseURIIDs(ref.URI())["vpcPeeringRoutes"]; v != "" {
+			rid = v
+			ok = true
+		}
+	}
+	if !ok {
+		return "", "", "", "", fmt.Errorf("cannot determine VPC peering route ID from Ref %q", ref.URI())
+	}
+	pid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withVPCPeeringID); ok {
+			return w.VPCPeeringID(), true
+		}
+		return "", false
+	}, "vpc-peerings")
+	if !ok {
+		m := parseURIIDs(ref.URI())
+		if v := m["vpcPeerings"]; v != "" {
+			pid = v
+			ok = true
+		} else if v := m["peerings"]; v != "" {
+			pid = v
+			ok = true
+		}
+	}
+	if !ok {
+		return "", "", "", "", fmt.Errorf("cannot determine VPC peering ID from Ref %q", ref.URI())
+	}
+	vid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withVPCID); ok {
+			return w.VPCID(), true
+		}
+		return "", false
+	}, "vpcs")
+	if !ok || vid == "" {
+		return "", "", "", "", fmt.Errorf("cannot determine VPC ID from Ref %q", ref.URI())
+	}
+	projID, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withProjectID); ok {
+			return w.ProjectID(), true
+		}
+		return "", false
+	}, "projects")
+	if !ok || projID == "" {
+		return "", "", "", "", fmt.Errorf("cannot determine project ID from Ref %q", ref.URI())
+	}
+	return projID, vid, pid, rid, nil
 }
 
 type VPCPeeringsClient interface {

@@ -571,7 +571,7 @@ func buildSubnetsClient(restClient *restclient.Client) (SubnetsClient, error) {
 }
 
 func buildVPCPeeringRoutesClient(restClient *restclient.Client) (VPCPeeringRoutesClient, error) {
-	return network.NewVPCPeeringRoutesClientImpl(restClient), nil
+	return newVPCPeeringRoutesClientAdapter(restClient), nil
 }
 
 func buildVPCPeeringsClient(restClient *restclient.Client) (VPCPeeringsClient, error) {
