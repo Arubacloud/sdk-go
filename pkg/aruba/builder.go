@@ -555,7 +555,7 @@ func buildElasticIPsClient(restClient *restclient.Client) (ElasticIPsClient, err
 }
 
 func buildLoadBalancersClient(restClient *restclient.Client) (LoadBalancersClient, error) {
-	return network.NewLoadBalancersClientImpl(restClient), nil
+	return newLoadBalancersClientAdapter(restClient), nil
 }
 
 func buildSecurityGroupRulesClient(restClient *restclient.Client) (SecurityGroupRulesClient, error) {

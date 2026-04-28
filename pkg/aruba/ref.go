@@ -83,3 +83,4 @@ type withBackupID interface{ BackupID() string }
 type withKMSID interface{ KMSID() string }
 type withSubnetID interface{ SubnetID() string }
 type withElasticIPID interface{ ElasticIPID() string }
+type withLoadBalancerID interface{ LoadBalancerID() string }
