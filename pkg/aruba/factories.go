@@ -77,6 +77,14 @@ func NewVPNTunnel() *VPNTunnel {
 	return t
 }
 
+// NewVPNRoute returns a fresh *VPNRoute ready for fluent setters and a Create call.
+// Binds vpnTunnelScopedMixin's error sink so IntoVPNTunnel failures surface via Err().
+func NewVPNRoute() *VPNRoute {
+	r := &VPNRoute{}
+	r.vpnTunnelScopedMixin = bindVPNTunnelScoped(&r.errMixin)
+	return r
+}
+
 // NewVPNIPConfig returns a fresh *VPNIPConfig sub-builder for configuring IP settings.
 func NewVPNIPConfig() *VPNIPConfig { return &VPNIPConfig{} }
 
