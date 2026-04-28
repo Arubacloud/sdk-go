@@ -60,3 +60,11 @@ func NewVPCPeering() *VPCPeering {
 	p.vpcScopedMixin = bindVPCScoped(&p.errMixin)
 	return p
 }
+
+// NewVPCPeeringRoute returns a fresh *VPCPeeringRoute ready for fluent setters and a Create call.
+// Binds vpcPeeringScopedMixin's error sink so IntoVPCPeering failures surface via Err().
+func NewVPCPeeringRoute() *VPCPeeringRoute {
+	r := &VPCPeeringRoute{}
+	r.vpcPeeringScopedMixin = bindVPCPeeringScoped(&r.errMixin)
+	return r
+}
