@@ -75,6 +75,7 @@ func extractID(parent Ref, typedKey func(Ref) (string, bool), uriSegment string)
 type withProjectID interface{ ProjectID() string }
 type withVPCID interface{ VPCID() string }
 type withSecurityGroupID interface{ SecurityGroupID() string }
+type withSecurityRuleID interface{ SecurityRuleID() string }
 type withDBaaSID interface{ DBaaSID() string }
 type withDatabaseID interface{ DatabaseID() string }
 type withVPCPeeringID interface{ VPCPeeringID() string }

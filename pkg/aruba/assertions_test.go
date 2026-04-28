@@ -32,8 +32,6 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 	// Local variables — stack-allocated, zero production overhead.
 	// Named intermediates are needed only to satisfy the nil-dep checks
 	// added by TD-018; they exist only for the duration of this call.
-	vpcsImpl := network.NewVPCsClientImpl(nil)
-	sgImpl := network.NewSecurityGroupsClientImpl(nil, vpcsImpl)
 	volImpl := storage.NewVolumesClientImpl(nil)
 	bkpImpl := storage.NewBackupClientImpl(nil)
 
@@ -65,7 +63,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 		_ LoadBalancersClient      = newLoadBalancersClientAdapter(nil)
 		_ VPCsClient               = newVPCsClientAdapter(nil)
 		_ SecurityGroupsClient     = newSecurityGroupsClientAdapter(nil)
-		_ SecurityGroupRulesClient = network.NewSecurityGroupRulesClientImpl(nil, sgImpl)
+		_ SecurityGroupRulesClient = newSecurityGroupRulesClientAdapter(nil)
 		_ SubnetsClient            = newSubnetsClientAdapter(nil)
 		_ VPCPeeringsClient        = network.NewVPCPeeringsClientImpl(nil)
 		_ VPCPeeringRoutesClient   = network.NewVPCPeeringRoutesClientImpl(nil)
