@@ -357,11 +357,234 @@ func loadBalancerIDsFromRef(ref Ref) (projectID, loadBalancerID string, err erro
 }
 
 type SecurityGroupRulesClient interface {
-	List(ctx context.Context, projectID string, vpcID string, securityGroupID string, params *types.RequestParameters) (*types.Response[types.SecurityRuleList], error)
-	Get(ctx context.Context, projectID string, vpcID string, securityGroupID string, securityGroupRuleID string, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error)
-	Create(ctx context.Context, projectID string, vpcID string, securityGroupID string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error)
-	Update(ctx context.Context, projectID string, vpcID string, securityGroupID string, securityGroupRuleID string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error)
-	Delete(ctx context.Context, projectID string, vpcID string, securityGroupID string, securityGroupRuleID string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, securityGroup Ref, opts ...CallOption) (*List[*SecurityRule], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*SecurityRule, error)
+	Create(ctx context.Context, rule *SecurityRule, opts ...CallOption) (*SecurityRule, error)
+	Update(ctx context.Context, rule *SecurityRule, opts ...CallOption) (*SecurityRule, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
+}
+
+type securityRuleLowLevelClient interface {
+	List(ctx context.Context, projectID, vpcID, securityGroupID string, params *types.RequestParameters) (*types.Response[types.SecurityRuleList], error)
+	Get(ctx context.Context, projectID, vpcID, securityGroupID, securityRuleID string, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error)
+	Create(ctx context.Context, projectID, vpcID, securityGroupID string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error)
+	Update(ctx context.Context, projectID, vpcID, securityGroupID, securityRuleID string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error)
+	Delete(ctx context.Context, projectID, vpcID, securityGroupID, securityRuleID string, params *types.RequestParameters) (*types.Response[any], error)
+}
+
+type securityGroupRulesClientAdapter struct{ low securityRuleLowLevelClient }
+
+func newSecurityGroupRulesClientAdapter(rest *restclient.Client) *securityGroupRulesClientAdapter {
+	if rest == nil {
+		return &securityGroupRulesClientAdapter{}
+	}
+	return &securityGroupRulesClientAdapter{
+		low: network.NewSecurityGroupRulesClientImpl(
+			rest,
+			network.NewSecurityGroupsClientImpl(rest, network.NewVPCsClientImpl(rest)),
+		),
+	}
+}
+
+func (a *securityGroupRulesClientAdapter) Create(ctx context.Context, rule *SecurityRule, opts ...CallOption) (*SecurityRule, error) {
+	if err := rule.Err(); err != nil {
+		return rule, err
+	}
+	if rule.SecurityGroupID() == "" || rule.VPCID() == "" || rule.ProjectID() == "" {
+		return rule, fmt.Errorf("Create: security rule has no SecurityGroup — call IntoSecurityGroup first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Create(ctx, rule.ProjectID(), rule.VPCID(), rule.SecurityGroupID(), rule.toRequest(), rp)
+	populateHTTPEnvelope(&rule.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		rule.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return rule, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return rule, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return rule, nil
+}
+
+func (a *securityGroupRulesClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*SecurityRule, error) {
+	projectID, vpcID, securityGroupID, securityRuleID, err := securityRuleIDsFromRef(ref)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Get(ctx, projectID, vpcID, securityGroupID, securityRuleID, rp)
+	out := &SecurityRule{}
+	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		out.fromResponse(resp.Data)
+	}
+	if out.securityGroupID == "" {
+		out.securityGroupID = securityGroupID
+	}
+	if out.vpcID == "" {
+		out.vpcID = vpcID
+	}
+	if out.projectID == "" {
+		out.projectID = projectID
+	}
+	if err != nil {
+		return out, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return out, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return out, nil
+}
+
+func (a *securityGroupRulesClientAdapter) Update(ctx context.Context, rule *SecurityRule, opts ...CallOption) (*SecurityRule, error) {
+	if err := rule.Err(); err != nil {
+		return rule, err
+	}
+	if rule.ID() == "" {
+		return rule, fmt.Errorf("Update: security rule has no ID — call Get first or seed from response metadata")
+	}
+	if rule.SecurityGroupID() == "" || rule.VPCID() == "" || rule.ProjectID() == "" {
+		return rule, fmt.Errorf("Update: security rule has no SecurityGroup — call IntoSecurityGroup first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Update(ctx, rule.ProjectID(), rule.VPCID(), rule.SecurityGroupID(), rule.ID(), rule.toRequest(), rp)
+	populateHTTPEnvelope(&rule.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		rule.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return rule, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return rule, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return rule, nil
+}
+
+func (a *securityGroupRulesClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
+	projectID, vpcID, securityGroupID, securityRuleID, err := securityRuleIDsFromRef(ref)
+	if err != nil {
+		return err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Delete(ctx, projectID, vpcID, securityGroupID, securityRuleID, rp)
+	if err != nil {
+		return err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return nil
+}
+
+func (a *securityGroupRulesClientAdapter) List(ctx context.Context, sg Ref, opts ...CallOption) (*List[*SecurityRule], error) {
+	projectID, vpcID, securityGroupID, err := securityGroupIDsFromRef(sg)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.List(ctx, projectID, vpcID, securityGroupID, rp)
+	if err != nil {
+		return nil, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	var items []*SecurityRule
+	if resp != nil && resp.Data != nil {
+		items = make([]*SecurityRule, 0, len(resp.Data.Values))
+		for i := range resp.Data.Values {
+			rule := &SecurityRule{}
+			rule.fromResponse(&resp.Data.Values[i])
+			if rule.securityGroupID == "" {
+				rule.securityGroupID = securityGroupID
+			}
+			if rule.vpcID == "" {
+				rule.vpcID = vpcID
+			}
+			if rule.projectID == "" {
+				rule.projectID = projectID
+			}
+			items = append(items, rule)
+		}
+	}
+	refetch := func(_ context.Context, _ string) (*List[*SecurityRule], error) {
+		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	}
+	var total int64
+	var self, prev, next, first, last string
+	if resp != nil && resp.Data != nil {
+		total = resp.Data.Total
+		self = resp.Data.Self
+		prev = resp.Data.Prev
+		next = resp.Data.Next
+		first = resp.Data.First
+		last = resp.Data.Last
+	}
+	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+}
+
+// securityRuleIDsFromRef extracts (projectID, vpcID, securityGroupID, securityRuleID) from a Ref.
+// Tries typed assertions first, then falls back to URI path parsing (both hyphenated and no-hyphen forms).
+func securityRuleIDsFromRef(ref Ref) (projectID, vpcID, securityGroupID, securityRuleID string, err error) {
+	rid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withSecurityRuleID); ok {
+			return w.SecurityRuleID(), true
+		}
+		return "", false
+	}, "security-rules")
+	if !ok || rid == "" {
+		m := parseURIIDs(ref.URI())
+		if v := m["securityrules"]; v != "" {
+			rid = v
+			ok = true
+		}
+	}
+	if !ok || rid == "" {
+		return "", "", "", "", fmt.Errorf("cannot determine security rule ID from Ref %q", ref.URI())
+	}
+	sgid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withSecurityGroupID); ok {
+			return w.SecurityGroupID(), true
+		}
+		return "", false
+	}, "security-groups")
+	if !ok || sgid == "" {
+		m := parseURIIDs(ref.URI())
+		if v := m["securitygroups"]; v != "" {
+			sgid = v
+			ok = true
+		}
+	}
+	if !ok || sgid == "" {
+		return "", "", "", "", fmt.Errorf("cannot determine security group ID from Ref %q", ref.URI())
+	}
+	vid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withVPCID); ok {
+			return w.VPCID(), true
+		}
+		return "", false
+	}, "vpcs")
+	if !ok || vid == "" {
+		return "", "", "", "", fmt.Errorf("cannot determine VPC ID from Ref %q", ref.URI())
+	}
+	pid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withProjectID); ok {
+			return w.ProjectID(), true
+		}
+		return "", false
+	}, "projects")
+	if !ok || pid == "" {
+		return "", "", "", "", fmt.Errorf("cannot determine project ID from Ref %q", ref.URI())
+	}
+	return pid, vid, sgid, rid, nil
 }
 
 type SecurityGroupsClient interface {

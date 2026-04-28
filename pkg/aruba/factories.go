@@ -44,3 +44,11 @@ func NewSecurityGroup() *SecurityGroup {
 	sg.vpcScopedMixin = bindVPCScoped(&sg.errMixin)
 	return sg
 }
+
+// NewSecurityRule returns a fresh *SecurityRule ready for fluent setters and a Create call.
+// Binds securityGroupScopedMixin's error sink so IntoSecurityGroup failures surface via Err().
+func NewSecurityRule() *SecurityRule {
+	r := &SecurityRule{}
+	r.securityGroupScopedMixin = bindSecurityGroupScoped(&r.errMixin)
+	return r
+}
