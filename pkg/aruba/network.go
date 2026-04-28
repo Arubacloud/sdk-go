@@ -249,8 +249,111 @@ func elasticIPIDsFromRef(ref Ref) (projectID, elasticIPID string, err error) {
 }
 
 type LoadBalancersClient interface {
+	List(ctx context.Context, project Ref, opts ...CallOption) (*List[*LoadBalancer], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*LoadBalancer, error)
+}
+
+type loadBalancerLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.LoadBalancerList], error)
-	Get(ctx context.Context, projectID string, loadBalancerID string, params *types.RequestParameters) (*types.Response[types.LoadBalancerResponse], error)
+	Get(ctx context.Context, projectID, loadBalancerID string, params *types.RequestParameters) (*types.Response[types.LoadBalancerResponse], error)
+}
+
+type loadBalancersClientAdapter struct{ low loadBalancerLowLevelClient }
+
+func newLoadBalancersClientAdapter(rest *restclient.Client) *loadBalancersClientAdapter {
+	if rest == nil {
+		return &loadBalancersClientAdapter{}
+	}
+	return &loadBalancersClientAdapter{low: network.NewLoadBalancersClientImpl(rest)}
+}
+
+func (a *loadBalancersClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*LoadBalancer, error) {
+	projectID, loadBalancerID, err := loadBalancerIDsFromRef(ref)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Get(ctx, projectID, loadBalancerID, rp)
+	out := &LoadBalancer{}
+	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		out.fromResponse(resp.Data)
+	}
+	out.projectID = projectID
+	if err != nil {
+		return out, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return out, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return out, nil
+}
+
+func (a *loadBalancersClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*LoadBalancer], error) {
+	projectID, err := projectIDFromRef(project)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.List(ctx, projectID, rp)
+	if err != nil {
+		return nil, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	var items []*LoadBalancer
+	if resp != nil && resp.Data != nil {
+		items = make([]*LoadBalancer, 0, len(resp.Data.Values))
+		for i := range resp.Data.Values {
+			lb := &LoadBalancer{}
+			lb.fromResponse(&resp.Data.Values[i])
+			if lb.projectID == "" {
+				lb.projectID = projectID
+			}
+			items = append(items, lb)
+		}
+	}
+	refetch := func(_ context.Context, _ string) (*List[*LoadBalancer], error) {
+		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	}
+	var total int64
+	var self, prev, next, first, last string
+	if resp != nil && resp.Data != nil {
+		total = resp.Data.Total
+		self = resp.Data.Self
+		prev = resp.Data.Prev
+		next = resp.Data.Next
+		first = resp.Data.First
+		last = resp.Data.Last
+	}
+	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+}
+
+// loadBalancerIDsFromRef extracts (projectID, loadBalancerID) from a Ref. Tries typed
+// assertions first, then falls back to URI path parsing.
+func loadBalancerIDsFromRef(ref Ref) (projectID, loadBalancerID string, err error) {
+	lid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withLoadBalancerID); ok {
+			return w.LoadBalancerID(), true
+		}
+		return "", false
+	}, "loadbalancers")
+	if !ok || lid == "" {
+		return "", "", fmt.Errorf("cannot determine load balancer ID from Ref %q", ref.URI())
+	}
+	pid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withProjectID); ok {
+			return w.ProjectID(), true
+		}
+		return "", false
+	}, "projects")
+	if !ok || pid == "" {
+		return "", "", fmt.Errorf("cannot determine project ID from Ref %q", ref.URI())
+	}
+	return pid, lid, nil
 }
 
 type SecurityGroupRulesClient interface {
