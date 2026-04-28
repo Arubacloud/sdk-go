@@ -1,0 +1,740 @@
+package aruba
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"strings"
+	"testing"
+
+	"github.com/Arubacloud/sdk-go/internal/testutil"
+	"github.com/Arubacloud/sdk-go/pkg/types"
+)
+
+// --------------------------------------------------------------------------
+// Compile-time Ref satisfaction
+// --------------------------------------------------------------------------
+
+var _ Ref = (*VPNRoute)(nil)
+
+// --------------------------------------------------------------------------
+// Fluent setters
+// --------------------------------------------------------------------------
+
+func TestVPNRoute_FluentSetters(t *testing.T) {
+	tun := &VPNTunnel{}
+	tun.fromResponse(vpnTunnelTestResponse("t-1", "my-tunnel",
+		"/projects/p/providers/Aruba.Network/vpnTunnels/t-1", "p"))
+
+	r := NewVPNRoute().
+		IntoVPNTunnel(tun).
+		WithName("my-route").
+		AddTag("cloud").
+		AddTag("vpn").
+		AddTag("cloud"). // dedupe
+		InRegion("ITBG-Bergamo").
+		WithCloudSubnet("10.0.0.0/24").
+		WithOnPremSubnet("192.168.0.0/24")
+
+	if r.Name() != "my-route" {
+		t.Errorf("Name() = %q", r.Name())
+	}
+	if tags := r.Tags(); len(tags) != 2 || tags[0] != "cloud" || tags[1] != "vpn" {
+		t.Errorf("Tags() = %v", tags)
+	}
+	if r.Region() != "ITBG-Bergamo" {
+		t.Errorf("Region() = %q", r.Region())
+	}
+	if r.CloudSubnet() != "10.0.0.0/24" {
+		t.Errorf("CloudSubnet() = %q", r.CloudSubnet())
+	}
+	if r.OnPremSubnet() != "192.168.0.0/24" {
+		t.Errorf("OnPremSubnet() = %q", r.OnPremSubnet())
+	}
+	if r.VPNTunnelID() != "t-1" {
+		t.Errorf("VPNTunnelID() = %q", r.VPNTunnelID())
+	}
+	if r.ProjectID() != "p" {
+		t.Errorf("ProjectID() = %q", r.ProjectID())
+	}
+	if r.Err() != nil {
+		t.Errorf("Err() = %v", r.Err())
+	}
+
+	r.RemoveTag("cloud")
+	if tags := r.Tags(); len(tags) != 1 || tags[0] != "vpn" {
+		t.Errorf("after RemoveTag Tags() = %v", tags)
+	}
+
+	r.ReplaceTags("x", "y")
+	if tags := r.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
+		t.Errorf("after ReplaceTags Tags() = %v", tags)
+	}
+}
+
+// --------------------------------------------------------------------------
+// IntoVPNTunnel — typed Ref
+// --------------------------------------------------------------------------
+
+func TestVPNRoute_IntoVPNTunnel_TypedRef(t *testing.T) {
+	tun := &VPNTunnel{}
+	tun.fromResponse(vpnTunnelTestResponse("t-1", "n",
+		"/projects/p/providers/Aruba.Network/vpnTunnels/t-1", "p"))
+
+	r := NewVPNRoute().IntoVPNTunnel(tun)
+
+	if r.VPNTunnelID() != "t-1" {
+		t.Errorf("VPNTunnelID() = %q", r.VPNTunnelID())
+	}
+	if r.ProjectID() != "p" {
+		t.Errorf("ProjectID() = %q", r.ProjectID())
+	}
+	if r.Err() != nil {
+		t.Errorf("Err() = %v", r.Err())
+	}
+}
+
+// --------------------------------------------------------------------------
+// IntoVPNTunnel — URI Ref (camelCase — production form; this exercises the mixin fix)
+// --------------------------------------------------------------------------
+
+func TestVPNRoute_IntoVPNTunnel_URIRef_CamelCase(t *testing.T) {
+	r := NewVPNRoute().IntoVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1"))
+
+	if r.Err() != nil {
+		t.Fatalf("unexpected Err() = %v", r.Err())
+	}
+	if r.VPNTunnelID() != "t-1" {
+		t.Errorf("VPNTunnelID() = %q", r.VPNTunnelID())
+	}
+	if r.ProjectID() != "p" {
+		t.Errorf("ProjectID() = %q", r.ProjectID())
+	}
+}
+
+// --------------------------------------------------------------------------
+// IntoVPNTunnel — URI Ref (kebab form; mixin test form)
+// --------------------------------------------------------------------------
+
+func TestVPNRoute_IntoVPNTunnel_URIRef_KebabCase(t *testing.T) {
+	r := NewVPNRoute().IntoVPNTunnel(URI("/projects/p/network/vpn-tunnels/t-1"))
+
+	if r.Err() != nil {
+		t.Fatalf("unexpected Err() = %v", r.Err())
+	}
+	if r.VPNTunnelID() != "t-1" {
+		t.Errorf("VPNTunnelID() = %q", r.VPNTunnelID())
+	}
+}
+
+// --------------------------------------------------------------------------
+// IntoVPNTunnel — bad Ref
+// --------------------------------------------------------------------------
+
+func TestVPNRoute_IntoVPNTunnel_BadRef(t *testing.T) {
+	r := NewVPNRoute().IntoVPNTunnel(URI("/garbage"))
+	if r.Err() == nil {
+		t.Error("expected Err() != nil for unresolvable Ref")
+	}
+}
+
+// --------------------------------------------------------------------------
+// toRequest round-trip
+// --------------------------------------------------------------------------
+
+func TestVPNRoute_ToRequestRoundTrip(t *testing.T) {
+	r := NewVPNRoute().
+		WithName("my-route").
+		AddTag("t1").
+		InRegion("ITBG-Bergamo").
+		WithCloudSubnet("10.1.0.0/16").
+		WithOnPremSubnet("172.16.0.0/12")
+
+	req := r.RawRequest()
+
+	if req.Metadata.Name != "my-route" {
+		t.Errorf("Metadata.Name = %q", req.Metadata.Name)
+	}
+	if len(req.Metadata.Tags) != 1 || req.Metadata.Tags[0] != "t1" {
+		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
+	}
+	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+		t.Errorf("Metadata.Location.Value = %q", req.Metadata.Location.Value)
+	}
+	if req.Properties.CloudSubnet != "10.1.0.0/16" {
+		t.Errorf("Properties.CloudSubnet = %q", req.Properties.CloudSubnet)
+	}
+	if req.Properties.OnPremSubnet != "172.16.0.0/12" {
+		t.Errorf("Properties.OnPremSubnet = %q", req.Properties.OnPremSubnet)
+	}
+}
+
+// --------------------------------------------------------------------------
+// toRequest — unset subnets emit empty strings (plain string, not pointer)
+// --------------------------------------------------------------------------
+
+func TestVPNRoute_ToRequest_UnsetSubnets_AreEmpty(t *testing.T) {
+	req := NewVPNRoute().WithName("bare").RawRequest()
+	if req.Properties.CloudSubnet != "" {
+		t.Errorf("CloudSubnet = %q, want empty", req.Properties.CloudSubnet)
+	}
+	if req.Properties.OnPremSubnet != "" {
+		t.Errorf("OnPremSubnet = %q, want empty", req.Properties.OnPremSubnet)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Ref + ancestor ID satisfaction (runtime)
+// --------------------------------------------------------------------------
+
+func TestVPNRoute_RefSatisfaction(t *testing.T) {
+	r := &VPNRoute{}
+	r.fromResponse(vpnRouteTestResponse("r-1", "my-route",
+		"/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-1", "p"))
+	r.vpnTunnelID = "t-1"
+
+	rid, ok := extractID(r, func(ref Ref) (string, bool) {
+		if w, ok := ref.(withVPNRouteID); ok {
+			return w.VPNRouteID(), true
+		}
+		return "", false
+	}, "vpn-routes")
+	if !ok || rid != "r-1" {
+		t.Errorf("extractID via withVPNRouteID = (%q, %v)", rid, ok)
+	}
+
+	tid, ok := extractID(r, func(ref Ref) (string, bool) {
+		if w, ok := ref.(withVPNTunnelID); ok {
+			return w.VPNTunnelID(), true
+		}
+		return "", false
+	}, "vpn-tunnels")
+	if !ok || tid != "t-1" {
+		t.Errorf("extractID via withVPNTunnelID = (%q, %v)", tid, ok)
+	}
+
+	pid, ok := extractID(r, func(ref Ref) (string, bool) {
+		if w, ok := ref.(withProjectID); ok {
+			return w.ProjectID(), true
+		}
+		return "", false
+	}, "projects")
+	if !ok || pid != "p" {
+		t.Errorf("extractID via withProjectID = (%q, %v)", pid, ok)
+	}
+}
+
+// --------------------------------------------------------------------------
+// fromResponse hydration
+// --------------------------------------------------------------------------
+
+func vpnRouteTestResponse(id, name, uri, projectID string) *types.VPNRouteResponse {
+	state := "Active"
+	cloud := "10.0.0.0/24"
+	onPrem := "192.168.0.0/24"
+	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
+	return &types.VPNRouteResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:               &id,
+			URI:              &uri,
+			Name:             &name,
+			Tags:             []string{"route-tag"},
+			LocationResponse: loc,
+			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+				ID: projectID,
+			},
+		},
+		Properties: types.VPNRoutePropertiesResponse{
+			CloudSubnet:  cloud,
+			OnPremSubnet: onPrem,
+			LinkedResources: []types.LinkedResource{
+				{URI: "/projects/p/providers/Aruba.Network/vpnTunnels/t-1"},
+			},
+		},
+		Status: types.ResourceStatus{State: &state},
+	}
+}
+
+func TestVPNRoute_FromResponseHydration(t *testing.T) {
+	r := &VPNRoute{}
+	resp := vpnRouteTestResponse("r-1", "my-route",
+		"/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-1", "p")
+	r.fromResponse(resp)
+
+	if r.ID() != "r-1" {
+		t.Errorf("ID() = %q", r.ID())
+	}
+	if r.URI() != "/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-1" {
+		t.Errorf("URI() = %q", r.URI())
+	}
+	if r.VPNRouteID() != "r-1" {
+		t.Errorf("VPNRouteID() = %q", r.VPNRouteID())
+	}
+	if r.Name() != "my-route" {
+		t.Errorf("Name() = %q", r.Name())
+	}
+	if tags := r.Tags(); len(tags) != 1 || tags[0] != "route-tag" {
+		t.Errorf("Tags() = %v", tags)
+	}
+	if r.Region() != "ITBG-Bergamo" {
+		t.Errorf("Region() = %q", r.Region())
+	}
+	if r.State() != "Active" {
+		t.Errorf("State() = %q", r.State())
+	}
+	if r.CloudSubnet() != "10.0.0.0/24" {
+		t.Errorf("CloudSubnet() = %q", r.CloudSubnet())
+	}
+	if r.OnPremSubnet() != "192.168.0.0/24" {
+		t.Errorf("OnPremSubnet() = %q", r.OnPremSubnet())
+	}
+	if r.ProjectID() != "p" {
+		t.Errorf("ProjectID() = %q", r.ProjectID())
+	}
+	if r.vpnTunnelID != "t-1" {
+		t.Errorf("vpnTunnelID = %q", r.vpnTunnelID)
+	}
+	if linked := r.LinkedResources(); len(linked) != 1 {
+		t.Errorf("LinkedResources() len = %d", len(linked))
+	}
+	if r.Raw() != resp {
+		t.Error("Raw() should return the hydrated response pointer")
+	}
+}
+
+func TestVPNRoute_FromResponsePartial(t *testing.T) {
+	r := &VPNRoute{}
+	r.fromResponse(nil)
+	if r.ID() != "" || r.URI() != "" || r.Name() != "" {
+		t.Error("fromResponse(nil) should be a no-op")
+	}
+	if r.Raw() != nil {
+		t.Error("Raw() should be nil before hydration")
+	}
+
+	r2 := &VPNRoute{}
+	r2.fromResponse(&types.VPNRouteResponse{})
+	if r2.ID() != "" || r2.URI() != "" || r2.State() != "" {
+		t.Error("empty response should yield zero accessor values")
+	}
+}
+
+func TestVPNRoute_FromResponseURIBackfill_CamelCase(t *testing.T) {
+	uri := "/projects/p2/providers/Aruba.Network/vpnTunnels/t-2/vpnRoutes/r-2"
+	id := "r-2"
+	name := "uri-route"
+	resp := &types.VPNRouteResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:   &id,
+			URI:  &uri,
+			Name: &name,
+			// ProjectResponseMetadata intentionally nil
+		},
+	}
+	r := &VPNRoute{}
+	r.fromResponse(resp)
+
+	if r.ProjectID() != "p2" {
+		t.Errorf("ProjectID() via URI fallback = %q", r.ProjectID())
+	}
+	if r.vpnTunnelID != "t-2" {
+		t.Errorf("vpnTunnelID via URI fallback = %q", r.vpnTunnelID)
+	}
+}
+
+func TestVPNRoute_FromResponseURIBackfill_KebabCase(t *testing.T) {
+	uri := "/projects/p3/network/vpn-tunnels/t-3/vpn-routes/r-3"
+	id := "r-3"
+	name := "kebab-route"
+	resp := &types.VPNRouteResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:   &id,
+			URI:  &uri,
+			Name: &name,
+		},
+	}
+	r := &VPNRoute{}
+	r.fromResponse(resp)
+
+	if r.ProjectID() != "p3" {
+		t.Errorf("ProjectID() via URI fallback = %q", r.ProjectID())
+	}
+	if r.vpnTunnelID != "t-3" {
+		t.Errorf("vpnTunnelID via URI fallback = %q", r.vpnTunnelID)
+	}
+}
+
+// --------------------------------------------------------------------------
+// vpnRouteIDsFromRef helper
+// --------------------------------------------------------------------------
+
+func TestVPNRouteIDsFromRef_TypedRef(t *testing.T) {
+	r := &VPNRoute{}
+	r.fromResponse(vpnRouteTestResponse("r-1", "n",
+		"/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-1", "p"))
+	r.vpnTunnelID = "t-1"
+
+	pid, tid, rid, err := vpnRouteIDsFromRef(r)
+	if err != nil || pid != "p" || tid != "t-1" || rid != "r-1" {
+		t.Errorf("vpnRouteIDsFromRef typed = (%q, %q, %q, %v)", pid, tid, rid, err)
+	}
+}
+
+func TestVPNRouteIDsFromRef_URIRef_CamelCase(t *testing.T) {
+	ref := URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-1")
+	pid, tid, rid, err := vpnRouteIDsFromRef(ref)
+	if err != nil || pid != "p" || tid != "t-1" || rid != "r-1" {
+		t.Errorf("vpnRouteIDsFromRef camelCase = (%q, %q, %q, %v)", pid, tid, rid, err)
+	}
+}
+
+func TestVPNRouteIDsFromRef_URIRef_KebabCase(t *testing.T) {
+	ref := URI("/projects/p/network/vpn-tunnels/t-1/vpn-routes/r-1")
+	pid, tid, rid, err := vpnRouteIDsFromRef(ref)
+	if err != nil || pid != "p" || tid != "t-1" || rid != "r-1" {
+		t.Errorf("vpnRouteIDsFromRef kebab = (%q, %q, %q, %v)", pid, tid, rid, err)
+	}
+}
+
+func TestVPNRouteIDsFromRef_BadURI_MissingRoute(t *testing.T) {
+	_, _, _, err := vpnRouteIDsFromRef(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1"))
+	if err == nil {
+		t.Error("expected error for URI missing route segment")
+	}
+}
+
+func TestVPNRouteIDsFromRef_BadURI_MissingTunnel(t *testing.T) {
+	_, _, _, err := vpnRouteIDsFromRef(URI("/projects/p/vpnRoutes/r-1"))
+	if err == nil {
+		t.Error("expected error for URI missing tunnel segment")
+	}
+}
+
+func TestVPNRouteIDsFromRef_BadURI_MissingProject(t *testing.T) {
+	_, _, _, err := vpnRouteIDsFromRef(URI("/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-1"))
+	if err == nil {
+		t.Error("expected error for URI missing project segment")
+	}
+}
+
+func TestVPNRouteIDsFromRef_BadURI_MissingAll(t *testing.T) {
+	_, _, _, err := vpnRouteIDsFromRef(URI("/something/else"))
+	if err == nil {
+		t.Error("expected error for totally invalid URI")
+	}
+}
+
+// --------------------------------------------------------------------------
+// vpnRoutesClientAdapter — CRUD integration tests
+// --------------------------------------------------------------------------
+
+func buildVPNRouteTestAdapter(t *testing.T, handler http.HandlerFunc) *vpnRoutesClientAdapter {
+	t.Helper()
+	server := testutil.NewMockServer(t, handler)
+	return newVPNRoutesClientAdapter(testutil.NewClient(t, server.URL))
+}
+
+const vpnRouteSuccessBody = `{` +
+	`"metadata":{` +
+	`"id":"r-1","name":"my-route",` +
+	`"uri":"/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-1",` +
+	`"project":{"id":"p"}` +
+	`},` +
+	`"properties":{` +
+	`"cloudSubnet":"10.0.0.0/24","onPremSubnet":"192.168.0.0/24"` +
+	`},` +
+	`"status":{"state":"Active"}}`
+
+func TestVPNRoutesClientAdapter_Create_Success(t *testing.T) {
+	var gotBody types.VPNRouteRequest
+	adapter := buildVPNRouteTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Errorf("decode request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprint(w, vpnRouteSuccessBody)
+	})
+
+	route := NewVPNRoute().
+		IntoVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")).
+		WithName("my-route").
+		InRegion("ITBG-Bergamo").
+		WithCloudSubnet("10.0.0.0/24").
+		WithOnPremSubnet("192.168.0.0/24")
+
+	result, err := adapter.Create(context.Background(), route)
+	if err != nil {
+		t.Fatalf("Create error: %v", err)
+	}
+	if result.ID() != "r-1" {
+		t.Errorf("ID() = %q", result.ID())
+	}
+	if result.Name() != "my-route" {
+		t.Errorf("Name() = %q", result.Name())
+	}
+	if result.StatusCode() != http.StatusCreated {
+		t.Errorf("StatusCode() = %d", result.StatusCode())
+	}
+	if gotBody.Metadata.Name != "my-route" {
+		t.Errorf("request Name = %q", gotBody.Metadata.Name)
+	}
+	if gotBody.Metadata.Location.Value != "ITBG-Bergamo" {
+		t.Errorf("request Location = %q", gotBody.Metadata.Location.Value)
+	}
+	if gotBody.Properties.CloudSubnet != "10.0.0.0/24" {
+		t.Errorf("request CloudSubnet = %q", gotBody.Properties.CloudSubnet)
+	}
+	if gotBody.Properties.OnPremSubnet != "192.168.0.0/24" {
+		t.Errorf("request OnPremSubnet = %q", gotBody.Properties.OnPremSubnet)
+	}
+}
+
+func TestVPNRoutesClientAdapter_Create_NoTunnel(t *testing.T) {
+	callCount := 0
+	adapter := buildVPNRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusCreated)
+	})
+
+	_, err := adapter.Create(context.Background(), NewVPNRoute().WithName("x"))
+	if err == nil {
+		t.Fatal("expected error when route has no parent tunnel")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made without parent tunnel")
+	}
+}
+
+func TestVPNRoutesClientAdapter_Create_MetadataValidationError(t *testing.T) {
+	adapter := buildVPNRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		// Missing "id" — triggers MetadataValidationError
+		fmt.Fprint(w, `{"metadata":{"name":"route","uri":"/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/x"},"properties":{},"status":{}}`)
+	})
+
+	route := NewVPNRoute().
+		IntoVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")).
+		WithName("route")
+	result, err := adapter.Create(context.Background(), route)
+	if err == nil {
+		t.Fatal("expected MetadataValidationError, got nil")
+	}
+	var mvErr *types.MetadataValidationError
+	if !errors.As(err, &mvErr) {
+		t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil alongside MetadataValidationError")
+	}
+}
+
+func TestVPNRoutesClientAdapter_Create_NonTwoXX(t *testing.T) {
+	adapter := buildVPNRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "name is required", 422))
+	})
+
+	route := NewVPNRoute().
+		IntoVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1"))
+	result, err := adapter.Create(context.Background(), route)
+	if err == nil {
+		t.Fatal("expected error on 422")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("HTTPError.StatusCode = %d", httpErr.StatusCode)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil on non-2xx")
+	}
+}
+
+func TestVPNRoutesClientAdapter_Get_URIRef(t *testing.T) {
+	var capturedPath string
+	adapter := buildVPNRouteTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, vpnRouteSuccessBody)
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-1")
+	result, err := adapter.Get(context.Background(), ref)
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if result.ID() != "r-1" {
+		t.Errorf("ID() = %q", result.ID())
+	}
+	if result.ProjectID() != "p" {
+		t.Errorf("ProjectID() = %q", result.ProjectID())
+	}
+	if result.StatusCode() != http.StatusOK {
+		t.Errorf("StatusCode() = %d", result.StatusCode())
+	}
+	if !strings.Contains(capturedPath, "vpnRoutes") {
+		t.Errorf("path = %q, expected vpnRoutes segment", capturedPath)
+	}
+}
+
+func TestVPNRoutesClientAdapter_Get_TypedRef(t *testing.T) {
+	adapter := buildVPNRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, vpnRouteSuccessBody)
+	})
+
+	existing := &VPNRoute{}
+	existing.fromResponse(vpnRouteTestResponse("r-99", "n",
+		"/projects/p2/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-99", "p2"))
+	existing.vpnTunnelID = "t-1"
+
+	result, err := adapter.Get(context.Background(), existing)
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if result.ID() != "r-1" {
+		t.Errorf("ID() = %q", result.ID())
+	}
+}
+
+func TestVPNRoutesClientAdapter_Update_Success(t *testing.T) {
+	var capturedBody types.VPNRouteRequest
+	adapter := buildVPNRouteTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&capturedBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"metadata":{"id":"r-1","name":"renamed","uri":"/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-1","project":{"id":"p"}},"properties":{},"status":{}}`)
+	})
+
+	r := &VPNRoute{}
+	r.fromResponse(vpnRouteTestResponse("r-1", "orig",
+		"/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-1", "p"))
+	r.vpnTunnelID = "t-1"
+	r.WithName("renamed")
+
+	result, err := adapter.Update(context.Background(), r)
+	if err != nil {
+		t.Fatalf("Update error: %v", err)
+	}
+	if result.Name() != "renamed" {
+		t.Errorf("Name() = %q", result.Name())
+	}
+	if capturedBody.Metadata.Name != "renamed" {
+		t.Errorf("request Name = %q", capturedBody.Metadata.Name)
+	}
+}
+
+func TestVPNRoutesClientAdapter_Update_NoID(t *testing.T) {
+	callCount := 0
+	adapter := buildVPNRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+
+	r := NewVPNRoute().
+		IntoVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")).
+		WithName("x")
+	_, err := adapter.Update(context.Background(), r)
+	if err == nil {
+		t.Fatal("expected error when route has no ID")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made without ID")
+	}
+}
+
+func TestVPNRoutesClientAdapter_Update_NoTunnel(t *testing.T) {
+	callCount := 0
+	adapter := buildVPNRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+
+	r := &VPNRoute{}
+	id := "r-1"
+	r.meta = &types.ResourceMetadataResponse{ID: &id}
+	// vpnTunnelID intentionally empty
+	_, err := adapter.Update(context.Background(), r)
+	if err == nil {
+		t.Fatal("expected error when route has no parent tunnel")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made without parent tunnel")
+	}
+}
+
+func TestVPNRoutesClientAdapter_Delete_Success(t *testing.T) {
+	adapter := buildVPNRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-1")
+	if err := adapter.Delete(context.Background(), ref); err != nil {
+		t.Fatalf("Delete error: %v", err)
+	}
+}
+
+func TestVPNRoutesClientAdapter_Delete_NonTwoXX(t *testing.T) {
+	adapter := buildVPNRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "route not found", 404))
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-1")
+	err := adapter.Delete(context.Background(), ref)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("HTTPError.StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestVPNRoutesClientAdapter_List_TwoItems(t *testing.T) {
+	adapter := buildVPNRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"total":2,"values":[`+
+			`{"metadata":{"id":"r-1","name":"route-1","uri":"/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-1","project":{"id":"p"}},"properties":{"cloudSubnet":"10.0.0.0/24","onPremSubnet":"192.168.0.0/24"},"status":{}},`+
+			`{"metadata":{"id":"r-2","name":"route-2","uri":"/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-2","project":{"id":"p"}},"properties":{"cloudSubnet":"10.1.0.0/24","onPremSubnet":"192.168.1.0/24"},"status":{}}`+
+			`]}`)
+	})
+
+	tunnel := URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")
+	list, err := adapter.List(context.Background(), tunnel)
+	if err != nil {
+		t.Fatalf("List error: %v", err)
+	}
+	items := list.Items()
+	if len(items) != 2 {
+		t.Fatalf("Items() len = %d, want 2", len(items))
+	}
+	if items[0].ID() != "r-1" {
+		t.Errorf("items[0].ID() = %q", items[0].ID())
+	}
+	if items[1].ID() != "r-2" {
+		t.Errorf("items[1].ID() = %q", items[1].ID())
+	}
+	for i, item := range items {
+		if item.ProjectID() != "p" {
+			t.Errorf("items[%d].ProjectID() = %q", i, item.ProjectID())
+		}
+		if item.vpnTunnelID != "t-1" {
+			t.Errorf("items[%d].vpnTunnelID = %q", i, item.vpnTunnelID)
+		}
+	}
+}
