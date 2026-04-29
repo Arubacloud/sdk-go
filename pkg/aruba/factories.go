@@ -125,6 +125,18 @@ func NewKeyPair() *KeyPair {
 	return k
 }
 
+// NewCloudServer returns a fresh *CloudServer ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+//
+// Action methods (PowerOn, PowerOff, SetPassword) on the returned wrapper will fail until
+// the wrapper has been hydrated by a real client call (Get/Create/Update/List populate
+// the internal action executor).
+func NewCloudServer() *CloudServer {
+	cs := &CloudServer{}
+	cs.projectScopedMixin = bindProjectScoped(&cs.errMixin)
+	return cs
+}
+
 // NewVPNIPConfig returns a fresh *VPNIPConfig sub-builder for configuring IP settings.
 func NewVPNIPConfig() *VPNIPConfig { return &VPNIPConfig{} }
 
