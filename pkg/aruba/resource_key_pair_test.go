@@ -308,30 +308,6 @@ func TestKeyPairIDsFromRef_BadURI_MissingAll(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// keyPairsClientAdapter — fake low-level client
-// --------------------------------------------------------------------------
-
-type fakeKeyPairLowLevel struct {
-	createFunc func(ctx context.Context, projectID string, body types.KeyPairRequest, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error)
-	getFunc    func(ctx context.Context, projectID, keyPairID string, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error)
-	deleteFunc func(ctx context.Context, projectID, keyPairID string, params *types.RequestParameters) (*types.Response[any], error)
-	listFunc   func(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KeyPairListResponse], error)
-}
-
-func (f *fakeKeyPairLowLevel) Create(ctx context.Context, projectID string, body types.KeyPairRequest, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error) {
-	return f.createFunc(ctx, projectID, body, params)
-}
-func (f *fakeKeyPairLowLevel) Get(ctx context.Context, projectID, keyPairID string, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error) {
-	return f.getFunc(ctx, projectID, keyPairID, params)
-}
-func (f *fakeKeyPairLowLevel) Delete(ctx context.Context, projectID, keyPairID string, params *types.RequestParameters) (*types.Response[any], error) {
-	return f.deleteFunc(ctx, projectID, keyPairID, params)
-}
-func (f *fakeKeyPairLowLevel) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KeyPairListResponse], error) {
-	return f.listFunc(ctx, projectID, params)
-}
-
-// --------------------------------------------------------------------------
 // keyPairsClientAdapter — HTTP mock tests
 // --------------------------------------------------------------------------
 
