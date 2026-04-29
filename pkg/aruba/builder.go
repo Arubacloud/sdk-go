@@ -16,7 +16,6 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 	"github.com/Arubacloud/sdk-go/internal/clients/security"
-	"github.com/Arubacloud/sdk-go/internal/clients/storage"
 	memory_creds_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/memory"
 	vault_creds_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/vault"
 	oauth2_connector "github.com/Arubacloud/sdk-go/internal/impl/auth/providerconnector/oauth2"
@@ -677,8 +676,5 @@ func buildStorageBackupsClient(restClient *restclient.Client) (StorageBackupsCli
 }
 
 func buildStorageRestoresClient(restClient *restclient.Client) (StorageRestoreClient, error) {
-	return storage.NewRestoreClientImpl(
-		restClient,
-		storage.NewBackupClientImpl(restClient),
-	), nil
+	return newStorageRestoresClientAdapter(restClient), nil
 }
