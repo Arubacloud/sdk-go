@@ -10,7 +10,6 @@ import (
 	redis_client "github.com/redis/go-redis/v9"
 
 	"github.com/Arubacloud/sdk-go/internal/clients/audit"
-	"github.com/Arubacloud/sdk-go/internal/clients/compute"
 	"github.com/Arubacloud/sdk-go/internal/clients/container"
 	"github.com/Arubacloud/sdk-go/internal/clients/database"
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
@@ -358,7 +357,7 @@ func buildComputeClient(restClient *restclient.Client) (ComputeClient, error) {
 }
 
 func buildCloudServersClient(restClient *restclient.Client) (CloudServersClient, error) {
-	return compute.NewCloudServersClientImpl(restClient), nil
+	return newCloudServersClientAdapter(restClient), nil
 }
 
 func buildKeyPairsClient(restClient *restclient.Client) (KeyPairsClient, error) {
