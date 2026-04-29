@@ -31,7 +31,6 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 	// Local variables — stack-allocated, zero production overhead.
 	// Named intermediates are needed only to satisfy the nil-dep checks
 	// added by TD-018; they exist only for the duration of this call.
-	volImpl := storage.NewVolumesClientImpl(nil)
 	bkpImpl := storage.NewBackupClientImpl(nil)
 
 	var (
@@ -77,7 +76,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 
 		// Storage
 		_ VolumesClient        = newVolumesClientAdapter(nil)
-		_ SnapshotsClient      = storage.NewSnapshotsClientImpl(nil, volImpl)
+		_ SnapshotsClient      = newSnapshotsClientAdapter(nil)
 		_ StorageBackupsClient = bkpImpl
 		_ StorageRestoreClient = storage.NewRestoreClientImpl(nil, bkpImpl)
 	)

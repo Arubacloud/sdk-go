@@ -665,10 +665,7 @@ func buildStorageClient(restClient *restclient.Client) (StorageClient, error) {
 }
 
 func buildSnapshotsClient(restClient *restclient.Client) (SnapshotsClient, error) {
-	return storage.NewSnapshotsClientImpl(
-		restClient,
-		storage.NewVolumesClientImpl(restClient),
-	), nil
+	return newSnapshotsClientAdapter(restClient), nil
 }
 
 func buildVolumesClient(restClient *restclient.Client) (VolumesClient, error) {
