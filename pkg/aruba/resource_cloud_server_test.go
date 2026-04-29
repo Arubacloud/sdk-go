@@ -292,8 +292,8 @@ func TestCloudServer_ToRequestRoundTrip(t *testing.T) {
 
 	req := cs.RawRequest()
 
-	if req.Metadata.ResourceMetadataRequest.Name != "srv" {
-		t.Errorf("request name = %q", req.Metadata.ResourceMetadataRequest.Name)
+	if req.Metadata.Name != "srv" {
+		t.Errorf("request name = %q", req.Metadata.Name)
 	}
 	if req.Metadata.Location.Value != "ITBG-Bergamo" {
 		t.Errorf("request location = %q", req.Metadata.Location.Value)
@@ -357,11 +357,11 @@ func cloudServerTestResponse(id, name, uri string) *types.CloudServerResponse {
 			LocationResponse: loc,
 		},
 		Properties: types.CloudServerPropertiesResult{
-			Zone:      "ITBG-1",
-			Flavor:    types.CloudServerFlavorResponse{Name: "CSO2A4", CPU: 2, RAM: 4096},
-			VPC:       types.ReferenceResource{URI: "/vpcs/v"},
+			Zone:       "ITBG-1",
+			Flavor:     types.CloudServerFlavorResponse{Name: "CSO2A4", CPU: 2, RAM: 4096},
+			VPC:        types.ReferenceResource{URI: "/vpcs/v"},
 			BootVolume: types.ReferenceResource{URI: "/vols/bv"},
-			KeyPair:   types.ReferenceResource{URI: "/kps/kp"},
+			KeyPair:    types.ReferenceResource{URI: "/kps/kp"},
 		},
 		Status: types.ResourceStatus{State: &state},
 	}
@@ -551,46 +551,6 @@ func TestCloudServerIDsFromRef_BadURI_MissingAll(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for completely unrelated URI")
 	}
-}
-
-// --------------------------------------------------------------------------
-// cloudServersClientAdapter — fake low-level client
-// --------------------------------------------------------------------------
-
-type fakeCloudServerLowLevel struct {
-	createFunc      func(ctx context.Context, projectID string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
-	updateFunc      func(ctx context.Context, projectID, cloudServerID string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
-	getFunc         func(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
-	deleteFunc      func(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[any], error)
-	listFunc        func(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.CloudServerList], error)
-	powerOnFunc     func(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
-	powerOffFunc    func(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
-	setPasswordFunc func(ctx context.Context, projectID, cloudServerID string, body types.CloudServerPasswordRequest, params *types.RequestParameters) (*types.Response[any], error)
-}
-
-func (f *fakeCloudServerLowLevel) Create(ctx context.Context, projectID string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
-	return f.createFunc(ctx, projectID, body, params)
-}
-func (f *fakeCloudServerLowLevel) Update(ctx context.Context, projectID, cloudServerID string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
-	return f.updateFunc(ctx, projectID, cloudServerID, body, params)
-}
-func (f *fakeCloudServerLowLevel) Get(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
-	return f.getFunc(ctx, projectID, cloudServerID, params)
-}
-func (f *fakeCloudServerLowLevel) Delete(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[any], error) {
-	return f.deleteFunc(ctx, projectID, cloudServerID, params)
-}
-func (f *fakeCloudServerLowLevel) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.CloudServerList], error) {
-	return f.listFunc(ctx, projectID, params)
-}
-func (f *fakeCloudServerLowLevel) PowerOn(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
-	return f.powerOnFunc(ctx, projectID, cloudServerID, params)
-}
-func (f *fakeCloudServerLowLevel) PowerOff(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
-	return f.powerOffFunc(ctx, projectID, cloudServerID, params)
-}
-func (f *fakeCloudServerLowLevel) SetPassword(ctx context.Context, projectID, cloudServerID string, body types.CloudServerPasswordRequest, params *types.RequestParameters) (*types.Response[any], error) {
-	return f.setPasswordFunc(ctx, projectID, cloudServerID, body, params)
 }
 
 // --------------------------------------------------------------------------
