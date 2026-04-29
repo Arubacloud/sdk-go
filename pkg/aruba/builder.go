@@ -362,7 +362,7 @@ func buildCloudServersClient(restClient *restclient.Client) (CloudServersClient,
 }
 
 func buildKeyPairsClient(restClient *restclient.Client) (KeyPairsClient, error) {
-	return compute.NewKeyPairsClientImpl(restClient), nil
+	return newKeyPairsClientAdapter(restClient), nil
 }
 
 //

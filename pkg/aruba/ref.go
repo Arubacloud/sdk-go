@@ -90,3 +90,4 @@ type withBlockStorageID interface{ BlockStorageID() string }
 type withSnapshotID interface{ SnapshotID() string }
 type withLoadBalancerID interface{ LoadBalancerID() string }
 type withRestoreID interface{ RestoreID() string }
+type withKeyPairID interface{ KeyPairID() string }

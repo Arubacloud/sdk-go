@@ -33,7 +33,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 
 		// Compute
 		_ CloudServersClient = compute.NewCloudServersClientImpl(nil)
-		_ KeyPairsClient     = compute.NewKeyPairsClientImpl(nil)
+		_ KeyPairsClient     = newKeyPairsClientAdapter(nil)
 
 		// Container
 		_ KaaSClient              = container.NewKaaSClientImpl(nil)
