@@ -30,7 +30,7 @@ func NewRestoreClientImpl(client *restclient.Client, backupClient *backupClientI
 }
 
 // List retrieves all Restores for a backup in a project
-func (c *restoreClientImpl) List(ctx context.Context, projectID string, backupID string, params *types.RequestParameters) (*types.Response[types.RestoreList], error) {
+func (c *restoreClientImpl) List(ctx context.Context, projectID string, backupID string, params *types.RequestParameters) (*types.Response[types.StorageRestoreList], error) {
 	c.client.Logger().Debugf("Listing Restores for project: %s, backup: %s", projectID, backupID)
 
 	if err := types.ValidateProjectAndResource(projectID, backupID, "Backup ID"); err != nil {
@@ -55,11 +55,11 @@ func (c *restoreClientImpl) List(ctx context.Context, projectID string, backupID
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.RestoreList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.StorageRestoreList](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific Restore by ID
-func (c *restoreClientImpl) Get(ctx context.Context, projectID string, backupID string, restoreID string, params *types.RequestParameters) (*types.Response[types.RestoreResponse], error) {
+func (c *restoreClientImpl) Get(ctx context.Context, projectID string, backupID string, restoreID string, params *types.RequestParameters) (*types.Response[types.StorageRestoreResponse], error) {
 	c.client.Logger().Debugf("Getting Restore: %s in project: %s, backup: %s", restoreID, projectID, backupID)
 
 	if err := types.ValidateProjectAndResource(projectID, backupID, "Backup ID"); err != nil {
@@ -87,11 +87,11 @@ func (c *restoreClientImpl) Get(ctx context.Context, projectID string, backupID 
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.RestoreResponse](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.StorageRestoreResponse](httpResp, c.client.Logger())
 }
 
 // Create creates a new Restore
-func (c *restoreClientImpl) Create(ctx context.Context, projectID string, backupID string, body types.RestoreRequest, params *types.RequestParameters) (*types.Response[types.RestoreResponse], error) {
+func (c *restoreClientImpl) Create(ctx context.Context, projectID string, backupID string, body types.StorageRestoreRequest, params *types.RequestParameters) (*types.Response[types.StorageRestoreResponse], error) {
 	c.client.Logger().Debugf("Creating Restore in project: %s, backup: %s", projectID, backupID)
 
 	if err := types.ValidateStorageRestore(projectID, backupID, nil); err != nil {
@@ -132,7 +132,7 @@ func (c *restoreClientImpl) Create(ctx context.Context, projectID string, backup
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &types.Response[types.RestoreResponse]{
+	response := &types.Response[types.StorageRestoreResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -140,7 +140,7 @@ func (c *restoreClientImpl) Create(ctx context.Context, projectID string, backup
 	}
 
 	if response.IsSuccess() {
-		var data types.RestoreResponse
+		var data types.StorageRestoreResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}
@@ -159,7 +159,7 @@ func (c *restoreClientImpl) Create(ctx context.Context, projectID string, backup
 }
 
 // Update updates an existing Restore
-func (c *restoreClientImpl) Update(ctx context.Context, projectID string, backupID string, restoreID string, body types.RestoreRequest, params *types.RequestParameters) (*types.Response[types.RestoreResponse], error) {
+func (c *restoreClientImpl) Update(ctx context.Context, projectID string, backupID string, restoreID string, body types.StorageRestoreRequest, params *types.RequestParameters) (*types.Response[types.StorageRestoreResponse], error) {
 	c.client.Logger().Debugf("Updating Restore: %s in project: %s, backup: %s", restoreID, projectID, backupID)
 
 	if err := types.ValidateProjectAndResource(projectID, backupID, "Backup ID"); err != nil {
@@ -197,7 +197,7 @@ func (c *restoreClientImpl) Update(ctx context.Context, projectID string, backup
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	response := &types.Response[types.RestoreResponse]{
+	response := &types.Response[types.StorageRestoreResponse]{
 		HTTPResponse: httpResp,
 		StatusCode:   httpResp.StatusCode,
 		Headers:      httpResp.Header,
@@ -205,7 +205,7 @@ func (c *restoreClientImpl) Update(ctx context.Context, projectID string, backup
 	}
 
 	if response.IsSuccess() {
-		var data types.RestoreResponse
+		var data types.StorageRestoreResponse
 		if err := json.Unmarshal(respBytes, &data); err != nil {
 			return nil, fmt.Errorf("failed to parse response: %w", err)
 		}

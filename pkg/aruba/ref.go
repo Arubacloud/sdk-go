@@ -89,3 +89,4 @@ type withElasticIPID interface{ ElasticIPID() string }
 type withBlockStorageID interface{ BlockStorageID() string }
 type withSnapshotID interface{ SnapshotID() string }
 type withLoadBalancerID interface{ LoadBalancerID() string }
+type withRestoreID interface{ RestoreID() string }
