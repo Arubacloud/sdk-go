@@ -137,6 +137,14 @@ func NewCloudServer() *CloudServer {
 	return cs
 }
 
+// NewDBaaS returns a fresh *DBaaS ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewDBaaS() *DBaaS {
+	d := &DBaaS{}
+	d.projectScopedMixin = bindProjectScoped(&d.errMixin)
+	return d
+}
+
 // NewVPNIPConfig returns a fresh *VPNIPConfig sub-builder for configuring IP settings.
 func NewVPNIPConfig() *VPNIPConfig { return &VPNIPConfig{} }
 

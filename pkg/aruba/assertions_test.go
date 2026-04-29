@@ -39,7 +39,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 		_ ContainerRegistryClient = container.NewContainerRegistryClientImpl(nil)
 
 		// Database
-		_ DBaaSClient     = database.NewDBaaSClientImpl(nil)
+		_ DBaaSClient     = newDBaaSClientAdapter(nil)
 		_ DatabasesClient = database.NewDatabasesClientImpl(nil)
 		_ BackupsClient   = database.NewBackupsClientImpl(nil)
 		_ UsersClient     = database.NewUsersClientImpl(nil)
