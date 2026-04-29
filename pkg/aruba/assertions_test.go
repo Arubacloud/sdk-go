@@ -42,7 +42,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 		_ DBaaSClient     = newDBaaSClientAdapter(nil)
 		_ DatabasesClient = newDatabasesClientAdapter(nil)
 		_ BackupsClient   = database.NewBackupsClientImpl(nil)
-		_ UsersClient     = database.NewUsersClientImpl(nil)
+		_ UsersClient     = newUsersClientAdapter(nil)
 		_ GrantsClient    = database.NewGrantsClientImpl(nil)
 
 		// Metric
