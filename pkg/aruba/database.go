@@ -2,7 +2,10 @@ package aruba
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/Arubacloud/sdk-go/internal/clients/database"
+	"github.com/Arubacloud/sdk-go/internal/restclient"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
@@ -45,11 +48,184 @@ func (c databaseClientImpl) Grants() GrantsClient {
 }
 
 type DBaaSClient interface {
+	List(ctx context.Context, project Ref, opts ...CallOption) (*List[*DBaaS], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*DBaaS, error)
+	Create(ctx context.Context, dbaas *DBaaS, opts ...CallOption) (*DBaaS, error)
+	Update(ctx context.Context, dbaas *DBaaS, opts ...CallOption) (*DBaaS, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
+}
+
+type dbaasLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.DBaaSList], error)
-	Get(ctx context.Context, projectID string, databaseID string, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error)
+	Get(ctx context.Context, projectID, dbaasID string, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error)
 	Create(ctx context.Context, projectID string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error)
-	Update(ctx context.Context, projectID string, databaseID string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error)
-	Delete(ctx context.Context, projectID string, databaseID string, params *types.RequestParameters) (*types.Response[any], error)
+	Update(ctx context.Context, projectID, dbaasID string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error)
+	Delete(ctx context.Context, projectID, dbaasID string, params *types.RequestParameters) (*types.Response[any], error)
+}
+
+type dbaasClientAdapter struct{ low dbaasLowLevelClient }
+
+func newDBaaSClientAdapter(rest *restclient.Client) *dbaasClientAdapter {
+	if rest == nil {
+		return &dbaasClientAdapter{}
+	}
+	return &dbaasClientAdapter{low: database.NewDBaaSClientImpl(rest)}
+}
+
+func (a *dbaasClientAdapter) Create(ctx context.Context, d *DBaaS, opts ...CallOption) (*DBaaS, error) {
+	if err := d.Err(); err != nil {
+		return d, err
+	}
+	if d.ProjectID() == "" {
+		return d, fmt.Errorf("Create: DBaaS has no parent project — call IntoProject first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Create(ctx, d.ProjectID(), d.toRequest(), rp)
+	populateHTTPEnvelope(&d.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		d.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return d, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return d, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return d, nil
+}
+
+func (a *dbaasClientAdapter) Update(ctx context.Context, d *DBaaS, opts ...CallOption) (*DBaaS, error) {
+	if err := d.Err(); err != nil {
+		return d, err
+	}
+	if d.DBaaSID() == "" {
+		return d, fmt.Errorf("Update: DBaaS has no ID")
+	}
+	if d.ProjectID() == "" {
+		return d, fmt.Errorf("Update: DBaaS has no parent project — call IntoProject first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Update(ctx, d.ProjectID(), d.DBaaSID(), d.toRequest(), rp)
+	populateHTTPEnvelope(&d.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		d.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return d, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return d, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return d, nil
+}
+
+func (a *dbaasClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*DBaaS, error) {
+	projectID, dbaasID, err := dbaasIDsFromRef(ref)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Get(ctx, projectID, dbaasID, rp)
+	out := &DBaaS{}
+	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		out.fromResponse(resp.Data)
+	}
+	if out.projectID == "" {
+		out.projectID = projectID
+	}
+	if err != nil {
+		return out, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return out, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return out, nil
+}
+
+func (a *dbaasClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
+	projectID, dbaasID, err := dbaasIDsFromRef(ref)
+	if err != nil {
+		return err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Delete(ctx, projectID, dbaasID, rp)
+	if err != nil {
+		return err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return nil
+}
+
+func (a *dbaasClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*DBaaS], error) {
+	projectID, err := projectIDFromRef(project)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.List(ctx, projectID, rp)
+	if err != nil {
+		return nil, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	var items []*DBaaS
+	if resp != nil && resp.Data != nil {
+		items = make([]*DBaaS, 0, len(resp.Data.Values))
+		for i := range resp.Data.Values {
+			d := &DBaaS{}
+			d.fromResponse(&resp.Data.Values[i])
+			if d.projectID == "" {
+				d.projectID = projectID
+			}
+			items = append(items, d)
+		}
+	}
+	refetch := func(_ context.Context, _ string) (*List[*DBaaS], error) {
+		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	}
+	var total int64
+	var self, prev, next, first, last string
+	if resp != nil && resp.Data != nil {
+		total = resp.Data.Total
+		self = resp.Data.Self
+		prev = resp.Data.Prev
+		next = resp.Data.Next
+		first = resp.Data.First
+		last = resp.Data.Last
+	}
+	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+}
+
+// dbaasIDsFromRef extracts (projectID, dbaasID) from a Ref.
+func dbaasIDsFromRef(ref Ref) (projectID, dbaasID string, err error) {
+	did, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withDBaaSID); ok {
+			return w.DBaaSID(), true
+		}
+		return "", false
+	}, "dbaas")
+	if !ok || did == "" {
+		return "", "", fmt.Errorf("cannot determine DBaaS ID from Ref %q", ref.URI())
+	}
+	pid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withProjectID); ok {
+			return w.ProjectID(), true
+		}
+		return "", false
+	}, "projects")
+	if !ok || pid == "" {
+		return "", "", fmt.Errorf("cannot determine project ID from Ref %q", ref.URI())
+	}
+	return pid, did, nil
 }
 
 type DatabasesClient interface {
