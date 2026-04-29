@@ -435,7 +435,7 @@ func buildDBaaSClient(restClient *restclient.Client) (DBaaSClient, error) {
 }
 
 func buildDatabasesClient(restClient *restclient.Client) (DatabasesClient, error) {
-	return database.NewDatabasesClientImpl(restClient), nil
+	return newDatabasesClientAdapter(restClient), nil
 }
 
 func buildBackupsClient(restClient *restclient.Client) (BackupsClient, error) {
