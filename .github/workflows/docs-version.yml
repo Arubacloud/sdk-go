@@ -106,14 +106,19 @@ jobs:
         run: |
           VERSION="${{ steps.extract_version.outputs.version }}"
           echo "Creating versioned docs for version: $VERSION"
-          npm run version "$VERSION"
-          
-          # Verify the version was created
-          if [ ! -d "versioned_docs/version-${VERSION}" ]; then
-            echo "⚠️  ERROR: Version directory was not created: versioned_docs/version-${VERSION}"
-            exit 1
+
+          if [ -d "versioned_docs/version-${VERSION}" ]; then
+            echo "ℹ️  Version ${VERSION} already exists, skipping creation"
+          else
+            npm run version "$VERSION"
+
+            # Verify the version was created
+            if [ ! -d "versioned_docs/version-${VERSION}" ]; then
+              echo "⚠️  ERROR: Version directory was not created: versioned_docs/version-${VERSION}"
+              exit 1
+            fi
+            echo "✓ Versioned docs created successfully: versioned_docs/version-${VERSION}"
           fi
-          echo "✓ Versioned docs created successfully: versioned_docs/version-${VERSION}"
 
       - name: Sync translations for all versions
         working-directory: docs/website
@@ -210,9 +215,13 @@ jobs:
           git config --local user.name "GitHub Action"
           # Pull latest changes to ensure we're up to date
           git pull origin main || true
-          # Create a branch for the versioned docs
+          # Create a branch for the versioned docs (reuse if it already exists remotely)
           BRANCH_NAME="docs/version-${{ steps.extract_version.outputs.version }}"
-          git checkout -b "$BRANCH_NAME"
+          if git ls-remote --exit-code --heads origin "$BRANCH_NAME" > /dev/null 2>&1; then
+            git checkout -B "$BRANCH_NAME" "origin/$BRANCH_NAME"
+          else
+            git checkout -b "$BRANCH_NAME"
+          fi
           # Add versioned docs
           git add docs/website/versioned_docs docs/website/versioned_sidebars docs/website/versions.json
           if ! git diff --staged --quiet; then
