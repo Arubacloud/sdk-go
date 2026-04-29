@@ -145,6 +145,14 @@ func NewDBaaS() *DBaaS {
 	return d
 }
 
+// NewDatabase returns a fresh *Database ready for fluent setters and a Create call.
+// Binds dbaasScopedMixin's error sink so IntoDBaaS failures surface via Err().
+func NewDatabase() *Database {
+	d := &Database{}
+	d.dbaasScopedMixin = bindDBaaSScoped(&d.errMixin)
+	return d
+}
+
 // NewVPNIPConfig returns a fresh *VPNIPConfig sub-builder for configuring IP settings.
 func NewVPNIPConfig() *VPNIPConfig { return &VPNIPConfig{} }
 
