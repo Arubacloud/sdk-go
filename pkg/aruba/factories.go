@@ -117,6 +117,14 @@ func NewStorageRestore() *StorageRestore {
 	return r
 }
 
+// NewKeyPair returns a fresh *KeyPair ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewKeyPair() *KeyPair {
+	k := &KeyPair{}
+	k.projectScopedMixin = bindProjectScoped(&k.errMixin)
+	return k
+}
+
 // NewVPNIPConfig returns a fresh *VPNIPConfig sub-builder for configuring IP settings.
 func NewVPNIPConfig() *VPNIPConfig { return &VPNIPConfig{} }
 
