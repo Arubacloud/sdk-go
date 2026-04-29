@@ -406,11 +406,184 @@ func blockStorageIDsFromRef(ref Ref) (projectID, blockStorageID string, err erro
 }
 
 type StorageBackupsClient interface {
+	List(ctx context.Context, project Ref, opts ...CallOption) (*List[*StorageBackup], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*StorageBackup, error)
+	Create(ctx context.Context, b *StorageBackup, opts ...CallOption) (*StorageBackup, error)
+	Update(ctx context.Context, b *StorageBackup, opts ...CallOption) (*StorageBackup, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
+}
+
+type storageBackupLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.StorageBackupList], error)
-	Get(ctx context.Context, projectID string, backupID string, params *types.RequestParameters) (*types.Response[types.StorageBackupResponse], error)
-	Update(ctx context.Context, projectID string, backupID string, body types.StorageBackupRequest, params *types.RequestParameters) (*types.Response[types.StorageBackupResponse], error)
+	Get(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[types.StorageBackupResponse], error)
 	Create(ctx context.Context, projectID string, body types.StorageBackupRequest, params *types.RequestParameters) (*types.Response[types.StorageBackupResponse], error)
-	Delete(ctx context.Context, projectID string, backupID string, params *types.RequestParameters) (*types.Response[any], error)
+	Update(ctx context.Context, projectID, backupID string, body types.StorageBackupRequest, params *types.RequestParameters) (*types.Response[types.StorageBackupResponse], error)
+	Delete(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[any], error)
+}
+
+type storageBackupsClientAdapter struct{ low storageBackupLowLevelClient }
+
+func newStorageBackupsClientAdapter(rest *restclient.Client) *storageBackupsClientAdapter {
+	if rest == nil {
+		return &storageBackupsClientAdapter{}
+	}
+	return &storageBackupsClientAdapter{low: storage.NewBackupClientImpl(rest)}
+}
+
+func (a *storageBackupsClientAdapter) Create(ctx context.Context, b *StorageBackup, opts ...CallOption) (*StorageBackup, error) {
+	if err := b.Err(); err != nil {
+		return b, err
+	}
+	if b.ProjectID() == "" {
+		return b, fmt.Errorf("Create: StorageBackup has no project — call IntoProject first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Create(ctx, b.ProjectID(), b.toRequest(), rp)
+	populateHTTPEnvelope(&b.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		b.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return b, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return b, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return b, nil
+}
+
+func (a *storageBackupsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*StorageBackup, error) {
+	projectID, backupID, err := backupIDsFromRef(ref)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Get(ctx, projectID, backupID, rp)
+	out := &StorageBackup{}
+	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		out.fromResponse(resp.Data)
+	}
+	if out.projectID == "" {
+		out.projectID = projectID
+	}
+	if err != nil {
+		return out, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return out, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return out, nil
+}
+
+func (a *storageBackupsClientAdapter) Update(ctx context.Context, b *StorageBackup, opts ...CallOption) (*StorageBackup, error) {
+	if err := b.Err(); err != nil {
+		return b, err
+	}
+	if b.ID() == "" {
+		return b, fmt.Errorf("Update: StorageBackup has no ID — call Get first or seed from response metadata")
+	}
+	if b.ProjectID() == "" {
+		return b, fmt.Errorf("Update: StorageBackup has no project — call IntoProject first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Update(ctx, b.ProjectID(), b.ID(), b.toRequest(), rp)
+	populateHTTPEnvelope(&b.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		b.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return b, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return b, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return b, nil
+}
+
+func (a *storageBackupsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
+	projectID, backupID, err := backupIDsFromRef(ref)
+	if err != nil {
+		return err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Delete(ctx, projectID, backupID, rp)
+	if err != nil {
+		return err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return nil
+}
+
+func (a *storageBackupsClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*StorageBackup], error) {
+	projectID, err := projectIDFromRef(project)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.List(ctx, projectID, rp)
+	if err != nil {
+		return nil, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	var items []*StorageBackup
+	if resp != nil && resp.Data != nil {
+		items = make([]*StorageBackup, 0, len(resp.Data.Values))
+		for i := range resp.Data.Values {
+			bkp := &StorageBackup{}
+			bkp.fromResponse(&resp.Data.Values[i])
+			if bkp.projectID == "" {
+				bkp.projectID = projectID
+			}
+			items = append(items, bkp)
+		}
+	}
+	refetch := func(_ context.Context, _ string) (*List[*StorageBackup], error) {
+		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	}
+	var total int64
+	var self, prev, next, first, last string
+	if resp != nil && resp.Data != nil {
+		total = resp.Data.Total
+		self = resp.Data.Self
+		prev = resp.Data.Prev
+		next = resp.Data.Next
+		first = resp.Data.First
+		last = resp.Data.Last
+	}
+	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+}
+
+// backupIDsFromRef extracts (projectID, backupID) from a Ref.
+func backupIDsFromRef(ref Ref) (projectID, backupID string, err error) {
+	bid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withBackupID); ok {
+			return w.BackupID(), true
+		}
+		return "", false
+	}, "backups")
+	if !ok || bid == "" {
+		return "", "", fmt.Errorf("cannot determine StorageBackup ID from Ref %q", ref.URI())
+	}
+	pid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withProjectID); ok {
+			return w.ProjectID(), true
+		}
+		return "", false
+	}, "projects")
+	if !ok || pid == "" {
+		return "", "", fmt.Errorf("cannot determine project ID from Ref %q", ref.URI())
+	}
+	return pid, bid, nil
 }
 
 type StorageRestoreClient interface {

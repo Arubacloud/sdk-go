@@ -77,7 +77,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 		// Storage
 		_ VolumesClient        = newVolumesClientAdapter(nil)
 		_ SnapshotsClient      = newSnapshotsClientAdapter(nil)
-		_ StorageBackupsClient = bkpImpl
+		_ StorageBackupsClient = newStorageBackupsClientAdapter(nil)
 		_ StorageRestoreClient = storage.NewRestoreClientImpl(nil, bkpImpl)
 	)
 }

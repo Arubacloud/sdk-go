@@ -101,6 +101,14 @@ func NewSnapshot() *Snapshot {
 	return s
 }
 
+// NewStorageBackup returns a fresh *StorageBackup ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewStorageBackup() *StorageBackup {
+	b := &StorageBackup{}
+	b.projectScopedMixin = bindProjectScoped(&b.errMixin)
+	return b
+}
+
 // NewVPNIPConfig returns a fresh *VPNIPConfig sub-builder for configuring IP settings.
 func NewVPNIPConfig() *VPNIPConfig { return &VPNIPConfig{} }
 
