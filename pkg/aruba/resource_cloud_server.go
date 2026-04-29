@@ -70,15 +70,25 @@ func (cs *CloudServer) WithVPCPreset(b bool) *CloudServer     { cs.vpcPreset = &
 
 // Single body-ref setters.
 
-func (cs *CloudServer) WithVPC(v Ref) *CloudServer         { return cs.setSingleRef("WithVPC", v, &cs.vpcRef) }
-func (cs *CloudServer) WithBootVolume(vol Ref) *CloudServer { return cs.setSingleRef("WithBootVolume", vol, &cs.bootVolumeRef) }
-func (cs *CloudServer) WithKeyPair(kp Ref) *CloudServer    { return cs.setSingleRef("WithKeyPair", kp, &cs.keyPairRef) }
-func (cs *CloudServer) WithElasticIP(eip Ref) *CloudServer { return cs.setSingleRef("WithElasticIP", eip, &cs.elasticIPRef) }
+func (cs *CloudServer) WithVPC(v Ref) *CloudServer { return cs.setSingleRef("WithVPC", v, &cs.vpcRef) }
+func (cs *CloudServer) WithBootVolume(vol Ref) *CloudServer {
+	return cs.setSingleRef("WithBootVolume", vol, &cs.bootVolumeRef)
+}
+func (cs *CloudServer) WithKeyPair(kp Ref) *CloudServer {
+	return cs.setSingleRef("WithKeyPair", kp, &cs.keyPairRef)
+}
+func (cs *CloudServer) WithElasticIP(eip Ref) *CloudServer {
+	return cs.setSingleRef("WithElasticIP", eip, &cs.elasticIPRef)
+}
 
 // Multi-ref slice setters.
 
-func (cs *CloudServer) AddSubnet(s Ref) *CloudServer         { return cs.appendRef("AddSubnet", s, &cs.subnetRefs) }
-func (cs *CloudServer) AddSecurityGroup(sg Ref) *CloudServer { return cs.appendRef("AddSecurityGroup", sg, &cs.securityGroupRefs) }
+func (cs *CloudServer) AddSubnet(s Ref) *CloudServer {
+	return cs.appendRef("AddSubnet", s, &cs.subnetRefs)
+}
+func (cs *CloudServer) AddSecurityGroup(sg Ref) *CloudServer {
+	return cs.appendRef("AddSecurityGroup", sg, &cs.securityGroupRefs)
+}
 
 // Internal ref helpers.
 
