@@ -24,15 +24,9 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/database"
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
-	"github.com/Arubacloud/sdk-go/internal/clients/storage"
 )
 
 func TestCompileTimeInterfaceGuards(_ *testing.T) {
-	// Local variables — stack-allocated, zero production overhead.
-	// Named intermediates are needed only to satisfy the nil-dep checks
-	// added by TD-018; they exist only for the duration of this call.
-	bkpImpl := storage.NewBackupClientImpl(nil)
-
 	var (
 		// Audit
 		_ EventsClient = audit.NewEventsClientImpl(nil)
@@ -78,6 +72,6 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 		_ VolumesClient        = newVolumesClientAdapter(nil)
 		_ SnapshotsClient      = newSnapshotsClientAdapter(nil)
 		_ StorageBackupsClient = newStorageBackupsClientAdapter(nil)
-		_ StorageRestoreClient = storage.NewRestoreClientImpl(nil, bkpImpl)
+		_ StorageRestoreClient = newStorageRestoresClientAdapter(nil)
 	)
 }
