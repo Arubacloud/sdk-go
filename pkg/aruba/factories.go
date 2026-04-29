@@ -161,6 +161,14 @@ func NewUser() *User {
 	return u
 }
 
+// NewGrant returns a fresh *Grant ready for fluent setters and a Create call.
+// Binds databaseScopedMixin's error sink so IntoDatabase failures surface via Err().
+func NewGrant() *Grant {
+	g := &Grant{}
+	g.databaseScopedMixin = bindDatabaseScoped(&g.errMixin)
+	return g
+}
+
 // NewVPNIPConfig returns a fresh *VPNIPConfig sub-builder for configuring IP settings.
 func NewVPNIPConfig() *VPNIPConfig { return &VPNIPConfig{} }
 

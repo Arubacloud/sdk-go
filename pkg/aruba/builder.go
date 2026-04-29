@@ -447,7 +447,7 @@ func buildUsersClient(restClient *restclient.Client) (UsersClient, error) {
 }
 
 func buildGrantsClient(restClient *restclient.Client) (GrantsClient, error) {
-	return database.NewGrantsClientImpl(restClient), nil
+	return newGrantsClientAdapter(restClient), nil
 }
 
 //
