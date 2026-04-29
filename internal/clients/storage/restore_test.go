@@ -247,11 +247,11 @@ func TestCreateRestore(t *testing.T) {
 			fmt.Fprint(w, `{"metadata":{"name":"new-restore","id":"restore-456","uri":"/projects/test-project/providers/Aruba.Storage/restores/restore-456"},"properties":{"destinationVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"}},"status":{"state":"creating"}}`)
 		})
 		svc := newRestoreSvc(t, server.URL)
-		body := types.RestoreRequest{
+		body := types.StorageRestoreRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-restore"},
 			},
-			Properties: types.RestorePropertiesRequest{
+			Properties: types.StorageRestorePropertiesRequest{
 				Target: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"},
 			},
 		}
@@ -275,7 +275,7 @@ func TestCreateRestore(t *testing.T) {
 
 	t.Run("empty project", func(t *testing.T) {
 		svc := newRestoreSvc(t, "http://unused.invalid")
-		_, err := svc.Create(context.Background(), "", "backup-123", types.RestoreRequest{}, nil)
+		_, err := svc.Create(context.Background(), "", "backup-123", types.StorageRestoreRequest{}, nil)
 		if err == nil {
 			t.Fatal("expected validation error, got nil")
 		}
@@ -283,7 +283,7 @@ func TestCreateRestore(t *testing.T) {
 
 	t.Run("empty backup ID", func(t *testing.T) {
 		svc := newRestoreSvc(t, "http://unused.invalid")
-		_, err := svc.Create(context.Background(), "test-project", "", types.RestoreRequest{}, nil)
+		_, err := svc.Create(context.Background(), "test-project", "", types.StorageRestoreRequest{}, nil)
 		if err == nil {
 			t.Fatal("expected validation error, got nil")
 		}
@@ -296,7 +296,7 @@ func TestCreateRestore(t *testing.T) {
 			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
 		})
 		svc := newRestoreSvc(t, server.URL)
-		body := types.RestoreRequest{Properties: types.RestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
+		body := types.StorageRestoreRequest{Properties: types.StorageRestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
 		resp, err := svc.Create(context.Background(), "test-project", "backup-123", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -317,7 +317,7 @@ func TestCreateRestore(t *testing.T) {
 			fmt.Fprint(w, "Bad Gateway")
 		})
 		svc := newRestoreSvc(t, server.URL)
-		body := types.RestoreRequest{Properties: types.RestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
+		body := types.StorageRestoreRequest{Properties: types.StorageRestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
 		resp, err := svc.Create(context.Background(), "test-project", "backup-123", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -333,7 +333,7 @@ func TestCreateRestore(t *testing.T) {
 	t.Run("network error", func(t *testing.T) {
 		c := testutil.NewBrokenClient(t, "http://unused.invalid")
 		svc := NewRestoreClientImpl(c, NewBackupClientImpl(c))
-		body := types.RestoreRequest{Properties: types.RestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
+		body := types.StorageRestoreRequest{Properties: types.StorageRestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
 		_, err := svc.Create(context.Background(), "test-project", "backup-123", body, nil)
 		if err == nil {
 			t.Fatal("expected transport error, got nil")
@@ -350,7 +350,7 @@ func TestCreateRestore(t *testing.T) {
 			fmt.Fprint(w, `{"metadata":{"id":"x","uri":"/x","name":"x"}}`)
 		})
 		svc := newRestoreSvc(t, server.URL)
-		body := types.RestoreRequest{Properties: types.RestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
+		body := types.StorageRestoreRequest{Properties: types.StorageRestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
 		resp, err := svc.Create(context.Background(), "test-project", "backup-123", body, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -367,7 +367,7 @@ func TestCreateRestore(t *testing.T) {
 			fmt.Fprint(w, `{"metadata":{"uri":"/projects/test-project/providers/Aruba.Storage/restores/res-123","name":"test-name"}}`)
 		})
 		svc := newRestoreSvc(t, server.URL)
-		body := types.RestoreRequest{Properties: types.RestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
+		body := types.StorageRestoreRequest{Properties: types.StorageRestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
 		resp, err := svc.Create(context.Background(), "test-project", "backup-123", body, nil)
 		if err == nil {
 			t.Fatal("expected metadata validation error, got nil")
@@ -391,7 +391,7 @@ func TestCreateRestore(t *testing.T) {
 			fmt.Fprint(w, `{"metadata":{"id":"res-123","uri":"/projects/test-project/providers/Aruba.Storage/restores/res-123"}}`)
 		})
 		svc := newRestoreSvc(t, server.URL)
-		body := types.RestoreRequest{Properties: types.RestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
+		body := types.StorageRestoreRequest{Properties: types.StorageRestorePropertiesRequest{Target: types.ReferenceResource{URI: "dummy"}}}
 		resp, err := svc.Create(context.Background(), "test-project", "backup-123", body, nil)
 		if err == nil {
 			t.Fatal("expected metadata validation error, got nil")
@@ -417,11 +417,11 @@ func TestUpdateRestore(t *testing.T) {
 			fmt.Fprint(w, `{"metadata":{"name":"updated-restore","id":"restore-123"},"properties":{"destinationVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"}},"status":{"state":"updating"}}`)
 		})
 		svc := newRestoreSvc(t, server.URL)
-		body := types.RestoreRequest{
+		body := types.StorageRestoreRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "updated-restore"},
 			},
-			Properties: types.RestorePropertiesRequest{
+			Properties: types.StorageRestorePropertiesRequest{
 				Target: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"},
 			},
 		}
@@ -439,7 +439,7 @@ func TestUpdateRestore(t *testing.T) {
 
 	t.Run("empty project", func(t *testing.T) {
 		svc := newRestoreSvc(t, "http://unused.invalid")
-		_, err := svc.Update(context.Background(), "", "backup-123", "restore-123", types.RestoreRequest{}, nil)
+		_, err := svc.Update(context.Background(), "", "backup-123", "restore-123", types.StorageRestoreRequest{}, nil)
 		if err == nil {
 			t.Fatal("expected validation error, got nil")
 		}
@@ -447,7 +447,7 @@ func TestUpdateRestore(t *testing.T) {
 
 	t.Run("empty backup ID", func(t *testing.T) {
 		svc := newRestoreSvc(t, "http://unused.invalid")
-		_, err := svc.Update(context.Background(), "test-project", "", "restore-123", types.RestoreRequest{}, nil)
+		_, err := svc.Update(context.Background(), "test-project", "", "restore-123", types.StorageRestoreRequest{}, nil)
 		if err == nil {
 			t.Fatal("expected validation error, got nil")
 		}
@@ -455,7 +455,7 @@ func TestUpdateRestore(t *testing.T) {
 
 	t.Run("empty restore ID", func(t *testing.T) {
 		svc := newRestoreSvc(t, "http://unused.invalid")
-		_, err := svc.Update(context.Background(), "test-project", "backup-123", "", types.RestoreRequest{}, nil)
+		_, err := svc.Update(context.Background(), "test-project", "backup-123", "", types.StorageRestoreRequest{}, nil)
 		if err == nil {
 			t.Fatal("expected validation error, got nil")
 		}
@@ -468,7 +468,7 @@ func TestUpdateRestore(t *testing.T) {
 			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
 		})
 		svc := newRestoreSvc(t, server.URL)
-		resp, err := svc.Update(context.Background(), "test-project", "backup-123", "restore-123", types.RestoreRequest{}, nil)
+		resp, err := svc.Update(context.Background(), "test-project", "backup-123", "restore-123", types.StorageRestoreRequest{}, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -488,7 +488,7 @@ func TestUpdateRestore(t *testing.T) {
 			fmt.Fprint(w, "Bad Gateway")
 		})
 		svc := newRestoreSvc(t, server.URL)
-		resp, err := svc.Update(context.Background(), "test-project", "backup-123", "restore-123", types.RestoreRequest{}, nil)
+		resp, err := svc.Update(context.Background(), "test-project", "backup-123", "restore-123", types.StorageRestoreRequest{}, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -503,7 +503,7 @@ func TestUpdateRestore(t *testing.T) {
 	t.Run("network error", func(t *testing.T) {
 		c := testutil.NewBrokenClient(t, "http://unused.invalid")
 		svc := NewRestoreClientImpl(c, NewBackupClientImpl(c))
-		_, err := svc.Update(context.Background(), "test-project", "backup-123", "restore-123", types.RestoreRequest{}, nil)
+		_, err := svc.Update(context.Background(), "test-project", "backup-123", "restore-123", types.StorageRestoreRequest{}, nil)
 		if err == nil {
 			t.Fatal("expected transport error, got nil")
 		}
@@ -519,7 +519,7 @@ func TestUpdateRestore(t *testing.T) {
 			fmt.Fprint(w, `{"metadata":{"name":"x"}}`)
 		})
 		svc := newRestoreSvc(t, server.URL)
-		resp, err := svc.Update(context.Background(), "test-project", "backup-123", "restore-123", types.RestoreRequest{}, nil)
+		resp, err := svc.Update(context.Background(), "test-project", "backup-123", "restore-123", types.StorageRestoreRequest{}, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

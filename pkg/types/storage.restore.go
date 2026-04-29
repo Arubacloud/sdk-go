@@ -1,28 +1,28 @@
 package types
 
-type RestorePropertiesRequest struct {
+type StorageRestorePropertiesRequest struct {
 	Target ReferenceResource `json:"destinationVolume"`
 }
 
-type RestorePropertiesResult struct {
+type StorageRestorePropertiesResult struct {
 	Destination ReferenceResource `json:"destinationVolume"`
 }
 
-type RestoreRequest struct {
+type StorageRestoreRequest struct {
 	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 
-	Properties RestorePropertiesRequest `json:"properties"`
+	Properties StorageRestorePropertiesRequest `json:"properties"`
 }
 
-type RestoreResponse struct {
+type StorageRestoreResponse struct {
 	Metadata ResourceMetadataResponse `json:"metadata"`
 
-	Properties RestorePropertiesResult `json:"properties"`
+	Properties StorageRestorePropertiesResult `json:"properties"`
 
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type RestoreList struct {
+type StorageRestoreList struct {
 	ListResponse
-	Values []RestoreResponse `json:"values"`
+	Values []StorageRestoreResponse `json:"values"`
 }
