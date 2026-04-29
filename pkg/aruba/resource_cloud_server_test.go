@@ -1,0 +1,1061 @@
+package aruba
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"testing"
+
+	"github.com/Arubacloud/sdk-go/internal/testutil"
+	"github.com/Arubacloud/sdk-go/pkg/types"
+)
+
+// --------------------------------------------------------------------------
+// Compile-time Ref satisfaction
+// --------------------------------------------------------------------------
+
+var _ Ref = (*CloudServer)(nil)
+
+// --------------------------------------------------------------------------
+// Fluent setters
+// --------------------------------------------------------------------------
+
+func TestCloudServer_FluentSetters(t *testing.T) {
+	proj := &Project{}
+	proj.fromResponse(projectTestResponse("p-1", "my-project", "/projects/p-1"))
+
+	cs := NewCloudServer().
+		IntoProject(proj).
+		WithName("my-server").
+		AddTag("compute").
+		AddTag("prod").
+		InRegion("ITBG-Bergamo").
+		InZone("ITBG-1").
+		WithFlavor("CSO2A4").
+		WithUserData("dGVzdA==").
+		WithVPCPreset(true)
+
+	if cs.Name() != "my-server" {
+		t.Errorf("Name() = %q", cs.Name())
+	}
+	if tags := cs.Tags(); len(tags) != 2 || tags[0] != "compute" || tags[1] != "prod" {
+		t.Errorf("Tags() = %v", tags)
+	}
+	if cs.Region() != "ITBG-Bergamo" {
+		t.Errorf("Region() = %q", cs.Region())
+	}
+	if cs.Zone() != "ITBG-1" {
+		t.Errorf("Zone() = %q", cs.Zone())
+	}
+	if cs.Flavor() != "CSO2A4" {
+		t.Errorf("Flavor() = %q", cs.Flavor())
+	}
+	if cs.ProjectID() != "p-1" {
+		t.Errorf("ProjectID() = %q", cs.ProjectID())
+	}
+	if cs.Err() != nil {
+		t.Errorf("Err() = %v", cs.Err())
+	}
+
+	cs.RemoveTag("compute")
+	if tags := cs.Tags(); len(tags) != 1 || tags[0] != "prod" {
+		t.Errorf("after RemoveTag Tags() = %v", tags)
+	}
+
+	cs.ReplaceTags("x", "y")
+	if tags := cs.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
+		t.Errorf("after ReplaceTags Tags() = %v", tags)
+	}
+}
+
+// --------------------------------------------------------------------------
+// IntoProject — typed / URI / bad Ref
+// --------------------------------------------------------------------------
+
+func TestCloudServer_IntoProject_TypedRef(t *testing.T) {
+	proj := &Project{}
+	proj.fromResponse(projectTestResponse("p-42", "n", "/projects/p-42"))
+
+	cs := NewCloudServer().IntoProject(proj)
+	if cs.ProjectID() != "p-42" {
+		t.Errorf("ProjectID() = %q", cs.ProjectID())
+	}
+	if cs.Err() != nil {
+		t.Errorf("Err() = %v", cs.Err())
+	}
+}
+
+func TestCloudServer_IntoProject_URIRef(t *testing.T) {
+	cs := NewCloudServer().IntoProject(URI("/projects/p-uri"))
+	if cs.ProjectID() != "p-uri" {
+		t.Errorf("ProjectID() = %q", cs.ProjectID())
+	}
+	if cs.Err() != nil {
+		t.Errorf("Err() = %v", cs.Err())
+	}
+}
+
+func TestCloudServer_IntoProject_BadRef(t *testing.T) {
+	cs := NewCloudServer().IntoProject(URI("/something/else"))
+	if cs.Err() == nil {
+		t.Error("expected Err() to be set for unresolvable parent")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Single body-ref setters
+// --------------------------------------------------------------------------
+
+func TestCloudServer_WithVPC_URIRef(t *testing.T) {
+	cs := NewCloudServer().WithVPC(URI("/projects/p/network/vpcs/v-1"))
+	if cs.VPC() != "/projects/p/network/vpcs/v-1" {
+		t.Errorf("VPC() = %q", cs.VPC())
+	}
+	if cs.Err() != nil {
+		t.Errorf("Err() = %v", cs.Err())
+	}
+}
+
+func TestCloudServer_WithVPC_EmptyURI(t *testing.T) {
+	cs := NewCloudServer().WithVPC(URI(""))
+	if cs.Err() == nil {
+		t.Error("expected Err() to be set for empty VPC URI")
+	}
+	if cs.vpcRef != nil {
+		t.Error("vpcRef should remain nil on error")
+	}
+}
+
+func TestCloudServer_WithBootVolume_URIRef(t *testing.T) {
+	cs := NewCloudServer().WithBootVolume(URI("/projects/p/storage/volumes/vol-1"))
+	if cs.BootVolume() != "/projects/p/storage/volumes/vol-1" {
+		t.Errorf("BootVolume() = %q", cs.BootVolume())
+	}
+	if cs.Err() != nil {
+		t.Errorf("Err() = %v", cs.Err())
+	}
+}
+
+func TestCloudServer_WithBootVolume_EmptyURI(t *testing.T) {
+	cs := NewCloudServer().WithBootVolume(URI(""))
+	if cs.Err() == nil {
+		t.Error("expected Err() for empty BootVolume URI")
+	}
+}
+
+func TestCloudServer_WithKeyPair_URIRef(t *testing.T) {
+	cs := NewCloudServer().WithKeyPair(URI("/projects/p/providers/Aruba.Compute/keypairs/kp-1"))
+	if cs.KeyPair() != "/projects/p/providers/Aruba.Compute/keypairs/kp-1" {
+		t.Errorf("KeyPair() = %q", cs.KeyPair())
+	}
+	if cs.Err() != nil {
+		t.Errorf("Err() = %v", cs.Err())
+	}
+}
+
+func TestCloudServer_WithKeyPair_EmptyURI(t *testing.T) {
+	cs := NewCloudServer().WithKeyPair(URI(""))
+	if cs.Err() == nil {
+		t.Error("expected Err() for empty KeyPair URI")
+	}
+}
+
+func TestCloudServer_WithElasticIP_URIRef(t *testing.T) {
+	cs := NewCloudServer().WithElasticIP(URI("/projects/p/network/elasticips/eip-1"))
+	if cs.Err() != nil {
+		t.Errorf("Err() = %v", cs.Err())
+	}
+}
+
+func TestCloudServer_WithElasticIP_EmptyURI(t *testing.T) {
+	cs := NewCloudServer().WithElasticIP(URI(""))
+	if cs.Err() == nil {
+		t.Error("expected Err() for empty ElasticIP URI")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Multi-ref slice setters
+// --------------------------------------------------------------------------
+
+func TestCloudServer_AddSubnet_AppendsTwo(t *testing.T) {
+	cs := NewCloudServer().
+		AddSubnet(URI("/subnets/s-1")).
+		AddSubnet(URI("/subnets/s-2"))
+	if cs.Err() != nil {
+		t.Errorf("Err() = %v", cs.Err())
+	}
+	req := cs.toRequest()
+	if len(req.Properties.Subnets) != 2 {
+		t.Fatalf("Subnets len = %d", len(req.Properties.Subnets))
+	}
+	if req.Properties.Subnets[0].URI != "/subnets/s-1" {
+		t.Errorf("Subnets[0].URI = %q", req.Properties.Subnets[0].URI)
+	}
+	if req.Properties.Subnets[1].URI != "/subnets/s-2" {
+		t.Errorf("Subnets[1].URI = %q", req.Properties.Subnets[1].URI)
+	}
+}
+
+func TestCloudServer_AddSubnet_EmptyURI(t *testing.T) {
+	cs := NewCloudServer().AddSubnet(URI(""))
+	if cs.Err() == nil {
+		t.Error("expected Err() for empty Subnet URI")
+	}
+	if len(cs.subnetRefs) != 0 {
+		t.Error("subnetRefs should remain empty on error")
+	}
+}
+
+func TestCloudServer_AddSecurityGroup_AppendsTwo(t *testing.T) {
+	cs := NewCloudServer().
+		AddSecurityGroup(URI("/sgs/sg-1")).
+		AddSecurityGroup(URI("/sgs/sg-2"))
+	if cs.Err() != nil {
+		t.Errorf("Err() = %v", cs.Err())
+	}
+	req := cs.toRequest()
+	if len(req.Properties.SecurityGroups) != 2 {
+		t.Fatalf("SecurityGroups len = %d", len(req.Properties.SecurityGroups))
+	}
+}
+
+func TestCloudServer_AddSecurityGroup_EmptyURI(t *testing.T) {
+	cs := NewCloudServer().AddSecurityGroup(URI(""))
+	if cs.Err() == nil {
+		t.Error("expected Err() for empty SecurityGroup URI")
+	}
+	if len(cs.securityGroupRefs) != 0 {
+		t.Error("securityGroupRefs should remain empty on error")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Scalar setters
+// --------------------------------------------------------------------------
+
+func TestCloudServer_WithFlavor(t *testing.T) {
+	cs := NewCloudServer().WithFlavor("CSO2A4")
+	if cs.Flavor() != "CSO2A4" {
+		t.Errorf("Flavor() = %q", cs.Flavor())
+	}
+}
+
+func TestCloudServer_WithUserData(t *testing.T) {
+	cs := NewCloudServer().WithUserData("dGVzdA==")
+	req := cs.toRequest()
+	if req.Properties.UserData == nil || *req.Properties.UserData != "dGVzdA==" {
+		t.Error("UserData not emitted correctly")
+	}
+}
+
+func TestCloudServer_WithVPCPreset(t *testing.T) {
+	cs := NewCloudServer().WithVPCPreset(true)
+	req := cs.toRequest()
+	if !req.Properties.VPCPreset {
+		t.Error("VPCPreset not emitted correctly")
+	}
+}
+
+func TestCloudServer_InZone(t *testing.T) {
+	cs := NewCloudServer().InZone("ITBG-1")
+	if cs.Zone() != "ITBG-1" {
+		t.Errorf("Zone() = %q", cs.Zone())
+	}
+	req := cs.toRequest()
+	if req.Properties.Zone != "ITBG-1" {
+		t.Errorf("request Zone = %q", req.Properties.Zone)
+	}
+}
+
+// --------------------------------------------------------------------------
+// toRequest round-trip
+// --------------------------------------------------------------------------
+
+func TestCloudServer_ToRequestRoundTrip(t *testing.T) {
+	cs := NewCloudServer().
+		IntoProject(URI("/projects/p")).
+		WithName("srv").
+		AddTag("tag1").
+		InRegion("ITBG-Bergamo").
+		InZone("ITBG-1").
+		WithFlavor("CSO2A4").
+		WithVPC(URI("/vpcs/v")).
+		WithBootVolume(URI("/vols/bv")).
+		WithKeyPair(URI("/kps/kp")).
+		WithElasticIP(URI("/eips/eip")).
+		AddSubnet(URI("/subnets/s")).
+		AddSecurityGroup(URI("/sgs/sg")).
+		WithUserData("dA==")
+
+	req := cs.RawRequest()
+
+	if req.Metadata.ResourceMetadataRequest.Name != "srv" {
+		t.Errorf("request name = %q", req.Metadata.ResourceMetadataRequest.Name)
+	}
+	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+		t.Errorf("request location = %q", req.Metadata.Location.Value)
+	}
+	if req.Properties.Zone != "ITBG-1" {
+		t.Errorf("Zone = %q", req.Properties.Zone)
+	}
+	if req.Properties.FlavorName == nil || *req.Properties.FlavorName != "CSO2A4" {
+		t.Errorf("FlavorName = %v", req.Properties.FlavorName)
+	}
+	if req.Properties.VPC.URI != "/vpcs/v" {
+		t.Errorf("VPC.URI = %q", req.Properties.VPC.URI)
+	}
+	if req.Properties.BootVolume.URI != "/vols/bv" {
+		t.Errorf("BootVolume.URI = %q", req.Properties.BootVolume.URI)
+	}
+	if req.Properties.KeyPair.URI != "/kps/kp" {
+		t.Errorf("KeyPair.URI = %q", req.Properties.KeyPair.URI)
+	}
+	if req.Properties.ElasticIP.URI != "/eips/eip" {
+		t.Errorf("ElasticIP.URI = %q", req.Properties.ElasticIP.URI)
+	}
+	if len(req.Properties.Subnets) != 1 || req.Properties.Subnets[0].URI != "/subnets/s" {
+		t.Errorf("Subnets = %v", req.Properties.Subnets)
+	}
+	if len(req.Properties.SecurityGroups) != 1 || req.Properties.SecurityGroups[0].URI != "/sgs/sg" {
+		t.Errorf("SecurityGroups = %v", req.Properties.SecurityGroups)
+	}
+	if req.Properties.UserData == nil || *req.Properties.UserData != "dA==" {
+		t.Errorf("UserData = %v", req.Properties.UserData)
+	}
+}
+
+func TestCloudServer_ToRequest_AllUnset(t *testing.T) {
+	cs := &CloudServer{}
+	req := cs.toRequest() // must not panic
+	if req.Properties.FlavorName != nil {
+		t.Error("FlavorName should be nil when unset")
+	}
+	if req.Properties.Zone != "" {
+		t.Error("Zone should be empty when unset")
+	}
+	if len(req.Properties.Subnets) != 0 {
+		t.Error("Subnets should be empty when unset")
+	}
+}
+
+// --------------------------------------------------------------------------
+// fromResponse hydration
+// --------------------------------------------------------------------------
+
+func cloudServerTestResponse(id, name, uri string) *types.CloudServerResponse {
+	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
+	state := "Running"
+	return &types.CloudServerResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:               &id,
+			URI:              &uri,
+			Name:             &name,
+			Tags:             []string{"tag1"},
+			LocationResponse: loc,
+		},
+		Properties: types.CloudServerPropertiesResult{
+			Zone:      "ITBG-1",
+			Flavor:    types.CloudServerFlavorResponse{Name: "CSO2A4", CPU: 2, RAM: 4096},
+			VPC:       types.ReferenceResource{URI: "/vpcs/v"},
+			BootVolume: types.ReferenceResource{URI: "/vols/bv"},
+			KeyPair:   types.ReferenceResource{URI: "/kps/kp"},
+		},
+		Status: types.ResourceStatus{State: &state},
+	}
+}
+
+func TestCloudServer_FromResponseHydration(t *testing.T) {
+	cs := &CloudServer{}
+	resp := cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1")
+	cs.fromResponse(resp)
+
+	if cs.ID() != "cs-1" {
+		t.Errorf("ID() = %q", cs.ID())
+	}
+	if cs.URI() != "/projects/p/providers/Aruba.Compute/cloudServers/cs-1" {
+		t.Errorf("URI() = %q", cs.URI())
+	}
+	if cs.CloudServerID() != "cs-1" {
+		t.Errorf("CloudServerID() = %q", cs.CloudServerID())
+	}
+	if cs.Name() != "my-server" {
+		t.Errorf("Name() = %q", cs.Name())
+	}
+	if tags := cs.Tags(); len(tags) != 1 || tags[0] != "tag1" {
+		t.Errorf("Tags() = %v", tags)
+	}
+	if cs.Region() != "ITBG-Bergamo" {
+		t.Errorf("Region() = %q", cs.Region())
+	}
+	if cs.Zone() != "ITBG-1" {
+		t.Errorf("Zone() = %q", cs.Zone())
+	}
+	// Flavor reads from response Flavor.Name
+	if cs.Flavor() != "CSO2A4" {
+		t.Errorf("Flavor() = %q", cs.Flavor())
+	}
+	if cs.FlavorRaw() == nil || cs.FlavorRaw().CPU != 2 {
+		t.Error("FlavorRaw() should carry full struct")
+	}
+	if cs.VPC() != "/vpcs/v" {
+		t.Errorf("VPC() = %q", cs.VPC())
+	}
+	if cs.BootVolume() != "/vols/bv" {
+		t.Errorf("BootVolume() = %q", cs.BootVolume())
+	}
+	if cs.KeyPair() != "/kps/kp" {
+		t.Errorf("KeyPair() = %q", cs.KeyPair())
+	}
+	if cs.State() != "Running" {
+		t.Errorf("State() = %q", cs.State())
+	}
+	if cs.Raw() != resp {
+		t.Error("Raw() should return the hydrated response pointer")
+	}
+	// ProjectID backfilled from URI when ProjectResponseMetadata is nil
+	if cs.ProjectID() != "p" {
+		t.Errorf("ProjectID() = %q", cs.ProjectID())
+	}
+}
+
+func TestCloudServer_FromResponseURIBackfill(t *testing.T) {
+	id := "cs-99"
+	uri := "/projects/p-uri/providers/Aruba.Compute/cloudServers/cs-99"
+	resp := &types.CloudServerResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:  &id,
+			URI: &uri,
+		},
+	}
+	cs := &CloudServer{}
+	cs.fromResponse(resp)
+
+	if cs.ProjectID() != "p-uri" {
+		t.Errorf("ProjectID() via URI backfill = %q", cs.ProjectID())
+	}
+}
+
+func TestCloudServer_FromResponse_NilSafe(t *testing.T) {
+	cs := &CloudServer{}
+	cs.fromResponse(nil)
+	if cs.ID() != "" || cs.URI() != "" || cs.Name() != "" {
+		t.Error("fromResponse(nil) should be a no-op")
+	}
+
+	cs2 := &CloudServer{}
+	cs2.fromResponse(&types.CloudServerResponse{})
+	if cs2.ID() != "" || cs2.URI() != "" || cs2.Flavor() != "" {
+		t.Error("empty response should yield zero accessor values")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Flavor asymmetry (request vs response)
+// --------------------------------------------------------------------------
+
+func TestCloudServer_Flavor_Asymmetry(t *testing.T) {
+	// Before any response: Flavor() returns what WithFlavor set.
+	cs := NewCloudServer().WithFlavor("CSO2A4")
+	if cs.Flavor() != "CSO2A4" {
+		t.Errorf("pre-response Flavor() = %q", cs.Flavor())
+	}
+	if cs.FlavorRaw() != nil {
+		t.Error("FlavorRaw() should be nil before hydration")
+	}
+
+	// After fromResponse: Flavor() returns the response Flavor.Name (response wins).
+	cs.fromResponse(&types.CloudServerResponse{
+		Properties: types.CloudServerPropertiesResult{
+			Flavor: types.CloudServerFlavorResponse{Name: "CSO4A8", CPU: 4, RAM: 8192},
+		},
+	})
+	if cs.Flavor() != "CSO4A8" {
+		t.Errorf("post-response Flavor() = %q (expected response value to win)", cs.Flavor())
+	}
+	if cs.FlavorRaw() == nil || cs.FlavorRaw().CPU != 4 {
+		t.Error("FlavorRaw() should carry full response struct")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Ref + ancestor ID satisfaction (runtime)
+// --------------------------------------------------------------------------
+
+func TestCloudServer_RefSatisfaction(t *testing.T) {
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-99", "n", "/projects/p99/providers/Aruba.Compute/cloudServers/cs-99"))
+
+	// withCloudServerID typed path
+	csID, ok := extractID(cs, func(ref Ref) (string, bool) {
+		if w, ok := ref.(withCloudServerID); ok {
+			return w.CloudServerID(), true
+		}
+		return "", false
+	}, "cloudServers")
+	if !ok || csID != "cs-99" {
+		t.Errorf("extractID via withCloudServerID = (%q, %v)", csID, ok)
+	}
+
+	// withProjectID typed path
+	pid, ok := extractID(cs, func(ref Ref) (string, bool) {
+		if w, ok := ref.(withProjectID); ok {
+			return w.ProjectID(), true
+		}
+		return "", false
+	}, "projects")
+	if !ok || pid != "p99" {
+		t.Errorf("extractID via withProjectID = (%q, %v)", pid, ok)
+	}
+}
+
+// --------------------------------------------------------------------------
+// cloudServerIDsFromRef helper
+// --------------------------------------------------------------------------
+
+func TestCloudServerIDsFromRef_TypedRef(t *testing.T) {
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "n", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	pid, csID, err := cloudServerIDsFromRef(cs)
+	if err != nil || pid != "p" || csID != "cs-1" {
+		t.Errorf("cloudServerIDsFromRef typed = (%q, %q, %v)", pid, csID, err)
+	}
+}
+
+func TestCloudServerIDsFromRef_URIRef(t *testing.T) {
+	ref := URI("/projects/p/providers/Aruba.Compute/cloudServers/cs-1")
+	pid, csID, err := cloudServerIDsFromRef(ref)
+	if err != nil || pid != "p" || csID != "cs-1" {
+		t.Errorf("cloudServerIDsFromRef URI = (%q, %q, %v)", pid, csID, err)
+	}
+}
+
+func TestCloudServerIDsFromRef_BadURI_MissingCloudServer(t *testing.T) {
+	_, _, err := cloudServerIDsFromRef(URI("/projects/p/providers/Aruba.Compute"))
+	if err == nil {
+		t.Error("expected error for URI without /cloudServers/<id>")
+	}
+}
+
+func TestCloudServerIDsFromRef_BadURI_MissingProject(t *testing.T) {
+	_, _, err := cloudServerIDsFromRef(URI("/providers/Aruba.Compute/cloudServers/cs-1"))
+	if err == nil {
+		t.Error("expected error for URI without /projects/<id>")
+	}
+}
+
+func TestCloudServerIDsFromRef_BadURI_MissingAll(t *testing.T) {
+	_, _, err := cloudServerIDsFromRef(URI("/something/else"))
+	if err == nil {
+		t.Error("expected error for completely unrelated URI")
+	}
+}
+
+// --------------------------------------------------------------------------
+// cloudServersClientAdapter — fake low-level client
+// --------------------------------------------------------------------------
+
+type fakeCloudServerLowLevel struct {
+	createFunc      func(ctx context.Context, projectID string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
+	updateFunc      func(ctx context.Context, projectID, cloudServerID string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
+	getFunc         func(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
+	deleteFunc      func(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[any], error)
+	listFunc        func(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.CloudServerList], error)
+	powerOnFunc     func(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
+	powerOffFunc    func(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
+	setPasswordFunc func(ctx context.Context, projectID, cloudServerID string, body types.CloudServerPasswordRequest, params *types.RequestParameters) (*types.Response[any], error)
+}
+
+func (f *fakeCloudServerLowLevel) Create(ctx context.Context, projectID string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
+	return f.createFunc(ctx, projectID, body, params)
+}
+func (f *fakeCloudServerLowLevel) Update(ctx context.Context, projectID, cloudServerID string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
+	return f.updateFunc(ctx, projectID, cloudServerID, body, params)
+}
+func (f *fakeCloudServerLowLevel) Get(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
+	return f.getFunc(ctx, projectID, cloudServerID, params)
+}
+func (f *fakeCloudServerLowLevel) Delete(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[any], error) {
+	return f.deleteFunc(ctx, projectID, cloudServerID, params)
+}
+func (f *fakeCloudServerLowLevel) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.CloudServerList], error) {
+	return f.listFunc(ctx, projectID, params)
+}
+func (f *fakeCloudServerLowLevel) PowerOn(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
+	return f.powerOnFunc(ctx, projectID, cloudServerID, params)
+}
+func (f *fakeCloudServerLowLevel) PowerOff(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
+	return f.powerOffFunc(ctx, projectID, cloudServerID, params)
+}
+func (f *fakeCloudServerLowLevel) SetPassword(ctx context.Context, projectID, cloudServerID string, body types.CloudServerPasswordRequest, params *types.RequestParameters) (*types.Response[any], error) {
+	return f.setPasswordFunc(ctx, projectID, cloudServerID, body, params)
+}
+
+// --------------------------------------------------------------------------
+// cloudServersClientAdapter — HTTP mock tests
+// --------------------------------------------------------------------------
+
+func buildCloudServersTestAdapter(t *testing.T, handler http.HandlerFunc) *cloudServersClientAdapter {
+	t.Helper()
+	server := testutil.NewMockServer(t, handler)
+	return newCloudServersClientAdapter(testutil.NewClient(t, server.URL))
+}
+
+const cloudServerSuccessBody = `{` +
+	`"metadata":{"id":"cs-1","name":"my-server","uri":"/projects/p/providers/Aruba.Compute/cloudServers/cs-1"},` +
+	`"properties":{"dataCenter":"ITBG-1","flavor":{"name":"CSO2A4","cpu":2,"ram":4096},"vpc":{"uri":"/vpcs/v"},"bootVolume":{"uri":"/vols/bv"}},` +
+	`"status":{"state":"Running"}}`
+
+func TestCloudServersClientAdapter_Create_Success(t *testing.T) {
+	var gotBody types.CloudServerRequest
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Errorf("decode request body: %v", err)
+		}
+		if !containsSubstring(r.URL.Path, "cloudServers") {
+			t.Errorf("path %q should contain 'cloudServers'", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprint(w, cloudServerSuccessBody)
+	})
+
+	cs := NewCloudServer().
+		IntoProject(URI("/projects/p")).
+		WithName("my-server").
+		InZone("ITBG-1").
+		WithFlavor("CSO2A4").
+		WithVPC(URI("/vpcs/v")).
+		WithBootVolume(URI("/vols/bv")).
+		WithKeyPair(URI("/kps/kp")).
+		AddSubnet(URI("/subnets/s"))
+
+	result, err := adapter.Create(context.Background(), cs)
+	if err != nil {
+		t.Fatalf("Create error: %v", err)
+	}
+	if result.ID() != "cs-1" {
+		t.Errorf("ID() = %q", result.ID())
+	}
+	if result.Name() != "my-server" {
+		t.Errorf("Name() = %q", result.Name())
+	}
+	if result.Flavor() != "CSO2A4" {
+		t.Errorf("Flavor() = %q", result.Flavor())
+	}
+	if result.State() != "Running" {
+		t.Errorf("State() = %q", result.State())
+	}
+	if result.actions == nil {
+		t.Error("actions executor should be set after Create")
+	}
+	if result.StatusCode() != http.StatusCreated {
+		t.Errorf("StatusCode() = %d", result.StatusCode())
+	}
+	// Verify wire body: flavorName field (wire name, mapped from WithFlavor)
+	if gotBody.Properties.FlavorName == nil || *gotBody.Properties.FlavorName != "CSO2A4" {
+		t.Errorf("request FlavorName = %v", gotBody.Properties.FlavorName)
+	}
+	if gotBody.Properties.VPC.URI != "/vpcs/v" {
+		t.Errorf("request VPC.URI = %q", gotBody.Properties.VPC.URI)
+	}
+	if len(gotBody.Properties.Subnets) != 1 || gotBody.Properties.Subnets[0].URI != "/subnets/s" {
+		t.Errorf("request Subnets = %v", gotBody.Properties.Subnets)
+	}
+}
+
+func TestCloudServersClientAdapter_Create_NoProject(t *testing.T) {
+	callCount := 0
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusCreated)
+	})
+
+	_, err := adapter.Create(context.Background(), NewCloudServer().WithName("x").WithFlavor("CSO2A4"))
+	if err == nil {
+		t.Fatal("expected error when CloudServer has no parent project")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made without parent project")
+	}
+}
+
+func TestCloudServersClientAdapter_Create_MetadataValidationError(t *testing.T) {
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		// Missing "id" field — triggers MetadataValidationError from the low-level client.
+		fmt.Fprint(w, `{"metadata":{"name":"srv","uri":"/projects/p/providers/Aruba.Compute/cloudServers/x"},"properties":{}}`)
+	})
+
+	cs := NewCloudServer().IntoProject(URI("/projects/p")).WithName("srv").WithFlavor("CSO2A4")
+	result, err := adapter.Create(context.Background(), cs)
+	if err == nil {
+		t.Fatal("expected MetadataValidationError, got nil")
+	}
+	var mvErr *types.MetadataValidationError
+	if !errors.As(err, &mvErr) {
+		t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil alongside MetadataValidationError")
+	}
+}
+
+func TestCloudServersClientAdapter_Create_NonTwoXX(t *testing.T) {
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "zone is required", 422))
+	})
+
+	cs := NewCloudServer().IntoProject(URI("/projects/p")).WithName("srv")
+	result, err := adapter.Create(context.Background(), cs)
+	if err == nil {
+		t.Fatal("expected error on 422")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("HTTPError.StatusCode = %d", httpErr.StatusCode)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil on non-2xx")
+	}
+}
+
+func TestCloudServersClientAdapter_Update_Success(t *testing.T) {
+	var capturedMethod string
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		capturedMethod = r.Method
+		if !containsSubstring(r.URL.Path, "cloudServers") {
+			t.Errorf("path %q should contain 'cloudServers'", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, cloudServerSuccessBody)
+	})
+
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.projectID = "p"
+
+	result, err := adapter.Update(context.Background(), cs)
+	if err != nil {
+		t.Fatalf("Update error: %v", err)
+	}
+	if capturedMethod != http.MethodPut {
+		t.Errorf("method = %q, want PUT", capturedMethod)
+	}
+	if result.ID() != "cs-1" {
+		t.Errorf("ID() = %q", result.ID())
+	}
+	if result.actions == nil {
+		t.Error("actions executor should be set after Update")
+	}
+}
+
+func TestCloudServersClientAdapter_Update_NoID(t *testing.T) {
+	callCount := 0
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+
+	cs := NewCloudServer().IntoProject(URI("/projects/p")).WithName("x")
+	_, err := adapter.Update(context.Background(), cs)
+	if err == nil {
+		t.Fatal("expected error when CloudServer has no ID")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made without ID")
+	}
+}
+
+func TestCloudServersClientAdapter_Get_URIRef(t *testing.T) {
+	var capturedPath string
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, cloudServerSuccessBody)
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Compute/cloudServers/cs-1")
+	result, err := adapter.Get(context.Background(), ref)
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if result.ID() != "cs-1" {
+		t.Errorf("ID() = %q", result.ID())
+	}
+	if result.ProjectID() != "p" {
+		t.Errorf("ProjectID() = %q", result.ProjectID())
+	}
+	if result.actions == nil {
+		t.Error("actions executor should be set after Get")
+	}
+	if !containsSubstring(capturedPath, "cloudServers") {
+		t.Errorf("path %q should contain 'cloudServers'", capturedPath)
+	}
+}
+
+func TestCloudServersClientAdapter_Get_TypedRef(t *testing.T) {
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, cloudServerSuccessBody)
+	})
+
+	existing := &CloudServer{}
+	existing.fromResponse(cloudServerTestResponse("cs-1", "n", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+
+	result, err := adapter.Get(context.Background(), existing)
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if result.ID() != "cs-1" {
+		t.Errorf("ID() = %q", result.ID())
+	}
+	if result.ProjectID() != "p" {
+		t.Errorf("ProjectID() = %q", result.ProjectID())
+	}
+}
+
+func TestCloudServersClientAdapter_Delete_Success(t *testing.T) {
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("method = %s", r.Method)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	if err != nil {
+		t.Fatalf("Delete error: %v", err)
+	}
+}
+
+func TestCloudServersClientAdapter_Delete_NonTwoXX(t *testing.T) {
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "cloud server not found", 404))
+	})
+
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Compute/cloudServers/missing"))
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestCloudServersClientAdapter_List_TwoItems(t *testing.T) {
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
+			`{"metadata":{"id":"cs-1","name":"srv1","uri":"/projects/p/providers/Aruba.Compute/cloudServers/cs-1"},"properties":{"dataCenter":"ITBG-1","flavor":{"name":"CSO2A4"}}},`+
+			`{"metadata":{"id":"cs-2","name":"srv2","uri":"/projects/p/providers/Aruba.Compute/cloudServers/cs-2"},"properties":{"dataCenter":"ITBG-2","flavor":{"name":"CSO4A8"}}}`+
+			`]}`)
+	})
+
+	list, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err != nil {
+		t.Fatalf("List error: %v", err)
+	}
+	if list.Total() != 2 {
+		t.Errorf("Total() = %d", list.Total())
+	}
+	items := list.Items()
+	if len(items) != 2 {
+		t.Fatalf("Items() len = %d", len(items))
+	}
+	if items[0].ID() != "cs-1" || items[0].Name() != "srv1" {
+		t.Errorf("items[0] = {%q, %q}", items[0].ID(), items[0].Name())
+	}
+	if items[0].Flavor() != "CSO2A4" {
+		t.Errorf("items[0].Flavor() = %q", items[0].Flavor())
+	}
+	if items[1].ID() != "cs-2" || items[1].Flavor() != "CSO4A8" {
+		t.Errorf("items[1] ID=%q Flavor=%q", items[1].ID(), items[1].Flavor())
+	}
+	if items[0].ProjectID() != "p" {
+		t.Errorf("items[0].ProjectID() = %q", items[0].ProjectID())
+	}
+	if items[0].actions == nil || items[1].actions == nil {
+		t.Error("actions executor should be set on all List items")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Action methods — PowerOn / PowerOff / SetPassword
+// --------------------------------------------------------------------------
+
+func TestCloudServer_PowerOn_Success(t *testing.T) {
+	var capturedPath string
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		state := "Running"
+		body := cloudServerSuccessBody
+		_ = state
+		fmt.Fprint(w, body)
+	})
+
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.projectID = "p"
+	cs.actions = adapter
+
+	if err := cs.PowerOn(context.Background()); err != nil {
+		t.Fatalf("PowerOn error: %v", err)
+	}
+	if !containsSubstring(capturedPath, "poweron") {
+		t.Errorf("path %q should contain 'poweron'", capturedPath)
+	}
+	// Status re-hydrated from response
+	if cs.State() != "Running" {
+		t.Errorf("State() after PowerOn = %q", cs.State())
+	}
+}
+
+func TestCloudServer_PowerOn_NoExecutor(t *testing.T) {
+	cs := NewCloudServer()
+	err := cs.PowerOn(context.Background())
+	if err == nil {
+		t.Fatal("expected error from PowerOn without action executor")
+	}
+	if !containsSubstring(err.Error(), "no action executor") {
+		t.Errorf("error message = %q", err.Error())
+	}
+}
+
+func TestCloudServer_PowerOn_MissingID(t *testing.T) {
+	callCount := 0
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	cs := &CloudServer{}
+	cs.projectID = "p"
+	cs.actions = adapter // actions set but ID empty
+
+	err := cs.PowerOn(context.Background())
+	if err == nil {
+		t.Fatal("expected error when CloudServer ID is empty")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made without CloudServer ID")
+	}
+}
+
+func TestCloudServer_PowerOff_Success(t *testing.T) {
+	var capturedPath string
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, cloudServerSuccessBody)
+	})
+
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.projectID = "p"
+	cs.actions = adapter
+
+	if err := cs.PowerOff(context.Background()); err != nil {
+		t.Fatalf("PowerOff error: %v", err)
+	}
+	if !containsSubstring(capturedPath, "poweroff") {
+		t.Errorf("path %q should contain 'poweroff'", capturedPath)
+	}
+}
+
+func TestCloudServer_PowerOff_NonTwoXX(t *testing.T) {
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Conflict", "server is already off", 409))
+	})
+
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "n", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.projectID = "p"
+	cs.actions = adapter
+
+	err := cs.PowerOff(context.Background())
+	if err == nil {
+		t.Fatal("expected error on 409")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusConflict {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestCloudServer_SetPassword_Success(t *testing.T) {
+	var capturedPath string
+	var gotBody types.CloudServerPasswordRequest
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Errorf("decode body: %v", err)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "n", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.projectID = "p"
+	cs.actions = adapter
+
+	if err := cs.SetPassword(context.Background(), "s3cr3t"); err != nil {
+		t.Fatalf("SetPassword error: %v", err)
+	}
+	if !containsSubstring(capturedPath, "password") {
+		t.Errorf("path %q should contain 'password'", capturedPath)
+	}
+	if gotBody.Password != "s3cr3t" {
+		t.Errorf("request password = %q", gotBody.Password)
+	}
+}
+
+func TestCloudServer_SetPassword_NonTwoXX(t *testing.T) {
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Bad Request", "password too short", 400))
+	})
+
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "n", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.projectID = "p"
+	cs.actions = adapter
+
+	err := cs.SetPassword(context.Background(), "x")
+	if err == nil {
+		t.Fatal("expected error on 400")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusBadRequest {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}

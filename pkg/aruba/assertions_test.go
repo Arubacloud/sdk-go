@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/internal/clients/audit"
-	"github.com/Arubacloud/sdk-go/internal/clients/compute"
 	"github.com/Arubacloud/sdk-go/internal/clients/container"
 	"github.com/Arubacloud/sdk-go/internal/clients/database"
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
@@ -32,7 +31,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 		_ EventsClient = audit.NewEventsClientImpl(nil)
 
 		// Compute
-		_ CloudServersClient = compute.NewCloudServersClientImpl(nil)
+		_ CloudServersClient = newCloudServersClientAdapter(nil)
 		_ KeyPairsClient     = newKeyPairsClientAdapter(nil)
 
 		// Container
