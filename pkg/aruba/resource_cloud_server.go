@@ -266,10 +266,10 @@ func (cs *CloudServer) toRequest() types.CloudServerRequest {
 		props.BootVolume = types.ReferenceResource{URI: *cs.bootVolumeRef}
 	}
 	if cs.keyPairRef != nil {
-		props.KeyPair = types.ReferenceResource{URI: *cs.keyPairRef}
+		props.KeyPair = &types.ReferenceResource{URI: *cs.keyPairRef}
 	}
 	if cs.elasticIPRef != nil {
-		props.ElasticIP = types.ReferenceResource{URI: *cs.elasticIPRef}
+		props.ElasticIP = &types.ReferenceResource{URI: *cs.elasticIPRef}
 	}
 	if len(cs.subnetRefs) > 0 {
 		props.Subnets = make([]types.ReferenceResource, 0, len(cs.subnetRefs))
