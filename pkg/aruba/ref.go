@@ -87,4 +87,5 @@ type withKMSID interface{ KMSID() string }
 type withSubnetID interface{ SubnetID() string }
 type withElasticIPID interface{ ElasticIPID() string }
 type withBlockStorageID interface{ BlockStorageID() string }
+type withSnapshotID interface{ SnapshotID() string }
 type withLoadBalancerID interface{ LoadBalancerID() string }

@@ -93,6 +93,14 @@ func NewBlockStorage() *BlockStorage {
 	return b
 }
 
+// NewSnapshot returns a fresh *Snapshot ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewSnapshot() *Snapshot {
+	s := &Snapshot{}
+	s.projectScopedMixin = bindProjectScoped(&s.errMixin)
+	return s
+}
+
 // NewVPNIPConfig returns a fresh *VPNIPConfig sub-builder for configuring IP settings.
 func NewVPNIPConfig() *VPNIPConfig { return &VPNIPConfig{} }
 
