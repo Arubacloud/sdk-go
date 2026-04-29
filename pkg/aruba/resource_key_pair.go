@@ -23,13 +23,13 @@ type KeyPair struct {
 
 // Setters (chainable).
 
-func (k *KeyPair) IntoProject(p Ref) *KeyPair          { k.intoProject(p); return k }
-func (k *KeyPair) WithName(n string) *KeyPair          { k.withName(n); return k }
-func (k *KeyPair) AddTag(t string) *KeyPair            { k.addTag(t); return k }
-func (k *KeyPair) RemoveTag(t string) *KeyPair         { k.removeTag(t); return k }
-func (k *KeyPair) ReplaceTags(ts ...string) *KeyPair   { k.replaceTags(ts...); return k }
-func (k *KeyPair) WithLocation(loc string) *KeyPair    { k.withLocation(loc); return k }
-func (k *KeyPair) InRegion(region string) *KeyPair     { k.withLocation(region); return k }
+func (k *KeyPair) IntoProject(p Ref) *KeyPair        { k.intoProject(p); return k }
+func (k *KeyPair) WithName(n string) *KeyPair        { k.withName(n); return k }
+func (k *KeyPair) AddTag(t string) *KeyPair          { k.addTag(t); return k }
+func (k *KeyPair) RemoveTag(t string) *KeyPair       { k.removeTag(t); return k }
+func (k *KeyPair) ReplaceTags(ts ...string) *KeyPair { k.replaceTags(ts...); return k }
+func (k *KeyPair) WithLocation(loc string) *KeyPair  { k.withLocation(loc); return k }
+func (k *KeyPair) InRegion(region string) *KeyPair   { k.withLocation(region); return k }
 
 // WithPublicKey sets the SSH public key (mapped to wire field "value").
 func (k *KeyPair) WithPublicKey(key string) *KeyPair {
