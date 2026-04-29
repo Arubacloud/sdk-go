@@ -443,7 +443,7 @@ func buildBackupsClient(restClient *restclient.Client) (BackupsClient, error) {
 }
 
 func buildUsersClient(restClient *restclient.Client) (UsersClient, error) {
-	return database.NewUsersClientImpl(restClient), nil
+	return newUsersClientAdapter(restClient), nil
 }
 
 func buildGrantsClient(restClient *restclient.Client) (GrantsClient, error) {

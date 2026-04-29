@@ -244,11 +244,11 @@ type BackupsClient interface {
 }
 
 type UsersClient interface {
-	List(ctx context.Context, projectID string, dbaasID string, params *types.RequestParameters) (*types.Response[types.UserList], error)
-	Get(ctx context.Context, projectID string, dbaasID string, userID string, params *types.RequestParameters) (*types.Response[types.UserResponse], error)
-	Create(ctx context.Context, projectID string, dbaasID string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error)
-	Update(ctx context.Context, projectID string, dbaasID string, userID string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error)
-	Delete(ctx context.Context, projectID string, dbaasID string, userID string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, dbaas Ref, opts ...CallOption) (*List[*User], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*User, error)
+	Create(ctx context.Context, u *User, opts ...CallOption) (*User, error)
+	Update(ctx context.Context, u *User, opts ...CallOption) (*User, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
 }
 
 type GrantsClient interface {
@@ -403,6 +403,200 @@ func (a *databasesClientAdapter) List(ctx context.Context, dbaas Ref, opts ...Ca
 		}
 	}
 	refetch := func(_ context.Context, _ string) (*List[*Database], error) {
+		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	}
+	var total int64
+	var self, prev, next, first, last string
+	if resp != nil && resp.Data != nil {
+		total = resp.Data.Total
+		self = resp.Data.Self
+		prev = resp.Data.Prev
+		next = resp.Data.Next
+		first = resp.Data.First
+		last = resp.Data.Last
+	}
+	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+}
+
+// userIDsFromRef extracts (projectID, dbaasID, userID) from a Ref.
+func userIDsFromRef(ref Ref) (projectID, dbaasID, userID string, err error) {
+	name, ok := extractID(ref, func(r Ref) (string, bool) {
+		return "", false // no withUserID interface; rely on URI segment fallback
+	}, "users")
+	if !ok || name == "" {
+		return "", "", "", fmt.Errorf("cannot determine user ID from Ref %q", ref.URI())
+	}
+	did, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withDBaaSID); ok {
+			return w.DBaaSID(), true
+		}
+		return "", false
+	}, "dbaas")
+	if !ok || did == "" {
+		return "", "", "", fmt.Errorf("cannot determine DBaaS ID from Ref %q", ref.URI())
+	}
+	pid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withProjectID); ok {
+			return w.ProjectID(), true
+		}
+		return "", false
+	}, "projects")
+	if !ok || pid == "" {
+		return "", "", "", fmt.Errorf("cannot determine project ID from Ref %q", ref.URI())
+	}
+	return pid, did, name, nil
+}
+
+type usersLowLevelClient interface {
+	List(ctx context.Context, projectID, dbaasID string, params *types.RequestParameters) (*types.Response[types.UserList], error)
+	Get(ctx context.Context, projectID, dbaasID, userID string, params *types.RequestParameters) (*types.Response[types.UserResponse], error)
+	Create(ctx context.Context, projectID, dbaasID string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error)
+	Update(ctx context.Context, projectID, dbaasID, userID string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error)
+	Delete(ctx context.Context, projectID, dbaasID, userID string, params *types.RequestParameters) (*types.Response[any], error)
+}
+
+type usersClientAdapter struct{ low usersLowLevelClient }
+
+func newUsersClientAdapter(rest *restclient.Client) *usersClientAdapter {
+	if rest == nil {
+		return &usersClientAdapter{}
+	}
+	return &usersClientAdapter{low: database.NewUsersClientImpl(rest)}
+}
+
+func (a *usersClientAdapter) Create(ctx context.Context, u *User, opts ...CallOption) (*User, error) {
+	if err := u.Err(); err != nil {
+		return u, err
+	}
+	if u.ProjectID() == "" {
+		return u, fmt.Errorf("Create: User has no parent project — call IntoDBaaS first")
+	}
+	if u.DBaaSID() == "" {
+		return u, fmt.Errorf("Create: User has no parent DBaaS — call IntoDBaaS first")
+	}
+	if u.Username() == "" {
+		return u, fmt.Errorf("Create: User has no username — call WithUsername first")
+	}
+	if u.password == nil {
+		return u, fmt.Errorf("Create: password is required — call WithPassword first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Create(ctx, u.ProjectID(), u.DBaaSID(), u.toRequest(), rp)
+	populateHTTPEnvelope(&u.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		u.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return u, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return u, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return u, nil
+}
+
+func (a *usersClientAdapter) Update(ctx context.Context, u *User, opts ...CallOption) (*User, error) {
+	if err := u.Err(); err != nil {
+		return u, err
+	}
+	if u.ID() == "" {
+		return u, fmt.Errorf("Update: User has no ID — call WithUsername first")
+	}
+	if u.DBaaSID() == "" {
+		return u, fmt.Errorf("Update: User has no parent DBaaS — call IntoDBaaS first")
+	}
+	if u.ProjectID() == "" {
+		return u, fmt.Errorf("Update: User has no parent project — call IntoDBaaS first")
+	}
+	if u.password == nil {
+		return u, fmt.Errorf("Update: password is required — call WithPassword first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Update(ctx, u.ProjectID(), u.DBaaSID(), u.ID(), u.toRequest(), rp)
+	populateHTTPEnvelope(&u.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		u.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return u, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return u, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return u, nil
+}
+
+func (a *usersClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*User, error) {
+	projectID, dbaasID, userID, err := userIDsFromRef(ref)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Get(ctx, projectID, dbaasID, userID, rp)
+	out := &User{}
+	out.dbaasID = dbaasID
+	out.projectID = projectID
+	name := userID
+	out.username = &name
+	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		out.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return out, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return out, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return out, nil
+}
+
+func (a *usersClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
+	projectID, dbaasID, userID, err := userIDsFromRef(ref)
+	if err != nil {
+		return err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Delete(ctx, projectID, dbaasID, userID, rp)
+	if err != nil {
+		return err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return nil
+}
+
+func (a *usersClientAdapter) List(ctx context.Context, dbaas Ref, opts ...CallOption) (*List[*User], error) {
+	projectID, dbaasID, err := dbaasIDsFromRef(dbaas)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.List(ctx, projectID, dbaasID, rp)
+	if err != nil {
+		return nil, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	var items []*User
+	if resp != nil && resp.Data != nil {
+		items = make([]*User, 0, len(resp.Data.Values))
+		for i := range resp.Data.Values {
+			u := &User{}
+			u.dbaasID = dbaasID
+			u.projectID = projectID
+			u.fromResponse(&resp.Data.Values[i])
+			items = append(items, u)
+		}
+	}
+	refetch := func(_ context.Context, _ string) (*List[*User], error) {
 		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
 	}
 	var total int64
