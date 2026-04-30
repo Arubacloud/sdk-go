@@ -758,6 +758,144 @@ func TestVolumesClientAdapter_List_TwoItems(t *testing.T) {
 	}
 }
 
+// --------------------------------------------------------------------------
+// Zero-value accessor tests (Shape F — 66.7% accessors)
+// --------------------------------------------------------------------------
+
+func TestBlockStorage_Accessors_ZeroValue(t *testing.T) {
+	bs := NewBlockStorage()
+	if bs.Type() != "" {
+		t.Errorf("Type() zero value = %q, want \"\"", bs.Type())
+	}
+	if bs.Bootable() != false {
+		t.Error("Bootable() zero value should be false")
+	}
+}
+
+func TestNewVolumesClientAdapter_Nil(t *testing.T) {
+	// Exercises the nil-rest branch of newVolumesClientAdapter.
+	adapter := newVolumesClientAdapter(nil)
+	if adapter == nil {
+		t.Fatal("newVolumesClientAdapter(nil) returned nil")
+	}
+}
+
+func TestVolumesClientAdapter_Update_Err(t *testing.T) {
+	// Exercise the Err() pre-check in Update.
+	adapter := buildVolumesTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	bs := NewBlockStorage().FromSnapshot(URI("")) // seeds an error
+	_, err := adapter.Update(context.Background(), bs)
+	if err == nil {
+		t.Fatal("expected error when BlockStorage has a pre-existing Err()")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Additional adapter coverage tests (Get_BadRef, Update_NonTwoXX, Delete_BadRef,
+// List_NonTwoXX)
+// --------------------------------------------------------------------------
+
+func TestVolumesClientAdapter_Get_BadRef(t *testing.T) {
+	adapter := buildVolumesTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	_, err := adapter.Get(context.Background(), URI("/something/unrelated"))
+	if err == nil {
+		t.Fatal("expected error for unresolvable Ref")
+	}
+}
+
+func TestVolumesClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildVolumesTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "block storage not found", 404))
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Storage/blockstorages/missing")
+	_, err := adapter.Get(context.Background(), ref)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestVolumesClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildVolumesTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "size invalid", 422))
+	})
+
+	bs := &BlockStorage{}
+	bs.fromResponse(blockStorageTestResponse("bs-1", "my-bs", "/projects/p/providers/Aruba.Storage/blockstorages/bs-1", "p"))
+	bs.WithSize(99999)
+
+	_, err := adapter.Update(context.Background(), bs)
+	if err == nil {
+		t.Fatal("expected error on 422")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestVolumesClientAdapter_Delete_BadRef(t *testing.T) {
+	adapter := buildVolumesTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	err := adapter.Delete(context.Background(), URI("/something/unrelated"))
+	if err == nil {
+		t.Fatal("expected error for unresolvable Ref")
+	}
+}
+
+func TestVolumesClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildVolumesTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Forbidden", "not authorized", 403))
+	})
+
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err == nil {
+		t.Fatal("expected error on 403")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusForbidden {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestVolumesClientAdapter_List_BadRef(t *testing.T) {
+	adapter := buildVolumesTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	_, err := adapter.List(context.Background(), URI("/something/unrelated"))
+	if err == nil {
+		t.Fatal("expected error for unresolvable project Ref")
+	}
+}
+
 // containsSubstring reports whether s contains substr.
 func containsSubstring(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > 0 && findSubstring(s, substr))

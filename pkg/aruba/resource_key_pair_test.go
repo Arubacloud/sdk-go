@@ -539,3 +539,92 @@ func TestKeyPairsClientAdapter_List_TwoItems(t *testing.T) {
 		t.Errorf("items[0].ProjectID() = %q", items[0].ProjectID())
 	}
 }
+
+// --------------------------------------------------------------------------
+// Get — bad ref and non-2xx
+// --------------------------------------------------------------------------
+
+func TestKeyPairsClientAdapter_Get_BadRef(t *testing.T) {
+	adapter := buildKeyPairsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	_, err := adapter.Get(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad ref")
+	}
+}
+
+func TestKeyPairsClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildKeyPairsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "key pair not found", 404))
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Compute/keypairs/kp-missing")
+	result, err := adapter.Get(context.Background(), ref)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil on non-2xx")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Delete — bad ref
+// --------------------------------------------------------------------------
+
+func TestKeyPairsClientAdapter_Delete_BadRef(t *testing.T) {
+	adapter := buildKeyPairsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	err := adapter.Delete(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad ref")
+	}
+}
+
+// --------------------------------------------------------------------------
+// List — bad ref and non-2xx
+// --------------------------------------------------------------------------
+
+func TestKeyPairsClientAdapter_List_BadRef(t *testing.T) {
+	adapter := buildKeyPairsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	_, err := adapter.List(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad project ref")
+	}
+}
+
+func TestKeyPairsClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildKeyPairsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Forbidden", "access denied", 403))
+	})
+
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err == nil {
+		t.Fatal("expected error on 403")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusForbidden {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}

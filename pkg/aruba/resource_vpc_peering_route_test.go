@@ -718,6 +718,21 @@ func TestVPCPeeringRoutesClientAdapter_Update_NoPeering(t *testing.T) {
 	}
 }
 
+func TestVPCPeeringRoutesClientAdapter_Delete_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildVPCPeeringRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	err := adapter.Delete(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad Ref")
+	}
+}
+
 func TestVPCPeeringRoutesClientAdapter_Delete_Success(t *testing.T) {
 	adapter := buildVPCPeeringRouteTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
@@ -751,6 +766,265 @@ func TestVPCPeeringRoutesClientAdapter_Delete_NonTwoXX(t *testing.T) {
 	}
 	if httpErr.StatusCode != http.StatusNotFound {
 		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// WithLocation exercises the 0% branch.
+func TestVPCPeeringRoute_WithLocation(t *testing.T) {
+	r := NewVPCPeeringRoute().
+		AddTag("a").
+		AddTag("b").
+		RemoveTag("a").
+		ReplaceTags("x", "y").
+		WithLocation("ITMI-Milano-1")
+
+	if r.Region() != "ITMI-Milano-1" {
+		t.Errorf("Region() = %q", r.Region())
+	}
+	if tags := r.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
+		t.Errorf("Tags() = %v", tags)
+	}
+}
+
+func TestVPCPeeringRoutesClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildVPCPeeringRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "vpc peering route not found", 404))
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1/vpcPeeringRoutes/missing")
+	result, err := adapter.Get(context.Background(), ref)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil on non-2xx")
+	}
+}
+
+func TestVPCPeeringRoutesClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildVPCPeeringRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "vpc peering route not found", 404))
+	})
+
+	r := &VPCPeeringRoute{}
+	r.fromResponse(vpcPeeringRouteTestResponse("route-1", "my-route",
+		"/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1/vpcPeeringRoutes/route-1", "p"))
+	_, err := adapter.Update(context.Background(), r)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+}
+
+func TestVPCPeeringRoutesClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildVPCPeeringRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Forbidden", "access denied", 403))
+	})
+
+	_, err := adapter.List(context.Background(),
+		URI("/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1"))
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+}
+
+func TestVPCPeeringRouteIDsFromRef_BadURI_MissingVPC(t *testing.T) {
+	// URI has vpc-peering-routes+vpc-peerings but no vpcs segment
+	_, _, _, _, err := vpcPeeringRouteIDsFromRef(URI("/projects/p/vpc-peerings/peer/vpc-peering-routes/route"))
+	if err == nil {
+		t.Error("expected error for URI without /vpcs/<id>")
+	}
+}
+
+func TestVPCPeeringRouteIDsFromRef_BadURI_MissingProject(t *testing.T) {
+	// URI has vpc-peering-routes+vpc-peerings+vpcs but no projects
+	_, _, _, _, err := vpcPeeringRouteIDsFromRef(URI("/providers/Aruba.Network/vpcs/v/vpc-peerings/peer/vpc-peering-routes/route"))
+	if err == nil {
+		t.Error("expected error for URI without /projects/<id>")
+	}
+}
+
+func TestVPCPeeringRoutesClientAdapter_Create_WithBuilderError(t *testing.T) {
+	callCount := 0
+	adapter := buildVPCPeeringRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusCreated)
+	})
+	route := NewVPCPeeringRoute().IntoVPCPeering(URI("/garbage"))
+	_, err := adapter.Create(context.Background(), route)
+	if err == nil {
+		t.Fatal("expected error for builder error")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made when builder has errors")
+	}
+}
+
+func TestVPCPeeringRoutesClientAdapter_Get_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildVPCPeeringRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	result, err := adapter.Get(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+	if result != nil {
+		t.Error("result should be nil on bad Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad Ref")
+	}
+}
+
+func TestVPCPeeringRoutesClientAdapter_Get_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newVPCPeeringRoutesClientAdapter(testutil.NewClient(t, server.URL))
+	result, err := adapter.Get(context.Background(),
+		URI("/projects/p/providers/Aruba.Network/vpcs/v/vpc-peerings/peer/vpc-peering-routes/route"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+	_ = result
+}
+
+func TestVPCPeeringRoutesClientAdapter_Update_WithBuilderError(t *testing.T) {
+	callCount := 0
+	adapter := buildVPCPeeringRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	route := NewVPCPeeringRoute().IntoVPCPeering(URI("/garbage"))
+	_, err := adapter.Update(context.Background(), route)
+	if err == nil {
+		t.Fatal("expected error for builder error")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made when builder has errors")
+	}
+}
+
+func TestVPCPeeringRoutesClientAdapter_Update_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newVPCPeeringRoutesClientAdapter(testutil.NewClient(t, server.URL))
+	route := &VPCPeeringRoute{}
+	route.fromResponse(vpcPeeringRouteTestResponse("route-1", "route-a",
+		"/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1/vpcPeeringRoutes/route-1", "p"))
+	_, err := adapter.Update(context.Background(), route)
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestVPCPeeringRoutesClientAdapter_Delete_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newVPCPeeringRoutesClientAdapter(testutil.NewClient(t, server.URL))
+	err := adapter.Delete(context.Background(),
+		URI("/projects/p/providers/Aruba.Network/vpcs/v/vpc-peerings/peer/vpc-peering-routes/route"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestVPCPeeringRoutesClientAdapter_List_BadPeeringRef(t *testing.T) {
+	callCount := 0
+	adapter := buildVPCPeeringRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.List(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad peering Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad peering Ref")
+	}
+}
+
+func TestVPCPeeringRoutesClientAdapter_List_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newVPCPeeringRoutesClientAdapter(testutil.NewClient(t, server.URL))
+	_, err := adapter.List(context.Background(),
+		URI("/projects/p/providers/Aruba.Network/vpcs/v/vpc-peerings/peer"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestVPCPeeringRoutesClientAdapter_List_AncestorIDBackfill(t *testing.T) {
+	// Items without ancestor IDs in metadata/URI: triggers vpcPeeringID/vpcID/projectID backfill
+	adapter := buildVPCPeeringRouteTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"total":1,"self":"","prev":"","next":"","first":"","last":"","values":[`+
+			`{"metadata":{"id":"route-x","name":"route-x"},"properties":{"localNetworkAddress":"10.0.0.0/24","remoteNetworkAddress":"192.168.0.0/24","billingPlan":{}},"status":{}}`+
+			`]}`)
+	})
+
+	list, err := adapter.List(context.Background(),
+		URI("/projects/proj-x/providers/Aruba.Network/vpcs/vpc-x/vpc-peerings/peer-x"))
+	if err != nil {
+		t.Fatalf("List error: %v", err)
+	}
+	items := list.Items()
+	if len(items) != 1 {
+		t.Fatalf("Items() len = %d", len(items))
+	}
+	if items[0].ProjectID() != "proj-x" {
+		t.Errorf("ProjectID() after backfill = %q, want %q", items[0].ProjectID(), "proj-x")
+	}
+	if items[0].VPCID() != "vpc-x" {
+		t.Errorf("VPCID() after backfill = %q, want %q", items[0].VPCID(), "vpc-x")
+	}
+	if items[0].VPCPeeringID() != "peer-x" {
+		t.Errorf("VPCPeeringID() after backfill = %q, want %q", items[0].VPCPeeringID(), "peer-x")
 	}
 }
 

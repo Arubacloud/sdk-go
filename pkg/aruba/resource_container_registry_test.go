@@ -1047,3 +1047,276 @@ func TestContainerRegistryClient_HasUpdateMethod(t *testing.T) {
 	}
 	t.Fatal("ContainerRegistryClient must have an Update method")
 }
+
+// --------------------------------------------------------------------------
+// Shape A — InRegion
+// --------------------------------------------------------------------------
+
+func TestContainerRegistry_InRegion(t *testing.T) {
+	cr := NewContainerRegistry().InRegion("ITMI-Milano-1")
+	if cr.Region() != "ITMI-Milano-1" {
+		t.Errorf("Region() = %q, want ITMI-Milano-1", cr.Region())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Shape F — Size() bad-string branch (response has unparseable value)
+// --------------------------------------------------------------------------
+
+func TestContainerRegistry_Size_BadResponseString(t *testing.T) {
+	cr := &ContainerRegistry{}
+	badSize := "not-an-int"
+	cr.response = &types.ContainerRegistryResponse{
+		Properties: types.ContainerRegistryPropertiesResult{
+			ConcurrentUsers: &badSize,
+		},
+	}
+	if cr.Size() != 0 {
+		t.Errorf("Size() = %d for bad response string, want 0", cr.Size())
+	}
+}
+
+func TestContainerRegistry_Size_BadLocalString(t *testing.T) {
+	// Manually inject a bad string into the local field (bypassing WithSize).
+	cr := &ContainerRegistry{}
+	bad := "not-an-int"
+	cr.concurrentUsers = &bad
+	if cr.Size() != 0 {
+		t.Errorf("Size() = %d for bad local string, want 0", cr.Size())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Shape E — ContainerRegistry adapter additional error paths
+// --------------------------------------------------------------------------
+
+// Get_BadRef: URI lacking /registries/<id>.
+func TestContainerRegistriesClientAdapter_Get_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildContainerRegistryTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.Get(context.Background(), URI("/projects/p/no-registries"))
+	if err == nil {
+		t.Fatal("expected error for bad ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad ref")
+	}
+}
+
+// Get_NonTwoXX: stub returns 404 → HTTPError.
+func TestContainerRegistriesClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildContainerRegistryTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "not found", 404))
+	})
+	_, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Container/registries/cr-1"))
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// Delete_BadRef: URI without registries segment → error before HTTP.
+func TestContainerRegistriesClientAdapter_Delete_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildContainerRegistryTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusNoContent)
+	})
+	err := adapter.Delete(context.Background(), URI("/projects/p/no-registries"))
+	if err == nil {
+		t.Fatal("expected error for bad ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad ref")
+	}
+}
+
+// List_BadRef: parent ref without project ID → error before HTTP.
+func TestContainerRegistriesClientAdapter_List_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildContainerRegistryTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.List(context.Background(), URI("/no-project"))
+	if err == nil {
+		t.Fatal("expected error for ref without project")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad ref")
+	}
+}
+
+// List_NonTwoXX: stub returns 500 → HTTPError.
+func TestContainerRegistriesClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildContainerRegistryTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Server Error", "internal", 500))
+	})
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err == nil {
+		t.Fatal("expected error on 500")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Shape F — Accessors on zero-value ContainerRegistry
+// --------------------------------------------------------------------------
+
+func TestContainerRegistry_Accessors_ZeroValue(t *testing.T) {
+	cr := NewContainerRegistry()
+
+	if cr.PublicIP() != "" {
+		t.Errorf("PublicIP() = %q, want empty", cr.PublicIP())
+	}
+	if cr.VPC() != "" {
+		t.Errorf("VPC() = %q, want empty", cr.VPC())
+	}
+	if cr.Subnet() != "" {
+		t.Errorf("Subnet() = %q, want empty", cr.Subnet())
+	}
+	if cr.SecurityGroup() != "" {
+		t.Errorf("SecurityGroup() = %q, want empty", cr.SecurityGroup())
+	}
+	if cr.BlockStorage() != "" {
+		t.Errorf("BlockStorage() = %q, want empty", cr.BlockStorage())
+	}
+	if cr.AdminUsername() != "" {
+		t.Errorf("AdminUsername() = %q, want empty", cr.AdminUsername())
+	}
+	if cr.Size() != 0 {
+		t.Errorf("Size() = %d, want 0", cr.Size())
+	}
+	if cr.BillingPeriod() != "" {
+		t.Errorf("BillingPeriod() = %q, want empty", cr.BillingPeriod())
+	}
+	if cr.Raw() != nil {
+		t.Errorf("Raw() = %v, want nil", cr.Raw())
+	}
+	if cr.URI() != "" {
+		t.Errorf("URI() = %q, want empty", cr.URI())
+	}
+	if cr.ContainerRegistryID() != "" {
+		t.Errorf("ContainerRegistryID() = %q, want empty", cr.ContainerRegistryID())
+	}
+	_ = cr.RawRequest() // must not panic
+}
+
+// --------------------------------------------------------------------------
+// Additional coverage: ContainerRegistry adapter error paths via fake
+// --------------------------------------------------------------------------
+
+// Update_WithErr: r.Err() is non-nil → return early.
+func TestContainerRegistriesClientAdapter_Update_WithErr(t *testing.T) {
+	callCount := 0
+	fake := &fakeContainerRegistryLowLevel{
+		updateFunc: func(_ context.Context, _, _ string, _ types.ContainerRegistryRequest, _ *types.RequestParameters) (*types.Response[types.ContainerRegistryResponse], error) {
+			callCount++
+			return nil, nil
+		},
+	}
+	adapter := &containerRegistriesClientAdapter{low: fake}
+
+	cr := &ContainerRegistry{}
+	cr.fromResponse(containerRegistryTestResponse("n"))
+	cr.addErr(fmt.Errorf("pre-existing validation error"))
+
+	_, err := adapter.Update(context.Background(), cr)
+	if err == nil {
+		t.Fatal("expected error when r.Err() is set")
+	}
+	if callCount != 0 {
+		t.Error("no low-level call should be made when r.Err() is set")
+	}
+}
+
+// Update_LowLevelError: low-level Update returns network error → propagate.
+func TestContainerRegistriesClientAdapter_Update_LowLevelError(t *testing.T) {
+	fake := &fakeContainerRegistryLowLevel{
+		updateFunc: func(_ context.Context, _, _ string, _ types.ContainerRegistryRequest, _ *types.RequestParameters) (*types.Response[types.ContainerRegistryResponse], error) {
+			return nil, fmt.Errorf("connection reset")
+		},
+	}
+	adapter := &containerRegistriesClientAdapter{low: fake}
+
+	cr := &ContainerRegistry{}
+	cr.fromResponse(containerRegistryTestResponse("n"))
+
+	_, err := adapter.Update(context.Background(), cr)
+	if err == nil {
+		t.Fatal("expected error from low-level Update")
+	}
+	if !containsSubstring(err.Error(), "connection reset") {
+		t.Errorf("error should mention 'connection reset', got %q", err.Error())
+	}
+}
+
+// Get_LowLevelError: low-level Get returns error → propagate.
+func TestContainerRegistriesClientAdapter_Get_LowLevelError(t *testing.T) {
+	fake := &fakeContainerRegistryLowLevel{
+		getFunc: func(_ context.Context, _, _ string, _ *types.RequestParameters) (*types.Response[types.ContainerRegistryResponse], error) {
+			return nil, fmt.Errorf("dns lookup failed")
+		},
+	}
+	adapter := &containerRegistriesClientAdapter{low: fake}
+
+	_, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Container/registries/cr-1"))
+	if err == nil {
+		t.Fatal("expected error from low-level Get")
+	}
+	if !containsSubstring(err.Error(), "dns lookup failed") {
+		t.Errorf("error should mention 'dns lookup failed', got %q", err.Error())
+	}
+}
+
+// Delete_LowLevelError: low-level Delete returns error → propagate.
+func TestContainerRegistriesClientAdapter_Delete_LowLevelError(t *testing.T) {
+	fake := &fakeContainerRegistryLowLevel{
+		deleteFunc: func(_ context.Context, _, _ string, _ *types.RequestParameters) (*types.Response[any], error) {
+			return nil, fmt.Errorf("timeout")
+		},
+	}
+	adapter := &containerRegistriesClientAdapter{low: fake}
+
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Container/registries/cr-1"))
+	if err == nil {
+		t.Fatal("expected error from low-level Delete")
+	}
+	if !containsSubstring(err.Error(), "timeout") {
+		t.Errorf("error should mention 'timeout', got %q", err.Error())
+	}
+}
+
+// List_LowLevelError: low-level List returns error → propagate.
+func TestContainerRegistriesClientAdapter_List_LowLevelError(t *testing.T) {
+	fake := &fakeContainerRegistryLowLevel{
+		listFunc: func(_ context.Context, _ string, _ *types.RequestParameters) (*types.Response[types.ContainerRegistryList], error) {
+			return nil, fmt.Errorf("upstream unavailable")
+		},
+	}
+	adapter := &containerRegistriesClientAdapter{low: fake}
+
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err == nil {
+		t.Fatal("expected error from low-level List")
+	}
+	if !containsSubstring(err.Error(), "upstream unavailable") {
+		t.Errorf("error should mention 'upstream unavailable', got %q", err.Error())
+	}
+}

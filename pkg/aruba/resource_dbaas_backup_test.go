@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Arubacloud/sdk-go/internal/clients/database"
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
@@ -702,6 +703,128 @@ func TestDBaaSBackupsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 // --------------------------------------------------------------------------
 // List adapter tests
 // --------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------
+// InRegion (0% → covers that branch)
+// --------------------------------------------------------------------------
+
+func TestDBaaSBackup_InRegion(t *testing.T) {
+	bkp := NewDBaaSBackup().InRegion("ITBG-Bergamo")
+	if bkp.Region() != "ITBG-Bergamo" {
+		t.Errorf("Region() after InRegion = %q", bkp.Region())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Zero-value accessors (Shape F — covers the nil-response branch)
+// --------------------------------------------------------------------------
+
+func TestDBaaSBackup_Accessors_ZeroValue(t *testing.T) {
+	bkp := &DBaaSBackup{}
+	if bkp.Size() != 0 {
+		t.Errorf("Size() zero = %d", bkp.Size())
+	}
+	if bkp.Zone() != "" {
+		t.Errorf("Zone() zero = %q", bkp.Zone())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Get — bad Ref and non-2xx
+// --------------------------------------------------------------------------
+
+func TestDBaaSBackupsClientAdapter_Get_BadRef(t *testing.T) {
+	adapter := buildDBaaSBackupsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.Get(context.Background(), URI("/something/not-a-backup"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+}
+
+func TestDBaaSBackupsClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildDBaaSBackupsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "backup not found", 404))
+	})
+	ref := URI("/projects/p/providers/Aruba.Database/backups/bkp-1")
+	_, err := adapter.Get(context.Background(), ref)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("HTTPError.StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Delete — bad Ref
+// --------------------------------------------------------------------------
+
+func TestDBaaSBackupsClientAdapter_Delete_BadRef(t *testing.T) {
+	adapter := buildDBaaSBackupsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	err := adapter.Delete(context.Background(), URI("/something/bad"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+}
+
+// --------------------------------------------------------------------------
+// List — non-2xx response
+// --------------------------------------------------------------------------
+
+func TestDBaaSBackupsClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildDBaaSBackupsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Forbidden", "not allowed", 403))
+	})
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err == nil {
+		t.Fatal("expected error on 403")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusForbidden {
+		t.Errorf("HTTPError.StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Get — broken client
+// --------------------------------------------------------------------------
+
+func TestDBaaSBackupsClientAdapter_Get_BrokenClient(t *testing.T) {
+	adapter := &dbaasBackupsClientAdapter{low: database.NewBackupsClientImpl(testutil.NewBrokenClient(t, "http://localhost:9"))}
+	_, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Database/backups/bkp-1"))
+	if err == nil {
+		t.Fatal("expected network error from broken client")
+	}
+}
+
+// --------------------------------------------------------------------------
+// List — bad parent ref
+// --------------------------------------------------------------------------
+
+func TestDBaaSBackupsClientAdapter_List_BadRef(t *testing.T) {
+	adapter := buildDBaaSBackupsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.List(context.Background(), URI("/something/bad"))
+	if err == nil {
+		t.Fatal("expected error for bad parent Ref")
+	}
+}
 
 func TestDBaaSBackupsClientAdapter_List_TwoItems(t *testing.T) {
 	adapter := buildDBaaSBackupsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {

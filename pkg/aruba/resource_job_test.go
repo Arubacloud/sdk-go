@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
@@ -746,6 +747,276 @@ func TestJobsClientAdapter_List_TwoItems(t *testing.T) {
 	}
 	if items[1].Name() != "job-two" {
 		t.Errorf("items[1].Name() = %q", items[1].Name())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Setter delegation (RemoveTag, ReplaceTags, InRegion)
+// --------------------------------------------------------------------------
+
+func TestJob_SetterDelegation(t *testing.T) {
+	j := NewJob().
+		AddTag("a").
+		AddTag("b").
+		AddTag("c").
+		RemoveTag("b").
+		ReplaceTags("x", "y").
+		InRegion("ITBG-Bergamo")
+
+	tags := j.Tags()
+	if len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
+		t.Errorf("Tags() after ReplaceTags = %v", tags)
+	}
+	if j.Region() != "ITBG-Bergamo" {
+		t.Errorf("Region() after InRegion = %q", j.Region())
+	}
+}
+
+// --------------------------------------------------------------------------
+// URI and Raw accessors after hydration
+// --------------------------------------------------------------------------
+
+func TestJob_URI_AfterHydration(t *testing.T) {
+	j := &Job{}
+	j.fromResponse(jobTestResponse("u"))
+	if j.URI() == "" {
+		t.Error("URI() should not be empty after hydration")
+	}
+	if j.Raw() == nil {
+		t.Error("Raw() should not be nil after hydration")
+	}
+}
+
+func TestJob_RawRequest_NoHydration(t *testing.T) {
+	_ = NewJob().RawRequest() // must not panic
+}
+
+// --------------------------------------------------------------------------
+// Accessors at zero value (no hydration)
+// --------------------------------------------------------------------------
+
+func TestJob_Accessors_ZeroValue(t *testing.T) {
+	j := NewJob()
+	if j.URI() != "" {
+		t.Errorf("URI() zero = %q", j.URI())
+	}
+	if j.Raw() != nil {
+		t.Errorf("Raw() zero = %v", j.Raw())
+	}
+	if j.Enabled() != false {
+		t.Error("Enabled() zero should be false")
+	}
+	if j.JobType() != "" {
+		t.Errorf("JobType() zero = %q", j.JobType())
+	}
+	if j.Cron() != "" {
+		t.Errorf("Cron() zero = %q", j.Cron())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Enabled, JobType, Cron — request-side fallbacks (response is nil)
+// --------------------------------------------------------------------------
+
+func TestJob_Enabled_RequestFallback(t *testing.T) {
+	j := NewJob().WithEnabled(true)
+	if !j.Enabled() {
+		t.Error("Enabled() request fallback should be true")
+	}
+}
+
+func TestJob_JobType_RequestFallback(t *testing.T) {
+	ts := time.Date(2026, 5, 1, 12, 0, 0, 0, time.UTC)
+	j := NewJob().OneShotAt(ts)
+	if j.JobType() != types.JobTypeOneShot {
+		t.Errorf("JobType() request fallback = %q", j.JobType())
+	}
+}
+
+func TestJob_Cron_RequestFallback(t *testing.T) {
+	j := NewJob().WithCron("0 * * * *")
+	if j.Cron() != "0 * * * *" {
+		t.Errorf("Cron() request fallback = %q", j.Cron())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Get adapter — BadRef and NonTwoXX
+// --------------------------------------------------------------------------
+
+func TestJobsClientAdapter_Get_BadRef(t *testing.T) {
+	adapter := buildJobsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.Get(context.Background(), URI("/providers/Aruba.Schedule"))
+	if err == nil {
+		t.Fatal("expected error for unparseable ref")
+	}
+}
+
+func TestJobsClientAdapter_Get_NetworkError(t *testing.T) {
+	adapter := &jobsClientAdapter{low: schedule.NewJobsClientImpl(testutil.NewBrokenClient(t, "http://localhost:9"))}
+	_, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Schedule/jobs/job-1"))
+	if err == nil {
+		t.Fatal("expected network error from broken client")
+	}
+}
+
+func TestJobsClientAdapter_Get_ProjectIDFallback(t *testing.T) {
+	// Server returns a response with no project metadata, so fromResponse won't set
+	// projectID — the "if out.projectID == """ guard must restore it from the ref.
+	adapter := buildJobsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		id := "job-99"
+		fmt.Fprintf(w, `{"metadata":{"id":%q},"properties":{},"status":{}}`, id)
+	})
+	ref := URI("/projects/p/providers/Aruba.Schedule/jobs/job-99")
+	result, err := adapter.Get(context.Background(), ref)
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if result.ProjectID() != "p" {
+		t.Errorf("ProjectID() after fallback = %q", result.ProjectID())
+	}
+}
+
+func TestJobsClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildJobsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{"message":"not found"}`)
+	})
+	ref := URI("/projects/p/providers/Aruba.Schedule/jobs/job-1")
+	_, err := adapter.Get(context.Background(), ref)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Delete adapter — BadRef
+// --------------------------------------------------------------------------
+
+func TestJobsClientAdapter_Delete_BadRef(t *testing.T) {
+	adapter := buildJobsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	err := adapter.Delete(context.Background(), URI("/providers/Aruba.Schedule"))
+	if err == nil {
+		t.Fatal("expected error for unparseable ref")
+	}
+}
+
+func TestJobsClientAdapter_Delete_NetworkError(t *testing.T) {
+	adapter := &jobsClientAdapter{low: schedule.NewJobsClientImpl(testutil.NewBrokenClient(t, "http://localhost:9"))}
+	j := &Job{}
+	j.fromResponse(jobTestResponse("j"))
+	err := adapter.Delete(context.Background(), j)
+	if err == nil {
+		t.Fatal("expected network error from broken client")
+	}
+}
+
+// --------------------------------------------------------------------------
+// List adapter — NonTwoXX and bad parent ref
+// --------------------------------------------------------------------------
+
+func TestJobsClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildJobsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, `{"message":"forbidden"}`)
+	})
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusForbidden {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestJobsClientAdapter_List_BadParentRef(t *testing.T) {
+	adapter := buildJobsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.List(context.Background(), URI("/no-project-here"))
+	if err == nil {
+		t.Fatal("expected error for parent ref with no project")
+	}
+}
+
+// --------------------------------------------------------------------------
+// newJobsClientAdapter nil-rest branch
+// --------------------------------------------------------------------------
+
+func TestNewJobsClientAdapter_NilRest(t *testing.T) {
+	a := newJobsClientAdapter(nil)
+	if a == nil {
+		t.Fatal("expected non-nil adapter")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Update — Err() pre-condition
+// --------------------------------------------------------------------------
+
+func TestJobsClientAdapter_Update_ErrSet(t *testing.T) {
+	adapter := buildJobsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	j := NewJob().IntoProject(URI("not-a-project-uri")) // sets Err()
+	_, err := adapter.Update(context.Background(), j)
+	if err == nil {
+		t.Fatal("expected error when Job has Err() set")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Cron — response not nil but Cron field is nil
+// --------------------------------------------------------------------------
+
+func TestJob_Cron_ResponseNilCron(t *testing.T) {
+	j := &Job{}
+	id := "job-x"
+	uri := "/projects/p/providers/Aruba.Schedule/jobs/job-x"
+	jt := types.JobTypeOneShot
+	resp := &types.JobResponse{
+		Metadata: types.ResourceMetadataResponse{ID: &id, URI: &uri},
+		Properties: types.JobPropertiesResponse{
+			Enabled: true,
+			JobType: jt,
+			Cron:    nil, // explicitly nil
+		},
+	}
+	j.fromResponse(resp)
+	// Cron() should fall through to the cron field (also nil), returning ""
+	if j.Cron() != "" {
+		t.Errorf("Cron() with nil response.Cron = %q", j.Cron())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Cron — response not nil and Cron field not nil (response-branch)
+// --------------------------------------------------------------------------
+
+func TestJob_Cron_ResponseBranch(t *testing.T) {
+	cronExpr := "0 12 * * 1"
+	j := &Job{}
+	// Directly set the response to exercise the response-first branch of Cron().
+	j.response = &types.JobResponse{
+		Properties: types.JobPropertiesResponse{
+			Cron: &cronExpr,
+		},
+	}
+	if j.Cron() != cronExpr {
+		t.Errorf("Cron() response branch = %q, want %q", j.Cron(), cronExpr)
 	}
 }
 

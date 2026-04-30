@@ -708,6 +708,155 @@ func TestStorageRestoresClientAdapter_Delete_NonTwoXX(t *testing.T) {
 	}
 }
 
+func TestNewStorageRestoresClientAdapter_Nil(t *testing.T) {
+	adapter := newStorageRestoresClientAdapter(nil)
+	if adapter == nil {
+		t.Fatal("newStorageRestoresClientAdapter(nil) returned nil")
+	}
+}
+
+func TestStorageRestoresClientAdapter_Update_Err(t *testing.T) {
+	adapter := buildStorageRestoresTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	r := NewStorageRestore().WithTarget(URI("")) // seeds an error
+	_, err := adapter.Update(context.Background(), r)
+	if err == nil {
+		t.Fatal("expected error when StorageRestore has a pre-existing Err()")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Additional adapter coverage tests (Get_BadRef, Get_NonTwoXX, Update_NonTwoXX,
+// Delete_BadRef, List_NonTwoXX, List_BadRef)
+// --------------------------------------------------------------------------
+
+func TestStorageRestoresClientAdapter_Get_BadRef(t *testing.T) {
+	adapter := buildStorageRestoresTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	_, err := adapter.Get(context.Background(), URI("/something/unrelated"))
+	if err == nil {
+		t.Fatal("expected error for unresolvable Ref")
+	}
+}
+
+func TestStorageRestoresClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildStorageRestoresTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "restore not found", 404))
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Storage/backups/bkp-1/restores/missing")
+	_, err := adapter.Get(context.Background(), ref)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestStorageRestoresClientAdapter_Update_NonTwoXX(t *testing.T) {
+	targetURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-new"
+	fake := &fakeStorageRestoreLowLevel{
+		updateFunc: func(_ context.Context, _, _, _ string, _ types.StorageRestoreRequest, _ *types.RequestParameters) (*types.Response[types.StorageRestoreResponse], error) {
+			return &types.Response[types.StorageRestoreResponse]{
+				StatusCode: http.StatusUnprocessableEntity,
+			}, nil
+		},
+	}
+	adapter := &storageRestoresClientAdapter{low: fake}
+
+	r := &StorageRestore{}
+	r.fromResponse(storageRestoreTestResponse("r-1", "my-restore", "/projects/p/providers/Aruba.Storage/backups/bkp-1/restores/r-1", "/v"))
+	r.backupID = "bkp-1"
+	r.projectID = "p"
+	r.WithTarget(URI(targetURI))
+
+	_, err := adapter.Update(context.Background(), r)
+	if err == nil {
+		t.Fatal("expected error on 422")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestStorageRestoresClientAdapter_Delete_BadRef(t *testing.T) {
+	adapter := buildStorageRestoresTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	err := adapter.Delete(context.Background(), URI("/something/unrelated"))
+	if err == nil {
+		t.Fatal("expected error for unresolvable Ref")
+	}
+}
+
+func TestStorageRestoresClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildStorageRestoresTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Forbidden", "not authorized", 403))
+	})
+
+	bkp := &StorageBackup{}
+	bkp.fromResponse(storageBackupTestResponse("bkp-1", "n", "/projects/p/providers/Aruba.Storage/backups/bkp-1", "p"))
+
+	_, err := adapter.List(context.Background(), bkp)
+	if err == nil {
+		t.Fatal("expected error on 403")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusForbidden {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestStorageRestoresClientAdapter_List_BadRef(t *testing.T) {
+	adapter := buildStorageRestoresTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	_, err := adapter.List(context.Background(), URI("/something/unrelated"))
+	if err == nil {
+		t.Fatal("expected error for unresolvable backup Ref")
+	}
+}
+
+func TestStorageRestoresClientAdapter_List_LowLevelError(t *testing.T) {
+	// Exercises the err != nil branch of a.low.List.
+	fake := &fakeStorageRestoreLowLevel{
+		listFunc: func(_ context.Context, _, _ string, _ *types.RequestParameters) (*types.Response[types.StorageRestoreList], error) {
+			return nil, fmt.Errorf("network error")
+		},
+	}
+	adapter := &storageRestoresClientAdapter{low: fake}
+
+	bkp := &StorageBackup{}
+	bkp.fromResponse(storageBackupTestResponse("bkp-1", "n", "/projects/p/providers/Aruba.Storage/backups/bkp-1", "p"))
+
+	_, err := adapter.List(context.Background(), bkp)
+	if err == nil {
+		t.Fatal("expected error from low-level list failure")
+	}
+}
+
 func TestStorageRestoresClientAdapter_List_TwoItems(t *testing.T) {
 	adapter := buildStorageRestoresTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

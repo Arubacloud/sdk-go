@@ -742,6 +742,144 @@ func TestSnapshotsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 	}
 }
 
+// --------------------------------------------------------------------------
+// Zero-value accessor tests (Shape F — 66.7% accessors)
+// --------------------------------------------------------------------------
+
+func TestSnapshot_Accessors_ZeroValue(t *testing.T) {
+	snap := NewSnapshot()
+	if snap.Size() != 0 {
+		t.Errorf("Size() zero value = %d, want 0", snap.Size())
+	}
+	if snap.Type() != "" {
+		t.Errorf("Type() zero value = %q, want \"\"", snap.Type())
+	}
+	if snap.Bootable() != false {
+		t.Error("Bootable() zero value should be false")
+	}
+}
+
+func TestNewSnapshotsClientAdapter_Nil(t *testing.T) {
+	adapter := newSnapshotsClientAdapter(nil)
+	if adapter == nil {
+		t.Fatal("newSnapshotsClientAdapter(nil) returned nil")
+	}
+}
+
+func TestSnapshotsClientAdapter_Update_Err(t *testing.T) {
+	adapter := buildSnapshotsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	snap := NewSnapshot().OfVolume(URI("")) // seeds an error
+	_, err := adapter.Update(context.Background(), snap)
+	if err == nil {
+		t.Fatal("expected error when Snapshot has a pre-existing Err()")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Additional adapter coverage tests
+// --------------------------------------------------------------------------
+
+func TestSnapshotsClientAdapter_Get_BadRef(t *testing.T) {
+	adapter := buildSnapshotsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	_, err := adapter.Get(context.Background(), URI("/something/unrelated"))
+	if err == nil {
+		t.Fatal("expected error for unresolvable Ref")
+	}
+}
+
+func TestSnapshotsClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildSnapshotsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "snapshot not found", 404))
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Storage/snapshots/missing")
+	_, err := adapter.Get(context.Background(), ref)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestSnapshotsClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildSnapshotsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "invalid billing period", 422))
+	})
+
+	snap := &Snapshot{}
+	snap.fromResponse(snapshotTestResponse("snap-1", "my-snap", "/projects/p/providers/Aruba.Storage/snapshots/snap-1", "p"))
+	snap.WithBillingPeriod("Invalid")
+
+	_, err := adapter.Update(context.Background(), snap)
+	if err == nil {
+		t.Fatal("expected error on 422")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestSnapshotsClientAdapter_Delete_BadRef(t *testing.T) {
+	adapter := buildSnapshotsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	err := adapter.Delete(context.Background(), URI("/something/unrelated"))
+	if err == nil {
+		t.Fatal("expected error for unresolvable Ref")
+	}
+}
+
+func TestSnapshotsClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildSnapshotsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Forbidden", "not authorized", 403))
+	})
+
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err == nil {
+		t.Fatal("expected error on 403")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusForbidden {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestSnapshotsClientAdapter_List_BadRef(t *testing.T) {
+	adapter := buildSnapshotsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	_, err := adapter.List(context.Background(), URI("/something/unrelated"))
+	if err == nil {
+		t.Fatal("expected error for unresolvable project Ref")
+	}
+}
+
 func TestSnapshotsClientAdapter_List_TwoItems(t *testing.T) {
 	adapter := buildSnapshotsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
