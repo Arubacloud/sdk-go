@@ -20,7 +20,6 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/clients/audit"
 	"github.com/Arubacloud/sdk-go/internal/clients/container"
-	"github.com/Arubacloud/sdk-go/internal/clients/database"
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 )
@@ -41,7 +40,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 		// Database
 		_ DBaaSClient     = newDBaaSClientAdapter(nil)
 		_ DatabasesClient = newDatabasesClientAdapter(nil)
-		_ BackupsClient   = database.NewBackupsClientImpl(nil)
+		_ BackupsClient   = newDBaaSBackupsClientAdapter(nil)
 		_ UsersClient     = newUsersClientAdapter(nil)
 		_ GrantsClient    = newGrantsClientAdapter(nil)
 
