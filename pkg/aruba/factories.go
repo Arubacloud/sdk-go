@@ -226,3 +226,11 @@ func NewKMS() *KMS {
 
 // NewJobStep returns a fresh *JobStep sub-builder for configuring a Job step.
 func NewJobStep() *JobStep { return &JobStep{} }
+
+// NewKey returns a fresh *Key ready for fluent setters and a Create call.
+// Binds kmsScopedMixin's error sink so IntoKMS failures surface via Err().
+func NewKey() *Key {
+	k := &Key{}
+	k.kmsScopedMixin = bindKMSScoped(&k.errMixin)
+	return k
+}
