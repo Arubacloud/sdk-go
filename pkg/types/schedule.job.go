@@ -1,14 +1,14 @@
 package types
 
-// TypeJob represents the type of job
-type TypeJob string
+// JobType represents the type of job
+type JobType string
 
 const (
-	// TypeJobOneShot represents a one-time job
-	TypeJobOneShot TypeJob = "OneShot"
+	// JobTypeOneShot represents a one-time job
+	JobTypeOneShot JobType = "OneShot"
 
-	// TypeJobRecurring represents a recurring job
-	TypeJobRecurring TypeJob = "Recurring"
+	// JobTypeRecurring represents a recurring job
+	JobTypeRecurring JobType = "Recurring"
 )
 
 // RecurrenceType represents the recurrence pattern of a job
@@ -88,7 +88,7 @@ type JobPropertiesRequest struct {
 	// JobType Type of job
 	// For more information, check the documentation.
 	// Possible values: OneShot, Recurring
-	JobType TypeJob `json:"scheduleJobType"`
+	JobType JobType `json:"scheduleJobType"`
 
 	// ScheduleAt Date and time when the job should run (nullable)
 	// Required only for "OneShot" jobs.
@@ -115,7 +115,7 @@ type JobPropertiesResponse struct {
 
 	// JobType Type of job
 	// Possible values: OneShot, Recurring
-	JobType TypeJob `json:"scheduleJobType,omitempty"`
+	JobType JobType `json:"scheduleJobType,omitempty"`
 
 	// ScheduleAt Date and time when the job should run (nullable)
 	ScheduleAt *string `json:"scheduleAt,omitempty"`

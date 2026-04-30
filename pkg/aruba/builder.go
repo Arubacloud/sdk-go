@@ -11,7 +11,6 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/clients/audit"
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
-	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 	"github.com/Arubacloud/sdk-go/internal/clients/security"
 	memory_creds_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/memory"
 	vault_creds_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/vault"
@@ -607,7 +606,7 @@ func buildScheduleClient(restClient *restclient.Client) (ScheduleClient, error) 
 }
 
 func buildJobsClient(restClient *restclient.Client) (JobsClient, error) {
-	return schedule.NewJobsClientImpl(restClient), nil
+	return newJobsClientAdapter(restClient), nil
 }
 
 //

@@ -20,7 +20,6 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/clients/audit"
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
-	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 )
 
 func TestCompileTimeInterfaceGuards(_ *testing.T) {
@@ -63,7 +62,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 		_ ProjectClient = newProjectClientAdapter(nil)
 
 		// Schedule
-		_ JobsClient = schedule.NewJobsClientImpl(nil)
+		_ JobsClient = newJobsClientAdapter(nil)
 
 		// Storage
 		_ VolumesClient        = newVolumesClientAdapter(nil)

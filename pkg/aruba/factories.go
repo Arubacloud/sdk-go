@@ -207,3 +207,14 @@ func NewVPNPSK() *VPNPSK { return &VPNPSK{} }
 
 // NewNodePool returns a fresh *NodePool sub-builder for configuring a KaaS node pool.
 func NewNodePool() *NodePool { return &NodePool{} }
+
+// NewJob returns a fresh *Job ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewJob() *Job {
+	j := &Job{}
+	j.projectScopedMixin = bindProjectScoped(&j.errMixin)
+	return j
+}
+
+// NewJobStep returns a fresh *JobStep sub-builder for configuring a Job step.
+func NewJobStep() *JobStep { return &JobStep{} }
