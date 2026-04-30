@@ -929,6 +929,21 @@ func TestVPNTunnelsClientAdapter_Update_NoProject(t *testing.T) {
 	}
 }
 
+func TestVPNTunnelsClientAdapter_Delete_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildVPNTunnelTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	err := adapter.Delete(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad Ref")
+	}
+}
+
 func TestVPNTunnelsClientAdapter_Delete_Success(t *testing.T) {
 	adapter := buildVPNTunnelTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
@@ -960,6 +975,307 @@ func TestVPNTunnelsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 	}
 	if httpErr.StatusCode != http.StatusNotFound {
 		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// WithLocation exercises the 0% branch.
+func TestVPNTunnel_WithLocation(t *testing.T) {
+	tun := NewVPNTunnel().
+		AddTag("a").
+		AddTag("b").
+		RemoveTag("a").
+		ReplaceTags("x", "y").
+		WithLocation("ITMI-Milano-1")
+
+	if tun.Region() != "ITMI-Milano-1" {
+		t.Errorf("Region() = %q", tun.Region())
+	}
+	if tags := tun.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
+		t.Errorf("Tags() = %v", tags)
+	}
+}
+
+// TestVPNTunnel_SubResourceAccessors covers the 0% IPConfig/IKE/ESP/PSK accessors and
+// also exercises the nil branch and error-absorbing branches of
+// WithIKESettings/WithESPSettings/WithPSKSettings/WithIPConfig.
+func TestVPNTunnel_SubResourceAccessors(t *testing.T) {
+	// Nil sub-builders — must not panic and must leave fields nil.
+	tunNil := NewVPNTunnel().
+		WithIKESettings(nil).
+		WithESPSettings(nil).
+		WithPSKSettings(nil)
+	if tunNil.IKE() != nil {
+		t.Error("IKE() should be nil when set with nil")
+	}
+	if tunNil.ESP() != nil {
+		t.Error("ESP() should be nil when set with nil")
+	}
+	if tunNil.PSK() != nil {
+		t.Error("PSK() should be nil when set with nil")
+	}
+	if tunNil.IPConfig() != nil {
+		t.Error("IPConfig() should be nil when not set")
+	}
+
+	// Non-nil sub-builders — accessors return the set value.
+	tun := NewVPNTunnel().
+		WithIPConfig(NewVPNIPConfig()).
+		WithIKESettings(NewVPNIKE()).
+		WithESPSettings(NewVPNESP()).
+		WithPSKSettings(NewVPNPSK())
+
+	if tun.IPConfig() == nil {
+		t.Error("IPConfig() nil after WithIPConfig")
+	}
+	if tun.IKE() == nil {
+		t.Error("IKE() nil after WithIKESettings")
+	}
+	if tun.ESP() == nil {
+		t.Error("ESP() nil after WithESPSettings")
+	}
+	if tun.PSK() == nil {
+		t.Error("PSK() nil after WithPSKSettings")
+	}
+
+	// Sub-builder with errors — error must be absorbed into tunnel.Err().
+	ikeWithErr := NewVPNIKE()
+	ikeWithErr.errs = []error{fmt.Errorf("ike-error")}
+	espWithErr := NewVPNESP()
+	espWithErr.errs = []error{fmt.Errorf("esp-error")}
+	pskWithErr := NewVPNPSK()
+	pskWithErr.errs = []error{fmt.Errorf("psk-error")}
+
+	tunWithErrs := NewVPNTunnel().
+		WithIKESettings(ikeWithErr).
+		WithESPSettings(espWithErr).
+		WithPSKSettings(pskWithErr)
+	if tunWithErrs.Err() == nil {
+		t.Error("tunnel.Err() must be non-nil when sub-builders have errors")
+	}
+}
+
+func TestVPNTunnelsClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildVPNTunnelTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "vpn tunnel not found", 404))
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Network/vpnTunnels/missing")
+	result, err := adapter.Get(context.Background(), ref)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil on non-2xx")
+	}
+}
+
+func TestVPNTunnelsClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildVPNTunnelTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "vpn tunnel not found", 404))
+	})
+
+	tun := &VPNTunnel{}
+	tun.fromResponse(vpnTunnelTestResponse("t-1", "my-tunnel",
+		"/projects/p/providers/Aruba.Network/vpnTunnels/t-1", "p"))
+	_, err := adapter.Update(context.Background(), tun)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+}
+
+func TestVPNTunnelsClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildVPNTunnelTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Forbidden", "access denied", 403))
+	})
+
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+}
+
+func TestVPNTunnelIDsFromRef_BadURI_MissingProjectID(t *testing.T) {
+	// URI has vpnTunnels segment but no projects segment
+	_, _, err := vpnTunnelIDsFromRef(URI("/providers/Aruba.Network/vpnTunnels/t"))
+	if err == nil {
+		t.Error("expected error for URI without /projects/<id>")
+	}
+}
+
+func TestVPNTunnelsClientAdapter_Create_WithBuilderError(t *testing.T) {
+	callCount := 0
+	adapter := buildVPNTunnelTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusCreated)
+	})
+	tun := NewVPNTunnel().IntoProject(URI("/garbage"))
+	_, err := adapter.Create(context.Background(), tun)
+	if err == nil {
+		t.Fatal("expected error for builder error")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made when builder has errors")
+	}
+}
+
+func TestVPNTunnelsClientAdapter_Get_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildVPNTunnelTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	result, err := adapter.Get(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+	if result != nil {
+		t.Error("result should be nil on bad Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad Ref")
+	}
+}
+
+func TestVPNTunnelsClientAdapter_Get_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newVPNTunnelsClientAdapter(testutil.NewClient(t, server.URL))
+	result, err := adapter.Get(context.Background(),
+		URI("/projects/p/providers/Aruba.Network/vpnTunnels/t"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+	_ = result
+}
+
+func TestVPNTunnelsClientAdapter_Update_WithBuilderError(t *testing.T) {
+	callCount := 0
+	adapter := buildVPNTunnelTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	tun := NewVPNTunnel().IntoProject(URI("/garbage"))
+	_, err := adapter.Update(context.Background(), tun)
+	if err == nil {
+		t.Fatal("expected error for builder error")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made when builder has errors")
+	}
+}
+
+func TestVPNTunnelsClientAdapter_Update_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newVPNTunnelsClientAdapter(testutil.NewClient(t, server.URL))
+	tun := &VPNTunnel{}
+	tun.fromResponse(vpnTunnelTestResponse("t-1", "tunnel-a",
+		"/projects/p/providers/Aruba.Network/vpnTunnels/t-1", "p"))
+	_, err := adapter.Update(context.Background(), tun)
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestVPNTunnelsClientAdapter_Delete_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newVPNTunnelsClientAdapter(testutil.NewClient(t, server.URL))
+	err := adapter.Delete(context.Background(),
+		URI("/projects/p/providers/Aruba.Network/vpnTunnels/t"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestVPNTunnelsClientAdapter_List_BadProjectRef(t *testing.T) {
+	callCount := 0
+	adapter := buildVPNTunnelTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.List(context.Background(), URI("/garbage"))
+	if err == nil {
+		t.Fatal("expected error for bad project Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad project Ref")
+	}
+}
+
+func TestVPNTunnelsClientAdapter_List_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newVPNTunnelsClientAdapter(testutil.NewClient(t, server.URL))
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestVPNTunnelsClientAdapter_List_ProjectIDBackfill(t *testing.T) {
+	// Items without projectID in metadata or URI: triggers v.projectID = projectID backfill
+	adapter := buildVPNTunnelTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"total":1,"self":"","prev":"","next":"","first":"","last":"","values":[`+
+			`{"metadata":{"id":"t-x","name":"tunnel-x"},"properties":{},"status":{}}`+
+			`]}`)
+	})
+
+	list, err := adapter.List(context.Background(), URI("/projects/proj-x"))
+	if err != nil {
+		t.Fatalf("List error: %v", err)
+	}
+	items := list.Items()
+	if len(items) != 1 {
+		t.Fatalf("Items() len = %d", len(items))
+	}
+	if items[0].ProjectID() != "proj-x" {
+		t.Errorf("ProjectID() after backfill = %q, want %q", items[0].ProjectID(), "proj-x")
 	}
 }
 

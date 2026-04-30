@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Arubacloud/sdk-go/internal/clients/security"
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
@@ -518,6 +519,219 @@ func TestKMSClientAdapter_List_TwoItems(t *testing.T) {
 	}
 	if items[1].Name() != "kms-two" {
 		t.Errorf("items[1].Name() = %q", items[1].Name())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Setter delegation (RemoveTag, ReplaceTags, WithLocation)
+// --------------------------------------------------------------------------
+
+func TestKMS_SetterDelegation(t *testing.T) {
+	k := NewKMS().
+		AddTag("a").
+		AddTag("b").
+		AddTag("c").
+		RemoveTag("b").
+		ReplaceTags("x", "y").
+		WithLocation("ITBG-Bergamo")
+
+	tags := k.Tags()
+	if len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
+		t.Errorf("Tags() after ReplaceTags = %v", tags)
+	}
+	if k.Region() != "ITBG-Bergamo" {
+		t.Errorf("Region() after WithLocation = %q", k.Region())
+	}
+}
+
+// --------------------------------------------------------------------------
+// URI and Raw accessors after hydration
+// --------------------------------------------------------------------------
+
+func TestKMS_URI_AfterHydration(t *testing.T) {
+	k := &KMS{}
+	k.fromResponse(kmsTestResponse("u"))
+	if k.URI() == "" {
+		t.Error("URI() should not be empty after hydration")
+	}
+	if k.Raw() == nil {
+		t.Error("Raw() should not be nil after hydration")
+	}
+}
+
+func TestKMS_RawRequest_NoHydration(t *testing.T) {
+	_ = NewKMS().RawRequest() // must not panic
+}
+
+// --------------------------------------------------------------------------
+// Accessors at zero value (no hydration)
+// --------------------------------------------------------------------------
+
+func TestKMS_Accessors_ZeroValue(t *testing.T) {
+	k := NewKMS()
+	if k.URI() != "" {
+		t.Errorf("URI() zero = %q", k.URI())
+	}
+	if k.Raw() != nil {
+		t.Errorf("Raw() zero = %v", k.Raw())
+	}
+	if k.BillingPeriod() != "" {
+		t.Errorf("BillingPeriod() zero = %q", k.BillingPeriod())
+	}
+}
+
+// --------------------------------------------------------------------------
+// BillingPeriod — request-side fallback (response is nil)
+// --------------------------------------------------------------------------
+
+func TestKMS_BillingPeriod_RequestFallback(t *testing.T) {
+	k := NewKMS().WithBillingPeriod("Monthly")
+	// response is nil, so it falls through to the request-side value
+	if k.BillingPeriod() != "Monthly" {
+		t.Errorf("BillingPeriod() request fallback = %q", k.BillingPeriod())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Get adapter — BadRef and NonTwoXX
+// --------------------------------------------------------------------------
+
+func TestKMSClientAdapter_Get_BadRef(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	// URI has no project or kms segments
+	_, err := adapter.Get(context.Background(), URI("/providers/Aruba.Security"))
+	if err == nil {
+		t.Fatal("expected error for unparseable ref")
+	}
+}
+
+func TestKMSClientAdapter_Get_NetworkError(t *testing.T) {
+	adapter := &kmsClientAdapter{low: security.NewKMSClientImpl(testutil.NewBrokenClient(t, "http://localhost:9"))}
+	_, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Security/kms/kms-1"))
+	if err == nil {
+		t.Fatal("expected network error from broken client")
+	}
+}
+
+func TestKMSClientAdapter_Get_ProjectIDFallback(t *testing.T) {
+	// Server returns a response that lacks project metadata — ensures the
+	// "if out.projectID == """ guard fires and restores the extracted projectID.
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		// No "project" field and no project in URI — projectID won't be set by fromResponse.
+		id := "kms-99"
+		fmt.Fprintf(w, `{"metadata":{"id":%q},"properties":{},"status":{}}`, id)
+	})
+	ref := URI("/projects/p/providers/Aruba.Security/kms/kms-99")
+	result, err := adapter.Get(context.Background(), ref)
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	// projectID must be restored from the extracted ref IDs.
+	if result.ProjectID() != "p" {
+		t.Errorf("ProjectID() after fallback = %q", result.ProjectID())
+	}
+}
+
+func TestKMSClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{"message":"not found"}`)
+	})
+	ref := URI("/projects/p/providers/Aruba.Security/kms/kms-1")
+	_, err := adapter.Get(context.Background(), ref)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Delete adapter — BadRef
+// --------------------------------------------------------------------------
+
+func TestKMSClientAdapter_Delete_BadRef(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	err := adapter.Delete(context.Background(), URI("/providers/Aruba.Security"))
+	if err == nil {
+		t.Fatal("expected error for unparseable ref")
+	}
+}
+
+func TestKMSClientAdapter_Delete_NetworkError(t *testing.T) {
+	adapter := &kmsClientAdapter{low: security.NewKMSClientImpl(testutil.NewBrokenClient(t, "http://localhost:9"))}
+	k := &KMS{}
+	k.fromResponse(kmsTestResponse("k"))
+	err := adapter.Delete(context.Background(), k)
+	if err == nil {
+		t.Fatal("expected network error from broken client")
+	}
+}
+
+// --------------------------------------------------------------------------
+// List adapter — NonTwoXX and bad parent ref
+// --------------------------------------------------------------------------
+
+func TestKMSClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, `{"message":"forbidden"}`)
+	})
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusForbidden {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestKMSClientAdapter_List_BadParentRef(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.List(context.Background(), URI("/no-project-here"))
+	if err == nil {
+		t.Fatal("expected error for parent ref with no project")
+	}
+}
+
+// --------------------------------------------------------------------------
+// newKMSClientAdapter nil-rest branch
+// --------------------------------------------------------------------------
+
+func TestNewKMSClientAdapter_NilRest(t *testing.T) {
+	// Exercises the rest == nil guard; the returned adapter has no low-level client
+	// but must not panic on construction.
+	a := newKMSClientAdapter(nil)
+	if a == nil {
+		t.Fatal("expected non-nil adapter")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Update — Err() pre-condition
+// --------------------------------------------------------------------------
+
+func TestKMSClientAdapter_Update_ErrSet(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	k := NewKMS().IntoProject(URI("not-a-project-uri")) // sets Err()
+	_, err := adapter.Update(context.Background(), k)
+	if err == nil {
+		t.Fatal("expected error when KMS has Err() set")
 	}
 }
 

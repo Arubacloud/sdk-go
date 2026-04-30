@@ -450,6 +450,24 @@ func TestSecurityGroupsClientAdapter_Create_NonTwoXX(t *testing.T) {
 	}
 }
 
+func TestSecurityGroupsClientAdapter_Get_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildSecurityGroupTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	result, err := adapter.Get(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+	if result != nil {
+		t.Error("result should be nil on bad Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad Ref")
+	}
+}
+
 func TestSecurityGroupsClientAdapter_Get_URIRef(t *testing.T) {
 	var capturedPath string
 	adapter := buildSecurityGroupTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
@@ -566,6 +584,21 @@ func TestSecurityGroupsClientAdapter_Update_NoVPC(t *testing.T) {
 	}
 }
 
+func TestSecurityGroupsClientAdapter_Delete_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildSecurityGroupTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	err := adapter.Delete(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad Ref")
+	}
+}
+
 func TestSecurityGroupsClientAdapter_Delete_Success(t *testing.T) {
 	adapter := buildSecurityGroupTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
@@ -597,6 +630,228 @@ func TestSecurityGroupsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 	}
 	if httpErr.StatusCode != http.StatusNotFound {
 		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// Default() zero-value test covers the 66.7% branch.
+func TestSecurityGroup_Default_ZeroValue(t *testing.T) {
+	sg := NewSecurityGroup()
+	if sg.Default() != false {
+		t.Errorf("Default() on zero value = %v", sg.Default())
+	}
+}
+
+func TestSecurityGroupsClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildSecurityGroupTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "security group not found", 404))
+	})
+
+	ref := URI("/projects/p/network/vpcs/v/security-groups/missing")
+	result, err := adapter.Get(context.Background(), ref)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil on non-2xx")
+	}
+}
+
+func TestSecurityGroupsClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildSecurityGroupTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "security group not found", 404))
+	})
+
+	sg := &SecurityGroup{}
+	sg.fromResponse(securityGroupTestResponse("sg-1", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securitygroups/sg-1", "p"))
+	_, err := adapter.Update(context.Background(), sg)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+}
+
+func TestSecurityGroupsClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildSecurityGroupTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Forbidden", "access denied", 403))
+	})
+
+	_, err := adapter.List(context.Background(), URI("/projects/p/network/vpcs/v"))
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+}
+
+func TestSecurityGroupIDsFromRef_BadURI_MissingVPC(t *testing.T) {
+	// URI has security-groups segment but no vpcs segment
+	_, _, _, err := securityGroupIDsFromRef(URI("/projects/p/security-groups/sg"))
+	if err == nil {
+		t.Error("expected error for URI without /vpcs/<id>")
+	}
+}
+
+func TestSecurityGroupIDsFromRef_BadURI_MissingProject(t *testing.T) {
+	// URI has security-groups+vpcs segments but no projects segment
+	_, _, _, err := securityGroupIDsFromRef(URI("/providers/Aruba.Network/vpcs/v/security-groups/sg"))
+	if err == nil {
+		t.Error("expected error for URI without /projects/<id>")
+	}
+}
+
+func TestSecurityGroupsClientAdapter_Create_WithBuilderError(t *testing.T) {
+	callCount := 0
+	adapter := buildSecurityGroupTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusCreated)
+	})
+	sg := NewSecurityGroup().IntoVPC(URI("/garbage"))
+	_, err := adapter.Create(context.Background(), sg)
+	if err == nil {
+		t.Fatal("expected error for builder error")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made when builder has errors")
+	}
+}
+
+func TestSecurityGroupsClientAdapter_Get_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newSecurityGroupsClientAdapter(testutil.NewClient(t, server.URL))
+	result, err := adapter.Get(context.Background(), URI("/projects/p/network/vpcs/v/security-groups/sg"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+	_ = result
+}
+
+func TestSecurityGroupsClientAdapter_Update_WithBuilderError(t *testing.T) {
+	callCount := 0
+	adapter := buildSecurityGroupTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	sg := NewSecurityGroup().IntoVPC(URI("/garbage"))
+	_, err := adapter.Update(context.Background(), sg)
+	if err == nil {
+		t.Fatal("expected error for builder error")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made when builder has errors")
+	}
+}
+
+func TestSecurityGroupsClientAdapter_Update_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newSecurityGroupsClientAdapter(testutil.NewClient(t, server.URL))
+	sg := &SecurityGroup{}
+	sg.fromResponse(securityGroupTestResponse("sg-1", "sg-a", "/projects/p/network/vpcs/v/security-groups/sg-1", "p"))
+	_, err := adapter.Update(context.Background(), sg)
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestSecurityGroupsClientAdapter_Delete_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newSecurityGroupsClientAdapter(testutil.NewClient(t, server.URL))
+	err := adapter.Delete(context.Background(), URI("/projects/p/network/vpcs/v/security-groups/sg"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestSecurityGroupsClientAdapter_List_BadVPCRef(t *testing.T) {
+	callCount := 0
+	adapter := buildSecurityGroupTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.List(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad VPC Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad VPC Ref")
+	}
+}
+
+func TestSecurityGroupsClientAdapter_List_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newSecurityGroupsClientAdapter(testutil.NewClient(t, server.URL))
+	_, err := adapter.List(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestSecurityGroupsClientAdapter_List_AncestorIDBackfill(t *testing.T) {
+	// Response items without projectID/vpcID in metadata or URI: triggers backfill
+	adapter := buildSecurityGroupTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"total":1,"self":"","prev":"","next":"","first":"","last":"","values":[`+
+			`{"metadata":{"id":"sg-x","name":"sg-x"},"properties":{"default":false},"status":{}}`+
+			`]}`)
+	})
+
+	list, err := adapter.List(context.Background(), URI("/projects/proj-x/providers/Aruba.Network/vpcs/vpc-x"))
+	if err != nil {
+		t.Fatalf("List error: %v", err)
+	}
+	items := list.Items()
+	if len(items) != 1 {
+		t.Fatalf("Items() len = %d", len(items))
+	}
+	if items[0].ProjectID() != "proj-x" {
+		t.Errorf("ProjectID() after backfill = %q, want %q", items[0].ProjectID(), "proj-x")
+	}
+	if items[0].VPCID() != "vpc-x" {
+		t.Errorf("VPCID() after backfill = %q, want %q", items[0].VPCID(), "vpc-x")
 	}
 }
 

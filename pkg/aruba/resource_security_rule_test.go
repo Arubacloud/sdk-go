@@ -757,6 +757,21 @@ func TestSecurityGroupRulesClientAdapter_Update_NoSG(t *testing.T) {
 	}
 }
 
+func TestSecurityGroupRulesClientAdapter_Delete_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildSecurityRuleTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	err := adapter.Delete(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad Ref")
+	}
+}
+
 func TestSecurityGroupRulesClientAdapter_Delete_Success(t *testing.T) {
 	adapter := buildSecurityRuleTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
@@ -788,6 +803,289 @@ func TestSecurityGroupRulesClientAdapter_Delete_NonTwoXX(t *testing.T) {
 	}
 	if httpErr.StatusCode != http.StatusNotFound {
 		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// WithLocation exercises the 0% branch.
+func TestSecurityRule_WithLocation(t *testing.T) {
+	rule := NewSecurityRule().
+		AddTag("a").
+		AddTag("b").
+		RemoveTag("a").
+		ReplaceTags("x", "y").
+		WithLocation("ITMI-Milano-1")
+
+	if rule.Region() != "ITMI-Milano-1" {
+		t.Errorf("Region() = %q", rule.Region())
+	}
+	if tags := rule.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
+		t.Errorf("Tags() = %v", tags)
+	}
+}
+
+// Zero-value accessor tests (covers 66.7% branches).
+func TestSecurityRule_Accessors_ZeroValue(t *testing.T) {
+	rule := NewSecurityRule()
+	if rule.Protocol() != "" {
+		t.Errorf("Protocol() on zero value = %q", rule.Protocol())
+	}
+	if rule.Port() != "" {
+		t.Errorf("Port() on zero value = %q", rule.Port())
+	}
+	if rule.TargetValue() != "" {
+		t.Errorf("TargetValue() on zero value = %q", rule.TargetValue())
+	}
+}
+
+func TestSecurityGroupRulesClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildSecurityRuleTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "security rule not found", 404))
+	})
+
+	ref := URI("/projects/p/network/vpcs/v/securitygroups/sg/securityrules/missing")
+	result, err := adapter.Get(context.Background(), ref)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil on non-2xx")
+	}
+}
+
+func TestSecurityGroupRulesClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildSecurityRuleTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "security rule not found", 404))
+	})
+
+	rule := &SecurityRule{}
+	rule.fromResponse(securityRuleTestResponse(
+		"r-1",
+		"allow-ssh",
+		"/projects/p/network/vpcs/v/security-groups/sg/security-rules/r-1",
+		"p",
+	))
+	_, err := adapter.Update(context.Background(), rule)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+}
+
+func TestSecurityGroupRulesClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildSecurityRuleTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Forbidden", "access denied", 403))
+	})
+
+	sg := URI("/projects/p/network/vpcs/v/security-groups/sg")
+	_, err := adapter.List(context.Background(), sg)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusForbidden {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestSecurityRuleIDsFromRef_BadURI_MissingSecurityGroup(t *testing.T) {
+	// URI has security-rules but no security-groups segment
+	_, _, _, _, err := securityRuleIDsFromRef(URI("/projects/p/network/vpcs/v/security-rules/r"))
+	if err == nil {
+		t.Error("expected error for URI without security group segment")
+	}
+}
+
+func TestSecurityRuleIDsFromRef_BadURI_MissingVPC(t *testing.T) {
+	// URI has rules+sg but no vpcs
+	_, _, _, _, err := securityRuleIDsFromRef(URI("/projects/p/security-groups/sg/security-rules/r"))
+	if err == nil {
+		t.Error("expected error for URI without /vpcs/<id>")
+	}
+}
+
+func TestSecurityRuleIDsFromRef_BadURI_MissingProject(t *testing.T) {
+	// URI has rules+sg+vpcs but no projects
+	_, _, _, _, err := securityRuleIDsFromRef(URI("/providers/Aruba.Network/vpcs/v/security-groups/sg/security-rules/r"))
+	if err == nil {
+		t.Error("expected error for URI without /projects/<id>")
+	}
+}
+
+func TestSecurityGroupRulesClientAdapter_Create_WithBuilderError(t *testing.T) {
+	callCount := 0
+	adapter := buildSecurityRuleTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusCreated)
+	})
+	rule := NewSecurityRule().IntoSecurityGroup(URI("/garbage"))
+	_, err := adapter.Create(context.Background(), rule)
+	if err == nil {
+		t.Fatal("expected error for builder error")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made when builder has errors")
+	}
+}
+
+func TestSecurityGroupRulesClientAdapter_Get_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildSecurityRuleTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	result, err := adapter.Get(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+	if result != nil {
+		t.Error("result should be nil on bad Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad Ref")
+	}
+}
+
+func TestSecurityGroupRulesClientAdapter_Get_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newSecurityGroupRulesClientAdapter(testutil.NewClient(t, server.URL))
+	result, err := adapter.Get(context.Background(), URI("/projects/p/network/vpcs/v/security-groups/sg/security-rules/r"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+	_ = result
+}
+
+func TestSecurityGroupRulesClientAdapter_Update_WithBuilderError(t *testing.T) {
+	callCount := 0
+	adapter := buildSecurityRuleTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	rule := NewSecurityRule().IntoSecurityGroup(URI("/garbage"))
+	_, err := adapter.Update(context.Background(), rule)
+	if err == nil {
+		t.Fatal("expected error for builder error")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made when builder has errors")
+	}
+}
+
+func TestSecurityGroupRulesClientAdapter_Update_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newSecurityGroupRulesClientAdapter(testutil.NewClient(t, server.URL))
+	rule := &SecurityRule{}
+	rule.fromResponse(securityRuleTestResponse("r-1", "rule-a", "/projects/p/network/vpcs/v/securitygroups/sg/securityrules/r-1", "p"))
+	_, err := adapter.Update(context.Background(), rule)
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestSecurityGroupRulesClientAdapter_Delete_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newSecurityGroupRulesClientAdapter(testutil.NewClient(t, server.URL))
+	err := adapter.Delete(context.Background(), URI("/projects/p/network/vpcs/v/security-groups/sg/security-rules/r"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestSecurityGroupRulesClientAdapter_List_BadSGRef(t *testing.T) {
+	callCount := 0
+	adapter := buildSecurityRuleTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.List(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad SG Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad SG Ref")
+	}
+}
+
+func TestSecurityGroupRulesClientAdapter_List_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newSecurityGroupRulesClientAdapter(testutil.NewClient(t, server.URL))
+	_, err := adapter.List(context.Background(), URI("/projects/p/network/vpcs/v/security-groups/sg"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestSecurityGroupRulesClientAdapter_List_AncestorIDBackfill(t *testing.T) {
+	// Items without ancestor IDs in metadata/URI: triggers securityGroupID/vpcID/projectID backfill
+	adapter := buildSecurityRuleTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"total":1,"self":"","prev":"","next":"","first":"","last":"","values":[`+
+			`{"metadata":{"id":"r-x","name":"rule-x"},"properties":{"direction":"Ingress","protocol":"TCP","port":"80"},"status":{}}`+
+			`]}`)
+	})
+
+	list, err := adapter.List(context.Background(), URI("/projects/proj-x/network/vpcs/vpc-x/security-groups/sg-x"))
+	if err != nil {
+		t.Fatalf("List error: %v", err)
+	}
+	items := list.Items()
+	if len(items) != 1 {
+		t.Fatalf("Items() len = %d", len(items))
+	}
+	if items[0].ProjectID() != "proj-x" {
+		t.Errorf("ProjectID() after backfill = %q, want %q", items[0].ProjectID(), "proj-x")
+	}
+	if items[0].VPCID() != "vpc-x" {
+		t.Errorf("VPCID() after backfill = %q, want %q", items[0].VPCID(), "vpc-x")
+	}
+	if items[0].SecurityGroupID() != "sg-x" {
+		t.Errorf("SecurityGroupID() after backfill = %q, want %q", items[0].SecurityGroupID(), "sg-x")
 	}
 }
 
