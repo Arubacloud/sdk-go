@@ -1,10 +1,6 @@
 package aruba
 
-import (
-	"context"
-
-	"github.com/Arubacloud/sdk-go/pkg/types"
-)
+import "context"
 
 type ScheduleClient interface {
 	Jobs() JobsClient
@@ -21,9 +17,9 @@ func (c *scheduleClientImpl) Jobs() JobsClient {
 }
 
 type JobsClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.JobList], error)
-	Get(ctx context.Context, projectID string, scheduleJobID string, params *types.RequestParameters) (*types.Response[types.JobResponse], error)
-	Create(ctx context.Context, projectID string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error)
-	Update(ctx context.Context, projectID string, scheduleJobID string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error)
-	Delete(ctx context.Context, projectID string, scheduleJobID string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, project Ref, opts ...CallOption) (*List[*Job], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*Job, error)
+	Create(ctx context.Context, j *Job, opts ...CallOption) (*Job, error)
+	Update(ctx context.Context, j *Job, opts ...CallOption) (*Job, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
 }
