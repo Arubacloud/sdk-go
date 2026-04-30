@@ -8,17 +8,21 @@ import (
 
 type SecurityClient interface {
 	KMS() KMSClient
+	Keys() KeysClient
+	Kmips() KmipsClient
 }
 
 type securityClientImpl struct {
-	kmsClient KMSClient
+	kmsClient   KMSClient
+	keysClient  KeysClient
+	kmipsClient KmipsClient
 }
 
 var _ SecurityClient = (*securityClientImpl)(nil)
 
-func (c *securityClientImpl) KMS() KMSClient {
-	return c.kmsClient
-}
+func (c *securityClientImpl) KMS() KMSClient     { return c.kmsClient }
+func (c *securityClientImpl) Keys() KeysClient   { return c.keysClient }
+func (c *securityClientImpl) Kmips() KmipsClient { return c.kmipsClient }
 
 type KMSClient interface {
 	List(ctx context.Context, project Ref, opts ...CallOption) (*List[*KMS], error)
@@ -26,8 +30,6 @@ type KMSClient interface {
 	Create(ctx context.Context, k *KMS, opts ...CallOption) (*KMS, error)
 	Update(ctx context.Context, k *KMS, opts ...CallOption) (*KMS, error)
 	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
-	Keys() KeysClient
-	Kmips() KmipsClient
 }
 
 // Sub-client aliases — pluralized to match repo convention.
