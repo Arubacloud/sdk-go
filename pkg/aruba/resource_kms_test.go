@@ -1,0 +1,571 @@
+package aruba
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"reflect"
+	"testing"
+
+	"github.com/Arubacloud/sdk-go/internal/testutil"
+	"github.com/Arubacloud/sdk-go/pkg/types"
+)
+
+// --------------------------------------------------------------------------
+// Compile-time interface satisfaction
+// --------------------------------------------------------------------------
+
+var (
+	_ Ref     = (*KMS)(nil)
+	_ Wrapper = (*KMS)(nil)
+)
+
+// --------------------------------------------------------------------------
+// Fluent setters
+// --------------------------------------------------------------------------
+
+func TestKMS_FluentSetters(t *testing.T) {
+	proj := &Project{}
+	proj.fromResponse(projectTestResponse("p-1", "my-proj", "/projects/p-1"))
+
+	k := NewKMS().
+		IntoProject(proj).
+		WithName("my-kms").
+		AddTag("security").
+		AddTag("encryption").
+		AddTag("security"). // dedupe
+		InRegion("ITBG-Bergamo").
+		WithBillingPeriod("Hour")
+
+	if k.Name() != "my-kms" {
+		t.Errorf("Name() = %q", k.Name())
+	}
+	if tags := k.Tags(); len(tags) != 2 || tags[0] != "security" || tags[1] != "encryption" {
+		t.Errorf("Tags() = %v", tags)
+	}
+	if k.Region() != "ITBG-Bergamo" {
+		t.Errorf("Region() = %q", k.Region())
+	}
+	if k.BillingPeriod() != "Hour" {
+		t.Errorf("BillingPeriod() = %q", k.BillingPeriod())
+	}
+	if k.ProjectID() != "p-1" {
+		t.Errorf("ProjectID() = %q", k.ProjectID())
+	}
+	if k.Err() != nil {
+		t.Errorf("Err() = %v", k.Err())
+	}
+}
+
+// --------------------------------------------------------------------------
+// IntoProject
+// --------------------------------------------------------------------------
+
+func TestKMS_IntoProject_TypedRef(t *testing.T) {
+	proj := &Project{}
+	proj.fromResponse(projectTestResponse("p-42", "proj", "/projects/p-42"))
+	k := NewKMS().IntoProject(proj)
+	if k.ProjectID() != "p-42" {
+		t.Errorf("ProjectID() = %q", k.ProjectID())
+	}
+	if k.Err() != nil {
+		t.Errorf("Err() = %v", k.Err())
+	}
+}
+
+func TestKMS_IntoProject_URIRef(t *testing.T) {
+	k := NewKMS().IntoProject(URI("/projects/p-uri"))
+	if k.ProjectID() != "p-uri" {
+		t.Errorf("ProjectID() = %q", k.ProjectID())
+	}
+}
+
+func TestKMS_IntoProject_BadRef(t *testing.T) {
+	k := NewKMS().IntoProject(URI("not-a-project-uri"))
+	if k.Err() == nil {
+		t.Error("expected Err() != nil for non-project URI")
+	}
+}
+
+// --------------------------------------------------------------------------
+// WithBillingPeriod round-trip
+// --------------------------------------------------------------------------
+
+func TestKMS_WithBillingPeriod_RoundTrip(t *testing.T) {
+	k := NewKMS().WithBillingPeriod("Monthly")
+	req := k.RawRequest()
+	if req.Properties.BillingPeriod != "Monthly" {
+		t.Errorf("Properties.BillingPeriod = %q", req.Properties.BillingPeriod)
+	}
+}
+
+// --------------------------------------------------------------------------
+// toRequest round-trip
+// --------------------------------------------------------------------------
+
+func TestKMS_ToRequest_FullyPopulated(t *testing.T) {
+	k := NewKMS().
+		IntoProject(URI("/projects/p")).
+		WithName("kms-name").
+		AddTag("tag1").
+		InRegion("ITBG-Bergamo").
+		WithBillingPeriod("Hour")
+
+	req := k.RawRequest()
+	if req.Metadata.Name != "kms-name" {
+		t.Errorf("Metadata.Name = %q", req.Metadata.Name)
+	}
+	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+		t.Errorf("Metadata.Location.Value = %q", req.Metadata.Location.Value)
+	}
+	if req.Properties.BillingPeriod != "Hour" {
+		t.Errorf("Properties.BillingPeriod = %q", req.Properties.BillingPeriod)
+	}
+}
+
+// --------------------------------------------------------------------------
+// fromResponse hydration
+// --------------------------------------------------------------------------
+
+func kmsTestResponse(name string) *types.KmsResponse {
+	id := "kms-1"
+	uri := "/projects/p/providers/Aruba.Security/kms/kms-1"
+	state := "Active"
+	return &types.KmsResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:               &id,
+			URI:              &uri,
+			Name:             func() *string { s := name; return &s }(),
+			Tags:             []string{"tag1"},
+			LocationResponse: &types.LocationResponse{Value: "ITBG-Bergamo"},
+			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+				ID: "p",
+			},
+		},
+		Properties: types.KmsPropertiesResponse{
+			BillingPeriod: "Hour",
+		},
+		Status: types.ResourceStatus{State: &state},
+	}
+}
+
+func TestKMS_FromResponseHydration(t *testing.T) {
+	k := &KMS{}
+	k.fromResponse(kmsTestResponse("my-kms"))
+
+	if k.Name() != "my-kms" {
+		t.Errorf("Name() = %q", k.Name())
+	}
+	if k.ProjectID() != "p" {
+		t.Errorf("ProjectID() = %q", k.ProjectID())
+	}
+	if k.ID() != "kms-1" {
+		t.Errorf("ID() = %q", k.ID())
+	}
+	if k.Region() != "ITBG-Bergamo" {
+		t.Errorf("Region() = %q", k.Region())
+	}
+	if k.BillingPeriod() != "Hour" {
+		t.Errorf("BillingPeriod() = %q", k.BillingPeriod())
+	}
+	if k.State() != "Active" {
+		t.Errorf("State() = %q", k.State())
+	}
+}
+
+func TestKMS_FromResponse_BackfillsProjectID_FromURI(t *testing.T) {
+	id := "kms-x"
+	uri := "/projects/proj-abc/providers/Aruba.Security/kms/kms-x"
+	resp := &types.KmsResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:  &id,
+			URI: &uri,
+		},
+	}
+	k := &KMS{}
+	k.fromResponse(resp)
+	if k.ProjectID() != "proj-abc" {
+		t.Errorf("ProjectID() backfilled from URI = %q", k.ProjectID())
+	}
+}
+
+func TestKMS_FromResponse_Nil(t *testing.T) {
+	k := &KMS{}
+	k.fromResponse(nil) // must not panic
+}
+
+// --------------------------------------------------------------------------
+// kmsIDsFromRef
+// --------------------------------------------------------------------------
+
+func TestKMSIDsFromRef_URIRef(t *testing.T) {
+	ref := URI("/projects/proj-1/providers/Aruba.Security/kms/kms-42")
+	pid, kid, err := kmsIDsFromRef(ref)
+	if err != nil {
+		t.Fatalf("kmsIDsFromRef error: %v", err)
+	}
+	if pid != "proj-1" {
+		t.Errorf("projectID = %q", pid)
+	}
+	if kid != "kms-42" {
+		t.Errorf("kmsID = %q", kid)
+	}
+}
+
+func TestKMSIDsFromRef_TypedRef(t *testing.T) {
+	k := &KMS{}
+	k.fromResponse(kmsTestResponse("k"))
+	pid, kid, err := kmsIDsFromRef(k)
+	if err != nil {
+		t.Fatalf("kmsIDsFromRef error: %v", err)
+	}
+	if pid != "p" {
+		t.Errorf("projectID = %q", pid)
+	}
+	if kid != "kms-1" {
+		t.Errorf("kmsID = %q", kid)
+	}
+}
+
+func TestKMSIDsFromRef_BadURI_NoKMS(t *testing.T) {
+	_, _, err := kmsIDsFromRef(URI("/projects/p/providers/Aruba.Security"))
+	if err == nil {
+		t.Error("expected error when kms segment missing")
+	}
+}
+
+func TestKMSIDsFromRef_BadURI_NoProject(t *testing.T) {
+	_, _, err := kmsIDsFromRef(URI("/providers/Aruba.Security/kms/k"))
+	if err == nil {
+		t.Error("expected error when project segment missing")
+	}
+}
+
+// --------------------------------------------------------------------------
+// HTTP-mock adapter helper
+// --------------------------------------------------------------------------
+
+func buildKMSTestAdapter(t *testing.T, handler http.HandlerFunc) *kmsClientAdapter {
+	t.Helper()
+	server := testutil.NewMockServer(t, handler)
+	return newKMSClientAdapter(testutil.NewClient(t, server.URL))
+}
+
+const kmsSuccessBody = `{` +
+	`"metadata":{"id":"kms-1","name":"my-kms","uri":"/projects/p/providers/Aruba.Security/kms/kms-1","project":{"id":"p"}},` +
+	`"properties":{"billingPeriod":"Hour"},` +
+	`"status":{"state":"Active"}}`
+
+// --------------------------------------------------------------------------
+// Keys / Kmips accessor tests
+// --------------------------------------------------------------------------
+
+func TestKMSClientAdapter_Keys_NotNil(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	a := newKMSClientAdapter(testutil.NewClient(t, server.URL))
+	if a.Keys() == nil {
+		t.Error("Keys() should not be nil")
+	}
+}
+
+func TestKMSClientAdapter_Kmips_NotNil(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	a := newKMSClientAdapter(testutil.NewClient(t, server.URL))
+	if a.Kmips() == nil {
+		t.Error("Kmips() should not be nil")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Create adapter tests
+// --------------------------------------------------------------------------
+
+func TestKMSClientAdapter_Create_Success(t *testing.T) {
+	var gotBody types.KmsRequest
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Errorf("decode request body: %v", err)
+		}
+		if !containsSubstring(r.URL.Path, "kms") {
+			t.Errorf("path %q should contain 'kms'", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprint(w, kmsSuccessBody)
+	})
+
+	k := NewKMS().
+		IntoProject(URI("/projects/p")).
+		WithName("my-kms").
+		InRegion("ITBG-Bergamo").
+		WithBillingPeriod("Hour")
+
+	result, err := adapter.Create(context.Background(), k)
+	if err != nil {
+		t.Fatalf("Create error: %v", err)
+	}
+	if result.ID() != "kms-1" {
+		t.Errorf("ID() = %q", result.ID())
+	}
+	if result.Name() != "my-kms" {
+		t.Errorf("Name() = %q", result.Name())
+	}
+	if result.StatusCode() != http.StatusCreated {
+		t.Errorf("StatusCode() = %d", result.StatusCode())
+	}
+	if gotBody.Metadata.Name != "my-kms" {
+		t.Errorf("request Metadata.Name = %q", gotBody.Metadata.Name)
+	}
+	if gotBody.Properties.BillingPeriod != "Hour" {
+		t.Errorf("request BillingPeriod = %q", gotBody.Properties.BillingPeriod)
+	}
+}
+
+func TestKMSClientAdapter_Create_NoProject(t *testing.T) {
+	callCount := 0
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusCreated)
+	})
+	_, err := adapter.Create(context.Background(), NewKMS().WithName("x"))
+	if err == nil {
+		t.Fatal("expected error when KMS has no project")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made without project")
+	}
+}
+
+func TestKMSClientAdapter_Create_MetadataValidationError(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		// Missing "id" — triggers MetadataValidationError from low-level Validate()
+		fmt.Fprint(w, `{"metadata":{"name":"k","uri":"/projects/p/providers/Aruba.Security/kms/x"},"properties":{},"status":{}}`)
+	})
+
+	k := NewKMS().IntoProject(URI("/projects/p")).WithName("k")
+	result, err := adapter.Create(context.Background(), k)
+	if err == nil {
+		t.Fatal("expected MetadataValidationError, got nil")
+	}
+	var mvErr *types.MetadataValidationError
+	if !errors.As(err, &mvErr) {
+		t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+	}
+	if result == nil {
+		t.Error("result wrapper should not be nil even on error")
+	}
+}
+
+func TestKMSClientAdapter_Create_NonTwoXX(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, `{"message":"bad request"}`)
+	})
+	_, err := adapter.Create(context.Background(), NewKMS().IntoProject(URI("/projects/p")).WithName("k"))
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusBadRequest {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Update adapter tests
+// --------------------------------------------------------------------------
+
+func TestKMSClientAdapter_Update_Success(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, kmsSuccessBody)
+	})
+
+	k := &KMS{}
+	k.fromResponse(kmsTestResponse("my-kms"))
+	k.WithBillingPeriod("Monthly")
+
+	result, err := adapter.Update(context.Background(), k)
+	if err != nil {
+		t.Fatalf("Update error: %v", err)
+	}
+	if result.ID() != "kms-1" {
+		t.Errorf("ID() = %q", result.ID())
+	}
+}
+
+func TestKMSClientAdapter_Update_NoID(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	k := NewKMS().IntoProject(URI("/projects/p")).WithName("x")
+	_, err := adapter.Update(context.Background(), k)
+	if err == nil {
+		t.Fatal("expected error when KMS has no ID")
+	}
+}
+
+func TestKMSClientAdapter_Update_NoProject(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	k := &KMS{}
+	id := "kms-1"
+	k.setMeta(&types.ResourceMetadataResponse{ID: &id})
+	_, err := adapter.Update(context.Background(), k)
+	if err == nil {
+		t.Fatal("expected error when KMS has no project")
+	}
+}
+
+func TestKMSClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{"message":"not found"}`)
+	})
+	k := &KMS{}
+	k.fromResponse(kmsTestResponse("k"))
+	_, err := adapter.Update(context.Background(), k)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Get adapter tests
+// --------------------------------------------------------------------------
+
+func TestKMSClientAdapter_Get_URIRef(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, kmsSuccessBody)
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Security/kms/kms-1")
+	result, err := adapter.Get(context.Background(), ref)
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if result.ID() != "kms-1" {
+		t.Errorf("ID() = %q", result.ID())
+	}
+}
+
+func TestKMSClientAdapter_Get_TypedRef(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, kmsSuccessBody)
+	})
+
+	k := &KMS{}
+	k.fromResponse(kmsTestResponse("k"))
+	result, err := adapter.Get(context.Background(), k)
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if result.ID() != "kms-1" {
+		t.Errorf("ID() = %q", result.ID())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Delete adapter tests
+// --------------------------------------------------------------------------
+
+func TestKMSClientAdapter_Delete_Success(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	k := &KMS{}
+	k.fromResponse(kmsTestResponse("k"))
+	if err := adapter.Delete(context.Background(), k); err != nil {
+		t.Errorf("Delete error: %v", err)
+	}
+}
+
+func TestKMSClientAdapter_Delete_NonTwoXX(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{"message":"not found"}`)
+	})
+	k := &KMS{}
+	k.fromResponse(kmsTestResponse("k"))
+	err := adapter.Delete(context.Background(), k)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+}
+
+// --------------------------------------------------------------------------
+// List adapter tests
+// --------------------------------------------------------------------------
+
+const kmsListBody = `{"total":2,"values":[` +
+	`{"metadata":{"id":"kms-1","name":"kms-one","uri":"/projects/p/providers/Aruba.Security/kms/kms-1","project":{"id":"p"}},"properties":{"billingPeriod":"Hour"},"status":{}},` +
+	`{"metadata":{"id":"kms-2","name":"kms-two","uri":"/projects/p/providers/Aruba.Security/kms/kms-2","project":{"id":"p"}},"properties":{"billingPeriod":"Monthly"},"status":{}}` +
+	`]}`
+
+func TestKMSClientAdapter_List_TwoItems(t *testing.T) {
+	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, kmsListBody)
+	})
+
+	list, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err != nil {
+		t.Fatalf("List error: %v", err)
+	}
+	if list.Total() != 2 {
+		t.Errorf("Total() = %d", list.Total())
+	}
+	items := list.Items()
+	if len(items) != 2 {
+		t.Fatalf("Items() len = %d", len(items))
+	}
+	if items[0].Name() != "kms-one" {
+		t.Errorf("items[0].Name() = %q", items[0].Name())
+	}
+	if items[1].Name() != "kms-two" {
+		t.Errorf("items[1].Name() = %q", items[1].Name())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Reflective guards
+// --------------------------------------------------------------------------
+
+func TestKMSClient_HasUpdateMethod(t *testing.T) {
+	iface := reflect.TypeOf((*KMSClient)(nil)).Elem()
+	if _, ok := iface.MethodByName("Update"); !ok {
+		t.Error("KMSClient interface is missing the Update method")
+	}
+}
+
+func TestKMSClient_HasKeysMethod(t *testing.T) {
+	iface := reflect.TypeOf((*KMSClient)(nil)).Elem()
+	if _, ok := iface.MethodByName("Keys"); !ok {
+		t.Error("KMSClient interface is missing the Keys method")
+	}
+}
+
+func TestKMSClient_HasKmipsMethod(t *testing.T) {
+	iface := reflect.TypeOf((*KMSClient)(nil)).Elem()
+	if _, ok := iface.MethodByName("Kmips"); !ok {
+		t.Error("KMSClient interface is missing the Kmips method")
+	}
+}

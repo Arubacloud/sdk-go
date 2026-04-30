@@ -1,6 +1,8 @@
 package aruba
 
 import (
+	"context"
+
 	"github.com/Arubacloud/sdk-go/internal/clients/security"
 )
 
@@ -18,9 +20,18 @@ func (c *securityClientImpl) KMS() KMSClient {
 	return c.kmsClient
 }
 
-// Type aliases to internal implementations
+type KMSClient interface {
+	List(ctx context.Context, project Ref, opts ...CallOption) (*List[*KMS], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*KMS, error)
+	Create(ctx context.Context, k *KMS, opts ...CallOption) (*KMS, error)
+	Update(ctx context.Context, k *KMS, opts ...CallOption) (*KMS, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
+	Keys() KeysClient
+	Kmips() KmipsClient
+}
+
+// Sub-client aliases — pluralized to match repo convention.
 type (
-	KMSClient  = *security.KMSClientWrapper
-	KeyClient  = *security.KeyClientImpl
-	KmipClient = *security.KmipClientImpl
+	KeysClient  = *security.KeyClientImpl
+	KmipsClient = *security.KmipClientImpl
 )
