@@ -3,7 +3,7 @@ package aruba
 import (
 	"context"
 
-	"github.com/Arubacloud/sdk-go/internal/clients/security"
+	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
 type SecurityClient interface {
@@ -41,5 +41,13 @@ type KeysClient interface {
 	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
 }
 
-// Sub-client alias — raw until issue #208 lands.
-type KmipsClient = *security.KmipClientImpl
+// KmipsClient is the wrapper-level interface for Kmip CRUD operations.
+// No Update — Family B resource with no update operation.
+// Download retrieves the KMIP certificate (key+cert pair) for a service instance.
+type KmipsClient interface {
+	List(ctx context.Context, kms Ref, opts ...CallOption) (*List[*Kmip], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*Kmip, error)
+	Create(ctx context.Context, km *Kmip, opts ...CallOption) (*Kmip, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
+	Download(ctx context.Context, ref Ref, opts ...CallOption) (*types.KmipCertificateResponse, error)
+}
