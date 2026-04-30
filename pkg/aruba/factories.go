@@ -234,3 +234,11 @@ func NewKey() *Key {
 	k.kmsScopedMixin = bindKMSScoped(&k.errMixin)
 	return k
 }
+
+// NewKmip returns a fresh *Kmip ready for fluent setters and a Create call.
+// Binds kmsScopedMixin's error sink so IntoKMS failures surface via Err().
+func NewKmip() *Kmip {
+	km := &Kmip{}
+	km.kmsScopedMixin = bindKMSScoped(&km.errMixin)
+	return km
+}
