@@ -237,10 +237,10 @@ type DatabasesClient interface {
 }
 
 type BackupsClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.BackupList], error)
-	Get(ctx context.Context, projectID string, backupID string, params *types.RequestParameters) (*types.Response[types.BackupResponse], error)
-	Create(ctx context.Context, projectID string, body types.BackupRequest, params *types.RequestParameters) (*types.Response[types.BackupResponse], error)
-	Delete(ctx context.Context, projectID string, backupID string, params *types.RequestParameters) (*types.Response[any], error)
+	List(ctx context.Context, project Ref, opts ...CallOption) (*List[*DBaaSBackup], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*DBaaSBackup, error)
+	Create(ctx context.Context, b *DBaaSBackup, opts ...CallOption) (*DBaaSBackup, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
 }
 
 type UsersClient interface {
@@ -810,6 +810,158 @@ func (a *grantsClientAdapter) List(ctx context.Context, parent Ref, opts ...Call
 		}
 	}
 	refetch := func(_ context.Context, _ string) (*List[*Grant], error) {
+		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	}
+	var total int64
+	var self, prev, next, first, last string
+	if resp != nil && resp.Data != nil {
+		total = resp.Data.Total
+		self = resp.Data.Self
+		prev = resp.Data.Prev
+		next = resp.Data.Next
+		first = resp.Data.First
+		last = resp.Data.Last
+	}
+	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+}
+
+// dbaasBackupIDsFromRef extracts (projectID, backupID) from a Ref. Uses the
+// dedicated withDBaaSBackupID interface for typed extraction so a typed
+// *StorageBackup Ref does not silently route to the DBaaS endpoint. URI
+// fallback (segment "backups") remains inherently ambiguous between the two
+// backup scopes — callers must pass URIs from the correct domain.
+func dbaasBackupIDsFromRef(ref Ref) (projectID, backupID string, err error) {
+	bid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withDBaaSBackupID); ok {
+			return w.DBaaSBackupID(), true
+		}
+		return "", false
+	}, "backups")
+	if !ok || bid == "" {
+		return "", "", fmt.Errorf("cannot determine backup ID from Ref %q", ref.URI())
+	}
+	pid, ok := extractID(ref, func(r Ref) (string, bool) {
+		if w, ok := r.(withProjectID); ok {
+			return w.ProjectID(), true
+		}
+		return "", false
+	}, "projects")
+	if !ok || pid == "" {
+		return "", "", fmt.Errorf("cannot determine project ID from Ref %q", ref.URI())
+	}
+	return pid, bid, nil
+}
+
+type dbaasBackupsLowLevelClient interface {
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.BackupList], error)
+	Get(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[types.BackupResponse], error)
+	Create(ctx context.Context, projectID string, body types.BackupRequest, params *types.RequestParameters) (*types.Response[types.BackupResponse], error)
+	Delete(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[any], error)
+}
+
+type dbaasBackupsClientAdapter struct{ low dbaasBackupsLowLevelClient }
+
+func newDBaaSBackupsClientAdapter(rest *restclient.Client) *dbaasBackupsClientAdapter {
+	if rest == nil {
+		return &dbaasBackupsClientAdapter{}
+	}
+	return &dbaasBackupsClientAdapter{low: database.NewBackupsClientImpl(rest)}
+}
+
+func (a *dbaasBackupsClientAdapter) Create(ctx context.Context, b *DBaaSBackup, opts ...CallOption) (*DBaaSBackup, error) {
+	if err := b.Err(); err != nil {
+		return b, err
+	}
+	if b.ProjectID() == "" {
+		return b, fmt.Errorf("Create: DBaaSBackup has no parent project — call IntoProject first")
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Create(ctx, b.ProjectID(), b.toRequest(), rp)
+	populateHTTPEnvelope(&b.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		b.fromResponse(resp.Data)
+	}
+	if err != nil {
+		return b, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return b, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return b, nil
+}
+
+func (a *dbaasBackupsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*DBaaSBackup, error) {
+	projectID, backupID, err := dbaasBackupIDsFromRef(ref)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Get(ctx, projectID, backupID, rp)
+	out := &DBaaSBackup{}
+	out.projectID = projectID
+	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		out.fromResponse(resp.Data)
+	}
+	if out.projectID == "" {
+		out.projectID = projectID
+	}
+	if err != nil {
+		return out, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return out, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return out, nil
+}
+
+func (a *dbaasBackupsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
+	projectID, backupID, err := dbaasBackupIDsFromRef(ref)
+	if err != nil {
+		return err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.Delete(ctx, projectID, backupID, rp)
+	if err != nil {
+		return err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return nil
+}
+
+func (a *dbaasBackupsClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOption) (*List[*DBaaSBackup], error) {
+	projectID, err := projectIDFromRef(parent)
+	if err != nil {
+		return nil, err
+	}
+	co := applyCallOptions(opts)
+	rp := co.toRequestParameters()
+	resp, err := a.low.List(ctx, projectID, rp)
+	if err != nil {
+		return nil, err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return nil, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	var items []*DBaaSBackup
+	if resp != nil && resp.Data != nil {
+		items = make([]*DBaaSBackup, 0, len(resp.Data.Values))
+		for i := range resp.Data.Values {
+			b := &DBaaSBackup{}
+			b.projectID = projectID
+			b.fromResponse(&resp.Data.Values[i])
+			if b.projectID == "" {
+				b.projectID = projectID
+			}
+			items = append(items, b)
+		}
+	}
+	refetch := func(_ context.Context, _ string) (*List[*DBaaSBackup], error) {
 		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
 	}
 	var total int64

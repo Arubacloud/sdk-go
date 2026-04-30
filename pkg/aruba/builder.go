@@ -11,7 +11,6 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/clients/audit"
 	"github.com/Arubacloud/sdk-go/internal/clients/container"
-	"github.com/Arubacloud/sdk-go/internal/clients/database"
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 	"github.com/Arubacloud/sdk-go/internal/clients/security"
@@ -439,7 +438,7 @@ func buildDatabasesClient(restClient *restclient.Client) (DatabasesClient, error
 }
 
 func buildBackupsClient(restClient *restclient.Client) (BackupsClient, error) {
-	return database.NewBackupsClientImpl(restClient), nil
+	return newDBaaSBackupsClientAdapter(restClient), nil
 }
 
 func buildUsersClient(restClient *restclient.Client) (UsersClient, error) {
