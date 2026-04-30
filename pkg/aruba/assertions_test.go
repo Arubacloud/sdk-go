@@ -35,7 +35,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 
 		// Container
 		_ KaaSClient              = container.NewKaaSClientImpl(nil)
-		_ ContainerRegistryClient = container.NewContainerRegistryClientImpl(nil)
+		_ ContainerRegistryClient = newContainerRegistriesClientAdapter(nil)
 
 		// Database
 		_ DBaaSClient     = newDBaaSClientAdapter(nil)
