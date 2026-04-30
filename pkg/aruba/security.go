@@ -32,8 +32,14 @@ type KMSClient interface {
 	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
 }
 
-// Sub-client aliases — pluralized to match repo convention.
-type (
-	KeysClient  = *security.KeyClientImpl
-	KmipsClient = *security.KmipClientImpl
-)
+// KeysClient is the wrapper-level interface for Key CRUD operations.
+// No Update — Family B resource with no update operation.
+type KeysClient interface {
+	List(ctx context.Context, kms Ref, opts ...CallOption) (*List[*Key], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*Key, error)
+	Create(ctx context.Context, k *Key, opts ...CallOption) (*Key, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
+}
+
+// Sub-client alias — raw until issue #208 lands.
+type KmipsClient = *security.KmipClientImpl
