@@ -388,7 +388,7 @@ func buildKaaSClient(restClient *restclient.Client) (KaaSClient, error) {
 }
 
 func buildContainerRegistryClient(restClient *restclient.Client) (ContainerRegistryClient, error) {
-	return container.NewContainerRegistryClientImpl(restClient), nil
+	return newContainerRegistriesClientAdapter(restClient), nil
 }
 
 //
