@@ -678,6 +678,21 @@ func TestSubnetsClientAdapter_Update_NoVPC(t *testing.T) {
 	}
 }
 
+func TestSubnetsClientAdapter_Delete_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildSubnetTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	err := adapter.Delete(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad Ref")
+	}
+}
+
 func TestSubnetsClientAdapter_Delete_Success(t *testing.T) {
 	adapter := buildSubnetTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
@@ -709,6 +724,265 @@ func TestSubnetsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 	}
 	if httpErr.StatusCode != http.StatusNotFound {
 		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestDHCPFromType_Nil(t *testing.T) {
+	// Covers the dhcpFromType(nil) early-return branch.
+	if got := dhcpFromType(nil); got != nil {
+		t.Errorf("dhcpFromType(nil) = %v, want nil", got)
+	}
+}
+
+func TestDHCPFromType_WithRoutes(t *testing.T) {
+	// Covers the t.Routes > 0 branch in dhcpFromType.
+	dhcp := &types.SubnetDHCP{
+		Enabled: true,
+		Routes:  []types.SubnetDHCPRoute{{Address: "10.0.0.0/8", Gateway: "10.0.0.1"}},
+	}
+	got := dhcpFromType(dhcp)
+	if got == nil {
+		t.Fatal("expected non-nil result")
+	}
+	if len(got.inner.Routes) != 1 {
+		t.Errorf("Routes len = %d, want 1", len(got.inner.Routes))
+	}
+}
+
+// IsDefault zero-value test covers the 66.7% branch.
+func TestSubnet_IsDefault_ZeroValue(t *testing.T) {
+	s := NewSubnet()
+	if s.IsDefault() {
+		t.Error("IsDefault() on zero value should be false")
+	}
+}
+
+func TestSubnetsClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildSubnetTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "subnet not found", 404))
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Network/vpcs/v/subnets/missing")
+	result, err := adapter.Get(context.Background(), ref)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil on non-2xx")
+	}
+}
+
+func TestSubnetsClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildSubnetTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "subnet not found", 404))
+	})
+
+	s := &Subnet{}
+	s.fromResponse(subnetTestResponse("s-1", "my-subnet", "/projects/p/providers/Aruba.Network/vpcs/v/subnets/s-1", "p"))
+	_, err := adapter.Update(context.Background(), s)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+}
+
+func TestSubnetsClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildSubnetTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Forbidden", "access denied", 403))
+	})
+
+	_, err := adapter.List(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v"))
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+}
+
+func TestSubnetIDsFromRef_BadURI_MissingVPC(t *testing.T) {
+	// URI has subnets segment but no vpcs segment
+	_, _, _, err := subnetIDsFromRef(URI("/projects/p/subnets/s"))
+	if err == nil {
+		t.Error("expected error for URI without /vpcs/<id>")
+	}
+}
+
+func TestSubnetIDsFromRef_BadURI_MissingProject(t *testing.T) {
+	// URI has subnets+vpcs segments but no projects segment
+	_, _, _, err := subnetIDsFromRef(URI("/providers/Aruba.Network/vpcs/v/subnets/s"))
+	if err == nil {
+		t.Error("expected error for URI without /projects/<id>")
+	}
+}
+
+func TestSubnetsClientAdapter_Create_WithBuilderError(t *testing.T) {
+	callCount := 0
+	adapter := buildSubnetTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusCreated)
+	})
+	s := NewSubnet().IntoVPC(URI("/garbage"))
+	_, err := adapter.Create(context.Background(), s)
+	if err == nil {
+		t.Fatal("expected error for builder error")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made when builder has errors")
+	}
+}
+
+func TestSubnetsClientAdapter_Get_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildSubnetTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	result, err := adapter.Get(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+	if result != nil {
+		t.Error("result should be nil on bad Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad Ref")
+	}
+}
+
+func TestSubnetsClientAdapter_Get_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newSubnetsClientAdapter(testutil.NewClient(t, server.URL))
+	result, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v/subnets/s"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+	_ = result
+}
+
+func TestSubnetsClientAdapter_Update_WithBuilderError(t *testing.T) {
+	callCount := 0
+	adapter := buildSubnetTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	s := NewSubnet().IntoVPC(URI("/garbage"))
+	_, err := adapter.Update(context.Background(), s)
+	if err == nil {
+		t.Fatal("expected error for builder error")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made when builder has errors")
+	}
+}
+
+func TestSubnetsClientAdapter_Update_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newSubnetsClientAdapter(testutil.NewClient(t, server.URL))
+	s := &Subnet{}
+	s.fromResponse(subnetTestResponse("s1", "n1", "/projects/p/providers/Aruba.Network/vpcs/v/subnets/s1", "p"))
+	_, err := adapter.Update(context.Background(), s)
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestSubnetsClientAdapter_Delete_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newSubnetsClientAdapter(testutil.NewClient(t, server.URL))
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v/subnets/s"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestSubnetsClientAdapter_List_BadVPCRef(t *testing.T) {
+	callCount := 0
+	adapter := buildSubnetTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.List(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad VPC Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad VPC Ref")
+	}
+}
+
+func TestSubnetsClientAdapter_List_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newSubnetsClientAdapter(testutil.NewClient(t, server.URL))
+	_, err := adapter.List(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestSubnetsClientAdapter_List_ProjectIDBackfill(t *testing.T) {
+	// Response items without projectID in metadata or URI: triggers s.projectID = projectID backfill
+	adapter := buildSubnetTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"total":1,"self":"","prev":"","next":"","first":"","last":"","values":[`+
+			`{"metadata":{"id":"s-x","name":"s-x"},"properties":{"type":"Basic"},"status":{}}`+
+			`]}`)
+	})
+
+	list, err := adapter.List(context.Background(), URI("/projects/proj-x/providers/Aruba.Network/vpcs/vpc-x"))
+	if err != nil {
+		t.Fatalf("List error: %v", err)
+	}
+	items := list.Items()
+	if len(items) != 1 {
+		t.Fatalf("Items() len = %d", len(items))
+	}
+	if items[0].ProjectID() != "proj-x" {
+		t.Errorf("ProjectID() after backfill = %q, want %q", items[0].ProjectID(), "proj-x")
 	}
 }
 

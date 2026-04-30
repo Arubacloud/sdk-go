@@ -1019,3 +1019,297 @@ func TestCloudServer_SetPassword_NonTwoXX(t *testing.T) {
 		t.Errorf("StatusCode = %d", httpErr.StatusCode)
 	}
 }
+
+// --------------------------------------------------------------------------
+// WithLocation setter
+// --------------------------------------------------------------------------
+
+func TestCloudServer_WithLocation(t *testing.T) {
+	cs := NewCloudServer().WithLocation("ITMI-Milano-1")
+	if cs.Region() != "ITMI-Milano-1" {
+		t.Errorf("Region() after WithLocation = %q", cs.Region())
+	}
+	req := cs.toRequest()
+	if req.Metadata.Location.Value != "ITMI-Milano-1" {
+		t.Errorf("request Location.Value = %q", req.Metadata.Location.Value)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Template and NetworkInterfaces response-only accessors
+// --------------------------------------------------------------------------
+
+func TestCloudServer_Template_AndNetworkInterfaces_AfterHydration(t *testing.T) {
+	cs := &CloudServer{}
+	// Before hydration both return zero values.
+	if cs.Template() != "" {
+		t.Errorf("Template() before hydration = %q, want empty", cs.Template())
+	}
+	if cs.NetworkInterfaces() != nil {
+		t.Errorf("NetworkInterfaces() before hydration = %v, want nil", cs.NetworkInterfaces())
+	}
+
+	// Hydrate with a response that carries template and network-interface data.
+	templateURI := "/templates/tmpl-1"
+	mac := "aa:bb:cc:dd:ee:ff"
+	iface := types.CloudServerNetworkInterfaceDetails{
+		MacAddress: &mac,
+		IPs:        []string{"10.0.0.1"},
+	}
+	resp := cloudServerTestResponse("cs-1", "srv", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1")
+	resp.Properties.Template = types.ReferenceResource{URI: templateURI}
+	resp.Properties.NetworkInterfaces = []types.CloudServerNetworkInterfaceDetails{iface}
+	cs.fromResponse(resp)
+
+	if cs.Template() != templateURI {
+		t.Errorf("Template() = %q, want %q", cs.Template(), templateURI)
+	}
+	if got := cs.NetworkInterfaces(); len(got) != 1 || got[0].MacAddress == nil || *got[0].MacAddress != mac {
+		t.Errorf("NetworkInterfaces() = %v", got)
+	}
+}
+
+// --------------------------------------------------------------------------
+// preActionCheck — missing project ID
+// --------------------------------------------------------------------------
+
+func TestCloudServer_PowerOff_MissingProjectID(t *testing.T) {
+	callCount := 0
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	// CloudServer has an ID but no project ID.
+	cs := &CloudServer{}
+	id := "cs-1"
+	uri := "/providers/Aruba.Compute/cloudServers/cs-1" // no /projects/ segment
+	cs.fromResponse(&types.CloudServerResponse{
+		Metadata: types.ResourceMetadataResponse{ID: &id, URI: &uri},
+	})
+	cs.actions = adapter
+
+	err := cs.PowerOff(context.Background())
+	if err == nil {
+		t.Fatal("expected error when project ID is empty")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made without project ID")
+	}
+}
+
+func TestCloudServer_SetPassword_MissingProjectID(t *testing.T) {
+	callCount := 0
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	cs := &CloudServer{}
+	id := "cs-1"
+	uri := "/providers/Aruba.Compute/cloudServers/cs-1"
+	cs.fromResponse(&types.CloudServerResponse{
+		Metadata: types.ResourceMetadataResponse{ID: &id, URI: &uri},
+	})
+	cs.actions = adapter
+
+	err := cs.SetPassword(context.Background(), "pwd")
+	if err == nil {
+		t.Fatal("expected error when project ID is empty")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made without project ID")
+	}
+}
+
+func TestCloudServer_PowerOn_NonTwoXX(t *testing.T) {
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Conflict", "server already running", 409))
+	})
+
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "n", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.projectID = "p"
+	cs.actions = adapter
+
+	err := cs.PowerOn(context.Background())
+	if err == nil {
+		t.Fatal("expected error on 409")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusConflict {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Update — missing project path
+// --------------------------------------------------------------------------
+
+func TestCloudServersClientAdapter_Update_SetterError(t *testing.T) {
+	callCount := 0
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+
+	cs := NewCloudServer()
+	cs.addErr(fmt.Errorf("setter error"))
+	// Give it an ID and project so the only failure is the setter error.
+	id := "cs-1"
+	uri := "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"
+	cs.fromResponse(&types.CloudServerResponse{
+		Metadata: types.ResourceMetadataResponse{ID: &id, URI: &uri},
+	})
+
+	_, err := adapter.Update(context.Background(), cs)
+	if err == nil {
+		t.Fatal("expected setter-time error")
+	}
+	if callCount != 0 {
+		t.Error("HTTP should not be called when setter errors present")
+	}
+}
+
+func TestCloudServersClientAdapter_Update_NoProject(t *testing.T) {
+	callCount := 0
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+
+	// Give it an ID but no project.
+	cs := &CloudServer{}
+	id := "cs-1"
+	uri := "/providers/Aruba.Compute/cloudServers/cs-1"
+	cs.fromResponse(&types.CloudServerResponse{
+		Metadata: types.ResourceMetadataResponse{ID: &id, URI: &uri},
+	})
+
+	_, err := adapter.Update(context.Background(), cs)
+	if err == nil {
+		t.Fatal("expected error when CloudServer has no parent project")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made without parent project")
+	}
+}
+
+func TestCloudServersClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "invalid field", 422))
+	})
+
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.projectID = "p"
+
+	result, err := adapter.Update(context.Background(), cs)
+	if err == nil {
+		t.Fatal("expected error on 422")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil on non-2xx")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Get — bad ref and non-2xx
+// --------------------------------------------------------------------------
+
+func TestCloudServersClientAdapter_Get_BadRef(t *testing.T) {
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	_, err := adapter.Get(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad ref")
+	}
+}
+
+func TestCloudServersClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "cloud server not found", 404))
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Compute/cloudServers/cs-missing")
+	result, err := adapter.Get(context.Background(), ref)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil on non-2xx")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Delete — bad ref
+// --------------------------------------------------------------------------
+
+func TestCloudServersClientAdapter_Delete_BadRef(t *testing.T) {
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	err := adapter.Delete(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad ref")
+	}
+}
+
+// --------------------------------------------------------------------------
+// List — bad ref and non-2xx
+// --------------------------------------------------------------------------
+
+func TestCloudServersClientAdapter_List_BadRef(t *testing.T) {
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	_, err := adapter.List(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad project ref")
+	}
+}
+
+func TestCloudServersClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Forbidden", "access denied", 403))
+	})
+
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err == nil {
+		t.Fatal("expected error on 403")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusForbidden {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}

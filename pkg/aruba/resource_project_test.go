@@ -485,3 +485,106 @@ func TestProjectClientAdapter_List_NonTwoXX(t *testing.T) {
 		t.Errorf("StatusCode = %d", httpErr.StatusCode)
 	}
 }
+
+// --------------------------------------------------------------------------
+// Get — bad ref and non-2xx
+// --------------------------------------------------------------------------
+
+func TestProjectClientAdapter_Get_BadRef(t *testing.T) {
+	adapter := buildTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	_, err := adapter.Get(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad ref")
+	}
+}
+
+func TestProjectClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "project not found", 404))
+	})
+
+	result, err := adapter.Get(context.Background(), URI("/projects/missing"))
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil on non-2xx")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Update — setter error, non-2xx
+// --------------------------------------------------------------------------
+
+func TestProjectClientAdapter_Update_SetterError(t *testing.T) {
+	callCount := 0
+	adapter := buildTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+
+	p := &Project{}
+	p.fromResponse(projectTestResponse("pid", "orig", "/projects/pid"))
+	p.addErr(fmt.Errorf("setter error"))
+
+	_, err := adapter.Update(context.Background(), p)
+	if err == nil {
+		t.Fatal("expected setter-time error")
+	}
+	if callCount != 0 {
+		t.Error("HTTP should not be called when setter errors present")
+	}
+}
+
+func TestProjectClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "name is required", 422))
+	})
+
+	p := &Project{}
+	p.fromResponse(projectTestResponse("pid", "orig", "/projects/pid"))
+
+	result, err := adapter.Update(context.Background(), p)
+	if err == nil {
+		t.Fatal("expected error on 422")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil on non-2xx")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Delete — bad ref
+// --------------------------------------------------------------------------
+
+func TestProjectClientAdapter_Delete_BadRef(t *testing.T) {
+	adapter := buildTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	err := adapter.Delete(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad ref")
+	}
+}

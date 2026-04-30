@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/Arubacloud/sdk-go/internal/clients/database"
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
@@ -840,6 +841,201 @@ func TestDBaaSClientAdapter_Delete_NonTwoXX(t *testing.T) {
 	}
 	if httpErr.StatusCode != http.StatusNotFound {
 		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// WithLocation (0% → covers that branch)
+// --------------------------------------------------------------------------
+
+func TestDBaaS_WithLocation(t *testing.T) {
+	d := NewDBaaS().WithLocation("ITBG-Bergamo")
+	if d.Region() != "ITBG-Bergamo" {
+		t.Errorf("Region() after WithLocation = %q", d.Region())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Zero-value accessors (Shape F — covers the nil-response branch)
+// --------------------------------------------------------------------------
+
+func TestDBaaS_Accessors_ZeroValue(t *testing.T) {
+	d := &DBaaS{}
+	// Storage: nil response, nil storageGB → 0
+	if d.Storage() != 0 {
+		t.Errorf("Storage() zero = %d", d.Storage())
+	}
+	// Autoscaling: nil → false
+	if d.Autoscaling() {
+		t.Error("Autoscaling() zero should be false")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Update — extra guard paths
+// --------------------------------------------------------------------------
+
+func TestDBaaSClientAdapter_Update_NoProject(t *testing.T) {
+	callCount := 0
+	adapter := buildDBaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+
+	d := &DBaaS{}
+	// Set an ID but no project
+	resp := dbaasTestResponse("db-x", "n", "/projects/p/providers/Aruba.Database/dbaas/db-x")
+	d.fromResponse(resp)
+	d.projectID = "" // explicitly clear
+	_, err := adapter.Update(context.Background(), d)
+	if err == nil {
+		t.Fatal("expected error when DBaaS has no parent project")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made without parent project")
+	}
+}
+
+func TestDBaaSClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildDBaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Conflict", "concurrent update", 409))
+	})
+
+	d := &DBaaS{}
+	d.fromResponse(dbaasTestResponse("db-1", "n", "/projects/p/providers/Aruba.Database/dbaas/db-1"))
+	d.projectID = "p"
+	_, err := adapter.Update(context.Background(), d)
+	if err == nil {
+		t.Fatal("expected error on non-2xx")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusConflict {
+		t.Errorf("HTTPError.StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Get — bad ref path
+// --------------------------------------------------------------------------
+
+func TestDBaaSClientAdapter_Get_BadRef(t *testing.T) {
+	adapter := buildDBaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	_, err := adapter.Get(context.Background(), URI("/something/not-a-dbaas"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Get — non-2xx response
+// --------------------------------------------------------------------------
+
+func TestDBaaSClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildDBaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "dbaas not found", 404))
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Database/dbaas/db-1")
+	_, err := adapter.Get(context.Background(), ref)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("HTTPError.StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// List — non-2xx response
+// --------------------------------------------------------------------------
+
+func TestDBaaSClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildDBaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Forbidden", "not allowed", 403))
+	})
+
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err == nil {
+		t.Fatal("expected error on 403")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusForbidden {
+		t.Errorf("HTTPError.StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Update — errMixin path
+// --------------------------------------------------------------------------
+
+func TestDBaaSClientAdapter_Update_ErrMixin(t *testing.T) {
+	callCount := 0
+	adapter := buildDBaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	d := NewDBaaS().IntoProject(URI("/garbage/project")) // triggers errMixin on intoProject
+	_, err := adapter.Update(context.Background(), d)
+	if err == nil {
+		t.Fatal("expected error from errMixin")
+	}
+	if callCount != 0 {
+		t.Errorf("expected 0 HTTP calls, got %d", callCount)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Delete — bad ref and broken client
+// --------------------------------------------------------------------------
+
+func TestDBaaSClientAdapter_Delete_BadRef(t *testing.T) {
+	adapter := buildDBaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	err := adapter.Delete(context.Background(), URI("/something/bad"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+}
+
+func TestDBaaSClientAdapter_Delete_BrokenClient(t *testing.T) {
+	adapter := &dbaasClientAdapter{low: database.NewDBaaSClientImpl(testutil.NewBrokenClient(t, "http://localhost:9"))}
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Database/dbaas/db-1"))
+	if err == nil {
+		t.Fatal("expected network error from broken client")
+	}
+}
+
+// --------------------------------------------------------------------------
+// List — bad parent ref and broken client
+// --------------------------------------------------------------------------
+
+func TestDBaaSClientAdapter_List_BadRef(t *testing.T) {
+	adapter := buildDBaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.List(context.Background(), URI("/something/bad"))
+	if err == nil {
+		t.Fatal("expected error for bad parent Ref")
 	}
 }
 

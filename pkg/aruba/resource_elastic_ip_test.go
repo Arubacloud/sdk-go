@@ -560,3 +560,239 @@ func TestElasticIPsClientAdapter_List_TwoItems(t *testing.T) {
 		t.Errorf("items[0].ProjectID() = %q", items[0].ProjectID())
 	}
 }
+
+func TestElasticIPsClientAdapter_Delete_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildElasticIPTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	err := adapter.Delete(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad Ref")
+	}
+}
+
+func TestElasticIPsClientAdapter_Get_BadRef(t *testing.T) {
+	adapter := buildElasticIPTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.Get(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+}
+
+func TestElasticIPsClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildElasticIPTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "elastic IP not found", 404))
+	})
+	_, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/elasticIps/eid"))
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestElasticIPsClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildElasticIPTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "elastic IP not found", 404))
+	})
+	e := &ElasticIP{}
+	e.fromResponse(elasticIPTestResponse("eid", "my-eip", "/projects/p/providers/Aruba.Network/elasticIps/eid", "p"))
+	_, err := adapter.Update(context.Background(), e)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+}
+
+func TestElasticIPsClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildElasticIPTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Forbidden", "access denied", 403))
+	})
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusForbidden {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestElasticIPsClientAdapter_List_BadProjectRef(t *testing.T) {
+	adapter := buildElasticIPTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.List(context.Background(), URI("/not-a-project"))
+	if err == nil {
+		t.Fatal("expected error for bad project Ref")
+	}
+}
+
+func TestElasticIPIDsFromRef_BadURI_MissingProject(t *testing.T) {
+	// URI has elasticIps segment but no projects segment
+	_, _, err := elasticIPIDsFromRef(URI("/providers/Aruba.Network/elasticIps/eid"))
+	if err == nil {
+		t.Error("expected error for URI without /projects/<id>")
+	}
+}
+
+func TestElasticIPsClientAdapter_Create_WithBuilderError(t *testing.T) {
+	callCount := 0
+	adapter := buildElasticIPTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusCreated)
+	})
+	e := NewElasticIP().IntoProject(URI("/garbage"))
+	_, err := adapter.Create(context.Background(), e)
+	if err == nil {
+		t.Fatal("expected error for builder error")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made when builder has errors")
+	}
+}
+
+func TestElasticIPsClientAdapter_Get_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newElasticIPsClientAdapter(testutil.NewClient(t, server.URL))
+	result, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/elasticIps/eid"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+	_ = result
+}
+
+func TestElasticIPsClientAdapter_Update_WithBuilderError(t *testing.T) {
+	callCount := 0
+	adapter := buildElasticIPTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	e := NewElasticIP().IntoProject(URI("/garbage"))
+	_, err := adapter.Update(context.Background(), e)
+	if err == nil {
+		t.Fatal("expected error for builder error")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made when builder has errors")
+	}
+}
+
+func TestElasticIPsClientAdapter_Update_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newElasticIPsClientAdapter(testutil.NewClient(t, server.URL))
+	e := &ElasticIP{}
+	e.fromResponse(elasticIPTestResponse("eid", "my-eip", "/projects/p/providers/Aruba.Network/elasticIps/eid", "p"))
+	_, err := adapter.Update(context.Background(), e)
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestElasticIPsClientAdapter_Delete_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newElasticIPsClientAdapter(testutil.NewClient(t, server.URL))
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Network/elasticIps/eid"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestElasticIPsClientAdapter_List_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newElasticIPsClientAdapter(testutil.NewClient(t, server.URL))
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestElasticIPsClientAdapter_List_ProjectIDBackfill(t *testing.T) {
+	// Items without projectID in metadata or URI: triggers e.projectID = projectID backfill
+	adapter := buildElasticIPTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"total":1,"self":"","prev":"","next":"","first":"","last":"","values":[`+
+			`{"metadata":{"id":"eip-x","name":"eip-x"},"properties":{},"status":{}}`+
+			`]}`)
+	})
+
+	list, err := adapter.List(context.Background(), URI("/projects/proj-x"))
+	if err != nil {
+		t.Fatalf("List error: %v", err)
+	}
+	items := list.Items()
+	if len(items) != 1 {
+		t.Fatalf("Items() len = %d", len(items))
+	}
+	if items[0].ProjectID() != "proj-x" {
+		t.Errorf("ProjectID() after backfill = %q, want %q", items[0].ProjectID(), "proj-x")
+	}
+}
+
+func TestElasticIP_FromResponse_URIBackfillProjectID(t *testing.T) {
+	// Ensure the URI-based projectID backfill branch is exercised.
+	uri := "/projects/p-uri/providers/Aruba.Network/elasticIps/eip-42"
+	id := "eip-42"
+	name := "backfilled"
+	resp := &types.ElasticIPResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:   &id,
+			URI:  &uri,
+			Name: &name,
+			// ProjectResponseMetadata intentionally nil
+		},
+	}
+	e := &ElasticIP{}
+	e.fromResponse(resp)
+	if e.ProjectID() != "p-uri" {
+		t.Errorf("ProjectID() via URI fallback = %q", e.ProjectID())
+	}
+}

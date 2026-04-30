@@ -551,6 +551,203 @@ func TestUsersClientAdapter_Delete_NonTwoXX(t *testing.T) {
 	}
 }
 
+// --------------------------------------------------------------------------
+// Zero-value accessors (Shape F — covers the nil-response branch)
+// --------------------------------------------------------------------------
+
+func TestUser_Accessors_ZeroValue(t *testing.T) {
+	u := &User{}
+	if !u.CreatedAt().IsZero() {
+		t.Error("CreatedAt() zero should be zero time")
+	}
+	if u.CreatedBy() != "" {
+		t.Errorf("CreatedBy() zero = %q", u.CreatedBy())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Create — conflict response
+// --------------------------------------------------------------------------
+
+func TestUsersClientAdapter_Create_Conflict(t *testing.T) {
+	adapter := buildUserTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		fmt.Fprint(w, `{"title":"Conflict","detail":"username taken"}`)
+	})
+	u := NewUser().
+		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		WithUsername("alice").
+		WithPassword("s3cret")
+	_, err := adapter.Create(context.Background(), u)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusConflict {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Update — extra guard paths
+// --------------------------------------------------------------------------
+
+func TestUsersClientAdapter_Update_NoDBaaS(t *testing.T) {
+	callCount := 0
+	adapter := buildUserTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	// Has username and password but no parent DBaaS
+	u := NewUser().WithUsername("alice").WithPassword("s3cret")
+	_, err := adapter.Update(context.Background(), u)
+	if err == nil {
+		t.Fatal("expected error when DBaaS is missing")
+	}
+	if callCount != 0 {
+		t.Errorf("expected 0 calls, got %d", callCount)
+	}
+}
+
+func TestUsersClientAdapter_Update_NoProject(t *testing.T) {
+	callCount := 0
+	adapter := buildUserTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	// Has username, password, dbaasID but no projectID
+	u := &User{}
+	u.dbaasID = "d-1"
+	name := "alice"
+	u.username = &name
+	pw := "s3cret"
+	u.password = &pw
+	_, err := adapter.Update(context.Background(), u)
+	if err == nil {
+		t.Fatal("expected error when projectID is missing")
+	}
+	if callCount != 0 {
+		t.Errorf("expected 0 calls, got %d", callCount)
+	}
+}
+
+func TestUsersClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildUserTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		fmt.Fprint(w, `{"title":"Conflict","detail":"concurrent update"}`)
+	})
+	u := NewUser().
+		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		WithUsername("alice").
+		WithPassword("s3cret")
+	_, err := adapter.Update(context.Background(), u)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusConflict {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Get — bad Ref and non-2xx
+// --------------------------------------------------------------------------
+
+func TestUsersClientAdapter_Get_BadRef(t *testing.T) {
+	adapter := buildUserTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.Get(context.Background(), URI("/something/bad"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+}
+
+func TestUsersClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildUserTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{"title":"Not Found","detail":"user not found"}`)
+	})
+	ref := URI("/projects/p/providers/Aruba.Database/dbaas/d-1/users/alice")
+	_, err := adapter.Get(context.Background(), ref)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Delete — bad Ref
+// --------------------------------------------------------------------------
+
+func TestUsersClientAdapter_Delete_BadRef(t *testing.T) {
+	adapter := buildUserTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	err := adapter.Delete(context.Background(), URI("/something/bad"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Create — errMixin path
+// --------------------------------------------------------------------------
+
+func TestUsersClientAdapter_Create_ErrMixin(t *testing.T) {
+	callCount := 0
+	adapter := buildUserTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+	})
+	// IntoDBaaS with bad URI sets errMixin
+	u := NewUser().IntoDBaaS(URI("/garbage")).WithUsername("alice").WithPassword("s3cret")
+	_, err := adapter.Create(context.Background(), u)
+	if err == nil {
+		t.Fatal("expected error from errMixin")
+	}
+	if callCount != 0 {
+		t.Errorf("expected 0 HTTP calls, got %d", callCount)
+	}
+}
+
+// --------------------------------------------------------------------------
+// List — bad parent ref and non-2xx
+// --------------------------------------------------------------------------
+
+func TestUsersClientAdapter_List_BadRef(t *testing.T) {
+	adapter := buildUserTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.List(context.Background(), URI("/something/bad"))
+	if err == nil {
+		t.Fatal("expected error for bad parent Ref")
+	}
+}
+
+func TestUsersClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildUserTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, `{"title":"Forbidden","detail":"not allowed"}`)
+	})
+	parent := URI("/projects/p/providers/Aruba.Database/dbaas/d-1")
+	_, err := adapter.List(context.Background(), parent)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusForbidden {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
 func TestUsersClientAdapter_List_TwoItems(t *testing.T) {
 	adapter := buildUserTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		if !containsSubstring(r.URL.Path, "users") {
