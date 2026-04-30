@@ -169,9 +169,7 @@ type kmsLowLevelClient interface {
 }
 
 type kmsClientAdapter struct {
-	low   kmsLowLevelClient
-	keys  *security.KeyClientImpl
-	kmips *security.KmipClientImpl
+	low kmsLowLevelClient
 }
 
 func newKMSClientAdapter(rest *restclient.Client) *kmsClientAdapter {
@@ -179,14 +177,9 @@ func newKMSClientAdapter(rest *restclient.Client) *kmsClientAdapter {
 		return &kmsClientAdapter{}
 	}
 	return &kmsClientAdapter{
-		low:   security.NewKMSClientImpl(rest),
-		keys:  security.NewKeyClientImpl(rest),
-		kmips: security.NewKmipClientImpl(rest),
+		low: security.NewKMSClientImpl(rest),
 	}
 }
-
-func (a *kmsClientAdapter) Keys() KeysClient   { return a.keys }
-func (a *kmsClientAdapter) Kmips() KmipsClient { return a.kmips }
 
 func (a *kmsClientAdapter) Create(ctx context.Context, k *KMS, opts ...CallOption) (*KMS, error) {
 	if err := k.Err(); err != nil {

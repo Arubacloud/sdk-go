@@ -259,30 +259,6 @@ const kmsSuccessBody = `{` +
 	`"status":{"state":"Active"}}`
 
 // --------------------------------------------------------------------------
-// Keys / Kmips accessor tests
-// --------------------------------------------------------------------------
-
-func TestKMSClientAdapter_Keys_NotNil(t *testing.T) {
-	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-	a := newKMSClientAdapter(testutil.NewClient(t, server.URL))
-	if a.Keys() == nil {
-		t.Error("Keys() should not be nil")
-	}
-}
-
-func TestKMSClientAdapter_Kmips_NotNil(t *testing.T) {
-	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-	a := newKMSClientAdapter(testutil.NewClient(t, server.URL))
-	if a.Kmips() == nil {
-		t.Error("Kmips() should not be nil")
-	}
-}
-
-// --------------------------------------------------------------------------
 // Create adapter tests
 // --------------------------------------------------------------------------
 
@@ -556,16 +532,16 @@ func TestKMSClient_HasUpdateMethod(t *testing.T) {
 	}
 }
 
-func TestKMSClient_HasKeysMethod(t *testing.T) {
-	iface := reflect.TypeOf((*KMSClient)(nil)).Elem()
+func TestSecurityClient_HasKeysMethod(t *testing.T) {
+	iface := reflect.TypeOf((*SecurityClient)(nil)).Elem()
 	if _, ok := iface.MethodByName("Keys"); !ok {
-		t.Error("KMSClient interface is missing the Keys method")
+		t.Error("SecurityClient interface is missing the Keys method")
 	}
 }
 
-func TestKMSClient_HasKmipsMethod(t *testing.T) {
-	iface := reflect.TypeOf((*KMSClient)(nil)).Elem()
+func TestSecurityClient_HasKmipsMethod(t *testing.T) {
+	iface := reflect.TypeOf((*SecurityClient)(nil)).Elem()
 	if _, ok := iface.MethodByName("Kmips"); !ok {
-		t.Error("KMSClient interface is missing the Kmips method")
+		t.Error("SecurityClient interface is missing the Kmips method")
 	}
 }
