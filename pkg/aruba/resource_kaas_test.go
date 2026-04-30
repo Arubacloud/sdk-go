@@ -1,0 +1,1177 @@
+package aruba
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"reflect"
+	"testing"
+
+	"github.com/Arubacloud/sdk-go/internal/testutil"
+	"github.com/Arubacloud/sdk-go/pkg/types"
+)
+
+// --------------------------------------------------------------------------
+// Compile-time interface satisfaction
+// --------------------------------------------------------------------------
+
+var (
+	_ Ref     = (*KaaS)(nil)
+	_ Wrapper = (*KaaS)(nil)
+)
+
+// --------------------------------------------------------------------------
+// Fluent setters
+// --------------------------------------------------------------------------
+
+func TestKaaS_FluentSetters(t *testing.T) {
+	proj := &Project{}
+	proj.fromResponse(projectTestResponse("p-1", "my-proj", "/projects/p-1"))
+
+	vpcURI := URI("/projects/p-1/providers/Aruba.Network/vpcs/vpc-1")
+	subnetURI := URI("/projects/p-1/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1")
+
+	k := NewKaaS().
+		IntoProject(proj).
+		WithName("my-cluster").
+		AddTag("env:prod").
+		AddTag("k8s").
+		AddTag("env:prod"). // dedupe
+		WithLocation("ITBG-Bergamo").
+		WithVPC(vpcURI).
+		WithSubnet(subnetURI).
+		WithSecurityGroupName("sg-name").
+		WithNodeCIDR("10.100.0.0/16", "node-cidr").
+		WithPodCIDR("10.200.0.0/16").
+		WithKubernetesVersion("1.32.3").
+		WithHA(true).
+		WithStorage(100).
+		WithBillingPeriod("Hour").
+		WithIdentity("cid", "csecret")
+
+	if k.Name() != "my-cluster" {
+		t.Errorf("Name() = %q", k.Name())
+	}
+	if tags := k.Tags(); len(tags) != 2 || tags[0] != "env:prod" || tags[1] != "k8s" {
+		t.Errorf("Tags() = %v", tags)
+	}
+	if k.Region() != "ITBG-Bergamo" {
+		t.Errorf("Region() = %q", k.Region())
+	}
+	if k.VPC() != vpcURI.URI() {
+		t.Errorf("VPC() = %q", k.VPC())
+	}
+	if k.Subnet() != subnetURI.URI() {
+		t.Errorf("Subnet() = %q", k.Subnet())
+	}
+	if k.SecurityGroupName() != "sg-name" {
+		t.Errorf("SecurityGroupName() = %q", k.SecurityGroupName())
+	}
+	if k.KubernetesVersion() != "1.32.3" {
+		t.Errorf("KubernetesVersion() = %q", k.KubernetesVersion())
+	}
+	if k.BillingPeriod() != "Hour" {
+		t.Errorf("BillingPeriod() = %q", k.BillingPeriod())
+	}
+	if k.ProjectID() != "p-1" {
+		t.Errorf("ProjectID() = %q", k.ProjectID())
+	}
+	if k.Err() != nil {
+		t.Errorf("Err() = %v", k.Err())
+	}
+}
+
+// --------------------------------------------------------------------------
+// IntoProject
+// --------------------------------------------------------------------------
+
+func TestKaaS_IntoProject_TypedRef(t *testing.T) {
+	proj := &Project{}
+	proj.fromResponse(projectTestResponse("p-42", "proj", "/projects/p-42"))
+	k := NewKaaS().IntoProject(proj)
+	if k.ProjectID() != "p-42" {
+		t.Errorf("ProjectID() = %q", k.ProjectID())
+	}
+	if k.Err() != nil {
+		t.Errorf("Err() = %v", k.Err())
+	}
+}
+
+func TestKaaS_IntoProject_URIRef(t *testing.T) {
+	k := NewKaaS().IntoProject(URI("/projects/p-uri"))
+	if k.ProjectID() != "p-uri" {
+		t.Errorf("ProjectID() = %q", k.ProjectID())
+	}
+}
+
+func TestKaaS_IntoProject_BadRef(t *testing.T) {
+	k := NewKaaS().IntoProject(URI("not-a-project-uri"))
+	if k.Err() == nil {
+		t.Error("expected Err() != nil for non-project URI")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Body-ref setters — WithVPC, WithSubnet
+// --------------------------------------------------------------------------
+
+func TestKaaS_WithVPC_URIRef(t *testing.T) {
+	uri := "/projects/p/providers/Aruba.Network/vpcs/vpc-1"
+	k := NewKaaS().WithVPC(URI(uri))
+	if k.VPC() != uri {
+		t.Errorf("VPC() = %q", k.VPC())
+	}
+	if k.Err() != nil {
+		t.Errorf("Err() = %v", k.Err())
+	}
+}
+
+func TestKaaS_WithVPC_TypedRef(t *testing.T) {
+	vpc := &VPC{}
+	vpc.fromResponse(vpcTestResponse("vpc-1", "v", "/projects/p/network/vpcs/vpc-1", "p"))
+	k := NewKaaS().WithVPC(vpc)
+	if k.VPC() != vpc.URI() {
+		t.Errorf("VPC() = %q", k.VPC())
+	}
+}
+
+func TestKaaS_WithVPC_EmptyURI(t *testing.T) {
+	k := NewKaaS().WithVPC(URI(""))
+	if k.Err() == nil {
+		t.Error("expected Err() != nil for empty VPC URI")
+	}
+	if k.VPC() != "" {
+		t.Errorf("VPC() should remain empty, got %q", k.VPC())
+	}
+}
+
+func TestKaaS_WithSubnet_URIRef(t *testing.T) {
+	uri := "/projects/p/providers/Aruba.Network/vpcs/v/subnets/sn-1"
+	k := NewKaaS().WithSubnet(URI(uri))
+	if k.Subnet() != uri {
+		t.Errorf("Subnet() = %q", k.Subnet())
+	}
+}
+
+func TestKaaS_WithSubnet_EmptyURI(t *testing.T) {
+	k := NewKaaS().WithSubnet(URI(""))
+	if k.Err() == nil {
+		t.Error("expected Err() != nil for empty Subnet URI")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Scalar setters
+// --------------------------------------------------------------------------
+
+func TestKaaS_WithSecurityGroupName(t *testing.T) {
+	k := NewKaaS().WithSecurityGroupName("my-sg")
+	if k.SecurityGroupName() != "my-sg" {
+		t.Errorf("SecurityGroupName() = %q", k.SecurityGroupName())
+	}
+}
+
+func TestKaaS_WithNodeCIDR(t *testing.T) {
+	k := NewKaaS().WithNodeCIDR("10.100.0.0/16", "node-cidr")
+	req := k.RawRequest()
+	if req.Properties.NodeCIDR.Address != "10.100.0.0/16" {
+		t.Errorf("NodeCIDR.Address = %q", req.Properties.NodeCIDR.Address)
+	}
+	if req.Properties.NodeCIDR.Name != "node-cidr" {
+		t.Errorf("NodeCIDR.Name = %q", req.Properties.NodeCIDR.Name)
+	}
+}
+
+func TestKaaS_WithPodCIDR(t *testing.T) {
+	k := NewKaaS().WithPodCIDR("10.200.0.0/16")
+	req := k.RawRequest()
+	if req.Properties.PodCIDR == nil || *req.Properties.PodCIDR != "10.200.0.0/16" {
+		t.Errorf("PodCIDR = %v", req.Properties.PodCIDR)
+	}
+}
+
+func TestKaaS_WithHA(t *testing.T) {
+	k := NewKaaS().WithHA(true)
+	req := k.RawRequest()
+	if req.Properties.HA == nil || !*req.Properties.HA {
+		t.Errorf("HA = %v", req.Properties.HA)
+	}
+}
+
+func TestKaaS_WithStorage(t *testing.T) {
+	k := NewKaaS().WithStorage(200)
+	req := k.RawRequest()
+	if req.Properties.Storage.MaxCumulativeVolumeSize == nil || *req.Properties.Storage.MaxCumulativeVolumeSize != 200 {
+		t.Errorf("Storage.MaxCumulativeVolumeSize = %v", req.Properties.Storage.MaxCumulativeVolumeSize)
+	}
+}
+
+func TestKaaS_WithKubernetesVersion(t *testing.T) {
+	k := NewKaaS().WithKubernetesVersion("1.32.3")
+	if k.KubernetesVersion() != "1.32.3" {
+		t.Errorf("KubernetesVersion() = %q", k.KubernetesVersion())
+	}
+}
+
+func TestKaaS_WithBillingPeriod(t *testing.T) {
+	k := NewKaaS().WithBillingPeriod("Monthly")
+	if k.BillingPeriod() != "Monthly" {
+		t.Errorf("BillingPeriod() = %q", k.BillingPeriod())
+	}
+}
+
+func TestKaaS_WithIdentity(t *testing.T) {
+	k := NewKaaS().WithIdentity("cid", "csecret")
+	req := k.RawRequest()
+	if req.Properties.Identity == nil {
+		t.Fatal("Identity is nil")
+	}
+	if req.Properties.Identity.ClientID == nil || *req.Properties.Identity.ClientID != "cid" {
+		t.Errorf("Identity.ClientID = %v", req.Properties.Identity.ClientID)
+	}
+	if req.Properties.Identity.ClientSecret == nil || *req.Properties.Identity.ClientSecret != "csecret" {
+		t.Errorf("Identity.ClientSecret = %v", req.Properties.Identity.ClientSecret)
+	}
+}
+
+// --------------------------------------------------------------------------
+// NodePool sub-builder
+// --------------------------------------------------------------------------
+
+func TestNodePool_Build_Basic(t *testing.T) {
+	np := NewNodePool().Named("pool-1").OfInstance("K4A8").InZone("ITBG-1").WithCount(3)
+	p := np.build()
+	if p.Name != "pool-1" {
+		t.Errorf("Name = %q", p.Name)
+	}
+	if p.Instance != "K4A8" {
+		t.Errorf("Instance = %q", p.Instance)
+	}
+	if p.Zone != "ITBG-1" {
+		t.Errorf("Zone (dataCenter) = %q", p.Zone)
+	}
+	if p.Nodes != 3 {
+		t.Errorf("Nodes = %d", p.Nodes)
+	}
+	if p.Autoscaling {
+		t.Error("Autoscaling should be false by default")
+	}
+}
+
+func TestNodePool_Build_Autoscaling(t *testing.T) {
+	np := NewNodePool().Named("pool-auto").WithCount(3).WithAutoscaling(2, 10)
+	p := np.build()
+	if !p.Autoscaling {
+		t.Error("Autoscaling should be true")
+	}
+	if p.MinCount == nil || *p.MinCount != 2 {
+		t.Errorf("MinCount = %v", p.MinCount)
+	}
+	if p.MaxCount == nil || *p.MaxCount != 10 {
+		t.Errorf("MaxCount = %v", p.MaxCount)
+	}
+}
+
+func TestKaaS_AddNodePool_DrainErrors(t *testing.T) {
+	// An error on the sub-builder should propagate to the parent via AddNodePool.
+	k := NewKaaS()
+	np := NewNodePool()
+	np.addErr(fmt.Errorf("test sub-builder error"))
+	k.AddNodePool(np)
+	if k.Err() == nil {
+		t.Error("expected Err() != nil after AddNodePool with errored sub-builder")
+	}
+}
+
+func TestKaaS_AddNodePool_Nil(t *testing.T) {
+	k := NewKaaS().AddNodePool(nil)
+	if k.Err() != nil {
+		t.Errorf("AddNodePool(nil) should not error: %v", k.Err())
+	}
+}
+
+// --------------------------------------------------------------------------
+// toRequest round-trip
+// --------------------------------------------------------------------------
+
+func TestKaaS_ToRequest(t *testing.T) {
+	vpcURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1"
+	subnetURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1"
+
+	k := NewKaaS().
+		WithName("my-cluster").
+		AddTag("t1").AddTag("t2").
+		WithLocation("ITBG-Bergamo").
+		WithVPC(URI(vpcURI)).
+		WithSubnet(URI(subnetURI)).
+		WithSecurityGroupName("sg-name").
+		WithNodeCIDR("10.100.0.0/16", "node-cidr").
+		WithPodCIDR("10.200.0.0/16").
+		WithKubernetesVersion("1.32.3").
+		WithHA(true).
+		WithStorage(100).
+		WithBillingPeriod("Hour").
+		WithIdentity("cid", "csecret").
+		AddNodePool(NewNodePool().Named("pool-1").OfInstance("K4A8").InZone("ITBG-1").WithCount(3))
+
+	req := k.RawRequest()
+
+	if req.Metadata.Name != "my-cluster" {
+		t.Errorf("Metadata.Name = %q", req.Metadata.Name)
+	}
+	if len(req.Metadata.Tags) != 2 {
+		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
+	}
+	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+		t.Errorf("Location.Value = %q", req.Metadata.Location.Value)
+	}
+	if req.Properties.VPC.URI != vpcURI {
+		t.Errorf("Properties.VPC.URI = %q", req.Properties.VPC.URI)
+	}
+	if req.Properties.Subnet.URI != subnetURI {
+		t.Errorf("Properties.Subnet.URI = %q", req.Properties.Subnet.URI)
+	}
+	if req.Properties.SecurityGroup.Name != "sg-name" {
+		t.Errorf("Properties.SecurityGroup.Name = %q", req.Properties.SecurityGroup.Name)
+	}
+	if req.Properties.NodeCIDR.Address != "10.100.0.0/16" || req.Properties.NodeCIDR.Name != "node-cidr" {
+		t.Errorf("NodeCIDR = %+v", req.Properties.NodeCIDR)
+	}
+	if req.Properties.PodCIDR == nil || *req.Properties.PodCIDR != "10.200.0.0/16" {
+		t.Errorf("PodCIDR = %v", req.Properties.PodCIDR)
+	}
+	if req.Properties.KubernetesVersion.Value != "1.32.3" {
+		t.Errorf("KubernetesVersion.Value = %q", req.Properties.KubernetesVersion.Value)
+	}
+	if req.Properties.HA == nil || !*req.Properties.HA {
+		t.Errorf("HA = %v", req.Properties.HA)
+	}
+	if req.Properties.Storage.MaxCumulativeVolumeSize == nil || *req.Properties.Storage.MaxCumulativeVolumeSize != 100 {
+		t.Errorf("Storage = %+v", req.Properties.Storage)
+	}
+	if req.Properties.BillingPlan.BillingPeriod != "Hour" {
+		t.Errorf("BillingPlan.BillingPeriod = %q", req.Properties.BillingPlan.BillingPeriod)
+	}
+	if req.Properties.Identity == nil {
+		t.Fatal("Identity is nil")
+	}
+	if req.Properties.Identity.ClientID == nil || *req.Properties.Identity.ClientID != "cid" {
+		t.Errorf("Identity.ClientID = %v", req.Properties.Identity.ClientID)
+	}
+	if len(req.Properties.NodePools) != 1 {
+		t.Fatalf("NodePools len = %d", len(req.Properties.NodePools))
+	}
+	if req.Properties.NodePools[0].Name != "pool-1" {
+		t.Errorf("NodePools[0].Name = %q", req.Properties.NodePools[0].Name)
+	}
+	if req.Properties.NodePools[0].Nodes != 3 {
+		t.Errorf("NodePools[0].Nodes = %d", req.Properties.NodePools[0].Nodes)
+	}
+}
+
+// --------------------------------------------------------------------------
+// toUpdateRequest round-trip — only mutable fields
+// --------------------------------------------------------------------------
+
+func TestKaaS_ToUpdateRequest_MutableOnly(t *testing.T) {
+	vpcURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1"
+	k := NewKaaS().
+		WithName("updated-cluster").
+		WithLocation("ITBG-Bergamo").
+		WithVPC(URI(vpcURI)). // set but must NOT appear in update request
+		WithKubernetesVersion("1.33.0").
+		WithHA(true).
+		WithStorage(200).
+		WithBillingPeriod("Monthly").
+		AddNodePool(NewNodePool().Named("pool-1").WithCount(5).OfInstance("K4A8").InZone("ITBG-1"))
+
+	upd := k.toUpdateRequest()
+
+	if upd.Properties.KubernetesVersion.Value != "1.33.0" {
+		t.Errorf("KubernetesVersion.Value = %q", upd.Properties.KubernetesVersion.Value)
+	}
+	if upd.Properties.HA == nil || !*upd.Properties.HA {
+		t.Errorf("HA = %v", upd.Properties.HA)
+	}
+	if upd.Properties.Storage == nil || upd.Properties.Storage.MaxCumulativeVolumeSize == nil || *upd.Properties.Storage.MaxCumulativeVolumeSize != 200 {
+		t.Errorf("Storage = %v", upd.Properties.Storage)
+	}
+	if upd.Properties.BillingPlan == nil || upd.Properties.BillingPlan.BillingPeriod != "Monthly" {
+		t.Errorf("BillingPlan = %v", upd.Properties.BillingPlan)
+	}
+	if len(upd.Properties.NodePools) != 1 || upd.Properties.NodePools[0].Nodes != 5 {
+		t.Errorf("NodePools = %+v", upd.Properties.NodePools)
+	}
+	// Immutable fields must not be present (VPC is in KaaSPropertiesRequest, not UpdateRequest)
+	// — the update type simply doesn't have VPC/Subnet fields, so this is a type-level guarantee.
+}
+
+func TestKaaS_ToUpdateRequest_Empty(t *testing.T) {
+	k := NewKaaS()
+	upd := k.toUpdateRequest() // must not panic
+	if upd.Properties.Storage != nil {
+		t.Errorf("Storage should be nil when not set, got %v", upd.Properties.Storage)
+	}
+	if upd.Properties.BillingPlan != nil {
+		t.Errorf("BillingPlan should be nil when not set, got %v", upd.Properties.BillingPlan)
+	}
+}
+
+// --------------------------------------------------------------------------
+// fromResponse hydration
+// --------------------------------------------------------------------------
+
+func kaasTestResponse(name string) *types.KaaSResponse {
+	id := "kaas-1"
+	uri := "/projects/p/providers/Aruba.Container/kaas/kaas-1"
+	state := "Active"
+	vpcURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1"
+	subnetURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1"
+	sgName := "sg-name"
+	sgURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1"
+	nodeCIDRAddr := "10.100.0.0/16"
+	nodeCIDRName := "node-cidr"
+	podCIDRAddr := "10.200.0.0/16"
+	k8sVersion := "1.32.3"
+	billingPeriod := "Hour"
+	haTrue := true
+	maxVol := int32(100)
+	instanceName := "K4A8"
+	dcCode := "ITBG-1"
+	poolName := "pool-1"
+	poolNodes := int32(3)
+	autoFalse := false
+	return &types.KaaSResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:               &id,
+			URI:              &uri,
+			Name:             func() *string { s := name; return &s }(),
+			Tags:             []string{"tag1"},
+			LocationResponse: &types.LocationResponse{Value: "ITBG-Bergamo"},
+			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+				ID: "p",
+			},
+		},
+		Properties: types.KaaSPropertiesResponse{
+			VPC:    types.ReferenceResourceResponse{URI: &vpcURI},
+			Subnet: types.ReferenceResourceResponse{URI: &subnetURI},
+			SecurityGroup: types.KaasSecurityGroupPropertiesResponse{
+				Name: &sgName,
+				URI:  &sgURI,
+			},
+			NodeCIDR: types.NodeCIDRPropertiesResponse{
+				Address: &nodeCIDRAddr,
+				Name:    &nodeCIDRName,
+			},
+			PodCIDR: &types.PodCIDRPropertiesResponse{
+				Address: &podCIDRAddr,
+			},
+			KubernetesVersion: types.KubernetesVersionInfoResponse{
+				Value: &k8sVersion,
+			},
+			HA: &haTrue,
+			Storage: &types.StorageKubernetes{
+				MaxCumulativeVolumeSize: &maxVol,
+			},
+			BillingPlan: &types.BillingPeriodResourceResponse{
+				BillingPeriod: &billingPeriod,
+			},
+			NodePools: &[]types.NodePoolPropertiesResponse{
+				{
+					Name:        &poolName,
+					Nodes:       &poolNodes,
+					Instance:    &types.InstanceResponse{Name: &instanceName},
+					DataCenter:  &types.DataCenterResponse{Code: &dcCode},
+					Autoscaling: autoFalse,
+				},
+			},
+		},
+		Status: types.ResourceStatus{
+			State: &state,
+		},
+	}
+}
+
+func TestKaaS_FromResponseHydration(t *testing.T) {
+	k := &KaaS{}
+	resp := kaasTestResponse("my-cluster")
+	k.fromResponse(resp)
+
+	if k.ID() != "kaas-1" {
+		t.Errorf("ID() = %q", k.ID())
+	}
+	if k.KaaSID() != "kaas-1" {
+		t.Errorf("KaaSID() = %q", k.KaaSID())
+	}
+	if k.URI() != "/projects/p/providers/Aruba.Container/kaas/kaas-1" {
+		t.Errorf("URI() = %q", k.URI())
+	}
+	if k.Name() != "my-cluster" {
+		t.Errorf("Name() = %q", k.Name())
+	}
+	if tags := k.Tags(); len(tags) != 1 || tags[0] != "tag1" {
+		t.Errorf("Tags() = %v", tags)
+	}
+	if k.Region() != "ITBG-Bergamo" {
+		t.Errorf("Region() = %q", k.Region())
+	}
+	if k.State() != "Active" {
+		t.Errorf("State() = %q", k.State())
+	}
+	if k.VPC() != "/projects/p/providers/Aruba.Network/vpcs/vpc-1" {
+		t.Errorf("VPC() = %q", k.VPC())
+	}
+	if k.Subnet() != "/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1" {
+		t.Errorf("Subnet() = %q", k.Subnet())
+	}
+	if k.SecurityGroupName() != "sg-name" {
+		t.Errorf("SecurityGroupName() = %q", k.SecurityGroupName())
+	}
+	if k.KubernetesVersion() != "1.32.3" {
+		t.Errorf("KubernetesVersion() = %q", k.KubernetesVersion())
+	}
+	if k.BillingPeriod() != "Hour" {
+		t.Errorf("BillingPeriod() = %q", k.BillingPeriod())
+	}
+	if k.ProjectID() != "p" {
+		t.Errorf("ProjectID() = %q", k.ProjectID())
+	}
+	// NodePools round-trip flattening
+	if len(k.nodePools) != 1 {
+		t.Fatalf("nodePools len = %d", len(k.nodePools))
+	}
+	np := k.nodePools[0]
+	if np.instance == nil || *np.instance != "K4A8" {
+		t.Errorf("nodePool.instance = %v", np.instance)
+	}
+	if np.zone == nil || *np.zone != "ITBG-1" {
+		t.Errorf("nodePool.zone (dataCenter code) = %v", np.zone)
+	}
+}
+
+func TestKaaS_FromResponse_BackfillsProjectID_FromURI(t *testing.T) {
+	id := "kaas-1"
+	uri := "/projects/p-uri/providers/Aruba.Container/kaas/kaas-1"
+	resp := &types.KaaSResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:  &id,
+			URI: &uri,
+		},
+	}
+	k := &KaaS{}
+	k.fromResponse(resp)
+	if k.ProjectID() != "p-uri" {
+		t.Errorf("ProjectID() via URI backfill = %q", k.ProjectID())
+	}
+}
+
+func TestKaaS_FromResponse_Nil(t *testing.T) {
+	k := &KaaS{}
+	k.fromResponse(nil) // must not panic
+	if k.ID() != "" {
+		t.Errorf("ID() should be empty after fromResponse(nil)")
+	}
+}
+
+// --------------------------------------------------------------------------
+// kaasIDsFromRef helper
+// --------------------------------------------------------------------------
+
+func TestKaaSIDsFromRef_URIRef(t *testing.T) {
+	ref := URI("/projects/p/providers/Aruba.Container/kaas/kaas-1")
+	pid, kid, err := kaasIDsFromRef(ref)
+	if err != nil || pid != "p" || kid != "kaas-1" {
+		t.Errorf("kaasIDsFromRef = (%q, %q, %v)", pid, kid, err)
+	}
+}
+
+func TestKaaSIDsFromRef_TypedRef(t *testing.T) {
+	k := &KaaS{}
+	id := "kaas-2"
+	uri := "/projects/p2/providers/Aruba.Container/kaas/kaas-2"
+	resp := &types.KaaSResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:                      &id,
+			URI:                     &uri,
+			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p2"},
+		},
+	}
+	k.fromResponse(resp)
+	pid, kid, err := kaasIDsFromRef(k)
+	if err != nil || pid != "p2" || kid != "kaas-2" {
+		t.Errorf("kaasIDsFromRef typed = (%q, %q, %v)", pid, kid, err)
+	}
+}
+
+func TestKaaSIDsFromRef_BadURI_NoKaaS(t *testing.T) {
+	_, _, err := kaasIDsFromRef(URI("/projects/p/providers/Aruba.Container/something/else"))
+	if err == nil {
+		t.Error("expected error for URI without /kaas/<id>")
+	}
+}
+
+func TestKaaSIDsFromRef_BadURI_NoProject(t *testing.T) {
+	_, _, err := kaasIDsFromRef(URI("/providers/Aruba.Container/kaas/kaas-1"))
+	if err == nil {
+		t.Error("expected error for URI without /projects/<id>")
+	}
+}
+
+// --------------------------------------------------------------------------
+// fakeKaaSLowLevel — body-capture / action tests
+// --------------------------------------------------------------------------
+
+type fakeKaaSLowLevel struct {
+	createFunc             func(ctx context.Context, projectID string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
+	updateFunc             func(ctx context.Context, projectID, kaasID string, body types.KaaSUpdateRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
+	getFunc                func(ctx context.Context, projectID, kaasID string, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
+	deleteFunc             func(ctx context.Context, projectID, kaasID string, params *types.RequestParameters) (*types.Response[any], error)
+	listFunc               func(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KaaSList], error)
+	downloadKubeconfigFunc func(ctx context.Context, projectID, kaasID string, params *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error)
+}
+
+func (f *fakeKaaSLowLevel) Create(ctx context.Context, projectID string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
+	return f.createFunc(ctx, projectID, body, params)
+}
+func (f *fakeKaaSLowLevel) Update(ctx context.Context, projectID, kaasID string, body types.KaaSUpdateRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
+	return f.updateFunc(ctx, projectID, kaasID, body, params)
+}
+func (f *fakeKaaSLowLevel) Get(ctx context.Context, projectID, kaasID string, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
+	return f.getFunc(ctx, projectID, kaasID, params)
+}
+func (f *fakeKaaSLowLevel) Delete(ctx context.Context, projectID, kaasID string, params *types.RequestParameters) (*types.Response[any], error) {
+	return f.deleteFunc(ctx, projectID, kaasID, params)
+}
+func (f *fakeKaaSLowLevel) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KaaSList], error) {
+	return f.listFunc(ctx, projectID, params)
+}
+func (f *fakeKaaSLowLevel) DownloadKubeconfig(ctx context.Context, projectID, kaasID string, params *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error) {
+	return f.downloadKubeconfigFunc(ctx, projectID, kaasID, params)
+}
+
+// --------------------------------------------------------------------------
+// HTTP-mock adapter helper
+// --------------------------------------------------------------------------
+
+func buildKaaSTestAdapter(t *testing.T, handler http.HandlerFunc) *kaasClientAdapter {
+	t.Helper()
+	server := testutil.NewMockServer(t, handler)
+	return newKaaSClientAdapter(testutil.NewClient(t, server.URL))
+}
+
+const kaasSuccessBody = `{` +
+	`"metadata":{"id":"kaas-1","name":"my-cluster","uri":"/projects/p/providers/Aruba.Container/kaas/kaas-1","project":{"id":"p"}},` +
+	`"properties":{` +
+	`"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},` +
+	`"subnet":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1"},` +
+	`"securityGroup":{"name":"sg-name"},` +
+	`"nodeCidr":{"address":"10.100.0.0/16","name":"node-cidr"},` +
+	`"kubernetesVersion":{"value":"1.32.3"},` +
+	`"billingPlan":{"billingPeriod":"Hour"},` +
+	`"ha":true` +
+	`},` +
+	`"status":{"state":"Active"}}`
+
+// --------------------------------------------------------------------------
+// Create adapter tests
+// --------------------------------------------------------------------------
+
+func TestKaaSClientAdapter_Create_Success(t *testing.T) {
+	var gotBody types.KaaSRequest
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Errorf("decode request body: %v", err)
+		}
+		if !containsSubstring(r.URL.Path, "kaas") {
+			t.Errorf("path %q should contain 'kaas'", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprint(w, kaasSuccessBody)
+	})
+
+	k := NewKaaS().
+		IntoProject(URI("/projects/p")).
+		WithName("my-cluster").
+		WithLocation("ITBG-Bergamo").
+		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1")).
+		WithSubnet(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1")).
+		WithSecurityGroupName("sg-name").
+		WithNodeCIDR("10.100.0.0/16", "node-cidr").
+		WithKubernetesVersion("1.32.3").
+		WithBillingPeriod("Hour").
+		WithHA(true).
+		AddNodePool(NewNodePool().Named("pool-1").WithCount(3).OfInstance("K4A8").InZone("ITBG-1"))
+
+	result, err := adapter.Create(context.Background(), k)
+	if err != nil {
+		t.Fatalf("Create error: %v", err)
+	}
+	if result.ID() != "kaas-1" {
+		t.Errorf("ID() = %q", result.ID())
+	}
+	if result.Name() != "my-cluster" {
+		t.Errorf("Name() = %q", result.Name())
+	}
+	if result.StatusCode() != http.StatusCreated {
+		t.Errorf("StatusCode() = %d", result.StatusCode())
+	}
+	// Wire body assertions
+	if gotBody.Metadata.Name != "my-cluster" {
+		t.Errorf("request Metadata.Name = %q", gotBody.Metadata.Name)
+	}
+	if gotBody.Properties.VPC.URI != "/projects/p/providers/Aruba.Network/vpcs/vpc-1" {
+		t.Errorf("request Properties.VPC.URI = %q", gotBody.Properties.VPC.URI)
+	}
+	if len(gotBody.Properties.NodePools) != 1 || gotBody.Properties.NodePools[0].Name != "pool-1" {
+		t.Errorf("request NodePools = %+v", gotBody.Properties.NodePools)
+	}
+	// actions must be set so DownloadKubeconfig works after Create
+	if result.actions == nil {
+		t.Error("actions should be set after Create")
+	}
+}
+
+func TestKaaSClientAdapter_Create_NoProject(t *testing.T) {
+	callCount := 0
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusCreated)
+	})
+	_, err := adapter.Create(context.Background(), NewKaaS().WithName("x"))
+	if err == nil {
+		t.Fatal("expected error when KaaS has no project")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made without project")
+	}
+}
+
+func TestKaaSClientAdapter_Create_MetadataValidationError(t *testing.T) {
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		// Missing "id" field — triggers MetadataValidationError from low-level Validate()
+		fmt.Fprint(w, `{"metadata":{"name":"cluster","uri":"/projects/p/providers/Aruba.Container/kaas/x"},"properties":{},"status":{}}`)
+	})
+
+	k := NewKaaS().IntoProject(URI("/projects/p")).WithName("cluster")
+	result, err := adapter.Create(context.Background(), k)
+	if err == nil {
+		t.Fatal("expected MetadataValidationError, got nil")
+	}
+	var mvErr *types.MetadataValidationError
+	if !errors.As(err, &mvErr) {
+		t.Fatalf("expected *types.MetadataValidationError, got %T: %v", err, err)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil alongside MetadataValidationError")
+	}
+}
+
+func TestKaaSClientAdapter_Create_NonTwoXX(t *testing.T) {
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "name is required", 422))
+	})
+
+	k := NewKaaS().IntoProject(URI("/projects/p"))
+	result, err := adapter.Create(context.Background(), k)
+	if err == nil {
+		t.Fatal("expected error on 422")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("HTTPError.StatusCode = %d", httpErr.StatusCode)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil on non-2xx")
+	}
+}
+
+func TestKaaSClientAdapter_Create_WithBodyRefs_ViaFake(t *testing.T) {
+	var gotBody types.KaaSRequest
+	fake := &fakeKaaSLowLevel{
+		createFunc: func(_ context.Context, _ string, body types.KaaSRequest, _ *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
+			gotBody = body
+			id := "kaas-x"
+			uri := "/projects/p/providers/Aruba.Container/kaas/kaas-x"
+			return &types.Response[types.KaaSResponse]{
+				StatusCode: http.StatusCreated,
+				Data: &types.KaaSResponse{
+					Metadata: types.ResourceMetadataResponse{
+						ID:                      &id,
+						URI:                     &uri,
+						ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+					},
+				},
+			}, nil
+		},
+	}
+	adapter := &kaasClientAdapter{low: fake}
+
+	k := NewKaaS().
+		IntoProject(URI("/projects/p")).
+		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1")).
+		WithSubnet(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1"))
+
+	result, err := adapter.Create(context.Background(), k)
+	if err != nil {
+		t.Fatalf("Create error: %v", err)
+	}
+	if result == nil {
+		t.Fatal("result is nil")
+	}
+	if gotBody.Properties.VPC.URI != "/projects/p/providers/Aruba.Network/vpcs/vpc-1" {
+		t.Errorf("VPC.URI = %q", gotBody.Properties.VPC.URI)
+	}
+	if gotBody.Properties.Subnet.URI != "/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1" {
+		t.Errorf("Subnet.URI = %q", gotBody.Properties.Subnet.URI)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Update adapter tests
+// --------------------------------------------------------------------------
+
+func TestKaaSClientAdapter_Update_Success(t *testing.T) {
+	var gotBody types.KaaSUpdateRequest
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Errorf("method = %s", r.Method)
+		}
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Errorf("decode request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, kaasSuccessBody)
+	})
+
+	k := &KaaS{}
+	id := "kaas-1"
+	uri := "/projects/p/providers/Aruba.Container/kaas/kaas-1"
+	k.fromResponse(&types.KaaSResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:                      &id,
+			URI:                     &uri,
+			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+		},
+	})
+	k.WithKubernetesVersion("1.33.0").
+		AddNodePool(NewNodePool().Named("pool-1").WithCount(5).OfInstance("K4A8").InZone("ITBG-1"))
+
+	result, err := adapter.Update(context.Background(), k)
+	if err != nil {
+		t.Fatalf("Update error: %v", err)
+	}
+	if result.ID() != "kaas-1" {
+		t.Errorf("ID() = %q", result.ID())
+	}
+	// The update request should use KubernetesVersionInfoUpdate
+	if gotBody.Properties.KubernetesVersion.Value != "1.33.0" {
+		t.Errorf("update KubernetesVersion.Value = %q", gotBody.Properties.KubernetesVersion.Value)
+	}
+}
+
+func TestKaaSClientAdapter_Update_NoID(t *testing.T) {
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.Update(context.Background(), NewKaaS().IntoProject(URI("/projects/p")))
+	if err == nil {
+		t.Fatal("expected error when KaaS has no ID")
+	}
+}
+
+func TestKaaSClientAdapter_Update_NoProject(t *testing.T) {
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	k := &KaaS{}
+	id := "kaas-1"
+	k.meta = nil // ensure projectID is unset but ID is set via fake
+	k.errMixin = errMixin{}
+	// Manually set ID without project
+	uri := "/providers/Aruba.Container/kaas/kaas-1"
+	k.fromResponse(&types.KaaSResponse{Metadata: types.ResourceMetadataResponse{ID: &id, URI: &uri}})
+	_, err := adapter.Update(context.Background(), k)
+	if err == nil {
+		t.Fatal("expected error when KaaS has no project")
+	}
+}
+
+func TestKaaSClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "cluster not found", 404))
+	})
+
+	k := &KaaS{}
+	id := "kaas-1"
+	uri := "/projects/p/providers/Aruba.Container/kaas/kaas-1"
+	k.fromResponse(&types.KaaSResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:                      &id,
+			URI:                     &uri,
+			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+		},
+	})
+	_, err := adapter.Update(context.Background(), k)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Get adapter tests
+// --------------------------------------------------------------------------
+
+func TestKaaSClientAdapter_Get_URIRef(t *testing.T) {
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		if !containsSubstring(r.URL.Path, "kaas-1") {
+			t.Errorf("path %q should contain 'kaas-1'", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, kaasSuccessBody)
+	})
+
+	result, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Container/kaas/kaas-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if result.ID() != "kaas-1" {
+		t.Errorf("ID() = %q", result.ID())
+	}
+	// actions must be set so DownloadKubeconfig works after Get
+	if result.actions == nil {
+		t.Error("actions should be set after Get")
+	}
+}
+
+func TestKaaSClientAdapter_Get_TypedRef(t *testing.T) {
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, kaasSuccessBody)
+	})
+
+	existing := &KaaS{}
+	id := "kaas-1"
+	uri := "/projects/p/providers/Aruba.Container/kaas/kaas-1"
+	existing.fromResponse(&types.KaaSResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:                      &id,
+			URI:                     &uri,
+			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+		},
+	})
+
+	result, err := adapter.Get(context.Background(), existing)
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if result.ID() != "kaas-1" {
+		t.Errorf("ID() = %q", result.ID())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Delete adapter tests
+// --------------------------------------------------------------------------
+
+func TestKaaSClientAdapter_Delete_Success(t *testing.T) {
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("method = %s", r.Method)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Container/kaas/kaas-1"))
+	if err != nil {
+		t.Fatalf("Delete error: %v", err)
+	}
+}
+
+func TestKaaSClientAdapter_Delete_NonTwoXX(t *testing.T) {
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "cluster not found", 404))
+	})
+
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Container/kaas/missing"))
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// List adapter tests
+// --------------------------------------------------------------------------
+
+func TestKaaSClientAdapter_List_TwoItems(t *testing.T) {
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
+			`{"metadata":{"id":"kaas-1","name":"c1","uri":"/projects/p/providers/Aruba.Container/kaas/kaas-1","project":{"id":"p"}},"properties":{"kubernetesVersion":{"value":"1.32.3"},"billingPlan":{"billingPeriod":"Hour"}},"status":{}},`+
+			`{"metadata":{"id":"kaas-2","name":"c2","uri":"/projects/p/providers/Aruba.Container/kaas/kaas-2","project":{"id":"p"}},"properties":{"kubernetesVersion":{"value":"1.31.0"},"billingPlan":{"billingPeriod":"Monthly"}},"status":{}}`+
+			`]}`)
+	})
+
+	list, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err != nil {
+		t.Fatalf("List error: %v", err)
+	}
+	if list.Total() != 2 {
+		t.Errorf("Total() = %d", list.Total())
+	}
+	items := list.Items()
+	if len(items) != 2 {
+		t.Fatalf("Items() len = %d", len(items))
+	}
+	if items[0].ID() != "kaas-1" || items[0].Name() != "c1" {
+		t.Errorf("items[0] = {%q, %q}", items[0].ID(), items[0].Name())
+	}
+	if items[1].ID() != "kaas-2" || items[1].BillingPeriod() != "Monthly" {
+		t.Errorf("items[1] ID=%q BillingPeriod=%q", items[1].ID(), items[1].BillingPeriod())
+	}
+	if items[0].ProjectID() != "p" {
+		t.Errorf("items[0].ProjectID() = %q", items[0].ProjectID())
+	}
+	// actions must be set on list items for DownloadKubeconfig
+	if items[0].actions == nil {
+		t.Error("actions should be set on list items")
+	}
+}
+
+// --------------------------------------------------------------------------
+// DownloadKubeconfig action tests
+// --------------------------------------------------------------------------
+
+func TestKaaS_DownloadKubeconfig_Success(t *testing.T) {
+	fake := &fakeKaaSLowLevel{
+		downloadKubeconfigFunc: func(_ context.Context, projectID, kaasID string, _ *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error) {
+			if projectID != "p" || kaasID != "kaas-1" {
+				return nil, fmt.Errorf("unexpected ids: %s/%s", projectID, kaasID)
+			}
+			return &types.Response[types.KaaSKubeconfigResponse]{
+				StatusCode: http.StatusOK,
+				Data: &types.KaaSKubeconfigResponse{
+					Name:    "cluster-kubeconfig.yaml",
+					Content: "apiVersion: v1\nkind: Config\n",
+				},
+			}, nil
+		},
+	}
+	adapter := &kaasClientAdapter{low: fake}
+
+	k := &KaaS{}
+	id := "kaas-1"
+	uri := "/projects/p/providers/Aruba.Container/kaas/kaas-1"
+	k.fromResponse(&types.KaaSResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:                      &id,
+			URI:                     &uri,
+			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+		},
+	})
+	k.actions = adapter
+
+	data, err := k.DownloadKubeconfig(context.Background())
+	if err != nil {
+		t.Fatalf("DownloadKubeconfig error: %v", err)
+	}
+	if string(data) != "apiVersion: v1\nkind: Config\n" {
+		t.Errorf("kubeconfig content = %q", string(data))
+	}
+}
+
+func TestKaaS_DownloadKubeconfig_NoActionExecutor(t *testing.T) {
+	k := NewKaaS()
+	id := "kaas-1"
+	uri := "/projects/p/providers/Aruba.Container/kaas/kaas-1"
+	k.fromResponse(&types.KaaSResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:                      &id,
+			URI:                     &uri,
+			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+		},
+	})
+	// k.actions is nil — locally-built wrapper
+
+	_, err := k.DownloadKubeconfig(context.Background())
+	if err == nil {
+		t.Fatal("expected error when actions is nil")
+	}
+	if !containsSubstring(err.Error(), "no action executor") {
+		t.Errorf("error should mention 'no action executor', got %q", err.Error())
+	}
+}
+
+func TestKaaS_DownloadKubeconfig_NonTwoXX(t *testing.T) {
+	fake := &fakeKaaSLowLevel{
+		downloadKubeconfigFunc: func(_ context.Context, _, _ string, _ *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error) {
+			return &types.Response[types.KaaSKubeconfigResponse]{
+				StatusCode: http.StatusNotFound,
+			}, nil
+		},
+	}
+	adapter := &kaasClientAdapter{low: fake}
+
+	k := &KaaS{}
+	id := "kaas-1"
+	uri := "/projects/p/providers/Aruba.Container/kaas/kaas-1"
+	k.fromResponse(&types.KaaSResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:                      &id,
+			URI:                     &uri,
+			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+		},
+	})
+	k.actions = adapter
+
+	_, err := k.DownloadKubeconfig(context.Background())
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Reflective check: KaaSClient has Update method
+// --------------------------------------------------------------------------
+
+func TestKaaSClient_HasUpdateMethod(t *testing.T) {
+	iface := reflect.TypeOf((*KaaSClient)(nil)).Elem()
+	for i := range iface.NumMethod() {
+		if iface.Method(i).Name == "Update" {
+			return // found — test passes
+		}
+	}
+	t.Fatal("KaaSClient must have an Update method")
+}

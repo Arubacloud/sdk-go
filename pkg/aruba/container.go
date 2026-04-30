@@ -31,12 +31,11 @@ func (c *containerClientImpl) KaaS() KaaSClient {
 }
 
 type KaaSClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KaaSList], error)
-	Get(ctx context.Context, projectID string, kaasID string, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
-	Create(ctx context.Context, projectID string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
-	Update(ctx context.Context, projectID string, kaasID string, body types.KaaSUpdateRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
-	Delete(ctx context.Context, projectID string, kaasID string, params *types.RequestParameters) (*types.Response[any], error)
-	DownloadKubeconfig(ctx context.Context, projectID string, kaasID string, params *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error)
+	List(ctx context.Context, project Ref, opts ...CallOption) (*List[*KaaS], error)
+	Get(ctx context.Context, ref Ref, opts ...CallOption) (*KaaS, error)
+	Create(ctx context.Context, k *KaaS, opts ...CallOption) (*KaaS, error)
+	Update(ctx context.Context, k *KaaS, opts ...CallOption) (*KaaS, error)
+	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
 }
 
 type ContainerRegistryClient interface {
