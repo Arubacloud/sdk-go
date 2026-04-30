@@ -145,6 +145,14 @@ func NewContainerRegistry() *ContainerRegistry {
 	return r
 }
 
+// NewKaaS returns a fresh *KaaS ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewKaaS() *KaaS {
+	k := &KaaS{}
+	k.projectScopedMixin = bindProjectScoped(&k.errMixin)
+	return k
+}
+
 // NewDBaaS returns a fresh *DBaaS ready for fluent setters and a Create call.
 // Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
 func NewDBaaS() *DBaaS {
@@ -196,3 +204,6 @@ func NewVPNESP() *VPNESP { return &VPNESP{} }
 
 // NewVPNPSK returns a fresh *VPNPSK sub-builder for configuring PSK settings.
 func NewVPNPSK() *VPNPSK { return &VPNPSK{} }
+
+// NewNodePool returns a fresh *NodePool sub-builder for configuring a KaaS node pool.
+func NewNodePool() *NodePool { return &NodePool{} }

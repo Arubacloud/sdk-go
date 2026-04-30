@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/internal/clients/audit"
-	"github.com/Arubacloud/sdk-go/internal/clients/container"
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
 	"github.com/Arubacloud/sdk-go/internal/clients/schedule"
 )
@@ -34,7 +33,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 		_ KeyPairsClient     = newKeyPairsClientAdapter(nil)
 
 		// Container
-		_ KaaSClient              = container.NewKaaSClientImpl(nil)
+		_ KaaSClient              = newKaaSClientAdapter(nil)
 		_ ContainerRegistryClient = newContainerRegistriesClientAdapter(nil)
 
 		// Database
