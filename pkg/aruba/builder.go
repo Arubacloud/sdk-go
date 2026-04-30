@@ -11,7 +11,6 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/clients/audit"
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
-	"github.com/Arubacloud/sdk-go/internal/clients/security"
 	memory_creds_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/memory"
 	vault_creds_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/vault"
 	oauth2_connector "github.com/Arubacloud/sdk-go/internal/impl/auth/providerconnector/oauth2"
@@ -644,7 +643,7 @@ func buildKeysClient(rest *restclient.Client) (KeysClient, error) {
 }
 
 func buildKmipsClient(rest *restclient.Client) (KmipsClient, error) {
-	return security.NewKmipClientImpl(rest), nil
+	return newKmipsClientAdapter(rest), nil
 }
 
 //
