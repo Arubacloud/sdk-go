@@ -146,7 +146,7 @@ func TestGetScheduleJob(t *testing.T) {
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "daily-backup" {
 			t.Errorf("expected name 'daily-backup', got %v", resp.Data.Metadata.Name)
 		}
-		if resp.Data.Properties.JobType != types.TypeJobRecurring {
+		if resp.Data.Properties.JobType != types.JobTypeRecurring {
 			t.Errorf("expected recurring job type")
 		}
 		if resp.Data.Properties.Cron == nil || *resp.Data.Properties.Cron != "0 2 * * *" {
@@ -263,7 +263,7 @@ func TestCreateScheduleJob(t *testing.T) {
 			},
 			Properties: types.JobPropertiesRequest{
 				Enabled:      true,
-				JobType:      types.TypeJobRecurring,
+				JobType:      types.JobTypeRecurring,
 				Cron:         types.StringPtr("0 3 * * 0"),
 				ExecuteUntil: types.StringPtr("2026-01-01T00:00:00Z"),
 				Steps: []types.JobStep{
@@ -289,7 +289,7 @@ func TestCreateScheduleJob(t *testing.T) {
 		if resp.Data.Metadata.URI == nil || *resp.Data.Metadata.URI != "/projects/test-project/providers/Aruba.Schedule/jobs/job-789" {
 			t.Errorf("expected URI, got %v", resp.Data.Metadata.URI)
 		}
-		if resp.Data.Properties.JobType != types.TypeJobRecurring {
+		if resp.Data.Properties.JobType != types.JobTypeRecurring {
 			t.Errorf("expected recurring job type")
 		}
 	})
@@ -309,7 +309,7 @@ func TestCreateScheduleJob(t *testing.T) {
 			},
 			Properties: types.JobPropertiesRequest{
 				Enabled:    true,
-				JobType:    types.TypeJobOneShot,
+				JobType:    types.JobTypeOneShot,
 				ScheduleAt: types.StringPtr("2025-11-20T22:00:00Z"),
 				Steps: []types.JobStep{
 					{
@@ -334,7 +334,7 @@ func TestCreateScheduleJob(t *testing.T) {
 		if resp.Data.Metadata.URI == nil || *resp.Data.Metadata.URI != "/projects/test-project/providers/Aruba.Schedule/jobs/job-999" {
 			t.Errorf("expected URI, got %v", resp.Data.Metadata.URI)
 		}
-		if resp.Data.Properties.JobType != types.TypeJobOneShot {
+		if resp.Data.Properties.JobType != types.JobTypeOneShot {
 			t.Errorf("expected one-shot job type")
 		}
 		if resp.Data.Status.State == nil || *resp.Data.Status.State != "scheduled" {
@@ -489,7 +489,7 @@ func TestUpdateScheduleJob(t *testing.T) {
 			},
 			Properties: types.JobPropertiesRequest{
 				Enabled:      false,
-				JobType:      types.TypeJobRecurring,
+				JobType:      types.JobTypeRecurring,
 				Cron:         types.StringPtr("0 4 * * *"),
 				ExecuteUntil: types.StringPtr("2025-12-31T23:59:59Z"),
 				Steps: []types.JobStep{
