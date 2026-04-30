@@ -12,8 +12,8 @@ package aruba
 // imports every internal client package; a _test.go file in the same package
 // inherits those imports without introducing a new cycle.
 //
-// The security domain is intentionally omitted: KMSClient, KeyClient, and
-// KmipClient are type aliases to concrete pointer types, not interfaces.
+// The security domain: KMSClient is now a wrapper interface verified below.
+// KeysClient and KmipsClient remain pointer-type aliases to concrete impls.
 
 import (
 	"testing"
@@ -63,6 +63,9 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 
 		// Schedule
 		_ JobsClient = newJobsClientAdapter(nil)
+
+		// Security
+		_ KMSClient = newKMSClientAdapter(nil)
 
 		// Storage
 		_ VolumesClient        = newVolumesClientAdapter(nil)
