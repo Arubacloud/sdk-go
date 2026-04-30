@@ -11,6 +11,7 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/clients/audit"
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
+	"github.com/Arubacloud/sdk-go/internal/clients/security"
 	memory_creds_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/memory"
 	vault_creds_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/vault"
 	oauth2_connector "github.com/Arubacloud/sdk-go/internal/impl/auth/providerconnector/oauth2"
@@ -617,13 +618,33 @@ func buildSecurityClient(restClient *restclient.Client) (SecurityClient, error) 
 		return nil, err // TODO: better error handling
 	}
 
+	keysClient, err := buildKeysClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
+	kmipsClient, err := buildKmipsClient(restClient)
+	if err != nil {
+		return nil, err // TODO: better error handling
+	}
+
 	return &securityClientImpl{
-		kmsClient: kmsClient,
+		kmsClient:   kmsClient,
+		keysClient:  keysClient,
+		kmipsClient: kmipsClient,
 	}, nil
 }
 
 func buildKMSClient(restClient *restclient.Client) (KMSClient, error) {
 	return newKMSClientAdapter(restClient), nil
+}
+
+func buildKeysClient(rest *restclient.Client) (KeysClient, error) {
+	return security.NewKeyClientImpl(rest), nil
+}
+
+func buildKmipsClient(rest *restclient.Client) (KmipsClient, error) {
+	return security.NewKmipClientImpl(rest), nil
 }
 
 //
