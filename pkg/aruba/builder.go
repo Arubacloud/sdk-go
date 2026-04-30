@@ -640,7 +640,7 @@ func buildKMSClient(restClient *restclient.Client) (KMSClient, error) {
 }
 
 func buildKeysClient(rest *restclient.Client) (KeysClient, error) {
-	return security.NewKeyClientImpl(rest), nil
+	return newKeysClientAdapter(rest), nil
 }
 
 func buildKmipsClient(rest *restclient.Client) (KmipsClient, error) {
