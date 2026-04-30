@@ -499,6 +499,21 @@ func TestVPCsClientAdapter_Update_NoProject(t *testing.T) {
 	}
 }
 
+func TestVPCsClientAdapter_Delete_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildVPCTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	err := adapter.Delete(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad Ref")
+	}
+}
+
 func TestVPCsClientAdapter_Delete_Success(t *testing.T) {
 	adapter := buildVPCTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
@@ -533,6 +548,75 @@ func TestVPCsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 	}
 }
 
+// IsDefault and IsPreset zero-value tests cover the 66.7% branches.
+func TestVPC_IsDefault_ZeroValue(t *testing.T) {
+	v := NewVPC()
+	if v.IsDefault() {
+		t.Error("IsDefault() on zero value should be false")
+	}
+}
+
+func TestVPC_IsPreset_ZeroValue(t *testing.T) {
+	v := NewVPC()
+	if v.IsPreset() {
+		t.Error("IsPreset() on zero value should be false")
+	}
+}
+
+func TestVPCsClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildVPCTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "vpc not found", 404))
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Network/vpcs/missing")
+	result, err := adapter.Get(context.Background(), ref)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+	if result == nil {
+		t.Fatal("result must be non-nil on non-2xx")
+	}
+}
+
+func TestVPCsClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildVPCTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "vpc not found", 404))
+	})
+
+	v := &VPC{}
+	v.fromResponse(vpcTestResponse("vpc-1", "my-vpc", "/projects/p/providers/Aruba.Network/vpcs/vpc-1", "p"))
+	_, err := adapter.Update(context.Background(), v)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+}
+
+func TestVPCsClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildVPCTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Forbidden", "access denied", 403))
+	})
+
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+}
+
 func TestVPCsClientAdapter_List_TwoItems(t *testing.T) {
 	adapter := buildVPCTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -564,3 +648,147 @@ func TestVPCsClientAdapter_List_TwoItems(t *testing.T) {
 
 // strPtr is a test helper local to this file.
 func strPtr(s string) *string { return &s }
+
+func TestVPCsClientAdapter_Create_WithBuilderError(t *testing.T) {
+	callCount := 0
+	adapter := buildVPCTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusCreated)
+	})
+	v := NewVPC().IntoProject(URI("/garbage"))
+	_, err := adapter.Create(context.Background(), v)
+	if err == nil {
+		t.Fatal("expected error for builder error")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made when builder has errors")
+	}
+}
+
+func TestVPCsClientAdapter_Get_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildVPCTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	result, err := adapter.Get(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+	if result != nil {
+		t.Error("result should be nil on bad Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad Ref")
+	}
+}
+
+func TestVPCsClientAdapter_Get_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newVPCsClientAdapter(testutil.NewClient(t, server.URL))
+	result, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+	_ = result
+}
+
+func TestVPCsClientAdapter_Update_WithBuilderError(t *testing.T) {
+	callCount := 0
+	adapter := buildVPCTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	v := NewVPC().IntoProject(URI("/garbage"))
+	_, err := adapter.Update(context.Background(), v)
+	if err == nil {
+		t.Fatal("expected error for builder error")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made when builder has errors")
+	}
+}
+
+func TestVPCsClientAdapter_Update_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newVPCsClientAdapter(testutil.NewClient(t, server.URL))
+	v := &VPC{}
+	v.fromResponse(vpcTestResponse("vid", "n", "/projects/p/providers/Aruba.Network/vpcs/vid", "p"))
+	_, err := adapter.Update(context.Background(), v)
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestVPCsClientAdapter_Delete_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newVPCsClientAdapter(testutil.NewClient(t, server.URL))
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestVPCsClientAdapter_List_BadProjectRef(t *testing.T) {
+	callCount := 0
+	adapter := buildVPCTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.List(context.Background(), URI("/garbage"))
+	if err == nil {
+		t.Fatal("expected error for bad project Ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad project Ref")
+	}
+}
+
+func TestVPCsClientAdapter_List_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newVPCsClientAdapter(testutil.NewClient(t, server.URL))
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestVPCIDsFromRef_MissingProjectID(t *testing.T) {
+	// URI has vpcs segment but no projects segment
+	_, _, err := vpcIDsFromRef(URI("/providers/Aruba.Network/vpcs/v"))
+	if err == nil {
+		t.Error("expected error when project ID is missing from URI")
+	}
+}

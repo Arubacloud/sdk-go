@@ -739,6 +739,141 @@ func TestStorageBackupsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 	}
 }
 
+// --------------------------------------------------------------------------
+// Zero-value accessor tests (Shape F — 66.7% accessors)
+// --------------------------------------------------------------------------
+
+func TestStorageBackup_Accessors_ZeroValue(t *testing.T) {
+	bkp := NewStorageBackup()
+	if bkp.Type() != "" {
+		t.Errorf("Type() zero value = %q, want \"\"", bkp.Type())
+	}
+	if bkp.RetentionDays() != 0 {
+		t.Errorf("RetentionDays() zero value = %d, want 0", bkp.RetentionDays())
+	}
+}
+
+func TestNewStorageBackupsClientAdapter_Nil(t *testing.T) {
+	adapter := newStorageBackupsClientAdapter(nil)
+	if adapter == nil {
+		t.Fatal("newStorageBackupsClientAdapter(nil) returned nil")
+	}
+}
+
+func TestStorageBackupsClientAdapter_Update_Err(t *testing.T) {
+	adapter := buildStorageBackupsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	bkp := NewStorageBackup().WithOrigin(URI("")) // seeds an error
+	_, err := adapter.Update(context.Background(), bkp)
+	if err == nil {
+		t.Fatal("expected error when StorageBackup has a pre-existing Err()")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Additional adapter coverage tests
+// --------------------------------------------------------------------------
+
+func TestStorageBackupsClientAdapter_Get_BadRef(t *testing.T) {
+	adapter := buildStorageBackupsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	_, err := adapter.Get(context.Background(), URI("/something/unrelated"))
+	if err == nil {
+		t.Fatal("expected error for unresolvable Ref")
+	}
+}
+
+func TestStorageBackupsClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildStorageBackupsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "backup not found", 404))
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Storage/backups/missing")
+	_, err := adapter.Get(context.Background(), ref)
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestStorageBackupsClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildStorageBackupsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "retention days invalid", 422))
+	})
+
+	bkp := &StorageBackup{}
+	bkp.fromResponse(storageBackupTestResponse("bkp-1", "my-backup", "/projects/p/providers/Aruba.Storage/backups/bkp-1", "p"))
+	bkp.WithRetentionDays(99999)
+
+	_, err := adapter.Update(context.Background(), bkp)
+	if err == nil {
+		t.Fatal("expected error on 422")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestStorageBackupsClientAdapter_Delete_BadRef(t *testing.T) {
+	adapter := buildStorageBackupsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	err := adapter.Delete(context.Background(), URI("/something/unrelated"))
+	if err == nil {
+		t.Fatal("expected error for unresolvable Ref")
+	}
+}
+
+func TestStorageBackupsClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildStorageBackupsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Forbidden", "not authorized", 403))
+	})
+
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err == nil {
+		t.Fatal("expected error on 403")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusForbidden {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+func TestStorageBackupsClientAdapter_List_BadRef(t *testing.T) {
+	adapter := buildStorageBackupsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	_, err := adapter.List(context.Background(), URI("/something/unrelated"))
+	if err == nil {
+		t.Fatal("expected error for unresolvable project Ref")
+	}
+}
+
 func TestStorageBackupsClientAdapter_List_TwoItems(t *testing.T) {
 	adapter := buildStorageBackupsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

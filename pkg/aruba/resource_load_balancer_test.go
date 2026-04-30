@@ -420,3 +420,62 @@ func TestLoadBalancersClientAdapter_List_NonTwoXX(t *testing.T) {
 		t.Error("result should be nil on non-2xx List")
 	}
 }
+
+func TestLoadBalancersClientAdapter_Get_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newLoadBalancersClientAdapter(testutil.NewClient(t, server.URL))
+	result, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/loadbalancers/lb-1"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+	_ = result
+}
+
+func TestLoadBalancersClientAdapter_List_TransportError(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("server doesn't support hijacking")
+			return
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	adapter := newLoadBalancersClientAdapter(testutil.NewClient(t, server.URL))
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err == nil {
+		t.Fatal("expected transport error")
+	}
+}
+
+func TestLoadBalancersClientAdapter_List_ProjectIDBackfill(t *testing.T) {
+	// Response items without projectID in metadata or URI: triggers lb.projectID = projectID backfill
+	adapter := buildLoadBalancerTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		// No "project" key and no URI path that can yield a projectID
+		fmt.Fprint(w, `{"total":1,"self":"","prev":"","next":"","first":"","last":"","values":[`+
+			`{"metadata":{"id":"lb-x","name":"lb-x"},"properties":{},"status":{}}`+
+			`]}`)
+	})
+
+	list, err := adapter.List(context.Background(), URI("/projects/proj-x"))
+	if err != nil {
+		t.Fatalf("List error: %v", err)
+	}
+	items := list.Items()
+	if len(items) != 1 {
+		t.Fatalf("Items() len = %d", len(items))
+	}
+	if items[0].ProjectID() != "proj-x" {
+		t.Errorf("ProjectID() after backfill = %q, want %q", items[0].ProjectID(), "proj-x")
+	}
+}

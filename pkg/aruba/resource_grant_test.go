@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Arubacloud/sdk-go/internal/clients/database"
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
@@ -588,6 +589,317 @@ func TestGrantsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
 	}
 	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// RawRequest (0% → covers the method)
+// --------------------------------------------------------------------------
+
+func TestGrant_RawRequest(t *testing.T) {
+	g := NewGrant().WithUserName("alice").WithRoleName("READ_WRITE")
+	req := g.RawRequest()
+	if req.User.Username != "alice" {
+		t.Errorf("RawRequest().User.Username = %q", req.User.Username)
+	}
+	if req.Role.Name != "READ_WRITE" {
+		t.Errorf("RawRequest().Role.Name = %q", req.Role.Name)
+	}
+	// Zero value — must not panic
+	_ = NewGrant().RawRequest()
+}
+
+// --------------------------------------------------------------------------
+// Zero-value accessors (Shape F — covers the nil-response branch)
+// --------------------------------------------------------------------------
+
+func TestGrant_Accessors_ZeroValue(t *testing.T) {
+	g := &Grant{}
+	if g.DatabaseName() != "" {
+		t.Errorf("DatabaseName() zero = %q", g.DatabaseName())
+	}
+	if !g.CreatedAt().IsZero() {
+		t.Error("CreatedAt() zero should be zero time")
+	}
+	if g.CreatedBy() != "" {
+		t.Errorf("CreatedBy() zero = %q", g.CreatedBy())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Create — extra guard paths
+// --------------------------------------------------------------------------
+
+func TestGrantsClientAdapter_Create_NoDBaaS(t *testing.T) {
+	callCount := 0
+	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+	})
+	// Has database in path but no DBaaS — bad URI produces no dbaasID
+	g := NewGrant().
+		IntoDatabase(URI("/projects/p/providers/Aruba.Database/databases/db-1")).
+		WithUserName("alice").
+		WithRoleName("READ_WRITE")
+	_, err := adapter.Create(context.Background(), g)
+	if err == nil {
+		t.Fatal("expected error when DBaaS is missing")
+	}
+	if callCount != 0 {
+		t.Errorf("expected 0 calls, got %d", callCount)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Update — extra guard paths
+// --------------------------------------------------------------------------
+
+func TestGrantsClientAdapter_Update_NoDatabase(t *testing.T) {
+	callCount := 0
+	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+	})
+	// Has grantID but no database
+	g := &Grant{}
+	gid := "g-1"
+	g.id = &gid
+	g.dbaasID = "d-1"
+	g.projectID = "p"
+	uname := "alice"
+	g.userName = &uname
+	rname := "READ_WRITE"
+	g.roleName = &rname
+	_, err := adapter.Update(context.Background(), g)
+	if err == nil {
+		t.Fatal("expected error when databaseID is missing")
+	}
+	if callCount != 0 {
+		t.Errorf("expected 0 calls, got %d", callCount)
+	}
+}
+
+func TestGrantsClientAdapter_Update_NoDBaaS(t *testing.T) {
+	callCount := 0
+	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+	})
+	// Has grantID and databaseID but no dbaasID
+	g := &Grant{}
+	gid := "g-1"
+	g.id = &gid
+	g.databaseID = "db-1"
+	g.projectID = "p"
+	uname := "alice"
+	g.userName = &uname
+	rname := "READ_WRITE"
+	g.roleName = &rname
+	_, err := adapter.Update(context.Background(), g)
+	if err == nil {
+		t.Fatal("expected error when dbaasID is missing")
+	}
+	if callCount != 0 {
+		t.Errorf("expected 0 calls, got %d", callCount)
+	}
+}
+
+func TestGrantsClientAdapter_Update_NoProject(t *testing.T) {
+	callCount := 0
+	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+	})
+	// Has grantID, databaseID, dbaasID but no projectID
+	g := &Grant{}
+	gid := "g-1"
+	g.id = &gid
+	g.databaseID = "db-1"
+	g.dbaasID = "d-1"
+	uname := "alice"
+	g.userName = &uname
+	rname := "READ_WRITE"
+	g.roleName = &rname
+	_, err := adapter.Update(context.Background(), g)
+	if err == nil {
+		t.Fatal("expected error when projectID is missing")
+	}
+	if callCount != 0 {
+		t.Errorf("expected 0 calls, got %d", callCount)
+	}
+}
+
+func TestGrantsClientAdapter_Update_NoUserName(t *testing.T) {
+	callCount := 0
+	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+	})
+	g := &Grant{}
+	gid := "g-1"
+	g.id = &gid
+	g.databaseID = "db-1"
+	g.dbaasID = "d-1"
+	g.projectID = "p"
+	rname := "READ_WRITE"
+	g.roleName = &rname
+	_, err := adapter.Update(context.Background(), g)
+	if err == nil {
+		t.Fatal("expected error when username is missing")
+	}
+	if callCount != 0 {
+		t.Errorf("expected 0 calls, got %d", callCount)
+	}
+}
+
+func TestGrantsClientAdapter_Update_NoRoleName(t *testing.T) {
+	callCount := 0
+	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+	})
+	g := &Grant{}
+	gid := "g-1"
+	g.id = &gid
+	g.databaseID = "db-1"
+	g.dbaasID = "d-1"
+	g.projectID = "p"
+	uname := "alice"
+	g.userName = &uname
+	_, err := adapter.Update(context.Background(), g)
+	if err == nil {
+		t.Fatal("expected error when roleName is missing")
+	}
+	if callCount != 0 {
+		t.Errorf("expected 0 calls, got %d", callCount)
+	}
+}
+
+func TestGrantsClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		fmt.Fprint(w, `{"title":"Conflict","detail":"concurrent update"}`)
+	})
+	g := NewGrant().
+		IntoDatabase(URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/db-1")).
+		WithUserName("alice").
+		WithRoleName("READ_WRITE")
+	gid := "g-1"
+	g.id = &gid
+	_, err := adapter.Update(context.Background(), g)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusConflict {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Get — bad Ref and non-2xx
+// --------------------------------------------------------------------------
+
+func TestGrantsClientAdapter_Get_BadRef(t *testing.T) {
+	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.Get(context.Background(), URI("/something/bad"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+}
+
+func TestGrantsClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{"title":"Not Found","detail":"grant not found"}`)
+	})
+	ref := URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/db-1/grants/g-1")
+	_, err := adapter.Get(context.Background(), ref)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Create — broken client (network error from LL)
+// --------------------------------------------------------------------------
+
+func TestGrantsClientAdapter_Create_BrokenClient(t *testing.T) {
+	adapter := &grantsClientAdapter{low: database.NewGrantsClientImpl(testutil.NewBrokenClient(t, "http://localhost:9"))}
+	g := NewGrant().
+		IntoDatabase(URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/db-1")).
+		WithUserName("alice").
+		WithRoleName("READ_WRITE")
+	_, err := adapter.Create(context.Background(), g)
+	if err == nil {
+		t.Fatal("expected network error from broken client")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Create — errMixin path
+// --------------------------------------------------------------------------
+
+func TestGrantsClientAdapter_Create_ErrMixin(t *testing.T) {
+	callCount := 0
+	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+	})
+	// IntoDatabase with bad URI sets errMixin
+	g := NewGrant().IntoDatabase(URI("/garbage")).WithUserName("alice").WithRoleName("READ_WRITE")
+	_, err := adapter.Create(context.Background(), g)
+	if err == nil {
+		t.Fatal("expected error from errMixin")
+	}
+	if callCount != 0 {
+		t.Errorf("expected 0 HTTP calls, got %d", callCount)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Delete — bad ref and broken client
+// --------------------------------------------------------------------------
+
+func TestGrantsClientAdapter_Delete_BadRef(t *testing.T) {
+	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	err := adapter.Delete(context.Background(), URI("/something/bad"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+}
+
+// --------------------------------------------------------------------------
+// List — bad parent ref and non-2xx
+// --------------------------------------------------------------------------
+
+func TestGrantsClientAdapter_List_BadRef(t *testing.T) {
+	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.List(context.Background(), URI("/something/bad"))
+	if err == nil {
+		t.Fatal("expected error for bad parent Ref")
+	}
+}
+
+func TestGrantsClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, `{"title":"Forbidden","detail":"not allowed"}`)
+	})
+	parent := URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/db-1")
+	_, err := adapter.List(context.Background(), parent)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusForbidden {
 		t.Errorf("StatusCode = %d", httpErr.StatusCode)
 	}
 }

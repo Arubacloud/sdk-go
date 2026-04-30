@@ -1175,3 +1175,426 @@ func TestKaaSClient_HasUpdateMethod(t *testing.T) {
 	}
 	t.Fatal("KaaSClient must have an Update method")
 }
+
+// --------------------------------------------------------------------------
+// Shape A — RemoveTag / ReplaceTags / InRegion
+// --------------------------------------------------------------------------
+
+func TestKaaS_RemoveTag_ReplaceTags_InRegion(t *testing.T) {
+	k := NewKaaS().
+		AddTag("a").
+		AddTag("b").
+		RemoveTag("a").
+		ReplaceTags("x", "y").
+		InRegion("ITMI-Milano-1")
+
+	tags := k.Tags()
+	if len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
+		t.Errorf("Tags() = %v, want [x y]", tags)
+	}
+	if k.Region() != "ITMI-Milano-1" {
+		t.Errorf("Region() = %q, want ITMI-Milano-1", k.Region())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Shape B — Raw() after fromResponse
+// --------------------------------------------------------------------------
+
+func TestKaaS_Raw_AfterFromResponse(t *testing.T) {
+	k := &KaaS{}
+	resp := kaasTestResponse("cluster-raw")
+	k.fromResponse(resp)
+
+	if k.Raw() == nil {
+		t.Fatal("Raw() should be non-nil after fromResponse")
+	}
+	if k.Raw() != resp {
+		t.Error("Raw() should return the exact response pointer passed to fromResponse")
+	}
+	// Also exercise RawRequest on a locally-built wrapper (already covered, but
+	// ensure the call path for an un-hydrated wrapper is not missed)
+	_ = NewKaaS().RawRequest()
+}
+
+// --------------------------------------------------------------------------
+// Shape D — WithAPIServerAccessProfile round-trip
+// --------------------------------------------------------------------------
+
+func TestKaaS_WithAPIServerAccessProfile_RoundTrip(t *testing.T) {
+	ranges := []string{"10.0.0.0/8", "192.168.0.0/16"}
+	profile := &types.APIServerAccessProfileProperties{
+		AuthorizedIPRanges:   &ranges,
+		EnablePrivateCluster: true,
+	}
+
+	k := NewKaaS().WithAPIServerAccessProfile(profile)
+	req := k.RawRequest()
+
+	if req.Properties.APIServerAccessProfile == nil {
+		t.Fatal("APIServerAccessProfile should be non-nil in request")
+	}
+	if !req.Properties.APIServerAccessProfile.EnablePrivateCluster {
+		t.Error("EnablePrivateCluster should be true")
+	}
+	if req.Properties.APIServerAccessProfile.AuthorizedIPRanges == nil ||
+		len(*req.Properties.APIServerAccessProfile.AuthorizedIPRanges) != 2 {
+		t.Errorf("AuthorizedIPRanges = %v", req.Properties.APIServerAccessProfile.AuthorizedIPRanges)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Shape E — KaaS adapter error paths
+// --------------------------------------------------------------------------
+
+// Get_BadRef: URI that can't be resolved to KaaS/project IDs.
+func TestKaaSClientAdapter_Get_BadRef(t *testing.T) {
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.Get(context.Background(), URI("/projects/p/no-kaas-segment"))
+	if err == nil {
+		t.Fatal("expected error for URI that lacks /kaas/<id>")
+	}
+}
+
+// Get_NonTwoXX: stub returns 404 → HTTPError.
+func TestKaaSClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "not found", 404))
+	})
+	_, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Container/kaas/kaas-1"))
+	if err == nil {
+		t.Fatal("expected error on 404")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// Delete_BadRef: URI without kaas segment → error before HTTP.
+func TestKaaSClientAdapter_Delete_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusNoContent)
+	})
+	err := adapter.Delete(context.Background(), URI("/projects/p/no-kaas-segment"))
+	if err == nil {
+		t.Fatal("expected error for bad ref")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad ref")
+	}
+}
+
+// List_BadRef: parent ref without project ID → error before HTTP.
+func TestKaaSClientAdapter_List_BadRef(t *testing.T) {
+	callCount := 0
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.List(context.Background(), URI("/no-project"))
+	if err == nil {
+		t.Fatal("expected error for ref without project")
+	}
+	if callCount != 0 {
+		t.Error("no HTTP call should be made for bad ref")
+	}
+}
+
+// List_NonTwoXX: stub returns 500 → HTTPError.
+func TestKaaSClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Server Error", "internal", 500))
+	})
+	_, err := adapter.List(context.Background(), URI("/projects/p"))
+	if err == nil {
+		t.Fatal("expected error on 500")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T", err)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Shape E — preActionCheck missing-ID path
+// --------------------------------------------------------------------------
+
+func TestKaaS_DownloadKubeconfig_MissingKaaSID(t *testing.T) {
+	fake := &fakeKaaSLowLevel{
+		downloadKubeconfigFunc: func(_ context.Context, _, _ string, _ *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error) {
+			return &types.Response[types.KaaSKubeconfigResponse]{StatusCode: 200, Data: &types.KaaSKubeconfigResponse{}}, nil
+		},
+	}
+	adapter := &kaasClientAdapter{low: fake}
+
+	// Has actions and project, but no ID.
+	k := NewKaaS()
+	k.projectID = "p"
+	k.actions = adapter
+
+	_, err := k.DownloadKubeconfig(context.Background())
+	if err == nil {
+		t.Fatal("expected error when KaaS has no ID")
+	}
+	if !containsSubstring(err.Error(), "missing KaaS ID") {
+		t.Errorf("error should mention 'missing KaaS ID', got %q", err.Error())
+	}
+}
+
+// DownloadKubeconfig_NilData: success status but nil Data → returns nil bytes.
+func TestKaaS_DownloadKubeconfig_NilData(t *testing.T) {
+	fake := &fakeKaaSLowLevel{
+		downloadKubeconfigFunc: func(_ context.Context, _, _ string, _ *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error) {
+			return &types.Response[types.KaaSKubeconfigResponse]{StatusCode: 200, Data: nil}, nil
+		},
+	}
+	adapter := &kaasClientAdapter{low: fake}
+
+	k := &KaaS{}
+	id := "kaas-1"
+	uri := "/projects/p/providers/Aruba.Container/kaas/kaas-1"
+	k.fromResponse(&types.KaaSResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:                      &id,
+			URI:                     &uri,
+			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+		},
+	})
+	k.actions = adapter
+
+	data, err := k.DownloadKubeconfig(context.Background())
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if data != nil {
+		t.Errorf("expected nil data for nil response Data, got %v", data)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Shape F — Accessors on zero-value KaaS
+// --------------------------------------------------------------------------
+
+func TestKaaS_Accessors_ZeroValue(t *testing.T) {
+	k := NewKaaS()
+
+	if k.VPC() != "" {
+		t.Errorf("VPC() = %q, want empty", k.VPC())
+	}
+	if k.Subnet() != "" {
+		t.Errorf("Subnet() = %q, want empty", k.Subnet())
+	}
+	if k.SecurityGroupName() != "" {
+		t.Errorf("SecurityGroupName() = %q, want empty", k.SecurityGroupName())
+	}
+	if k.KubernetesVersion() != "" {
+		t.Errorf("KubernetesVersion() = %q, want empty", k.KubernetesVersion())
+	}
+	if k.BillingPeriod() != "" {
+		t.Errorf("BillingPeriod() = %q, want empty", k.BillingPeriod())
+	}
+	if k.Raw() != nil {
+		t.Errorf("Raw() = %v, want nil", k.Raw())
+	}
+	if k.URI() != "" {
+		t.Errorf("URI() = %q, want empty", k.URI())
+	}
+	if k.KaaSID() != "" {
+		t.Errorf("KaaSID() = %q, want empty", k.KaaSID())
+	}
+}
+
+// --------------------------------------------------------------------------
+// kaasRebuildNodePools — nil-field branches
+// --------------------------------------------------------------------------
+
+func TestKaasRebuildNodePools_NilOptionalFields(t *testing.T) {
+	// Construct a response pool where Name, Nodes, Instance, DataCenter,
+	// MinCount, and MaxCount are all nil to exercise the nil-guard branches.
+	autoTrue := true
+	pools := &[]types.NodePoolPropertiesResponse{
+		{
+			// Name: nil
+			// Nodes: nil
+			Instance:    nil,
+			DataCenter:  nil,
+			MinCount:    nil,
+			MaxCount:    nil,
+			Autoscaling: autoTrue,
+		},
+	}
+	result := kaasRebuildNodePools(pools)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 pool, got %d", len(result))
+	}
+	np := result[0]
+	if np.name != nil {
+		t.Errorf("name should be nil, got %v", np.name)
+	}
+	if np.instance != nil {
+		t.Errorf("instance should be nil, got %v", np.instance)
+	}
+	if np.zone != nil {
+		t.Errorf("zone should be nil, got %v", np.zone)
+	}
+	if np.autoscaling == nil || !*np.autoscaling {
+		t.Errorf("autoscaling should be true")
+	}
+}
+
+func TestKaasRebuildNodePools_WithMinMaxCount(t *testing.T) {
+	// Cover the MinCount and MaxCount non-nil branches.
+	min := int32(2)
+	max := int32(8)
+	autoFalse := false
+	pools := &[]types.NodePoolPropertiesResponse{
+		{
+			MinCount:    &min,
+			MaxCount:    &max,
+			Autoscaling: autoFalse,
+		},
+	}
+	result := kaasRebuildNodePools(pools)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 pool, got %d", len(result))
+	}
+	np := result[0]
+	if np.minCount == nil || *np.minCount != 2 {
+		t.Errorf("minCount = %v, want 2", np.minCount)
+	}
+	if np.maxCount == nil || *np.maxCount != 8 {
+		t.Errorf("maxCount = %v, want 8", np.maxCount)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Additional coverage: DownloadKubeconfig missing-projectID + low-level error
+// --------------------------------------------------------------------------
+
+// MissingProjectID: has actions and ID, but no projectID.
+func TestKaaS_DownloadKubeconfig_MissingProjectID(t *testing.T) {
+	fake := &fakeKaaSLowLevel{
+		downloadKubeconfigFunc: func(_ context.Context, _, _ string, _ *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error) {
+			return &types.Response[types.KaaSKubeconfigResponse]{StatusCode: 200, Data: &types.KaaSKubeconfigResponse{}}, nil
+		},
+	}
+	adapter := &kaasClientAdapter{low: fake}
+
+	// Has ID but no project (URI has no /projects segment).
+	k := NewKaaS()
+	id := "kaas-1"
+	uri := "/providers/Aruba.Container/kaas/kaas-1"
+	k.fromResponse(&types.KaaSResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:  &id,
+			URI: &uri,
+		},
+	})
+	k.actions = adapter
+
+	_, err := k.DownloadKubeconfig(context.Background())
+	if err == nil {
+		t.Fatal("expected error when KaaS has no projectID")
+	}
+	if !containsSubstring(err.Error(), "missing project ID") {
+		t.Errorf("error should mention 'missing project ID', got %q", err.Error())
+	}
+}
+
+// LowLevelError: low-level client returns error → propagate.
+func TestKaaS_DownloadKubeconfig_LowLevelError(t *testing.T) {
+	fake := &fakeKaaSLowLevel{
+		downloadKubeconfigFunc: func(_ context.Context, _, _ string, _ *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error) {
+			return nil, fmt.Errorf("network timeout")
+		},
+	}
+	adapter := &kaasClientAdapter{low: fake}
+
+	k := &KaaS{}
+	id := "kaas-1"
+	uri := "/projects/p/providers/Aruba.Container/kaas/kaas-1"
+	k.fromResponse(&types.KaaSResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:                      &id,
+			URI:                     &uri,
+			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+		},
+	})
+	k.actions = adapter
+
+	_, err := k.DownloadKubeconfig(context.Background())
+	if err == nil {
+		t.Fatal("expected error from low-level client")
+	}
+	if !containsSubstring(err.Error(), "network timeout") {
+		t.Errorf("error should mention 'network timeout', got %q", err.Error())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Additional coverage: KaaS adapter Update/Get error paths via fake
+// --------------------------------------------------------------------------
+
+// Update_WithErr: k.Err() is non-nil → return early.
+func TestKaaSClientAdapter_Update_WithErr(t *testing.T) {
+	callCount := 0
+	fake := &fakeKaaSLowLevel{
+		updateFunc: func(_ context.Context, _, _ string, _ types.KaaSUpdateRequest, _ *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
+			callCount++
+			return nil, nil
+		},
+	}
+	adapter := &kaasClientAdapter{low: fake}
+
+	k := NewKaaS()
+	k.addErr(fmt.Errorf("pre-existing error"))
+	// Give it an ID and project so those checks pass.
+	id := "kaas-1"
+	uri := "/projects/p/providers/Aruba.Container/kaas/kaas-1"
+	k.fromResponse(&types.KaaSResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:                      &id,
+			URI:                     &uri,
+			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+		},
+	})
+	k.addErr(fmt.Errorf("pre-existing error after hydration"))
+
+	_, err := adapter.Update(context.Background(), k)
+	if err == nil {
+		t.Fatal("expected error when k.Err() is set")
+	}
+	if callCount != 0 {
+		t.Error("no low-level call should be made when k.Err() is set")
+	}
+}
+
+// Get_LowLevelError: low-level Get returns error → propagate.
+func TestKaaSClientAdapter_Get_LowLevelError(t *testing.T) {
+	fake := &fakeKaaSLowLevel{
+		getFunc: func(_ context.Context, _, _ string, _ *types.RequestParameters) (*types.Response[types.KaaSResponse], error) {
+			return nil, fmt.Errorf("connection refused")
+		},
+	}
+	adapter := &kaasClientAdapter{low: fake}
+
+	_, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Container/kaas/kaas-1"))
+	if err == nil {
+		t.Fatal("expected error from low-level Get")
+	}
+	if !containsSubstring(err.Error(), "connection refused") {
+		t.Errorf("error should mention 'connection refused', got %q", err.Error())
+	}
+}

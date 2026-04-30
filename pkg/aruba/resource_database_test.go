@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Arubacloud/sdk-go/internal/clients/database"
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
@@ -476,6 +477,238 @@ func TestDatabasesClientAdapter_Delete_NonTwoXX(t *testing.T) {
 		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
 	}
 	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// RawRequest (0% → covers the method)
+// --------------------------------------------------------------------------
+
+func TestDatabase_RawRequest(t *testing.T) {
+	db := NewDatabase().WithName("mydb")
+	req := db.RawRequest()
+	if req.Name != "mydb" {
+		t.Errorf("RawRequest().Name = %q", req.Name)
+	}
+	// Also test zero value
+	_ = NewDatabase().RawRequest() // must not panic
+}
+
+// --------------------------------------------------------------------------
+// Zero-value accessors (Shape F — covers the nil-response branch)
+// --------------------------------------------------------------------------
+
+func TestDatabase_Accessors_ZeroValue(t *testing.T) {
+	db := &Database{}
+	if !db.CreatedAt().IsZero() {
+		t.Error("CreatedAt() zero should be zero time")
+	}
+	if db.CreatedBy() != "" {
+		t.Errorf("CreatedBy() zero = %q", db.CreatedBy())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Update — no dbaasID path
+// --------------------------------------------------------------------------
+
+func TestDatabasesClientAdapter_Update_NoDBaaSID(t *testing.T) {
+	callCount := 0
+	adapter := buildDatabaseTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+	})
+	// Has name and projectID but no dbaasID
+	db := &Database{}
+	db.projectID = "p"
+	name := "mydb"
+	db.name = &name
+	_, err := adapter.Update(context.Background(), db)
+	if err == nil {
+		t.Fatal("expected error when dbaasID is missing")
+	}
+	if callCount != 0 {
+		t.Errorf("expected 0 calls, got %d", callCount)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Update — extra guard paths
+// --------------------------------------------------------------------------
+
+func TestDatabasesClientAdapter_Update_NoProject(t *testing.T) {
+	callCount := 0
+	adapter := buildDatabaseTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+	// Has name and dbaasID but no projectID
+	db := &Database{}
+	db.dbaasID = "d-1"
+	name := "mydb"
+	db.name = &name
+	_, err := adapter.Update(context.Background(), db)
+	if err == nil {
+		t.Fatal("expected error when projectID is missing")
+	}
+	if callCount != 0 {
+		t.Errorf("expected 0 calls, got %d", callCount)
+	}
+}
+
+func TestDatabasesClientAdapter_Update_NonTwoXX(t *testing.T) {
+	adapter := buildDatabaseTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		fmt.Fprint(w, `{"title":"Conflict","detail":"concurrent update"}`)
+	})
+	db := NewDatabase().
+		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		WithName("my-db")
+	_, err := adapter.Update(context.Background(), db)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusConflict {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Get — bad Ref
+// --------------------------------------------------------------------------
+
+func TestDatabasesClientAdapter_Get_BadRef(t *testing.T) {
+	adapter := buildDatabaseTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.Get(context.Background(), URI("/something/else"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Get — non-2xx response
+// --------------------------------------------------------------------------
+
+func TestDatabasesClientAdapter_Get_NonTwoXX(t *testing.T) {
+	adapter := buildDatabaseTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{"title":"Not Found","detail":"database not found"}`)
+	})
+	ref := URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/my-db")
+	_, err := adapter.Get(context.Background(), ref)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Delete — bad Ref
+// --------------------------------------------------------------------------
+
+func TestDatabasesClientAdapter_Delete_BadRef(t *testing.T) {
+	adapter := buildDatabaseTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	err := adapter.Delete(context.Background(), URI("/something/bad"))
+	if err == nil {
+		t.Fatal("expected error for bad Ref")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Create — no dbaasID path
+// --------------------------------------------------------------------------
+
+func TestDatabasesClientAdapter_Create_NoDBaaSID(t *testing.T) {
+	callCount := 0
+	adapter := buildDatabaseTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+	})
+	// Has projectID but no dbaasID
+	db := &Database{}
+	db.projectID = "p"
+	name := "mydb"
+	db.name = &name
+	_, err := adapter.Create(context.Background(), db)
+	if err == nil {
+		t.Fatal("expected error when dbaasID is missing")
+	}
+	if callCount != 0 {
+		t.Errorf("expected 0 calls, got %d", callCount)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Create — errMixin path
+// --------------------------------------------------------------------------
+
+func TestDatabasesClientAdapter_Create_ErrMixin(t *testing.T) {
+	callCount := 0
+	adapter := buildDatabaseTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+	})
+	// IntoDBaaS with bad URI sets errMixin
+	db := NewDatabase().IntoDBaaS(URI("/garbage")).WithName("mydb")
+	_, err := adapter.Create(context.Background(), db)
+	if err == nil {
+		t.Fatal("expected error from errMixin")
+	}
+	if callCount != 0 {
+		t.Errorf("expected 0 HTTP calls, got %d", callCount)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Update — broken client
+// --------------------------------------------------------------------------
+
+func TestDatabasesClientAdapter_Update_BrokenClient(t *testing.T) {
+	adapter := &databasesClientAdapter{low: database.NewDatabasesClientImpl(testutil.NewBrokenClient(t, "http://localhost:9"))}
+	db := NewDatabase().
+		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		WithName("my-db")
+	_, err := adapter.Update(context.Background(), db)
+	if err == nil {
+		t.Fatal("expected network error from broken client")
+	}
+}
+
+// --------------------------------------------------------------------------
+// List — bad parent ref and non-2xx
+// --------------------------------------------------------------------------
+
+func TestDatabasesClientAdapter_List_BadRef(t *testing.T) {
+	adapter := buildDatabaseTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	_, err := adapter.List(context.Background(), URI("/something/bad"))
+	if err == nil {
+		t.Fatal("expected error for bad parent Ref")
+	}
+}
+
+func TestDatabasesClientAdapter_List_NonTwoXX(t *testing.T) {
+	adapter := buildDatabaseTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, `{"title":"Forbidden","detail":"not allowed"}`)
+	})
+	parent := URI("/projects/p/providers/Aruba.Database/dbaas/d-1")
+	_, err := adapter.List(context.Background(), parent)
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != http.StatusForbidden {
 		t.Errorf("StatusCode = %d", httpErr.StatusCode)
 	}
 }
