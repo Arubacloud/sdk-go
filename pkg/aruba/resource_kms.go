@@ -107,6 +107,7 @@ func (k *KMS) fromResponse(resp *types.KmsResponse) {
 		k.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	k.setStatus(&resp.Status)
+	k.setTerminalStates(kmsTerminalStates)
 
 	if resp.Properties.BillingPeriod != "" {
 		v := resp.Properties.BillingPeriod
@@ -156,6 +157,11 @@ func kmsIDsFromRef(ref Ref) (projectID, kmsID string, err error) {
 	return pid, kid, nil
 }
 
+var kmsTerminalStates = map[string]bool{
+	"Active": true,
+	"Error":  false,
+}
+
 // ---------------------------------------------------------------------------
 // Low-level interface + adapter
 // ---------------------------------------------------------------------------
@@ -194,6 +200,16 @@ func (a *kmsClientAdapter) Create(ctx context.Context, k *KMS, opts ...CallOptio
 	populateHTTPEnvelope(&k.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		k.fromResponse(resp.Data)
+		k.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, k)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				k.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return k, err
@@ -220,6 +236,16 @@ func (a *kmsClientAdapter) Update(ctx context.Context, k *KMS, opts ...CallOptio
 	populateHTTPEnvelope(&k.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		k.fromResponse(resp.Data)
+		k.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, k)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				k.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return k, err
@@ -243,6 +269,16 @@ func (a *kmsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption)
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if out.projectID == "" {
 		out.projectID = projectID
@@ -294,6 +330,16 @@ func (a *kmsClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOpt
 			k := &KMS{}
 			k.projectID = projectID
 			k.fromResponse(&resp.Data.Values[i])
+			k.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, k)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					k.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if k.projectID == "" {
 				k.projectID = projectID
 			}

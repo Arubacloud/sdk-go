@@ -1030,3 +1030,36 @@ func TestJobsClient_HasUpdateMethod(t *testing.T) {
 		t.Error("JobsClient interface is missing the Update method")
 	}
 }
+
+func TestJob_FromResponse_SetsTerminalStates(t *testing.T) {
+	j := &Job{}
+	state := "Active"
+	j.fromResponse(&types.JobResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(j.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !j.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for Job")
+	}
+	if j.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for Job")
+	}
+}
+
+func TestJobsClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, jobSuccessBody)
+	})
+	adapter := newJobsClientAdapter(testutil.NewClient(t, server.URL))
+	j, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Schedule/jobs/job-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&j.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned Job")
+	}
+}

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Arubacloud/sdk-go/pkg/async"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
@@ -614,18 +615,52 @@ func (m *responseMetadataMixin) Raw() *types.ResourceMetadataResponse {
 // --------------------------------------------------------------------------
 
 // WaitOption configures WaitUntilActive / WaitUntilState behaviour.
-// Full implementation is deferred to the async-poll issue; the type exists now
-// so call sites compile without changes once the real implementation lands.
 type WaitOption func(*waitOptions)
 
-type waitOptions struct{}
+type waitOptions struct {
+	retries   int
+	baseDelay time.Duration
+	timeout   time.Duration
+}
+
+func defaultWaitOptions() waitOptions {
+	return waitOptions{
+		retries:   async.DefaultRetries,
+		baseDelay: async.DefaultBaseDelay,
+		timeout:   async.DefaultTimeout,
+	}
+}
+
+// WithRetries sets the maximum number of polling attempts (default: 60).
+func WithRetries(n int) WaitOption { return func(o *waitOptions) { o.retries = n } }
+
+// WithBaseDelay sets the fixed delay between polling attempts (default: 10s).
+func WithBaseDelay(d time.Duration) WaitOption { return func(o *waitOptions) { o.baseDelay = d } }
+
+// WithTimeout sets the overall deadline for the polling loop (default: 600s).
+func WithTimeout(d time.Duration) WaitOption { return func(o *waitOptions) { o.timeout = d } }
+
+func applyWaitOptions(opts []WaitOption) waitOptions {
+	out := defaultWaitOptions()
+	for _, opt := range opts {
+		if opt != nil {
+			opt(&out)
+		}
+	}
+	return out
+}
 
 type statusMixin struct {
-	status  *types.ResourceStatus
-	refresh func(ctx context.Context) error
+	status         *types.ResourceStatus
+	refresh        func(ctx context.Context) error
+	terminalStates map[string]bool // true = success, false = error
 }
 
 func (m *statusMixin) setStatus(s *types.ResourceStatus) { m.status = s }
+
+func (m *statusMixin) setRefresh(fn func(context.Context) error) { m.refresh = fn }
+
+func (m *statusMixin) setTerminalStates(states map[string]bool) { m.terminalStates = states }
 
 // State returns the current lifecycle state string, or "".
 func (m *statusMixin) State() string {
@@ -667,16 +702,43 @@ func (m *statusMixin) PreviousState() string {
 	return *m.status.PreviousStatus.State
 }
 
-// WaitUntilActive blocks until the resource reaches the Active state.
-// Full implementation is deferred to the async-poll issue.
-func (m *statusMixin) WaitUntilActive(_ context.Context, _ ...WaitOption) error {
-	return errors.New("WaitUntilActive: not yet implemented (see async-poll issue)")
+// WaitUntilActive blocks until the resource reaches the "Active" state.
+// Equivalent to WaitUntilState(ctx, "Active", opts...).
+func (m *statusMixin) WaitUntilActive(ctx context.Context, opts ...WaitOption) error {
+	return m.WaitUntilState(ctx, "Active", opts...)
 }
 
 // WaitUntilState blocks until the resource reaches the given state.
-// Full implementation is deferred to the async-poll issue.
-func (m *statusMixin) WaitUntilState(_ context.Context, _ string, _ ...WaitOption) error {
-	return errors.New("WaitUntilState: not yet implemented (see async-poll issue)")
+// Returns immediately with an error if the resource enters a known error terminal state.
+// Returns a descriptive error if the refresh callback was not set (resource not produced by an adapter).
+func (m *statusMixin) WaitUntilState(ctx context.Context, target string, opts ...WaitOption) error {
+	if m.refresh == nil {
+		return errors.New("WaitUntilState: refresh callback not set; resource must be produced by an adapter (Create/Get/Update/List) to support polling")
+	}
+	cfg := applyWaitOptions(opts)
+	call := func(ctx context.Context) (*types.Response[any], error) {
+		if err := m.refresh(ctx); err != nil {
+			return nil, err
+		}
+		return &types.Response[any]{}, nil
+	}
+	var terminalErr error
+	check := func(_ *types.Response[any]) (bool, error) {
+		state := m.State()
+		if state == target {
+			return true, nil
+		}
+		if isSuccess, isTerminal := m.terminalStates[state]; isTerminal && !isSuccess {
+			terminalErr = fmt.Errorf("resource entered terminal error state %q (target %q)", state, target)
+			return true, terminalErr
+		}
+		return false, nil
+	}
+	_, err := async.WaitFor[any](ctx, cfg.retries, cfg.baseDelay, cfg.timeout, call, check).Await(ctx)
+	if terminalErr != nil {
+		return terminalErr
+	}
+	return err
 }
 
 // --------------------------------------------------------------------------

@@ -92,6 +92,7 @@ func (r *StorageRestore) fromResponse(resp *types.StorageRestoreResponse) {
 		r.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	r.setStatus(&resp.Status)
+	r.setTerminalStates(storageRestoreTerminalStates)
 
 	// Response shape uses Destination (not Target).
 	if resp.Properties.Destination.URI != "" {
@@ -118,6 +119,11 @@ func storageRestoreDerefString(p *string) string {
 		return ""
 	}
 	return *p
+}
+
+var storageRestoreTerminalStates = map[string]bool{
+	"Available": true,
+	"Error":     false,
 }
 
 // ---------------------------------------------------------------------------
@@ -161,6 +167,16 @@ func (a *storageRestoresClientAdapter) Create(ctx context.Context, r *StorageRes
 	populateHTTPEnvelope(&r.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		r.fromResponse(resp.Data)
+		r.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, r)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				r.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return r, err
@@ -183,6 +199,16 @@ func (a *storageRestoresClientAdapter) Get(ctx context.Context, ref Ref, opts ..
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if out.projectID == "" {
 		out.projectID = projectID
@@ -215,6 +241,16 @@ func (a *storageRestoresClientAdapter) Update(ctx context.Context, r *StorageRes
 	populateHTTPEnvelope(&r.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		r.fromResponse(resp.Data)
+		r.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, r)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				r.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return r, err
@@ -262,6 +298,16 @@ func (a *storageRestoresClientAdapter) List(ctx context.Context, backup Ref, opt
 		for i := range resp.Data.Values {
 			v := &StorageRestore{}
 			v.fromResponse(&resp.Data.Values[i])
+			v.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, v)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					v.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if v.projectID == "" {
 				v.projectID = projectID
 			}

@@ -65,6 +65,7 @@ func (l *LoadBalancer) fromResponse(resp *types.LoadBalancerResponse) {
 		l.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	l.setStatus(&resp.Status)
+	l.setTerminalStates(loadBalancerTerminalStates)
 	l.setLinked(resp.Properties.LinkedResources)
 
 	if resp.Properties.Address != nil && *resp.Properties.Address != "" {
@@ -91,6 +92,11 @@ func loadBalancerDerefString(p *string) string {
 		return ""
 	}
 	return *p
+}
+
+var loadBalancerTerminalStates = map[string]bool{
+	"Active": true,
+	"Error":  false,
 }
 
 // ---------------------------------------------------------------------------
@@ -123,6 +129,16 @@ func (a *loadBalancersClientAdapter) Get(ctx context.Context, ref Ref, opts ...C
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	out.projectID = projectID
 	if err != nil {
@@ -154,6 +170,16 @@ func (a *loadBalancersClientAdapter) List(ctx context.Context, project Ref, opts
 		for i := range resp.Data.Values {
 			lb := &LoadBalancer{}
 			lb.fromResponse(&resp.Data.Values[i])
+			lb.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, lb)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					lb.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if lb.projectID == "" {
 				lb.projectID = projectID
 			}

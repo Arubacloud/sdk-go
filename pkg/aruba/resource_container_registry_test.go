@@ -1320,3 +1320,36 @@ func TestContainerRegistriesClientAdapter_List_LowLevelError(t *testing.T) {
 		t.Errorf("error should mention 'upstream unavailable', got %q", err.Error())
 	}
 }
+
+func TestContainerRegistry_FromResponse_SetsTerminalStates(t *testing.T) {
+	r := &ContainerRegistry{}
+	state := "Active"
+	r.fromResponse(&types.ContainerRegistryResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(r.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !r.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for ContainerRegistry")
+	}
+	if r.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for ContainerRegistry")
+	}
+}
+
+func TestContainerRegistriesClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, containerRegistrySuccessBody)
+	})
+	adapter := newContainerRegistriesClientAdapter(testutil.NewClient(t, server.URL))
+	cr, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Container/registries/cr-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&cr.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned ContainerRegistry")
+	}
+}

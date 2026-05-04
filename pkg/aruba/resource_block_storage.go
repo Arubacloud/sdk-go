@@ -136,6 +136,7 @@ func (b *BlockStorage) fromResponse(resp *types.BlockStorageResponse) {
 		b.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	b.setStatus(&resp.Status)
+	b.setTerminalStates(blockStorageTerminalStates)
 	b.setLinked(resp.Properties.LinkedResources)
 
 	if resp.Properties.SizeGB != 0 {
@@ -183,6 +184,11 @@ func blockStorageDerefString(p *string) string {
 	return *p
 }
 
+var blockStorageTerminalStates = map[string]bool{
+	"Available": true,
+	"Error":     false,
+}
+
 // ---------------------------------------------------------------------------
 // Low-level client interface, adapter, constructor, and methods
 // ---------------------------------------------------------------------------
@@ -217,6 +223,16 @@ func (a *volumesClientAdapter) Create(ctx context.Context, vol *BlockStorage, op
 	populateHTTPEnvelope(&vol.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		vol.fromResponse(resp.Data)
+		vol.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, vol)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				vol.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return vol, err
@@ -239,6 +255,16 @@ func (a *volumesClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOpt
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if out.projectID == "" {
 		out.projectID = projectID
@@ -268,6 +294,16 @@ func (a *volumesClientAdapter) Update(ctx context.Context, vol *BlockStorage, op
 	populateHTTPEnvelope(&vol.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		vol.fromResponse(resp.Data)
+		vol.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, vol)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				vol.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return vol, err
@@ -315,6 +351,16 @@ func (a *volumesClientAdapter) List(ctx context.Context, project Ref, opts ...Ca
 		for i := range resp.Data.Values {
 			bs := &BlockStorage{}
 			bs.fromResponse(&resp.Data.Values[i])
+			bs.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, bs)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					bs.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if bs.projectID == "" {
 				bs.projectID = projectID
 			}

@@ -892,3 +892,36 @@ func TestSecurityGroupsClientAdapter_List_TwoItems(t *testing.T) {
 		t.Errorf("items[0].ProjectID() = %q", items[0].ProjectID())
 	}
 }
+
+func TestSecurityGroup_FromResponse_SetsTerminalStates(t *testing.T) {
+	sg := &SecurityGroup{}
+	state := "Active"
+	sg.fromResponse(&types.SecurityGroupResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(sg.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !sg.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for SecurityGroup")
+	}
+	if sg.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for SecurityGroup")
+	}
+}
+
+func TestSecurityGroupsClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, securityGroupSuccessBody)
+	})
+	adapter := newSecurityGroupsClientAdapter(testutil.NewClient(t, server.URL))
+	sg, err := adapter.Get(context.Background(), URI("/projects/p/network/vpcs/v/security-groups/sg-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&sg.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned SecurityGroup")
+	}
+}
