@@ -4,154 +4,94 @@ Questa guida spiega come utilizzare i filtri con l'SDK Aruba Cloud Go per interr
 
 ## Panoramica
 
-L'SDK fornisce un sistema di filtraggio potente e flessibile che segue la specifica dei filtri dell'API Aruba Cloud. I filtri ti consentono di:
+L'SDK fornisce un sistema di filtraggio flessibile tramite helper `CallOption`. Passali direttamente a `List` (e ad altre operazioni di lettura) senza costruire struct di parametri intermedi.
 
-- Interrogare le risorse in base ai valori dei campi
-- Utilizzare operatori di confronto (uguale, maggiore di, minore di, ecc.)
-- Combinare più condizioni con operatori logici (AND/OR)
-- Eseguire corrispondenze di pattern (contiene, inizia con, termina con)
-- Filtrare per più valori (IN, NOT IN)
+```go
+servers, err := arubaClient.FromCompute().CloudServers().List(ctx, proj,
+    aruba.WithFilter("status:eq:Active,cpu:gt:2"),
+    aruba.WithSort("name:asc"),
+    aruba.WithLimit(50),
+)
+```
+
+Opzioni di chiamata disponibili:
+
+| Opzione | Descrizione |
+|---------|-------------|
+| `aruba.WithFilter(expr string)` | Espressione di filtro lato server |
+| `aruba.WithSort(expr string)` | Espressione di ordinamento |
+| `aruba.WithLimit(n int)` | Dimensione della pagina |
+| `aruba.WithOffset(n int)` | Offset di paginazione |
+| `aruba.WithProjection(expr string)` | Proiezione dei campi |
 
 ## Formato Filtro
 
-I filtri seguono questo formato: `field:operator:value`
+I filtri seguono questo formato: `campo:operatore:valore`
 
-- **Field**: Il campo della risorsa su cui filtrare (ad esempio, `status`, `name`, `cpu`)
-- **Operator**: L'operatore di confronto (ad esempio, `eq`, `gt`, `like`)
-- **Value**: Il valore con cui confrontare
+- **Campo**: Il campo della risorsa su cui filtrare (es. `status`, `name`, `cpu`)
+- **Operatore**: L'operatore di confronto (es. `eq`, `gt`, `like`)
+- **Valore**: Il valore con cui confrontare
 
-I filtri multipli sono combinati utilizzando:
+Più filtri vengono combinati usando:
 - `,` (virgola) per operazioni **AND**
 - `;` (punto e virgola) per operazioni **OR**
 
 ## Operatori Supportati
 
-| Operatore | Codice   | Descrizione              | Esempio                    |
-|----------|--------|--------------------------|----------------------------|
-| Uguale    | `eq`   | Corrispondenza esatta              | `status:eq:running`        |
-| Diverso| `ne`   | Diverso da             | `status:ne:stopped`        |
-| Maggiore  | `gt`   | Maggiore di             | `cpu:gt:2`                 |
-| Maggiore/Uguale | `gte` | Maggiore o uguale | `memory:gte:4096`         |
-| Minore     | `lt`   | Minore di                | `disk:lt:100`              |
-| Minore/Uguale | `lte` | Minore o uguale      | `cpu:lte:8`                |
-| In       | `in`   | Valore nell'elenco            | `region:in:us-east,us-west`|
-| Non In   | `nin`  | Valore non nell'elenco        | `status:nin:failed,error`  |
-| Contiene | `like` | Corrispondenza sottostringa          | `name:like:prod`           |
-| Inizia Con | `sw` | Corrispondenza prefisso            | `name:sw:web-`             |
-| Termina Con | `ew`  | Corrispondenza suffisso             | `name:ew:-prod`            |
+| Operatore | Codice | Descrizione | Esempio |
+|-----------|--------|-------------|---------|
+| Uguale | `eq` | Corrispondenza esatta | `status:eq:Active` |
+| Diverso | `ne` | Non uguale a | `status:ne:Error` |
+| Maggiore | `gt` | Maggiore di | `cpu:gt:2` |
+| Maggiore/Uguale | `gte` | Maggiore o uguale a | `memory:gte:4096` |
+| Minore | `lt` | Minore di | `disk:lt:100` |
+| Minore/Uguale | `lte` | Minore o uguale a | `cpu:lte:8` |
+| In | `in` | Valore in lista | `region:in:us-east,us-west` |
+| Non In | `nin` | Valore non in lista | `status:nin:Error,Failed` |
+| Contiene | `like` | Corrispondenza sottostringa | `name:like:prod` |
+| Inizia Con | `sw` | Corrispondenza prefisso | `name:sw:web-` |
+| Termina Con | `ew` | Corrispondenza suffisso | `name:ew:-prod` |
 
-## Utilizzo di FilterBuilder
+## Filtri Semplici
 
-L'SDK fornisce un `FilterBuilder` per costruire espressioni di filtro complesse in modo programmatico.
-
-### Filtri Semplici
-
-#### Condizione Singola
+### Condizione Singola
 
 ```go
-import "github.com/Arubacloud/sdk-go/pkg/types"
-
-// Filtra per stato
-filter := types.NewFilterBuilder().
-    Equal("status", "running").
-    Build()
-
-params := &types.RequestParameters{
-    Filter: &filter,
-}
-
-resp, err := arubaClient.FromCompute().CloudServers().List(ctx, projectID, params)
+// Elenca i cloud server attivi
+servers, err := arubaClient.FromCompute().CloudServers().List(ctx, proj,
+    aruba.WithFilter("status:eq:Active"),
+)
 ```
 
-Risultato: `status:eq:running`
-
-#### Condizioni AND Multiple
+### Condizioni AND Multiple
 
 ```go
-// Filtra per stato AND cpu AND memoria
-filter := types.NewFilterBuilder().
-    Equal("status", "running").
-    GreaterThan("cpu", 2).
-    GreaterThanOrEqual("memory", 4096).
-    Build()
+// Server attivi con almeno 2 vCPU e 4 GB di RAM
+servers, err := arubaClient.FromCompute().CloudServers().List(ctx, proj,
+    aruba.WithFilter("status:eq:Active,cpu:gt:2,memory:gte:4096"),
+)
 ```
 
-Risultato: `status:eq:running,cpu:gt:2,memory:gte:4096`
+Espressione risultante: `status:eq:Active,cpu:gt:2,memory:gte:4096`
 
 ### Condizioni OR
 
 ```go
-// Filtra per stato = running OR stato = starting
-filter := types.NewFilterBuilder().
-    Equal("status", "running").
-    Or().
-    Equal("status", "starting").
-    Build()
+// Server che sono Attivi O in Avvio
+servers, err := arubaClient.FromCompute().CloudServers().List(ctx, proj,
+    aruba.WithFilter("status:eq:Active;status:eq:Starting"),
+)
 ```
 
-Risultato: `status:eq:running;status:eq:starting`
+Espressione risultante: `status:eq:Active;status:eq:Starting`
 
 ### Filtri Complessi (AND + OR)
 
 ```go
-// (environment = production AND memory >= 4096) OR (tier = premium AND region IN [us-east-1, us-west-2])
-filter := types.NewFilterBuilder().
-    Equal("environment", "production").
-    GreaterThanOrEqual("memory", 4096).
-    Or().
-    Equal("tier", "premium").
-    In("region", "us-east-1", "us-west-2").
-    Build()
-```
-
-Risultato: `environment:eq:production,memory:gte:4096;tier:eq:premium,region:in:us-east-1,us-west-2`
-
-## Metodi Filtro
-
-### Metodi di Confronto
-
-```go
-fb := types.NewFilterBuilder()
-
-// Uguaglianza
-fb.Equal("field", "value")           // field = value
-fb.NotEqual("field", "value")        // field != value
-
-// Confronti numerici
-fb.GreaterThan("field", 100)         // field > 100
-fb.GreaterThanOrEqual("field", 100)  // field >= 100
-fb.LessThan("field", 100)            // field < 100
-fb.LessThanOrEqual("field", 100)     // field <= 100
-
-// Operazioni su elenchi
-fb.In("field", "val1", "val2", "val3")     // field IN (val1, val2, val3)
-fb.NotIn("field", "val1", "val2")          // field NOT IN (val1, val2)
-
-// Corrispondenza pattern stringa
-fb.Contains("field", "substring")    // field LIKE %substring%
-fb.StartsWith("field", "prefix")     // field LIKE prefix%
-fb.EndsWith("field", "suffix")       // field LIKE %suffix
-```
-
-### Operatori Logici
-
-```go
-fb := types.NewFilterBuilder()
-
-// Il predefinito è AND
-fb.Equal("field1", "value1").
-   Equal("field2", "value2")  // field1 = value1 AND field2 = value2
-
-// OR esplicito
-fb.Equal("field1", "value1").
-   Or().
-   Equal("field2", "value2")  // field1 = value1 OR field2 = value2
-
-// Mescola AND e OR
-fb.Equal("field1", "value1").
-   Equal("field2", "value2").  // Gruppo 1: AND
-   Or().
-   Equal("field3", "value3")   // Gruppo 2: OR
+// (environment=production AND memory>=4096) OR (tier=premium AND region IN [us-east-1,us-west-2])
+servers, err := arubaClient.FromCompute().CloudServers().List(ctx, proj,
+    aruba.WithFilter("environment:eq:production,memory:gte:4096;tier:eq:premium,region:in:us-east-1,us-west-2"),
+)
 ```
 
 ## Esempi Pratici
@@ -159,146 +99,135 @@ fb.Equal("field1", "value1").
 ### Filtra Cloud Server Attivi
 
 ```go
-// Elenca tutti i cloud server in esecuzione con almeno 4GB di RAM
-filter := types.NewFilterBuilder().
-    Equal("status", "running").
-    GreaterThanOrEqual("memory", 4096).
-    Build()
-
-params := &types.RequestParameters{
-    Filter: &filter,
-    Limit:  types.Int32Ptr(50),
+// Elenca server attivi con almeno 4 GB di RAM, dimensione pagina 50
+servers, err := arubaClient.FromCompute().CloudServers().List(ctx, proj,
+    aruba.WithFilter("status:eq:Active,memory:gte:4096"),
+    aruba.WithLimit(50),
+)
+if err != nil {
+    log.Fatalf("List failed: %v", err)
 }
-
-resp, err := arubaClient.FromCompute().CloudServers().List(ctx, projectID, params)
+fmt.Printf("Found %d servers\n", servers.Total())
+for _, s := range servers.Items() {
+    fmt.Println("-", s.Name())
+}
 ```
 
-### Filtra per Più Regioni
+### Filtra VPC per Regione
 
 ```go
-// Elenca risorse nelle regioni US East o US West
-filter := types.NewFilterBuilder().
-    In("region", "us-east-1", "us-east-2", "us-west-1", "us-west-2").
-    Build()
-
-params := &types.RequestParameters{
-    Filter: &filter,
-}
-
-resp, err := arubaClient.FromNetwork().VPCs().List(ctx, projectID, params)
+// Elenca VPC in data center specifici
+vpcs, err := arubaClient.FromNetwork().VPCs().List(ctx, proj,
+    aruba.WithFilter("location:in:ITBG-Bergamo,ITMI-Milan"),
+)
 ```
 
 ### Filtra per Pattern Nome
 
 ```go
-// Elenca tutti i server web di produzione
-filter := types.NewFilterBuilder().
-    StartsWith("name", "web-").
-    Contains("environment", "prod").
-    Build()
-
-params := &types.RequestParameters{
-    Filter: &filter,
-}
-
-resp, err := arubaClient.FromCompute().CloudServers().List(ctx, projectID, params)
+// Tutti i cloud server il cui nome inizia con "web-"
+servers, err := arubaClient.FromCompute().CloudServers().List(ctx, proj,
+    aruba.WithFilter("name:sw:web-"),
+)
 ```
 
 ### Logica di Business Complessa
 
 ```go
-// Trova server che sono:
-// - Server di produzione con risorse elevate (cpu >= 8 AND memory >= 16GB)
-// - OR Server di sviluppo in regioni specifiche
-filter := types.NewFilterBuilder().
-    Equal("environment", "production").
-    GreaterThanOrEqual("cpu", 8).
-    GreaterThanOrEqual("memory", 16384).
-    Or().
-    Equal("environment", "development").
-    In("region", "us-east-1", "eu-west-1").
-    Build()
-
-params := &types.RequestParameters{
-    Filter: &filter,
-}
-
-resp, err := arubaClient.FromCompute().CloudServers().List(ctx, projectID, params)
+// Server di produzione con risorse elevate O server di sviluppo in regioni specifiche
+servers, err := arubaClient.FromCompute().CloudServers().List(ctx, proj,
+    aruba.WithFilter(
+        "environment:eq:production,cpu:gte:8,memory:gte:16384" +
+        ";environment:eq:development,region:in:ITBG-Bergamo,ITMI-Milan",
+    ),
+)
 ```
 
-## Best Practices
+## Ordinamento
 
-### 1. Usa Filtri Specifici
+```go
+// Ordina per nome crescente
+servers, err := arubaClient.FromCompute().CloudServers().List(ctx, proj,
+    aruba.WithSort("name:asc"),
+)
+
+// Ordina per data di creazione decrescente
+servers, err = arubaClient.FromCompute().CloudServers().List(ctx, proj,
+    aruba.WithSort("createdAt:desc"),
+)
+```
+
+## Paginazione
+
+```go
+const pageSize = 25
+
+// Prima pagina
+page1, err := arubaClient.FromCompute().CloudServers().List(ctx, proj,
+    aruba.WithLimit(pageSize),
+    aruba.WithOffset(0),
+)
+
+// Seconda pagina
+page2, err := arubaClient.FromCompute().CloudServers().List(ctx, proj,
+    aruba.WithLimit(pageSize),
+    aruba.WithOffset(pageSize),
+)
+
+fmt.Printf("Total resources: %d\n", page1.Total())
+```
+
+## Best Practice
+
+### Usa Filtri Specifici
 
 Sii il più specifico possibile per ridurre la quantità di dati trasferiti:
 
 ```go
-// Buono: Filtro specifico
-filter := types.NewFilterBuilder().
-    Equal("status", "running").
-    Equal("region", "us-east-1").
-    Build()
+// Bene: filtro specifico — solo le risorse necessarie
+servers, err := arubaClient.FromCompute().CloudServers().List(ctx, proj,
+    aruba.WithFilter("status:eq:Active,region:eq:ITBG-Bergamo"),
+)
 
-// Meno efficiente: Nessun filtro, elabora tutti i risultati
-resp, err := arubaClient.FromCompute().CloudServers().List(ctx, projectID, nil)
+// Meno efficiente: nessun filtro — recupera tutto
+servers, err = arubaClient.FromCompute().CloudServers().List(ctx, proj)
 ```
 
-### 2. Combina con Paginazione
-
-Usa i filtri con la paginazione per set di risultati grandi:
+### Combina Filtro e Paginazione
 
 ```go
-filter := types.NewFilterBuilder().
-    Equal("environment", "production").
-    Build()
-
-params := &types.RequestParameters{
-    Filter: &filter,
-    Limit:  types.Int32Ptr(50),
-}
-
-resp, err := arubaClient.FromCompute().CloudServers().List(ctx, projectID, params)
+servers, err := arubaClient.FromCompute().CloudServers().List(ctx, proj,
+    aruba.WithFilter("environment:eq:production"),
+    aruba.WithLimit(50),
+    aruba.WithOffset(0),
+)
 ```
 
-### 3. Valida la Logica del Filtro
+### Valida le Stringhe di Filtro
 
-Testa le tue espressioni di filtro per assicurarti che producano i risultati attesi:
+Stampa la stringa di filtro per debuggare risultati inaspettati:
 
 ```go
-fb := types.NewFilterBuilder().
-    Equal("status", "running").
-    GreaterThan("cpu", 4)
+filter := "status:eq:Active,cpu:gt:4"
+fmt.Println("Filter:", filter)
+// Output: Filter: status:eq:Active,cpu:gt:4
 
-filterStr := fb.Build()
-fmt.Println("Filter:", filterStr)
-// Output: Filter: status:eq:running,cpu:gt:4
+servers, err := arubaClient.FromCompute().CloudServers().List(ctx, proj,
+    aruba.WithFilter(filter),
+)
 ```
 
-### 4. Usa Valori Type-Safe
+## Risoluzione dei Problemi
 
-Usa i tipi corretti per i valori del filtro:
-
-```go
-// Buono: Tipi corretti
-fb.Equal("cpu", 4)           // int
-fb.Equal("status", "running") // string
-fb.GreaterThan("memory", 4096) // int
-
-// Evita: Rappresentazione stringa di numeri quando sono attesi numeri
-fb.Equal("cpu", "4") // Potrebbe non funzionare come previsto
-```
-
-## Risoluzione Problemi
-
-### Filtro Non Funziona
+### Filtro Non Funzionante
 
 **Problema**: Il filtro non restituisce i risultati attesi
 
 **Soluzioni**:
-1. Controlla che i nomi dei campi corrispondano esattamente allo schema API (case-sensitive)
+1. Controlla che i nomi dei campi corrispondano esattamente allo schema API (sensibile alle maiuscole)
 2. Verifica che l'operatore sia appropriato per il tipo di campo
-3. Assicurati che i valori siano del tipo corretto (string, int, bool)
-4. Stampa la stringa del filtro per il debug: `fmt.Println(fb.Build())`
+3. Assicurati che i valori siano nel formato corretto (es. `Active` non `active`)
+4. Stampa la stringa di filtro per il debug
 
 ### Risultati Vuoti
 
@@ -308,21 +237,21 @@ fb.Equal("cpu", "4") // Potrebbe non funzionare come previsto
 1. Verifica che la logica del filtro sia corretta
 2. Prova filtri più semplici per isolare il problema
 3. Controlla se il campo supporta l'operatore utilizzato
-4. Testa senza filtri per confermare che le risorse esistano
+4. Elenca senza filtri per confermare che le risorse esistano
 
 ### Problemi con Filtri Complessi
 
 **Problema**: La logica AND/OR complessa non funziona come previsto
 
 **Soluzioni**:
-1. Suddividi i filtri complessi in parti più semplici
+1. Scomponi i filtri complessi in parti più semplici
 2. Testa ogni condizione separatamente
 3. Ricorda: virgole (`,`) = AND, punto e virgola (`;`) = OR
-4. Usa parentesi nella tua mente per capire il raggruppamento
+4. Usa le parentesi mentalmente per capire il raggruppamento
 
-```go
-// Questo: status:eq:running,cpu:gt:2;memory:gte:4096
-// Significa: (status = running AND cpu > 2) OR (memory >= 4096)
+```
+// Questo: status:eq:Active,cpu:gt:2;memory:gte:4096
+// Significa: (status = Active AND cpu > 2) OR (memory >= 4096)
 
-// Non: status = running AND (cpu > 2 OR memory >= 4096)
+// Non: status = Active AND (cpu > 2 OR memory >= 4096)
 ```
