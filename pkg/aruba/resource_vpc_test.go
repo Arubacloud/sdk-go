@@ -792,3 +792,36 @@ func TestVPCIDsFromRef_MissingProjectID(t *testing.T) {
 		t.Error("expected error when project ID is missing from URI")
 	}
 }
+
+func TestVPC_FromResponse_SetsTerminalStates(t *testing.T) {
+	v := &VPC{}
+	state := "Active"
+	v.fromResponse(&types.VPCResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(v.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !v.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for VPC")
+	}
+	if v.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for VPC")
+	}
+}
+
+func TestVPCsClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"metadata":{"id":"v-1","name":"my-vpc","uri":"/projects/p-1/providers/Aruba.Network/vpcs/v-1","project":{"id":"p-1"}},"properties":{"default":false},"status":{"state":"Active"}}`)
+	})
+	adapter := newVPCsClientAdapter(testutil.NewClient(t, server.URL))
+	vpc, err := adapter.Get(context.Background(), URI("/projects/p-1/providers/Aruba.Network/vpcs/v-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&vpc.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned VPC")
+	}
+}

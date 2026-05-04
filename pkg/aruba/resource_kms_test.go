@@ -759,3 +759,36 @@ func TestSecurityClient_HasKmipsMethod(t *testing.T) {
 		t.Error("SecurityClient interface is missing the Kmips method")
 	}
 }
+
+func TestKMS_FromResponse_SetsTerminalStates(t *testing.T) {
+	k := &KMS{}
+	state := "Active"
+	k.fromResponse(&types.KmsResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(k.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !k.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for KMS")
+	}
+	if k.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for KMS")
+	}
+}
+
+func TestKMSClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, kmsSuccessBody)
+	})
+	adapter := newKMSClientAdapter(testutil.NewClient(t, server.URL))
+	k, err := adapter.Get(context.Background(), URI("/projects/proj-1/providers/Aruba.Security/kms/kms-42"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&k.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned KMS")
+	}
+}

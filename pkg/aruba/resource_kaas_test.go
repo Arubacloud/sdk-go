@@ -1598,3 +1598,36 @@ func TestKaaSClientAdapter_Get_LowLevelError(t *testing.T) {
 		t.Errorf("error should mention 'connection refused', got %q", err.Error())
 	}
 }
+
+func TestKaaS_FromResponse_SetsTerminalStates(t *testing.T) {
+	k := &KaaS{}
+	state := "Active"
+	k.fromResponse(&types.KaaSResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(k.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !k.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for KaaS")
+	}
+	if k.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for KaaS")
+	}
+}
+
+func TestKaaSClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, kaasSuccessBody)
+	})
+	adapter := newKaaSClientAdapter(testutil.NewClient(t, server.URL))
+	k, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Container/kaas/kaas-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&k.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned KaaS")
+	}
+}

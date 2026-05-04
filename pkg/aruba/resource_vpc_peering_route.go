@@ -120,6 +120,7 @@ func (r *VPCPeeringRoute) fromResponse(resp *types.VPCPeeringRouteResponse) {
 		r.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	r.setStatus(&resp.Status)
+	r.setTerminalStates(vpcPeeringRouteTerminalStates)
 
 	if resp.Properties.LocalNetworkAddress != "" {
 		v := resp.Properties.LocalNetworkAddress
@@ -164,6 +165,11 @@ func vpcPeeringRouteDerefString(p *string) string {
 	return *p
 }
 
+var vpcPeeringRouteTerminalStates = map[string]bool{
+	"Active": true,
+	"Error":  false,
+}
+
 // ---------------------------------------------------------------------------
 // Low-level interface + adapter
 // ---------------------------------------------------------------------------
@@ -198,6 +204,16 @@ func (a *vpcPeeringRoutesClientAdapter) Create(ctx context.Context, route *VPCPe
 	populateHTTPEnvelope(&route.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		route.fromResponse(resp.Data)
+		route.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, route)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				route.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return route, err
@@ -220,6 +236,16 @@ func (a *vpcPeeringRoutesClientAdapter) Get(ctx context.Context, ref Ref, opts .
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if out.vpcPeeringID == "" {
 		out.vpcPeeringID = vpcPeeringID
@@ -255,6 +281,16 @@ func (a *vpcPeeringRoutesClientAdapter) Update(ctx context.Context, route *VPCPe
 	populateHTTPEnvelope(&route.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		route.fromResponse(resp.Data)
+		route.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, route)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				route.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return route, err
@@ -302,6 +338,16 @@ func (a *vpcPeeringRoutesClientAdapter) List(ctx context.Context, peering Ref, o
 		for i := range resp.Data.Values {
 			r := &VPCPeeringRoute{}
 			r.fromResponse(&resp.Data.Values[i])
+			r.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, r)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					r.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if r.vpcPeeringID == "" {
 				r.vpcPeeringID = vpcPeeringID
 			}

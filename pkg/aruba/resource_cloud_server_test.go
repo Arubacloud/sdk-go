@@ -1313,3 +1313,36 @@ func TestCloudServersClientAdapter_List_NonTwoXX(t *testing.T) {
 		t.Errorf("StatusCode = %d", httpErr.StatusCode)
 	}
 }
+
+func TestCloudServer_FromResponse_SetsTerminalStates(t *testing.T) {
+	cs := &CloudServer{}
+	state := "Active"
+	cs.fromResponse(&types.CloudServerResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(cs.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !cs.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for CloudServer")
+	}
+	if cs.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for CloudServer")
+	}
+}
+
+func TestCloudServersClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, cloudServerSuccessBody)
+	})
+	adapter := newCloudServersClientAdapter(testutil.NewClient(t, server.URL))
+	cs, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&cs.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned CloudServer")
+	}
+}

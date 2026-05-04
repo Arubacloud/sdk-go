@@ -109,6 +109,7 @@ func (s *Subnet) fromResponse(resp *types.SubnetResponse) {
 		s.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	s.setStatus(&resp.Status)
+	s.setTerminalStates(subnetTerminalStates)
 	s.setLinked(resp.Properties.LinkedResources)
 
 	if resp.Properties.Type != "" {
@@ -147,6 +148,11 @@ func subnetDerefString(p *string) string {
 	return *p
 }
 
+var subnetTerminalStates = map[string]bool{
+	"Active": true,
+	"Error":  false,
+}
+
 // ---------------------------------------------------------------------------
 // Low-level interface + adapter
 // ---------------------------------------------------------------------------
@@ -183,6 +189,16 @@ func (a *subnetsClientAdapter) Create(ctx context.Context, s *Subnet, opts ...Ca
 	populateHTTPEnvelope(&s.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		s.fromResponse(resp.Data)
+		s.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, s)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				s.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return s, err
@@ -205,6 +221,16 @@ func (a *subnetsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOpt
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	out.vpcID = vpcID
 	out.projectID = projectID
@@ -233,6 +259,16 @@ func (a *subnetsClientAdapter) Update(ctx context.Context, s *Subnet, opts ...Ca
 	populateHTTPEnvelope(&s.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		s.fromResponse(resp.Data)
+		s.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, s)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				s.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return s, err
@@ -280,6 +316,16 @@ func (a *subnetsClientAdapter) List(ctx context.Context, vpc Ref, opts ...CallOp
 		for i := range resp.Data.Values {
 			s := &Subnet{}
 			s.fromResponse(&resp.Data.Values[i])
+			s.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, s)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					s.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			s.vpcID = vpcID
 			if s.projectID == "" {
 				s.projectID = projectID

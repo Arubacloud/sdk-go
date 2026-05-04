@@ -158,6 +158,7 @@ func (t *VPNTunnel) fromResponse(resp *types.VPNTunnelResponse) {
 		t.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	t.setStatus(&resp.Status)
+	t.setTerminalStates(vpnTunnelTerminalStates)
 
 	if resp.Properties.VPNType != nil {
 		v := *resp.Properties.VPNType
@@ -191,6 +192,11 @@ func vpnTunnelDerefString(p *string) string {
 		return ""
 	}
 	return *p
+}
+
+var vpnTunnelTerminalStates = map[string]bool{
+	"Active": true,
+	"Error":  false,
 }
 
 // ---------------------------------------------------------------------------
@@ -227,6 +233,16 @@ func (a *vpnTunnelsClientAdapter) Create(ctx context.Context, t *VPNTunnel, opts
 	populateHTTPEnvelope(&t.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		t.fromResponse(resp.Data)
+		t.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, t)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				t.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return t, err
@@ -249,6 +265,16 @@ func (a *vpnTunnelsClientAdapter) Get(ctx context.Context, ref Ref, opts ...Call
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if out.projectID == "" {
 		out.projectID = projectID
@@ -278,6 +304,16 @@ func (a *vpnTunnelsClientAdapter) Update(ctx context.Context, t *VPNTunnel, opts
 	populateHTTPEnvelope(&t.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		t.fromResponse(resp.Data)
+		t.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, t)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				t.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return t, err
@@ -325,6 +361,16 @@ func (a *vpnTunnelsClientAdapter) List(ctx context.Context, project Ref, opts ..
 		for i := range resp.Data.Values {
 			v := &VPNTunnel{}
 			v.fromResponse(&resp.Data.Values[i])
+			v.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, v)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					v.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if v.projectID == "" {
 				v.projectID = projectID
 			}
