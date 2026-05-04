@@ -634,11 +634,11 @@ func TestKmipsClientAdapter_Download_Success(t *testing.T) {
 	if cert == nil {
 		t.Fatal("Download returned nil cert")
 	}
-	if cert.Key == "" {
-		t.Error("cert.Key is empty")
+	if cert.Key() == "" {
+		t.Error("cert.Key() is empty")
 	}
-	if cert.Cert == "" {
-		t.Error("cert.Cert is empty")
+	if cert.Cert() == "" {
+		t.Error("cert.Cert() is empty")
 	}
 }
 
@@ -682,6 +682,73 @@ func TestKmipsClientAdapter_Download_NonTwoXX(t *testing.T) {
 	}
 	if httpErr.StatusCode != http.StatusNotFound {
 		t.Errorf("StatusCode = %d", httpErr.StatusCode)
+	}
+}
+
+// --------------------------------------------------------------------------
+// KmipCertificate wrapper tests
+// --------------------------------------------------------------------------
+
+func TestKmipCertificate_Accessors_NilSafe(t *testing.T) {
+	var c *KmipCertificate
+	if c.Key() != "" {
+		t.Errorf("Key() on nil receiver = %q, want empty", c.Key())
+	}
+	if c.Cert() != "" {
+		t.Errorf("Cert() on nil receiver = %q, want empty", c.Cert())
+	}
+	if c.Raw() != nil {
+		t.Error("Raw() on nil receiver should be nil")
+	}
+
+	withNilResp := &KmipCertificate{response: nil}
+	if withNilResp.Key() != "" {
+		t.Errorf("Key() with nil response = %q, want empty", withNilResp.Key())
+	}
+	if withNilResp.Cert() != "" {
+		t.Errorf("Cert() with nil response = %q, want empty", withNilResp.Cert())
+	}
+	if withNilResp.Raw() != nil {
+		t.Error("Raw() with nil response should be nil")
+	}
+}
+
+func TestKmipCertificate_Accessors_Populated(t *testing.T) {
+	c := &KmipCertificate{response: &types.KmipCertificateResponse{
+		Key:  "-----BEGIN PRIVATE KEY-----",
+		Cert: "-----BEGIN CERTIFICATE-----",
+	}}
+	if c.Key() != "-----BEGIN PRIVATE KEY-----" {
+		t.Errorf("Key() = %q", c.Key())
+	}
+	if c.Cert() != "-----BEGIN CERTIFICATE-----" {
+		t.Errorf("Cert() = %q", c.Cert())
+	}
+	if c.Raw() == nil {
+		t.Error("Raw() should not be nil after population")
+	}
+}
+
+func TestKmipsClientAdapter_Download_ReturnsWrapper(t *testing.T) {
+	adapter := buildKmipTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, kmipCertBody)
+	})
+
+	cert, err := adapter.Download(context.Background(), URI(
+		"/projects/p-1/providers/Aruba.Security/kms/kms-1/kmips/kmip-1"))
+	if err != nil {
+		t.Fatalf("Download error: %v", err)
+	}
+	if cert == nil {
+		t.Fatal("Download returned nil cert")
+	}
+	if _, ok := any(cert).(*KmipCertificate); !ok {
+		t.Errorf("Download returned %T, want *KmipCertificate", cert)
+	}
+	if cert.Raw() == nil {
+		t.Error("Raw() should not be nil on a successful download")
 	}
 }
 
