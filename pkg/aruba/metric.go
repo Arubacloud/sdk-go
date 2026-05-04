@@ -2,8 +2,6 @@ package aruba
 
 import (
 	"context"
-
-	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
 type MetricClient interface {
@@ -31,5 +29,5 @@ type AlertsClient interface {
 }
 
 type MetricsClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.MetricListResponse], error)
+	List(ctx context.Context, project Ref, opts ...CallOption) (*List[*Metric], error)
 }
