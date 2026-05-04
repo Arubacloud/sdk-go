@@ -302,7 +302,7 @@ func (a *kmipsClientAdapter) List(ctx context.Context, parent Ref, opts ...CallO
 	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
 }
 
-func (a *kmipsClientAdapter) Download(ctx context.Context, ref Ref, opts ...CallOption) (*types.KmipCertificateResponse, error) {
+func (a *kmipsClientAdapter) Download(ctx context.Context, ref Ref, opts ...CallOption) (*KmipCertificate, error) {
 	projectID, kmsID, kmipID, err := kmipIDsFromRef(ref)
 	if err != nil {
 		return nil, err
@@ -317,7 +317,37 @@ func (a *kmipsClientAdapter) Download(ctx context.Context, ref Ref, opts ...Call
 		return nil, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
 	}
 	if resp != nil {
-		return resp.Data, nil
+		return &KmipCertificate{response: resp.Data}, nil
 	}
 	return nil, nil
+}
+
+// KmipCertificate is the wrapper for a KMIP certificate download response.
+// Returned by KmipsClient.Download. Read-only; no factory.
+type KmipCertificate struct {
+	response *types.KmipCertificateResponse
+}
+
+// Cert returns the PEM-encoded certificate string.
+func (c *KmipCertificate) Cert() string {
+	if c == nil || c.response == nil {
+		return ""
+	}
+	return c.response.Cert
+}
+
+// Key returns the PEM-encoded private key string.
+func (c *KmipCertificate) Key() string {
+	if c == nil || c.response == nil {
+		return ""
+	}
+	return c.response.Key
+}
+
+// Raw returns the underlying wire response.
+func (c *KmipCertificate) Raw() *types.KmipCertificateResponse {
+	if c == nil {
+		return nil
+	}
+	return c.response
 }
