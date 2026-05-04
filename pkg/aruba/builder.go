@@ -466,7 +466,7 @@ func buildMetricClient(restClient *restclient.Client) (MetricClient, error) {
 }
 
 func buildAlertsClient(restClient *restclient.Client) (AlertsClient, error) {
-	return metric.NewAlertsClientImpl(restClient), nil
+	return newAlertsClientAdapter(restClient), nil
 }
 
 func buildMetricsClient(restClient *restclient.Client) (MetricsClient, error) {
