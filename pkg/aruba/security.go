@@ -1,10 +1,6 @@
 package aruba
 
-import (
-	"context"
-
-	"github.com/Arubacloud/sdk-go/pkg/types"
-)
+import "context"
 
 type SecurityClient interface {
 	KMS() KMSClient
@@ -49,5 +45,5 @@ type KmipsClient interface {
 	Get(ctx context.Context, ref Ref, opts ...CallOption) (*Kmip, error)
 	Create(ctx context.Context, km *Kmip, opts ...CallOption) (*Kmip, error)
 	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
-	Download(ctx context.Context, ref Ref, opts ...CallOption) (*types.KmipCertificateResponse, error)
+	Download(ctx context.Context, ref Ref, opts ...CallOption) (*KmipCertificate, error)
 }
