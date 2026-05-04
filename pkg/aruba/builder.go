@@ -9,7 +9,6 @@ import (
 	vaultapi "github.com/hashicorp/vault/api"
 	redis_client "github.com/redis/go-redis/v9"
 
-	"github.com/Arubacloud/sdk-go/internal/clients/metric"
 	memory_creds_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/memory"
 	vault_creds_repo "github.com/Arubacloud/sdk-go/internal/impl/auth/credentialsrepository/vault"
 	oauth2_connector "github.com/Arubacloud/sdk-go/internal/impl/auth/providerconnector/oauth2"
@@ -470,7 +469,7 @@ func buildAlertsClient(restClient *restclient.Client) (AlertsClient, error) {
 }
 
 func buildMetricsClient(restClient *restclient.Client) (MetricsClient, error) {
-	return metric.NewMetricsClientImpl(restClient), nil
+	return newMetricsClientAdapter(restClient), nil
 }
 
 //

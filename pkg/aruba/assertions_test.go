@@ -17,8 +17,6 @@ package aruba
 
 import (
 	"testing"
-
-	"github.com/Arubacloud/sdk-go/internal/clients/metric"
 )
 
 func TestCompileTimeInterfaceGuards(_ *testing.T) {
@@ -43,7 +41,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 
 		// Metric
 		_ AlertsClient  = newAlertsClientAdapter(nil)
-		_ MetricsClient = metric.NewMetricsClientImpl(nil)
+		_ MetricsClient = newMetricsClientAdapter(nil)
 
 		// Network
 		_ ElasticIPsClient         = newElasticIPsClientAdapter(nil)
