@@ -18,14 +18,13 @@ package aruba
 import (
 	"testing"
 
-	"github.com/Arubacloud/sdk-go/internal/clients/audit"
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
 )
 
 func TestCompileTimeInterfaceGuards(_ *testing.T) {
 	var (
 		// Audit
-		_ EventsClient = audit.NewEventsClientImpl(nil)
+		_ EventsClient = newAuditEventsClientAdapter(nil)
 
 		// Compute
 		_ CloudServersClient = newCloudServersClientAdapter(nil)
