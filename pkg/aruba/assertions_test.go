@@ -42,7 +42,7 @@ func TestCompileTimeInterfaceGuards(_ *testing.T) {
 		_ GrantsClient    = newGrantsClientAdapter(nil)
 
 		// Metric
-		_ AlertsClient  = metric.NewAlertsClientImpl(nil)
+		_ AlertsClient  = newAlertsClientAdapter(nil)
 		_ MetricsClient = metric.NewMetricsClientImpl(nil)
 
 		// Network
