@@ -1,13 +1,9 @@
 package aruba
 
-import (
-	"context"
-
-	"github.com/Arubacloud/sdk-go/pkg/types"
-)
+import "context"
 
 type EventsClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.AuditEventListResponse], error)
+	List(ctx context.Context, project Ref, opts ...CallOption) (*List[*AuditEvent], error)
 }
 
 type AuditClient interface {
@@ -20,6 +16,6 @@ type auditClientImpl struct {
 
 var _ AuditClient = (*auditClientImpl)(nil)
 
-func (c auditClientImpl) Events() EventsClient {
+func (c *auditClientImpl) Events() EventsClient {
 	return c.eventsClient
 }
