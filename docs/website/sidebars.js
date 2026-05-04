@@ -21,13 +21,28 @@ const sidebars = {
     },
     {
       type: 'doc',
+      id: 'walkthrough',
+      label: 'API Walkthrough',
+    },
+    {
+      type: 'doc',
       id: 'resources',
       label: 'Resources',
     },
     {
       type: 'doc',
-      id: 'types',
-      label: 'Types',
+      id: 'filters',
+      label: 'Filters',
+    },
+    {
+      type: 'doc',
+      id: 'response-handling',
+      label: 'Response Handling',
+    },
+    {
+      type: 'doc',
+      id: 'async',
+      label: 'Async / Await',
     },
     {
       type: 'doc',
@@ -38,16 +53,6 @@ const sidebars = {
       type: 'doc',
       id: 'options',
       label: 'Options',
-    },
-    {
-      type: 'doc',
-      id: 'response-handling',
-      label: 'Response Handling',
-    },
-    {
-      type: 'doc',
-      id: 'filters',
-      label: 'Filters',
     },
   ],
 };

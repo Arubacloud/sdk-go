@@ -2,296 +2,129 @@
 
 ## Overview
 
-The SDK uses a generic `Response[T]` type that properly handles both success and error responses from the API. Response parsing is centralized through the `ParseResponseBody[T]` function for consistency.
+The SDK wrapper layer handles response parsing and error surfacing automatically. Every CRUD method returns either a populated wrapper (on success) or an error. You rarely need to inspect the raw HTTP envelope — but the tools to do so are all there when you need them.
 
-## Response Structure
+## Basic Pattern
+
+Every wrapper method returns `(wrapper, error)`. The error is non-nil for both network failures and API-level errors (4xx / 5xx).
 
 ```go
-type Response[T any] struct {
-    Data         *T              // Populated for 2xx responses
-    Error        *ErrorResponse  // Populated for 4xx/5xx responses
-    HTTPResponse *http.Response  // The underlying HTTP response
-    StatusCode   int             // HTTP status code
-    Headers      http.Header     // Response headers
-    RawBody      []byte          // Raw response body (always available)
+vpc, err := arubaClient.FromNetwork().VPCs().Get(ctx,
+    aruba.URI("/projects/<projectID>/providers/Aruba.Network/vpcs/<vpcID>"),
+)
+if err != nil {
+    log.Fatalf("Get VPC failed: %v", err)
 }
+fmt.Printf("VPC: %s (state: %s)\n", vpc.Name(), vpc.State())
 ```
 
-## Centralized Response Parsing
+## Typed HTTP Errors
 
-All service methods use the `ParseResponseBody[T]` function to handle response parsing:
-
-```go
-func ParseResponseBody[T any](httpResp *http.Response) (*Response[T], error) {
-    // Reads the response body
-    // Creates the Response[T] wrapper
-    // Parses into Data for 2xx responses
-    // Parses into Error for 4xx/5xx responses
-    return response, nil
-}
-```
-
-### Implementation in Services
-
-Service methods simply call `ParseResponseBody` after the HTTP request:
+When the API returns a 4xx or 5xx response, the SDK wraps it in `*aruba.HTTPError`. Use `errors.As` to inspect the status code and structured error body:
 
 ```go
-func (s *VPCService) GetVPC(ctx context.Context, project string, vpcId string, params *schema.RequestParameters) (*schema.Response[schema.VpcResponse], error) {
-    // ... prepare request ...
-    
-    httpResp, err := s.client.DoRequest(ctx, http.MethodGet, path, nil, queryParams, headers)
-    if err != nil {
-        return nil, err
+import "errors"
+
+vpc, err := arubaClient.FromNetwork().VPCs().Get(ctx, ref)
+if err != nil {
+    var httpErr *aruba.HTTPError
+    if errors.As(err, &httpErr) {
+        fmt.Printf("API error %d: %s\n", httpErr.StatusCode, httpErr.Error())
+        if httpErr.ErrResp != nil {
+            fmt.Printf("  title:  %s\n", derefStr(httpErr.ErrResp.Title))
+            fmt.Printf("  detail: %s\n", derefStr(httpErr.ErrResp.Detail))
+            for _, ve := range httpErr.ErrResp.Errors {
+                fmt.Printf("  field %s: %s\n", ve.Field, ve.Message)
+            }
+        }
+    } else {
+        // Network error, context timeout, etc.
+        log.Fatalf("Request failed: %v", err)
     }
-    defer httpResp.Body.Close()
-
-    return schema.ParseResponseBody[schema.VpcResponse](httpResp)
 }
 ```
 
-**Benefits:**
-- ✅ Eliminates code duplication across all services
-- ✅ Ensures consistent error handling
-- ✅ Simplifies service implementations
-- ✅ Makes updates easier to maintain
-
-## Error Response Structure
+## Complete Error Handling Pattern
 
 ```go
-type ValidationError struct {
-    Field   string `json:"field,omitempty"`
-    Message string `json:"message,omitempty"`
-}
-
-type ErrorResponse struct {
-    Type     *string             // URI reference for the problem type
-    Title    *string             // Short, human-readable summary
-    Status   *int32              // HTTP status code
-    Detail   *string             // Human-readable explanation
-    Instance *string             // URI for this specific occurrence
-    Errors   []ValidationError   // Field-level validation errors (e.g. 400)
-    TraceID  *string             // Correlation id, JSON "traceId" (e.g. 404)
-}
-```
-
-## Response Handling Pattern
-
-### 1. Basic Pattern
-
-```go
-resp, err := api.CreateResource(ctx, projectID, request, nil)
+proj, err := arubaClient.FromProject().Get(ctx, ref)
 if err != nil {
-    // Network error, context timeout, or SDK error
-    log.Fatalf("Request failed: %v", err)
-}
-
-if resp.IsSuccess() {
-    // 2xx - Success response
-    fmt.Printf("Created: %s\n", *resp.Data.Metadata.Name)
-} else if resp.IsError() && resp.Error != nil {
-    // 4xx/5xx - API error response
-    log.Printf("API Error: %s - %s", 
-        stringValue(resp.Error.Title), 
-        stringValue(resp.Error.Detail))
-}
-```
-
-### 2. Complete Error Handling
-
-```go
-resp, err := api.GetResource(ctx, projectID, resourceID, nil)
-if err != nil {
+    var httpErr *aruba.HTTPError
+    if errors.As(err, &httpErr) {
+        switch httpErr.StatusCode {
+        case 404:
+            return fmt.Errorf("project not found")
+        case 400:
+            return fmt.Errorf("bad request: %s", derefStr(httpErr.ErrResp.Detail))
+        default:
+            return fmt.Errorf("API error (%d): %s", httpErr.StatusCode, httpErr.Error())
+        }
+    }
     return fmt.Errorf("request failed: %w", err)
 }
-
-switch {
-case resp.IsSuccess():
-    // Handle success - resp.Data is populated
-    resource := resp.Data
-    fmt.Printf("Resource: %s (Status: %s)\n", 
-        *resource.Metadata.Name, 
-        *resource.Status.State)
-    return nil
-
-case resp.StatusCode == 404:
-    // Handle not found
-    return fmt.Errorf("resource not found")
-
-case resp.StatusCode == 400:
-    // Handle validation errors
-    if resp.Error != nil {
-        return fmt.Errorf("validation error: %s", stringValue(resp.Error.Detail))
-    }
-    return fmt.Errorf("bad request: %s", string(resp.RawBody))
-
-case resp.IsError():
-    // Handle other errors
-    if resp.Error != nil {
-        return fmt.Errorf("API error (%d): %s - %s", 
-            resp.StatusCode,
-            stringValue(resp.Error.Title),
-            stringValue(resp.Error.Detail))
-    }
-    return fmt.Errorf("unexpected error (%d): %s", resp.StatusCode, string(resp.RawBody))
-
-default:
-    // Unexpected status code
-    return fmt.Errorf("unexpected status %d", resp.StatusCode)
-}
+// proj is populated — use it directly
+fmt.Printf("Project: %s (tags: %v)\n", proj.Name(), proj.Tags())
 ```
 
-### 3. Accessing Error Details
+## HTTP Envelope Accessors
+
+Every wrapper produced by a Create / Get / Update / List call exposes its raw HTTP envelope:
 
 ```go
-if resp.IsError() && resp.Error != nil {
-    // Standard fields
-    log.Printf("Error Type: %s", stringValue(resp.Error.Type))
-    log.Printf("Error Title: %s", stringValue(resp.Error.Title))
-    log.Printf("Error Detail: %s", stringValue(resp.Error.Detail))
-    log.Printf("Status Code: %d", int32Value(resp.Error.Status))
-    
-    // Field-level validation errors (e.g. 400)
-    for _, ve := range resp.Error.Errors {
-        log.Printf("  Field: %s, Message: %s", ve.Field, ve.Message)
-    }
-}
+// After any CRUD call:
+proj, err := arubaClient.FromProject().Create(ctx, p)
+// …
+
+fmt.Println("Status:", proj.StatusCode())
+fmt.Println("Headers:", proj.Headers())
+fmt.Println("Raw body:", string(proj.RawHTTP()))
+fmt.Println("Error body (if any):", proj.RawError())
 ```
 
-### 4. Raw Body Access
+## Accessing the Raw Wire Response
+
+Every wrapper has a `Raw()` method that returns the underlying typed response struct from `pkg/types`. This is useful for fields not yet promoted to the wrapper surface:
 
 ```go
-// Always available for debugging
-log.Printf("Raw response: %s", string(resp.RawBody))
+vpc, err := arubaClient.FromNetwork().VPCs().Get(ctx, ref)
+if err != nil { /* … */ }
 
-// Useful for logging full responses during development
-if !resp.IsSuccess() {
-    log.Printf("Request failed with status %d: %s", 
-        resp.StatusCode, 
-        string(resp.RawBody))
-}
+raw := vpc.Raw()                         // underlying wire struct
+fmt.Println(raw.Properties.IsDefault)    // field not on the wrapper
 ```
 
-## Helper Functions
+## Setter-Time Errors
+
+Fluent builder setters never return errors — instead they record them internally. The error surfaces the first time you call `Create` or `Update`. You can also check eagerly:
 
 ```go
-// Safe pointer dereference helpers
-func stringValue(s *string) string {
-    if s == nil {
-        return ""
-    }
-    return *s
-}
+rule := aruba.NewSecurityRule().
+    IntoSecurityGroup(sg).
+    WithTargetCIDR("0.0.0.0/0").
+    WithTargetSecurityGroup(otherSG) // conflicting setter — records an error
 
-func int32Value(i *int32) int32 {
-    if i == nil {
-        return 0
-    }
-    return *i
-}
-
-func boolValue(b *bool) bool {
-    if b == nil {
-        return false
-    }
-    return *b
-}
-```
-
-## Common Error Scenarios
-
-### 400 Bad Request - Validation Errors
-
-```go
-resp, err := api.CreateResource(ctx, projectID, invalidRequest, nil)
-if err != nil {
-    log.Fatalf("Request failed: %v", err)
-}
-
-if resp.StatusCode == 400 && resp.Error != nil {
-    fmt.Printf("Validation failed: %s\n", stringValue(resp.Error.Title))
-    for _, ve := range resp.Error.Errors {
-        fmt.Printf("  - %s: %s\n", ve.Field, ve.Message)
-    }
-}
-```
-
-### 404 Not Found
-
-```go
-resp, err := api.GetResource(ctx, projectID, resourceID, nil)
-if err != nil {
-    return err
-}
-
-if resp.StatusCode == 404 {
-    return fmt.Errorf("resource %s not found", resourceID)
-}
-
-if !resp.IsSuccess() {
-    return fmt.Errorf("unexpected error: %d", resp.StatusCode)
-}
-
-// Use resp.Data
-resource := resp.Data
-```
-
-### 500 Internal Server Error
-
-```go
-if resp.StatusCode >= 500 {
-    // Server error - may want to retry
-    if resp.Error != nil {
-        log.Printf("Server error: %s", stringValue(resp.Error.Detail))
-    }
-    
-    if resp.Error != nil && resp.Error.TraceID != nil {
-        log.Printf("Trace ID: %s", *resp.Error.TraceID)
-    }
-    log.Printf("Raw body: %s", string(resp.RawBody))
+if err := rule.Err(); err != nil {
+    log.Fatalf("Bad rule configuration: %v", err)
 }
 ```
 
 ## Best Practices
 
-1. **Always check for network errors first** (`err != nil`)
-2. **Use `IsSuccess()` to check for 2xx responses** before accessing `Data`
-3. **Use `IsError()` to check for 4xx/5xx responses** before accessing `Error`
-4. **Check if `Error` field is non-nil** before dereferencing
-5. **Use helper functions** to safely dereference pointer fields
-6. **Keep `RawBody` available** for debugging and logging
-7. **Use `Error.TraceID`** (JSON `traceId`) for support; keep **`RawBody`** for anything else not modeled
+1. **Always check `err` first** — it covers both network failures and API errors.
+2. **Use `errors.As(err, &httpErr)`** to get structured error details on 4xx/5xx.
+3. **Check `httpErr.ErrResp.Errors`** for field-level validation messages on 400.
+4. **Use `httpErr.ErrResp.TraceID`** when filing a support request.
+5. **Use `.Raw()`** sparingly — prefer the typed wrapper accessors.
+6. **Check `wrapper.Err()` before Create/Update** when the builder chain is long.
 
-## Testing Response Handling
+---
 
 ```go
-func TestResourceCreation(t *testing.T) {
-    resp, err := api.CreateResource(ctx, projectID, request, nil)
-    
-    // Check no network error
-    if err != nil {
-        t.Fatalf("Request failed: %v", err)
+// Helper used in examples above
+func derefStr(s *string) string {
+    if s == nil {
+        return ""
     }
-    
-    // Check successful response
-    if !resp.IsSuccess() {
-        if resp.Error != nil {
-            t.Fatalf("API error: %s - %s", 
-                stringValue(resp.Error.Title),
-                stringValue(resp.Error.Detail))
-        }
-        t.Fatalf("Unexpected status: %d, body: %s", 
-            resp.StatusCode, 
-            string(resp.RawBody))
-    }
-    
-    // Validate response data
-    if resp.Data == nil {
-        t.Fatal("Expected data to be populated")
-    }
-    
-    if resp.Data.Metadata.Name == nil {
-        t.Fatal("Expected resource name")
-    }
+    return *s
 }
 ```
-
