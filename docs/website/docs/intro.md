@@ -18,7 +18,7 @@ go get github.com/Arubacloud/sdk-go
 
 ## Getting Started
 
-Getting started with the SDK is straightforward. You need to import the `aruba` package, create a client with your credentials, and then you can start making API calls.
+Getting started with the SDK is straightforward. Import the `aruba` package, create a client with your credentials, and start making API calls using the wrapper builder pattern.
 
 The first and most fundamental resource in the Aruba Cloud is the **Project**. All other resources belong to a project.
 
@@ -34,7 +34,6 @@ import (
 	"time"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
-	aruba_types "github.com/Arubacloud/sdk-go/pkg/types"
 )
 
 func main() {
@@ -42,7 +41,7 @@ func main() {
 	clientID := "your-client-id"
 	clientSecret := "your-client-secret"
 
-	// 1. Initialize the SDK Client using default options
+	// 1. Initialize the SDK client using default options
 	arubaClient, err := aruba.NewClient(aruba.DefaultOptions(clientID, clientSecret))
 	if err != nil {
 		log.Fatalf("Failed to create SDK client: %v", err)
@@ -52,52 +51,28 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	// 2. Define the request to create a new Project
-	projectReq := aruba_types.ProjectRequest{
-		Metadata: aruba_types.ResourceMetadataRequest{
-			Name: "my-first-project",
-			Tags: []string{"go-sdk", "quick-start"},
-		},
-		Properties: aruba_types.ProjectPropertiesRequest{
-			Description: stringPtr("A project created with the Go SDK"),
-		},
-	}
-
-	// 3. Create the Project
+	// 2. Create the project — build inline and pass to Create
 	fmt.Println("Creating a new project...")
-	createResp, err := arubaClient.FromProject().Create(ctx, projectReq, nil)
+	proj, err := arubaClient.FromProject().Create(
+		ctx,
+		aruba.NewProject().
+			WithName("my-first-project").
+			WithDescription("A project proj with the Go SDK").
+			AddTag("go-sdk").
+			AddTag("quick-start"))
 	if err != nil {
-		// Handle network errors or client-side validation errors
 		log.Fatalf("Error creating project: %v", err)
 	}
 
-	// 4. Check the API response
-	if !createResp.IsSuccess() {
-		// Handle API errors (e.g., 4xx or 5xx statuses)
-		log.Fatalf("API Error: Failed to create project - Status: %d, Title: %s, Detail: %s",
-			createResp.StatusCode,
-			stringValue(createResp.Error.Title),
-			stringValue(createResp.Error.Detail))
-	}
-
-	projectID := *createResp.Data.Metadata.ID
-	fmt.Printf("✓ Successfully created project with ID: %s\n", projectID)
-}
-
-// Helper functions for pointers
-func stringPtr(s string) *string { return &s }
-func stringValue(s *string) string {
-	if s == nil { return "" }
-	return *s
+	fmt.Printf("✓ Successfully proj project: %s (ID: %s)\n", proj.Name(), proj.ID())
 }
 ```
 
 ## Next Steps
 
+- Read the [API Walkthrough](./walkthrough) for an end-to-end guide through the full resource lifecycle
 - Learn about [Configuration Options](./options) to customize your SDK client
 - Explore [API Resources](./resources) to see what you can manage
 - Understand [Response Handling](./response-handling) for robust error handling
-- Check out [Data Types](./types) for detailed type information
-- Read about [Multitenancy](./multitenancy) to manage tenant-specific clients
 - Learn about [Filtering](./filters) to query resources efficiently
-
+- Read about [Multitenancy](./multitenancy) to manage tenant-specific clients
