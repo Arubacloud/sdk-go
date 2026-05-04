@@ -1009,3 +1009,36 @@ func TestVPNRoutesClientAdapter_List_TwoItems(t *testing.T) {
 		}
 	}
 }
+
+func TestVPNRoute_FromResponse_SetsTerminalStates(t *testing.T) {
+	r := &VPNRoute{}
+	state := "Active"
+	r.fromResponse(&types.VPNRouteResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(r.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !r.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for VPNRoute")
+	}
+	if r.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for VPNRoute")
+	}
+}
+
+func TestVPNRoutesClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, vpnRouteSuccessBody)
+	})
+	adapter := newVPNRoutesClientAdapter(testutil.NewClient(t, server.URL))
+	route, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&route.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned VPNRoute")
+	}
+}

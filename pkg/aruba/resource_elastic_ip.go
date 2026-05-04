@@ -91,6 +91,7 @@ func (e *ElasticIP) fromResponse(resp *types.ElasticIPResponse) {
 		e.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	e.setStatus(&resp.Status)
+	e.setTerminalStates(elasticIPTerminalStates)
 	e.setLinked(resp.Properties.LinkedResources)
 
 	if resp.Properties.BillingPlan.BillingPeriod != "" {
@@ -117,6 +118,11 @@ func elasticIPDerefString(p *string) string {
 		return ""
 	}
 	return *p
+}
+
+var elasticIPTerminalStates = map[string]bool{
+	"Active": true,
+	"Error":  false,
 }
 
 // ---------------------------------------------------------------------------
@@ -153,6 +159,16 @@ func (a *elasticIPsClientAdapter) Create(ctx context.Context, e *ElasticIP, opts
 	populateHTTPEnvelope(&e.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		e.fromResponse(resp.Data)
+		e.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, e)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				e.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return e, err
@@ -175,6 +191,16 @@ func (a *elasticIPsClientAdapter) Get(ctx context.Context, ref Ref, opts ...Call
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	out.projectID = projectID
 	if err != nil {
@@ -202,6 +228,16 @@ func (a *elasticIPsClientAdapter) Update(ctx context.Context, e *ElasticIP, opts
 	populateHTTPEnvelope(&e.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		e.fromResponse(resp.Data)
+		e.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, e)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				e.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return e, err
@@ -249,6 +285,16 @@ func (a *elasticIPsClientAdapter) List(ctx context.Context, project Ref, opts ..
 		for i := range resp.Data.Values {
 			e := &ElasticIP{}
 			e.fromResponse(&resp.Data.Values[i])
+			e.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, e)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					e.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if e.projectID == "" {
 				e.projectID = projectID
 			}

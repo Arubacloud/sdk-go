@@ -226,6 +226,7 @@ func (r *ContainerRegistry) fromResponse(resp *types.ContainerRegistryResponse) 
 		r.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	r.setStatus(&resp.Status)
+	r.setTerminalStates(containerRegistryTerminalStates)
 
 	if resp.Properties.PublicIp.URI != "" {
 		v := resp.Properties.PublicIp.URI
@@ -275,6 +276,11 @@ func containerRegistryDeref(p *string) string {
 		return ""
 	}
 	return *p
+}
+
+var containerRegistryTerminalStates = map[string]bool{
+	"Active": true,
+	"Error":  false,
 }
 
 // ---------------------------------------------------------------------------
@@ -335,6 +341,16 @@ func (a *containerRegistriesClientAdapter) Create(ctx context.Context, r *Contai
 	populateHTTPEnvelope(&r.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		r.fromResponse(resp.Data)
+		r.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, r)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				r.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return r, err
@@ -361,6 +377,16 @@ func (a *containerRegistriesClientAdapter) Update(ctx context.Context, r *Contai
 	populateHTTPEnvelope(&r.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		r.fromResponse(resp.Data)
+		r.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, r)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				r.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return r, err
@@ -384,6 +410,16 @@ func (a *containerRegistriesClientAdapter) Get(ctx context.Context, ref Ref, opt
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if out.projectID == "" {
 		out.projectID = projectID
@@ -435,6 +471,16 @@ func (a *containerRegistriesClientAdapter) List(ctx context.Context, parent Ref,
 			cr := &ContainerRegistry{}
 			cr.projectID = projectID
 			cr.fromResponse(&resp.Data.Values[i])
+			cr.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, cr)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					cr.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if cr.projectID == "" {
 				cr.projectID = projectID
 			}

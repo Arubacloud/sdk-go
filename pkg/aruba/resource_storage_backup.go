@@ -134,6 +134,7 @@ func (b *StorageBackup) fromResponse(resp *types.StorageBackupResponse) {
 		b.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	b.setStatus(&resp.Status)
+	b.setTerminalStates(storageBackupTerminalStates)
 
 	if resp.Properties.Type != "" {
 		v := resp.Properties.Type
@@ -167,6 +168,11 @@ func storageBackupDerefString(p *string) string {
 		return ""
 	}
 	return *p
+}
+
+var storageBackupTerminalStates = map[string]bool{
+	"Available": true,
+	"Error":     false,
 }
 
 // ---------------------------------------------------------------------------
@@ -203,6 +209,16 @@ func (a *storageBackupsClientAdapter) Create(ctx context.Context, b *StorageBack
 	populateHTTPEnvelope(&b.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		b.fromResponse(resp.Data)
+		b.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, b)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				b.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return b, err
@@ -225,6 +241,16 @@ func (a *storageBackupsClientAdapter) Get(ctx context.Context, ref Ref, opts ...
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if out.projectID == "" {
 		out.projectID = projectID
@@ -254,6 +280,16 @@ func (a *storageBackupsClientAdapter) Update(ctx context.Context, b *StorageBack
 	populateHTTPEnvelope(&b.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		b.fromResponse(resp.Data)
+		b.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, b)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				b.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return b, err
@@ -301,6 +337,16 @@ func (a *storageBackupsClientAdapter) List(ctx context.Context, project Ref, opt
 		for i := range resp.Data.Values {
 			bkp := &StorageBackup{}
 			bkp.fromResponse(&resp.Data.Values[i])
+			bkp.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, bkp)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					bkp.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if bkp.projectID == "" {
 				bkp.projectID = projectID
 			}

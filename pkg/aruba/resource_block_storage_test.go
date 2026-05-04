@@ -909,3 +909,36 @@ func findSubstring(s, substr string) bool {
 	}
 	return false
 }
+
+func TestBlockStorage_FromResponse_SetsTerminalStates(t *testing.T) {
+	b := &BlockStorage{}
+	state := "Available"
+	b.fromResponse(&types.BlockStorageResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(b.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !b.terminalStates["Available"] {
+		t.Error("terminalStates[Available] should be true for BlockStorage")
+	}
+	if b.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for BlockStorage")
+	}
+}
+
+func TestVolumesClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, blockStorageSuccessBody)
+	})
+	adapter := newVolumesClientAdapter(testutil.NewClient(t, server.URL))
+	bs, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Storage/blockstorages/bs-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&bs.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned BlockStorage")
+	}
+}

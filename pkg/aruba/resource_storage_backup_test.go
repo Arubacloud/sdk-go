@@ -911,3 +911,36 @@ func TestStorageBackupsClientAdapter_List_TwoItems(t *testing.T) {
 		t.Errorf("items[0].ProjectID() = %q", items[0].ProjectID())
 	}
 }
+
+func TestStorageBackup_FromResponse_SetsTerminalStates(t *testing.T) {
+	b := &StorageBackup{}
+	state := "Available"
+	b.fromResponse(&types.StorageBackupResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(b.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !b.terminalStates["Available"] {
+		t.Error("terminalStates[Available] should be true for StorageBackup")
+	}
+	if b.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for StorageBackup")
+	}
+}
+
+func TestStorageBackupsClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, storageBackupSuccessBody)
+	})
+	adapter := newStorageBackupsClientAdapter(testutil.NewClient(t, server.URL))
+	bkp, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Storage/backups/bkp-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&bkp.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned StorageBackup")
+	}
+}

@@ -326,6 +326,7 @@ func (k *KaaS) fromResponse(resp *types.KaaSResponse) {
 		k.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	k.setStatus(&resp.Status)
+	k.setTerminalStates(kaasTerminalStates)
 	k.setLinked(resp.Properties.LinkedResources)
 	k.kaasHydrateCacheFromProps(resp.Properties)
 	k.nodePools = kaasRebuildNodePools(resp.Properties.NodePools)
@@ -466,6 +467,11 @@ type kaasActions interface {
 	downloadKubeconfig(ctx context.Context, projectID, kaasID string, rp *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error)
 }
 
+var kaasTerminalStates = map[string]bool{
+	"Active": true,
+	"Error":  false,
+}
+
 // ---------------------------------------------------------------------------
 // Low-level interface + adapter
 // ---------------------------------------------------------------------------
@@ -505,6 +511,16 @@ func (a *kaasClientAdapter) Create(ctx context.Context, k *KaaS, opts ...CallOpt
 	populateHTTPEnvelope(&k.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		k.fromResponse(resp.Data)
+		k.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, k)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				k.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	k.actions = a
 	if err != nil {
@@ -532,6 +548,16 @@ func (a *kaasClientAdapter) Update(ctx context.Context, k *KaaS, opts ...CallOpt
 	populateHTTPEnvelope(&k.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		k.fromResponse(resp.Data)
+		k.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, k)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				k.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	k.actions = a
 	if err != nil {
@@ -556,6 +582,16 @@ func (a *kaasClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if out.projectID == "" {
 		out.projectID = projectID
@@ -608,6 +644,16 @@ func (a *kaasClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOp
 			k := &KaaS{}
 			k.projectID = projectID
 			k.fromResponse(&resp.Data.Values[i])
+			k.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, k)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					k.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if k.projectID == "" {
 				k.projectID = projectID
 			}

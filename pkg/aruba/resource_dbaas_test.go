@@ -1073,3 +1073,36 @@ func TestDBaaSClientAdapter_List_TwoItems(t *testing.T) {
 		t.Errorf("items[0].ProjectID() = %q", items[0].ProjectID())
 	}
 }
+
+func TestDBaaS_FromResponse_SetsTerminalStates(t *testing.T) {
+	d := &DBaaS{}
+	state := "Active"
+	d.fromResponse(&types.DBaaSResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(d.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !d.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for DBaaS")
+	}
+	if d.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for DBaaS")
+	}
+}
+
+func TestDBaaSClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, dbaasSuccessBody)
+	})
+	adapter := newDBaaSClientAdapter(testutil.NewClient(t, server.URL))
+	db, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Database/dbaas/db-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&db.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned DBaaS")
+	}
+}

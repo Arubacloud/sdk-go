@@ -210,6 +210,7 @@ func (j *Job) fromResponse(resp *types.JobResponse) {
 		j.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	j.setStatus(&resp.Status)
+	j.setTerminalStates(jobTerminalStates)
 
 	// Hydrate request-side cache.
 	e := resp.Properties.Enabled
@@ -309,6 +310,11 @@ func jobIDsFromRef(ref Ref) (projectID, jobID string, err error) {
 	return pid, jid, nil
 }
 
+var jobTerminalStates = map[string]bool{
+	"Active": true,
+	"Error":  false,
+}
+
 // ---------------------------------------------------------------------------
 // Low-level interface + adapter
 // ---------------------------------------------------------------------------
@@ -345,6 +351,16 @@ func (a *jobsClientAdapter) Create(ctx context.Context, j *Job, opts ...CallOpti
 	populateHTTPEnvelope(&j.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		j.fromResponse(resp.Data)
+		j.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, j)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				j.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return j, err
@@ -371,6 +387,16 @@ func (a *jobsClientAdapter) Update(ctx context.Context, j *Job, opts ...CallOpti
 	populateHTTPEnvelope(&j.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		j.fromResponse(resp.Data)
+		j.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, j)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				j.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return j, err
@@ -394,6 +420,16 @@ func (a *jobsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if out.projectID == "" {
 		out.projectID = projectID
@@ -445,6 +481,16 @@ func (a *jobsClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOp
 			j := &Job{}
 			j.projectID = projectID
 			j.fromResponse(&resp.Data.Values[i])
+			j.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, j)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					j.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if j.projectID == "" {
 				j.projectID = projectID
 			}

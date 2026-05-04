@@ -1130,3 +1130,36 @@ func TestSecurityGroupRulesClientAdapter_List_TwoItems(t *testing.T) {
 		t.Errorf("items[0].ProjectID() = %q", items[0].ProjectID())
 	}
 }
+
+func TestSecurityRule_FromResponse_SetsTerminalStates(t *testing.T) {
+	r := &SecurityRule{}
+	state := "Active"
+	r.fromResponse(&types.SecurityRuleResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(r.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !r.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for SecurityRule")
+	}
+	if r.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for SecurityRule")
+	}
+}
+
+func TestSecurityGroupRulesClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, securityRuleSuccessBody)
+	})
+	adapter := newSecurityGroupRulesClientAdapter(testutil.NewClient(t, server.URL))
+	rule, err := adapter.Get(context.Background(), URI("/projects/p/network/vpcs/v/securitygroups/sg/security-rules/r-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&rule.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned SecurityRule")
+	}
+}
