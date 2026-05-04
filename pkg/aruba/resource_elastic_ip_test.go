@@ -796,3 +796,36 @@ func TestElasticIP_FromResponse_URIBackfillProjectID(t *testing.T) {
 		t.Errorf("ProjectID() via URI fallback = %q", e.ProjectID())
 	}
 }
+
+func TestElasticIP_FromResponse_SetsTerminalStates(t *testing.T) {
+	e := &ElasticIP{}
+	state := "Active"
+	e.fromResponse(&types.ElasticIPResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(e.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !e.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for ElasticIP")
+	}
+	if e.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for ElasticIP")
+	}
+}
+
+func TestElasticIPsClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, elasticIPSuccessBody)
+	})
+	adapter := newElasticIPsClientAdapter(testutil.NewClient(t, server.URL))
+	eip, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/elasticIps/eid"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&eip.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned ElasticIP")
+	}
+}

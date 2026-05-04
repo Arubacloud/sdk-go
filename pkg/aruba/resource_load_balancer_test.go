@@ -479,3 +479,36 @@ func TestLoadBalancersClientAdapter_List_ProjectIDBackfill(t *testing.T) {
 		t.Errorf("ProjectID() after backfill = %q, want %q", items[0].ProjectID(), "proj-x")
 	}
 }
+
+func TestLoadBalancer_FromResponse_SetsTerminalStates(t *testing.T) {
+	l := &LoadBalancer{}
+	state := "Active"
+	l.fromResponse(&types.LoadBalancerResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(l.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !l.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for LoadBalancer")
+	}
+	if l.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for LoadBalancer")
+	}
+}
+
+func TestLoadBalancersClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, loadBalancerSuccessBody)
+	})
+	adapter := newLoadBalancersClientAdapter(testutil.NewClient(t, server.URL))
+	lb, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/loadbalancers/lb-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&lb.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned LoadBalancer")
+	}
+}

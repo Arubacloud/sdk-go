@@ -73,6 +73,7 @@ func (sg *SecurityGroup) fromResponse(resp *types.SecurityGroupResponse) {
 		sg.replaceTags(resp.Metadata.Tags...)
 	}
 	sg.setStatus(&resp.Status)
+	sg.setTerminalStates(securityGroupTerminalStates)
 	sg.setLinked(resp.Properties.LinkedResources)
 
 	// Properties.Default is plain bool on the response — backfill into our *bool field.
@@ -99,6 +100,11 @@ func securityGroupDerefString(p *string) string {
 		return ""
 	}
 	return *p
+}
+
+var securityGroupTerminalStates = map[string]bool{
+	"Active": true,
+	"Error":  false,
 }
 
 // ---------------------------------------------------------------------------
@@ -137,6 +143,16 @@ func (a *securityGroupsClientAdapter) Create(ctx context.Context, sg *SecurityGr
 	populateHTTPEnvelope(&sg.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		sg.fromResponse(resp.Data)
+		sg.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, sg)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				sg.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return sg, err
@@ -159,6 +175,16 @@ func (a *securityGroupsClientAdapter) Get(ctx context.Context, ref Ref, opts ...
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	out.vpcID = vpcID
 	out.projectID = projectID
@@ -187,6 +213,16 @@ func (a *securityGroupsClientAdapter) Update(ctx context.Context, sg *SecurityGr
 	populateHTTPEnvelope(&sg.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		sg.fromResponse(resp.Data)
+		sg.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, sg)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				sg.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return sg, err
@@ -234,6 +270,16 @@ func (a *securityGroupsClientAdapter) List(ctx context.Context, vpc Ref, opts ..
 		for i := range resp.Data.Values {
 			sg := &SecurityGroup{}
 			sg.fromResponse(&resp.Data.Values[i])
+			sg.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, sg)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					sg.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if sg.vpcID == "" {
 				sg.vpcID = vpcID
 			}

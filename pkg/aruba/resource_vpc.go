@@ -93,6 +93,7 @@ func (v *VPC) fromResponse(resp *types.VPCResponse) {
 		v.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	v.setStatus(&resp.Status)
+	v.setTerminalStates(vpcTerminalStates)
 	v.setLinked(resp.Properties.LinkedResources)
 	d := resp.Properties.Default
 	v.defaultVPC = &d
@@ -106,6 +107,11 @@ func vpcDerefString(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+var vpcTerminalStates = map[string]bool{
+	"Active": true,
+	"Error":  false,
 }
 
 // ---------------------------------------------------------------------------
@@ -142,6 +148,16 @@ func (a *vpcsClientAdapter) Create(ctx context.Context, v *VPC, opts ...CallOpti
 	populateHTTPEnvelope(&v.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		v.fromResponse(resp.Data)
+		v.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, v)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				v.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return v, err
@@ -164,6 +180,16 @@ func (a *vpcsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return out, err
@@ -190,6 +216,16 @@ func (a *vpcsClientAdapter) Update(ctx context.Context, v *VPC, opts ...CallOpti
 	populateHTTPEnvelope(&v.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		v.fromResponse(resp.Data)
+		v.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, v)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				v.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return v, err
@@ -237,6 +273,16 @@ func (a *vpcsClientAdapter) List(ctx context.Context, project Ref, opts ...CallO
 		for i := range resp.Data.Values {
 			v := &VPC{}
 			v.fromResponse(&resp.Data.Values[i])
+			v.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, v)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					v.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			items = append(items, v)
 		}
 	}

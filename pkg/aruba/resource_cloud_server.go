@@ -319,6 +319,7 @@ func (cs *CloudServer) fromResponse(resp *types.CloudServerResponse) {
 	}
 	cs.setLinked(resp.Properties.LinkedResources)
 	cs.setStatus(&resp.Status)
+	cs.setTerminalStates(cloudServerTerminalStates)
 
 	if resp.Properties.Zone != "" {
 		v := resp.Properties.Zone
@@ -355,6 +356,11 @@ func cloudServerDerefString(p *string) string {
 		return ""
 	}
 	return *p
+}
+
+var cloudServerTerminalStates = map[string]bool{
+	"Active": true,
+	"Error":  false,
 }
 
 // ---------------------------------------------------------------------------
@@ -405,6 +411,16 @@ func (a *cloudServersClientAdapter) Create(ctx context.Context, cs *CloudServer,
 	populateHTTPEnvelope(&cs.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		cs.fromResponse(resp.Data)
+		cs.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, cs)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				cs.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	cs.actions = a
 	if err != nil {
@@ -432,6 +448,16 @@ func (a *cloudServersClientAdapter) Update(ctx context.Context, cs *CloudServer,
 	populateHTTPEnvelope(&cs.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		cs.fromResponse(resp.Data)
+		cs.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, cs)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				cs.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	cs.actions = a
 	if err != nil {
@@ -455,6 +481,16 @@ func (a *cloudServersClientAdapter) Get(ctx context.Context, ref Ref, opts ...Ca
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if out.projectID == "" {
 		out.projectID = projectID
@@ -506,6 +542,16 @@ func (a *cloudServersClientAdapter) List(ctx context.Context, project Ref, opts 
 		for i := range resp.Data.Values {
 			cs := &CloudServer{}
 			cs.fromResponse(&resp.Data.Values[i])
+			cs.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, cs)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					cs.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if cs.projectID == "" {
 				cs.projectID = projectID
 			}

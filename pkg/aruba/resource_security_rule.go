@@ -172,6 +172,7 @@ func (r *SecurityRule) fromResponse(resp *types.SecurityRuleResponse) {
 		r.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	r.setStatus(&resp.Status)
+	r.setTerminalStates(securityRuleTerminalStates)
 
 	if resp.Properties.Direction != "" {
 		d := resp.Properties.Direction
@@ -220,6 +221,11 @@ func securityRuleDerefString(p *string) string {
 	return *p
 }
 
+var securityRuleTerminalStates = map[string]bool{
+	"Active": true,
+	"Error":  false,
+}
+
 // ---------------------------------------------------------------------------
 // Low-level interface + adapter
 // ---------------------------------------------------------------------------
@@ -259,6 +265,16 @@ func (a *securityGroupRulesClientAdapter) Create(ctx context.Context, rule *Secu
 	populateHTTPEnvelope(&rule.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		rule.fromResponse(resp.Data)
+		rule.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, rule)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				rule.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return rule, err
@@ -281,6 +297,16 @@ func (a *securityGroupRulesClientAdapter) Get(ctx context.Context, ref Ref, opts
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if out.securityGroupID == "" {
 		out.securityGroupID = securityGroupID
@@ -316,6 +342,16 @@ func (a *securityGroupRulesClientAdapter) Update(ctx context.Context, rule *Secu
 	populateHTTPEnvelope(&rule.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		rule.fromResponse(resp.Data)
+		rule.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, rule)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				rule.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return rule, err
@@ -363,6 +399,16 @@ func (a *securityGroupRulesClientAdapter) List(ctx context.Context, sg Ref, opts
 		for i := range resp.Data.Values {
 			rule := &SecurityRule{}
 			rule.fromResponse(&resp.Data.Values[i])
+			rule.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, rule)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					rule.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if rule.securityGroupID == "" {
 				rule.securityGroupID = securityGroupID
 			}

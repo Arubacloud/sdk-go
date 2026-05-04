@@ -122,6 +122,7 @@ func (s *Snapshot) fromResponse(resp *types.SnapshotResponse) {
 		s.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	s.setStatus(&resp.Status)
+	s.setTerminalStates(snapshotTerminalStates)
 
 	if resp.Properties.SizeGB != nil {
 		v := *resp.Properties.SizeGB
@@ -165,6 +166,11 @@ func snapshotDerefString(p *string) string {
 	return *p
 }
 
+var snapshotTerminalStates = map[string]bool{
+	"Available": true,
+	"Error":     false,
+}
+
 // ---------------------------------------------------------------------------
 // Low-level client interface, adapter, constructor, and methods
 // ---------------------------------------------------------------------------
@@ -201,6 +207,16 @@ func (a *snapshotsClientAdapter) Create(ctx context.Context, snap *Snapshot, opt
 	populateHTTPEnvelope(&snap.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		snap.fromResponse(resp.Data)
+		snap.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, snap)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				snap.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return snap, err
@@ -223,6 +239,16 @@ func (a *snapshotsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallO
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if out.projectID == "" {
 		out.projectID = projectID
@@ -252,6 +278,16 @@ func (a *snapshotsClientAdapter) Update(ctx context.Context, snap *Snapshot, opt
 	populateHTTPEnvelope(&snap.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		snap.fromResponse(resp.Data)
+		snap.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, snap)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				snap.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return snap, err
@@ -299,6 +335,16 @@ func (a *snapshotsClientAdapter) List(ctx context.Context, project Ref, opts ...
 		for i := range resp.Data.Values {
 			snap := &Snapshot{}
 			snap.fromResponse(&resp.Data.Values[i])
+			snap.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, snap)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					snap.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if snap.projectID == "" {
 				snap.projectID = projectID
 			}

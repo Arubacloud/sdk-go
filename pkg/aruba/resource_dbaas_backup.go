@@ -138,6 +138,7 @@ func (b *DBaaSBackup) fromResponse(resp *types.BackupResponse) {
 		b.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	b.setStatus(&resp.Status)
+	b.setTerminalStates(dbaasBackupTerminalStates)
 
 	if resp.Properties.DBaaS.URI != "" {
 		v := resp.Properties.DBaaS.URI
@@ -167,6 +168,11 @@ func dbaasBackupDerefString(p *string) string {
 		return ""
 	}
 	return *p
+}
+
+var dbaasBackupTerminalStates = map[string]bool{
+	"Available": true,
+	"Error":     false,
 }
 
 // ---------------------------------------------------------------------------
@@ -229,6 +235,16 @@ func (a *dbaasBackupsClientAdapter) Create(ctx context.Context, b *DBaaSBackup, 
 	populateHTTPEnvelope(&b.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		b.fromResponse(resp.Data)
+		b.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, b)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				b.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return b, err
@@ -252,6 +268,16 @@ func (a *dbaasBackupsClientAdapter) Get(ctx context.Context, ref Ref, opts ...Ca
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if out.projectID == "" {
 		out.projectID = projectID
@@ -303,6 +329,16 @@ func (a *dbaasBackupsClientAdapter) List(ctx context.Context, parent Ref, opts .
 			b := &DBaaSBackup{}
 			b.projectID = projectID
 			b.fromResponse(&resp.Data.Values[i])
+			b.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, b)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					b.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if b.projectID == "" {
 				b.projectID = projectID
 			}

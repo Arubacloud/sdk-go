@@ -1066,3 +1066,36 @@ func TestVPCPeeringRoutesClientAdapter_List_TwoItems(t *testing.T) {
 		t.Errorf("items[0].ProjectID() = %q", items[0].ProjectID())
 	}
 }
+
+func TestVPCPeeringRoute_FromResponse_SetsTerminalStates(t *testing.T) {
+	r := &VPCPeeringRoute{}
+	state := "Active"
+	r.fromResponse(&types.VPCPeeringRouteResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(r.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !r.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for VPCPeeringRoute")
+	}
+	if r.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for VPCPeeringRoute")
+	}
+}
+
+func TestVPCPeeringRoutesClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, vpcPeeringRouteSuccessBody)
+	})
+	adapter := newVPCPeeringRoutesClientAdapter(testutil.NewClient(t, server.URL))
+	route, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1/vpcPeeringRoutes/route-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&route.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned VPCPeeringRoute")
+	}
+}

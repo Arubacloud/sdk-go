@@ -914,3 +914,36 @@ func TestSnapshotsClientAdapter_List_TwoItems(t *testing.T) {
 		t.Errorf("items[0].ProjectID() = %q", items[0].ProjectID())
 	}
 }
+
+func TestSnapshot_FromResponse_SetsTerminalStates(t *testing.T) {
+	s := &Snapshot{}
+	state := "Available"
+	s.fromResponse(&types.SnapshotResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(s.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !s.terminalStates["Available"] {
+		t.Error("terminalStates[Available] should be true for Snapshot")
+	}
+	if s.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for Snapshot")
+	}
+}
+
+func TestSnapshotsClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, snapshotSuccessBody)
+	})
+	adapter := newSnapshotsClientAdapter(testutil.NewClient(t, server.URL))
+	snap, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Storage/snapshots/snap-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&snap.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned Snapshot")
+	}
+}

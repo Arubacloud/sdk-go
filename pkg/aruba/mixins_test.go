@@ -523,13 +523,15 @@ func TestStatusMixin_Populated(t *testing.T) {
 	}
 }
 
-func TestStatusMixin_WaitStubs(t *testing.T) {
+func TestStatusMixin_WaitRefreshNil(t *testing.T) {
+	// When no refresh callback is set, both wait methods must return a descriptive
+	// error rather than panicking. Full wait behaviour is tested in wait_test.go.
 	var m statusMixin
 	if err := m.WaitUntilActive(context.Background()); err == nil {
-		t.Error("WaitUntilActive should return not-implemented error")
+		t.Error("WaitUntilActive with nil refresh should return an error")
 	}
 	if err := m.WaitUntilState(context.Background(), "Active"); err == nil {
-		t.Error("WaitUntilState should return not-implemented error")
+		t.Error("WaitUntilState with nil refresh should return an error")
 	}
 }
 

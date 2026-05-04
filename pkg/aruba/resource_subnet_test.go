@@ -1017,3 +1017,36 @@ func TestSubnetsClientAdapter_List_TwoItems(t *testing.T) {
 		t.Errorf("items[1] ID=%q IsDefault=%v", items[1].ID(), items[1].IsDefault())
 	}
 }
+
+func TestSubnet_FromResponse_SetsTerminalStates(t *testing.T) {
+	s := &Subnet{}
+	state := "Active"
+	s.fromResponse(&types.SubnetResponse{
+		Status: types.ResourceStatus{State: &state},
+	})
+	if len(s.terminalStates) == 0 {
+		t.Error("fromResponse should set terminalStates on the wrapper")
+	}
+	if !s.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for Subnet")
+	}
+	if s.terminalStates["Error"] {
+		t.Error("terminalStates[Error] should be false for Subnet")
+	}
+}
+
+func TestSubnetsClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, subnetSuccessBody)
+	})
+	adapter := newSubnetsClientAdapter(testutil.NewClient(t, server.URL))
+	sub, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v/subnets/sid"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if !refreshIsSet(&sub.statusMixin) {
+		t.Error("Get should inject a refresh callback into the returned Subnet")
+	}
+}

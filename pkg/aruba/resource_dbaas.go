@@ -252,6 +252,7 @@ func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 	}
 	d.setLinked(resp.Properties.LinkedResources)
 	d.setStatus(&resp.Status)
+	d.setTerminalStates(dbaasTerminalStates)
 
 	// Hydrate request-side fields from response for round-trip Update support.
 	if resp.Properties.Engine != nil && resp.Properties.Engine.Type != nil {
@@ -314,6 +315,11 @@ func dbaasNetworkingURI(resp *types.DBaaSResponse, pick func(*types.DBaaSNetwork
 	return dbaasDerefString(fallback)
 }
 
+var dbaasTerminalStates = map[string]bool{
+	"Active": true,
+	"Error":  false,
+}
+
 // ---------------------------------------------------------------------------
 // DBaaS low-level client, adapter, and helpers
 // ---------------------------------------------------------------------------
@@ -348,6 +354,16 @@ func (a *dbaasClientAdapter) Create(ctx context.Context, d *DBaaS, opts ...CallO
 	populateHTTPEnvelope(&d.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		d.fromResponse(resp.Data)
+		d.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, d)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				d.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return d, err
@@ -374,6 +390,16 @@ func (a *dbaasClientAdapter) Update(ctx context.Context, d *DBaaS, opts ...CallO
 	populateHTTPEnvelope(&d.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		d.fromResponse(resp.Data)
+		d.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, d)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				d.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return d, err
@@ -396,6 +422,16 @@ func (a *dbaasClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOptio
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if out.projectID == "" {
 		out.projectID = projectID
@@ -446,6 +482,16 @@ func (a *dbaasClientAdapter) List(ctx context.Context, project Ref, opts ...Call
 		for i := range resp.Data.Values {
 			d := &DBaaS{}
 			d.fromResponse(&resp.Data.Values[i])
+			d.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, d)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					d.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			if d.projectID == "" {
 				d.projectID = projectID
 			}
