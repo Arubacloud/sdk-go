@@ -127,6 +127,7 @@ func vpnRouteDerefString(p *string) string {
 var vpnRouteTerminalStates = map[string]bool{
 	"Active": true,
 	"Error":  false,
+	"Failed": false,
 }
 
 // ---------------------------------------------------------------------------

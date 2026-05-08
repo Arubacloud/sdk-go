@@ -197,6 +197,7 @@ func vpnTunnelDerefString(p *string) string {
 var vpnTunnelTerminalStates = map[string]bool{
 	"Active": true,
 	"Error":  false,
+	"Failed": false,
 }
 
 // ---------------------------------------------------------------------------
