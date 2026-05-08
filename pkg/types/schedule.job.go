@@ -31,6 +31,17 @@ const (
 	DeactiveReasonResourceDeleted DeactiveReasonDto = "ResourceDeleted"
 )
 
+// HTTPVerb is the HTTP method for a job step action.
+type HTTPVerb string
+
+const (
+	HTTPVerbGET    HTTPVerb = "GET"
+	HTTPVerbPOST   HTTPVerb = "POST"
+	HTTPVerbPUT    HTTPVerb = "PUT"
+	HTTPVerbDELETE HTTPVerb = "DELETE"
+	HTTPVerbPATCH  HTTPVerb = "PATCH"
+)
+
 // JobStep represents a step that will be executed as part of the job
 type JobStep struct {
 	// Name Descriptive name of the step (nullable)
@@ -46,7 +57,7 @@ type JobStep struct {
 
 	// HttpVerb HTTP verb to be used for the action (e.g., GET, POST, PUT, DELETE)
 	// For more information, check the documentation.
-	HttpVerb string `json:"httpVerb"`
+	HttpVerb HTTPVerb `json:"httpVerb"`
 
 	// Body Optional HTTP request body to send with the action (nullable)
 	// For more information, check the documentation.
