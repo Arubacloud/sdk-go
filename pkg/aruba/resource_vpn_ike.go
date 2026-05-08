@@ -15,13 +15,13 @@ type VPNIKE struct {
 	dpdTimeout  int32
 }
 
-func (k *VPNIKE) WithLifetime(s int32) *VPNIKE    { k.lifetime = s; return k }
-func (k *VPNIKE) WithEncryption(v string) *VPNIKE { k.encryption = &v; return k }
-func (k *VPNIKE) WithHash(v string) *VPNIKE       { k.hash = &v; return k }
-func (k *VPNIKE) WithDHGroup(v string) *VPNIKE    { k.dhGroup = &v; return k }
-func (k *VPNIKE) WithDPDAction(v string) *VPNIKE  { k.dpdAction = &v; return k }
-func (k *VPNIKE) WithDPDInterval(s int32) *VPNIKE { k.dpdInterval = s; return k }
-func (k *VPNIKE) WithDPDTimeout(s int32) *VPNIKE  { k.dpdTimeout = s; return k }
+func (k *VPNIKE) WithLifetimeSeconds(s int) *VPNIKE    { k.lifetime = int32(s); return k }
+func (k *VPNIKE) WithEncryption(v string) *VPNIKE      { k.encryption = &v; return k }
+func (k *VPNIKE) WithHash(v string) *VPNIKE            { k.hash = &v; return k }
+func (k *VPNIKE) WithDHGroup(v string) *VPNIKE         { k.dhGroup = &v; return k }
+func (k *VPNIKE) WithDPDAction(v string) *VPNIKE       { k.dpdAction = &v; return k }
+func (k *VPNIKE) WithDPDIntervalSeconds(s int) *VPNIKE { k.dpdInterval = int32(s); return k }
+func (k *VPNIKE) WithDPDTimeoutSeconds(s int) *VPNIKE  { k.dpdTimeout = int32(s); return k }
 
 func (k *VPNIKE) build() *types.IKESettings {
 	if k == nil {
