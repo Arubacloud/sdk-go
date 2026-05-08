@@ -89,18 +89,11 @@ func (c *subnetsClientImpl) Get(ctx context.Context, projectID string, vpcID str
 }
 
 // Create creates a new subnet in a VPC
-// The SDK automatically waits for the VPC to become Active before creating the subnet
 func (c *subnetsClientImpl) Create(ctx context.Context, projectID string, vpcID string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error) {
 	c.client.Logger().Debugf("Creating subnet in VPC: %s in project: %s", vpcID, projectID)
 
 	if err := types.ValidateProjectAndResource(projectID, vpcID, "VPC ID"); err != nil {
 		return nil, err
-	}
-
-	// Wait for VPC to become Active before creating subnet
-	err := waitForVPCActive(ctx, c.vpcClient, projectID, vpcID)
-	if err != nil {
-		return nil, fmt.Errorf("failed waiting for VPC to become active: %w", err)
 	}
 
 	path := fmt.Sprintf(SubnetsPath, projectID, vpcID)

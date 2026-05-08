@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -239,86 +238,27 @@ func TestGetSubnet(t *testing.T) {
 }
 
 func TestCreateSubnet(t *testing.T) {
-	// TODO(TD-020): unskip once VPC-active polling is mockable.
-	t.Skip("Skipping CreateSubnet test - requires complex VPC polling mock setup")
-	// NOTE: CreateSubnet calls waitForVPCActive() which polls the VPC status
-	// To properly test this, you need to mock the VPC GET endpoint to return "active" status
-	// Example path: /projects/test-project/providers/Aruba.Network/vpcs/vpc-123
 	t.Run("successful create", func(t *testing.T) {
-		requestCount := 0
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			requestCount++
-			t.Logf("Request #%d: %s %s", requestCount, r.Method, r.URL.Path)
-
-			// Limit requests to prevent infinite loops during testing
-			if requestCount > 50 {
-				t.Error("Too many requests - infinite loop detected")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				t.Errorf("expected POST, got %s", r.Method)
 			}
-
-			// Handle token endpoint
-			if r.URL.Path == "/token" {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				tokenResp := `{"access_token":"test-token","token_type":"Bearer","expires_in":3600}`
-				t.Logf("Returning token response: %s", tokenResp)
-				w.Write([]byte(tokenResp))
-				return
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			resp := types.SubnetResponse{
+				Metadata: types.ResourceMetadataResponse{
+					ID:   types.StringPtr("subnet-123"),
+					Name: types.StringPtr("new-subnet"),
+					URI:  types.StringPtr("/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/subnets/subnet-123"),
+				},
+				Properties: types.SubnetPropertiesResponse{
+					Type: types.SubnetTypeAdvanced,
+				},
 			}
-
-			// Handle VPC status polling - GET request to VPC endpoint
-			// Path: /projects/test-project/providers/Aruba.Network/vpcs/vpc-123
-			if r.Method == http.MethodGet && r.URL.Path == "/projects/test-project/providers/Aruba.Network/vpcs/vpc-123" {
-				t.Logf("Returning active VPC status")
-				w.WriteHeader(http.StatusOK)
-				vpcResp := types.VPCResponse{
-					Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("test-vpc")},
-					Status:   types.ResourceStatus{State: types.StringPtr("active")},
-				}
-				json.NewEncoder(w).Encode(vpcResp)
-				return
-			}
-
-			// Handle subnet creation - POST request
-			if r.Method == http.MethodPost {
-				t.Logf("Creating subnet")
-				w.WriteHeader(http.StatusCreated)
-				resp := types.SubnetResponse{
-					Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("new-subnet")},
-					Properties: types.SubnetPropertiesResponse{
-						Type: types.SubnetTypeAdvanced,
-						Network: &types.SubnetNetwork{
-							Address: "192.168.1.0/25",
-						},
-						DHCP: &types.SubnetDHCP{
-							Enabled: true,
-							Range: &types.SubnetDHCPRange{
-								Start: "192.168.1.10",
-								Count: 50,
-							},
-							Routes: []types.SubnetDHCPRoute{
-								{
-									Address: "0.0.0.0/0",
-									Gateway: "192.168.1.1",
-								},
-							},
-							DNS: []string{"8.8.8.8", "8.8.4.4"},
-						},
-					},
-				}
-				json.NewEncoder(w).Encode(resp)
-				return
-			}
-
-			// If we get here, something unexpected happened
-			t.Logf("Unexpected request: %s %s", r.Method, r.URL.Path)
-			w.WriteHeader(http.StatusNotFound)
-		}))
-		defer server.Close()
+			json.NewEncoder(w).Encode(resp)
+		})
 
 		c := testutil.NewClient(t, server.URL)
-
 		svc := NewSubnetsClientImpl(c, NewVPCsClientImpl(c))
 
 		req := types.SubnetRequest{

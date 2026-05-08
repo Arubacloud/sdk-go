@@ -255,8 +255,25 @@ func TestGetSecurityGroupRule(t *testing.T) {
 }
 
 func TestCreateSecurityGroupRule(t *testing.T) {
-	// TODO(TD-020): unskip once security-group-active polling is mockable.
-	t.Skip("Skipping CreateSecurityGroupRule test - requires complex security-group polling mock setup")
+	t.Run("successful create", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				t.Errorf("expected POST, got %s", r.Method)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"id":"rule-1","name":"my-rule","uri":"/projects/p/providers/Aruba.Network/vpcs/v/securitygroups/sg/securityrules/rule-1"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewSecurityGroupRulesClientImpl(c, NewSecurityGroupsClientImpl(c, NewVPCsClientImpl(c)))
+		resp, err := svc.Create(context.Background(), "test-project", "vpc-123", "sg-456", types.SecurityRuleRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusCreated {
+			t.Errorf("expected status 201, got %d", resp.StatusCode)
+		}
+	})
 }
 
 func TestUpdateSecurityGroupRule(t *testing.T) {
