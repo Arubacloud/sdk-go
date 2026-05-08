@@ -36,8 +36,8 @@ func (b *StorageBackup) WithName(n string) *StorageBackup        { b.withName(n)
 func (b *StorageBackup) AddTag(t string) *StorageBackup          { b.addTag(t); return b }
 func (b *StorageBackup) RemoveTag(t string) *StorageBackup       { b.removeTag(t); return b }
 func (b *StorageBackup) ReplaceTags(ts ...string) *StorageBackup { b.replaceTags(ts...); return b }
-func (b *StorageBackup) WithLocation(loc string) *StorageBackup  { b.withLocation(loc); return b }
-func (b *StorageBackup) InRegion(region string) *StorageBackup   { b.withLocation(region); return b }
+func (b *StorageBackup) WithLocation(loc Region) *StorageBackup  { b.withLocation(loc); return b }
+func (b *StorageBackup) InRegion(region Region) *StorageBackup   { b.withLocation(region); return b }
 
 // WithType sets the backup type (Full or Incremental).
 func (b *StorageBackup) WithType(t types.StorageBackupType) *StorageBackup {

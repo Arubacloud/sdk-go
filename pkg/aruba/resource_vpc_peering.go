@@ -32,8 +32,8 @@ func (p *VPCPeering) WithName(n string) *VPCPeering        { p.withName(n); retu
 func (p *VPCPeering) AddTag(t string) *VPCPeering          { p.addTag(t); return p }
 func (p *VPCPeering) RemoveTag(t string) *VPCPeering       { p.removeTag(t); return p }
 func (p *VPCPeering) ReplaceTags(ts ...string) *VPCPeering { p.replaceTags(ts...); return p }
-func (p *VPCPeering) WithLocation(loc string) *VPCPeering  { p.withLocation(loc); return p }
-func (p *VPCPeering) InRegion(region string) *VPCPeering   { p.inRegion(region); return p }
+func (p *VPCPeering) WithLocation(loc Region) *VPCPeering  { p.withLocation(loc); return p }
+func (p *VPCPeering) InRegion(region Region) *VPCPeering   { p.inRegion(region); return p }
 
 // WithRemoteVPC stores the remote VPC URI in the request body Properties.
 // Records a setter-time error if the supplied Ref's URI is empty.

@@ -35,6 +35,10 @@ type (
 	// Metrics / Alerts
 	ActionType = types.ActionType
 
+	// Location / zone
+	Region = types.Region
+	Zone   = types.Zone
+
 	// Billing
 	BillingPeriod = types.BillingPeriod
 
@@ -115,6 +119,12 @@ const (
 	DeactiveReasonNone            = types.DeactiveReasonNone
 	DeactiveReasonManual          = types.DeactiveReasonManual
 	DeactiveReasonResourceDeleted = types.DeactiveReasonResourceDeleted
+
+	// Location
+	RegionITBGBergamo = types.RegionITBGBergamo
+
+	// Zone
+	ZoneITBG1 = types.ZoneITBG1
 
 	// Billing period
 	BillingPeriodHour = types.BillingPeriodHour
