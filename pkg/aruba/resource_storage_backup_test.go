@@ -914,15 +914,15 @@ func TestStorageBackupsClientAdapter_List_TwoItems(t *testing.T) {
 
 func TestStorageBackup_FromResponse_SetsTerminalStates(t *testing.T) {
 	b := &StorageBackup{}
-	state := "Available"
+	state := "Active"
 	b.fromResponse(&types.StorageBackupResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
 	if len(b.terminalStates) == 0 {
 		t.Error("fromResponse should set terminalStates on the wrapper")
 	}
-	if !b.terminalStates["Available"] {
-		t.Error("terminalStates[Available] should be true for StorageBackup")
+	if !b.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for StorageBackup")
 	}
 	if b.terminalStates["Error"] {
 		t.Error("terminalStates[Error] should be false for StorageBackup")

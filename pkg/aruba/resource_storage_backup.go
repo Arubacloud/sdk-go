@@ -171,8 +171,9 @@ func storageBackupDerefString(p *string) string {
 }
 
 var storageBackupTerminalStates = map[string]bool{
-	"Available": true,
-	"Error":     false,
+	"Active": true,
+	"Error":  false,
+	"Failed": false,
 }
 
 // ---------------------------------------------------------------------------
