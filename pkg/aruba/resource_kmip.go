@@ -2,10 +2,12 @@ package aruba
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Arubacloud/sdk-go/internal/clients/security"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
+	"github.com/Arubacloud/sdk-go/pkg/async"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
@@ -28,6 +30,57 @@ type Kmip struct {
 
 	name     *string
 	response *types.KmipResponse
+	refresh  func(ctx context.Context) error
+}
+
+func (km *Kmip) setRefresh(fn func(context.Context) error) { km.refresh = fn }
+
+var kmipTerminalStates = map[string]bool{
+	"Failed":  false,
+	"Deleted": false,
+}
+
+// WaitUntilReady blocks until the KMIP service is ready for use — i.e. reaches
+// "CertificateAvailable", at which point KmipsClient.Download will succeed.
+// Provided so all polling-aware resources expose a uniform "ready" gate;
+// equivalent to WaitUntilCertificateAvailable for the KMIP resource type.
+func (km *Kmip) WaitUntilReady(ctx context.Context, opts ...WaitOption) error {
+	return km.WaitUntilCertificateAvailable(ctx, opts...)
+}
+
+// WaitUntilCertificateAvailable blocks until the KMIP service reaches
+// "CertificateAvailable", at which point KmipsClient.Download will succeed.
+// Returns immediately with an error if the service enters a terminal state
+// ("Failed", "Deleted"), or if the wrapper was not produced by an adapter
+// (Create/Get/List).
+func (km *Kmip) WaitUntilCertificateAvailable(ctx context.Context, opts ...WaitOption) error {
+	if km.refresh == nil {
+		return errors.New("WaitUntilCertificateAvailable: refresh callback not set; resource must be produced by an adapter (Create/Get/List) to support polling")
+	}
+	cfg := applyWaitOptions(opts)
+	call := func(ctx context.Context) (*types.Response[any], error) {
+		if err := km.refresh(ctx); err != nil {
+			return nil, err
+		}
+		return &types.Response[any]{}, nil
+	}
+	var terminalErr error
+	check := func(_ *types.Response[any]) (bool, error) {
+		state := km.KmipStatus()
+		if state == string(types.ServiceStatusCertificateAvailable) {
+			return true, nil
+		}
+		if isSuccess, isTerminal := kmipTerminalStates[state]; isTerminal && !isSuccess {
+			terminalErr = fmt.Errorf("KMIP entered terminal state %q (target %q)", state, types.ServiceStatusCertificateAvailable)
+			return true, terminalErr
+		}
+		return false, nil
+	}
+	_, err := async.WaitFor[any](ctx, cfg.retries, cfg.baseDelay, cfg.timeout, call, check).Await(ctx)
+	if terminalErr != nil {
+		return terminalErr
+	}
+	return err
 }
 
 // ---------------------------------------------------------------------------
@@ -210,6 +263,16 @@ func (a *kmipsClientAdapter) Create(ctx context.Context, km *Kmip, opts ...CallO
 	populateHTTPEnvelope(&km.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		km.fromResponse(resp.Data)
+		km.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, km)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				km.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return km, err
@@ -234,6 +297,16 @@ func (a *kmipsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOptio
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return out, err
@@ -283,6 +356,16 @@ func (a *kmipsClientAdapter) List(ctx context.Context, parent Ref, opts ...CallO
 			km.projectID = projectID
 			km.kmsID = kmsID
 			km.fromResponse(&resp.Data.Values[i])
+			km.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, km)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					km.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			items = append(items, km)
 		}
 	}
