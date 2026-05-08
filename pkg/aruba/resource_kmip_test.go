@@ -764,6 +764,108 @@ func TestNewKmipsClientAdapter_Nil(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
+// WaitUntilCertificateAvailable tests
+// --------------------------------------------------------------------------
+
+func TestKmip_WaitUntilCertificateAvailable_HappyPath(t *testing.T) {
+	km := &Kmip{}
+	calls := 0
+	status := types.ServiceStatusInCreation
+	km.setRefresh(func(_ context.Context) error {
+		calls++
+		if calls >= 2 {
+			status = types.ServiceStatusCertificateAvailable
+		}
+		st := status
+		km.response = &types.KmipResponse{Status: &st}
+		return nil
+	})
+	if err := km.WaitUntilCertificateAvailable(context.Background(), fastOpts()...); err != nil {
+		t.Fatalf("WaitUntilCertificateAvailable error: %v", err)
+	}
+	if km.KmipStatus() != string(types.ServiceStatusCertificateAvailable) {
+		t.Errorf("KmipStatus() = %q after wait", km.KmipStatus())
+	}
+}
+
+func TestKmip_WaitUntilCertificateAvailable_TerminalFailure(t *testing.T) {
+	km := &Kmip{}
+	failed := types.ServiceStatusFailed
+	km.setRefresh(func(_ context.Context) error {
+		km.response = &types.KmipResponse{Status: &failed}
+		return nil
+	})
+	if err := km.WaitUntilCertificateAvailable(context.Background(), fastOpts()...); err == nil {
+		t.Fatal("expected error for terminal failure state, got nil")
+	}
+}
+
+func TestKmip_WaitUntilCertificateAvailable_NotHydrated(t *testing.T) {
+	km := &Kmip{}
+	err := km.WaitUntilCertificateAvailable(context.Background())
+	if err == nil {
+		t.Fatal("expected error when refresh callback is not set")
+	}
+}
+
+func TestKmipsClientAdapter_Create_InjectsRefresh(t *testing.T) {
+	adapter := buildKmipTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprint(w, kmipSuccessBody)
+	})
+	parent := kmipMakeKMSParent("p-1", "kms-1")
+	km, err := adapter.Create(context.Background(), NewKmip().IntoKMS(parent).WithName("my-kmip"))
+	if err != nil {
+		t.Fatalf("Create error: %v", err)
+	}
+	if km.refresh == nil {
+		t.Error("Create should inject a refresh callback into the returned Kmip")
+	}
+}
+
+func TestKmipsClientAdapter_Get_InjectsRefresh(t *testing.T) {
+	adapter := buildKmipTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, kmipSuccessBody)
+	})
+	km, err := adapter.Get(context.Background(), URI(
+		"/projects/p-1/providers/Aruba.Security/kms/kms-1/kmips/kmip-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if km.refresh == nil {
+		t.Error("Get should inject a refresh callback into the returned Kmip")
+	}
+}
+
+// --------------------------------------------------------------------------
+// WaitUntilReady (alias for WaitUntilCertificateAvailable)
+// --------------------------------------------------------------------------
+
+func TestKmip_WaitUntilReady_HappyPath(t *testing.T) {
+	km := &Kmip{}
+	calls := 0
+	status := types.ServiceStatusInCreation
+	km.setRefresh(func(_ context.Context) error {
+		calls++
+		if calls >= 2 {
+			status = types.ServiceStatusCertificateAvailable
+		}
+		s := status
+		km.response = &types.KmipResponse{Status: &s}
+		return nil
+	})
+	if err := km.WaitUntilReady(context.Background(), fastOpts()...); err != nil {
+		t.Fatalf("WaitUntilReady error: %v", err)
+	}
+	if km.KmipStatus() != string(types.ServiceStatusCertificateAvailable) {
+		t.Errorf("KmipStatus() = %q after wait, want %q", km.KmipStatus(), types.ServiceStatusCertificateAvailable)
+	}
+}
+
+// --------------------------------------------------------------------------
 // Reflective guard: KmipsClient must NOT expose Update (Family B, no-Update)
 // --------------------------------------------------------------------------
 
