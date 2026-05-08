@@ -34,7 +34,7 @@ func TestSecurityRule_FluentSetters(t *testing.T) {
 		AddTag("t2").
 		AddTag("t1"). // dedupe
 		InRegion("ITBG-Bergamo").
-		WithDirection(string(types.RuleDirectionIngress)).
+		WithDirection(types.RuleDirectionIngress).
 		WithProtocol("TCP").
 		WithPort("22").
 		WithTargetCIDR("0.0.0.0/0")
@@ -203,7 +203,7 @@ func TestSecurityRule_ToRequestRoundTrip(t *testing.T) {
 		AddTag("t1").
 		AddTag("t2").
 		InRegion("ITBG-Bergamo").
-		WithDirection(string(types.RuleDirectionIngress)).
+		WithDirection(types.RuleDirectionIngress).
 		WithProtocol("TCP").
 		WithPort("22").
 		WithTargetCIDR("0.0.0.0/0")
@@ -247,7 +247,7 @@ func TestSecurityRule_ToRequestRoundTrip(t *testing.T) {
 func securityRuleTestResponse(id, name, uri, projectID string) *types.SecurityRuleResponse {
 	state := "Active"
 	dir := types.RuleDirectionEgress
-	proto := "UDP"
+	proto := types.RuleProtocol("UDP")
 	port := "53"
 	return &types.SecurityRuleResponse{
 		Metadata: types.ResourceMetadataResponse{
@@ -511,7 +511,7 @@ func TestSecurityGroupRulesClientAdapter_Create_Success(t *testing.T) {
 		IntoSecurityGroup(sg).
 		WithName("allow-ssh").
 		InRegion("ITBG-Bergamo").
-		WithDirection(string(types.RuleDirectionIngress)).
+		WithDirection(types.RuleDirectionIngress).
 		WithProtocol("TCP").
 		WithPort("22").
 		WithTargetCIDR("0.0.0.0/0")
