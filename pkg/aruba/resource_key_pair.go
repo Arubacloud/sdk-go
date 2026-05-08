@@ -34,8 +34,7 @@ func (k *KeyPair) WithName(n string) *KeyPair        { k.withName(n); return k }
 func (k *KeyPair) AddTag(t string) *KeyPair          { k.addTag(t); return k }
 func (k *KeyPair) RemoveTag(t string) *KeyPair       { k.removeTag(t); return k }
 func (k *KeyPair) ReplaceTags(ts ...string) *KeyPair { k.replaceTags(ts...); return k }
-func (k *KeyPair) WithLocation(loc Region) *KeyPair  { k.withLocation(loc); return k }
-func (k *KeyPair) InRegion(region Region) *KeyPair   { k.withLocation(region); return k }
+func (k *KeyPair) InRegion(region Region) *KeyPair   { k.inRegion(region); return k }
 
 // WithPublicKey sets the SSH public key (mapped to wire field "value").
 func (k *KeyPair) WithPublicKey(key string) *KeyPair {
@@ -84,7 +83,7 @@ func (k *KeyPair) fromResponse(resp *types.KeyPairResponse) {
 		k.replaceTags(resp.Metadata.Tags...)
 	}
 	if resp.Metadata.LocationResponse != nil {
-		k.withLocation(resp.Metadata.LocationResponse.Value)
+		k.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	k.setLinked(resp.Properties.LinkedResources)
 	k.setStatus(&resp.Status)

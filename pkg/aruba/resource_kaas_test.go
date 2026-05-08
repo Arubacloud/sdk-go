@@ -39,7 +39,7 @@ func TestKaaS_FluentSetters(t *testing.T) {
 		AddTag("env:prod").
 		AddTag("k8s").
 		AddTag("env:prod"). // dedupe
-		WithLocation("ITBG-Bergamo").
+		InRegion("ITBG-Bergamo").
 		WithVPC(vpcURI).
 		WithSubnet(subnetURI).
 		WithSecurityGroupName("sg-name").
@@ -303,7 +303,7 @@ func TestKaaS_ToRequest(t *testing.T) {
 	k := NewKaaS().
 		WithName("my-cluster").
 		AddTag("t1").AddTag("t2").
-		WithLocation("ITBG-Bergamo").
+		InRegion("ITBG-Bergamo").
 		WithVPC(URI(vpcURI)).
 		WithSubnet(URI(subnetURI)).
 		WithSecurityGroupName("sg-name").
@@ -379,7 +379,7 @@ func TestKaaS_ToUpdateRequest_MutableOnly(t *testing.T) {
 	vpcURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1"
 	k := NewKaaS().
 		WithName("updated-cluster").
-		WithLocation("ITBG-Bergamo").
+		InRegion("ITBG-Bergamo").
 		WithVPC(URI(vpcURI)). // set but must NOT appear in update request
 		WithKubernetesVersion("1.33.0").
 		WithHA(true).
@@ -695,7 +695,7 @@ func TestKaaSClientAdapter_Create_Success(t *testing.T) {
 	k := NewKaaS().
 		IntoProject(URI("/projects/p")).
 		WithName("my-cluster").
-		WithLocation("ITBG-Bergamo").
+		InRegion("ITBG-Bergamo").
 		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1")).
 		WithSubnet(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1")).
 		WithSecurityGroupName("sg-name").

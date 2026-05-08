@@ -38,8 +38,7 @@ func (b *BlockStorage) WithName(n string) *BlockStorage        { b.withName(n); 
 func (b *BlockStorage) AddTag(t string) *BlockStorage          { b.addTag(t); return b }
 func (b *BlockStorage) RemoveTag(t string) *BlockStorage       { b.removeTag(t); return b }
 func (b *BlockStorage) ReplaceTags(ts ...string) *BlockStorage { b.replaceTags(ts...); return b }
-func (b *BlockStorage) WithLocation(loc Region) *BlockStorage  { b.withLocation(loc); return b }
-func (b *BlockStorage) InRegion(region Region) *BlockStorage   { b.withLocation(region); return b }
+func (b *BlockStorage) InRegion(region Region) *BlockStorage   { b.inRegion(region); return b }
 func (b *BlockStorage) InZone(zone Zone) *BlockStorage         { b.zone = &zone; return b }
 func (b *BlockStorage) WithSizeGB(gb int) *BlockStorage        { b.sizeGB = gb; return b }
 func (b *BlockStorage) WithType(t types.BlockStorageType) *BlockStorage {
@@ -141,7 +140,7 @@ func (b *BlockStorage) fromResponse(resp *types.BlockStorageResponse) {
 		b.replaceTags(resp.Metadata.Tags...)
 	}
 	if resp.Metadata.LocationResponse != nil {
-		b.withLocation(resp.Metadata.LocationResponse.Value)
+		b.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	b.setStatus(&resp.Status)
 	b.setTerminalStates(blockStorageTerminalStates)

@@ -42,7 +42,7 @@ func TestContainerRegistry_FluentSetters(t *testing.T) {
 		AddTag("env:prod").
 		AddTag("registry").
 		AddTag("env:prod"). // dedupe
-		WithLocation("ITBG-1").
+		InRegion("ITBG-1").
 		WithVPC(vpcURI).
 		WithSubnet(subnetURI).
 		WithSecurityGroup(sgURI).
@@ -350,7 +350,7 @@ func TestContainerRegistry_ToRequest(t *testing.T) {
 	cr := NewContainerRegistry().
 		WithName("reg-rt").
 		AddTag("t1").AddTag("t2").
-		WithLocation("ITBG-1").
+		InRegion("ITBG-1").
 		WithVPC(URI(vpcURI)).
 		WithSubnet(URI(subnetURI)).
 		WithSecurityGroup(URI(sgURI)).
@@ -651,7 +651,7 @@ func TestContainerRegistriesClientAdapter_Create_Success(t *testing.T) {
 	cr := NewContainerRegistry().
 		IntoProject(URI("/projects/p")).
 		WithName("my-registry").
-		WithLocation("ITBG-1").
+		InRegion("ITBG-1").
 		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1")).
 		WithSubnet(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1")).
 		WithSecurityGroup(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1")).
@@ -770,7 +770,7 @@ func TestContainerRegistriesClientAdapter_Create_WithBodyRefs_ViaFake(t *testing
 
 	cr := NewContainerRegistry().
 		IntoProject(URI("/projects/p")).
-		WithLocation("ITBG-1").
+		InRegion("ITBG-1").
 		WithVPC(URI(vpcURI)).
 		WithSubnet(URI(subnetURI)).
 		WithSecurityGroup(URI(sgURI)).
@@ -826,7 +826,7 @@ func TestContainerRegistriesClientAdapter_Update_Success(t *testing.T) {
 	cr := NewContainerRegistry().
 		IntoProject(URI("/projects/p")).
 		WithName("my-registry").
-		WithLocation("ITBG-1").
+		InRegion("ITBG-1").
 		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1"))
 
 	// Hydrate to get an ID before Update.

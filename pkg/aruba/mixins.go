@@ -88,17 +88,16 @@ func (m *metadataMixin) toMetadata() types.ResourceMetadataRequest {
 // --------------------------------------------------------------------------
 
 type regionalMixin struct {
-	location Region
+	region Region
 }
 
-func (m *regionalMixin) withLocation(loc Region) { m.location = loc }
-func (m *regionalMixin) inRegion(region Region)  { m.location = region }
+func (m *regionalMixin) inRegion(region Region) { m.region = region }
 
-// Region returns the location value.
-func (m *regionalMixin) Region() Region { return m.location }
+// Region returns the region value.
+func (m *regionalMixin) Region() Region { return m.region }
 
 func (m *regionalMixin) toLocation() types.LocationRequest {
-	return types.LocationRequest{Value: m.location}
+	return types.LocationRequest{Value: m.region}
 }
 
 // --------------------------------------------------------------------------

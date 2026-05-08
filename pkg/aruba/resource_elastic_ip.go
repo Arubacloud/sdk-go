@@ -31,8 +31,7 @@ func (e *ElasticIP) WithName(n string) *ElasticIP                 { e.withName(n
 func (e *ElasticIP) AddTag(t string) *ElasticIP                   { e.addTag(t); return e }
 func (e *ElasticIP) RemoveTag(t string) *ElasticIP                { e.removeTag(t); return e }
 func (e *ElasticIP) ReplaceTags(ts ...string) *ElasticIP          { e.replaceTags(ts...); return e }
-func (e *ElasticIP) WithLocation(loc Region) *ElasticIP           { e.withLocation(loc); return e }
-func (e *ElasticIP) InRegion(region Region) *ElasticIP            { e.withLocation(region); return e }
+func (e *ElasticIP) InRegion(region Region) *ElasticIP            { e.inRegion(region); return e }
 func (e *ElasticIP) WithBillingPeriod(p BillingPeriod) *ElasticIP { e.billingPeriod = &p; return e }
 
 // URI satisfies Ref.
@@ -88,7 +87,7 @@ func (e *ElasticIP) fromResponse(resp *types.ElasticIPResponse) {
 		e.replaceTags(resp.Metadata.Tags...)
 	}
 	if resp.Metadata.LocationResponse != nil {
-		e.withLocation(resp.Metadata.LocationResponse.Value)
+		e.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	e.setStatus(&resp.Status)
 	e.setTerminalStates(elasticIPTerminalStates)

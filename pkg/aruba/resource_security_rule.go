@@ -34,7 +34,6 @@ func (r *SecurityRule) WithName(n string) *SecurityRule        { r.withName(n); 
 func (r *SecurityRule) AddTag(t string) *SecurityRule          { r.addTag(t); return r }
 func (r *SecurityRule) RemoveTag(t string) *SecurityRule       { r.removeTag(t); return r }
 func (r *SecurityRule) ReplaceTags(ts ...string) *SecurityRule { r.replaceTags(ts...); return r }
-func (r *SecurityRule) WithLocation(loc Region) *SecurityRule  { r.withLocation(loc); return r }
 func (r *SecurityRule) InRegion(region Region) *SecurityRule   { r.inRegion(region); return r }
 
 // WithDirection sets the rule direction.
@@ -168,7 +167,7 @@ func (r *SecurityRule) fromResponse(resp *types.SecurityRuleResponse) {
 		r.replaceTags(resp.Metadata.Tags...)
 	}
 	if resp.Metadata.LocationResponse != nil {
-		r.withLocation(resp.Metadata.LocationResponse.Value)
+		r.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	r.setStatus(&resp.Status)
 	r.setTerminalStates(securityRuleTerminalStates)

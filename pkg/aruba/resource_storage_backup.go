@@ -36,8 +36,7 @@ func (b *StorageBackup) WithName(n string) *StorageBackup        { b.withName(n)
 func (b *StorageBackup) AddTag(t string) *StorageBackup          { b.addTag(t); return b }
 func (b *StorageBackup) RemoveTag(t string) *StorageBackup       { b.removeTag(t); return b }
 func (b *StorageBackup) ReplaceTags(ts ...string) *StorageBackup { b.replaceTags(ts...); return b }
-func (b *StorageBackup) WithLocation(loc Region) *StorageBackup  { b.withLocation(loc); return b }
-func (b *StorageBackup) InRegion(region Region) *StorageBackup   { b.withLocation(region); return b }
+func (b *StorageBackup) InRegion(region Region) *StorageBackup   { b.inRegion(region); return b }
 
 // WithType sets the backup type (Full or Incremental).
 func (b *StorageBackup) WithType(t types.StorageBackupType) *StorageBackup {
@@ -136,7 +135,7 @@ func (b *StorageBackup) fromResponse(resp *types.StorageBackupResponse) {
 		b.replaceTags(resp.Metadata.Tags...)
 	}
 	if resp.Metadata.LocationResponse != nil {
-		b.withLocation(resp.Metadata.LocationResponse.Value)
+		b.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	b.setStatus(&resp.Status)
 	b.setTerminalStates(storageBackupTerminalStates)
