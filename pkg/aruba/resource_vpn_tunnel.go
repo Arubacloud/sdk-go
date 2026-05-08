@@ -21,8 +21,8 @@ type VPNTunnel struct {
 	linkedMixin
 	httpEnvelopeMixin
 
-	vpnType           *VPNType
-	vpnClientProtocol *VPNClientProtocol
+	vpnType            *VPNType
+	vpnClientProtocol  *VPNClientProtocol
 	billingPeriod      *BillingPeriod
 	peerClientPublicIP *string
 
@@ -36,14 +36,14 @@ type VPNTunnel struct {
 
 // Setters (chainable).
 
-func (t *VPNTunnel) IntoProject(p Ref) *VPNTunnel                 { t.intoProject(p); return t }
-func (t *VPNTunnel) WithName(n string) *VPNTunnel                 { t.withName(n); return t }
-func (t *VPNTunnel) AddTag(tag string) *VPNTunnel                 { t.addTag(tag); return t }
-func (t *VPNTunnel) RemoveTag(tag string) *VPNTunnel              { t.removeTag(tag); return t }
-func (t *VPNTunnel) ReplaceTags(tags ...string) *VPNTunnel        { t.replaceTags(tags...); return t }
-func (t *VPNTunnel) WithLocation(loc Region) *VPNTunnel           { t.withLocation(loc); return t }
-func (t *VPNTunnel) InRegion(r Region) *VPNTunnel                 { t.inRegion(r); return t }
-func (t *VPNTunnel) WithVPNType(s VPNType) *VPNTunnel              { t.vpnType = &s; return t }
+func (t *VPNTunnel) IntoProject(p Ref) *VPNTunnel          { t.intoProject(p); return t }
+func (t *VPNTunnel) WithName(n string) *VPNTunnel          { t.withName(n); return t }
+func (t *VPNTunnel) AddTag(tag string) *VPNTunnel          { t.addTag(tag); return t }
+func (t *VPNTunnel) RemoveTag(tag string) *VPNTunnel       { t.removeTag(tag); return t }
+func (t *VPNTunnel) ReplaceTags(tags ...string) *VPNTunnel { t.replaceTags(tags...); return t }
+func (t *VPNTunnel) WithLocation(loc Region) *VPNTunnel    { t.withLocation(loc); return t }
+func (t *VPNTunnel) InRegion(r Region) *VPNTunnel          { t.inRegion(r); return t }
+func (t *VPNTunnel) WithVPNType(s VPNType) *VPNTunnel      { t.vpnType = &s; return t }
 func (t *VPNTunnel) WithVPNClientProtocol(s VPNClientProtocol) *VPNTunnel {
 	t.vpnClientProtocol = &s
 	return t
@@ -105,10 +105,10 @@ func (t *VPNTunnel) RawRequest() types.VPNTunnelRequest { return t.toRequest() }
 
 // Read accessors.
 
-func (t *VPNTunnel) IPConfig() *VPNIPConfig    { return t.ipConfig }
-func (t *VPNTunnel) IKE() *VPNIKE              { return t.ike }
-func (t *VPNTunnel) ESP() *VPNESP              { return t.esp }
-func (t *VPNTunnel) PSK() *VPNPSK              { return t.psk }
+func (t *VPNTunnel) IPConfig() *VPNIPConfig { return t.ipConfig }
+func (t *VPNTunnel) IKE() *VPNIKE           { return t.ike }
+func (t *VPNTunnel) ESP() *VPNESP           { return t.esp }
+func (t *VPNTunnel) PSK() *VPNPSK           { return t.psk }
 func (t *VPNTunnel) VPNType() VPNType {
 	if t.vpnType == nil {
 		return ""

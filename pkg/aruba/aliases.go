@@ -69,7 +69,7 @@ type (
 	ESPPFSGroup   = types.ESPPFSGroup
 
 	// VPN tunnel types
-	VPNType          = types.VPNType
+	VPNType           = types.VPNType
 	VPNClientProtocol = types.VPNClientProtocol
 )
 
