@@ -105,6 +105,7 @@ func securityGroupDerefString(p *string) string {
 var securityGroupTerminalStates = map[string]bool{
 	"Active": true,
 	"Error":  false,
+	"Failed": false,
 }
 
 // ---------------------------------------------------------------------------

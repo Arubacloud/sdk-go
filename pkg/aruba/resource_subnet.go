@@ -151,6 +151,7 @@ func subnetDerefString(p *string) string {
 var subnetTerminalStates = map[string]bool{
 	"Active": true,
 	"Error":  false,
+	"Failed": false,
 }
 
 // ---------------------------------------------------------------------------

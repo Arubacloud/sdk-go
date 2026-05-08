@@ -327,31 +327,16 @@ const securityGroupSuccessBody = `{` +
 	`"properties":{"default":false},` +
 	`"status":{"state":"Active"}}`
 
-// withVPCActiveRouteForSG wraps a handler so VPC GET requests are answered with
-// an "Active" state. The internal security-group client calls waitForVPCActive
-// before Create, which polls the VPC endpoint; without this, the test would time out.
-func withVPCActiveRouteForSG(sgHandler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.URL.Path, "/securitygroups") {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, activeVPCBody)
-			return
-		}
-		sgHandler(w, r)
-	}
-}
-
 func TestSecurityGroupsClientAdapter_Create_Success(t *testing.T) {
 	var gotBody types.SecurityGroupRequest
-	adapter := buildSecurityGroupTestAdapter(t, withVPCActiveRouteForSG(func(w http.ResponseWriter, r *http.Request) {
+	adapter := buildSecurityGroupTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
 			t.Errorf("decode request body: %v", err)
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		fmt.Fprint(w, securityGroupSuccessBody)
-	}))
+	})
 
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "my-vpc", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
@@ -399,12 +384,12 @@ func TestSecurityGroupsClientAdapter_Create_NoVPC(t *testing.T) {
 }
 
 func TestSecurityGroupsClientAdapter_Create_MetadataValidationError(t *testing.T) {
-	adapter := buildSecurityGroupTestAdapter(t, withVPCActiveRouteForSG(func(w http.ResponseWriter, r *http.Request) {
+	adapter := buildSecurityGroupTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		// Missing "id" field — triggers MetadataValidationError
 		fmt.Fprint(w, `{"metadata":{"name":"sg","uri":"/projects/p/network/vpcs/v/security-groups/x"},"properties":{},"status":{}}`)
-	}))
+	})
 
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "my-vpc", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
@@ -424,11 +409,11 @@ func TestSecurityGroupsClientAdapter_Create_MetadataValidationError(t *testing.T
 }
 
 func TestSecurityGroupsClientAdapter_Create_NonTwoXX(t *testing.T) {
-	adapter := buildSecurityGroupTestAdapter(t, withVPCActiveRouteForSG(func(w http.ResponseWriter, r *http.Request) {
+	adapter := buildSecurityGroupTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "name is required", 422))
-	}))
+	})
 
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "my-vpc", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))

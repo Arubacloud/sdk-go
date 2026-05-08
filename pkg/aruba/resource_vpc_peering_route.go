@@ -168,6 +168,7 @@ func vpcPeeringRouteDerefString(p *string) string {
 var vpcPeeringRouteTerminalStates = map[string]bool{
 	"Active": true,
 	"Error":  false,
+	"Failed": false,
 }
 
 // ---------------------------------------------------------------------------

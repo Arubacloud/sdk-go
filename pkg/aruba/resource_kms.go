@@ -160,6 +160,7 @@ func kmsIDsFromRef(ref Ref) (projectID, kmsID string, err error) {
 var kmsTerminalStates = map[string]bool{
 	"Active": true,
 	"Error":  false,
+	"Failed": false,
 }
 
 // ---------------------------------------------------------------------------
