@@ -41,7 +41,6 @@ func (t *VPNTunnel) WithName(n string) *VPNTunnel          { t.withName(n); retu
 func (t *VPNTunnel) AddTag(tag string) *VPNTunnel          { t.addTag(tag); return t }
 func (t *VPNTunnel) RemoveTag(tag string) *VPNTunnel       { t.removeTag(tag); return t }
 func (t *VPNTunnel) ReplaceTags(tags ...string) *VPNTunnel { t.replaceTags(tags...); return t }
-func (t *VPNTunnel) WithLocation(loc Region) *VPNTunnel    { t.withLocation(loc); return t }
 func (t *VPNTunnel) InRegion(r Region) *VPNTunnel          { t.inRegion(r); return t }
 func (t *VPNTunnel) WithVPNType(s VPNType) *VPNTunnel      { t.vpnType = &s; return t }
 func (t *VPNTunnel) WithVPNClientProtocol(s VPNClientProtocol) *VPNTunnel {
@@ -173,7 +172,7 @@ func (t *VPNTunnel) fromResponse(resp *types.VPNTunnelResponse) {
 		t.replaceTags(resp.Metadata.Tags...)
 	}
 	if resp.Metadata.LocationResponse != nil {
-		t.withLocation(resp.Metadata.LocationResponse.Value)
+		t.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	t.setStatus(&resp.Status)
 	t.setTerminalStates(vpnTunnelTerminalStates)

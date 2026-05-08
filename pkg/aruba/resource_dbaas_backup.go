@@ -40,8 +40,7 @@ func (b *DBaaSBackup) WithName(n string) *DBaaSBackup        { b.withName(n); re
 func (b *DBaaSBackup) AddTag(t string) *DBaaSBackup          { b.addTag(t); return b }
 func (b *DBaaSBackup) RemoveTag(t string) *DBaaSBackup       { b.removeTag(t); return b }
 func (b *DBaaSBackup) ReplaceTags(ts ...string) *DBaaSBackup { b.replaceTags(ts...); return b }
-func (b *DBaaSBackup) WithLocation(loc Region) *DBaaSBackup  { b.withLocation(loc); return b }
-func (b *DBaaSBackup) InRegion(region Region) *DBaaSBackup   { b.withLocation(region); return b }
+func (b *DBaaSBackup) InRegion(region Region) *DBaaSBackup   { b.inRegion(region); return b }
 
 // WithDBaaS binds the source DBaaS via its URI. Empty URIs are recorded on the
 // error sink and the field remains unset.
@@ -140,7 +139,7 @@ func (b *DBaaSBackup) fromResponse(resp *types.BackupResponse) {
 		b.replaceTags(resp.Metadata.Tags...)
 	}
 	if resp.Metadata.LocationResponse != nil {
-		b.withLocation(resp.Metadata.LocationResponse.Value)
+		b.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	b.setStatus(&resp.Status)
 	b.setTerminalStates(dbaasBackupTerminalStates)

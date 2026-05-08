@@ -160,7 +160,7 @@ func TestBlockStorage_ToRequestRoundTrip(t *testing.T) {
 	bs := NewBlockStorage().
 		WithName("bs-rt").
 		AddTag("t1").AddTag("t2").
-		WithLocation("ITBG-Bergamo").
+		InRegion("ITBG-Bergamo").
 		WithSizeGB(30).
 		WithType(types.BlockStorageTypePerformance).
 		InZone("ITBG-1").

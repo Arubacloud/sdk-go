@@ -38,7 +38,7 @@ func TestJob_FluentSetters(t *testing.T) {
 		AddTag("env:prod").
 		AddTag("schedule").
 		AddTag("env:prod"). // dedupe
-		WithLocation("ITBG-Bergamo").
+		InRegion("ITBG-Bergamo").
 		WithEnabled(true)
 
 	if j.Name() != "my-job" {
@@ -258,7 +258,7 @@ func TestJob_ToRequest_OneShot(t *testing.T) {
 	j := NewJob().
 		IntoProject(URI("/projects/p")).
 		WithName("one-shot-job").
-		WithLocation("ITBG-Bergamo").
+		InRegion("ITBG-Bergamo").
 		WithEnabled(true).
 		OneShotAt(ts).
 		AddStep(NewJobStep().
@@ -506,7 +506,7 @@ func TestJobsClientAdapter_Create_Success(t *testing.T) {
 	j := NewJob().
 		IntoProject(URI("/projects/p")).
 		WithName("my-job").
-		WithLocation("ITBG-Bergamo").
+		InRegion("ITBG-Bergamo").
 		WithEnabled(true).
 		OneShotAt(ts)
 

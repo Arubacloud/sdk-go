@@ -39,8 +39,7 @@ func (s *Snapshot) WithName(n string) *Snapshot                 { s.withName(n);
 func (s *Snapshot) AddTag(t string) *Snapshot                   { s.addTag(t); return s }
 func (s *Snapshot) RemoveTag(t string) *Snapshot                { s.removeTag(t); return s }
 func (s *Snapshot) ReplaceTags(ts ...string) *Snapshot          { s.replaceTags(ts...); return s }
-func (s *Snapshot) WithLocation(loc Region) *Snapshot           { s.withLocation(loc); return s }
-func (s *Snapshot) InRegion(region Region) *Snapshot            { s.withLocation(region); return s }
+func (s *Snapshot) InRegion(region Region) *Snapshot            { s.inRegion(region); return s }
 func (s *Snapshot) WithBillingPeriod(p BillingPeriod) *Snapshot { s.billingPeriod = &p; return s }
 
 // OfVolume binds the source BlockStorage via its URI. Pass any Ref (typed or
@@ -124,7 +123,7 @@ func (s *Snapshot) fromResponse(resp *types.SnapshotResponse) {
 		s.replaceTags(resp.Metadata.Tags...)
 	}
 	if resp.Metadata.LocationResponse != nil {
-		s.withLocation(resp.Metadata.LocationResponse.Value)
+		s.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	s.setStatus(&resp.Status)
 	s.setTerminalStates(snapshotTerminalStates)

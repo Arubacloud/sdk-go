@@ -52,12 +52,8 @@ func (r *ContainerRegistry) ReplaceTags(ts ...string) *ContainerRegistry {
 	r.replaceTags(ts...)
 	return r
 }
-func (r *ContainerRegistry) WithLocation(loc Region) *ContainerRegistry {
-	r.withLocation(loc)
-	return r
-}
 func (r *ContainerRegistry) InRegion(region Region) *ContainerRegistry {
-	r.withLocation(region)
+	r.inRegion(region)
 	return r
 }
 
@@ -222,7 +218,7 @@ func (r *ContainerRegistry) fromResponse(resp *types.ContainerRegistryResponse) 
 		r.replaceTags(resp.Metadata.Tags...)
 	}
 	if resp.Metadata.LocationResponse != nil {
-		r.withLocation(resp.Metadata.LocationResponse.Value)
+		r.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	r.setStatus(&resp.Status)
 	r.setTerminalStates(containerRegistryTerminalStates)

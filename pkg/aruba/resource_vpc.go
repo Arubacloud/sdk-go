@@ -32,8 +32,7 @@ func (v *VPC) WithName(n string) *VPC        { v.withName(n); return v }
 func (v *VPC) AddTag(t string) *VPC          { v.addTag(t); return v }
 func (v *VPC) RemoveTag(t string) *VPC       { v.removeTag(t); return v }
 func (v *VPC) ReplaceTags(ts ...string) *VPC { v.replaceTags(ts...); return v }
-func (v *VPC) WithLocation(loc Region) *VPC  { v.withLocation(loc); return v }
-func (v *VPC) InRegion(region Region) *VPC   { v.withLocation(region); return v }
+func (v *VPC) InRegion(region Region) *VPC   { v.inRegion(region); return v }
 func (v *VPC) WithDefault(b bool) *VPC       { v.defaultVPC = &b; return v }
 func (v *VPC) WithPreset(b bool) *VPC        { v.preset = &b; return v }
 
@@ -90,7 +89,7 @@ func (v *VPC) fromResponse(resp *types.VPCResponse) {
 		v.replaceTags(resp.Metadata.Tags...)
 	}
 	if resp.Metadata.LocationResponse != nil {
-		v.withLocation(resp.Metadata.LocationResponse.Value)
+		v.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	v.setStatus(&resp.Status)
 	v.setTerminalStates(vpcTerminalStates)
