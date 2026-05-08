@@ -129,11 +129,11 @@ func (a *Alert) Rule() string {
 
 // Threshold returns the alert threshold value.
 // Note: the upstream field is misspelled as "Theshold" — this accessor normalizes the name.
-func (a *Alert) Threshold() int64 {
+func (a *Alert) Threshold() int {
 	if a.response == nil {
 		return 0
 	}
-	return a.response.Theshold
+	return int(a.response.Theshold)
 }
 
 // UM returns the unit of measure, or "" when unset.
