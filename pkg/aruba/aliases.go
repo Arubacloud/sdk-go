@@ -62,6 +62,11 @@ type (
 	IKEHash       = types.IKEHash
 	IKEDHGroup    = types.IKEDHGroup
 	IKEDPDAction  = types.IKEDPDAction
+
+	// VPN ESP crypto
+	ESPEncryption = types.ESPEncryption
+	ESPHash       = types.ESPHash
+	ESPPFSGroup   = types.ESPPFSGroup
 )
 
 // ---------------------------------------------------------------------------
@@ -315,29 +320,100 @@ const (
 	IKEDPDActionClear   = types.IKEDPDActionClear
 	IKEDPDActionRestart = types.IKEDPDActionRestart
 
-	// VPN — PFS groups (for ESPSettings.PFS; typed ESPPFSGroup* consts coming in next commit)
-	VPNPFSEnable    = types.VPNPFSEnable
-	VPNPFSDisable   = types.VPNPFSDisable
-	VPNPFSDHGroup1  = types.VPNPFSDHGroup1
-	VPNPFSDHGroup2  = types.VPNPFSDHGroup2
-	VPNPFSDHGroup5  = types.VPNPFSDHGroup5
-	VPNPFSDHGroup14 = types.VPNPFSDHGroup14
-	VPNPFSDHGroup15 = types.VPNPFSDHGroup15
-	VPNPFSDHGroup16 = types.VPNPFSDHGroup16
-	VPNPFSDHGroup17 = types.VPNPFSDHGroup17
-	VPNPFSDHGroup18 = types.VPNPFSDHGroup18
-	VPNPFSDHGroup19 = types.VPNPFSDHGroup19
-	VPNPFSDHGroup20 = types.VPNPFSDHGroup20
-	VPNPFSDHGroup21 = types.VPNPFSDHGroup21
-	VPNPFSDHGroup22 = types.VPNPFSDHGroup22
-	VPNPFSDHGroup23 = types.VPNPFSDHGroup23
-	VPNPFSDHGroup24 = types.VPNPFSDHGroup24
-	VPNPFSDHGroup25 = types.VPNPFSDHGroup25
-	VPNPFSDHGroup26 = types.VPNPFSDHGroup26
-	VPNPFSDHGroup27 = types.VPNPFSDHGroup27
-	VPNPFSDHGroup28 = types.VPNPFSDHGroup28
-	VPNPFSDHGroup29 = types.VPNPFSDHGroup29
-	VPNPFSDHGroup30 = types.VPNPFSDHGroup30
-	VPNPFSDHGroup31 = types.VPNPFSDHGroup31
-	VPNPFSDHGroup32 = types.VPNPFSDHGroup32
+	// VPN ESP — encryption algorithms (for ESPSettings.Encryption)
+	ESPEncryptionAES128            = types.ESPEncryptionAES128
+	ESPEncryptionAES192            = types.ESPEncryptionAES192
+	ESPEncryptionAES256            = types.ESPEncryptionAES256
+	ESPEncryptionAES128CTR         = types.ESPEncryptionAES128CTR
+	ESPEncryptionAES192CTR         = types.ESPEncryptionAES192CTR
+	ESPEncryptionAES256CTR         = types.ESPEncryptionAES256CTR
+	ESPEncryptionAES128CCM64       = types.ESPEncryptionAES128CCM64
+	ESPEncryptionAES128CCM96       = types.ESPEncryptionAES128CCM96
+	ESPEncryptionAES128CCM128      = types.ESPEncryptionAES128CCM128
+	ESPEncryptionAES192CCM64       = types.ESPEncryptionAES192CCM64
+	ESPEncryptionAES192CCM96       = types.ESPEncryptionAES192CCM96
+	ESPEncryptionAES192CCM128      = types.ESPEncryptionAES192CCM128
+	ESPEncryptionAES256CCM64       = types.ESPEncryptionAES256CCM64
+	ESPEncryptionAES256CCM96       = types.ESPEncryptionAES256CCM96
+	ESPEncryptionAES256CCM128      = types.ESPEncryptionAES256CCM128
+	ESPEncryptionAES128GCM64       = types.ESPEncryptionAES128GCM64
+	ESPEncryptionAES128GCM96       = types.ESPEncryptionAES128GCM96
+	ESPEncryptionAES128GCM128      = types.ESPEncryptionAES128GCM128
+	ESPEncryptionAES192GCM64       = types.ESPEncryptionAES192GCM64
+	ESPEncryptionAES192GCM96       = types.ESPEncryptionAES192GCM96
+	ESPEncryptionAES192GCM128      = types.ESPEncryptionAES192GCM128
+	ESPEncryptionAES256GCM64       = types.ESPEncryptionAES256GCM64
+	ESPEncryptionAES256GCM96       = types.ESPEncryptionAES256GCM96
+	ESPEncryptionAES256GCM128      = types.ESPEncryptionAES256GCM128
+	ESPEncryptionAES128GMAC        = types.ESPEncryptionAES128GMAC
+	ESPEncryptionAES192GMAC        = types.ESPEncryptionAES192GMAC
+	ESPEncryptionAES256GMAC        = types.ESPEncryptionAES256GMAC
+	ESPEncryption3DES              = types.ESPEncryption3DES
+	ESPEncryptionBlowfish128       = types.ESPEncryptionBlowfish128
+	ESPEncryptionBlowfish192       = types.ESPEncryptionBlowfish192
+	ESPEncryptionBlowfish256       = types.ESPEncryptionBlowfish256
+	ESPEncryptionCamellia128       = types.ESPEncryptionCamellia128
+	ESPEncryptionCamellia192       = types.ESPEncryptionCamellia192
+	ESPEncryptionCamellia256       = types.ESPEncryptionCamellia256
+	ESPEncryptionCamellia128CTR    = types.ESPEncryptionCamellia128CTR
+	ESPEncryptionCamellia192CTR    = types.ESPEncryptionCamellia192CTR
+	ESPEncryptionCamellia256CTR    = types.ESPEncryptionCamellia256CTR
+	ESPEncryptionCamellia128CCM64  = types.ESPEncryptionCamellia128CCM64
+	ESPEncryptionCamellia128CCM96  = types.ESPEncryptionCamellia128CCM96
+	ESPEncryptionCamellia128CCM128 = types.ESPEncryptionCamellia128CCM128
+	ESPEncryptionCamellia192CCM64  = types.ESPEncryptionCamellia192CCM64
+	ESPEncryptionCamellia192CCM96  = types.ESPEncryptionCamellia192CCM96
+	ESPEncryptionCamellia192CCM128 = types.ESPEncryptionCamellia192CCM128
+	ESPEncryptionCamellia256CCM64  = types.ESPEncryptionCamellia256CCM64
+	ESPEncryptionCamellia256CCM96  = types.ESPEncryptionCamellia256CCM96
+	ESPEncryptionCamellia256CCM128 = types.ESPEncryptionCamellia256CCM128
+	ESPEncryptionSerpent128        = types.ESPEncryptionSerpent128
+	ESPEncryptionSerpent192        = types.ESPEncryptionSerpent192
+	ESPEncryptionSerpent256        = types.ESPEncryptionSerpent256
+	ESPEncryptionTwofish128        = types.ESPEncryptionTwofish128
+	ESPEncryptionTwofish192        = types.ESPEncryptionTwofish192
+	ESPEncryptionTwofish256        = types.ESPEncryptionTwofish256
+	ESPEncryptionCAST128           = types.ESPEncryptionCAST128
+	ESPEncryptionChaCha20Poly1305  = types.ESPEncryptionChaCha20Poly1305
+
+	// VPN ESP — hash algorithms (for ESPSettings.Hash)
+	ESPHashMD5        = types.ESPHashMD5
+	ESPHashMD5128     = types.ESPHashMD5128
+	ESPHashSHA1       = types.ESPHashSHA1
+	ESPHashSHA1160    = types.ESPHashSHA1160
+	ESPHashSHA256     = types.ESPHashSHA256
+	ESPHashSHA25696   = types.ESPHashSHA25696
+	ESPHashSHA384     = types.ESPHashSHA384
+	ESPHashSHA512     = types.ESPHashSHA512
+	ESPHashAESXCBC    = types.ESPHashAESXCBC
+	ESPHashAESCMAC    = types.ESPHashAESCMAC
+	ESPHashAES128GMAC = types.ESPHashAES128GMAC
+	ESPHashAES192GMAC = types.ESPHashAES192GMAC
+	ESPHashAES256GMAC = types.ESPHashAES256GMAC
+
+	// VPN ESP — PFS groups (for ESPSettings.PFS)
+	ESPPFSGroupEnable    = types.ESPPFSGroupEnable
+	ESPPFSGroupDisable   = types.ESPPFSGroupDisable
+	ESPPFSGroupDHGroup1  = types.ESPPFSGroupDHGroup1
+	ESPPFSGroupDHGroup2  = types.ESPPFSGroupDHGroup2
+	ESPPFSGroupDHGroup5  = types.ESPPFSGroupDHGroup5
+	ESPPFSGroupDHGroup14 = types.ESPPFSGroupDHGroup14
+	ESPPFSGroupDHGroup15 = types.ESPPFSGroupDHGroup15
+	ESPPFSGroupDHGroup16 = types.ESPPFSGroupDHGroup16
+	ESPPFSGroupDHGroup17 = types.ESPPFSGroupDHGroup17
+	ESPPFSGroupDHGroup18 = types.ESPPFSGroupDHGroup18
+	ESPPFSGroupDHGroup19 = types.ESPPFSGroupDHGroup19
+	ESPPFSGroupDHGroup20 = types.ESPPFSGroupDHGroup20
+	ESPPFSGroupDHGroup21 = types.ESPPFSGroupDHGroup21
+	ESPPFSGroupDHGroup22 = types.ESPPFSGroupDHGroup22
+	ESPPFSGroupDHGroup23 = types.ESPPFSGroupDHGroup23
+	ESPPFSGroupDHGroup24 = types.ESPPFSGroupDHGroup24
+	ESPPFSGroupDHGroup25 = types.ESPPFSGroupDHGroup25
+	ESPPFSGroupDHGroup26 = types.ESPPFSGroupDHGroup26
+	ESPPFSGroupDHGroup27 = types.ESPPFSGroupDHGroup27
+	ESPPFSGroupDHGroup28 = types.ESPPFSGroupDHGroup28
+	ESPPFSGroupDHGroup29 = types.ESPPFSGroupDHGroup29
+	ESPPFSGroupDHGroup30 = types.ESPPFSGroupDHGroup30
+	ESPPFSGroupDHGroup31 = types.ESPPFSGroupDHGroup31
+	ESPPFSGroupDHGroup32 = types.ESPPFSGroupDHGroup32
 )
