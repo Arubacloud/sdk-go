@@ -21,7 +21,7 @@ type ElasticIP struct {
 	linkedMixin
 	httpEnvelopeMixin
 
-	billingPeriod *string                  // Properties.BillingPlan.BillingPeriod
+	billingPeriod *BillingPeriod           // Properties.BillingPlan.BillingPeriod
 	address       *string                  // Properties.Address (read-only from response)
 	response      *types.ElasticIPResponse // backs Raw()
 }
@@ -33,7 +33,7 @@ func (e *ElasticIP) RemoveTag(t string) *ElasticIP         { e.removeTag(t); ret
 func (e *ElasticIP) ReplaceTags(ts ...string) *ElasticIP   { e.replaceTags(ts...); return e }
 func (e *ElasticIP) WithLocation(loc string) *ElasticIP    { e.withLocation(loc); return e }
 func (e *ElasticIP) InRegion(region string) *ElasticIP     { e.withLocation(region); return e }
-func (e *ElasticIP) WithBillingPeriod(p string) *ElasticIP { e.billingPeriod = &p; return e }
+func (e *ElasticIP) WithBillingPeriod(p BillingPeriod) *ElasticIP { e.billingPeriod = &p; return e }
 
 // URI satisfies Ref.
 func (e *ElasticIP) URI() string { return e.RespURI() }
@@ -47,7 +47,7 @@ func (e *ElasticIP) Raw() *types.ElasticIPResponse { return e.response }
 // RawRequest returns what toRequest() would emit right now.
 func (e *ElasticIP) RawRequest() types.ElasticIPRequest { return e.toRequest() }
 
-func (e *ElasticIP) BillingPeriod() string {
+func (e *ElasticIP) BillingPeriod() BillingPeriod {
 	if e.billingPeriod == nil {
 		return ""
 	}
@@ -62,7 +62,7 @@ func (e *ElasticIP) Address() string {
 }
 
 func (e *ElasticIP) toRequest() types.ElasticIPRequest {
-	var bp string
+	var bp BillingPeriod
 	if e.billingPeriod != nil {
 		bp = *e.billingPeriod
 	}

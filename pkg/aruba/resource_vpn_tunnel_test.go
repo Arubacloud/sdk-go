@@ -489,7 +489,7 @@ func vpnTunnelTestResponse(id, name, uri, projectID string) *types.VPNTunnelResp
 	proto := "ikev2"
 	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
 	peerIP := "1.2.3.4"
-	bp := "monthly"
+	bp := BillingPeriod("monthly")
 	return &types.VPNTunnelResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:               &id,

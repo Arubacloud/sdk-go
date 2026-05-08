@@ -96,8 +96,19 @@ type LinkedResource struct {
 	StrictCorrelation bool `json:"strictCorrelation"`
 }
 
+// BillingPeriod identifies the billing cycle for a resource.
+//
+// The platform accepts "Hour" as the primary value. Additional periods may
+// be available — consult the resource-specific API documentation for the
+// authoritative list.
+type BillingPeriod string
+
+const (
+	BillingPeriodHour BillingPeriod = "Hour"
+)
+
 type BillingPeriodResource struct {
-	BillingPeriod string `json:"billingPeriod"`
+	BillingPeriod BillingPeriod `json:"billingPeriod"`
 }
 
 type ReferenceResource struct {

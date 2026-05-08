@@ -371,7 +371,7 @@ func dbaasTestResponse(id, name, uri string) *types.DBaaSResponse {
 	engineType := "mysql-8.0"
 	flavorName := "DBO2A4"
 	sizeGB := int32(20)
-	billingPeriod := "Hour"
+	billingPeriod := BillingPeriod("Hour")
 	state := "Active"
 	vpcURI := "/vpcs/v"
 	subnetURI := "/subnets/s"
