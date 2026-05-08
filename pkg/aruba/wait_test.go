@@ -96,12 +96,12 @@ func TestStatusMixin_SetTerminalStates(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// WaitUntilState / WaitUntilActive — nil refresh
+// WaitUntilStates / WaitUntilActive — nil refresh
 // --------------------------------------------------------------------------
 
-func TestWaitUntilState_RefreshNil_Error(t *testing.T) {
+func TestWaitUntilStates_RefreshNil_Error(t *testing.T) {
 	var m statusMixin
-	err := m.WaitUntilState(context.Background(), "Active")
+	err := m.WaitUntilStates(context.Background(), []string{"Active"})
 	if err == nil {
 		t.Fatal("expected error when refresh is nil")
 	}
@@ -111,7 +111,7 @@ func TestWaitUntilState_RefreshNil_Error(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// WaitUntilActive / WaitUntilState — happy paths
+// WaitUntilActive / WaitUntilStates / WaitUntilReady — happy paths
 // --------------------------------------------------------------------------
 
 func fastOpts() []WaitOption {
@@ -146,7 +146,7 @@ func TestWaitUntilActive_HappyPath(t *testing.T) {
 	}
 }
 
-func TestWaitUntilState_CustomTarget(t *testing.T) {
+func TestWaitUntilStates_CustomTarget(t *testing.T) {
 	var m statusMixin
 	calls := 0
 	state := "Pending"
@@ -159,11 +159,37 @@ func TestWaitUntilState_CustomTarget(t *testing.T) {
 		m.setStatus(&types.ResourceStatus{State: &s})
 		return nil
 	})
-	if err := m.WaitUntilState(context.Background(), "Available", fastOpts()...); err != nil {
-		t.Fatalf("WaitUntilState error: %v", err)
+	if err := m.WaitUntilStates(context.Background(), []string{"Available"}, fastOpts()...); err != nil {
+		t.Fatalf("WaitUntilStates error: %v", err)
 	}
 	if m.State() != "Available" {
 		t.Errorf("State() = %q after wait, want Available", m.State())
+	}
+}
+
+func TestWaitUntilReady_HappyPath(t *testing.T) {
+	for _, target := range []string{"Active", "NotUsed", "InUse", "Used"} {
+		target := target
+		t.Run(target, func(t *testing.T) {
+			var m statusMixin
+			calls := 0
+			state := "InCreation"
+			m.setRefresh(func(_ context.Context) error {
+				calls++
+				if calls >= 2 {
+					state = target
+				}
+				s := state
+				m.setStatus(&types.ResourceStatus{State: &s})
+				return nil
+			})
+			if err := m.WaitUntilReady(context.Background(), fastOpts()...); err != nil {
+				t.Fatalf("WaitUntilReady error for target %q: %v", target, err)
+			}
+			if m.State() != target {
+				t.Errorf("State() = %q after wait, want %q", m.State(), target)
+			}
+		})
 	}
 }
 
