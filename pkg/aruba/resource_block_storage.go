@@ -185,8 +185,25 @@ func blockStorageDerefString(p *string) string {
 }
 
 var blockStorageTerminalStates = map[string]bool{
-	"Available": true,
-	"Error":     false,
+	"NotUsed": true,
+	"InUse":   true,
+	"Used":    true,
+	"Error":   false,
+	"Failed": false,
+}
+
+// WaitUntilNotUsed blocks until the BlockStorage reaches the "NotUsed" state —
+// the steady terminal state for an unattached volume. Call this after Create
+// and before passing the volume to a CloudServer.
+func (b *BlockStorage) WaitUntilNotUsed(ctx context.Context, opts ...WaitOption) error {
+	return b.WaitUntilStates(ctx, []string{"NotUsed"}, opts...)
+}
+
+// WaitUntilUsed blocks until the BlockStorage reaches the "InUse" or "Used"
+// state — both signal that the volume has been attached to a CloudServer. The
+// platform may emit either value; this method succeeds on whichever arrives.
+func (b *BlockStorage) WaitUntilUsed(ctx context.Context, opts ...WaitOption) error {
+	return b.WaitUntilStates(ctx, []string{"InUse", "Used"}, opts...)
 }
 
 // ---------------------------------------------------------------------------
