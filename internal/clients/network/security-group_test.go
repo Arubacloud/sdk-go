@@ -237,11 +237,24 @@ func TestGetSecurityGroup(t *testing.T) {
 }
 
 func TestCreateSecurityGroup(t *testing.T) {
-	// TODO(TD-020): unskip once VPC-active polling is mockable.
-	t.Skip("Skipping CreateSecurityGroup test - requires complex VPC polling mock setup")
-	// NOTE: CreateSecurityGroup calls waitForVPCActive() which polls the VPC status
 	t.Run("successful create", func(t *testing.T) {
-		_ = types.SecurityGroupRequest{}
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				t.Errorf("expected POST, got %s", r.Method)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, `{"metadata":{"id":"sg-1","name":"my-sg","uri":"/projects/p/providers/Aruba.Network/vpcs/v/securitygroups/sg-1"}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewSecurityGroupsClientImpl(c, NewVPCsClientImpl(c))
+		resp, err := svc.Create(context.Background(), "test-project", "vpc-123", types.SecurityGroupRequest{}, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusCreated {
+			t.Errorf("expected status 201, got %d", resp.StatusCode)
+		}
 	})
 }
 

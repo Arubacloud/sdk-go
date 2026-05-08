@@ -89,18 +89,11 @@ func (c *securityGroupRulesClientImpl) Get(ctx context.Context, projectID string
 }
 
 // Create creates a new security group rule
-// The SDK automatically waits for the SecurityGroup to become Active before creating the rule
 func (c *securityGroupRulesClientImpl) Create(ctx context.Context, projectID string, vpcID string, securityGroupID string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error) {
 	c.client.Logger().Debugf("Creating security group rule in security group: %s in VPC: %s in project: %s", securityGroupID, vpcID, projectID)
 
 	if err := types.ValidateVPCResource(projectID, vpcID, securityGroupID, "security group ID"); err != nil {
 		return nil, err
-	}
-
-	// Wait for SecurityGroup to become Active before creating rule
-	err := waitForSecurityGroupActive(ctx, *c.securityGroupsClient, projectID, vpcID, securityGroupID)
-	if err != nil {
-		return nil, fmt.Errorf("failed waiting for SecurityGroup to become active: %w", err)
 	}
 
 	path := fmt.Sprintf(SecurityGroupRulesPath, projectID, vpcID, securityGroupID)
