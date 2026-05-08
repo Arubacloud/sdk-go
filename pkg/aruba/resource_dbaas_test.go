@@ -899,13 +899,13 @@ func TestDBaaSClientAdapter_Delete_NonTwoXX(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// WithLocation (0% → covers that branch)
+// InRegion (0% → covers that branch)
 // --------------------------------------------------------------------------
 
-func TestDBaaS_WithLocation(t *testing.T) {
-	d := NewDBaaS().WithLocation("ITBG-Bergamo")
+func TestDBaaS_InRegion(t *testing.T) {
+	d := NewDBaaS().InRegion("ITBG-Bergamo")
 	if d.Region() != "ITBG-Bergamo" {
-		t.Errorf("Region() after WithLocation = %q", d.Region())
+		t.Errorf("Region() after InRegion = %q", d.Region())
 	}
 }
 

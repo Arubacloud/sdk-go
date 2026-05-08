@@ -34,7 +34,6 @@ func (r *VPNRoute) WithName(n string) *VPNRoute          { r.withName(n); return
 func (r *VPNRoute) AddTag(tag string) *VPNRoute          { r.addTag(tag); return r }
 func (r *VPNRoute) RemoveTag(tag string) *VPNRoute       { r.removeTag(tag); return r }
 func (r *VPNRoute) ReplaceTags(tags ...string) *VPNRoute { r.replaceTags(tags...); return r }
-func (r *VPNRoute) WithLocation(loc Region) *VPNRoute    { r.withLocation(loc); return r }
 func (r *VPNRoute) InRegion(region Region) *VPNRoute     { r.inRegion(region); return r }
 
 func (r *VPNRoute) WithCloudSubnet(cidr string) *VPNRoute  { r.cloudSubnet = &cidr; return r }
@@ -83,7 +82,7 @@ func (r *VPNRoute) fromResponse(resp *types.VPNRouteResponse) {
 		r.replaceTags(resp.Metadata.Tags...)
 	}
 	if resp.Metadata.LocationResponse != nil {
-		r.withLocation(resp.Metadata.LocationResponse.Value)
+		r.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	r.setStatus(&resp.Status)
 	r.setTerminalStates(vpnRouteTerminalStates)

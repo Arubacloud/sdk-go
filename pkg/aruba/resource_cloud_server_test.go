@@ -1021,13 +1021,13 @@ func TestCloudServer_SetPassword_NonTwoXX(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// WithLocation setter
+// InRegion setter
 // --------------------------------------------------------------------------
 
-func TestCloudServer_WithLocation(t *testing.T) {
-	cs := NewCloudServer().WithLocation("ITMI-Milano-1")
+func TestCloudServer_InRegion(t *testing.T) {
+	cs := NewCloudServer().InRegion("ITMI-Milano-1")
 	if cs.Region() != "ITMI-Milano-1" {
-		t.Errorf("Region() after WithLocation = %q", cs.Region())
+		t.Errorf("Region() after InRegion = %q", cs.Region())
 	}
 	req := cs.toRequest()
 	if req.Metadata.Location.Value != "ITMI-Milano-1" {

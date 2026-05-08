@@ -155,7 +155,7 @@ func TestStorageRestore_ToRequestRoundTrip(t *testing.T) {
 	r := NewStorageRestore().
 		WithName("rt-restore").
 		AddTag("t1").AddTag("t2").
-		WithLocation("ITBG-Bergamo").
+		InRegion("ITBG-Bergamo").
 		WithTarget(URI(volURI))
 
 	req := r.RawRequest()

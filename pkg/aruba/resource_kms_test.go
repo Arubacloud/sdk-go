@@ -523,7 +523,7 @@ func TestKMSClientAdapter_List_TwoItems(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// Setter delegation (RemoveTag, ReplaceTags, WithLocation)
+// Setter delegation (RemoveTag, ReplaceTags, InRegion)
 // --------------------------------------------------------------------------
 
 func TestKMS_SetterDelegation(t *testing.T) {
@@ -533,14 +533,14 @@ func TestKMS_SetterDelegation(t *testing.T) {
 		AddTag("c").
 		RemoveTag("b").
 		ReplaceTags("x", "y").
-		WithLocation("ITBG-Bergamo")
+		InRegion("ITBG-Bergamo")
 
 	tags := k.Tags()
 	if len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("Tags() after ReplaceTags = %v", tags)
 	}
 	if k.Region() != "ITBG-Bergamo" {
-		t.Errorf("Region() after WithLocation = %q", k.Region())
+		t.Errorf("Region() after InRegion = %q", k.Region())
 	}
 }
 

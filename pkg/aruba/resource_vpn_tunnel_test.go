@@ -978,14 +978,14 @@ func TestVPNTunnelsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 	}
 }
 
-// WithLocation exercises the 0% branch.
-func TestVPNTunnel_WithLocation(t *testing.T) {
+// InRegion exercises the 0% branch.
+func TestVPNTunnel_InRegion(t *testing.T) {
 	tun := NewVPNTunnel().
 		AddTag("a").
 		AddTag("b").
 		RemoveTag("a").
 		ReplaceTags("x", "y").
-		WithLocation("ITMI-Milano-1")
+		InRegion("ITMI-Milano-1")
 
 	if tun.Region() != "ITMI-Milano-1" {
 		t.Errorf("Region() = %q", tun.Region())

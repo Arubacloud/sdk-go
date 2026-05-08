@@ -62,7 +62,7 @@ func (l *LoadBalancer) fromResponse(resp *types.LoadBalancerResponse) {
 		l.replaceTags(resp.Metadata.Tags...)
 	}
 	if resp.Metadata.LocationResponse != nil {
-		l.withLocation(resp.Metadata.LocationResponse.Value)
+		l.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	l.setStatus(&resp.Status)
 	l.setTerminalStates(loadBalancerTerminalStates)

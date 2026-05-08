@@ -698,14 +698,14 @@ func TestVPCPeeringsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 	}
 }
 
-// WithLocation exercises the 0% branch.
-func TestVPCPeering_WithLocation(t *testing.T) {
+// InRegion exercises the 0% branch.
+func TestVPCPeering_InRegion(t *testing.T) {
 	p := NewVPCPeering().
 		AddTag("a").
 		AddTag("b").
 		RemoveTag("a").
 		ReplaceTags("x", "y").
-		WithLocation("ITMI-Milano-1")
+		InRegion("ITMI-Milano-1")
 
 	if p.Region() != "ITMI-Milano-1" {
 		t.Errorf("Region() = %q", p.Region())

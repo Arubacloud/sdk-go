@@ -62,8 +62,7 @@ func (cs *CloudServer) WithName(n string) *CloudServer        { cs.withName(n); 
 func (cs *CloudServer) AddTag(t string) *CloudServer          { cs.addTag(t); return cs }
 func (cs *CloudServer) RemoveTag(t string) *CloudServer       { cs.removeTag(t); return cs }
 func (cs *CloudServer) ReplaceTags(ts ...string) *CloudServer { cs.replaceTags(ts...); return cs }
-func (cs *CloudServer) WithLocation(loc Region) *CloudServer  { cs.withLocation(loc); return cs }
-func (cs *CloudServer) InRegion(region Region) *CloudServer   { cs.withLocation(region); return cs }
+func (cs *CloudServer) InRegion(region Region) *CloudServer   { cs.inRegion(region); return cs }
 
 func (cs *CloudServer) InZone(zone Zone) *CloudServer { cs.zone = &zone; return cs }
 func (cs *CloudServer) WithFlavor(flavor CloudServerFlavor) *CloudServer {
@@ -320,7 +319,7 @@ func (cs *CloudServer) fromResponse(resp *types.CloudServerResponse) {
 		cs.replaceTags(resp.Metadata.Tags...)
 	}
 	if resp.Metadata.LocationResponse != nil {
-		cs.withLocation(resp.Metadata.LocationResponse.Value)
+		cs.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	cs.setLinked(resp.Properties.LinkedResources)
 	cs.setStatus(&resp.Status)
