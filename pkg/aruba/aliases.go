@@ -67,6 +67,10 @@ type (
 	ESPEncryption = types.ESPEncryption
 	ESPHash       = types.ESPHash
 	ESPPFSGroup   = types.ESPPFSGroup
+
+	// VPN tunnel types
+	VPNType          = types.VPNType
+	VPNClientProtocol = types.VPNClientProtocol
 )
 
 // ---------------------------------------------------------------------------
@@ -416,4 +420,8 @@ const (
 	ESPPFSGroupDHGroup30 = types.ESPPFSGroupDHGroup30
 	ESPPFSGroupDHGroup31 = types.ESPPFSGroupDHGroup31
 	ESPPFSGroupDHGroup32 = types.ESPPFSGroupDHGroup32
+
+	// VPN tunnel — type and client protocol
+	VPNTypeSiteToSite      = types.VPNTypeSiteToSite
+	VPNClientProtocolIKEv2 = types.VPNClientProtocolIKEv2
 )
