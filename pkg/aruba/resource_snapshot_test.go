@@ -252,8 +252,8 @@ func TestSnapshot_FromResponseHydration(t *testing.T) {
 	if snap.IsDisabled() {
 		t.Error("IsDisabled() should be false")
 	}
-	if snap.Size() != 20 {
-		t.Errorf("Size() = %d", snap.Size())
+	if snap.SizeGB() != 20 {
+		t.Errorf("Size() = %d", snap.SizeGB())
 	}
 	if snap.Type() != types.BlockStorageTypeStandard {
 		t.Errorf("Type() = %q", snap.Type())
@@ -746,8 +746,8 @@ func TestSnapshotsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 
 func TestSnapshot_Accessors_ZeroValue(t *testing.T) {
 	snap := NewSnapshot()
-	if snap.Size() != 0 {
-		t.Errorf("Size() zero value = %d, want 0", snap.Size())
+	if snap.SizeGB() != 0 {
+		t.Errorf("Size() zero value = %d, want 0", snap.SizeGB())
 	}
 	if snap.Type() != "" {
 		t.Errorf("Type() zero value = %q, want \"\"", snap.Type())
@@ -902,8 +902,8 @@ func TestSnapshotsClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].ID() != "snap-1" || items[0].Name() != "n1" {
 		t.Errorf("items[0] = {%q, %q}", items[0].ID(), items[0].Name())
 	}
-	if items[0].Size() != 10 {
-		t.Errorf("items[0].Size() = %d", items[0].Size())
+	if items[0].SizeGB() != 10 {
+		t.Errorf("items[0].SizeGB() = %d", items[0].SizeGB())
 	}
 	if items[1].ID() != "snap-2" || items[1].Type() != types.BlockStorageTypePerformance {
 		t.Errorf("items[1] ID=%q Type=%q", items[1].ID(), items[1].Type())
