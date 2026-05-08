@@ -90,8 +90,8 @@ func (b *DBaaSBackup) BillingPeriod() BillingPeriod {
 	}
 	return *b.billingPeriod
 }
-func (b *DBaaSBackup) DBaaSURI() string      { return dbaasBackupDerefString(b.dbaasRef) }
-func (b *DBaaSBackup) DatabaseURI() string   { return dbaasBackupDerefString(b.databaseRef) }
+func (b *DBaaSBackup) DBaaSURI() string    { return dbaasBackupDerefString(b.dbaasRef) }
+func (b *DBaaSBackup) DatabaseURI() string { return dbaasBackupDerefString(b.databaseRef) }
 
 func (b *DBaaSBackup) SizeGB() int {
 	if b.response == nil {

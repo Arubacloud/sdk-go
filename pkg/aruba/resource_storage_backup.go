@@ -90,7 +90,7 @@ func (b *StorageBackup) Type() types.StorageBackupType {
 	return *b.backupType
 }
 
-func (b *StorageBackup) OriginURI() string     { return storageBackupDerefString(b.originRef) }
+func (b *StorageBackup) OriginURI() string { return storageBackupDerefString(b.originRef) }
 func (b *StorageBackup) BillingPeriod() BillingPeriod {
 	if b.billingPeriod == nil {
 		return ""

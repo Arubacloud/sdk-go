@@ -48,11 +48,11 @@ type DBaaS struct {
 	zone                      *Zone
 	engine                    *DatabaseEngine // wire: Engine.ID
 	flavor                    *DBaaSFlavor    // wire: Flavor.Name
-	storageGB                 *int32  // wire: Storage.SizeGB
-	autoscalingEnabled        *bool   // wire: Autoscaling.Enabled
-	autoscalingAvailableSpace *int32  // wire: Autoscaling.AvailableSpace
-	autoscalingStepSize       *int32  // wire: Autoscaling.StepSize
-	billingPeriod             *BillingPeriod // wire: BillingPlan.BillingPeriod
+	storageGB                 *int32          // wire: Storage.SizeGB
+	autoscalingEnabled        *bool           // wire: Autoscaling.Enabled
+	autoscalingAvailableSpace *int32          // wire: Autoscaling.AvailableSpace
+	autoscalingStepSize       *int32          // wire: Autoscaling.StepSize
+	billingPeriod             *BillingPeriod  // wire: BillingPlan.BillingPeriod
 
 	// Networking refs.
 	vpcRef           *string
@@ -74,10 +74,10 @@ func (d *DBaaS) ReplaceTags(ts ...string) *DBaaS { d.replaceTags(ts...); return 
 func (d *DBaaS) WithLocation(loc Region) *DBaaS  { d.withLocation(loc); return d }
 func (d *DBaaS) InRegion(region Region) *DBaaS   { d.withLocation(region); return d }
 
-func (d *DBaaS) InZone(zone Zone) *DBaaS         { d.zone = &zone; return d }
+func (d *DBaaS) InZone(zone Zone) *DBaaS                 { d.zone = &zone; return d }
 func (d *DBaaS) WithEngine(engine DatabaseEngine) *DBaaS { d.engine = &engine; return d }
-func (d *DBaaS) WithFlavor(flavor DBaaSFlavor) *DBaaS   { d.flavor = &flavor; return d }
-func (d *DBaaS) WithStorageGB(gb int) *DBaaS     { v := int32(gb); d.storageGB = &v; return d }
+func (d *DBaaS) WithFlavor(flavor DBaaSFlavor) *DBaaS    { d.flavor = &flavor; return d }
+func (d *DBaaS) WithStorageGB(gb int) *DBaaS             { v := int32(gb); d.storageGB = &v; return d }
 
 // WithAutoscaling enables autoscaling and pins the available-space threshold and
 // step size in GB. Mirrors NodePool.WithAutoscaling(min, max) from resource_kaas_nodepool.go.

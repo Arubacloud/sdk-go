@@ -24,11 +24,11 @@ const (
 type NodePoolInstance string
 
 const (
-	NodePoolInstanceK1A2  NodePoolInstance = "K1A2"
-	NodePoolInstanceK1A4R NodePoolInstance = "K1A4R"
-	NodePoolInstanceK2A4  NodePoolInstance = "K2A4"
-	NodePoolInstanceK2A8R NodePoolInstance = "K2A8R"
-	NodePoolInstanceK4A8  NodePoolInstance = "K4A8"
+	NodePoolInstanceK1A2   NodePoolInstance = "K1A2"
+	NodePoolInstanceK1A4R  NodePoolInstance = "K1A4R"
+	NodePoolInstanceK2A4   NodePoolInstance = "K2A4"
+	NodePoolInstanceK2A8R  NodePoolInstance = "K2A8R"
+	NodePoolInstanceK4A8   NodePoolInstance = "K4A8"
 	NodePoolInstanceK4A16R NodePoolInstance = "K4A16R"
 	NodePoolInstanceK8A16  NodePoolInstance = "K8A16"
 	NodePoolInstanceK8A32R NodePoolInstance = "K8A32R"

@@ -36,17 +36,17 @@ type VPNTunnel struct {
 
 // Setters (chainable).
 
-func (t *VPNTunnel) IntoProject(p Ref) *VPNTunnel               { t.intoProject(p); return t }
-func (t *VPNTunnel) WithName(n string) *VPNTunnel               { t.withName(n); return t }
-func (t *VPNTunnel) AddTag(tag string) *VPNTunnel               { t.addTag(tag); return t }
-func (t *VPNTunnel) RemoveTag(tag string) *VPNTunnel            { t.removeTag(tag); return t }
-func (t *VPNTunnel) ReplaceTags(tags ...string) *VPNTunnel      { t.replaceTags(tags...); return t }
-func (t *VPNTunnel) WithLocation(loc Region) *VPNTunnel         { t.withLocation(loc); return t }
-func (t *VPNTunnel) InRegion(r Region) *VPNTunnel               { t.inRegion(r); return t }
-func (t *VPNTunnel) WithVPNType(s string) *VPNTunnel            { t.vpnType = &s; return t }
-func (t *VPNTunnel) WithVPNClientProtocol(s string) *VPNTunnel  { t.vpnClientProtocol = &s; return t }
+func (t *VPNTunnel) IntoProject(p Ref) *VPNTunnel                 { t.intoProject(p); return t }
+func (t *VPNTunnel) WithName(n string) *VPNTunnel                 { t.withName(n); return t }
+func (t *VPNTunnel) AddTag(tag string) *VPNTunnel                 { t.addTag(tag); return t }
+func (t *VPNTunnel) RemoveTag(tag string) *VPNTunnel              { t.removeTag(tag); return t }
+func (t *VPNTunnel) ReplaceTags(tags ...string) *VPNTunnel        { t.replaceTags(tags...); return t }
+func (t *VPNTunnel) WithLocation(loc Region) *VPNTunnel           { t.withLocation(loc); return t }
+func (t *VPNTunnel) InRegion(r Region) *VPNTunnel                 { t.inRegion(r); return t }
+func (t *VPNTunnel) WithVPNType(s string) *VPNTunnel              { t.vpnType = &s; return t }
+func (t *VPNTunnel) WithVPNClientProtocol(s string) *VPNTunnel    { t.vpnClientProtocol = &s; return t }
 func (t *VPNTunnel) WithBillingPeriod(s BillingPeriod) *VPNTunnel { t.billingPeriod = &s; return t }
-func (t *VPNTunnel) WithPeerClientPublicIP(s string) *VPNTunnel { t.peerClientPublicIP = &s; return t }
+func (t *VPNTunnel) WithPeerClientPublicIP(s string) *VPNTunnel   { t.peerClientPublicIP = &s; return t }
 
 func (t *VPNTunnel) WithIPConfig(c *VPNIPConfig) *VPNTunnel {
 	t.ipConfig = c
@@ -102,12 +102,12 @@ func (t *VPNTunnel) RawRequest() types.VPNTunnelRequest { return t.toRequest() }
 
 // Read accessors.
 
-func (t *VPNTunnel) IPConfig() *VPNIPConfig     { return t.ipConfig }
-func (t *VPNTunnel) IKE() *VPNIKE               { return t.ike }
-func (t *VPNTunnel) ESP() *VPNESP               { return t.esp }
-func (t *VPNTunnel) PSK() *VPNPSK               { return t.psk }
-func (t *VPNTunnel) VPNType() string            { return vpnTunnelDerefString(t.vpnType) }
-func (t *VPNTunnel) VPNClientProtocol() string  { return vpnTunnelDerefString(t.vpnClientProtocol) }
+func (t *VPNTunnel) IPConfig() *VPNIPConfig    { return t.ipConfig }
+func (t *VPNTunnel) IKE() *VPNIKE              { return t.ike }
+func (t *VPNTunnel) ESP() *VPNESP              { return t.esp }
+func (t *VPNTunnel) PSK() *VPNPSK              { return t.psk }
+func (t *VPNTunnel) VPNType() string           { return vpnTunnelDerefString(t.vpnType) }
+func (t *VPNTunnel) VPNClientProtocol() string { return vpnTunnelDerefString(t.vpnClientProtocol) }
 func (t *VPNTunnel) BillingPeriod() BillingPeriod {
 	if t.billingPeriod == nil {
 		return ""
