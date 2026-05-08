@@ -198,13 +198,13 @@ func TestVPNIPConfig_Build_NilReceiver(t *testing.T) {
 
 func TestVPNIKE_FluentSetters(t *testing.T) {
 	ike := NewVPNIKE().
-		WithLifetime(28800).
+		WithLifetimeSeconds(28800).
 		WithEncryption(types.VPNEncryptionAES256).
 		WithHash(types.VPNHashSHA256).
 		WithDHGroup(types.VPNDHGroup14).
 		WithDPDAction(types.VPNDPDActionRestart).
-		WithDPDInterval(30).
-		WithDPDTimeout(120)
+		WithDPDIntervalSeconds(30).
+		WithDPDTimeoutSeconds(120)
 
 	built := ike.build()
 	if built == nil {
@@ -234,7 +234,7 @@ func TestVPNIKE_FluentSetters(t *testing.T) {
 }
 
 func TestVPNIKE_Build_PartialFields(t *testing.T) {
-	ike := NewVPNIKE().WithLifetime(3600)
+	ike := NewVPNIKE().WithLifetimeSeconds(3600)
 	built := ike.build()
 	if built.Encryption != nil {
 		t.Error("Encryption should be nil when not set")
@@ -260,7 +260,7 @@ func TestVPNIKE_Build_NilReceiver(t *testing.T) {
 
 func TestVPNESP_FluentSetters(t *testing.T) {
 	esp := NewVPNESP().
-		WithLifetime(3600).
+		WithLifetimeSeconds(3600).
 		WithEncryption(types.VPNEncryptionAES128).
 		WithHash(types.VPNHashSHA1).
 		WithPFS(types.VPNPFSDHGroup14)
@@ -361,14 +361,14 @@ func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
 		).
 		WithIKESettings(
 			NewVPNIKE().
-				WithLifetime(28800).
+				WithLifetimeSeconds(28800).
 				WithEncryption(types.VPNEncryptionAES256).
 				WithHash(types.VPNHashSHA256).
 				WithDHGroup(types.VPNDHGroup14),
 		).
 		WithESPSettings(
 			NewVPNESP().
-				WithLifetime(3600).
+				WithLifetimeSeconds(3600).
 				WithPFS(types.VPNPFSEnable),
 		).
 		WithPSKSettings(
