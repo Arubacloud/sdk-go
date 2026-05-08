@@ -18,6 +18,7 @@ type KeyPair struct {
 	regionalMixin
 	projectScopedMixin
 	responseMetadataMixin
+	statusMixin
 	linkedMixin
 	httpEnvelopeMixin
 
@@ -86,6 +87,8 @@ func (k *KeyPair) fromResponse(resp *types.KeyPairResponse) {
 		k.withLocation(resp.Metadata.LocationResponse.Value)
 	}
 	k.setLinked(resp.Properties.LinkedResources)
+	k.setStatus(&resp.Status)
+	k.setTerminalStates(keyPairTerminalStates)
 
 	if resp.Properties.Value != "" {
 		v := resp.Properties.Value
@@ -99,6 +102,12 @@ func (k *KeyPair) fromResponse(resp *types.KeyPairResponse) {
 		ids := parseURIIDs(k.RespURI())
 		k.projectID = ids["projects"]
 	}
+}
+
+var keyPairTerminalStates = map[string]bool{
+	"Active": true,
+	"Error":  false,
+	"Failed": false,
 }
 
 func keyPairDerefString(p *string) string {
@@ -141,6 +150,16 @@ func (a *keyPairsClientAdapter) Create(ctx context.Context, kp *KeyPair, opts ..
 	populateHTTPEnvelope(&kp.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		kp.fromResponse(resp.Data)
+		kp.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, kp)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				kp.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return kp, err
@@ -163,6 +182,16 @@ func (a *keyPairsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOp
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if out.projectID == "" {
 		out.projectID = projectID
