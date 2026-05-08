@@ -121,8 +121,24 @@ func elasticIPDerefString(p *string) string {
 }
 
 var elasticIPTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
+	"NotUsed": true,
+	"InUse":   true,
+	"Error":   false,
+	"Failed": false,
+}
+
+// WaitUntilNotUsed blocks until the ElasticIP reaches the "NotUsed" state —
+// the steady terminal state for an unattached EIP. Call this after Create and
+// before passing the EIP to a CloudServer, ContainerRegistry, or LoadBalancer.
+func (e *ElasticIP) WaitUntilNotUsed(ctx context.Context, opts ...WaitOption) error {
+	return e.WaitUntilStates(ctx, []string{"NotUsed"}, opts...)
+}
+
+// WaitUntilUsed blocks until the ElasticIP reaches the "InUse" or "Used"
+// state — both signal that the EIP has been bound to a consumer resource. The
+// platform may emit either value; this method succeeds on whichever arrives.
+func (e *ElasticIP) WaitUntilUsed(ctx context.Context, opts ...WaitOption) error {
+	return e.WaitUntilStates(ctx, []string{"InUse", "Used"}, opts...)
 }
 
 // ---------------------------------------------------------------------------
