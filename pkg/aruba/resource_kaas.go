@@ -44,7 +44,7 @@ type KaaS struct {
 	nodeCIDRAddress      *string
 	nodeCIDRName         *string
 	podCIDR              *string
-	kubernetesVersion    *string
+	kubernetesVersion    *KubernetesVersion
 	ha                   *bool
 	storageMaxCumulative *int32 // wire: storage.maxCumulativeVolumeSize
 	billingPeriod        *BillingPeriod
@@ -72,7 +72,7 @@ func (k *KaaS) RemoveTag(t string) *KaaS                { k.removeTag(t); return
 func (k *KaaS) ReplaceTags(ts ...string) *KaaS          { k.replaceTags(ts...); return k }
 func (k *KaaS) WithLocation(loc Region) *KaaS           { k.withLocation(loc); return k }
 func (k *KaaS) InRegion(region Region) *KaaS            { k.withLocation(region); return k }
-func (k *KaaS) WithKubernetesVersion(v string) *KaaS    { k.kubernetesVersion = &v; return k }
+func (k *KaaS) WithKubernetesVersion(v KubernetesVersion) *KaaS { k.kubernetesVersion = &v; return k }
 func (k *KaaS) WithPodCIDR(cidr string) *KaaS           { k.podCIDR = &cidr; return k }
 func (k *KaaS) WithHA(enabled bool) *KaaS               { k.ha = &enabled; return k }
 func (k *KaaS) WithBillingPeriod(period BillingPeriod) *KaaS { k.billingPeriod = &period; return k }
@@ -220,11 +220,14 @@ func (k *KaaS) SecurityGroupName() string {
 	return kaasDeref(k.securityGroupName)
 }
 
-func (k *KaaS) KubernetesVersion() string {
+func (k *KaaS) KubernetesVersion() KubernetesVersion {
 	if k.response != nil && k.response.Properties.KubernetesVersion.Value != nil {
-		return *k.response.Properties.KubernetesVersion.Value
+		return KubernetesVersion(*k.response.Properties.KubernetesVersion.Value)
 	}
-	return kaasDeref(k.kubernetesVersion)
+	if k.kubernetesVersion == nil {
+		return ""
+	}
+	return *k.kubernetesVersion
 }
 
 func (k *KaaS) BillingPeriod() BillingPeriod {
@@ -252,8 +255,13 @@ func (k *KaaS) toRequest() types.KaaSRequest {
 			Address: kaasDeref(k.nodeCIDRAddress),
 			Name:    kaasDeref(k.nodeCIDRName),
 		},
-		PodCIDR:           k.podCIDR,
-		KubernetesVersion: types.KubernetesVersionInfo{Value: kaasDeref(k.kubernetesVersion)},
+		PodCIDR: k.podCIDR,
+		KubernetesVersion: types.KubernetesVersionInfo{Value: func() KubernetesVersion {
+			if k.kubernetesVersion != nil {
+				return *k.kubernetesVersion
+			}
+			return ""
+		}()},
 		HA:                k.ha,
 		BillingPlan: func() types.BillingPeriodResource {
 			var bp BillingPeriod
@@ -296,7 +304,12 @@ func (k *KaaS) toRequest() types.KaaSRequest {
 func (k *KaaS) toUpdateRequest() types.KaaSUpdateRequest {
 	props := types.KaaSPropertiesUpdateRequest{
 		KubernetesVersion: types.KubernetesVersionInfoUpdate{
-			Value: kaasDeref(k.kubernetesVersion),
+			Value: func() KubernetesVersion {
+				if k.kubernetesVersion != nil {
+					return *k.kubernetesVersion
+				}
+				return ""
+			}(),
 		},
 		HA: k.ha,
 	}
@@ -376,7 +389,7 @@ func (k *KaaS) kaasHydrateCacheFromProps(props types.KaaSPropertiesResponse) {
 		k.podCIDR = &v
 	}
 	if props.KubernetesVersion.Value != nil && *props.KubernetesVersion.Value != "" {
-		v := *props.KubernetesVersion.Value
+		v := KubernetesVersion(*props.KubernetesVersion.Value)
 		k.kubernetesVersion = &v
 	}
 	k.ha = props.HA
@@ -414,7 +427,7 @@ func kaasRebuildNodePools(pools *[]types.NodePoolPropertiesResponse) []*NodePool
 			np.nodes = &v
 		}
 		if rp.Instance != nil && rp.Instance.Name != nil {
-			v := *rp.Instance.Name
+			v := NodePoolInstance(*rp.Instance.Name)
 			np.instance = &v
 		}
 		if rp.DataCenter != nil && rp.DataCenter.Code != nil {
