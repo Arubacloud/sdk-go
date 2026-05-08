@@ -36,7 +36,7 @@ func TestBlockStorage_FluentSetters(t *testing.T) {
 		WithSizeGB(50).
 		OfType(types.BlockStorageTypeStandard).
 		WithBillingPeriod("Hour").
-		WithImage("LU22-001").
+		FromImage("LU22-001").
 		WithBootable(true)
 
 	if bs.Name() != "my-bs" {
@@ -166,7 +166,7 @@ func TestBlockStorage_ToRequestRoundTrip(t *testing.T) {
 		InZone("ITBG-1").
 		WithBillingPeriod("Hour").
 		WithBootable(true).
-		WithImage("LU22-001").
+		FromImage("LU22-001").
 		FromSnapshot(URI(snapURI))
 
 	req := bs.RawRequest()
