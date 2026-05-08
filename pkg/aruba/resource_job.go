@@ -265,7 +265,7 @@ func jobRebuildSteps(steps []types.JobStepResponse) []*JobStep {
 			s.actionURI = &v
 		}
 		if rs.HttpVerb != nil {
-			v := *rs.HttpVerb
+			v := HTTPVerb(*rs.HttpVerb)
 			s.httpVerb = &v
 		}
 		if rs.Body != nil {
