@@ -912,18 +912,73 @@ func findSubstring(s, substr string) bool {
 
 func TestBlockStorage_FromResponse_SetsTerminalStates(t *testing.T) {
 	b := &BlockStorage{}
-	state := "Available"
+	state := "NotUsed"
 	b.fromResponse(&types.BlockStorageResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
 	if len(b.terminalStates) == 0 {
 		t.Error("fromResponse should set terminalStates on the wrapper")
 	}
-	if !b.terminalStates["Available"] {
-		t.Error("terminalStates[Available] should be true for BlockStorage")
+	if !b.terminalStates["NotUsed"] {
+		t.Error("terminalStates[NotUsed] should be true for BlockStorage")
+	}
+	if !b.terminalStates["InUse"] {
+		t.Error("terminalStates[InUse] should be true for BlockStorage")
+	}
+	if !b.terminalStates["Used"] {
+		t.Error("terminalStates[Used] should be true for BlockStorage")
 	}
 	if b.terminalStates["Error"] {
 		t.Error("terminalStates[Error] should be false for BlockStorage")
+	}
+}
+
+func TestBlockStorage_WaitUntilNotUsed_HappyPath(t *testing.T) {
+	b := &BlockStorage{}
+	calls := 0
+	state := "InCreation"
+	b.setRefresh(func(_ context.Context) error {
+		calls++
+		if calls >= 2 {
+			state = "NotUsed"
+		}
+		s := state
+		b.setStatus(&types.ResourceStatus{State: &s})
+		return nil
+	})
+	b.setTerminalStates(blockStorageTerminalStates)
+	if err := b.WaitUntilNotUsed(context.Background(), fastOpts()...); err != nil {
+		t.Fatalf("WaitUntilNotUsed error: %v", err)
+	}
+	if b.State() != "NotUsed" {
+		t.Errorf("State() = %q after wait, want NotUsed", b.State())
+	}
+}
+
+func TestBlockStorage_WaitUntilUsed_HappyPath(t *testing.T) {
+	for _, attachedState := range []string{"InUse", "Used"} {
+		attachedState := attachedState
+		t.Run(attachedState, func(t *testing.T) {
+			b := &BlockStorage{}
+			calls := 0
+			state := "NotUsed"
+			b.setRefresh(func(_ context.Context) error {
+				calls++
+				if calls >= 2 {
+					state = attachedState
+				}
+				s := state
+				b.setStatus(&types.ResourceStatus{State: &s})
+				return nil
+			})
+			b.setTerminalStates(blockStorageTerminalStates)
+			if err := b.WaitUntilUsed(context.Background(), fastOpts()...); err != nil {
+				t.Fatalf("WaitUntilUsed error for %q: %v", attachedState, err)
+			}
+			if b.State() != attachedState {
+				t.Errorf("State() = %q after wait, want %q", b.State(), attachedState)
+			}
+		})
 	}
 }
 
