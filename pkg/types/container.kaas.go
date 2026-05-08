@@ -1,5 +1,43 @@
 package types
 
+// KubernetesVersion identifies a KaaS Kubernetes version.
+//
+// The constants below cover versions referenced in SDK fixtures and the KB
+// upgrade-versions page. The authoritative list is available via:
+//
+//	GET /providers/Aruba.Container/kubernetesVersions
+type KubernetesVersion string
+
+const (
+	KubernetesVersion1282 KubernetesVersion = "1.28.2"
+	KubernetesVersion1292 KubernetesVersion = "1.29.2"
+	KubernetesVersion1302 KubernetesVersion = "1.30.2"
+	KubernetesVersion1332 KubernetesVersion = "1.33.2"
+)
+
+// NodePoolInstance identifies a KaaS node pool instance type.
+//
+// Pattern: K<vCPU>A<RAM>. The constant below covers the SKU referenced in
+// the cmd/example reference app. The authoritative list is available via:
+//
+//	GET /providers/Aruba.Container/instances
+type NodePoolInstance string
+
+const (
+	NodePoolInstanceK1A2  NodePoolInstance = "K1A2"
+	NodePoolInstanceK1A4R NodePoolInstance = "K1A4R"
+	NodePoolInstanceK2A4  NodePoolInstance = "K2A4"
+	NodePoolInstanceK2A8R NodePoolInstance = "K2A8R"
+	NodePoolInstanceK4A8  NodePoolInstance = "K4A8"
+	NodePoolInstanceK4A16R NodePoolInstance = "K4A16R"
+	NodePoolInstanceK8A16  NodePoolInstance = "K8A16"
+	NodePoolInstanceK8A32R NodePoolInstance = "K8A32R"
+	NodePoolInstanceK12A24 NodePoolInstance = "K12A24"
+	NodePoolInstanceK16A32 NodePoolInstance = "K16A32"
+	NodePoolInstanceK24A48 NodePoolInstance = "K24A48"
+	NodePoolInstanceK32A64 NodePoolInstance = "K32A64"
+)
+
 type NodeCIDRProperties struct {
 
 	// Address in CIDR notation The IP range must be between 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
@@ -10,12 +48,12 @@ type NodeCIDRProperties struct {
 }
 
 type KubernetesVersionInfo struct {
-	Value string `json:"value"`
+	Value KubernetesVersion `json:"value"`
 }
 
 type KubernetesVersionInfoUpdate struct {
-	Value       string  `json:"value"`
-	UpgradeDate *string `json:"upgradeDate,omitempty"`
+	Value       KubernetesVersion `json:"value"`
+	UpgradeDate *string           `json:"upgradeDate,omitempty"`
 }
 
 type StorageKubernetes struct {
@@ -33,7 +71,7 @@ type NodePoolProperties struct {
 	// Instance Configuration name of the nodes.
 	// See metadata section of the API documentation for an updated list of admissible values.
 	// For more information, check the documentation.
-	Instance string `json:"instance"`
+	Instance NodePoolInstance `json:"instance"`
 
 	// DataCenter Datacenter in which the nodes of the pool will be located.
 	// See metadata section of the API documentation for an updated list of admissible values.
