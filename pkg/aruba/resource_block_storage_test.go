@@ -33,7 +33,7 @@ func TestBlockStorage_FluentSetters(t *testing.T) {
 		AddTag("data").
 		AddTag("storage"). // dedupe
 		InRegion("ITBG-Bergamo").
-		WithSize(50).
+		WithSizeGB(50).
 		WithType(types.BlockStorageTypeStandard).
 		WithBillingPeriod("Hour").
 		WithImage("LU22-001").
@@ -48,8 +48,8 @@ func TestBlockStorage_FluentSetters(t *testing.T) {
 	if bs.Region() != "ITBG-Bergamo" {
 		t.Errorf("Region() = %q", bs.Region())
 	}
-	if bs.Size() != 50 {
-		t.Errorf("Size() = %d", bs.Size())
+	if bs.SizeGB() != 50 {
+		t.Errorf("Size() = %d", bs.SizeGB())
 	}
 	if bs.Type() != types.BlockStorageTypeStandard {
 		t.Errorf("Type() = %q", bs.Type())
@@ -161,7 +161,7 @@ func TestBlockStorage_ToRequestRoundTrip(t *testing.T) {
 		WithName("bs-rt").
 		AddTag("t1").AddTag("t2").
 		WithLocation("ITBG-Bergamo").
-		WithSize(30).
+		WithSizeGB(30).
 		WithType(types.BlockStorageTypePerformance).
 		InZone("ITBG-1").
 		WithBillingPeriod("Hour").
@@ -204,7 +204,7 @@ func TestBlockStorage_ToRequestRoundTrip(t *testing.T) {
 }
 
 func TestBlockStorage_ToRequest_UnsetOptionals_AreNilOrZero(t *testing.T) {
-	bs := NewBlockStorage().WithName("bare").WithSize(10).WithType(types.BlockStorageTypeStandard)
+	bs := NewBlockStorage().WithName("bare").WithSizeGB(10).WithType(types.BlockStorageTypeStandard)
 	req := bs.RawRequest()
 
 	if req.Properties.Bootable != nil {
@@ -321,8 +321,8 @@ func TestBlockStorage_FromResponseHydration(t *testing.T) {
 	if linked := bs.LinkedResources(); len(linked) != 1 {
 		t.Errorf("LinkedResources() len = %d", len(linked))
 	}
-	if bs.Size() != 20 {
-		t.Errorf("Size() = %d", bs.Size())
+	if bs.SizeGB() != 20 {
+		t.Errorf("Size() = %d", bs.SizeGB())
 	}
 	if bs.Type() != types.BlockStorageTypeStandard {
 		t.Errorf("Type() = %q", bs.Type())
@@ -492,7 +492,7 @@ func TestVolumesClientAdapter_Create_Success(t *testing.T) {
 		IntoProject(URI("/projects/p")).
 		WithName("my-bs").
 		InRegion("ITBG-Bergamo").
-		WithSize(20).
+		WithSizeGB(20).
 		WithType(types.BlockStorageTypeStandard).
 		WithBillingPeriod("Hour")
 
@@ -634,14 +634,14 @@ func TestVolumesClientAdapter_Update_Success(t *testing.T) {
 
 	bs := &BlockStorage{}
 	bs.fromResponse(blockStorageTestResponse("bs-1", "my-bs", "/projects/p/providers/Aruba.Storage/blockstorages/bs-1", "p"))
-	bs.WithSize(40)
+	bs.WithSizeGB(40)
 
 	result, err := adapter.Update(context.Background(), bs)
 	if err != nil {
 		t.Fatalf("Update error: %v", err)
 	}
-	if result.Size() != 40 {
-		t.Errorf("Size() = %d", result.Size())
+	if result.SizeGB() != 40 {
+		t.Errorf("Size() = %d", result.SizeGB())
 	}
 	if capturedBody.Properties.SizeGB != 40 {
 		t.Errorf("request SizeGB = %d", capturedBody.Properties.SizeGB)
@@ -747,8 +747,8 @@ func TestVolumesClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].ID() != "bs-1" || items[0].Name() != "n1" {
 		t.Errorf("items[0] = {%q, %q}", items[0].ID(), items[0].Name())
 	}
-	if items[0].Size() != 10 {
-		t.Errorf("items[0].Size() = %d", items[0].Size())
+	if items[0].SizeGB() != 10 {
+		t.Errorf("items[0].SizeGB() = %d", items[0].SizeGB())
 	}
 	if items[1].ID() != "bs-2" || items[1].Type() != types.BlockStorageTypePerformance {
 		t.Errorf("items[1] ID=%q Type=%q", items[1].ID(), items[1].Type())
@@ -839,7 +839,7 @@ func TestVolumesClientAdapter_Update_NonTwoXX(t *testing.T) {
 
 	bs := &BlockStorage{}
 	bs.fromResponse(blockStorageTestResponse("bs-1", "my-bs", "/projects/p/providers/Aruba.Storage/blockstorages/bs-1", "p"))
-	bs.WithSize(99999)
+	bs.WithSizeGB(99999)
 
 	_, err := adapter.Update(context.Background(), bs)
 	if err == nil {
