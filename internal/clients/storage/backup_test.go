@@ -247,7 +247,7 @@ func TestCreateBackup(t *testing.T) {
 				StorageBackupType: types.StorageBackupTypeFull,
 				Origin:            types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/volume-456"},
 				RetentionDays:     types.IntPtr(20),
-				BillingPeriod:     types.StringPtr("Yearly"),
+				BillingPeriod:     (*types.BillingPeriod)(types.StringPtr("Yearly")),
 			},
 		}
 		resp, err := svc.Create(context.Background(), "test-project", body, nil)
@@ -413,7 +413,7 @@ func TestUpdateBackup(t *testing.T) {
 				StorageBackupType: types.StorageBackupTypeIncremental,
 				Origin:            types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/volume-123"},
 				RetentionDays:     types.IntPtr(30),
-				BillingPeriod:     types.StringPtr("Monthly"),
+				BillingPeriod:     (*types.BillingPeriod)(types.StringPtr("Monthly")),
 			},
 		}
 		resp, err := svc.Update(context.Background(), "test-project", "backup-123", body, nil)

@@ -28,7 +28,7 @@ type DBaaSBackup struct {
 	linkedMixin
 	httpEnvelopeMixin
 
-	billingPeriod *string
+	billingPeriod *BillingPeriod
 	dbaasRef      *string // body URI
 	databaseRef   *string // body URI
 
@@ -67,7 +67,7 @@ func (b *DBaaSBackup) WithDatabase(db Ref) *DBaaSBackup {
 	return b
 }
 
-func (b *DBaaSBackup) WithBillingPeriod(p string) *DBaaSBackup {
+func (b *DBaaSBackup) WithBillingPeriod(p BillingPeriod) *DBaaSBackup {
 	b.billingPeriod = &p
 	return b
 }
@@ -84,7 +84,12 @@ func (b *DBaaSBackup) Raw() *types.BackupResponse { return b.response }
 // RawRequest returns what toRequest() would emit right now.
 func (b *DBaaSBackup) RawRequest() types.BackupRequest { return b.toRequest() }
 
-func (b *DBaaSBackup) BillingPeriod() string { return dbaasBackupDerefString(b.billingPeriod) }
+func (b *DBaaSBackup) BillingPeriod() BillingPeriod {
+	if b.billingPeriod == nil {
+		return ""
+	}
+	return *b.billingPeriod
+}
 func (b *DBaaSBackup) DBaaSURI() string      { return dbaasBackupDerefString(b.dbaasRef) }
 func (b *DBaaSBackup) DatabaseURI() string   { return dbaasBackupDerefString(b.databaseRef) }
 

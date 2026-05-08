@@ -26,7 +26,7 @@ type StorageBackup struct {
 	backupType    *types.StorageBackupType
 	originRef     *string // body URI
 	retentionDays *int
-	billingPeriod *string
+	billingPeriod *BillingPeriod
 
 	response *types.StorageBackupResponse
 }
@@ -53,7 +53,7 @@ func (b *StorageBackup) WithRetentionDays(days int) *StorageBackup {
 	return b
 }
 
-func (b *StorageBackup) WithBillingPeriod(p string) *StorageBackup {
+func (b *StorageBackup) WithBillingPeriod(p BillingPeriod) *StorageBackup {
 	b.billingPeriod = &p
 	return b
 }
@@ -91,7 +91,12 @@ func (b *StorageBackup) Type() types.StorageBackupType {
 }
 
 func (b *StorageBackup) OriginURI() string     { return storageBackupDerefString(b.originRef) }
-func (b *StorageBackup) BillingPeriod() string { return storageBackupDerefString(b.billingPeriod) }
+func (b *StorageBackup) BillingPeriod() BillingPeriod {
+	if b.billingPeriod == nil {
+		return ""
+	}
+	return *b.billingPeriod
+}
 
 func (b *StorageBackup) RetentionDays() int {
 	if b.retentionDays == nil {

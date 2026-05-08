@@ -25,7 +25,7 @@ type BlockStorage struct {
 	sizeGB        int
 	storageType   *types.BlockStorageType
 	zone          *string
-	billingPeriod *string
+	billingPeriod *BillingPeriod
 	snapshotRef   *string // body URI
 	image         *string
 	bootable      *bool
@@ -46,7 +46,7 @@ func (b *BlockStorage) WithType(t types.BlockStorageType) *BlockStorage {
 	b.storageType = &t
 	return b
 }
-func (b *BlockStorage) WithBillingPeriod(p string) *BlockStorage { b.billingPeriod = &p; return b }
+func (b *BlockStorage) WithBillingPeriod(p BillingPeriod) *BlockStorage { b.billingPeriod = &p; return b }
 func (b *BlockStorage) WithImage(img string) *BlockStorage       { b.image = &img; return b }
 func (b *BlockStorage) WithBootable(boot bool) *BlockStorage     { b.bootable = &boot; return b }
 
@@ -83,7 +83,12 @@ func (b *BlockStorage) Type() types.BlockStorageType {
 	return *b.storageType
 }
 func (b *BlockStorage) Zone() string          { return blockStorageDerefString(b.zone) }
-func (b *BlockStorage) BillingPeriod() string { return blockStorageDerefString(b.billingPeriod) }
+func (b *BlockStorage) BillingPeriod() BillingPeriod {
+	if b.billingPeriod == nil {
+		return ""
+	}
+	return *b.billingPeriod
+}
 func (b *BlockStorage) Image() string         { return blockStorageDerefString(b.image) }
 func (b *BlockStorage) Bootable() bool {
 	if b.bootable == nil {
@@ -94,7 +99,7 @@ func (b *BlockStorage) Bootable() bool {
 func (b *BlockStorage) SnapshotURI() string { return blockStorageDerefString(b.snapshotRef) }
 
 func (b *BlockStorage) toRequest() types.BlockStorageRequest {
-	var bp string
+	var bp BillingPeriod
 	if b.billingPeriod != nil {
 		bp = *b.billingPeriod
 	}

@@ -52,7 +52,7 @@ type DBaaS struct {
 	autoscalingEnabled        *bool   // wire: Autoscaling.Enabled
 	autoscalingAvailableSpace *int32  // wire: Autoscaling.AvailableSpace
 	autoscalingStepSize       *int32  // wire: Autoscaling.StepSize
-	billingPeriod             *string // wire: BillingPlan.BillingPeriod
+	billingPeriod             *BillingPeriod // wire: BillingPlan.BillingPeriod
 
 	// Networking refs.
 	vpcRef           *string
@@ -99,7 +99,7 @@ func (d *DBaaS) WithoutAutoscaling() *DBaaS {
 	d.autoscalingStepSize = nil
 	return d
 }
-func (d *DBaaS) WithBillingPeriod(period string) *DBaaS { d.billingPeriod = &period; return d }
+func (d *DBaaS) WithBillingPeriod(period BillingPeriod) *DBaaS { d.billingPeriod = &period; return d }
 
 // WithNetworking sets VPC, Subnet, SecurityGroup, and ElasticIP in a single call.
 // Each Ref is validated independently; an empty URI records an error but does not
@@ -182,11 +182,14 @@ func (d *DBaaS) StorageGB() int {
 // BillingPeriod returns the billing period. On a hydrated response the value comes
 // from BillingPlan.BillingPeriod; before hydration it returns what was passed to
 // WithBillingPeriod.
-func (d *DBaaS) BillingPeriod() string {
+func (d *DBaaS) BillingPeriod() BillingPeriod {
 	if d.response != nil && d.response.Properties.BillingPlan != nil && d.response.Properties.BillingPlan.BillingPeriod != nil {
 		return *d.response.Properties.BillingPlan.BillingPeriod
 	}
-	return dbaasDerefString(d.billingPeriod)
+	if d.billingPeriod == nil {
+		return ""
+	}
+	return *d.billingPeriod
 }
 
 // AutoscalingEnabled returns the locally-set Enabled flag (request-side intent).
