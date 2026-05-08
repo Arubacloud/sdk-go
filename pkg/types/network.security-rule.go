@@ -1,5 +1,17 @@
 package types
 
+// RuleProtocol identifies the L4 protocol for a security rule.
+//
+// Authoritative list: ANY, TCP, UDP, ICMP (fully enumerated in the API docs).
+type RuleProtocol string
+
+const (
+	RuleProtocolANY  RuleProtocol = "ANY"
+	RuleProtocolTCP  RuleProtocol = "TCP"
+	RuleProtocolUDP  RuleProtocol = "UDP"
+	RuleProtocolICMP RuleProtocol = "ICMP"
+)
+
 // RuleDirection represents the direction of a security rule
 type RuleDirection string
 
@@ -33,7 +45,7 @@ type SecurityRulePropertiesRequest struct {
 	Direction RuleDirection `json:"direction,omitempty"`
 
 	// Protocol Name of the protocol. Admissible values: ANY, TCP, UDP, ICMP
-	Protocol string `json:"protocol,omitempty"`
+	Protocol RuleProtocol `json:"protocol,omitempty"`
 
 	// Port can be set with different values, according to the protocol.
 	// - ANY and ICMP must not have a port
@@ -54,7 +66,7 @@ type SecurityRulePropertiesResponse struct {
 	Direction RuleDirection `json:"direction,omitempty"`
 
 	// Protocol Name of the protocol. Admissible values: ANY, TCP, UDP, ICMP
-	Protocol string `json:"protocol,omitempty"`
+	Protocol RuleProtocol `json:"protocol,omitempty"`
 
 	// Port can be set with different values, according to the protocol.
 	// - ANY and ICMP must not have a port
