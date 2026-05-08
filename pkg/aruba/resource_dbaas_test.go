@@ -38,7 +38,7 @@ func TestDBaaS_FluentSetters(t *testing.T) {
 		WithFlavor("DBO2A4").
 		WithStorage(20).
 		WithBillingPeriod("Hour").
-		WithAutoscaling(true)
+		WithAutoscaling(50, 10)
 
 	if d.Name() != "my-dbaas" {
 		t.Errorf("Name() = %q", d.Name())
@@ -64,8 +64,14 @@ func TestDBaaS_FluentSetters(t *testing.T) {
 	if d.BillingPeriod() != "Hour" {
 		t.Errorf("BillingPeriod() = %q", d.BillingPeriod())
 	}
-	if !d.Autoscaling() {
-		t.Error("Autoscaling() should be true")
+	if !d.AutoscalingEnabled() {
+		t.Error("AutoscalingEnabled() should be true")
+	}
+	if d.AutoscalingAvailableSpace() != 50 {
+		t.Errorf("AutoscalingAvailableSpace() = %d", d.AutoscalingAvailableSpace())
+	}
+	if d.AutoscalingStepSize() != 10 {
+		t.Errorf("AutoscalingStepSize() = %d", d.AutoscalingStepSize())
 	}
 	if d.ProjectID() != "p-1" {
 		t.Errorf("ProjectID() = %q", d.ProjectID())
@@ -220,9 +226,48 @@ func TestDBaaS_WithStorage(t *testing.T) {
 }
 
 func TestDBaaS_WithAutoscaling(t *testing.T) {
-	d := NewDBaaS().WithAutoscaling(false)
-	if d.Autoscaling() {
-		t.Error("Autoscaling() should be false")
+	d := NewDBaaS().WithAutoscaling(50, 10)
+	if !d.AutoscalingEnabled() {
+		t.Error("AutoscalingEnabled() should be true")
+	}
+	if d.AutoscalingAvailableSpace() != 50 {
+		t.Errorf("AutoscalingAvailableSpace() = %d", d.AutoscalingAvailableSpace())
+	}
+	if d.AutoscalingStepSize() != 10 {
+		t.Errorf("AutoscalingStepSize() = %d", d.AutoscalingStepSize())
+	}
+	req := d.RawRequest()
+	if req.Properties.Autoscaling == nil {
+		t.Fatal("Autoscaling block should be present in request")
+	}
+	if req.Properties.Autoscaling.Enabled == nil || !*req.Properties.Autoscaling.Enabled {
+		t.Error("Autoscaling.Enabled should be true on wire")
+	}
+	if req.Properties.Autoscaling.AvailableSpace == nil || *req.Properties.Autoscaling.AvailableSpace != 50 {
+		t.Errorf("Autoscaling.AvailableSpace = %v", req.Properties.Autoscaling.AvailableSpace)
+	}
+	if req.Properties.Autoscaling.StepSize == nil || *req.Properties.Autoscaling.StepSize != 10 {
+		t.Errorf("Autoscaling.StepSize = %v", req.Properties.Autoscaling.StepSize)
+	}
+}
+
+func TestDBaaS_WithoutAutoscaling(t *testing.T) {
+	d := NewDBaaS().WithoutAutoscaling()
+	if d.AutoscalingEnabled() {
+		t.Error("AutoscalingEnabled() should be false after WithoutAutoscaling()")
+	}
+	req := d.RawRequest()
+	if req.Properties.Autoscaling == nil {
+		t.Fatal("Autoscaling block should be present in request (Enabled=false must be sent explicitly)")
+	}
+	if req.Properties.Autoscaling.Enabled == nil || *req.Properties.Autoscaling.Enabled {
+		t.Error("Autoscaling.Enabled should be false on wire")
+	}
+	if req.Properties.Autoscaling.AvailableSpace != nil {
+		t.Error("Autoscaling.AvailableSpace should be nil when disabled")
+	}
+	if req.Properties.Autoscaling.StepSize != nil {
+		t.Error("Autoscaling.StepSize should be nil when disabled")
 	}
 }
 
@@ -248,7 +293,7 @@ func TestDBaaS_ToRequestRoundTrip(t *testing.T) {
 		WithFlavor("DBO2A4").
 		WithStorage(20).
 		WithBillingPeriod("Hour").
-		WithAutoscaling(true).
+		WithAutoscaling(50, 10).
 		WithNetworking(URI("/vpcs/v"), URI("/subnets/s"), URI("/sgs/sg"), URI("/eips/e"))
 
 	req := d.RawRequest()
@@ -276,6 +321,12 @@ func TestDBaaS_ToRequestRoundTrip(t *testing.T) {
 	}
 	if req.Properties.Autoscaling == nil || req.Properties.Autoscaling.Enabled == nil || !*req.Properties.Autoscaling.Enabled {
 		t.Errorf("Autoscaling.Enabled = %v", req.Properties.Autoscaling)
+	}
+	if req.Properties.Autoscaling == nil || req.Properties.Autoscaling.AvailableSpace == nil || *req.Properties.Autoscaling.AvailableSpace != 50 {
+		t.Errorf("Autoscaling.AvailableSpace = %v", req.Properties.Autoscaling)
+	}
+	if req.Properties.Autoscaling == nil || req.Properties.Autoscaling.StepSize == nil || *req.Properties.Autoscaling.StepSize != 10 {
+		t.Errorf("Autoscaling.StepSize = %v", req.Properties.Autoscaling)
 	}
 	if req.Properties.Networking == nil {
 		t.Fatal("Networking should not be nil")
@@ -305,6 +356,9 @@ func TestDBaaS_ToRequest_AllUnset(t *testing.T) {
 	}
 	if req.Properties.Networking != nil {
 		t.Error("Networking should be nil when no refs are set")
+	}
+	if req.Properties.Autoscaling != nil {
+		t.Error("Autoscaling should be nil when neither WithAutoscaling nor WithoutAutoscaling was called")
 	}
 }
 
@@ -625,7 +679,7 @@ func TestDBaaSClientAdapter_Create_Success(t *testing.T) {
 		WithFlavor("DBO2A4").
 		WithStorage(20).
 		WithBillingPeriod("Hour").
-		WithAutoscaling(true).
+		WithAutoscaling(50, 10).
 		WithNetworking(URI("/vpcs/v"), URI("/subnets/s"), URI("/sgs/sg"), URI("/eips/e"))
 
 	result, err := adapter.Create(context.Background(), d)
@@ -861,13 +915,63 @@ func TestDBaaS_WithLocation(t *testing.T) {
 
 func TestDBaaS_Accessors_ZeroValue(t *testing.T) {
 	d := &DBaaS{}
-	// Storage: nil response, nil storageGB → 0
 	if d.Storage() != 0 {
 		t.Errorf("Storage() zero = %d", d.Storage())
 	}
-	// Autoscaling: nil → false
-	if d.Autoscaling() {
-		t.Error("Autoscaling() zero should be false")
+	if d.AutoscalingEnabled() {
+		t.Error("AutoscalingEnabled() zero should be false")
+	}
+	if d.AutoscalingStatus() != "" {
+		t.Errorf("AutoscalingStatus() zero = %q", d.AutoscalingStatus())
+	}
+	if d.AutoscalingAvailableSpace() != 0 {
+		t.Errorf("AutoscalingAvailableSpace() zero = %d", d.AutoscalingAvailableSpace())
+	}
+	if d.AutoscalingStepSize() != 0 {
+		t.Errorf("AutoscalingStepSize() zero = %d", d.AutoscalingStepSize())
+	}
+	if d.AutoscalingRuleID() != "" {
+		t.Errorf("AutoscalingRuleID() zero = %q", d.AutoscalingRuleID())
+	}
+	if d.AutoscalingRaw() != nil {
+		t.Error("AutoscalingRaw() zero should be nil")
+	}
+}
+
+func TestDBaaS_AutoscalingResponse_Accessors(t *testing.T) {
+	status := "Enabled"
+	avail := int32(50)
+	step := int32(10)
+	ruleID := "rule-1"
+	d := &DBaaS{}
+	d.fromResponse(&types.DBaaSResponse{
+		Properties: types.DBaaSPropertiesResponse{
+			Autoscaling: &types.DBaaSAutoscalingResponse{
+				Status:         &status,
+				AvailableSpace: &avail,
+				StepSize:       &step,
+				RuleID:         &ruleID,
+			},
+		},
+	})
+
+	if d.AutoscalingStatus() != "Enabled" {
+		t.Errorf("AutoscalingStatus() = %q", d.AutoscalingStatus())
+	}
+	if d.AutoscalingAvailableSpace() != 50 {
+		t.Errorf("AutoscalingAvailableSpace() = %d", d.AutoscalingAvailableSpace())
+	}
+	if d.AutoscalingStepSize() != 10 {
+		t.Errorf("AutoscalingStepSize() = %d", d.AutoscalingStepSize())
+	}
+	if d.AutoscalingRuleID() != "rule-1" {
+		t.Errorf("AutoscalingRuleID() = %q", d.AutoscalingRuleID())
+	}
+	if d.AutoscalingRaw() == nil {
+		t.Error("AutoscalingRaw() should be non-nil after hydration")
+	}
+	if d.AutoscalingRaw().Status == nil || *d.AutoscalingRaw().Status != "Enabled" {
+		t.Error("AutoscalingRaw().Status should match")
 	}
 }
 

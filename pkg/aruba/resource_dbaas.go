@@ -25,6 +25,15 @@ import (
 //     objects. Read-back getters (VPC/Subnet/SecurityGroup/ElasticIP)
 //     prefer the response side, falling back to the locally-set URI.
 //   - Zone: Go field is "Zone" but the wire JSON tag is "dataCenter".
+//   - Autoscaling: request emits {Enabled,AvailableSpace,StepSize};
+//     response returns {Status,AvailableSpace,StepSize,RuleID}.
+//     AutoscalingEnabled() reads only the locally-set value;
+//     AutoscalingStatus() / AutoscalingRuleID() read only the response;
+//     AutoscalingAvailableSpace() / AutoscalingStepSize() prefer the
+//     response and fall back to the locally-set value.
+//     fromResponse does NOT back-populate request-side fields, so an
+//     Update after Get omits the autoscaling block unless the caller
+//     re-asserts intent via WithAutoscaling/WithoutAutoscaling.
 type DBaaS struct {
 	errMixin
 	metadataMixin
@@ -40,7 +49,9 @@ type DBaaS struct {
 	engine        *string // wire: Engine.ID
 	flavor        *string // wire: Flavor.Name
 	storageGB     *int32  // wire: Storage.SizeGB
-	autoscaling   *bool   // wire: Autoscaling.Enabled
+	autoscalingEnabled        *bool  // wire: Autoscaling.Enabled
+	autoscalingAvailableSpace *int32 // wire: Autoscaling.AvailableSpace
+	autoscalingStepSize       *int32 // wire: Autoscaling.StepSize
 	billingPeriod *string // wire: BillingPlan.BillingPeriod
 
 	// Networking refs.
@@ -67,7 +78,24 @@ func (d *DBaaS) InZone(zone string) *DBaaS              { d.zone = &zone; return
 func (d *DBaaS) WithEngine(engine string) *DBaaS        { d.engine = &engine; return d }
 func (d *DBaaS) WithFlavor(flavor string) *DBaaS        { d.flavor = &flavor; return d }
 func (d *DBaaS) WithStorage(gb int) *DBaaS              { v := int32(gb); d.storageGB = &v; return d }
-func (d *DBaaS) WithAutoscaling(enabled bool) *DBaaS    { d.autoscaling = &enabled; return d }
+// WithAutoscaling enables autoscaling and pins the available-space threshold and
+// step size. Mirrors NodePool.WithAutoscaling(min, max) from resource_kaas_nodepool.go.
+func (d *DBaaS) WithAutoscaling(availableSpace, stepSize int32) *DBaaS {
+	t := true
+	d.autoscalingEnabled = &t
+	d.autoscalingAvailableSpace = &availableSpace
+	d.autoscalingStepSize = &stepSize
+	return d
+}
+
+// WithoutAutoscaling explicitly disables autoscaling and clears the bounds.
+func (d *DBaaS) WithoutAutoscaling() *DBaaS {
+	f := false
+	d.autoscalingEnabled = &f
+	d.autoscalingAvailableSpace = nil
+	d.autoscalingStepSize = nil
+	return d
+}
 func (d *DBaaS) WithBillingPeriod(period string) *DBaaS { d.billingPeriod = &period; return d }
 
 // WithNetworking sets VPC, Subnet, SecurityGroup, and ElasticIP in a single call.
@@ -158,14 +186,68 @@ func (d *DBaaS) BillingPeriod() string {
 	return dbaasDerefString(d.billingPeriod)
 }
 
-// Autoscaling returns whether autoscaling is enabled. The response side carries no
-// Enabled field (only Status/AvailableSpace/StepSize/RuleID), so this always reads
-// from the locally-set value.
-func (d *DBaaS) Autoscaling() bool {
-	if d.autoscaling != nil {
-		return *d.autoscaling
+// AutoscalingEnabled returns the locally-set Enabled flag (request-side intent).
+// The response side carries no Enabled field — see AutoscalingStatus() for the
+// platform-reported state.
+func (d *DBaaS) AutoscalingEnabled() bool {
+	if d.autoscalingEnabled != nil {
+		return *d.autoscalingEnabled
 	}
 	return false
+}
+
+// AutoscalingStatus returns the response-side autoscaling status string.
+// Empty before hydration.
+func (d *DBaaS) AutoscalingStatus() string {
+	if d.response != nil && d.response.Properties.Autoscaling != nil &&
+		d.response.Properties.Autoscaling.Status != nil {
+		return *d.response.Properties.Autoscaling.Status
+	}
+	return ""
+}
+
+// AutoscalingAvailableSpace returns the available-space threshold.
+// Hydrated response wins; otherwise returns the locally-set value, else 0.
+func (d *DBaaS) AutoscalingAvailableSpace() int32 {
+	if d.response != nil && d.response.Properties.Autoscaling != nil &&
+		d.response.Properties.Autoscaling.AvailableSpace != nil {
+		return *d.response.Properties.Autoscaling.AvailableSpace
+	}
+	if d.autoscalingAvailableSpace != nil {
+		return *d.autoscalingAvailableSpace
+	}
+	return 0
+}
+
+// AutoscalingStepSize returns the step size.
+// Hydrated response wins; otherwise returns the locally-set value, else 0.
+func (d *DBaaS) AutoscalingStepSize() int32 {
+	if d.response != nil && d.response.Properties.Autoscaling != nil &&
+		d.response.Properties.Autoscaling.StepSize != nil {
+		return *d.response.Properties.Autoscaling.StepSize
+	}
+	if d.autoscalingStepSize != nil {
+		return *d.autoscalingStepSize
+	}
+	return 0
+}
+
+// AutoscalingRuleID returns the response-side rule identifier.
+// Empty before hydration.
+func (d *DBaaS) AutoscalingRuleID() string {
+	if d.response != nil && d.response.Properties.Autoscaling != nil &&
+		d.response.Properties.Autoscaling.RuleID != nil {
+		return *d.response.Properties.Autoscaling.RuleID
+	}
+	return ""
+}
+
+// AutoscalingRaw returns the full autoscaling response struct, or nil before hydration.
+func (d *DBaaS) AutoscalingRaw() *types.DBaaSAutoscalingResponse {
+	if d.response == nil {
+		return nil
+	}
+	return d.response.Properties.Autoscaling
 }
 
 func (d *DBaaS) VPC() string {
@@ -204,9 +286,21 @@ func (d *DBaaS) toRequest() types.DBaaSRequest {
 		v := *d.storageGB
 		props.Storage = &types.DBaaSStorage{SizeGB: &v}
 	}
-	if d.autoscaling != nil {
-		v := *d.autoscaling
-		props.Autoscaling = &types.DBaaSAutoscaling{Enabled: &v}
+	if d.autoscalingEnabled != nil || d.autoscalingAvailableSpace != nil || d.autoscalingStepSize != nil {
+		a := &types.DBaaSAutoscaling{}
+		if d.autoscalingEnabled != nil {
+			v := *d.autoscalingEnabled
+			a.Enabled = &v
+		}
+		if d.autoscalingAvailableSpace != nil {
+			v := *d.autoscalingAvailableSpace
+			a.AvailableSpace = &v
+		}
+		if d.autoscalingStepSize != nil {
+			v := *d.autoscalingStepSize
+			a.StepSize = &v
+		}
+		props.Autoscaling = a
 	}
 	if d.billingPeriod != nil {
 		v := *d.billingPeriod
@@ -318,6 +412,7 @@ func dbaasNetworkingURI(resp *types.DBaaSResponse, pick func(*types.DBaaSNetwork
 var dbaasTerminalStates = map[string]bool{
 	"Active": true,
 	"Error":  false,
+	"Failed": false,
 }
 
 // ---------------------------------------------------------------------------
