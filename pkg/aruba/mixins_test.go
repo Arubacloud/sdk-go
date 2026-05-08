@@ -102,13 +102,13 @@ func TestMetadataMixin(t *testing.T) {
 
 func TestRegionalMixin(t *testing.T) {
 	var m regionalMixin
-	m.withLocation("eu-west")
+	m.inRegion("eu-west")
 	if m.Region() != "eu-west" {
 		t.Errorf("Region() = %q", m.Region())
 	}
 	m.inRegion("us-east")
 	if m.Region() != "us-east" {
-		t.Errorf("InRegion alias: Region() = %q", m.Region())
+		t.Errorf("Region() after second inRegion = %q", m.Region())
 	}
 	loc := m.toLocation()
 	if loc.Value != "us-east" {

@@ -90,7 +90,7 @@ func TestVPC_ToRequestRoundTrip(t *testing.T) {
 		WithName("vpc-1").
 		AddTag("t1").
 		AddTag("t2").
-		WithLocation("ITBG-Bergamo").
+		InRegion("ITBG-Bergamo").
 		WithDefault(true).
 		WithPreset(false)
 

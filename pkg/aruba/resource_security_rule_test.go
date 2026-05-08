@@ -789,14 +789,14 @@ func TestSecurityGroupRulesClientAdapter_Delete_NonTwoXX(t *testing.T) {
 	}
 }
 
-// WithLocation exercises the 0% branch.
-func TestSecurityRule_WithLocation(t *testing.T) {
+// InRegion exercises the 0% branch.
+func TestSecurityRule_InRegion(t *testing.T) {
 	rule := NewSecurityRule().
 		AddTag("a").
 		AddTag("b").
 		RemoveTag("a").
 		ReplaceTags("x", "y").
-		WithLocation("ITMI-Milano-1")
+		InRegion("ITMI-Milano-1")
 
 	if rule.Region() != "ITMI-Milano-1" {
 		t.Errorf("Region() = %q", rule.Region())

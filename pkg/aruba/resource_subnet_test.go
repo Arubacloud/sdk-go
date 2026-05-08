@@ -161,7 +161,7 @@ func TestSubnet_ToRequestRoundTrip(t *testing.T) {
 		WithName("sn-1").
 		AddTag("t1").
 		AddTag("t2").
-		WithLocation("ITBG-Bergamo").
+		InRegion("ITBG-Bergamo").
 		WithType("Basic").
 		WithDefault(true).
 		WithCIDR("10.1.2.0/24").

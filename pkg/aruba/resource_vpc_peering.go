@@ -32,7 +32,6 @@ func (p *VPCPeering) WithName(n string) *VPCPeering        { p.withName(n); retu
 func (p *VPCPeering) AddTag(t string) *VPCPeering          { p.addTag(t); return p }
 func (p *VPCPeering) RemoveTag(t string) *VPCPeering       { p.removeTag(t); return p }
 func (p *VPCPeering) ReplaceTags(ts ...string) *VPCPeering { p.replaceTags(ts...); return p }
-func (p *VPCPeering) WithLocation(loc Region) *VPCPeering  { p.withLocation(loc); return p }
 func (p *VPCPeering) InRegion(region Region) *VPCPeering   { p.inRegion(region); return p }
 
 // WithRemoteVPC stores the remote VPC URI in the request body Properties.
@@ -93,7 +92,7 @@ func (p *VPCPeering) fromResponse(resp *types.VPCPeeringResponse) {
 		p.replaceTags(resp.Metadata.Tags...)
 	}
 	if resp.Metadata.LocationResponse != nil {
-		p.withLocation(resp.Metadata.LocationResponse.Value)
+		p.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	p.setStatus(&resp.Status)
 	p.setTerminalStates(vpcPeeringTerminalStates)

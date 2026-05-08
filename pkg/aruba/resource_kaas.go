@@ -70,8 +70,7 @@ func (k *KaaS) WithName(n string) *KaaS                         { k.withName(n);
 func (k *KaaS) AddTag(t string) *KaaS                           { k.addTag(t); return k }
 func (k *KaaS) RemoveTag(t string) *KaaS                        { k.removeTag(t); return k }
 func (k *KaaS) ReplaceTags(ts ...string) *KaaS                  { k.replaceTags(ts...); return k }
-func (k *KaaS) WithLocation(loc Region) *KaaS                   { k.withLocation(loc); return k }
-func (k *KaaS) InRegion(region Region) *KaaS                    { k.withLocation(region); return k }
+func (k *KaaS) InRegion(region Region) *KaaS                    { k.inRegion(region); return k }
 func (k *KaaS) WithKubernetesVersion(v KubernetesVersion) *KaaS { k.kubernetesVersion = &v; return k }
 func (k *KaaS) WithPodCIDR(cidr string) *KaaS                   { k.podCIDR = &cidr; return k }
 func (k *KaaS) WithHA(enabled bool) *KaaS                       { k.ha = &enabled; return k }
@@ -346,7 +345,7 @@ func (k *KaaS) fromResponse(resp *types.KaaSResponse) {
 		k.replaceTags(resp.Metadata.Tags...)
 	}
 	if resp.Metadata.LocationResponse != nil {
-		k.withLocation(resp.Metadata.LocationResponse.Value)
+		k.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	k.setStatus(&resp.Status)
 	k.setTerminalStates(kaasTerminalStates)

@@ -41,7 +41,7 @@ func TestDBaaSBackup_FluentSetters(t *testing.T) {
 		AddTag("backup").
 		AddTag("dbaas").
 		AddTag("backup"). // dedupe
-		WithLocation("ITBG-1").
+		InRegion("ITBG-1").
 		WithDBaaS(dbaasURI).
 		WithDatabase(dbURI).
 		WithBillingPeriod("Hour")
@@ -202,7 +202,7 @@ func TestDBaaSBackup_ToRequest(t *testing.T) {
 	bkp := NewDBaaSBackup().
 		WithName("bkp-rt").
 		AddTag("t1").AddTag("t2").
-		WithLocation("ITBG-1").
+		InRegion("ITBG-1").
 		WithDBaaS(URI(dbaasURI)).
 		WithDatabase(URI(dbURI)).
 		WithBillingPeriod("Hour")
@@ -230,7 +230,7 @@ func TestDBaaSBackup_ToRequest(t *testing.T) {
 }
 
 func TestDBaaSBackup_ToRequest_ZoneFromLocation(t *testing.T) {
-	bkp := NewDBaaSBackup().WithLocation("ITBG-1")
+	bkp := NewDBaaSBackup().InRegion("ITBG-1")
 	req := bkp.RawRequest()
 	if req.Properties.Zone != "ITBG-1" {
 		t.Errorf("Properties.Zone = %q, want ITBG-1 (auto-derived from location)", req.Properties.Zone)
@@ -470,7 +470,7 @@ func TestDBaaSBackupsClientAdapter_Create_Success(t *testing.T) {
 	bkp := NewDBaaSBackup().
 		IntoProject(URI("/projects/p")).
 		WithName("my-backup").
-		WithLocation("ITBG-1").
+		InRegion("ITBG-1").
 		WithDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		WithDatabase(URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb")).
 		WithBillingPeriod("Hour")
@@ -590,7 +590,7 @@ func TestDBaaSBackupsClientAdapter_Create_WithBodyRefs_ViaFake(t *testing.T) {
 
 	bkp := NewDBaaSBackup().
 		IntoProject(URI("/projects/p")).
-		WithLocation("ITBG-1").
+		InRegion("ITBG-1").
 		WithDBaaS(URI(dbaasURI)).
 		WithDatabase(URI(dbURI)).
 		WithBillingPeriod("Hour")

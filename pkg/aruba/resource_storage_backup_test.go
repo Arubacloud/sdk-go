@@ -168,7 +168,7 @@ func TestStorageBackup_ToRequestRoundTrip(t *testing.T) {
 	bkp := NewStorageBackup().
 		WithName("bkp-rt").
 		AddTag("t1").AddTag("t2").
-		WithLocation("ITBG-Bergamo").
+		InRegion("ITBG-Bergamo").
 		WithType(types.StorageBackupTypeFull).
 		WithOrigin(URI(volURI)).
 		WithRetentionDays(14).

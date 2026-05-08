@@ -719,14 +719,14 @@ func TestVPNRoutesClientAdapter_Delete_NonTwoXX(t *testing.T) {
 	}
 }
 
-// WithLocation exercises the 0% branch.
-func TestVPNRoute_WithLocation(t *testing.T) {
+// InRegion exercises the 0% branch.
+func TestVPNRoute_InRegion(t *testing.T) {
 	r := NewVPNRoute().
 		AddTag("a").
 		AddTag("b").
 		RemoveTag("a").
 		ReplaceTags("x", "y").
-		WithLocation("ITMI-Milano-1")
+		InRegion("ITMI-Milano-1")
 
 	if r.Region() != "ITMI-Milano-1" {
 		t.Errorf("Region() = %q", r.Region())
