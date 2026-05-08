@@ -32,7 +32,7 @@ type SnapshotPropertiesResponse struct {
 	Type BlockStorageType `json:"type"`
 
 	//Zone where blockstorage will be created
-	Zone string `json:"dataCenter"`
+	Zone Zone `json:"dataCenter"`
 
 	Bootable *bool `json:"bootable,omitempty"`
 }

@@ -31,8 +31,8 @@ func (e *ElasticIP) WithName(n string) *ElasticIP          { e.withName(n); retu
 func (e *ElasticIP) AddTag(t string) *ElasticIP            { e.addTag(t); return e }
 func (e *ElasticIP) RemoveTag(t string) *ElasticIP         { e.removeTag(t); return e }
 func (e *ElasticIP) ReplaceTags(ts ...string) *ElasticIP   { e.replaceTags(ts...); return e }
-func (e *ElasticIP) WithLocation(loc string) *ElasticIP    { e.withLocation(loc); return e }
-func (e *ElasticIP) InRegion(region string) *ElasticIP     { e.withLocation(region); return e }
+func (e *ElasticIP) WithLocation(loc Region) *ElasticIP    { e.withLocation(loc); return e }
+func (e *ElasticIP) InRegion(region Region) *ElasticIP     { e.withLocation(region); return e }
 func (e *ElasticIP) WithBillingPeriod(p BillingPeriod) *ElasticIP { e.billingPeriod = &p; return e }
 
 // URI satisfies Ref.

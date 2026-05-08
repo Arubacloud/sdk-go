@@ -191,7 +191,7 @@ func snapshotTestResponse(id, name, uri, projectID string) *types.SnapshotRespon
 	billingPeriod := BillingPeriod("Hour")
 	sizeGB := int32(20)
 	boot := true
-	zone := "ITBG-1"
+	zone := Zone("ITBG-1")
 	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
 	return &types.SnapshotResponse{
 		Metadata: types.ResourceMetadataResponse{

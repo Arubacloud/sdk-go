@@ -55,8 +55,8 @@ func (j *Job) WithName(n string) *Job        { j.withName(n); return j }
 func (j *Job) AddTag(t string) *Job          { j.addTag(t); return j }
 func (j *Job) RemoveTag(t string) *Job       { j.removeTag(t); return j }
 func (j *Job) ReplaceTags(ts ...string) *Job { j.replaceTags(ts...); return j }
-func (j *Job) WithLocation(loc string) *Job  { j.withLocation(loc); return j }
-func (j *Job) InRegion(region string) *Job   { j.withLocation(region); return j }
+func (j *Job) WithLocation(loc Region) *Job  { j.withLocation(loc); return j }
+func (j *Job) InRegion(region Region) *Job   { j.withLocation(region); return j }
 
 // WithEnabled sets whether the job is active.
 // Note: the underlying wire type uses bool with omitempty, so false is dropped

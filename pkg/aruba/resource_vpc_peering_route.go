@@ -34,8 +34,8 @@ func (r *VPCPeeringRoute) WithName(n string) *VPCPeeringRoute        { r.withNam
 func (r *VPCPeeringRoute) AddTag(t string) *VPCPeeringRoute          { r.addTag(t); return r }
 func (r *VPCPeeringRoute) RemoveTag(t string) *VPCPeeringRoute       { r.removeTag(t); return r }
 func (r *VPCPeeringRoute) ReplaceTags(ts ...string) *VPCPeeringRoute { r.replaceTags(ts...); return r }
-func (r *VPCPeeringRoute) WithLocation(loc string) *VPCPeeringRoute  { r.withLocation(loc); return r }
-func (r *VPCPeeringRoute) InRegion(region string) *VPCPeeringRoute   { r.inRegion(region); return r }
+func (r *VPCPeeringRoute) WithLocation(loc Region) *VPCPeeringRoute  { r.withLocation(loc); return r }
+func (r *VPCPeeringRoute) InRegion(region Region) *VPCPeeringRoute   { r.inRegion(region); return r }
 
 func (r *VPCPeeringRoute) WithLocalCIDR(cidr string) *VPCPeeringRoute { r.localCIDR = &cidr; return r }
 func (r *VPCPeeringRoute) WithRemoteCIDR(cidr string) *VPCPeeringRoute {
