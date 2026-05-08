@@ -35,6 +35,9 @@ type (
 	// Metrics / Alerts
 	ActionType = types.ActionType
 
+	// Billing
+	BillingPeriod = types.BillingPeriod
+
 	// Parameters
 	AcceptHeader = types.AcceptHeader
 )
@@ -112,6 +115,9 @@ const (
 	DeactiveReasonNone            = types.DeactiveReasonNone
 	DeactiveReasonManual          = types.DeactiveReasonManual
 	DeactiveReasonResourceDeleted = types.DeactiveReasonResourceDeleted
+
+	// Billing period
+	BillingPeriodHour = types.BillingPeriodHour
 
 	// Metrics / Alerts — action type
 	ActionTypeNotificationPanel = types.ActionTypeNotificationPanel

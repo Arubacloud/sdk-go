@@ -188,7 +188,7 @@ func TestSnapshot_ToRequest_UnsetOptionals_AreNilOrEmpty(t *testing.T) {
 func snapshotTestResponse(id, name, uri, projectID string) *types.SnapshotResponse {
 	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
 	state := "Active"
-	billingPeriod := "Hour"
+	billingPeriod := BillingPeriod("Hour")
 	sizeGB := int32(20)
 	boot := true
 	zone := "ITBG-1"

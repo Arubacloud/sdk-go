@@ -2,7 +2,7 @@ package types
 
 type SnapshotPropertiesRequest struct {
 	// BillingPeriod The billing period for blockStorage. Only Hour is a valid value (nullable)
-	BillingPeriod *string `json:"billingPeriod,omitempty"`
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 
 	Volume ReferenceResource `json:"volume,omitempty"`
 }
@@ -23,7 +23,7 @@ type SnapshotPropertiesResponse struct {
 	SizeGB *int32 `json:"sizeGb,omitempty"`
 
 	// BillingPeriod The billing period for blockStorage. Only Hour is a valid value (nullable)
-	BillingPeriod *string `json:"billingPeriod,omitempty"`
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 
 	// Volume information about the original volume
 	Volume *VolumeInfo `json:"volume,omitempty"`

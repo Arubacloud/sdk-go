@@ -19,7 +19,7 @@ type StorageBackupPropertiesRequest struct {
 	RetentionDays *int `json:"retentionDays,omitempty"`
 
 	// BillingPeriod indicates the billing period
-	BillingPeriod *string `json:"billingPeriod,omitempty"`
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 }
 
 type StorageBackupPropertiesResult struct {
@@ -34,7 +34,7 @@ type StorageBackupPropertiesResult struct {
 	RetentionDays *int `json:"retentionDays,omitempty"`
 
 	// BillingPeriod indicates the billing period
-	BillingPeriod *string `json:"billingPeriod,omitempty"`
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 }
 
 type StorageBackupRequest struct {

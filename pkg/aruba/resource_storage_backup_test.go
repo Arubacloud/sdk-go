@@ -224,7 +224,7 @@ func TestStorageBackup_ToRequest_UnsetOptionals_AreNilOrEmpty(t *testing.T) {
 func storageBackupTestResponse(id, name, uri, projectID string) *types.StorageBackupResponse {
 	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
 	state := "Active"
-	billingPeriod := "Monthly"
+	billingPeriod := BillingPeriod("Monthly")
 	retentionDays := 30
 	originURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
 	return &types.StorageBackupResponse{

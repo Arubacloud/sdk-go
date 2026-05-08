@@ -47,7 +47,7 @@ type KaaS struct {
 	kubernetesVersion    *string
 	ha                   *bool
 	storageMaxCumulative *int32 // wire: storage.maxCumulativeVolumeSize
-	billingPeriod        *string
+	billingPeriod        *BillingPeriod
 	identityClientID     *string
 	identityClientSecret *string
 	apiServerProfile     *types.APIServerAccessProfileProperties // structural pass-through
@@ -75,7 +75,7 @@ func (k *KaaS) InRegion(region string) *KaaS            { k.withLocation(region)
 func (k *KaaS) WithKubernetesVersion(v string) *KaaS    { k.kubernetesVersion = &v; return k }
 func (k *KaaS) WithPodCIDR(cidr string) *KaaS           { k.podCIDR = &cidr; return k }
 func (k *KaaS) WithHA(enabled bool) *KaaS               { k.ha = &enabled; return k }
-func (k *KaaS) WithBillingPeriod(period string) *KaaS   { k.billingPeriod = &period; return k }
+func (k *KaaS) WithBillingPeriod(period BillingPeriod) *KaaS { k.billingPeriod = &period; return k }
 func (k *KaaS) WithSecurityGroupName(name string) *KaaS { k.securityGroupName = &name; return k }
 
 // WithNodeCIDR sets the node CIDR block (address and name).
@@ -227,11 +227,14 @@ func (k *KaaS) KubernetesVersion() string {
 	return kaasDeref(k.kubernetesVersion)
 }
 
-func (k *KaaS) BillingPeriod() string {
+func (k *KaaS) BillingPeriod() BillingPeriod {
 	if k.response != nil && k.response.Properties.BillingPlan != nil && k.response.Properties.BillingPlan.BillingPeriod != nil {
 		return *k.response.Properties.BillingPlan.BillingPeriod
 	}
-	return kaasDeref(k.billingPeriod)
+	if k.billingPeriod == nil {
+		return ""
+	}
+	return *k.billingPeriod
 }
 
 // ---------------------------------------------------------------------------
@@ -252,7 +255,13 @@ func (k *KaaS) toRequest() types.KaaSRequest {
 		PodCIDR:           k.podCIDR,
 		KubernetesVersion: types.KubernetesVersionInfo{Value: kaasDeref(k.kubernetesVersion)},
 		HA:                k.ha,
-		BillingPlan:       types.BillingPeriodResource{BillingPeriod: kaasDeref(k.billingPeriod)},
+		BillingPlan: func() types.BillingPeriodResource {
+			var bp BillingPeriod
+			if k.billingPeriod != nil {
+				bp = *k.billingPeriod
+			}
+			return types.BillingPeriodResource{BillingPeriod: bp}
+		}(),
 	}
 	if k.storageMaxCumulative != nil {
 		props.Storage = types.StorageKubernetes{MaxCumulativeVolumeSize: k.storageMaxCumulative}

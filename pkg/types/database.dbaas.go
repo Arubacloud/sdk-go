@@ -70,13 +70,13 @@ type DBaaSStorageResponse struct {
 // DBaaSBillingPlan contains the billing plan configuration
 type DBaaSBillingPlan struct {
 	// BillingPeriod Type of billing period to use (nullable)
-	BillingPeriod *string `json:"billingPeriod,omitempty"`
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 }
 
 // DBaaSBillingPlanResponse contains the billing plan response configuration
 type DBaaSBillingPlanResponse struct {
 	// BillingPeriod Billing period (nullable)
-	BillingPeriod *string `json:"billingPeriod,omitempty"`
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 }
 
 // DBaaSNetworking contains the network information to use when creating the new DBaaS
