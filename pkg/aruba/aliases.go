@@ -49,6 +49,10 @@ type (
 	DatabaseEngine = types.DatabaseEngine
 	DBaaSFlavor    = types.DBaaSFlavor
 
+	// Container / KaaS
+	KubernetesVersion = types.KubernetesVersion
+	NodePoolInstance  = types.NodePoolInstance
+
 	// Parameters
 	AcceptHeader = types.AcceptHeader
 )
@@ -158,9 +162,39 @@ const (
 	DatabaseEnginePostgres14 = types.DatabaseEnginePostgres14
 
 	// Database — DBaaS flavor
-	DBaaSFlavorDBO2A4 = types.DBaaSFlavorDBO2A4
-	DBaaSFlavorDBO2A8 = types.DBaaSFlavorDBO2A8
-	DBaaSFlavorDBO4A8 = types.DBaaSFlavorDBO4A8
+	DBaaSFlavorDBO1A2  = types.DBaaSFlavorDBO1A2
+	DBaaSFlavorDBO1A4  = types.DBaaSFlavorDBO1A4
+	DBaaSFlavorDBO2A4  = types.DBaaSFlavorDBO2A4
+	DBaaSFlavorDBO2A8  = types.DBaaSFlavorDBO2A8
+	DBaaSFlavorDBO4A8  = types.DBaaSFlavorDBO4A8
+	DBaaSFlavorDBO4A16 = types.DBaaSFlavorDBO4A16
+	DBaaSFlavorDBO8A16 = types.DBaaSFlavorDBO8A16
+	DBaaSFlavorDBO8A32 = types.DBaaSFlavorDBO8A32
+	DBaaSFlavorDBO12A24 = types.DBaaSFlavorDBO12A24
+	DBaaSFlavorDBO16A32 = types.DBaaSFlavorDBO16A32
+	DBaaSFlavorDBO16A64 = types.DBaaSFlavorDBO16A64
+	DBaaSFlavorDBO24A48 = types.DBaaSFlavorDBO24A48
+	DBaaSFlavorDBO32A64 = types.DBaaSFlavorDBO32A64
+
+	// Container — Kubernetes version
+	KubernetesVersion1282 = types.KubernetesVersion1282
+	KubernetesVersion1292 = types.KubernetesVersion1292
+	KubernetesVersion1302 = types.KubernetesVersion1302
+	KubernetesVersion1332 = types.KubernetesVersion1332
+
+	// Container — node pool instance
+	NodePoolInstanceK1A2   = types.NodePoolInstanceK1A2
+	NodePoolInstanceK1A4R  = types.NodePoolInstanceK1A4R
+	NodePoolInstanceK2A4   = types.NodePoolInstanceK2A4
+	NodePoolInstanceK2A8R  = types.NodePoolInstanceK2A8R
+	NodePoolInstanceK4A8   = types.NodePoolInstanceK4A8
+	NodePoolInstanceK4A16R = types.NodePoolInstanceK4A16R
+	NodePoolInstanceK8A16  = types.NodePoolInstanceK8A16
+	NodePoolInstanceK8A32R = types.NodePoolInstanceK8A32R
+	NodePoolInstanceK12A24 = types.NodePoolInstanceK12A24
+	NodePoolInstanceK16A32 = types.NodePoolInstanceK16A32
+	NodePoolInstanceK24A48 = types.NodePoolInstanceK24A48
+	NodePoolInstanceK32A64 = types.NodePoolInstanceK32A64
 
 	// Metrics / Alerts — action type
 	ActionTypeNotificationPanel = types.ActionTypeNotificationPanel
