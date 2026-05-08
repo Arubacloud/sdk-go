@@ -86,9 +86,10 @@ func (k *KaaS) WithNodeCIDR(address, name string) *KaaS {
 	return k
 }
 
-// WithStorage sets the maximum cumulative volume size (in GB).
-func (k *KaaS) WithStorage(maxCumulativeVolumeSize int32) *KaaS {
-	k.storageMaxCumulative = &maxCumulativeVolumeSize
+// WithStorageGB sets the maximum cumulative volume size in GB.
+func (k *KaaS) WithStorageGB(gb int) *KaaS {
+	v := int32(gb)
+	k.storageMaxCumulative = &v
 	return k
 }
 
