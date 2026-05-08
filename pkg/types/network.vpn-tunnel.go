@@ -118,32 +118,115 @@ const (
 	IKEDPDActionRestart IKEDPDAction = "restart"
 )
 
-// VPN PFS group constants for ESPSettings.PFS (replaced by ESPPFSGroup in a later commit).
+// ESPEncryption is the encryption algorithm for ESPSettings.Encryption.
+//
+// GET /providers/Aruba.Network/vpn-tunnels for the live catalog.
+type ESPEncryption string
+
 const (
-	VPNPFSEnable    = "enable"
-	VPNPFSDisable   = "disable"
-	VPNPFSDHGroup1  = "dh-group1"
-	VPNPFSDHGroup2  = "dh-group2"
-	VPNPFSDHGroup5  = "dh-group5"
-	VPNPFSDHGroup14 = "dh-group14"
-	VPNPFSDHGroup15 = "dh-group15"
-	VPNPFSDHGroup16 = "dh-group16"
-	VPNPFSDHGroup17 = "dh-group17"
-	VPNPFSDHGroup18 = "dh-group18"
-	VPNPFSDHGroup19 = "dh-group19"
-	VPNPFSDHGroup20 = "dh-group20"
-	VPNPFSDHGroup21 = "dh-group21"
-	VPNPFSDHGroup22 = "dh-group22"
-	VPNPFSDHGroup23 = "dh-group23"
-	VPNPFSDHGroup24 = "dh-group24"
-	VPNPFSDHGroup25 = "dh-group25"
-	VPNPFSDHGroup26 = "dh-group26"
-	VPNPFSDHGroup27 = "dh-group27"
-	VPNPFSDHGroup28 = "dh-group28"
-	VPNPFSDHGroup29 = "dh-group29"
-	VPNPFSDHGroup30 = "dh-group30"
-	VPNPFSDHGroup31 = "dh-group31"
-	VPNPFSDHGroup32 = "dh-group32"
+	ESPEncryptionAES128            ESPEncryption = "aes128"
+	ESPEncryptionAES192            ESPEncryption = "aes192"
+	ESPEncryptionAES256            ESPEncryption = "aes256"
+	ESPEncryptionAES128CTR         ESPEncryption = "aes128ctr"
+	ESPEncryptionAES192CTR         ESPEncryption = "aes192ctr"
+	ESPEncryptionAES256CTR         ESPEncryption = "aes256ctr"
+	ESPEncryptionAES128CCM64       ESPEncryption = "aes128ccm64"
+	ESPEncryptionAES128CCM96       ESPEncryption = "aes128ccm96"
+	ESPEncryptionAES128CCM128      ESPEncryption = "aes128ccm128"
+	ESPEncryptionAES192CCM64       ESPEncryption = "aes192ccm64"
+	ESPEncryptionAES192CCM96       ESPEncryption = "aes192ccm96"
+	ESPEncryptionAES192CCM128      ESPEncryption = "aes192ccm128"
+	ESPEncryptionAES256CCM64       ESPEncryption = "aes256ccm64"
+	ESPEncryptionAES256CCM96       ESPEncryption = "aes256ccm96"
+	ESPEncryptionAES256CCM128      ESPEncryption = "aes256ccm128"
+	ESPEncryptionAES128GCM64       ESPEncryption = "aes128gcm64"
+	ESPEncryptionAES128GCM96       ESPEncryption = "aes128gcm96"
+	ESPEncryptionAES128GCM128      ESPEncryption = "aes128gcm128"
+	ESPEncryptionAES192GCM64       ESPEncryption = "aes192gcm64"
+	ESPEncryptionAES192GCM96       ESPEncryption = "aes192gcm96"
+	ESPEncryptionAES192GCM128      ESPEncryption = "aes192gcm128"
+	ESPEncryptionAES256GCM64       ESPEncryption = "aes256gcm64"
+	ESPEncryptionAES256GCM96       ESPEncryption = "aes256gcm96"
+	ESPEncryptionAES256GCM128      ESPEncryption = "aes256gcm128"
+	ESPEncryptionAES128GMAC        ESPEncryption = "aes128gmac"
+	ESPEncryptionAES192GMAC        ESPEncryption = "aes192gmac"
+	ESPEncryptionAES256GMAC        ESPEncryption = "aes256gmac"
+	ESPEncryption3DES              ESPEncryption = "3des"
+	ESPEncryptionBlowfish128       ESPEncryption = "blowfish128"
+	ESPEncryptionBlowfish192       ESPEncryption = "blowfish192"
+	ESPEncryptionBlowfish256       ESPEncryption = "blowfish256"
+	ESPEncryptionCamellia128       ESPEncryption = "camellia128"
+	ESPEncryptionCamellia192       ESPEncryption = "camellia192"
+	ESPEncryptionCamellia256       ESPEncryption = "camellia256"
+	ESPEncryptionCamellia128CTR    ESPEncryption = "camellia128ctr"
+	ESPEncryptionCamellia192CTR    ESPEncryption = "camellia192ctr"
+	ESPEncryptionCamellia256CTR    ESPEncryption = "camellia256ctr"
+	ESPEncryptionCamellia128CCM64  ESPEncryption = "camellia128ccm64"
+	ESPEncryptionCamellia128CCM96  ESPEncryption = "camellia128ccm96"
+	ESPEncryptionCamellia128CCM128 ESPEncryption = "camellia128ccm128"
+	ESPEncryptionCamellia192CCM64  ESPEncryption = "camellia192ccm64"
+	ESPEncryptionCamellia192CCM96  ESPEncryption = "camellia192ccm96"
+	ESPEncryptionCamellia192CCM128 ESPEncryption = "camellia192ccm128"
+	ESPEncryptionCamellia256CCM64  ESPEncryption = "camellia256ccm64"
+	ESPEncryptionCamellia256CCM96  ESPEncryption = "camellia256ccm96"
+	ESPEncryptionCamellia256CCM128 ESPEncryption = "camellia256ccm128"
+	ESPEncryptionSerpent128        ESPEncryption = "serpent128"
+	ESPEncryptionSerpent192        ESPEncryption = "serpent192"
+	ESPEncryptionSerpent256        ESPEncryption = "serpent256"
+	ESPEncryptionTwofish128        ESPEncryption = "twofish128"
+	ESPEncryptionTwofish192        ESPEncryption = "twofish192"
+	ESPEncryptionTwofish256        ESPEncryption = "twofish256"
+	ESPEncryptionCAST128           ESPEncryption = "cast128"
+	ESPEncryptionChaCha20Poly1305  ESPEncryption = "chacha20poly1305"
+)
+
+// ESPHash is the hash algorithm for ESPSettings.Hash.
+type ESPHash string
+
+const (
+	ESPHashMD5        ESPHash = "md5"
+	ESPHashMD5128     ESPHash = "md5_128"
+	ESPHashSHA1       ESPHash = "sha1"
+	ESPHashSHA1160    ESPHash = "sha1_160"
+	ESPHashSHA256     ESPHash = "sha256"
+	ESPHashSHA25696   ESPHash = "sha256_96"
+	ESPHashSHA384     ESPHash = "sha384"
+	ESPHashSHA512     ESPHash = "sha512"
+	ESPHashAESXCBC    ESPHash = "aesxcbc"
+	ESPHashAESCMAC    ESPHash = "aescmac"
+	ESPHashAES128GMAC ESPHash = "aes128gmac"
+	ESPHashAES192GMAC ESPHash = "aes192gmac"
+	ESPHashAES256GMAC ESPHash = "aes256gmac"
+)
+
+// ESPPFSGroup is the Perfect Forward Secrecy group for ESPSettings.PFS.
+type ESPPFSGroup string
+
+const (
+	ESPPFSGroupEnable    ESPPFSGroup = "enable"
+	ESPPFSGroupDisable   ESPPFSGroup = "disable"
+	ESPPFSGroupDHGroup1  ESPPFSGroup = "dh-group1"
+	ESPPFSGroupDHGroup2  ESPPFSGroup = "dh-group2"
+	ESPPFSGroupDHGroup5  ESPPFSGroup = "dh-group5"
+	ESPPFSGroupDHGroup14 ESPPFSGroup = "dh-group14"
+	ESPPFSGroupDHGroup15 ESPPFSGroup = "dh-group15"
+	ESPPFSGroupDHGroup16 ESPPFSGroup = "dh-group16"
+	ESPPFSGroupDHGroup17 ESPPFSGroup = "dh-group17"
+	ESPPFSGroupDHGroup18 ESPPFSGroup = "dh-group18"
+	ESPPFSGroupDHGroup19 ESPPFSGroup = "dh-group19"
+	ESPPFSGroupDHGroup20 ESPPFSGroup = "dh-group20"
+	ESPPFSGroupDHGroup21 ESPPFSGroup = "dh-group21"
+	ESPPFSGroupDHGroup22 ESPPFSGroup = "dh-group22"
+	ESPPFSGroupDHGroup23 ESPPFSGroup = "dh-group23"
+	ESPPFSGroupDHGroup24 ESPPFSGroup = "dh-group24"
+	ESPPFSGroupDHGroup25 ESPPFSGroup = "dh-group25"
+	ESPPFSGroupDHGroup26 ESPPFSGroup = "dh-group26"
+	ESPPFSGroupDHGroup27 ESPPFSGroup = "dh-group27"
+	ESPPFSGroupDHGroup28 ESPPFSGroup = "dh-group28"
+	ESPPFSGroupDHGroup29 ESPPFSGroup = "dh-group29"
+	ESPPFSGroupDHGroup30 ESPPFSGroup = "dh-group30"
+	ESPPFSGroupDHGroup31 ESPPFSGroup = "dh-group31"
+	ESPPFSGroupDHGroup32 ESPPFSGroup = "dh-group32"
 )
 
 // SubnetInfo contains subnet CIDR and name for VPN tunnel IP configuration
@@ -194,13 +277,13 @@ type ESPSettings struct {
 	Lifetime int32 `json:"lifetime,omitempty"`
 
 	// Encryption Encryption algorithm (nullable)
-	Encryption *string `json:"encryption,omitempty"`
+	Encryption *ESPEncryption `json:"encryption,omitempty"`
 
 	// Hash Hash algorithm (nullable)
-	Hash *string `json:"hash,omitempty"`
+	Hash *ESPHash `json:"hash,omitempty"`
 
 	// PFS Perfect Forward Secrecy (nullable)
-	PFS *string `json:"pfs,omitempty"`
+	PFS *ESPPFSGroup `json:"pfs,omitempty"`
 }
 
 // PSKSettings contains Pre-Shared Key settings
