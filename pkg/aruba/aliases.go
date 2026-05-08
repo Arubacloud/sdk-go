@@ -71,6 +71,9 @@ type (
 	// VPN tunnel types
 	VPNType           = types.VPNType
 	VPNClientProtocol = types.VPNClientProtocol
+
+	// Schedule
+	HTTPVerb = types.HTTPVerb
 )
 
 // ---------------------------------------------------------------------------
@@ -424,4 +427,11 @@ const (
 	// VPN tunnel — type and client protocol
 	VPNTypeSiteToSite      = types.VPNTypeSiteToSite
 	VPNClientProtocolIKEv2 = types.VPNClientProtocolIKEv2
+
+	// Schedule — HTTP verb
+	HTTPVerbGET    = types.HTTPVerbGET
+	HTTPVerbPOST   = types.HTTPVerbPOST
+	HTTPVerbPUT    = types.HTTPVerbPUT
+	HTTPVerbDELETE = types.HTTPVerbDELETE
+	HTTPVerbPATCH  = types.HTTPVerbPATCH
 )
