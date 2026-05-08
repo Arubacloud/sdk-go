@@ -41,7 +41,7 @@ func (b *BlockStorage) ReplaceTags(ts ...string) *BlockStorage { b.replaceTags(t
 func (b *BlockStorage) WithLocation(loc string) *BlockStorage  { b.withLocation(loc); return b }
 func (b *BlockStorage) InRegion(region string) *BlockStorage   { b.withLocation(region); return b }
 func (b *BlockStorage) InZone(zone string) *BlockStorage       { b.zone = &zone; return b }
-func (b *BlockStorage) WithSize(gb int) *BlockStorage          { b.sizeGB = gb; return b }
+func (b *BlockStorage) WithSizeGB(gb int) *BlockStorage        { b.sizeGB = gb; return b }
 func (b *BlockStorage) WithType(t types.BlockStorageType) *BlockStorage {
 	b.storageType = &t
 	return b
@@ -75,7 +75,7 @@ func (b *BlockStorage) Raw() *types.BlockStorageResponse { return b.response }
 // RawRequest returns what toRequest() would emit right now.
 func (b *BlockStorage) RawRequest() types.BlockStorageRequest { return b.toRequest() }
 
-func (b *BlockStorage) Size() int { return b.sizeGB }
+func (b *BlockStorage) SizeGB() int { return b.sizeGB }
 func (b *BlockStorage) Type() types.BlockStorageType {
 	if b.storageType == nil {
 		return ""
