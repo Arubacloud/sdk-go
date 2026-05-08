@@ -42,8 +42,8 @@ func TestDBaaSBackup_FluentSetters(t *testing.T) {
 		AddTag("dbaas").
 		AddTag("backup"). // dedupe
 		InRegion("ITBG-1").
-		WithDBaaS(dbaasURI).
-		WithDatabase(dbURI).
+		FromDBaaS(dbaasURI).
+		FromDatabase(dbURI).
 		WithBillingPeriod("Hour")
 
 	if bkp.Name() != "my-dbaas-backup" {
@@ -116,12 +116,12 @@ func TestDBaaSBackup_IntoProject_BadRef(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// WithDBaaS body-ref setter
+// FromDBaaS body-ref setter
 // --------------------------------------------------------------------------
 
-func TestDBaaSBackup_WithDBaaS_URIRef(t *testing.T) {
+func TestDBaaSBackup_FromDBaaS_URIRef(t *testing.T) {
 	uri := "/projects/p/providers/Aruba.Database/dbaas/d-1"
-	bkp := NewDBaaSBackup().WithDBaaS(URI(uri))
+	bkp := NewDBaaSBackup().FromDBaaS(URI(uri))
 	if bkp.DBaaSURI() != uri {
 		t.Errorf("DBaaSURI() = %q", bkp.DBaaSURI())
 	}
@@ -130,11 +130,11 @@ func TestDBaaSBackup_WithDBaaS_URIRef(t *testing.T) {
 	}
 }
 
-func TestDBaaSBackup_WithDBaaS_TypedRef(t *testing.T) {
+func TestDBaaSBackup_FromDBaaS_TypedRef(t *testing.T) {
 	d := &DBaaS{}
 	d.fromResponse(dbaasTestResponse("d-1", "n", "/projects/p/providers/Aruba.Database/dbaas/d-1"))
 
-	bkp := NewDBaaSBackup().WithDBaaS(d)
+	bkp := NewDBaaSBackup().FromDBaaS(d)
 	if bkp.DBaaSURI() != d.URI() {
 		t.Errorf("DBaaSURI() = %q, want %q", bkp.DBaaSURI(), d.URI())
 	}
@@ -143,8 +143,8 @@ func TestDBaaSBackup_WithDBaaS_TypedRef(t *testing.T) {
 	}
 }
 
-func TestDBaaSBackup_WithDBaaS_EmptyURI(t *testing.T) {
-	bkp := NewDBaaSBackup().WithDBaaS(URI(""))
+func TestDBaaSBackup_FromDBaaS_EmptyURI(t *testing.T) {
+	bkp := NewDBaaSBackup().FromDBaaS(URI(""))
 	if bkp.Err() == nil {
 		t.Error("expected Err() != nil for empty DBaaS URI")
 	}
@@ -154,12 +154,12 @@ func TestDBaaSBackup_WithDBaaS_EmptyURI(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// WithDatabase body-ref setter
+// FromDatabase body-ref setter
 // --------------------------------------------------------------------------
 
-func TestDBaaSBackup_WithDatabase_URIRef(t *testing.T) {
+func TestDBaaSBackup_FromDatabase_URIRef(t *testing.T) {
 	uri := "/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb"
-	bkp := NewDBaaSBackup().WithDatabase(URI(uri))
+	bkp := NewDBaaSBackup().FromDatabase(URI(uri))
 	if bkp.DatabaseURI() != uri {
 		t.Errorf("DatabaseURI() = %q", bkp.DatabaseURI())
 	}
@@ -168,11 +168,11 @@ func TestDBaaSBackup_WithDatabase_URIRef(t *testing.T) {
 	}
 }
 
-func TestDBaaSBackup_WithDatabase_TypedRef(t *testing.T) {
+func TestDBaaSBackup_FromDatabase_TypedRef(t *testing.T) {
 	// Database.URI() is constructed from its ancestors, so we test via URI() directly.
 	dbRef := URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb")
 
-	bkp := NewDBaaSBackup().WithDatabase(dbRef)
+	bkp := NewDBaaSBackup().FromDatabase(dbRef)
 	if bkp.DatabaseURI() != dbRef.URI() {
 		t.Errorf("DatabaseURI() = %q, want %q", bkp.DatabaseURI(), dbRef.URI())
 	}
@@ -181,8 +181,8 @@ func TestDBaaSBackup_WithDatabase_TypedRef(t *testing.T) {
 	}
 }
 
-func TestDBaaSBackup_WithDatabase_EmptyURI(t *testing.T) {
-	bkp := NewDBaaSBackup().WithDatabase(URI(""))
+func TestDBaaSBackup_FromDatabase_EmptyURI(t *testing.T) {
+	bkp := NewDBaaSBackup().FromDatabase(URI(""))
 	if bkp.Err() == nil {
 		t.Error("expected Err() != nil for empty Database URI")
 	}
@@ -203,8 +203,8 @@ func TestDBaaSBackup_ToRequest(t *testing.T) {
 		WithName("bkp-rt").
 		AddTag("t1").AddTag("t2").
 		InRegion("ITBG-1").
-		WithDBaaS(URI(dbaasURI)).
-		WithDatabase(URI(dbURI)).
+		FromDBaaS(URI(dbaasURI)).
+		FromDatabase(URI(dbURI)).
 		WithBillingPeriod("Hour")
 
 	req := bkp.RawRequest()
@@ -471,8 +471,8 @@ func TestDBaaSBackupsClientAdapter_Create_Success(t *testing.T) {
 		IntoProject(URI("/projects/p")).
 		WithName("my-backup").
 		InRegion("ITBG-1").
-		WithDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
-		WithDatabase(URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb")).
+		FromDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		FromDatabase(URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb")).
 		WithBillingPeriod("Hour")
 
 	result, err := adapter.Create(context.Background(), bkp)
@@ -591,8 +591,8 @@ func TestDBaaSBackupsClientAdapter_Create_WithBodyRefs_ViaFake(t *testing.T) {
 	bkp := NewDBaaSBackup().
 		IntoProject(URI("/projects/p")).
 		InRegion("ITBG-1").
-		WithDBaaS(URI(dbaasURI)).
-		WithDatabase(URI(dbURI)).
+		FromDBaaS(URI(dbaasURI)).
+		FromDatabase(URI(dbURI)).
 		WithBillingPeriod("Hour")
 
 	_, err := adapter.Create(context.Background(), bkp)
