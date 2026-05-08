@@ -33,7 +33,7 @@ func TestStorageBackup_FluentSetters(t *testing.T) {
 		AddTag("storage").
 		AddTag("backup"). // dedupe
 		InRegion("ITBG-Bergamo").
-		WithType(types.StorageBackupTypeFull).
+		OfType(types.StorageBackupTypeFull).
 		WithRetentionDays(30).
 		WithBillingPeriod("Monthly")
 
@@ -145,11 +145,11 @@ func TestStorageBackup_WithOrigin_EmptyURI(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// WithType typed enum
+// OfType typed enum
 // --------------------------------------------------------------------------
 
-func TestStorageBackup_WithType_Enum(t *testing.T) {
-	bkp := NewStorageBackup().WithType(types.StorageBackupTypeFull)
+func TestStorageBackup_OfType_Enum(t *testing.T) {
+	bkp := NewStorageBackup().OfType(types.StorageBackupTypeFull)
 	if bkp.Type() != types.StorageBackupTypeFull {
 		t.Errorf("Type() = %q", bkp.Type())
 	}
@@ -169,7 +169,7 @@ func TestStorageBackup_ToRequestRoundTrip(t *testing.T) {
 		WithName("bkp-rt").
 		AddTag("t1").AddTag("t2").
 		InRegion("ITBG-Bergamo").
-		WithType(types.StorageBackupTypeFull).
+		OfType(types.StorageBackupTypeFull).
 		WithOrigin(URI(volURI)).
 		WithRetentionDays(14).
 		WithBillingPeriod("Hour")
@@ -473,7 +473,7 @@ func TestStorageBackupsClientAdapter_Create_Success(t *testing.T) {
 		IntoProject(URI("/projects/p")).
 		WithName("my-backup").
 		InRegion("ITBG-Bergamo").
-		WithType(types.StorageBackupTypeFull).
+		OfType(types.StorageBackupTypeFull).
 		WithRetentionDays(30).
 		WithBillingPeriod("Monthly")
 

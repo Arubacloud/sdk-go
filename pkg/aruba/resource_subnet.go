@@ -34,7 +34,7 @@ func (s *Subnet) AddTag(t string) *Subnet          { s.addTag(t); return s }
 func (s *Subnet) RemoveTag(t string) *Subnet       { s.removeTag(t); return s }
 func (s *Subnet) ReplaceTags(ts ...string) *Subnet { s.replaceTags(ts...); return s }
 func (s *Subnet) InRegion(region Region) *Subnet   { s.inRegion(region); return s }
-func (s *Subnet) WithType(t SubnetType) *Subnet    { s.subnetType = &t; return s }
+func (s *Subnet) OfType(t SubnetType) *Subnet      { s.subnetType = &t; return s }
 func (s *Subnet) WithDefault(b bool) *Subnet       { s.defaultSubnet = &b; return s }
 func (s *Subnet) WithCIDR(cidr string) *Subnet     { s.cidr = &cidr; return s }
 func (s *Subnet) WithDHCP(d *SubnetDHCP) *Subnet   { s.dhcp = d; return s }

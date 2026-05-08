@@ -15,7 +15,7 @@ import (
 //
 // Schema asymmetry: the request side uses FlavorName *string under the "flavorName" wire
 // field; the response side returns a full Flavor struct under the "flavor" wire field.
-// This wrapper exposes WithFlavor(flavor) for the request leg and Flavor() / FlavorRaw()
+// This wrapper exposes OfFlavor(flavor) for the request leg and Flavor() / FlavorRaw()
 // for the response leg.
 //
 // The response also carries Template ReferenceResource (no request equivalent); this
@@ -65,7 +65,7 @@ func (cs *CloudServer) ReplaceTags(ts ...string) *CloudServer { cs.replaceTags(t
 func (cs *CloudServer) InRegion(region Region) *CloudServer   { cs.inRegion(region); return cs }
 
 func (cs *CloudServer) InZone(zone Zone) *CloudServer { cs.zone = &zone; return cs }
-func (cs *CloudServer) WithFlavor(flavor CloudServerFlavor) *CloudServer {
+func (cs *CloudServer) OfFlavor(flavor CloudServerFlavor) *CloudServer {
 	cs.flavor = &flavor
 	return cs
 }
@@ -131,7 +131,7 @@ func (cs *CloudServer) Zone() Zone {
 }
 
 // Flavor returns the flavor name. On a hydrated response the value comes from the
-// response's Flavor.Name; before hydration it returns what was passed to WithFlavor.
+// response's Flavor.Name; before hydration it returns what was passed to OfFlavor.
 func (cs *CloudServer) Flavor() CloudServerFlavor {
 	if cs.response != nil && cs.response.Properties.Flavor.Name != "" {
 		return cs.response.Properties.Flavor.Name
