@@ -1,5 +1,16 @@
 package types
 
+// ContainerRegistrySizeFlavor is the concurrent-users tier for a container
+// registry. Wire-encoded into the "size" JSON field of the request.
+// Accepted values per the platform: "Small", "Medium", "HighPerf".
+type ContainerRegistrySizeFlavor string
+
+const (
+	ContainerRegistrySizeFlavorSmall    ContainerRegistrySizeFlavor = "Small"
+	ContainerRegistrySizeFlavorMedium   ContainerRegistrySizeFlavor = "Medium"
+	ContainerRegistrySizeFlavorHighPerf ContainerRegistrySizeFlavor = "HighPerf"
+)
+
 type UserCredential struct {
 
 	// Username is the administrator username for the container registry

@@ -17,6 +17,9 @@ type (
 	BlockStorageType  = types.BlockStorageType
 	StorageBackupType = types.StorageBackupType
 
+	// Container
+	ContainerRegistrySizeFlavor = types.ContainerRegistrySizeFlavor
+
 	// Security / KMS
 	KeyAlgorithm      = types.KeyAlgorithm
 	KeyCreationSource = types.KeyCreationSource
@@ -60,6 +63,11 @@ const (
 	// Storage — backup type
 	StorageBackupTypeFull        = types.StorageBackupTypeFull
 	StorageBackupTypeIncremental = types.StorageBackupTypeIncremental
+
+	// Container — registry size flavor
+	ContainerRegistrySizeFlavorSmall    = types.ContainerRegistrySizeFlavorSmall
+	ContainerRegistrySizeFlavorMedium   = types.ContainerRegistrySizeFlavorMedium
+	ContainerRegistrySizeFlavorHighPerf = types.ContainerRegistrySizeFlavorHighPerf
 
 	// Security — key algorithm
 	KeyAlgorithmAes = types.KeyAlgorithmAes
