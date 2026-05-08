@@ -42,6 +42,9 @@ type (
 	// Billing
 	BillingPeriod = types.BillingPeriod
 
+	// Compute
+	CloudServerFlavor = types.CloudServerFlavor
+
 	// Parameters
 	AcceptHeader = types.AcceptHeader
 )
@@ -125,9 +128,26 @@ const (
 
 	// Zone
 	ZoneITBG1 = types.ZoneITBG1
+	ZoneITBG2 = types.ZoneITBG2
+	ZoneITBG3 = types.ZoneITBG3
 
 	// Billing period
 	BillingPeriodHour = types.BillingPeriodHour
+
+	// Compute — cloud server flavor
+	CloudServerFlavorCSO1A2  = types.CloudServerFlavorCSO1A2
+	CloudServerFlavorCSO1A4  = types.CloudServerFlavorCSO1A4
+	CloudServerFlavorCSO2A4  = types.CloudServerFlavorCSO2A4
+	CloudServerFlavorCSO2A8  = types.CloudServerFlavorCSO2A8
+	CloudServerFlavorCSO4A8  = types.CloudServerFlavorCSO4A8
+	CloudServerFlavorCSO4A16 = types.CloudServerFlavorCSO4A16
+	CloudServerFlavorCSO8A16 = types.CloudServerFlavorCSO8A16
+	CloudServerFlavorCSO8A32 = types.CloudServerFlavorCSO8A32
+	CloudServerFlavorCSO12A24 = types.CloudServerFlavorCSO12A24
+	CloudServerFlavorCSO16A32 = types.CloudServerFlavorCSO16A32
+	CloudServerFlavorCSO16A64 = types.CloudServerFlavorCSO16A64
+	CloudServerFlavorCSO24A48 = types.CloudServerFlavorCSO24A48
+	CloudServerFlavorCSO32A64 = types.CloudServerFlavorCSO32A64
 
 	// Metrics / Alerts — action type
 	ActionTypeNotificationPanel = types.ActionTypeNotificationPanel
