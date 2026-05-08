@@ -32,7 +32,7 @@ type CloudServer struct {
 
 	// Request-side scalars.
 	zone      *Zone
-	flavor    *string
+	flavor    *CloudServerFlavor
 	userData  *string
 	vpcPreset *bool
 
@@ -65,8 +65,8 @@ func (cs *CloudServer) ReplaceTags(ts ...string) *CloudServer { cs.replaceTags(t
 func (cs *CloudServer) WithLocation(loc Region) *CloudServer  { cs.withLocation(loc); return cs }
 func (cs *CloudServer) InRegion(region Region) *CloudServer   { cs.withLocation(region); return cs }
 
-func (cs *CloudServer) InZone(zone Zone) *CloudServer         { cs.zone = &zone; return cs }
-func (cs *CloudServer) WithFlavor(flavor string) *CloudServer { cs.flavor = &flavor; return cs }
+func (cs *CloudServer) InZone(zone Zone) *CloudServer                   { cs.zone = &zone; return cs }
+func (cs *CloudServer) WithFlavor(flavor CloudServerFlavor) *CloudServer { cs.flavor = &flavor; return cs }
 func (cs *CloudServer) WithUserData(b64 string) *CloudServer  { cs.userData = &b64; return cs }
 func (cs *CloudServer) WithVPCPreset(b bool) *CloudServer     { cs.vpcPreset = &b; return cs }
 
@@ -130,11 +130,14 @@ func (cs *CloudServer) Zone() Zone {
 
 // Flavor returns the flavor name. On a hydrated response the value comes from the
 // response's Flavor.Name; before hydration it returns what was passed to WithFlavor.
-func (cs *CloudServer) Flavor() string {
+func (cs *CloudServer) Flavor() CloudServerFlavor {
 	if cs.response != nil && cs.response.Properties.Flavor.Name != "" {
 		return cs.response.Properties.Flavor.Name
 	}
-	return cloudServerDerefString(cs.flavor)
+	if cs.flavor == nil {
+		return ""
+	}
+	return *cs.flavor
 }
 
 // FlavorRaw returns the full flavor struct from the last response, or nil.
@@ -264,8 +267,7 @@ func (cs *CloudServer) toRequest() types.CloudServerRequest {
 		props.VPCPreset = *cs.vpcPreset
 	}
 	if cs.flavor != nil {
-		v := *cs.flavor
-		props.FlavorName = &v // wire field is "flavorName"; wrapper field is just "flavor"
+		props.FlavorName = cs.flavor
 	}
 	if cs.userData != nil {
 		v := *cs.userData
@@ -326,8 +328,8 @@ func (cs *CloudServer) fromResponse(resp *types.CloudServerResponse) {
 		cs.zone = &v
 	}
 	if resp.Properties.Flavor.Name != "" {
-		v := resp.Properties.Flavor.Name
-		cs.flavor = &v
+		name := resp.Properties.Flavor.Name
+		cs.flavor = &name
 	}
 	if resp.Properties.VPC.URI != "" {
 		v := resp.Properties.VPC.URI
