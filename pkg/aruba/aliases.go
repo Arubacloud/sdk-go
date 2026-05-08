@@ -56,6 +56,12 @@ type (
 
 	// Parameters
 	AcceptHeader = types.AcceptHeader
+
+	// VPN IKE crypto
+	IKEEncryption = types.IKEEncryption
+	IKEHash       = types.IKEHash
+	IKEDHGroup    = types.IKEDHGroup
+	IKEDPDAction  = types.IKEDPDAction
 )
 
 // ---------------------------------------------------------------------------
@@ -209,107 +215,107 @@ const (
 	ActionTypeSendSMS           = types.ActionTypeSendSMS
 	ActionTypeAutoscalingDBaaS  = types.ActionTypeAutoscalingDBaaS
 
-	// VPN — encryption algorithms (for IKESettings.Encryption and ESPSettings.Encryption)
-	VPNEncryptionAES128            = types.VPNEncryptionAES128
-	VPNEncryptionAES192            = types.VPNEncryptionAES192
-	VPNEncryptionAES256            = types.VPNEncryptionAES256
-	VPNEncryptionAES128CTR         = types.VPNEncryptionAES128CTR
-	VPNEncryptionAES192CTR         = types.VPNEncryptionAES192CTR
-	VPNEncryptionAES256CTR         = types.VPNEncryptionAES256CTR
-	VPNEncryptionAES128CCM64       = types.VPNEncryptionAES128CCM64
-	VPNEncryptionAES128CCM96       = types.VPNEncryptionAES128CCM96
-	VPNEncryptionAES128CCM128      = types.VPNEncryptionAES128CCM128
-	VPNEncryptionAES192CCM64       = types.VPNEncryptionAES192CCM64
-	VPNEncryptionAES192CCM96       = types.VPNEncryptionAES192CCM96
-	VPNEncryptionAES192CCM128      = types.VPNEncryptionAES192CCM128
-	VPNEncryptionAES256CCM64       = types.VPNEncryptionAES256CCM64
-	VPNEncryptionAES256CCM96       = types.VPNEncryptionAES256CCM96
-	VPNEncryptionAES256CCM128      = types.VPNEncryptionAES256CCM128
-	VPNEncryptionAES128GCM64       = types.VPNEncryptionAES128GCM64
-	VPNEncryptionAES128GCM96       = types.VPNEncryptionAES128GCM96
-	VPNEncryptionAES128GCM128      = types.VPNEncryptionAES128GCM128
-	VPNEncryptionAES192GCM64       = types.VPNEncryptionAES192GCM64
-	VPNEncryptionAES192GCM96       = types.VPNEncryptionAES192GCM96
-	VPNEncryptionAES192GCM128      = types.VPNEncryptionAES192GCM128
-	VPNEncryptionAES256GCM64       = types.VPNEncryptionAES256GCM64
-	VPNEncryptionAES256GCM96       = types.VPNEncryptionAES256GCM96
-	VPNEncryptionAES256GCM128      = types.VPNEncryptionAES256GCM128
-	VPNEncryptionAES128GMAC        = types.VPNEncryptionAES128GMAC
-	VPNEncryptionAES192GMAC        = types.VPNEncryptionAES192GMAC
-	VPNEncryptionAES256GMAC        = types.VPNEncryptionAES256GMAC
-	VPNEncryption3DES              = types.VPNEncryption3DES
-	VPNEncryptionBlowfish128       = types.VPNEncryptionBlowfish128
-	VPNEncryptionBlowfish192       = types.VPNEncryptionBlowfish192
-	VPNEncryptionBlowfish256       = types.VPNEncryptionBlowfish256
-	VPNEncryptionCamellia128       = types.VPNEncryptionCamellia128
-	VPNEncryptionCamellia192       = types.VPNEncryptionCamellia192
-	VPNEncryptionCamellia256       = types.VPNEncryptionCamellia256
-	VPNEncryptionCamellia128CTR    = types.VPNEncryptionCamellia128CTR
-	VPNEncryptionCamellia192CTR    = types.VPNEncryptionCamellia192CTR
-	VPNEncryptionCamellia256CTR    = types.VPNEncryptionCamellia256CTR
-	VPNEncryptionCamellia128CCM64  = types.VPNEncryptionCamellia128CCM64
-	VPNEncryptionCamellia128CCM96  = types.VPNEncryptionCamellia128CCM96
-	VPNEncryptionCamellia128CCM128 = types.VPNEncryptionCamellia128CCM128
-	VPNEncryptionCamellia192CCM64  = types.VPNEncryptionCamellia192CCM64
-	VPNEncryptionCamellia192CCM96  = types.VPNEncryptionCamellia192CCM96
-	VPNEncryptionCamellia192CCM128 = types.VPNEncryptionCamellia192CCM128
-	VPNEncryptionCamellia256CCM64  = types.VPNEncryptionCamellia256CCM64
-	VPNEncryptionCamellia256CCM96  = types.VPNEncryptionCamellia256CCM96
-	VPNEncryptionCamellia256CCM128 = types.VPNEncryptionCamellia256CCM128
-	VPNEncryptionSerpent128        = types.VPNEncryptionSerpent128
-	VPNEncryptionSerpent192        = types.VPNEncryptionSerpent192
-	VPNEncryptionSerpent256        = types.VPNEncryptionSerpent256
-	VPNEncryptionTwofish128        = types.VPNEncryptionTwofish128
-	VPNEncryptionTwofish192        = types.VPNEncryptionTwofish192
-	VPNEncryptionTwofish256        = types.VPNEncryptionTwofish256
-	VPNEncryptionCAST128           = types.VPNEncryptionCAST128
-	VPNEncryptionChaCha20Poly1305  = types.VPNEncryptionChaCha20Poly1305
+	// VPN IKE — encryption algorithms (for IKESettings.Encryption)
+	IKEEncryptionAES128            = types.IKEEncryptionAES128
+	IKEEncryptionAES192            = types.IKEEncryptionAES192
+	IKEEncryptionAES256            = types.IKEEncryptionAES256
+	IKEEncryptionAES128CTR         = types.IKEEncryptionAES128CTR
+	IKEEncryptionAES192CTR         = types.IKEEncryptionAES192CTR
+	IKEEncryptionAES256CTR         = types.IKEEncryptionAES256CTR
+	IKEEncryptionAES128CCM64       = types.IKEEncryptionAES128CCM64
+	IKEEncryptionAES128CCM96       = types.IKEEncryptionAES128CCM96
+	IKEEncryptionAES128CCM128      = types.IKEEncryptionAES128CCM128
+	IKEEncryptionAES192CCM64       = types.IKEEncryptionAES192CCM64
+	IKEEncryptionAES192CCM96       = types.IKEEncryptionAES192CCM96
+	IKEEncryptionAES192CCM128      = types.IKEEncryptionAES192CCM128
+	IKEEncryptionAES256CCM64       = types.IKEEncryptionAES256CCM64
+	IKEEncryptionAES256CCM96       = types.IKEEncryptionAES256CCM96
+	IKEEncryptionAES256CCM128      = types.IKEEncryptionAES256CCM128
+	IKEEncryptionAES128GCM64       = types.IKEEncryptionAES128GCM64
+	IKEEncryptionAES128GCM96       = types.IKEEncryptionAES128GCM96
+	IKEEncryptionAES128GCM128      = types.IKEEncryptionAES128GCM128
+	IKEEncryptionAES192GCM64       = types.IKEEncryptionAES192GCM64
+	IKEEncryptionAES192GCM96       = types.IKEEncryptionAES192GCM96
+	IKEEncryptionAES192GCM128      = types.IKEEncryptionAES192GCM128
+	IKEEncryptionAES256GCM64       = types.IKEEncryptionAES256GCM64
+	IKEEncryptionAES256GCM96       = types.IKEEncryptionAES256GCM96
+	IKEEncryptionAES256GCM128      = types.IKEEncryptionAES256GCM128
+	IKEEncryptionAES128GMAC        = types.IKEEncryptionAES128GMAC
+	IKEEncryptionAES192GMAC        = types.IKEEncryptionAES192GMAC
+	IKEEncryptionAES256GMAC        = types.IKEEncryptionAES256GMAC
+	IKEEncryption3DES              = types.IKEEncryption3DES
+	IKEEncryptionBlowfish128       = types.IKEEncryptionBlowfish128
+	IKEEncryptionBlowfish192       = types.IKEEncryptionBlowfish192
+	IKEEncryptionBlowfish256       = types.IKEEncryptionBlowfish256
+	IKEEncryptionCamellia128       = types.IKEEncryptionCamellia128
+	IKEEncryptionCamellia192       = types.IKEEncryptionCamellia192
+	IKEEncryptionCamellia256       = types.IKEEncryptionCamellia256
+	IKEEncryptionCamellia128CTR    = types.IKEEncryptionCamellia128CTR
+	IKEEncryptionCamellia192CTR    = types.IKEEncryptionCamellia192CTR
+	IKEEncryptionCamellia256CTR    = types.IKEEncryptionCamellia256CTR
+	IKEEncryptionCamellia128CCM64  = types.IKEEncryptionCamellia128CCM64
+	IKEEncryptionCamellia128CCM96  = types.IKEEncryptionCamellia128CCM96
+	IKEEncryptionCamellia128CCM128 = types.IKEEncryptionCamellia128CCM128
+	IKEEncryptionCamellia192CCM64  = types.IKEEncryptionCamellia192CCM64
+	IKEEncryptionCamellia192CCM96  = types.IKEEncryptionCamellia192CCM96
+	IKEEncryptionCamellia192CCM128 = types.IKEEncryptionCamellia192CCM128
+	IKEEncryptionCamellia256CCM64  = types.IKEEncryptionCamellia256CCM64
+	IKEEncryptionCamellia256CCM96  = types.IKEEncryptionCamellia256CCM96
+	IKEEncryptionCamellia256CCM128 = types.IKEEncryptionCamellia256CCM128
+	IKEEncryptionSerpent128        = types.IKEEncryptionSerpent128
+	IKEEncryptionSerpent192        = types.IKEEncryptionSerpent192
+	IKEEncryptionSerpent256        = types.IKEEncryptionSerpent256
+	IKEEncryptionTwofish128        = types.IKEEncryptionTwofish128
+	IKEEncryptionTwofish192        = types.IKEEncryptionTwofish192
+	IKEEncryptionTwofish256        = types.IKEEncryptionTwofish256
+	IKEEncryptionCAST128           = types.IKEEncryptionCAST128
+	IKEEncryptionChaCha20Poly1305  = types.IKEEncryptionChaCha20Poly1305
 
-	// VPN — hash algorithms (for IKESettings.Hash and ESPSettings.Hash)
-	VPNHashMD5        = types.VPNHashMD5
-	VPNHashMD5128     = types.VPNHashMD5128
-	VPNHashSHA1       = types.VPNHashSHA1
-	VPNHashSHA1160    = types.VPNHashSHA1160
-	VPNHashSHA256     = types.VPNHashSHA256
-	VPNHashSHA25696   = types.VPNHashSHA25696
-	VPNHashSHA384     = types.VPNHashSHA384
-	VPNHashSHA512     = types.VPNHashSHA512
-	VPNHashAESXCBC    = types.VPNHashAESXCBC
-	VPNHashAESCMAC    = types.VPNHashAESCMAC
-	VPNHashAES128GMAC = types.VPNHashAES128GMAC
-	VPNHashAES192GMAC = types.VPNHashAES192GMAC
-	VPNHashAES256GMAC = types.VPNHashAES256GMAC
+	// VPN IKE — hash algorithms (for IKESettings.Hash)
+	IKEHashMD5        = types.IKEHashMD5
+	IKEHashMD5128     = types.IKEHashMD5128
+	IKEHashSHA1       = types.IKEHashSHA1
+	IKEHashSHA1160    = types.IKEHashSHA1160
+	IKEHashSHA256     = types.IKEHashSHA256
+	IKEHashSHA25696   = types.IKEHashSHA25696
+	IKEHashSHA384     = types.IKEHashSHA384
+	IKEHashSHA512     = types.IKEHashSHA512
+	IKEHashAESXCBC    = types.IKEHashAESXCBC
+	IKEHashAESCMAC    = types.IKEHashAESCMAC
+	IKEHashAES128GMAC = types.IKEHashAES128GMAC
+	IKEHashAES192GMAC = types.IKEHashAES192GMAC
+	IKEHashAES256GMAC = types.IKEHashAES256GMAC
 
-	// VPN — DH groups (for IKESettings.DHGroup)
-	VPNDHGroup1  = types.VPNDHGroup1
-	VPNDHGroup2  = types.VPNDHGroup2
-	VPNDHGroup5  = types.VPNDHGroup5
-	VPNDHGroup14 = types.VPNDHGroup14
-	VPNDHGroup15 = types.VPNDHGroup15
-	VPNDHGroup16 = types.VPNDHGroup16
-	VPNDHGroup17 = types.VPNDHGroup17
-	VPNDHGroup18 = types.VPNDHGroup18
-	VPNDHGroup19 = types.VPNDHGroup19
-	VPNDHGroup20 = types.VPNDHGroup20
-	VPNDHGroup21 = types.VPNDHGroup21
-	VPNDHGroup22 = types.VPNDHGroup22
-	VPNDHGroup23 = types.VPNDHGroup23
-	VPNDHGroup24 = types.VPNDHGroup24
-	VPNDHGroup25 = types.VPNDHGroup25
-	VPNDHGroup26 = types.VPNDHGroup26
-	VPNDHGroup27 = types.VPNDHGroup27
-	VPNDHGroup28 = types.VPNDHGroup28
-	VPNDHGroup29 = types.VPNDHGroup29
-	VPNDHGroup30 = types.VPNDHGroup30
-	VPNDHGroup31 = types.VPNDHGroup31
-	VPNDHGroup32 = types.VPNDHGroup32
+	// VPN IKE — DH groups (for IKESettings.DHGroup)
+	IKEDHGroup1  = types.IKEDHGroup1
+	IKEDHGroup2  = types.IKEDHGroup2
+	IKEDHGroup5  = types.IKEDHGroup5
+	IKEDHGroup14 = types.IKEDHGroup14
+	IKEDHGroup15 = types.IKEDHGroup15
+	IKEDHGroup16 = types.IKEDHGroup16
+	IKEDHGroup17 = types.IKEDHGroup17
+	IKEDHGroup18 = types.IKEDHGroup18
+	IKEDHGroup19 = types.IKEDHGroup19
+	IKEDHGroup20 = types.IKEDHGroup20
+	IKEDHGroup21 = types.IKEDHGroup21
+	IKEDHGroup22 = types.IKEDHGroup22
+	IKEDHGroup23 = types.IKEDHGroup23
+	IKEDHGroup24 = types.IKEDHGroup24
+	IKEDHGroup25 = types.IKEDHGroup25
+	IKEDHGroup26 = types.IKEDHGroup26
+	IKEDHGroup27 = types.IKEDHGroup27
+	IKEDHGroup28 = types.IKEDHGroup28
+	IKEDHGroup29 = types.IKEDHGroup29
+	IKEDHGroup30 = types.IKEDHGroup30
+	IKEDHGroup31 = types.IKEDHGroup31
+	IKEDHGroup32 = types.IKEDHGroup32
 
-	// VPN — DPD actions (for IKESettings.DPDAction)
-	VPNDPDActionTrap    = types.VPNDPDActionTrap
-	VPNDPDActionClear   = types.VPNDPDActionClear
-	VPNDPDActionRestart = types.VPNDPDActionRestart
+	// VPN IKE — DPD actions (for IKESettings.DPDAction)
+	IKEDPDActionTrap    = types.IKEDPDActionTrap
+	IKEDPDActionClear   = types.IKEDPDActionClear
+	IKEDPDActionRestart = types.IKEDPDActionRestart
 
-	// VPN — PFS groups (for ESPSettings.PFS)
+	// VPN — PFS groups (for ESPSettings.PFS; typed ESPPFSGroup* consts coming in next commit)
 	VPNPFSEnable    = types.VPNPFSEnable
 	VPNPFSDisable   = types.VPNPFSDisable
 	VPNPFSDHGroup1  = types.VPNPFSDHGroup1
