@@ -169,7 +169,7 @@ func snapshotDerefString(p *string) string {
 var snapshotTerminalStates = map[string]bool{
 	"Available": true,
 	"Error":     false,
-	"Failed": false,
+	"Failed":    false,
 }
 
 // ---------------------------------------------------------------------------
