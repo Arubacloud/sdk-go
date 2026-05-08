@@ -21,7 +21,7 @@ type Subnet struct {
 	linkedMixin
 	httpEnvelopeMixin
 
-	subnetType    *string               // Properties.Type ("Basic" / "Advanced")
+	subnetType    *SubnetType           // Properties.Type ("Basic" / "Advanced")
 	defaultSubnet *bool                 // Properties.Default
 	cidr          *string               // Properties.Network.Address
 	dhcp          *SubnetDHCP           // Properties.DHCP (sub-builder)
@@ -35,7 +35,7 @@ func (s *Subnet) RemoveTag(t string) *Subnet       { s.removeTag(t); return s }
 func (s *Subnet) ReplaceTags(ts ...string) *Subnet { s.replaceTags(ts...); return s }
 func (s *Subnet) WithLocation(loc Region) *Subnet  { s.withLocation(loc); return s }
 func (s *Subnet) InRegion(region Region) *Subnet   { s.withLocation(region); return s }
-func (s *Subnet) WithType(t string) *Subnet        { s.subnetType = &t; return s }
+func (s *Subnet) WithType(t SubnetType) *Subnet    { s.subnetType = &t; return s }
 func (s *Subnet) WithDefault(b bool) *Subnet       { s.defaultSubnet = &b; return s }
 func (s *Subnet) WithCIDR(cidr string) *Subnet     { s.cidr = &cidr; return s }
 func (s *Subnet) WithDHCP(d *SubnetDHCP) *Subnet   { s.dhcp = d; return s }
@@ -52,7 +52,7 @@ func (s *Subnet) Raw() *types.SubnetResponse { return s.response }
 // RawRequest returns what toRequest() would emit right now.
 func (s *Subnet) RawRequest() types.SubnetRequest { return s.toRequest() }
 
-func (s *Subnet) Type() string {
+func (s *Subnet) Type() SubnetType {
 	if s.subnetType == nil {
 		return ""
 	}
@@ -75,7 +75,7 @@ func (s *Subnet) DHCP() *SubnetDHCP { return s.dhcp }
 func (s *Subnet) toRequest() types.SubnetRequest {
 	props := types.SubnetPropertiesRequest{}
 	if s.subnetType != nil {
-		props.Type = types.SubnetType(*s.subnetType)
+		props.Type = *s.subnetType
 	}
 	if s.defaultSubnet != nil {
 		props.Default = *s.defaultSubnet
@@ -113,7 +113,7 @@ func (s *Subnet) fromResponse(resp *types.SubnetResponse) {
 	s.setLinked(resp.Properties.LinkedResources)
 
 	if resp.Properties.Type != "" {
-		t := string(resp.Properties.Type)
+		t := resp.Properties.Type
 		s.subnetType = &t
 	}
 	d := resp.Properties.Default
