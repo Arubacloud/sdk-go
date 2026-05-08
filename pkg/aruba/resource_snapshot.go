@@ -34,13 +34,13 @@ type Snapshot struct {
 	response *types.SnapshotResponse
 }
 
-func (s *Snapshot) IntoProject(p Ref) *Snapshot          { s.intoProject(p); return s }
-func (s *Snapshot) WithName(n string) *Snapshot          { s.withName(n); return s }
-func (s *Snapshot) AddTag(t string) *Snapshot            { s.addTag(t); return s }
-func (s *Snapshot) RemoveTag(t string) *Snapshot         { s.removeTag(t); return s }
-func (s *Snapshot) ReplaceTags(ts ...string) *Snapshot   { s.replaceTags(ts...); return s }
-func (s *Snapshot) WithLocation(loc Region) *Snapshot    { s.withLocation(loc); return s }
-func (s *Snapshot) InRegion(region Region) *Snapshot     { s.withLocation(region); return s }
+func (s *Snapshot) IntoProject(p Ref) *Snapshot                 { s.intoProject(p); return s }
+func (s *Snapshot) WithName(n string) *Snapshot                 { s.withName(n); return s }
+func (s *Snapshot) AddTag(t string) *Snapshot                   { s.addTag(t); return s }
+func (s *Snapshot) RemoveTag(t string) *Snapshot                { s.removeTag(t); return s }
+func (s *Snapshot) ReplaceTags(ts ...string) *Snapshot          { s.replaceTags(ts...); return s }
+func (s *Snapshot) WithLocation(loc Region) *Snapshot           { s.withLocation(loc); return s }
+func (s *Snapshot) InRegion(region Region) *Snapshot            { s.withLocation(region); return s }
 func (s *Snapshot) WithBillingPeriod(p BillingPeriod) *Snapshot { s.billingPeriod = &p; return s }
 
 // OfVolume binds the source BlockStorage via its URI. Pass any Ref (typed or
@@ -74,7 +74,7 @@ func (s *Snapshot) BillingPeriod() BillingPeriod {
 	}
 	return *s.billingPeriod
 }
-func (s *Snapshot) VolumeURI() string     { return snapshotDerefString(s.volumeRef) }
+func (s *Snapshot) VolumeURI() string { return snapshotDerefString(s.volumeRef) }
 
 // Read-only accessors hydrated from response.
 func (s *Snapshot) SizeGB() int {
