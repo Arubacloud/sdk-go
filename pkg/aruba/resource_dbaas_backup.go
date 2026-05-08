@@ -88,11 +88,11 @@ func (b *DBaaSBackup) BillingPeriod() string { return dbaasBackupDerefString(b.b
 func (b *DBaaSBackup) DBaaSURI() string      { return dbaasBackupDerefString(b.dbaasRef) }
 func (b *DBaaSBackup) DatabaseURI() string   { return dbaasBackupDerefString(b.databaseRef) }
 
-func (b *DBaaSBackup) Size() int32 {
+func (b *DBaaSBackup) SizeGB() int {
 	if b.response == nil {
 		return 0
 	}
-	return b.response.Properties.Storage.Size
+	return int(b.response.Properties.Storage.Size)
 }
 
 func (b *DBaaSBackup) Zone() string {
