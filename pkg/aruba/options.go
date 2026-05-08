@@ -548,7 +548,7 @@ func (o *Options) WithNoLogs() *Options {
 const (
 	stdRedisURI                           = "redis://admin:admin@localhost:6379/0"
 	stdFileBaseDir                        = "/tmp/sdk-go"
-	stdTokenExpirationDriftSeconds uint32 = 300
+	stdTokenExpirationDriftSeconds int = 300
 )
 
 // WithSecurityScopes set the security scopes to be claimed during the
@@ -605,10 +605,10 @@ func (o *Options) WithVaultCredentialsRepository(
 
 // WithTokenExpirationDriftSeconds sets the safety buffer for token expiration.
 // Side Effect: Removes the token if previously set.
-func (o *Options) WithTokenExpirationDriftSeconds(tokenExpirationDriftSeconds uint32) *Options {
+func (o *Options) WithTokenExpirationDriftSeconds(tokenExpirationDriftSeconds int) *Options {
 	o.tokenManager.useTokenIssuer()
 
-	o.tokenManager.tokenIssuerOptions.expirationDriftSeconds = tokenExpirationDriftSeconds
+	o.tokenManager.tokenIssuerOptions.expirationDriftSeconds = uint32(tokenExpirationDriftSeconds)
 
 	return o
 }
