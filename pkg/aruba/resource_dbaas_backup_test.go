@@ -327,8 +327,8 @@ func TestDBaaSBackup_FromResponseHydration(t *testing.T) {
 	if bkp.Zone() != "ITBG-1" {
 		t.Errorf("Zone() = %q", bkp.Zone())
 	}
-	if bkp.Size() != 50 {
-		t.Errorf("Size() = %d", bkp.Size())
+	if bkp.SizeGB() != 50 {
+		t.Errorf("Size() = %d", bkp.SizeGB())
 	}
 	if bkp.ProjectID() != "p" {
 		t.Errorf("ProjectID() = %q", bkp.ProjectID())
@@ -721,8 +721,8 @@ func TestDBaaSBackup_InRegion(t *testing.T) {
 
 func TestDBaaSBackup_Accessors_ZeroValue(t *testing.T) {
 	bkp := &DBaaSBackup{}
-	if bkp.Size() != 0 {
-		t.Errorf("Size() zero = %d", bkp.Size())
+	if bkp.SizeGB() != 0 {
+		t.Errorf("Size() zero = %d", bkp.SizeGB())
 	}
 	if bkp.Zone() != "" {
 		t.Errorf("Zone() zero = %q", bkp.Zone())
