@@ -70,8 +70,8 @@ func (k *KaaS) WithName(n string) *KaaS                 { k.withName(n); return 
 func (k *KaaS) AddTag(t string) *KaaS                   { k.addTag(t); return k }
 func (k *KaaS) RemoveTag(t string) *KaaS                { k.removeTag(t); return k }
 func (k *KaaS) ReplaceTags(ts ...string) *KaaS          { k.replaceTags(ts...); return k }
-func (k *KaaS) WithLocation(loc string) *KaaS           { k.withLocation(loc); return k }
-func (k *KaaS) InRegion(region string) *KaaS            { k.withLocation(region); return k }
+func (k *KaaS) WithLocation(loc Region) *KaaS           { k.withLocation(loc); return k }
+func (k *KaaS) InRegion(region Region) *KaaS            { k.withLocation(region); return k }
 func (k *KaaS) WithKubernetesVersion(v string) *KaaS    { k.kubernetesVersion = &v; return k }
 func (k *KaaS) WithPodCIDR(cidr string) *KaaS           { k.podCIDR = &cidr; return k }
 func (k *KaaS) WithHA(enabled bool) *KaaS               { k.ha = &enabled; return k }
@@ -418,7 +418,7 @@ func kaasRebuildNodePools(pools *[]types.NodePoolPropertiesResponse) []*NodePool
 			np.instance = &v
 		}
 		if rp.DataCenter != nil && rp.DataCenter.Code != nil {
-			v := *rp.DataCenter.Code
+			v := Zone(*rp.DataCenter.Code)
 			np.zone = &v
 		}
 		if rp.MinCount != nil {

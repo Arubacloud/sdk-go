@@ -52,11 +52,11 @@ func (r *ContainerRegistry) ReplaceTags(ts ...string) *ContainerRegistry {
 	r.replaceTags(ts...)
 	return r
 }
-func (r *ContainerRegistry) WithLocation(loc string) *ContainerRegistry {
+func (r *ContainerRegistry) WithLocation(loc Region) *ContainerRegistry {
 	r.withLocation(loc)
 	return r
 }
-func (r *ContainerRegistry) InRegion(region string) *ContainerRegistry {
+func (r *ContainerRegistry) InRegion(region Region) *ContainerRegistry {
 	r.withLocation(region)
 	return r
 }

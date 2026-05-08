@@ -41,8 +41,8 @@ func (t *VPNTunnel) WithName(n string) *VPNTunnel               { t.withName(n);
 func (t *VPNTunnel) AddTag(tag string) *VPNTunnel               { t.addTag(tag); return t }
 func (t *VPNTunnel) RemoveTag(tag string) *VPNTunnel            { t.removeTag(tag); return t }
 func (t *VPNTunnel) ReplaceTags(tags ...string) *VPNTunnel      { t.replaceTags(tags...); return t }
-func (t *VPNTunnel) WithLocation(loc string) *VPNTunnel         { t.withLocation(loc); return t }
-func (t *VPNTunnel) InRegion(r string) *VPNTunnel               { t.inRegion(r); return t }
+func (t *VPNTunnel) WithLocation(loc Region) *VPNTunnel         { t.withLocation(loc); return t }
+func (t *VPNTunnel) InRegion(r Region) *VPNTunnel               { t.inRegion(r); return t }
 func (t *VPNTunnel) WithVPNType(s string) *VPNTunnel            { t.vpnType = &s; return t }
 func (t *VPNTunnel) WithVPNClientProtocol(s string) *VPNTunnel  { t.vpnClientProtocol = &s; return t }
 func (t *VPNTunnel) WithBillingPeriod(s BillingPeriod) *VPNTunnel { t.billingPeriod = &s; return t }
