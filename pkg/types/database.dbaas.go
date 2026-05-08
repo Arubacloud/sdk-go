@@ -1,10 +1,48 @@
 package types
 
+// DatabaseEngine identifies a DBaaS engine.
+//
+// Verified values: SDK fixtures and KB (MySQL, Postgres). The KB mentions
+// MariaDB and SQL Server but does not enumerate v2 version-tag strings.
+// Use DatabaseEngine("mariadb-10.6") for unconfirmed values.
+//
+// Authoritative list: GET /providers/Aruba.Database/engines
+type DatabaseEngine string
+
+const (
+	DatabaseEngineMySQL80    DatabaseEngine = "mysql-8.0"
+	DatabaseEnginePostgres14 DatabaseEngine = "postgres-14"
+)
+
+// DBaaSFlavor identifies a DBaaS flavor SKU.
+//
+// Pattern: DBO<vCPU>A<RAM>. The constants below cover SKUs referenced in
+// SDK fixtures. The authoritative list is available via:
+//
+//	GET /providers/Aruba.Database/flavors
+type DBaaSFlavor string
+
+const (
+	DBaaSFlavorDBO1A2  DBaaSFlavor = "DBO1A2"
+	DBaaSFlavorDBO1A4  DBaaSFlavor = "DBO1A4"
+	DBaaSFlavorDBO2A4  DBaaSFlavor = "DBO2A4"
+	DBaaSFlavorDBO2A8  DBaaSFlavor = "DBO2A8"
+	DBaaSFlavorDBO4A8  DBaaSFlavor = "DBO4A8"
+	DBaaSFlavorDBO4A16 DBaaSFlavor = "DBO4A16"
+	DBaaSFlavorDBO8A16 DBaaSFlavor = "DBO8A16"
+	DBaaSFlavorDBO8A32 DBaaSFlavor = "DBO8A32"
+	DBaaSFlavorDBO12A24 DBaaSFlavor = "DBO12A24"
+	DBaaSFlavorDBO16A32 DBaaSFlavor = "DBO16A32"
+	DBaaSFlavorDBO16A64 DBaaSFlavor = "DBO16A64"
+	DBaaSFlavorDBO24A48 DBaaSFlavor = "DBO24A48"
+	DBaaSFlavorDBO32A64 DBaaSFlavor = "DBO32A64"
+)
+
 // DBaaSEngine contains the database engine configuration
 type DBaaSEngine struct {
 	// ID Type of DB engine to activate (nullable)
 	// For more information, check the documentation.
-	ID *string `json:"id,omitempty"`
+	ID *DatabaseEngine `json:"id,omitempty"`
 
 	// DataCenter Datacenter location (nullable)
 	// For more information, check the documentation.
@@ -33,11 +71,11 @@ type DBaaSEngineResponse struct {
 	PrivateIPAddress *string `json:"privateIpAddress,omitempty"`
 }
 
-// DBaaSFlavor contains the flavor configuration
-type DBaaSFlavor struct {
+// DBaaSFlavorSpec contains the flavor configuration for a DBaaS request.
+type DBaaSFlavorSpec struct {
 	// Name Type of flavor to use (nullable)
 	// For more information, check the documentation.
-	Name *string `json:"name,omitempty"`
+	Name *DBaaSFlavor `json:"name,omitempty"`
 }
 
 // DBaaSFlavorResponse contains the flavor response configuration
@@ -151,7 +189,7 @@ type DBaaSPropertiesRequest struct {
 	Engine *DBaaSEngine `json:"engine,omitempty"`
 
 	// Flavor Flavor configuration
-	Flavor *DBaaSFlavor `json:"flavor,omitempty"`
+	Flavor *DBaaSFlavorSpec `json:"flavor,omitempty"`
 
 	// Storage Storage configuration
 	Storage *DBaaSStorage `json:"storage,omitempty"`

@@ -45,6 +45,10 @@ type (
 	// Compute
 	CloudServerFlavor = types.CloudServerFlavor
 
+	// Database
+	DatabaseEngine = types.DatabaseEngine
+	DBaaSFlavor    = types.DBaaSFlavor
+
 	// Parameters
 	AcceptHeader = types.AcceptHeader
 )
@@ -148,6 +152,15 @@ const (
 	CloudServerFlavorCSO16A64 = types.CloudServerFlavorCSO16A64
 	CloudServerFlavorCSO24A48 = types.CloudServerFlavorCSO24A48
 	CloudServerFlavorCSO32A64 = types.CloudServerFlavorCSO32A64
+
+	// Database — engine
+	DatabaseEngineMySQL80    = types.DatabaseEngineMySQL80
+	DatabaseEnginePostgres14 = types.DatabaseEnginePostgres14
+
+	// Database — DBaaS flavor
+	DBaaSFlavorDBO2A4 = types.DBaaSFlavorDBO2A4
+	DBaaSFlavorDBO2A8 = types.DBaaSFlavorDBO2A8
+	DBaaSFlavorDBO4A8 = types.DBaaSFlavorDBO4A8
 
 	// Metrics / Alerts — action type
 	ActionTypeNotificationPanel = types.ActionTypeNotificationPanel
