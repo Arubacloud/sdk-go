@@ -46,8 +46,8 @@ type DBaaS struct {
 
 	// Request-side scalars.
 	zone                      *Zone
-	engine                    *string // wire: Engine.ID
-	flavor                    *string // wire: Flavor.Name
+	engine                    *DatabaseEngine // wire: Engine.ID
+	flavor                    *DBaaSFlavor    // wire: Flavor.Name
 	storageGB                 *int32  // wire: Storage.SizeGB
 	autoscalingEnabled        *bool   // wire: Autoscaling.Enabled
 	autoscalingAvailableSpace *int32  // wire: Autoscaling.AvailableSpace
@@ -75,8 +75,8 @@ func (d *DBaaS) WithLocation(loc Region) *DBaaS  { d.withLocation(loc); return d
 func (d *DBaaS) InRegion(region Region) *DBaaS   { d.withLocation(region); return d }
 
 func (d *DBaaS) InZone(zone Zone) *DBaaS         { d.zone = &zone; return d }
-func (d *DBaaS) WithEngine(engine string) *DBaaS { d.engine = &engine; return d }
-func (d *DBaaS) WithFlavor(flavor string) *DBaaS { d.flavor = &flavor; return d }
+func (d *DBaaS) WithEngine(engine DatabaseEngine) *DBaaS { d.engine = &engine; return d }
+func (d *DBaaS) WithFlavor(flavor DBaaSFlavor) *DBaaS   { d.flavor = &flavor; return d }
 func (d *DBaaS) WithStorageGB(gb int) *DBaaS     { v := int32(gb); d.storageGB = &v; return d }
 
 // WithAutoscaling enables autoscaling and pins the available-space threshold and
@@ -135,11 +135,14 @@ func (d *DBaaS) Zone() Zone { return dbaasDerefZone(d.zone) }
 
 // Engine returns the engine identifier. On a hydrated response the value comes
 // from Engine.Type; before hydration it returns what was passed to WithEngine.
-func (d *DBaaS) Engine() string {
+func (d *DBaaS) Engine() DatabaseEngine {
 	if d.response != nil && d.response.Properties.Engine != nil && d.response.Properties.Engine.Type != nil {
-		return *d.response.Properties.Engine.Type
+		return DatabaseEngine(*d.response.Properties.Engine.Type)
 	}
-	return dbaasDerefString(d.engine)
+	if d.engine == nil {
+		return ""
+	}
+	return *d.engine
 }
 
 // EngineRaw returns the full engine struct from the last response, or nil.
@@ -152,11 +155,14 @@ func (d *DBaaS) EngineRaw() *types.DBaaSEngineResponse {
 
 // Flavor returns the flavor name. On a hydrated response the value comes from
 // Flavor.Name; before hydration it returns what was passed to WithFlavor.
-func (d *DBaaS) Flavor() string {
+func (d *DBaaS) Flavor() DBaaSFlavor {
 	if d.response != nil && d.response.Properties.Flavor != nil && d.response.Properties.Flavor.Name != nil {
-		return *d.response.Properties.Flavor.Name
+		return DBaaSFlavor(*d.response.Properties.Flavor.Name)
 	}
-	return dbaasDerefString(d.flavor)
+	if d.flavor == nil {
+		return ""
+	}
+	return *d.flavor
 }
 
 // FlavorRaw returns the full flavor struct from the last response, or nil.
@@ -281,12 +287,10 @@ func (d *DBaaS) toRequest() types.DBaaSRequest {
 		props.Zone = &v
 	}
 	if d.engine != nil {
-		v := *d.engine
-		props.Engine = &types.DBaaSEngine{ID: &v}
+		props.Engine = &types.DBaaSEngine{ID: d.engine}
 	}
 	if d.flavor != nil {
-		v := *d.flavor
-		props.Flavor = &types.DBaaSFlavor{Name: &v}
+		props.Flavor = &types.DBaaSFlavorSpec{Name: d.flavor}
 	}
 	if d.storageGB != nil {
 		v := *d.storageGB
@@ -356,12 +360,12 @@ func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 
 	// Hydrate request-side fields from response for round-trip Update support.
 	if resp.Properties.Engine != nil && resp.Properties.Engine.Type != nil {
-		v := *resp.Properties.Engine.Type
-		d.engine = &v
+		e := DatabaseEngine(*resp.Properties.Engine.Type)
+		d.engine = &e
 	}
 	if resp.Properties.Flavor != nil && resp.Properties.Flavor.Name != nil {
-		v := *resp.Properties.Flavor.Name
-		d.flavor = &v
+		f := DBaaSFlavor(*resp.Properties.Flavor.Name)
+		d.flavor = &f
 	}
 	if resp.Properties.Storage != nil && resp.Properties.Storage.SizeGB != nil {
 		v := *resp.Properties.Storage.SizeGB
