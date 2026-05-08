@@ -46,9 +46,12 @@ func (b *BlockStorage) WithType(t types.BlockStorageType) *BlockStorage {
 	b.storageType = &t
 	return b
 }
-func (b *BlockStorage) WithBillingPeriod(p BillingPeriod) *BlockStorage { b.billingPeriod = &p; return b }
-func (b *BlockStorage) WithImage(img string) *BlockStorage       { b.image = &img; return b }
-func (b *BlockStorage) WithBootable(boot bool) *BlockStorage     { b.bootable = &boot; return b }
+func (b *BlockStorage) WithBillingPeriod(p BillingPeriod) *BlockStorage {
+	b.billingPeriod = &p
+	return b
+}
+func (b *BlockStorage) WithImage(img string) *BlockStorage   { b.image = &img; return b }
+func (b *BlockStorage) WithBootable(boot bool) *BlockStorage { b.bootable = &boot; return b }
 
 // FromSnapshot binds the source snapshot via its URI. Pass any Ref (typed or
 // aruba.URI(...)). Empty URIs are recorded on the error sink and the field
@@ -82,14 +85,14 @@ func (b *BlockStorage) Type() types.BlockStorageType {
 	}
 	return *b.storageType
 }
-func (b *BlockStorage) Zone() Zone            { return blockStorageDerefZone(b.zone) }
+func (b *BlockStorage) Zone() Zone { return blockStorageDerefZone(b.zone) }
 func (b *BlockStorage) BillingPeriod() BillingPeriod {
 	if b.billingPeriod == nil {
 		return ""
 	}
 	return *b.billingPeriod
 }
-func (b *BlockStorage) Image() string         { return blockStorageDerefString(b.image) }
+func (b *BlockStorage) Image() string { return blockStorageDerefString(b.image) }
 func (b *BlockStorage) Bootable() bool {
 	if b.bootable == nil {
 		return false

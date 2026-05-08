@@ -65,10 +65,13 @@ func (cs *CloudServer) ReplaceTags(ts ...string) *CloudServer { cs.replaceTags(t
 func (cs *CloudServer) WithLocation(loc Region) *CloudServer  { cs.withLocation(loc); return cs }
 func (cs *CloudServer) InRegion(region Region) *CloudServer   { cs.withLocation(region); return cs }
 
-func (cs *CloudServer) InZone(zone Zone) *CloudServer                   { cs.zone = &zone; return cs }
-func (cs *CloudServer) WithFlavor(flavor CloudServerFlavor) *CloudServer { cs.flavor = &flavor; return cs }
-func (cs *CloudServer) WithUserData(b64 string) *CloudServer  { cs.userData = &b64; return cs }
-func (cs *CloudServer) WithVPCPreset(b bool) *CloudServer     { cs.vpcPreset = &b; return cs }
+func (cs *CloudServer) InZone(zone Zone) *CloudServer { cs.zone = &zone; return cs }
+func (cs *CloudServer) WithFlavor(flavor CloudServerFlavor) *CloudServer {
+	cs.flavor = &flavor
+	return cs
+}
+func (cs *CloudServer) WithUserData(b64 string) *CloudServer { cs.userData = &b64; return cs }
+func (cs *CloudServer) WithVPCPreset(b bool) *CloudServer    { cs.vpcPreset = &b; return cs }
 
 // Single body-ref setters.
 

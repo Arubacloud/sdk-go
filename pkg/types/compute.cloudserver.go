@@ -9,14 +9,14 @@ package types
 type CloudServerFlavor string
 
 const (
-	CloudServerFlavorCSO1A2  CloudServerFlavor = "CSO1A2"
-	CloudServerFlavorCSO1A4  CloudServerFlavor = "CSO1A4"
-	CloudServerFlavorCSO2A4  CloudServerFlavor = "CSO2A4"
-	CloudServerFlavorCSO2A8  CloudServerFlavor = "CSO2A8"
-	CloudServerFlavorCSO4A8  CloudServerFlavor = "CSO4A8"
-	CloudServerFlavorCSO4A16 CloudServerFlavor = "CSO4A16"
-	CloudServerFlavorCSO8A16 CloudServerFlavor = "CSO8A16"
-	CloudServerFlavorCSO8A32 CloudServerFlavor = "CSO8A32"
+	CloudServerFlavorCSO1A2   CloudServerFlavor = "CSO1A2"
+	CloudServerFlavorCSO1A4   CloudServerFlavor = "CSO1A4"
+	CloudServerFlavorCSO2A4   CloudServerFlavor = "CSO2A4"
+	CloudServerFlavorCSO2A8   CloudServerFlavor = "CSO2A8"
+	CloudServerFlavorCSO4A8   CloudServerFlavor = "CSO4A8"
+	CloudServerFlavorCSO4A16  CloudServerFlavor = "CSO4A16"
+	CloudServerFlavorCSO8A16  CloudServerFlavor = "CSO8A16"
+	CloudServerFlavorCSO8A32  CloudServerFlavor = "CSO8A32"
 	CloudServerFlavorCSO12A24 CloudServerFlavor = "CSO12A24"
 	CloudServerFlavorCSO16A32 CloudServerFlavor = "CSO16A32"
 	CloudServerFlavorCSO16A64 CloudServerFlavor = "CSO16A64"

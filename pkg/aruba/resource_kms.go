@@ -38,13 +38,13 @@ type KMS struct {
 // Standard setters
 // ---------------------------------------------------------------------------
 
-func (k *KMS) IntoProject(p Ref) *KMS          { k.intoProject(p); return k }
-func (k *KMS) WithName(n string) *KMS          { k.withName(n); return k }
-func (k *KMS) AddTag(t string) *KMS            { k.addTag(t); return k }
-func (k *KMS) RemoveTag(t string) *KMS         { k.removeTag(t); return k }
-func (k *KMS) ReplaceTags(ts ...string) *KMS   { k.replaceTags(ts...); return k }
-func (k *KMS) WithLocation(loc Region) *KMS    { k.withLocation(loc); return k }
-func (k *KMS) InRegion(region Region) *KMS     { k.withLocation(region); return k }
+func (k *KMS) IntoProject(p Ref) *KMS                 { k.intoProject(p); return k }
+func (k *KMS) WithName(n string) *KMS                 { k.withName(n); return k }
+func (k *KMS) AddTag(t string) *KMS                   { k.addTag(t); return k }
+func (k *KMS) RemoveTag(t string) *KMS                { k.removeTag(t); return k }
+func (k *KMS) ReplaceTags(ts ...string) *KMS          { k.replaceTags(ts...); return k }
+func (k *KMS) WithLocation(loc Region) *KMS           { k.withLocation(loc); return k }
+func (k *KMS) InRegion(region Region) *KMS            { k.withLocation(region); return k }
 func (k *KMS) WithBillingPeriod(p BillingPeriod) *KMS { k.billingPeriod = &p; return k }
 
 // ---------------------------------------------------------------------------

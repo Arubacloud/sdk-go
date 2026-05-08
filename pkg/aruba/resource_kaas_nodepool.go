@@ -14,15 +14,15 @@ type NodePool struct {
 	name        *string
 	nodes       *int32
 	instance    *NodePoolInstance // wire JSON: "instance"
-	zone        *Zone   // wire JSON: "dataCenter"
+	zone        *Zone             // wire JSON: "dataCenter"
 	minCount    *int32
 	maxCount    *int32
 	autoscaling *bool
 }
 
-func (n *NodePool) Named(name string) *NodePool                   { n.name = &name; return n }
+func (n *NodePool) Named(name string) *NodePool                    { n.name = &name; return n }
 func (n *NodePool) OfInstance(instance NodePoolInstance) *NodePool { n.instance = &instance; return n }
-func (n *NodePool) InZone(zone Zone) *NodePool                    { n.zone = &zone; return n }
+func (n *NodePool) InZone(zone Zone) *NodePool                     { n.zone = &zone; return n }
 
 func (n *NodePool) WithCount(count int) *NodePool { v := int32(count); n.nodes = &v; return n }
 
