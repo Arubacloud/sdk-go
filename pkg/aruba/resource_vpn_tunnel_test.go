@@ -261,9 +261,9 @@ func TestVPNIKE_Build_NilReceiver(t *testing.T) {
 func TestVPNESP_FluentSetters(t *testing.T) {
 	esp := NewVPNESP().
 		WithLifetimeSeconds(3600).
-		WithEncryption("aes128").
-		WithHash("sha1").
-		WithPFS(types.VPNPFSDHGroup14)
+		WithEncryption(types.ESPEncryptionAES128).
+		WithHash(types.ESPHashSHA1).
+		WithPFS(types.ESPPFSGroupDHGroup14)
 
 	built := esp.build()
 	if built == nil {
@@ -272,13 +272,13 @@ func TestVPNESP_FluentSetters(t *testing.T) {
 	if built.Lifetime != 3600 {
 		t.Errorf("Lifetime = %d", built.Lifetime)
 	}
-	if built.Encryption == nil || *built.Encryption != "aes128" {
+	if built.Encryption == nil || *built.Encryption != types.ESPEncryptionAES128 {
 		t.Errorf("Encryption = %v", built.Encryption)
 	}
-	if built.Hash == nil || *built.Hash != "sha1" {
+	if built.Hash == nil || *built.Hash != types.ESPHashSHA1 {
 		t.Errorf("Hash = %v", built.Hash)
 	}
-	if built.PFS == nil || *built.PFS != types.VPNPFSDHGroup14 {
+	if built.PFS == nil || *built.PFS != types.ESPPFSGroupDHGroup14 {
 		t.Errorf("PFS = %v", built.PFS)
 	}
 }
@@ -369,7 +369,7 @@ func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
 		WithESPSettings(
 			NewVPNESP().
 				WithLifetimeSeconds(3600).
-				WithPFS(types.VPNPFSEnable),
+				WithPFS(types.ESPPFSGroupEnable),
 		).
 		WithPSKSettings(
 			NewVPNPSK().
