@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
@@ -434,34 +433,16 @@ const subnetSuccessBody = `{` +
 	`"properties":{"type":"Advanced","default":false,"network":{"address":"10.0.0.0/24"}},` +
 	`"status":{"state":"Creating"}}`
 
-// activeVPCBody is returned by the VPC GET poll inside waitForVPCActive.
-const activeVPCBody = `{"metadata":{"id":"v","uri":"/projects/p/providers/Aruba.Network/vpcs/v","project":{"id":"p"}},"properties":{"default":false},"status":{"state":"Active"}}`
-
-// withVPCActiveRoute wraps a handler so VPC GET requests are answered with an
-// "Active" state. The internal subnet client calls waitForVPCActive before
-// Create, which polls the VPC endpoint; without this, the test would time out.
-func withVPCActiveRoute(subnetHandler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.URL.Path, "/subnets") {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, activeVPCBody)
-			return
-		}
-		subnetHandler(w, r)
-	}
-}
-
 func TestSubnetsClientAdapter_Create_Success(t *testing.T) {
 	var gotBody types.SubnetRequest
-	adapter := buildSubnetTestAdapter(t, withVPCActiveRoute(func(w http.ResponseWriter, r *http.Request) {
+	adapter := buildSubnetTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
 			t.Errorf("decode request body: %v", err)
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		fmt.Fprint(w, subnetSuccessBody)
-	}))
+	})
 
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "my-vpc", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
@@ -510,12 +491,12 @@ func TestSubnetsClientAdapter_Create_NoVPC(t *testing.T) {
 }
 
 func TestSubnetsClientAdapter_Create_MetadataValidationError(t *testing.T) {
-	adapter := buildSubnetTestAdapter(t, withVPCActiveRoute(func(w http.ResponseWriter, r *http.Request) {
+	adapter := buildSubnetTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		// Missing "id" field — triggers MetadataValidationError
 		fmt.Fprint(w, `{"metadata":{"name":"sn","uri":"/projects/p/providers/Aruba.Network/vpcs/v/subnets/x"},"properties":{},"status":{}}`)
-	}))
+	})
 
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "n", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
@@ -534,11 +515,11 @@ func TestSubnetsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 }
 
 func TestSubnetsClientAdapter_Create_NonTwoXX(t *testing.T) {
-	adapter := buildSubnetTestAdapter(t, withVPCActiveRoute(func(w http.ResponseWriter, r *http.Request) {
+	adapter := buildSubnetTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "name is required", 422))
-	}))
+	})
 
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "n", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))

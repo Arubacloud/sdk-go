@@ -112,6 +112,7 @@ func vpcDerefString(s *string) string {
 var vpcTerminalStates = map[string]bool{
 	"Active": true,
 	"Error":  false,
+	"Failed": false,
 }
 
 // ---------------------------------------------------------------------------
