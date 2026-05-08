@@ -104,12 +104,20 @@ func (e *AuditEvent) Category() types.EventCategory {
 	return e.response.Category
 }
 
-// Region returns the optional region for this event, or nil when absent.
-func (e *AuditEvent) Region() *types.RegionInfo {
-	if e.response == nil {
-		return nil
+// Region returns the region this event was emitted in, or "" when absent.
+func (e *AuditEvent) Region() Region {
+	if e.response == nil || e.response.Region == nil || e.response.Region.Name == nil {
+		return ""
 	}
-	return e.response.Region
+	return Region(*e.response.Region.Name)
+}
+
+// Zone returns the availability zone this event was emitted in, or "" when absent.
+func (e *AuditEvent) Zone() Zone {
+	if e.response == nil || e.response.Region == nil || e.response.Region.AvailabilityZone == nil {
+		return ""
+	}
+	return Zone(*e.response.Region.AvailabilityZone)
 }
 
 // Status returns the event status.
