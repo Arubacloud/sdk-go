@@ -224,6 +224,7 @@ func securityRuleDerefString(p *string) string {
 var securityRuleTerminalStates = map[string]bool{
 	"Active": true,
 	"Error":  false,
+	"Failed": false,
 }
 
 // ---------------------------------------------------------------------------

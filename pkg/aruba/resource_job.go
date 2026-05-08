@@ -313,6 +313,7 @@ func jobIDsFromRef(ref Ref) (projectID, jobID string, err error) {
 var jobTerminalStates = map[string]bool{
 	"Active": true,
 	"Error":  false,
+	"Failed": false,
 }
 
 // ---------------------------------------------------------------------------

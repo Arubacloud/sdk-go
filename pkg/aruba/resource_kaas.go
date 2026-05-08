@@ -470,6 +470,7 @@ type kaasActions interface {
 var kaasTerminalStates = map[string]bool{
 	"Active": true,
 	"Error":  false,
+	"Failed": false,
 }
 
 // ---------------------------------------------------------------------------
