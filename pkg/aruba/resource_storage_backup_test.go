@@ -107,12 +107,12 @@ func TestStorageBackup_IntoProject_BadRef(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// WithOrigin
+// FromVolume
 // --------------------------------------------------------------------------
 
-func TestStorageBackup_WithOrigin_URIRef(t *testing.T) {
+func TestStorageBackup_FromVolume_URIRef(t *testing.T) {
 	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
-	bkp := NewStorageBackup().WithOrigin(URI(volURI))
+	bkp := NewStorageBackup().FromVolume(URI(volURI))
 	if bkp.OriginURI() != volURI {
 		t.Errorf("OriginURI() = %q", bkp.OriginURI())
 	}
@@ -121,11 +121,11 @@ func TestStorageBackup_WithOrigin_URIRef(t *testing.T) {
 	}
 }
 
-func TestStorageBackup_WithOrigin_TypedRef(t *testing.T) {
+func TestStorageBackup_FromVolume_TypedRef(t *testing.T) {
 	bs := &BlockStorage{}
 	bs.fromResponse(blockStorageTestResponse("bs-42", "n", "/projects/p/providers/Aruba.Storage/blockstorages/bs-42", "p"))
 
-	bkp := NewStorageBackup().WithOrigin(bs)
+	bkp := NewStorageBackup().FromVolume(bs)
 	if bkp.OriginURI() != bs.URI() {
 		t.Errorf("OriginURI() = %q, want %q", bkp.OriginURI(), bs.URI())
 	}
@@ -134,8 +134,8 @@ func TestStorageBackup_WithOrigin_TypedRef(t *testing.T) {
 	}
 }
 
-func TestStorageBackup_WithOrigin_EmptyURI(t *testing.T) {
-	bkp := NewStorageBackup().WithOrigin(URI(""))
+func TestStorageBackup_FromVolume_EmptyURI(t *testing.T) {
+	bkp := NewStorageBackup().FromVolume(URI(""))
 	if bkp.Err() == nil {
 		t.Error("expected Err() != nil for empty origin URI")
 	}
@@ -170,7 +170,7 @@ func TestStorageBackup_ToRequestRoundTrip(t *testing.T) {
 		AddTag("t1").AddTag("t2").
 		InRegion("ITBG-Bergamo").
 		OfType(types.StorageBackupTypeFull).
-		WithOrigin(URI(volURI)).
+		FromVolume(URI(volURI)).
 		WithRetentionDays(14).
 		WithBillingPeriod("Hour")
 
@@ -498,7 +498,7 @@ func TestStorageBackupsClientAdapter_Create_Success(t *testing.T) {
 	}
 }
 
-func TestStorageBackupsClientAdapter_Create_WithOrigin(t *testing.T) {
+func TestStorageBackupsClientAdapter_Create_FromVolume(t *testing.T) {
 	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
 	var capturedBody types.StorageBackupRequest
 
@@ -519,7 +519,7 @@ func TestStorageBackupsClientAdapter_Create_WithOrigin(t *testing.T) {
 	bkp := NewStorageBackup().
 		IntoProject(URI("/projects/p")).
 		WithName("my-backup").
-		WithOrigin(URI(volURI))
+		FromVolume(URI(volURI))
 
 	result, err := adapter.Create(context.Background(), bkp)
 	if err != nil {
@@ -765,7 +765,7 @@ func TestStorageBackupsClientAdapter_Update_Err(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	bkp := NewStorageBackup().WithOrigin(URI("")) // seeds an error
+	bkp := NewStorageBackup().FromVolume(URI("")) // seeds an error
 	_, err := adapter.Update(context.Background(), bkp)
 	if err == nil {
 		t.Fatal("expected error when StorageBackup has a pre-existing Err()")

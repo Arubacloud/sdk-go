@@ -34,9 +34,9 @@ type Key struct {
 // Standard setters
 // ---------------------------------------------------------------------------
 
-func (k *Key) IntoKMS(parent Ref) *Key                 { k.intoKMS(parent); return k }
-func (k *Key) WithName(n string) *Key                  { k.name = &n; return k }
-func (k *Key) WithAlgorithm(a types.KeyAlgorithm) *Key { k.algorithm = &a; return k }
+func (k *Key) IntoKMS(parent Ref) *Key               { k.intoKMS(parent); return k }
+func (k *Key) WithName(n string) *Key                { k.name = &n; return k }
+func (k *Key) OfAlgorithm(a types.KeyAlgorithm) *Key { k.algorithm = &a; return k }
 
 // ---------------------------------------------------------------------------
 // Ref + ID accessors (shadow responseMetadataMixin)

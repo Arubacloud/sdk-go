@@ -12,7 +12,7 @@ import (
 // DBaaSBackup is the wrapper for an Aruba Cloud DBaaS Backup (a direct child
 // of a Project; the source DBaaS and Database are body-refs, not path-parents).
 // Construct with aruba.NewDBaaSBackup() and bind it via IntoProject(project),
-// WithDBaaS(d), and WithDatabase(db).
+// FromDBaaS(d), and FromDatabase(db).
 //
 // Family A: regional, Metadata/Properties envelope, location-aware. No Update
 // operation — the underlying API exposes only Create / Get / List / Delete.
@@ -42,24 +42,24 @@ func (b *DBaaSBackup) RemoveTag(t string) *DBaaSBackup       { b.removeTag(t); r
 func (b *DBaaSBackup) ReplaceTags(ts ...string) *DBaaSBackup { b.replaceTags(ts...); return b }
 func (b *DBaaSBackup) InRegion(region Region) *DBaaSBackup   { b.inRegion(region); return b }
 
-// WithDBaaS binds the source DBaaS via its URI. Empty URIs are recorded on the
+// FromDBaaS binds the source DBaaS via its URI. Empty URIs are recorded on the
 // error sink and the field remains unset.
-func (b *DBaaSBackup) WithDBaaS(d Ref) *DBaaSBackup {
+func (b *DBaaSBackup) FromDBaaS(d Ref) *DBaaSBackup {
 	uri := d.URI()
 	if uri == "" {
-		b.addErr(fmt.Errorf("WithDBaaS: empty URI"))
+		b.addErr(fmt.Errorf("FromDBaaS: empty URI"))
 		return b
 	}
 	b.dbaasRef = &uri
 	return b
 }
 
-// WithDatabase binds the source Database via its URI. Empty URIs are recorded
+// FromDatabase binds the source Database via its URI. Empty URIs are recorded
 // on the error sink and the field remains unset.
-func (b *DBaaSBackup) WithDatabase(db Ref) *DBaaSBackup {
+func (b *DBaaSBackup) FromDatabase(db Ref) *DBaaSBackup {
 	uri := db.URI()
 	if uri == "" {
-		b.addErr(fmt.Errorf("WithDatabase: empty URI"))
+		b.addErr(fmt.Errorf("FromDatabase: empty URI"))
 		return b
 	}
 	b.databaseRef = &uri
