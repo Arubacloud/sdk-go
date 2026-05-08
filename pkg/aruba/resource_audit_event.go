@@ -105,7 +105,7 @@ func (e *AuditEvent) Category() types.EventCategory {
 }
 
 // Region returns the optional region for this event, or nil when absent.
-func (e *AuditEvent) Region() *types.Region {
+func (e *AuditEvent) Region() *types.RegionInfo {
 	if e.response == nil {
 		return nil
 	}
