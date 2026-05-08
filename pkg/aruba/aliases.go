@@ -143,14 +143,14 @@ const (
 	BillingPeriodHour = types.BillingPeriodHour
 
 	// Compute — cloud server flavor
-	CloudServerFlavorCSO1A2  = types.CloudServerFlavorCSO1A2
-	CloudServerFlavorCSO1A4  = types.CloudServerFlavorCSO1A4
-	CloudServerFlavorCSO2A4  = types.CloudServerFlavorCSO2A4
-	CloudServerFlavorCSO2A8  = types.CloudServerFlavorCSO2A8
-	CloudServerFlavorCSO4A8  = types.CloudServerFlavorCSO4A8
-	CloudServerFlavorCSO4A16 = types.CloudServerFlavorCSO4A16
-	CloudServerFlavorCSO8A16 = types.CloudServerFlavorCSO8A16
-	CloudServerFlavorCSO8A32 = types.CloudServerFlavorCSO8A32
+	CloudServerFlavorCSO1A2   = types.CloudServerFlavorCSO1A2
+	CloudServerFlavorCSO1A4   = types.CloudServerFlavorCSO1A4
+	CloudServerFlavorCSO2A4   = types.CloudServerFlavorCSO2A4
+	CloudServerFlavorCSO2A8   = types.CloudServerFlavorCSO2A8
+	CloudServerFlavorCSO4A8   = types.CloudServerFlavorCSO4A8
+	CloudServerFlavorCSO4A16  = types.CloudServerFlavorCSO4A16
+	CloudServerFlavorCSO8A16  = types.CloudServerFlavorCSO8A16
+	CloudServerFlavorCSO8A32  = types.CloudServerFlavorCSO8A32
 	CloudServerFlavorCSO12A24 = types.CloudServerFlavorCSO12A24
 	CloudServerFlavorCSO16A32 = types.CloudServerFlavorCSO16A32
 	CloudServerFlavorCSO16A64 = types.CloudServerFlavorCSO16A64
@@ -162,14 +162,14 @@ const (
 	DatabaseEnginePostgres14 = types.DatabaseEnginePostgres14
 
 	// Database — DBaaS flavor
-	DBaaSFlavorDBO1A2  = types.DBaaSFlavorDBO1A2
-	DBaaSFlavorDBO1A4  = types.DBaaSFlavorDBO1A4
-	DBaaSFlavorDBO2A4  = types.DBaaSFlavorDBO2A4
-	DBaaSFlavorDBO2A8  = types.DBaaSFlavorDBO2A8
-	DBaaSFlavorDBO4A8  = types.DBaaSFlavorDBO4A8
-	DBaaSFlavorDBO4A16 = types.DBaaSFlavorDBO4A16
-	DBaaSFlavorDBO8A16 = types.DBaaSFlavorDBO8A16
-	DBaaSFlavorDBO8A32 = types.DBaaSFlavorDBO8A32
+	DBaaSFlavorDBO1A2   = types.DBaaSFlavorDBO1A2
+	DBaaSFlavorDBO1A4   = types.DBaaSFlavorDBO1A4
+	DBaaSFlavorDBO2A4   = types.DBaaSFlavorDBO2A4
+	DBaaSFlavorDBO2A8   = types.DBaaSFlavorDBO2A8
+	DBaaSFlavorDBO4A8   = types.DBaaSFlavorDBO4A8
+	DBaaSFlavorDBO4A16  = types.DBaaSFlavorDBO4A16
+	DBaaSFlavorDBO8A16  = types.DBaaSFlavorDBO8A16
+	DBaaSFlavorDBO8A32  = types.DBaaSFlavorDBO8A32
 	DBaaSFlavorDBO12A24 = types.DBaaSFlavorDBO12A24
 	DBaaSFlavorDBO16A32 = types.DBaaSFlavorDBO16A32
 	DBaaSFlavorDBO16A64 = types.DBaaSFlavorDBO16A64
