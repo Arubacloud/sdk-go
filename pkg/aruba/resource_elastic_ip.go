@@ -124,7 +124,7 @@ var elasticIPTerminalStates = map[string]bool{
 	"NotUsed": true,
 	"InUse":   true,
 	"Error":   false,
-	"Failed": false,
+	"Failed":  false,
 }
 
 // WaitUntilNotUsed blocks until the ElasticIP reaches the "NotUsed" state —

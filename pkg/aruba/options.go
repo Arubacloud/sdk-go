@@ -546,8 +546,8 @@ func (o *Options) WithNoLogs() *Options {
 // Token Manager Options Helpers
 
 const (
-	stdRedisURI                           = "redis://admin:admin@localhost:6379/0"
-	stdFileBaseDir                        = "/tmp/sdk-go"
+	stdRedisURI                        = "redis://admin:admin@localhost:6379/0"
+	stdFileBaseDir                     = "/tmp/sdk-go"
 	stdTokenExpirationDriftSeconds int = 300
 )
 

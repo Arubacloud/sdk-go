@@ -189,7 +189,7 @@ var blockStorageTerminalStates = map[string]bool{
 	"InUse":   true,
 	"Used":    true,
 	"Error":   false,
-	"Failed": false,
+	"Failed":  false,
 }
 
 // WaitUntilNotUsed blocks until the BlockStorage reaches the "NotUsed" state —
