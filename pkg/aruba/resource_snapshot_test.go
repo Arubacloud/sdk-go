@@ -415,8 +415,7 @@ func TestSnapshotIDsFromRef_BadURI_MissingAll(t *testing.T) {
 // snapshotsClientAdapter — fake low-level client for body tests
 // --------------------------------------------------------------------------
 
-// fakeSnapshotLowLevel is a hand-rolled implementation of snapshotLowLevelClient
-// that skips the production waitForBlockStorageActive path entirely.
+// fakeSnapshotLowLevel is a hand-rolled implementation of snapshotLowLevelClient.
 type fakeSnapshotLowLevel struct {
 	createFunc func(ctx context.Context, projectID string, body types.SnapshotRequest, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error)
 	getFunc    func(ctx context.Context, projectID, snapshotID string, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error)
@@ -470,7 +469,7 @@ func TestSnapshotsClientAdapter_Create_Success(t *testing.T) {
 		fmt.Fprint(w, snapshotSuccessBody)
 	})
 
-	// No OfVolume → Volume.URI == "" → waitForBlockStorageActive is skipped.
+	// No OfVolume → Volume.URI == "" → no BlockStorage dependency.
 	snap := NewSnapshot().
 		IntoProject(URI("/projects/p")).
 		WithName("my-snap").
@@ -561,8 +560,7 @@ func TestSnapshotsClientAdapter_Create_NonTwoXX(t *testing.T) {
 }
 
 // TestSnapshotsClientAdapter_Create_WithVolume uses the fake low-level client
-// to assert the Volume.URI is wired correctly in the request body, without
-// triggering the production waitForBlockStorageActive path.
+// to assert the Volume.URI is wired correctly in the request body.
 func TestSnapshotsClientAdapter_Create_WithVolume(t *testing.T) {
 	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
 	var capturedBody types.SnapshotRequest

@@ -361,6 +361,7 @@ func cloudServerDerefString(p *string) string {
 var cloudServerTerminalStates = map[string]bool{
 	"Active": true,
 	"Error":  false,
+	"Failed": false,
 }
 
 // ---------------------------------------------------------------------------

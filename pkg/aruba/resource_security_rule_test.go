@@ -488,23 +488,6 @@ func buildSecurityRuleTestAdapter(t *testing.T, handler http.HandlerFunc) *secur
 	return newSecurityGroupRulesClientAdapter(testutil.NewClient(t, server.URL))
 }
 
-// activeSecurityGroupBody is returned by the SG GET poll inside waitForSecurityGroupActive.
-const activeSecurityGroupBody = `{"metadata":{"id":"sg","uri":"/projects/p/providers/Aruba.Network/vpcs/v/securitygroups/sg","project":{"id":"p"}},"properties":{"default":false},"status":{"state":"Active"}}`
-
-// withSecurityGroupActiveRoute wraps a handler so SG GET requests (for the waiter poll) are
-// answered with an "Active" state. Only rule-path requests are forwarded to ruleHandler.
-func withSecurityGroupActiveRoute(ruleHandler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.URL.Path, "/securityrules") {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, activeSecurityGroupBody)
-			return
-		}
-		ruleHandler(w, r)
-	}
-}
-
 const securityRuleSuccessBody = `{` +
 	`"metadata":{"id":"r-1","name":"allow-ssh","uri":"/projects/p/network/vpcs/v/securitygroups/sg/securityrules/r-1","project":{"id":"p"}},` +
 	`"properties":{"direction":"Ingress","protocol":"TCP","port":"22","target":{"kind":"Ip","value":"0.0.0.0/0"}},` +
@@ -512,14 +495,14 @@ const securityRuleSuccessBody = `{` +
 
 func TestSecurityGroupRulesClientAdapter_Create_Success(t *testing.T) {
 	var gotBody types.SecurityRuleRequest
-	adapter := buildSecurityRuleTestAdapter(t, withSecurityGroupActiveRoute(func(w http.ResponseWriter, r *http.Request) {
+	adapter := buildSecurityRuleTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
 			t.Errorf("decode request body: %v", err)
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		fmt.Fprint(w, securityRuleSuccessBody)
-	}))
+	})
 
 	sg := &SecurityGroup{}
 	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securitygroups/sg", "p"))
@@ -571,12 +554,12 @@ func TestSecurityGroupRulesClientAdapter_Create_NoSG(t *testing.T) {
 }
 
 func TestSecurityGroupRulesClientAdapter_Create_MetadataValidationError(t *testing.T) {
-	adapter := buildSecurityRuleTestAdapter(t, withSecurityGroupActiveRoute(func(w http.ResponseWriter, _ *http.Request) {
+	adapter := buildSecurityRuleTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		// Missing "id" field — triggers MetadataValidationError
 		fmt.Fprint(w, `{"metadata":{"name":"rule","uri":"/projects/p/network/vpcs/v/securitygroups/sg/securityrules/x"},"properties":{},"status":{}}`)
-	}))
+	})
 
 	sg := &SecurityGroup{}
 	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securitygroups/sg", "p"))
@@ -596,11 +579,11 @@ func TestSecurityGroupRulesClientAdapter_Create_MetadataValidationError(t *testi
 }
 
 func TestSecurityGroupRulesClientAdapter_Create_NonTwoXX(t *testing.T) {
-	adapter := buildSecurityRuleTestAdapter(t, withSecurityGroupActiveRoute(func(w http.ResponseWriter, _ *http.Request) {
+	adapter := buildSecurityRuleTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "direction is required", 422))
-	}))
+	})
 
 	sg := &SecurityGroup{}
 	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securitygroups/sg", "p"))
