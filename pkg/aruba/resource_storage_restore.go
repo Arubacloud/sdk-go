@@ -11,7 +11,7 @@ import (
 
 // StorageRestore is the wrapper for an Aruba Cloud Storage Restore (a direct
 // child of a StorageBackup, grandchild of a Project). Construct with
-// aruba.NewStorageRestore() and bind it via IntoBackup(backup) and WithTarget(volume).
+// aruba.NewStorageRestore() and bind it via IntoBackup(backup) and ToVolume(volume).
 type StorageRestore struct {
 	errMixin
 	metadataMixin
@@ -34,13 +34,13 @@ func (r *StorageRestore) RemoveTag(t string) *StorageRestore       { r.removeTag
 func (r *StorageRestore) ReplaceTags(ts ...string) *StorageRestore { r.replaceTags(ts...); return r }
 func (r *StorageRestore) InRegion(region Region) *StorageRestore   { r.inRegion(region); return r }
 
-// WithTarget binds the destination volume (where the backup will be restored to)
+// ToVolume binds the destination volume (where the backup will be restored to)
 // via its URI. Pass any Ref (typed or aruba.URI(...)). Empty URIs are recorded
 // on the error sink and the field remains unset.
-func (r *StorageRestore) WithTarget(vol Ref) *StorageRestore {
+func (r *StorageRestore) ToVolume(vol Ref) *StorageRestore {
 	uri := vol.URI()
 	if uri == "" {
-		r.addErr(fmt.Errorf("WithTarget: empty URI"))
+		r.addErr(fmt.Errorf("ToVolume: empty URI"))
 		return r
 	}
 	r.targetRef = &uri
@@ -159,7 +159,7 @@ func (a *storageRestoresClientAdapter) Create(ctx context.Context, r *StorageRes
 		return r, fmt.Errorf("Create: StorageRestore has no parent backup — call IntoBackup first")
 	}
 	if r.targetRef == nil {
-		return r, fmt.Errorf("Create: StorageRestore has no target — call WithTarget first")
+		return r, fmt.Errorf("Create: StorageRestore has no target — call ToVolume first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

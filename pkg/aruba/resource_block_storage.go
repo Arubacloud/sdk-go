@@ -49,7 +49,7 @@ func (b *BlockStorage) WithBillingPeriod(p BillingPeriod) *BlockStorage {
 	b.billingPeriod = &p
 	return b
 }
-func (b *BlockStorage) WithImage(img string) *BlockStorage   { b.image = &img; return b }
+func (b *BlockStorage) FromImage(img string) *BlockStorage   { b.image = &img; return b }
 func (b *BlockStorage) WithBootable(boot bool) *BlockStorage { b.bootable = &boot; return b }
 
 // FromSnapshot binds the source snapshot via its URI. Pass any Ref (typed or

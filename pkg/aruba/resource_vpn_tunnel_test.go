@@ -34,7 +34,7 @@ func TestVPNTunnel_FluentSetters(t *testing.T) {
 		AddTag("ipsec").
 		AddTag("vpn"). // dedupe
 		InRegion("ITBG-Bergamo").
-		WithVPNType("ipsec").
+		OfType("ipsec").
 		WithVPNClientProtocol("ikev2").
 		WithBillingPeriod("monthly").
 		WithPeerClientPublicIP("1.2.3.4")
@@ -350,7 +350,7 @@ func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
 		WithName("my-tunnel").
 		AddTag("t1").
 		InRegion("ITBG-Bergamo").
-		WithVPNType("ipsec").
+		OfType("ipsec").
 		WithVPNClientProtocol("ikev2").
 		WithBillingPeriod("monthly").
 		WithPeerClientPublicIP("1.2.3.4").
@@ -721,7 +721,7 @@ func TestVPNTunnelsClientAdapter_Create_Success(t *testing.T) {
 		IntoProject(URI("/projects/p")).
 		WithName("my-tunnel").
 		InRegion("ITBG-Bergamo").
-		WithVPNType("ipsec").
+		OfType("ipsec").
 		WithVPNClientProtocol("ikev2").
 		WithIKESettings(NewVPNIKE().WithEncryption(types.IKEEncryptionAES256))
 
