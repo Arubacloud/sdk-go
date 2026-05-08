@@ -34,8 +34,8 @@ func TestDBaaS_FluentSetters(t *testing.T) {
 		AddTag("prod").
 		InRegion("ITBG-Bergamo").
 		InZone("ITBG-1").
-		WithEngine("mysql-8.0").
-		WithFlavor("DBO2A4").
+		OfEngine("mysql-8.0").
+		WithServerFlavor("DBO2A4").
 		WithStorageGB(20).
 		WithBillingPeriod("Hour").
 		WithAutoscaling(50, 10)
@@ -204,15 +204,15 @@ func TestDBaaS_InZone(t *testing.T) {
 	}
 }
 
-func TestDBaaS_WithEngine(t *testing.T) {
-	d := NewDBaaS().WithEngine("mysql-8.0")
+func TestDBaaS_OfEngine(t *testing.T) {
+	d := NewDBaaS().OfEngine("mysql-8.0")
 	if d.Engine() != "mysql-8.0" {
 		t.Errorf("Engine() = %q", d.Engine())
 	}
 }
 
-func TestDBaaS_WithFlavor(t *testing.T) {
-	d := NewDBaaS().WithFlavor("DBO2A4")
+func TestDBaaS_WithServerFlavor(t *testing.T) {
+	d := NewDBaaS().WithServerFlavor("DBO2A4")
 	if d.Flavor() != "DBO2A4" {
 		t.Errorf("Flavor() = %q", d.Flavor())
 	}
@@ -289,8 +289,8 @@ func TestDBaaS_ToRequestRoundTrip(t *testing.T) {
 		AddTag("tag1").
 		InRegion("ITBG-Bergamo").
 		InZone("ITBG-1").
-		WithEngine("mysql-8.0").
-		WithFlavor("DBO2A4").
+		OfEngine("mysql-8.0").
+		WithServerFlavor("DBO2A4").
 		WithStorageGB(20).
 		WithBillingPeriod("Hour").
 		WithAutoscaling(50, 10).
@@ -501,7 +501,7 @@ func TestDBaaS_FromResponse_NilSafe(t *testing.T) {
 
 func TestDBaaS_Engine_Asymmetry(t *testing.T) {
 	engineType := "mysql-8.0"
-	d := NewDBaaS().WithEngine("mysql-8.0")
+	d := NewDBaaS().OfEngine("mysql-8.0")
 	if d.Engine() != "mysql-8.0" {
 		t.Errorf("pre-response Engine() = %q", d.Engine())
 	}
@@ -524,7 +524,7 @@ func TestDBaaS_Engine_Asymmetry(t *testing.T) {
 
 func TestDBaaS_Flavor_Asymmetry(t *testing.T) {
 	flavorName := "DBO4A8"
-	d := NewDBaaS().WithFlavor("DBO2A4")
+	d := NewDBaaS().WithServerFlavor("DBO2A4")
 	if d.Flavor() != "DBO2A4" {
 		t.Errorf("pre-response Flavor() = %q", d.Flavor())
 	}
@@ -675,8 +675,8 @@ func TestDBaaSClientAdapter_Create_Success(t *testing.T) {
 		IntoProject(URI("/projects/p")).
 		WithName("my-dbaas").
 		InZone("ITBG-1").
-		WithEngine("mysql-8.0").
-		WithFlavor("DBO2A4").
+		OfEngine("mysql-8.0").
+		WithServerFlavor("DBO2A4").
 		WithStorageGB(20).
 		WithBillingPeriod("Hour").
 		WithAutoscaling(50, 10).
@@ -717,7 +717,7 @@ func TestDBaaSClientAdapter_Create_NoProject(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewDBaaS().WithName("x").WithEngine("mysql-8.0"))
+	_, err := adapter.Create(context.Background(), NewDBaaS().WithName("x").OfEngine("mysql-8.0"))
 	if err == nil {
 		t.Fatal("expected error when DBaaS has no parent project")
 	}
@@ -734,7 +734,7 @@ func TestDBaaSClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"db","uri":"/projects/p/providers/Aruba.Database/dbaas/x"},"properties":{}}`)
 	})
 
-	d := NewDBaaS().IntoProject(URI("/projects/p")).WithName("db").WithEngine("mysql-8.0")
+	d := NewDBaaS().IntoProject(URI("/projects/p")).WithName("db").OfEngine("mysql-8.0")
 	result, err := adapter.Create(context.Background(), d)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")

@@ -34,7 +34,7 @@ func TestBlockStorage_FluentSetters(t *testing.T) {
 		AddTag("storage"). // dedupe
 		InRegion("ITBG-Bergamo").
 		WithSizeGB(50).
-		WithType(types.BlockStorageTypeStandard).
+		OfType(types.BlockStorageTypeStandard).
 		WithBillingPeriod("Hour").
 		WithImage("LU22-001").
 		WithBootable(true)
@@ -162,7 +162,7 @@ func TestBlockStorage_ToRequestRoundTrip(t *testing.T) {
 		AddTag("t1").AddTag("t2").
 		InRegion("ITBG-Bergamo").
 		WithSizeGB(30).
-		WithType(types.BlockStorageTypePerformance).
+		OfType(types.BlockStorageTypePerformance).
 		InZone("ITBG-1").
 		WithBillingPeriod("Hour").
 		WithBootable(true).
@@ -204,7 +204,7 @@ func TestBlockStorage_ToRequestRoundTrip(t *testing.T) {
 }
 
 func TestBlockStorage_ToRequest_UnsetOptionals_AreNilOrZero(t *testing.T) {
-	bs := NewBlockStorage().WithName("bare").WithSizeGB(10).WithType(types.BlockStorageTypeStandard)
+	bs := NewBlockStorage().WithName("bare").WithSizeGB(10).OfType(types.BlockStorageTypeStandard)
 	req := bs.RawRequest()
 
 	if req.Properties.Bootable != nil {
@@ -493,7 +493,7 @@ func TestVolumesClientAdapter_Create_Success(t *testing.T) {
 		WithName("my-bs").
 		InRegion("ITBG-Bergamo").
 		WithSizeGB(20).
-		WithType(types.BlockStorageTypeStandard).
+		OfType(types.BlockStorageTypeStandard).
 		WithBillingPeriod("Hour")
 
 	result, err := adapter.Create(context.Background(), bs)
