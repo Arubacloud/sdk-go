@@ -33,7 +33,7 @@ func TestSubnet_FluentSetters(t *testing.T) {
 		AddTag("infra").
 		AddTag("net"). // dedupe
 		InRegion("ITBG-Bergamo").
-		WithType("Advanced").
+		OfType("Advanced").
 		WithDefault(false).
 		WithCIDR("10.0.0.0/24")
 
@@ -162,7 +162,7 @@ func TestSubnet_ToRequestRoundTrip(t *testing.T) {
 		AddTag("t1").
 		AddTag("t2").
 		InRegion("ITBG-Bergamo").
-		WithType("Basic").
+		OfType("Basic").
 		WithDefault(true).
 		WithCIDR("10.1.2.0/24").
 		WithDHCP(NewSubnetDHCP().
@@ -450,7 +450,7 @@ func TestSubnetsClientAdapter_Create_Success(t *testing.T) {
 	s := NewSubnet().
 		IntoVPC(vpc).
 		WithName("my-subnet").
-		WithType("Advanced").
+		OfType("Advanced").
 		WithCIDR("10.0.0.0/24")
 
 	result, err := adapter.Create(context.Background(), s)

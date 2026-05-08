@@ -38,8 +38,8 @@ func (b *StorageBackup) RemoveTag(t string) *StorageBackup       { b.removeTag(t
 func (b *StorageBackup) ReplaceTags(ts ...string) *StorageBackup { b.replaceTags(ts...); return b }
 func (b *StorageBackup) InRegion(region Region) *StorageBackup   { b.inRegion(region); return b }
 
-// WithType sets the backup type (Full or Incremental).
-func (b *StorageBackup) WithType(t types.StorageBackupType) *StorageBackup {
+// OfType sets the backup type (Full or Incremental).
+func (b *StorageBackup) OfType(t types.StorageBackupType) *StorageBackup {
 	v := t
 	b.backupType = &v
 	return b

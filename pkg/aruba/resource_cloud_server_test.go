@@ -33,7 +33,7 @@ func TestCloudServer_FluentSetters(t *testing.T) {
 		AddTag("prod").
 		InRegion("ITBG-Bergamo").
 		InZone("ITBG-1").
-		WithFlavor("CSO2A4").
+		OfFlavor("CSO2A4").
 		WithUserData("dGVzdA==").
 		WithVPCPreset(true)
 
@@ -236,8 +236,8 @@ func TestCloudServer_AddSecurityGroup_EmptyURI(t *testing.T) {
 // Scalar setters
 // --------------------------------------------------------------------------
 
-func TestCloudServer_WithFlavor(t *testing.T) {
-	cs := NewCloudServer().WithFlavor("CSO2A4")
+func TestCloudServer_OfFlavor(t *testing.T) {
+	cs := NewCloudServer().OfFlavor("CSO2A4")
 	if cs.Flavor() != "CSO2A4" {
 		t.Errorf("Flavor() = %q", cs.Flavor())
 	}
@@ -281,7 +281,7 @@ func TestCloudServer_ToRequestRoundTrip(t *testing.T) {
 		AddTag("tag1").
 		InRegion("ITBG-Bergamo").
 		InZone("ITBG-1").
-		WithFlavor("CSO2A4").
+		OfFlavor("CSO2A4").
 		WithVPC(URI("/vpcs/v")).
 		WithBootVolume(URI("/vols/bv")).
 		WithKeyPair(URI("/kps/kp")).
@@ -457,8 +457,8 @@ func TestCloudServer_FromResponse_NilSafe(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestCloudServer_Flavor_Asymmetry(t *testing.T) {
-	// Before any response: Flavor() returns what WithFlavor set.
-	cs := NewCloudServer().WithFlavor("CSO2A4")
+	// Before any response: Flavor() returns what OfFlavor set.
+	cs := NewCloudServer().OfFlavor("CSO2A4")
 	if cs.Flavor() != "CSO2A4" {
 		t.Errorf("pre-response Flavor() = %q", cs.Flavor())
 	}
@@ -586,7 +586,7 @@ func TestCloudServersClientAdapter_Create_Success(t *testing.T) {
 		IntoProject(URI("/projects/p")).
 		WithName("my-server").
 		InZone("ITBG-1").
-		WithFlavor("CSO2A4").
+		OfFlavor("CSO2A4").
 		WithVPC(URI("/vpcs/v")).
 		WithBootVolume(URI("/vols/bv")).
 		WithKeyPair(URI("/kps/kp")).
@@ -614,7 +614,7 @@ func TestCloudServersClientAdapter_Create_Success(t *testing.T) {
 	if result.StatusCode() != http.StatusCreated {
 		t.Errorf("StatusCode() = %d", result.StatusCode())
 	}
-	// Verify wire body: flavorName field (wire name, mapped from WithFlavor)
+	// Verify wire body: flavorName field (wire name, mapped from OfFlavor)
 	if gotBody.Properties.FlavorName == nil || *gotBody.Properties.FlavorName != "CSO2A4" {
 		t.Errorf("request FlavorName = %v", gotBody.Properties.FlavorName)
 	}
@@ -633,7 +633,7 @@ func TestCloudServersClientAdapter_Create_NoProject(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewCloudServer().WithName("x").WithFlavor("CSO2A4"))
+	_, err := adapter.Create(context.Background(), NewCloudServer().WithName("x").OfFlavor("CSO2A4"))
 	if err == nil {
 		t.Fatal("expected error when CloudServer has no parent project")
 	}
@@ -650,7 +650,7 @@ func TestCloudServersClientAdapter_Create_MetadataValidationError(t *testing.T) 
 		fmt.Fprint(w, `{"metadata":{"name":"srv","uri":"/projects/p/providers/Aruba.Compute/cloudServers/x"},"properties":{}}`)
 	})
 
-	cs := NewCloudServer().IntoProject(URI("/projects/p")).WithName("srv").WithFlavor("CSO2A4")
+	cs := NewCloudServer().IntoProject(URI("/projects/p")).WithName("srv").OfFlavor("CSO2A4")
 	result, err := adapter.Create(context.Background(), cs)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
