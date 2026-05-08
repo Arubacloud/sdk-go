@@ -49,7 +49,7 @@ func TestContainerRegistry_FluentSetters(t *testing.T) {
 		WithPublicIP(eipURI).
 		WithBlockStorage(bsURI).
 		WithAdminUsername("admin").
-		WithSize(50).
+		WithSizeFlavor(types.ContainerRegistrySizeFlavorSmall).
 		WithBillingPeriod("Hour")
 
 	if cr.Name() != "my-registry" {
@@ -79,8 +79,8 @@ func TestContainerRegistry_FluentSetters(t *testing.T) {
 	if cr.AdminUsername() != "admin" {
 		t.Errorf("AdminUsername() = %q", cr.AdminUsername())
 	}
-	if cr.Size() != 50 {
-		t.Errorf("Size() = %d", cr.Size())
+	if cr.SizeFlavor() != types.ContainerRegistrySizeFlavorSmall {
+		t.Errorf("SizeFlavor() = %q", cr.SizeFlavor())
 	}
 	if cr.BillingPeriod() != "Hour" {
 		t.Errorf("BillingPeriod() = %q", cr.BillingPeriod())
@@ -318,14 +318,13 @@ func TestContainerRegistry_WithAdminUsername(t *testing.T) {
 	}
 }
 
-func TestContainerRegistry_WithSize(t *testing.T) {
-	cr := NewContainerRegistry().WithSize(42)
-	if cr.Size() != 42 {
-		t.Errorf("Size() = %d", cr.Size())
+func TestContainerRegistry_WithSizeFlavor(t *testing.T) {
+	cr := NewContainerRegistry().WithSizeFlavor(types.ContainerRegistrySizeFlavorSmall)
+	if cr.SizeFlavor() != types.ContainerRegistrySizeFlavorSmall {
+		t.Errorf("SizeFlavor() = %q", cr.SizeFlavor())
 	}
-	// Verify the wire representation is the string "42"
 	req := cr.RawRequest()
-	if req.Properties.ConcurrentUsers == nil || *req.Properties.ConcurrentUsers != "42" {
+	if req.Properties.ConcurrentUsers == nil || *req.Properties.ConcurrentUsers != "Small" {
 		t.Errorf("wire ConcurrentUsers = %v", req.Properties.ConcurrentUsers)
 	}
 }
@@ -358,7 +357,7 @@ func TestContainerRegistry_ToRequest(t *testing.T) {
 		WithPublicIP(URI(eipURI)).
 		WithBlockStorage(URI(bsURI)).
 		WithAdminUsername("admin").
-		WithSize(100).
+		WithSizeFlavor(types.ContainerRegistrySizeFlavorHighPerf).
 		WithBillingPeriod("Hour")
 
 	req := cr.RawRequest()
@@ -390,7 +389,7 @@ func TestContainerRegistry_ToRequest(t *testing.T) {
 	if req.Properties.AdminUser == nil || req.Properties.AdminUser.Username != "admin" {
 		t.Errorf("Properties.AdminUser = %v", req.Properties.AdminUser)
 	}
-	if req.Properties.ConcurrentUsers == nil || *req.Properties.ConcurrentUsers != "100" {
+	if req.Properties.ConcurrentUsers == nil || *req.Properties.ConcurrentUsers != "HighPerf" {
 		t.Errorf("Properties.ConcurrentUsers = %v", req.Properties.ConcurrentUsers)
 	}
 	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod != "Hour" {
@@ -426,7 +425,7 @@ func containerRegistryTestResponse(name string) *types.ContainerRegistryResponse
 	id := "cr-1"
 	uri := "/projects/p/providers/Aruba.Container/registries/cr-1"
 	state := "Active"
-	size := "50"
+	size := "Small"
 	vpcURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1"
 	subnetURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1"
 	sgURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1"
@@ -507,8 +506,8 @@ func TestContainerRegistry_FromResponseHydration(t *testing.T) {
 	if cr.AdminUsername() != "admin" {
 		t.Errorf("AdminUsername() = %q", cr.AdminUsername())
 	}
-	if cr.Size() != 50 {
-		t.Errorf("Size() = %d", cr.Size())
+	if cr.SizeFlavor() != types.ContainerRegistrySizeFlavorSmall {
+		t.Errorf("SizeFlavor() = %q", cr.SizeFlavor())
 	}
 	if cr.BillingPeriod() != "Hour" {
 		t.Errorf("BillingPeriod() = %q", cr.BillingPeriod())
@@ -627,7 +626,7 @@ const containerRegistrySuccessBody = `{` +
 	`"securityGroup":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1"},` +
 	`"publicIp":{"uri":"/projects/p/providers/Aruba.Network/elasticips/eip-1"},` +
 	`"blockStorage":{"uri":"/projects/p/providers/Aruba.Storage/blockstorages/bs-1"},` +
-	`"adminUser":{"username":"admin"},"size":"50","billingPlan":{"billingPeriod":"Hour"}` +
+	`"adminUser":{"username":"admin"},"size":"Small","billingPlan":{"billingPeriod":"Hour"}` +
 	`},` +
 	`"status":{"state":"Active"}}`
 
@@ -659,7 +658,7 @@ func TestContainerRegistriesClientAdapter_Create_Success(t *testing.T) {
 		WithPublicIP(URI("/projects/p/providers/Aruba.Network/elasticips/eip-1")).
 		WithBlockStorage(URI("/projects/p/providers/Aruba.Storage/blockstorages/bs-1")).
 		WithAdminUsername("admin").
-		WithSize(50).
+		WithSizeFlavor(types.ContainerRegistrySizeFlavorSmall).
 		WithBillingPeriod("Hour")
 
 	result, err := adapter.Create(context.Background(), cr)
@@ -778,7 +777,7 @@ func TestContainerRegistriesClientAdapter_Create_WithBodyRefs_ViaFake(t *testing
 		WithPublicIP(URI(eipURI)).
 		WithBlockStorage(URI(bsURI)).
 		WithAdminUsername("admin").
-		WithSize(100)
+		WithSizeFlavor(types.ContainerRegistrySizeFlavorHighPerf)
 
 	_, err := adapter.Create(context.Background(), cr)
 	if err != nil {
@@ -802,7 +801,7 @@ func TestContainerRegistriesClientAdapter_Create_WithBodyRefs_ViaFake(t *testing
 	if captured.Properties.AdminUser == nil || captured.Properties.AdminUser.Username != "admin" {
 		t.Errorf("captured AdminUser = %v", captured.Properties.AdminUser)
 	}
-	if captured.Properties.ConcurrentUsers == nil || *captured.Properties.ConcurrentUsers != "100" {
+	if captured.Properties.ConcurrentUsers == nil || *captured.Properties.ConcurrentUsers != "HighPerf" {
 		t.Errorf("captured ConcurrentUsers = %v", captured.Properties.ConcurrentUsers)
 	}
 }
@@ -1004,8 +1003,8 @@ func TestContainerRegistriesClientAdapter_List_TwoItems(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
-			`{"metadata":{"id":"cr-1","name":"n1","uri":"/projects/p/providers/Aruba.Container/registries/cr-1","project":{"id":"p"}},"properties":{"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},"size":"10","billingPlan":{"billingPeriod":"Hour"}},"status":{}},`+
-			`{"metadata":{"id":"cr-2","name":"n2","uri":"/projects/p/providers/Aruba.Container/registries/cr-2","project":{"id":"p"}},"properties":{"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},"size":"20","billingPlan":{"billingPeriod":"Monthly"}},"status":{}}`+
+			`{"metadata":{"id":"cr-1","name":"n1","uri":"/projects/p/providers/Aruba.Container/registries/cr-1","project":{"id":"p"}},"properties":{"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},"size":"Small","billingPlan":{"billingPeriod":"Hour"}},"status":{}},`+
+			`{"metadata":{"id":"cr-2","name":"n2","uri":"/projects/p/providers/Aruba.Container/registries/cr-2","project":{"id":"p"}},"properties":{"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},"size":"Medium","billingPlan":{"billingPeriod":"Monthly"}},"status":{}}`+
 			`]}`)
 	})
 
@@ -1023,8 +1022,8 @@ func TestContainerRegistriesClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].ID() != "cr-1" || items[0].Name() != "n1" {
 		t.Errorf("items[0] = {%q, %q}", items[0].ID(), items[0].Name())
 	}
-	if items[0].Size() != 10 {
-		t.Errorf("items[0].Size() = %d", items[0].Size())
+	if items[0].SizeFlavor() != types.ContainerRegistrySizeFlavorSmall {
+		t.Errorf("items[0].SizeFlavor() = %q", items[0].SizeFlavor())
 	}
 	if items[1].ID() != "cr-2" || items[1].BillingPeriod() != "Monthly" {
 		t.Errorf("items[1] ID=%q BillingPeriod=%q", items[1].ID(), items[1].BillingPeriod())
@@ -1060,29 +1059,28 @@ func TestContainerRegistry_InRegion(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// Shape F — Size() bad-string branch (response has unparseable value)
+// Shape F — SizeFlavor() unknown-string branches
 // --------------------------------------------------------------------------
 
-func TestContainerRegistry_Size_BadResponseString(t *testing.T) {
+func TestContainerRegistry_SizeFlavor_UnknownResponseString(t *testing.T) {
 	cr := &ContainerRegistry{}
-	badSize := "not-an-int"
+	unknown := "not-a-flavor"
 	cr.response = &types.ContainerRegistryResponse{
 		Properties: types.ContainerRegistryPropertiesResult{
-			ConcurrentUsers: &badSize,
+			ConcurrentUsers: &unknown,
 		},
 	}
-	if cr.Size() != 0 {
-		t.Errorf("Size() = %d for bad response string, want 0", cr.Size())
+	if cr.SizeFlavor() != types.ContainerRegistrySizeFlavor("not-a-flavor") {
+		t.Errorf("SizeFlavor() = %q for unknown response string, want %q", cr.SizeFlavor(), "not-a-flavor")
 	}
 }
 
-func TestContainerRegistry_Size_BadLocalString(t *testing.T) {
-	// Manually inject a bad string into the local field (bypassing WithSize).
+func TestContainerRegistry_SizeFlavor_UnknownLocalString(t *testing.T) {
 	cr := &ContainerRegistry{}
-	bad := "not-an-int"
-	cr.concurrentUsers = &bad
-	if cr.Size() != 0 {
-		t.Errorf("Size() = %d for bad local string, want 0", cr.Size())
+	unknown := "not-a-flavor"
+	cr.concurrentUsers = &unknown
+	if cr.SizeFlavor() != types.ContainerRegistrySizeFlavor("not-a-flavor") {
+		t.Errorf("SizeFlavor() = %q for unknown local string, want %q", cr.SizeFlavor(), "not-a-flavor")
 	}
 }
 
@@ -1200,8 +1198,8 @@ func TestContainerRegistry_Accessors_ZeroValue(t *testing.T) {
 	if cr.AdminUsername() != "" {
 		t.Errorf("AdminUsername() = %q, want empty", cr.AdminUsername())
 	}
-	if cr.Size() != 0 {
-		t.Errorf("Size() = %d, want 0", cr.Size())
+	if cr.SizeFlavor() != "" {
+		t.Errorf("SizeFlavor() = %q, want empty", cr.SizeFlavor())
 	}
 	if cr.BillingPeriod() != "" {
 		t.Errorf("BillingPeriod() = %q, want empty", cr.BillingPeriod())
