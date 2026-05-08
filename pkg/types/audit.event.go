@@ -21,8 +21,8 @@ type EventCategory struct {
 	Description *string `json:"description,omitempty"`
 }
 
-// Region represents the region information
-type Region struct {
+// RegionInfo represents the region information in an audit log event.
+type RegionInfo struct {
 	Name             *string `json:"name,omitempty"`
 	AvailabilityZone *string `json:"availabilityZone,omitempty"`
 }
@@ -76,7 +76,7 @@ type AuditEvent struct {
 	Operation     Operation              `json:"operation"`
 	Event         EventInfo              `json:"event"`
 	Category      EventCategory          `json:"category"`
-	Region        *Region                `json:"region,omitempty"`
+	Region        *RegionInfo            `json:"region,omitempty"`
 	Origin        string                 `json:"origin"`
 	Channel       string                 `json:"channel"`
 	Status        Status                 `json:"status"`

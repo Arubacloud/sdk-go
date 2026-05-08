@@ -43,7 +43,7 @@ func auditMakeFullEvent() types.AuditEvent {
 		Operation:     types.Operation{ID: "op-1", Value: strPtr("Create")},
 		Event:         types.EventInfo{ID: "evt-1", Value: strPtr("evt-value"), Type: "write"},
 		Category:      types.EventCategory{Value: "resource", Description: strPtr("Resource category")},
-		Region:        &types.Region{Name: &regionName, AvailabilityZone: &az},
+		Region:        &types.RegionInfo{Name: &regionName, AvailabilityZone: &az},
 		Origin:        "portal",
 		Channel:       "web",
 		Status:        types.Status{Value: "Success", Description: strPtr("ok"), Code: int32Ptr(200)},
