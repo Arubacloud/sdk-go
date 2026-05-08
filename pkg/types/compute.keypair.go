@@ -19,6 +19,7 @@ type KeyPairRequest struct {
 type KeyPairResponse struct {
 	Metadata   ResourceMetadataResponse `json:"metadata"`
 	Properties KeyPairPropertiesResult  `json:"properties"`
+	Status     ResourceStatus           `json:"status"`
 }
 
 type KeyPairListResponse struct {
