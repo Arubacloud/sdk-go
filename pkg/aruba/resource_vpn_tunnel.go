@@ -42,7 +42,7 @@ func (t *VPNTunnel) AddTag(tag string) *VPNTunnel          { t.addTag(tag); retu
 func (t *VPNTunnel) RemoveTag(tag string) *VPNTunnel       { t.removeTag(tag); return t }
 func (t *VPNTunnel) ReplaceTags(tags ...string) *VPNTunnel { t.replaceTags(tags...); return t }
 func (t *VPNTunnel) InRegion(r Region) *VPNTunnel          { t.inRegion(r); return t }
-func (t *VPNTunnel) WithVPNType(s VPNType) *VPNTunnel      { t.vpnType = &s; return t }
+func (t *VPNTunnel) OfType(s VPNType) *VPNTunnel           { t.vpnType = &s; return t }
 func (t *VPNTunnel) WithVPNClientProtocol(s VPNClientProtocol) *VPNTunnel {
 	t.vpnClientProtocol = &s
 	return t

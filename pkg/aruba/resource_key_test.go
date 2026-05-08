@@ -46,7 +46,7 @@ func TestKey_FluentSetters(t *testing.T) {
 	k := NewKey().
 		IntoKMS(parent).
 		WithName("my-key").
-		WithAlgorithm("Aes")
+		OfAlgorithm("Aes")
 
 	if k.Name() != "my-key" {
 		t.Errorf("Name() = %q", k.Name())
@@ -115,7 +115,7 @@ func TestKey_IntoKMS_BadRef_NoProject(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestKey_ToRequest_FullyPopulated(t *testing.T) {
-	k := NewKey().WithName("enc-key").WithAlgorithm("Rsa")
+	k := NewKey().WithName("enc-key").OfAlgorithm("Rsa")
 	req := k.RawRequest()
 	if req.Name != "enc-key" {
 		t.Errorf("Name = %q", req.Name)
@@ -297,7 +297,7 @@ func TestKey_Accessors_ZeroValue(t *testing.T) {
 
 // Algorithm falls back to local field (no response)
 func TestKey_Algorithm_LocalFallback(t *testing.T) {
-	k := NewKey().WithAlgorithm("Rsa")
+	k := NewKey().OfAlgorithm("Rsa")
 	if k.Algorithm() != "Rsa" {
 		t.Errorf("Algorithm() = %q, want Rsa", k.Algorithm())
 	}
@@ -388,7 +388,7 @@ func TestKeysClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	parent := keyMakeKMSParent("p-1", "kms-1")
-	k := NewKey().IntoKMS(parent).WithName("my-key").WithAlgorithm("Aes")
+	k := NewKey().IntoKMS(parent).WithName("my-key").OfAlgorithm("Aes")
 
 	result, err := adapter.Create(context.Background(), k)
 	if err != nil {
@@ -417,7 +417,7 @@ func TestKeysClientAdapter_Create_NoProject(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusCreated)
 	})
-	k := NewKey().WithName("x").WithAlgorithm("Aes")
+	k := NewKey().WithName("x").OfAlgorithm("Aes")
 	_, err := adapter.Create(context.Background(), k)
 	if err == nil {
 		t.Fatal("expected error when Key has no project")
@@ -435,7 +435,7 @@ func TestKeysClientAdapter_Create_NoKMS(t *testing.T) {
 	})
 	k := NewKey()
 	k.projectID = "p-1" // project set but not KMS
-	k.WithName("x").WithAlgorithm("Aes")
+	k.WithName("x").OfAlgorithm("Aes")
 	_, err := adapter.Create(context.Background(), k)
 	if err == nil {
 		t.Fatal("expected error when Key has no KMS ID")
@@ -463,7 +463,7 @@ func TestKeysClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, `{"message":"bad request"}`)
 	})
 	parent := keyMakeKMSParent("p-1", "kms-1")
-	_, err := adapter.Create(context.Background(), NewKey().IntoKMS(parent).WithName("k").WithAlgorithm("Aes"))
+	_, err := adapter.Create(context.Background(), NewKey().IntoKMS(parent).WithName("k").OfAlgorithm("Aes"))
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {
 		t.Fatalf("expected *HTTPError, got %T: %v", err, err)

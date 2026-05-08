@@ -12,7 +12,7 @@ import (
 // StorageBackup is the wrapper for an Aruba Cloud Storage Backup (a direct
 // child of a Project, derived from a BlockStorage volume). Construct with
 // aruba.NewStorageBackup() and bind it via IntoProject(project) and
-// WithOrigin(bs).
+// FromVolume(bs).
 type StorageBackup struct {
 	errMixin
 	metadataMixin
@@ -57,13 +57,13 @@ func (b *StorageBackup) WithBillingPeriod(p BillingPeriod) *StorageBackup {
 	return b
 }
 
-// WithOrigin binds the source BlockStorage via its URI. Pass any Ref (typed
+// FromVolume binds the source BlockStorage via its URI. Pass any Ref (typed
 // or aruba.URI(...)). Empty URIs are recorded on the error sink and the field
 // remains unset.
-func (b *StorageBackup) WithOrigin(vol Ref) *StorageBackup {
+func (b *StorageBackup) FromVolume(vol Ref) *StorageBackup {
 	uri := vol.URI()
 	if uri == "" {
-		b.addErr(fmt.Errorf("WithOrigin: empty URI"))
+		b.addErr(fmt.Errorf("FromVolume: empty URI"))
 		return b
 	}
 	b.originRef = &uri
