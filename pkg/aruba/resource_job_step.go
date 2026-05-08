@@ -18,13 +18,13 @@ type JobStep struct {
 	name        *string
 	resourceURI *string
 	actionURI   *string
-	httpVerb    *string
+	httpVerb    *HTTPVerb
 	body        *string
 }
 
 func (s *JobStep) Named(name string) *JobStep        { s.name = &name; return s }
 func (s *JobStep) WithAction(action string) *JobStep { s.actionURI = &action; return s }
-func (s *JobStep) WithVerb(verb string) *JobStep     { s.httpVerb = &verb; return s }
+func (s *JobStep) WithVerb(verb HTTPVerb) *JobStep   { s.httpVerb = &verb; return s }
 func (s *JobStep) WithBody(body string) *JobStep     { s.body = &body; return s }
 
 // OfResource sets the resource URI for this step. Errors if the ref's URI is empty.
