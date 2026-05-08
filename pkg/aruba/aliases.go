@@ -10,6 +10,7 @@ import "github.com/Arubacloud/sdk-go/pkg/types"
 type (
 	// Network
 	RuleDirection   = types.RuleDirection
+	RuleProtocol    = types.RuleProtocol
 	EndpointTypeDto = types.EndpointTypeDto
 	SubnetType      = types.SubnetType
 
@@ -65,6 +66,12 @@ const (
 	// Network — security rule direction
 	RuleDirectionIngress = types.RuleDirectionIngress
 	RuleDirectionEgress  = types.RuleDirectionEgress
+
+	// Network — security rule protocol
+	RuleProtocolANY  = types.RuleProtocolANY
+	RuleProtocolTCP  = types.RuleProtocolTCP
+	RuleProtocolUDP  = types.RuleProtocolUDP
+	RuleProtocolICMP = types.RuleProtocolICMP
 
 	// Network — endpoint type
 	EndpointTypeIP            = types.EndpointTypeIP
