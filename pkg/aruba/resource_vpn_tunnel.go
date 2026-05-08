@@ -23,7 +23,7 @@ type VPNTunnel struct {
 
 	vpnType            *string
 	vpnClientProtocol  *string
-	billingPeriod      *string
+	billingPeriod      *BillingPeriod
 	peerClientPublicIP *string
 
 	ipConfig *VPNIPConfig
@@ -45,7 +45,7 @@ func (t *VPNTunnel) WithLocation(loc string) *VPNTunnel         { t.withLocation
 func (t *VPNTunnel) InRegion(r string) *VPNTunnel               { t.inRegion(r); return t }
 func (t *VPNTunnel) WithVPNType(s string) *VPNTunnel            { t.vpnType = &s; return t }
 func (t *VPNTunnel) WithVPNClientProtocol(s string) *VPNTunnel  { t.vpnClientProtocol = &s; return t }
-func (t *VPNTunnel) WithBillingPeriod(s string) *VPNTunnel      { t.billingPeriod = &s; return t }
+func (t *VPNTunnel) WithBillingPeriod(s BillingPeriod) *VPNTunnel { t.billingPeriod = &s; return t }
 func (t *VPNTunnel) WithPeerClientPublicIP(s string) *VPNTunnel { t.peerClientPublicIP = &s; return t }
 
 func (t *VPNTunnel) WithIPConfig(c *VPNIPConfig) *VPNTunnel {
@@ -108,7 +108,12 @@ func (t *VPNTunnel) ESP() *VPNESP               { return t.esp }
 func (t *VPNTunnel) PSK() *VPNPSK               { return t.psk }
 func (t *VPNTunnel) VPNType() string            { return vpnTunnelDerefString(t.vpnType) }
 func (t *VPNTunnel) VPNClientProtocol() string  { return vpnTunnelDerefString(t.vpnClientProtocol) }
-func (t *VPNTunnel) BillingPeriod() string      { return vpnTunnelDerefString(t.billingPeriod) }
+func (t *VPNTunnel) BillingPeriod() BillingPeriod {
+	if t.billingPeriod == nil {
+		return ""
+	}
+	return *t.billingPeriod
+}
 func (t *VPNTunnel) PeerClientPublicIP() string { return vpnTunnelDerefString(t.peerClientPublicIP) }
 
 func (t *VPNTunnel) toRequest() types.VPNTunnelRequest {

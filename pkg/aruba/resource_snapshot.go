@@ -22,7 +22,7 @@ type Snapshot struct {
 	linkedMixin
 	httpEnvelopeMixin
 
-	billingPeriod *string
+	billingPeriod *BillingPeriod
 	volumeRef     *string // body URI
 
 	// Read-only fields hydrated from response.
@@ -41,7 +41,7 @@ func (s *Snapshot) RemoveTag(t string) *Snapshot         { s.removeTag(t); retur
 func (s *Snapshot) ReplaceTags(ts ...string) *Snapshot   { s.replaceTags(ts...); return s }
 func (s *Snapshot) WithLocation(loc string) *Snapshot    { s.withLocation(loc); return s }
 func (s *Snapshot) InRegion(region string) *Snapshot     { s.withLocation(region); return s }
-func (s *Snapshot) WithBillingPeriod(p string) *Snapshot { s.billingPeriod = &p; return s }
+func (s *Snapshot) WithBillingPeriod(p BillingPeriod) *Snapshot { s.billingPeriod = &p; return s }
 
 // OfVolume binds the source BlockStorage via its URI. Pass any Ref (typed or
 // aruba.URI(...)). Empty URIs are recorded on the error sink and the field
@@ -68,7 +68,12 @@ func (s *Snapshot) Raw() *types.SnapshotResponse { return s.response }
 // RawRequest returns what toRequest() would emit right now.
 func (s *Snapshot) RawRequest() types.SnapshotRequest { return s.toRequest() }
 
-func (s *Snapshot) BillingPeriod() string { return snapshotDerefString(s.billingPeriod) }
+func (s *Snapshot) BillingPeriod() BillingPeriod {
+	if s.billingPeriod == nil {
+		return ""
+	}
+	return *s.billingPeriod
+}
 func (s *Snapshot) VolumeURI() string     { return snapshotDerefString(s.volumeRef) }
 
 // Read-only accessors hydrated from response.

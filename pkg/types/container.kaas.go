@@ -82,7 +82,7 @@ type OpenstackProjectResponse struct {
 }
 
 type BillingPeriodResourceResponse struct {
-	BillingPeriod *string `json:"billingPeriod,omitempty"`
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 }
 
 type KaaSPropertiesRequest struct {

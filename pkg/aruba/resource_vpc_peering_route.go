@@ -23,7 +23,7 @@ type VPCPeeringRoute struct {
 
 	localCIDR     *string
 	remoteCIDR    *string
-	billingPeriod *string
+	billingPeriod *BillingPeriod
 	response      *types.VPCPeeringRouteResponse
 }
 
@@ -42,7 +42,7 @@ func (r *VPCPeeringRoute) WithRemoteCIDR(cidr string) *VPCPeeringRoute {
 	r.remoteCIDR = &cidr
 	return r
 }
-func (r *VPCPeeringRoute) WithBillingPeriod(p string) *VPCPeeringRoute {
+func (r *VPCPeeringRoute) WithBillingPeriod(p BillingPeriod) *VPCPeeringRoute {
 	r.billingPeriod = &p
 	return r
 }
@@ -76,7 +76,7 @@ func (r *VPCPeeringRoute) RemoteCIDR() string {
 }
 
 // BillingPeriod returns the configured billing period ("" if unset).
-func (r *VPCPeeringRoute) BillingPeriod() string {
+func (r *VPCPeeringRoute) BillingPeriod() BillingPeriod {
 	if r.billingPeriod == nil {
 		return ""
 	}
@@ -84,7 +84,7 @@ func (r *VPCPeeringRoute) BillingPeriod() string {
 }
 
 func (r *VPCPeeringRoute) toRequest() types.VPCPeeringRouteRequest {
-	var bp string
+	var bp BillingPeriod
 	if r.billingPeriod != nil {
 		bp = *r.billingPeriod
 	}
