@@ -24,14 +24,15 @@ func (n *NodePool) Named(name string) *NodePool          { n.name = &name; retur
 func (n *NodePool) OfInstance(instance string) *NodePool { n.instance = &instance; return n }
 func (n *NodePool) InZone(zone string) *NodePool         { n.zone = &zone; return n }
 
-func (n *NodePool) WithCount(count int32) *NodePool { n.nodes = &count; return n }
+func (n *NodePool) WithCount(count int) *NodePool { v := int32(count); n.nodes = &v; return n }
 
 // WithAutoscaling enables autoscaling with the given min and max node counts.
-func (n *NodePool) WithAutoscaling(min, max int32) *NodePool {
+func (n *NodePool) WithAutoscaling(min, max int) *NodePool {
 	t := true
+	mn, mx := int32(min), int32(max)
 	n.autoscaling = &t
-	n.minCount = &min
-	n.maxCount = &max
+	n.minCount = &mn
+	n.maxCount = &mx
 	return n
 }
 
