@@ -23,14 +23,14 @@ const (
 type DBaaSFlavor string
 
 const (
-	DBaaSFlavorDBO1A2  DBaaSFlavor = "DBO1A2"
-	DBaaSFlavorDBO1A4  DBaaSFlavor = "DBO1A4"
-	DBaaSFlavorDBO2A4  DBaaSFlavor = "DBO2A4"
-	DBaaSFlavorDBO2A8  DBaaSFlavor = "DBO2A8"
-	DBaaSFlavorDBO4A8  DBaaSFlavor = "DBO4A8"
-	DBaaSFlavorDBO4A16 DBaaSFlavor = "DBO4A16"
-	DBaaSFlavorDBO8A16 DBaaSFlavor = "DBO8A16"
-	DBaaSFlavorDBO8A32 DBaaSFlavor = "DBO8A32"
+	DBaaSFlavorDBO1A2   DBaaSFlavor = "DBO1A2"
+	DBaaSFlavorDBO1A4   DBaaSFlavor = "DBO1A4"
+	DBaaSFlavorDBO2A4   DBaaSFlavor = "DBO2A4"
+	DBaaSFlavorDBO2A8   DBaaSFlavor = "DBO2A8"
+	DBaaSFlavorDBO4A8   DBaaSFlavor = "DBO4A8"
+	DBaaSFlavorDBO4A16  DBaaSFlavor = "DBO4A16"
+	DBaaSFlavorDBO8A16  DBaaSFlavor = "DBO8A16"
+	DBaaSFlavorDBO8A32  DBaaSFlavor = "DBO8A32"
 	DBaaSFlavorDBO12A24 DBaaSFlavor = "DBO12A24"
 	DBaaSFlavorDBO16A32 DBaaSFlavor = "DBO16A32"
 	DBaaSFlavorDBO16A64 DBaaSFlavor = "DBO16A64"

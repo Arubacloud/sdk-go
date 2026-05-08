@@ -65,18 +65,18 @@ type KaaS struct {
 // Standard setters
 // ---------------------------------------------------------------------------
 
-func (k *KaaS) IntoProject(p Ref) *KaaS                 { k.intoProject(p); return k }
-func (k *KaaS) WithName(n string) *KaaS                 { k.withName(n); return k }
-func (k *KaaS) AddTag(t string) *KaaS                   { k.addTag(t); return k }
-func (k *KaaS) RemoveTag(t string) *KaaS                { k.removeTag(t); return k }
-func (k *KaaS) ReplaceTags(ts ...string) *KaaS          { k.replaceTags(ts...); return k }
-func (k *KaaS) WithLocation(loc Region) *KaaS           { k.withLocation(loc); return k }
-func (k *KaaS) InRegion(region Region) *KaaS            { k.withLocation(region); return k }
+func (k *KaaS) IntoProject(p Ref) *KaaS                         { k.intoProject(p); return k }
+func (k *KaaS) WithName(n string) *KaaS                         { k.withName(n); return k }
+func (k *KaaS) AddTag(t string) *KaaS                           { k.addTag(t); return k }
+func (k *KaaS) RemoveTag(t string) *KaaS                        { k.removeTag(t); return k }
+func (k *KaaS) ReplaceTags(ts ...string) *KaaS                  { k.replaceTags(ts...); return k }
+func (k *KaaS) WithLocation(loc Region) *KaaS                   { k.withLocation(loc); return k }
+func (k *KaaS) InRegion(region Region) *KaaS                    { k.withLocation(region); return k }
 func (k *KaaS) WithKubernetesVersion(v KubernetesVersion) *KaaS { k.kubernetesVersion = &v; return k }
-func (k *KaaS) WithPodCIDR(cidr string) *KaaS           { k.podCIDR = &cidr; return k }
-func (k *KaaS) WithHA(enabled bool) *KaaS               { k.ha = &enabled; return k }
-func (k *KaaS) WithBillingPeriod(period BillingPeriod) *KaaS { k.billingPeriod = &period; return k }
-func (k *KaaS) WithSecurityGroupName(name string) *KaaS { k.securityGroupName = &name; return k }
+func (k *KaaS) WithPodCIDR(cidr string) *KaaS                   { k.podCIDR = &cidr; return k }
+func (k *KaaS) WithHA(enabled bool) *KaaS                       { k.ha = &enabled; return k }
+func (k *KaaS) WithBillingPeriod(period BillingPeriod) *KaaS    { k.billingPeriod = &period; return k }
+func (k *KaaS) WithSecurityGroupName(name string) *KaaS         { k.securityGroupName = &name; return k }
 
 // WithNodeCIDR sets the node CIDR block (address and name).
 // The wire type is NodeCIDRProperties{Address, Name}.
@@ -262,7 +262,7 @@ func (k *KaaS) toRequest() types.KaaSRequest {
 			}
 			return ""
 		}()},
-		HA:                k.ha,
+		HA: k.ha,
 		BillingPlan: func() types.BillingPeriodResource {
 			var bp BillingPeriod
 			if k.billingPeriod != nil {
