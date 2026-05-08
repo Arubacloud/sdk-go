@@ -47,7 +47,7 @@ func TestKaaS_FluentSetters(t *testing.T) {
 		WithPodCIDR("10.200.0.0/16").
 		WithKubernetesVersion("1.32.3").
 		WithHA(true).
-		WithStorage(100).
+		WithStorageGB(100).
 		WithBillingPeriod("Hour").
 		WithIdentity("cid", "csecret")
 
@@ -201,7 +201,7 @@ func TestKaaS_WithHA(t *testing.T) {
 }
 
 func TestKaaS_WithStorage(t *testing.T) {
-	k := NewKaaS().WithStorage(200)
+	k := NewKaaS().WithStorageGB(200)
 	req := k.RawRequest()
 	if req.Properties.Storage.MaxCumulativeVolumeSize == nil || *req.Properties.Storage.MaxCumulativeVolumeSize != 200 {
 		t.Errorf("Storage.MaxCumulativeVolumeSize = %v", req.Properties.Storage.MaxCumulativeVolumeSize)
@@ -311,7 +311,7 @@ func TestKaaS_ToRequest(t *testing.T) {
 		WithPodCIDR("10.200.0.0/16").
 		WithKubernetesVersion("1.32.3").
 		WithHA(true).
-		WithStorage(100).
+		WithStorageGB(100).
 		WithBillingPeriod("Hour").
 		WithIdentity("cid", "csecret").
 		AddNodePool(NewNodePool().Named("pool-1").OfInstance("K4A8").InZone("ITBG-1").WithCount(3))
@@ -383,7 +383,7 @@ func TestKaaS_ToUpdateRequest_MutableOnly(t *testing.T) {
 		WithVPC(URI(vpcURI)). // set but must NOT appear in update request
 		WithKubernetesVersion("1.33.0").
 		WithHA(true).
-		WithStorage(200).
+		WithStorageGB(200).
 		WithBillingPeriod("Monthly").
 		AddNodePool(NewNodePool().Named("pool-1").WithCount(5).OfInstance("K4A8").InZone("ITBG-1"))
 
