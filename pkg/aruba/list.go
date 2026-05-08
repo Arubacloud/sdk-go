@@ -55,7 +55,7 @@ func newList[T Wrapper](
 func (l *List[T]) Items() []T { return l.items }
 
 // Total returns the server-reported total item count across all pages.
-func (l *List[T]) Total() int64 { return l.total }
+func (l *List[T]) Total() int { return int(l.total) }
 
 // HasNext reports whether a next page is available.
 func (l *List[T]) HasNext() bool { return l.next != "" }
