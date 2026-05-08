@@ -33,8 +33,8 @@ func (s *Subnet) WithName(n string) *Subnet        { s.withName(n); return s }
 func (s *Subnet) AddTag(t string) *Subnet          { s.addTag(t); return s }
 func (s *Subnet) RemoveTag(t string) *Subnet       { s.removeTag(t); return s }
 func (s *Subnet) ReplaceTags(ts ...string) *Subnet { s.replaceTags(ts...); return s }
-func (s *Subnet) WithLocation(loc string) *Subnet  { s.withLocation(loc); return s }
-func (s *Subnet) InRegion(region string) *Subnet   { s.withLocation(region); return s }
+func (s *Subnet) WithLocation(loc Region) *Subnet  { s.withLocation(loc); return s }
+func (s *Subnet) InRegion(region Region) *Subnet   { s.withLocation(region); return s }
 func (s *Subnet) WithType(t string) *Subnet        { s.subnetType = &t; return s }
 func (s *Subnet) WithDefault(b bool) *Subnet       { s.defaultSubnet = &b; return s }
 func (s *Subnet) WithCIDR(cidr string) *Subnet     { s.cidr = &cidr; return s }

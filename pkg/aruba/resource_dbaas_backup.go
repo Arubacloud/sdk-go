@@ -40,8 +40,8 @@ func (b *DBaaSBackup) WithName(n string) *DBaaSBackup        { b.withName(n); re
 func (b *DBaaSBackup) AddTag(t string) *DBaaSBackup          { b.addTag(t); return b }
 func (b *DBaaSBackup) RemoveTag(t string) *DBaaSBackup       { b.removeTag(t); return b }
 func (b *DBaaSBackup) ReplaceTags(ts ...string) *DBaaSBackup { b.replaceTags(ts...); return b }
-func (b *DBaaSBackup) WithLocation(loc string) *DBaaSBackup  { b.withLocation(loc); return b }
-func (b *DBaaSBackup) InRegion(region string) *DBaaSBackup   { b.withLocation(region); return b }
+func (b *DBaaSBackup) WithLocation(loc Region) *DBaaSBackup  { b.withLocation(loc); return b }
+func (b *DBaaSBackup) InRegion(region Region) *DBaaSBackup   { b.withLocation(region); return b }
 
 // WithDBaaS binds the source DBaaS via its URI. Empty URIs are recorded on the
 // error sink and the field remains unset.
@@ -100,7 +100,7 @@ func (b *DBaaSBackup) SizeGB() int {
 	return int(b.response.Properties.Storage.Size)
 }
 
-func (b *DBaaSBackup) Zone() string {
+func (b *DBaaSBackup) Zone() Zone {
 	if b.response == nil {
 		return ""
 	}
@@ -109,7 +109,7 @@ func (b *DBaaSBackup) Zone() string {
 
 func (b *DBaaSBackup) toRequest() types.BackupRequest {
 	props := types.BackupPropertiesRequest{
-		Zone: b.Region(), // auto-derive from regionalMixin (no separate setter)
+		Zone: Zone(b.Region()), // auto-derive from regionalMixin (no separate setter)
 	}
 	if b.dbaasRef != nil {
 		props.DBaaS = types.ReferenceResource{URI: *b.dbaasRef}

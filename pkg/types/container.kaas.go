@@ -38,7 +38,7 @@ type NodePoolProperties struct {
 	// DataCenter Datacenter in which the nodes of the pool will be located.
 	// See metadata section of the API documentation for an updated list of admissible values.
 	// For more information, check the documentation.
-	Zone string `json:"dataCenter"`
+	Zone Zone `json:"dataCenter"`
 
 	// MinCount Minimum number of nodes for autoscaling
 	MinCount *int32 `json:"minCount,omitempty"`

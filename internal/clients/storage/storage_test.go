@@ -253,7 +253,7 @@ func TestCreateBlockStorageVolume(t *testing.T) {
 			Properties: types.BlockStoragePropertiesRequest{
 				SizeGB:        50,
 				BillingPeriod: "Hour",
-				Zone:          types.StringPtr("it-eur-1"),
+				Zone:          (*types.Zone)(types.StringPtr("it-eur-1")),
 				Type:          types.BlockStorageTypeStandard,
 			},
 		}
@@ -972,7 +972,7 @@ func TestUpdateSnapshot(t *testing.T) {
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "updated-snapshot"},
 			},
 			Properties: types.SnapshotPropertiesRequest{
-				BillingPeriod: types.StringPtr("Hour"),
+				BillingPeriod: (*types.BillingPeriod)(types.StringPtr("Hour")),
 			},
 		}
 		resp, err := svc.Update(context.Background(), "test-project", "snap-123", body, nil)

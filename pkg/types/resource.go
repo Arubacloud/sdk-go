@@ -20,7 +20,7 @@ type RegionalResourceMetadataRequest struct {
 }
 
 type LocationRequest struct {
-	Value string `json:"value"`
+	Value Region `json:"value"`
 }
 
 // Resource Metadata Response
@@ -29,7 +29,7 @@ type LocationResponse struct {
 	Country string `json:"country,omitempty"`
 	Name    string `json:"region,omitempty"`
 	City    string `json:"city,omitempty"`
-	Value   string `json:"value,omitempty"`
+	Value   Region `json:"value,omitempty"`
 }
 
 type ProjectResponseMetadata struct {

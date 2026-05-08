@@ -255,7 +255,7 @@ func blockStorageTestResponse(id, name, uri, projectID string) *types.BlockStora
 	state := "Active"
 	img := "LU22-001"
 	boot := true
-	zone := "ITBG-1"
+	zone := Zone("ITBG-1")
 	snap := &types.ReferenceResource{URI: "/projects/p/providers/Aruba.Storage/snapshots/s1"}
 	return &types.BlockStorageResponse{
 		Metadata: types.ResourceMetadataResponse{

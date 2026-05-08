@@ -24,7 +24,7 @@ type BlockStorage struct {
 
 	sizeGB        int
 	storageType   *types.BlockStorageType
-	zone          *string
+	zone          *Zone
 	billingPeriod *BillingPeriod
 	snapshotRef   *string // body URI
 	image         *string
@@ -38,9 +38,9 @@ func (b *BlockStorage) WithName(n string) *BlockStorage        { b.withName(n); 
 func (b *BlockStorage) AddTag(t string) *BlockStorage          { b.addTag(t); return b }
 func (b *BlockStorage) RemoveTag(t string) *BlockStorage       { b.removeTag(t); return b }
 func (b *BlockStorage) ReplaceTags(ts ...string) *BlockStorage { b.replaceTags(ts...); return b }
-func (b *BlockStorage) WithLocation(loc string) *BlockStorage  { b.withLocation(loc); return b }
-func (b *BlockStorage) InRegion(region string) *BlockStorage   { b.withLocation(region); return b }
-func (b *BlockStorage) InZone(zone string) *BlockStorage       { b.zone = &zone; return b }
+func (b *BlockStorage) WithLocation(loc Region) *BlockStorage  { b.withLocation(loc); return b }
+func (b *BlockStorage) InRegion(region Region) *BlockStorage   { b.withLocation(region); return b }
+func (b *BlockStorage) InZone(zone Zone) *BlockStorage         { b.zone = &zone; return b }
 func (b *BlockStorage) WithSizeGB(gb int) *BlockStorage        { b.sizeGB = gb; return b }
 func (b *BlockStorage) WithType(t types.BlockStorageType) *BlockStorage {
 	b.storageType = &t
@@ -82,7 +82,7 @@ func (b *BlockStorage) Type() types.BlockStorageType {
 	}
 	return *b.storageType
 }
-func (b *BlockStorage) Zone() string          { return blockStorageDerefString(b.zone) }
+func (b *BlockStorage) Zone() Zone            { return blockStorageDerefZone(b.zone) }
 func (b *BlockStorage) BillingPeriod() BillingPeriod {
 	if b.billingPeriod == nil {
 		return ""
@@ -183,6 +183,13 @@ func (b *BlockStorage) fromResponse(resp *types.BlockStorageResponse) {
 }
 
 func blockStorageDerefString(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
+
+func blockStorageDerefZone(p *Zone) Zone {
 	if p == nil {
 		return ""
 	}

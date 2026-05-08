@@ -31,7 +31,7 @@ type CloudServer struct {
 	httpEnvelopeMixin
 
 	// Request-side scalars.
-	zone      *string
+	zone      *Zone
 	flavor    *string
 	userData  *string
 	vpcPreset *bool
@@ -62,10 +62,10 @@ func (cs *CloudServer) WithName(n string) *CloudServer        { cs.withName(n); 
 func (cs *CloudServer) AddTag(t string) *CloudServer          { cs.addTag(t); return cs }
 func (cs *CloudServer) RemoveTag(t string) *CloudServer       { cs.removeTag(t); return cs }
 func (cs *CloudServer) ReplaceTags(ts ...string) *CloudServer { cs.replaceTags(ts...); return cs }
-func (cs *CloudServer) WithLocation(loc string) *CloudServer  { cs.withLocation(loc); return cs }
-func (cs *CloudServer) InRegion(region string) *CloudServer   { cs.withLocation(region); return cs }
+func (cs *CloudServer) WithLocation(loc Region) *CloudServer  { cs.withLocation(loc); return cs }
+func (cs *CloudServer) InRegion(region Region) *CloudServer   { cs.withLocation(region); return cs }
 
-func (cs *CloudServer) InZone(zone string) *CloudServer       { cs.zone = &zone; return cs }
+func (cs *CloudServer) InZone(zone Zone) *CloudServer         { cs.zone = &zone; return cs }
 func (cs *CloudServer) WithFlavor(flavor string) *CloudServer { cs.flavor = &flavor; return cs }
 func (cs *CloudServer) WithUserData(b64 string) *CloudServer  { cs.userData = &b64; return cs }
 func (cs *CloudServer) WithVPCPreset(b bool) *CloudServer     { cs.vpcPreset = &b; return cs }
@@ -124,8 +124,8 @@ func (cs *CloudServer) CloudServerID() string { return cs.ID() }
 func (cs *CloudServer) Raw() *types.CloudServerResponse      { return cs.response }
 func (cs *CloudServer) RawRequest() types.CloudServerRequest { return cs.toRequest() }
 
-func (cs *CloudServer) Zone() string {
-	return cloudServerDerefString(cs.zone)
+func (cs *CloudServer) Zone() Zone {
+	return cloudServerDerefZone(cs.zone)
 }
 
 // Flavor returns the flavor name. On a hydrated response the value comes from the
@@ -352,6 +352,13 @@ func (cs *CloudServer) fromResponse(resp *types.CloudServerResponse) {
 }
 
 func cloudServerDerefString(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
+
+func cloudServerDerefZone(p *Zone) Zone {
 	if p == nil {
 		return ""
 	}
