@@ -36,7 +36,7 @@ func TestDBaaS_FluentSetters(t *testing.T) {
 		InZone("ITBG-1").
 		WithEngine("mysql-8.0").
 		WithFlavor("DBO2A4").
-		WithStorage(20).
+		WithStorageGB(20).
 		WithBillingPeriod("Hour").
 		WithAutoscaling(50, 10)
 
@@ -58,8 +58,8 @@ func TestDBaaS_FluentSetters(t *testing.T) {
 	if d.Flavor() != "DBO2A4" {
 		t.Errorf("Flavor() = %q", d.Flavor())
 	}
-	if d.Storage() != 20 {
-		t.Errorf("Storage() = %d", d.Storage())
+	if d.StorageGB() != 20 {
+		t.Errorf("Storage() = %d", d.StorageGB())
 	}
 	if d.BillingPeriod() != "Hour" {
 		t.Errorf("BillingPeriod() = %q", d.BillingPeriod())
@@ -67,11 +67,11 @@ func TestDBaaS_FluentSetters(t *testing.T) {
 	if !d.AutoscalingEnabled() {
 		t.Error("AutoscalingEnabled() should be true")
 	}
-	if d.AutoscalingAvailableSpace() != 50 {
-		t.Errorf("AutoscalingAvailableSpace() = %d", d.AutoscalingAvailableSpace())
+	if d.AutoscalingAvailableSpaceGB() != 50 {
+		t.Errorf("AutoscalingAvailableSpaceGB() = %d", d.AutoscalingAvailableSpaceGB())
 	}
-	if d.AutoscalingStepSize() != 10 {
-		t.Errorf("AutoscalingStepSize() = %d", d.AutoscalingStepSize())
+	if d.AutoscalingStepSizeGB() != 10 {
+		t.Errorf("AutoscalingStepSizeGB() = %d", d.AutoscalingStepSizeGB())
 	}
 	if d.ProjectID() != "p-1" {
 		t.Errorf("ProjectID() = %q", d.ProjectID())
@@ -218,10 +218,10 @@ func TestDBaaS_WithFlavor(t *testing.T) {
 	}
 }
 
-func TestDBaaS_WithStorage(t *testing.T) {
-	d := NewDBaaS().WithStorage(50)
-	if d.Storage() != 50 {
-		t.Errorf("Storage() = %d", d.Storage())
+func TestDBaaS_WithStorageGB(t *testing.T) {
+	d := NewDBaaS().WithStorageGB(50)
+	if d.StorageGB() != 50 {
+		t.Errorf("Storage() = %d", d.StorageGB())
 	}
 }
 
@@ -230,11 +230,11 @@ func TestDBaaS_WithAutoscaling(t *testing.T) {
 	if !d.AutoscalingEnabled() {
 		t.Error("AutoscalingEnabled() should be true")
 	}
-	if d.AutoscalingAvailableSpace() != 50 {
-		t.Errorf("AutoscalingAvailableSpace() = %d", d.AutoscalingAvailableSpace())
+	if d.AutoscalingAvailableSpaceGB() != 50 {
+		t.Errorf("AutoscalingAvailableSpaceGB() = %d", d.AutoscalingAvailableSpaceGB())
 	}
-	if d.AutoscalingStepSize() != 10 {
-		t.Errorf("AutoscalingStepSize() = %d", d.AutoscalingStepSize())
+	if d.AutoscalingStepSizeGB() != 10 {
+		t.Errorf("AutoscalingStepSizeGB() = %d", d.AutoscalingStepSizeGB())
 	}
 	req := d.RawRequest()
 	if req.Properties.Autoscaling == nil {
@@ -291,7 +291,7 @@ func TestDBaaS_ToRequestRoundTrip(t *testing.T) {
 		InZone("ITBG-1").
 		WithEngine("mysql-8.0").
 		WithFlavor("DBO2A4").
-		WithStorage(20).
+		WithStorageGB(20).
 		WithBillingPeriod("Hour").
 		WithAutoscaling(50, 10).
 		WithNetworking(URI("/vpcs/v"), URI("/subnets/s"), URI("/sgs/sg"), URI("/eips/e"))
@@ -436,8 +436,8 @@ func TestDBaaS_FromResponseHydration(t *testing.T) {
 	if d.FlavorRaw() == nil || d.FlavorRaw().Name == nil {
 		t.Error("FlavorRaw() should carry full struct")
 	}
-	if d.Storage() != 20 {
-		t.Errorf("Storage() = %d", d.Storage())
+	if d.StorageGB() != 20 {
+		t.Errorf("Storage() = %d", d.StorageGB())
 	}
 	if d.BillingPeriod() != "Hour" {
 		t.Errorf("BillingPeriod() = %q", d.BillingPeriod())
@@ -552,7 +552,7 @@ func TestDBaaS_RoundTripUpdateFlow(t *testing.T) {
 	d.fromResponse(resp)
 
 	// Mutate storage; networking URIs should still come from the hydrated response.
-	d.WithStorage(40)
+	d.WithStorageGB(40)
 
 	req := d.RawRequest()
 	if req.Properties.Storage == nil || req.Properties.Storage.SizeGB == nil || *req.Properties.Storage.SizeGB != 40 {
@@ -677,7 +677,7 @@ func TestDBaaSClientAdapter_Create_Success(t *testing.T) {
 		InZone("ITBG-1").
 		WithEngine("mysql-8.0").
 		WithFlavor("DBO2A4").
-		WithStorage(20).
+		WithStorageGB(20).
 		WithBillingPeriod("Hour").
 		WithAutoscaling(50, 10).
 		WithNetworking(URI("/vpcs/v"), URI("/subnets/s"), URI("/sgs/sg"), URI("/eips/e"))
@@ -915,8 +915,8 @@ func TestDBaaS_WithLocation(t *testing.T) {
 
 func TestDBaaS_Accessors_ZeroValue(t *testing.T) {
 	d := &DBaaS{}
-	if d.Storage() != 0 {
-		t.Errorf("Storage() zero = %d", d.Storage())
+	if d.StorageGB() != 0 {
+		t.Errorf("Storage() zero = %d", d.StorageGB())
 	}
 	if d.AutoscalingEnabled() {
 		t.Error("AutoscalingEnabled() zero should be false")
@@ -924,11 +924,11 @@ func TestDBaaS_Accessors_ZeroValue(t *testing.T) {
 	if d.AutoscalingStatus() != "" {
 		t.Errorf("AutoscalingStatus() zero = %q", d.AutoscalingStatus())
 	}
-	if d.AutoscalingAvailableSpace() != 0 {
-		t.Errorf("AutoscalingAvailableSpace() zero = %d", d.AutoscalingAvailableSpace())
+	if d.AutoscalingAvailableSpaceGB() != 0 {
+		t.Errorf("AutoscalingAvailableSpaceGB() zero = %d", d.AutoscalingAvailableSpaceGB())
 	}
-	if d.AutoscalingStepSize() != 0 {
-		t.Errorf("AutoscalingStepSize() zero = %d", d.AutoscalingStepSize())
+	if d.AutoscalingStepSizeGB() != 0 {
+		t.Errorf("AutoscalingStepSizeGB() zero = %d", d.AutoscalingStepSizeGB())
 	}
 	if d.AutoscalingRuleID() != "" {
 		t.Errorf("AutoscalingRuleID() zero = %q", d.AutoscalingRuleID())
@@ -958,11 +958,11 @@ func TestDBaaS_AutoscalingResponse_Accessors(t *testing.T) {
 	if d.AutoscalingStatus() != "Enabled" {
 		t.Errorf("AutoscalingStatus() = %q", d.AutoscalingStatus())
 	}
-	if d.AutoscalingAvailableSpace() != 50 {
-		t.Errorf("AutoscalingAvailableSpace() = %d", d.AutoscalingAvailableSpace())
+	if d.AutoscalingAvailableSpaceGB() != 50 {
+		t.Errorf("AutoscalingAvailableSpaceGB() = %d", d.AutoscalingAvailableSpaceGB())
 	}
-	if d.AutoscalingStepSize() != 10 {
-		t.Errorf("AutoscalingStepSize() = %d", d.AutoscalingStepSize())
+	if d.AutoscalingStepSizeGB() != 10 {
+		t.Errorf("AutoscalingStepSizeGB() = %d", d.AutoscalingStepSizeGB())
 	}
 	if d.AutoscalingRuleID() != "rule-1" {
 		t.Errorf("AutoscalingRuleID() = %q", d.AutoscalingRuleID())
