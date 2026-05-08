@@ -614,7 +614,7 @@ func (m *responseMetadataMixin) Raw() *types.ResourceMetadataResponse {
 // statusMixin — resource lifecycle state
 // --------------------------------------------------------------------------
 
-// WaitOption configures WaitUntilActive / WaitUntilState behaviour.
+// WaitOption configures WaitUntilActive / WaitUntilStates behaviour.
 type WaitOption func(*waitOptions)
 
 type waitOptions struct {
@@ -703,17 +703,28 @@ func (m *statusMixin) PreviousState() string {
 }
 
 // WaitUntilActive blocks until the resource reaches the "Active" state.
-// Equivalent to WaitUntilState(ctx, "Active", opts...).
+// Equivalent to WaitUntilStates(ctx, []string{"Active"}, opts...).
 func (m *statusMixin) WaitUntilActive(ctx context.Context, opts ...WaitOption) error {
-	return m.WaitUntilState(ctx, "Active", opts...)
+	return m.WaitUntilStates(ctx, []string{"Active"}, opts...)
 }
 
-// WaitUntilState blocks until the resource reaches the given state.
+// WaitUntilReady blocks until the resource reaches any positive terminal
+// lifecycle state: "Active", "NotUsed", "InUse", or "Used". Use this when a
+// caller does not care which steady state the resource lands in — only that it
+// is no longer transitioning. For resources that reach "Active" (VPC, Subnet,
+// SecurityGroup, KeyPair, …) this is equivalent to WaitUntilActive. For
+// attach/detach resources (BlockStorage, ElasticIP) it succeeds whether the
+// resource is currently attached or not.
+func (m *statusMixin) WaitUntilReady(ctx context.Context, opts ...WaitOption) error {
+	return m.WaitUntilStates(ctx, []string{"Active", "NotUsed", "InUse", "Used"}, opts...)
+}
+
+// WaitUntilStates blocks until the resource reaches any of the given target states.
 // Returns immediately with an error if the resource enters a known error terminal state.
 // Returns a descriptive error if the refresh callback was not set (resource not produced by an adapter).
-func (m *statusMixin) WaitUntilState(ctx context.Context, target string, opts ...WaitOption) error {
+func (m *statusMixin) WaitUntilStates(ctx context.Context, targets []string, opts ...WaitOption) error {
 	if m.refresh == nil {
-		return errors.New("WaitUntilState: refresh callback not set; resource must be produced by an adapter (Create/Get/Update/List) to support polling")
+		return errors.New("WaitUntilStates: refresh callback not set; resource must be produced by an adapter (Create/Get/Update/List) to support polling")
 	}
 	cfg := applyWaitOptions(opts)
 	call := func(ctx context.Context) (*types.Response[any], error) {
@@ -725,11 +736,13 @@ func (m *statusMixin) WaitUntilState(ctx context.Context, target string, opts ..
 	var terminalErr error
 	check := func(_ *types.Response[any]) (bool, error) {
 		state := m.State()
-		if state == target {
-			return true, nil
+		for _, t := range targets {
+			if state == t {
+				return true, nil
+			}
 		}
 		if isSuccess, isTerminal := m.terminalStates[state]; isTerminal && !isSuccess {
-			terminalErr = fmt.Errorf("resource entered terminal error state %q (target %q)", state, target)
+			terminalErr = fmt.Errorf("resource entered terminal error state %q (targets %q)", state, targets)
 			return true, terminalErr
 		}
 		return false, nil
