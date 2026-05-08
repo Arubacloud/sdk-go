@@ -77,14 +77,16 @@ func (d *DBaaS) InRegion(region string) *DBaaS   { d.withLocation(region); retur
 func (d *DBaaS) InZone(zone string) *DBaaS              { d.zone = &zone; return d }
 func (d *DBaaS) WithEngine(engine string) *DBaaS        { d.engine = &engine; return d }
 func (d *DBaaS) WithFlavor(flavor string) *DBaaS        { d.flavor = &flavor; return d }
-func (d *DBaaS) WithStorage(gb int) *DBaaS              { v := int32(gb); d.storageGB = &v; return d }
+func (d *DBaaS) WithStorageGB(gb int) *DBaaS            { v := int32(gb); d.storageGB = &v; return d }
 // WithAutoscaling enables autoscaling and pins the available-space threshold and
-// step size. Mirrors NodePool.WithAutoscaling(min, max) from resource_kaas_nodepool.go.
-func (d *DBaaS) WithAutoscaling(availableSpace, stepSize int32) *DBaaS {
+// step size in GB. Mirrors NodePool.WithAutoscaling(min, max) from resource_kaas_nodepool.go.
+func (d *DBaaS) WithAutoscaling(availableSpaceGB, stepSizeGB int) *DBaaS {
 	t := true
+	av := int32(availableSpaceGB)
+	ss := int32(stepSizeGB)
 	d.autoscalingEnabled = &t
-	d.autoscalingAvailableSpace = &availableSpace
-	d.autoscalingStepSize = &stepSize
+	d.autoscalingAvailableSpace = &av
+	d.autoscalingStepSize = &ss
 	return d
 }
 
@@ -164,14 +166,14 @@ func (d *DBaaS) FlavorRaw() *types.DBaaSFlavorResponse {
 	return d.response.Properties.Flavor
 }
 
-// Storage returns the storage size in GB. On a hydrated response the value comes
-// from Storage.SizeGB; before hydration it returns what was passed to WithStorage.
-func (d *DBaaS) Storage() int32 {
+// StorageGB returns the storage size in GB. On a hydrated response the value comes
+// from Storage.SizeGB; before hydration it returns what was passed to WithStorageGB.
+func (d *DBaaS) StorageGB() int {
 	if d.response != nil && d.response.Properties.Storage != nil && d.response.Properties.Storage.SizeGB != nil {
-		return *d.response.Properties.Storage.SizeGB
+		return int(*d.response.Properties.Storage.SizeGB)
 	}
 	if d.storageGB != nil {
-		return *d.storageGB
+		return int(*d.storageGB)
 	}
 	return 0
 }
@@ -206,28 +208,28 @@ func (d *DBaaS) AutoscalingStatus() string {
 	return ""
 }
 
-// AutoscalingAvailableSpace returns the available-space threshold.
+// AutoscalingAvailableSpaceGB returns the available-space threshold in GB.
 // Hydrated response wins; otherwise returns the locally-set value, else 0.
-func (d *DBaaS) AutoscalingAvailableSpace() int32 {
+func (d *DBaaS) AutoscalingAvailableSpaceGB() int {
 	if d.response != nil && d.response.Properties.Autoscaling != nil &&
 		d.response.Properties.Autoscaling.AvailableSpace != nil {
-		return *d.response.Properties.Autoscaling.AvailableSpace
+		return int(*d.response.Properties.Autoscaling.AvailableSpace)
 	}
 	if d.autoscalingAvailableSpace != nil {
-		return *d.autoscalingAvailableSpace
+		return int(*d.autoscalingAvailableSpace)
 	}
 	return 0
 }
 
-// AutoscalingStepSize returns the step size.
+// AutoscalingStepSizeGB returns the step size in GB.
 // Hydrated response wins; otherwise returns the locally-set value, else 0.
-func (d *DBaaS) AutoscalingStepSize() int32 {
+func (d *DBaaS) AutoscalingStepSizeGB() int {
 	if d.response != nil && d.response.Properties.Autoscaling != nil &&
 		d.response.Properties.Autoscaling.StepSize != nil {
-		return *d.response.Properties.Autoscaling.StepSize
+		return int(*d.response.Properties.Autoscaling.StepSize)
 	}
 	if d.autoscalingStepSize != nil {
-		return *d.autoscalingStepSize
+		return int(*d.autoscalingStepSize)
 	}
 	return 0
 }
