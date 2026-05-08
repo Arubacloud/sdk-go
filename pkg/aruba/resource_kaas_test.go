@@ -435,7 +435,7 @@ func kaasTestResponse(name string) *types.KaaSResponse {
 	nodeCIDRName := "node-cidr"
 	podCIDRAddr := "10.200.0.0/16"
 	k8sVersion := "1.32.3"
-	billingPeriod := "Hour"
+	billingPeriod := BillingPeriod("Hour")
 	haTrue := true
 	maxVol := int32(100)
 	instanceName := "K4A8"

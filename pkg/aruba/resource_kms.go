@@ -29,7 +29,7 @@ type KMS struct {
 	statusMixin
 	httpEnvelopeMixin
 
-	billingPeriod *string
+	billingPeriod *BillingPeriod
 
 	response *types.KmsResponse
 }
@@ -45,7 +45,7 @@ func (k *KMS) RemoveTag(t string) *KMS         { k.removeTag(t); return k }
 func (k *KMS) ReplaceTags(ts ...string) *KMS   { k.replaceTags(ts...); return k }
 func (k *KMS) WithLocation(loc string) *KMS    { k.withLocation(loc); return k }
 func (k *KMS) InRegion(region string) *KMS     { k.withLocation(region); return k }
-func (k *KMS) WithBillingPeriod(p string) *KMS { k.billingPeriod = &p; return k }
+func (k *KMS) WithBillingPeriod(p BillingPeriod) *KMS { k.billingPeriod = &p; return k }
 
 // ---------------------------------------------------------------------------
 // Ref + ID accessors
@@ -65,7 +65,7 @@ func (k *KMS) RawRequest() types.KmsRequest { return k.toRequest() }
 // Response-preferring accessors
 // ---------------------------------------------------------------------------
 
-func (k *KMS) BillingPeriod() string {
+func (k *KMS) BillingPeriod() BillingPeriod {
 	if k.response != nil && k.response.Properties.BillingPeriod != "" {
 		return k.response.Properties.BillingPeriod
 	}

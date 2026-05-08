@@ -37,7 +37,7 @@ type ContainerRegistry struct {
 	// Registry-specific scalars.
 	adminUsername   *string
 	concurrentUsers *string // wire "size" — flavor enum string ("Small", "Medium", "HighPerf")
-	billingPeriod   *string
+	billingPeriod   *BillingPeriod
 
 	response *types.ContainerRegistryResponse
 }
@@ -106,7 +106,7 @@ func (r *ContainerRegistry) WithSizeFlavor(flavor types.ContainerRegistrySizeFla
 	return r
 }
 
-func (r *ContainerRegistry) WithBillingPeriod(p string) *ContainerRegistry {
+func (r *ContainerRegistry) WithBillingPeriod(p BillingPeriod) *ContainerRegistry {
 	r.billingPeriod = &p
 	return r
 }
@@ -166,11 +166,14 @@ func (r *ContainerRegistry) SizeFlavor() types.ContainerRegistrySizeFlavor {
 	return ""
 }
 
-func (r *ContainerRegistry) BillingPeriod() string {
+func (r *ContainerRegistry) BillingPeriod() BillingPeriod {
 	if r.response != nil && r.response.Properties.BillingPlan != nil {
 		return r.response.Properties.BillingPlan.BillingPeriod
 	}
-	return containerRegistryDeref(r.billingPeriod)
+	if r.billingPeriod == nil {
+		return ""
+	}
+	return *r.billingPeriod
 }
 
 func (r *ContainerRegistry) toRequest() types.ContainerRegistryRequest {

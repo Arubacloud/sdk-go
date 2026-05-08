@@ -41,7 +41,7 @@ func TestListContainerRegistry(t *testing.T) {
 									URI: *types.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
 								},
 								BillingPlan: &types.BillingPeriodResource{
-									BillingPeriod: *types.StringPtr("Hour"),
+									BillingPeriod: types.BillingPeriodHour,
 								},
 								AdminUser: &types.UserCredential{
 									Username: "admin",
@@ -208,7 +208,7 @@ func TestGetContainerRegistry(t *testing.T) {
 							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
 						},
 						BillingPlan: &types.BillingPeriodResource{
-							BillingPeriod: *types.StringPtr("Hour"),
+							BillingPeriod: types.BillingPeriodHour,
 						},
 						AdminUser: &types.UserCredential{
 							Username: "admin",
@@ -366,7 +366,7 @@ func TestCreateContainerRegistry(t *testing.T) {
 							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
 						},
 						BillingPlan: &types.BillingPeriodResource{
-							BillingPeriod: *types.StringPtr("Hour"),
+							BillingPeriod: types.BillingPeriodHour,
 						},
 						AdminUser: &types.UserCredential{
 							Username: "admin",
@@ -603,7 +603,7 @@ func TestUpdateContainerRegistry(t *testing.T) {
 							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
 						},
 						BillingPlan: &types.BillingPeriodResource{
-							BillingPeriod: *types.StringPtr("Hour"),
+							BillingPeriod: types.BillingPeriodHour,
 						},
 						AdminUser: &types.UserCredential{
 							Username: "admin",
