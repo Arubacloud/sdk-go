@@ -28,7 +28,7 @@ type Snapshot struct {
 	// Read-only fields hydrated from response.
 	sizeGB      *int32
 	storageType *types.BlockStorageType
-	zone        *string
+	zone        *Zone
 	bootable    *bool
 
 	response *types.SnapshotResponse
@@ -39,8 +39,8 @@ func (s *Snapshot) WithName(n string) *Snapshot          { s.withName(n); return
 func (s *Snapshot) AddTag(t string) *Snapshot            { s.addTag(t); return s }
 func (s *Snapshot) RemoveTag(t string) *Snapshot         { s.removeTag(t); return s }
 func (s *Snapshot) ReplaceTags(ts ...string) *Snapshot   { s.replaceTags(ts...); return s }
-func (s *Snapshot) WithLocation(loc string) *Snapshot    { s.withLocation(loc); return s }
-func (s *Snapshot) InRegion(region string) *Snapshot     { s.withLocation(region); return s }
+func (s *Snapshot) WithLocation(loc Region) *Snapshot    { s.withLocation(loc); return s }
+func (s *Snapshot) InRegion(region Region) *Snapshot     { s.withLocation(region); return s }
 func (s *Snapshot) WithBillingPeriod(p BillingPeriod) *Snapshot { s.billingPeriod = &p; return s }
 
 // OfVolume binds the source BlockStorage via its URI. Pass any Ref (typed or
@@ -89,7 +89,7 @@ func (s *Snapshot) Type() types.BlockStorageType {
 	}
 	return *s.storageType
 }
-func (s *Snapshot) Zone() string { return snapshotDerefString(s.zone) }
+func (s *Snapshot) Zone() Zone { return snapshotDerefZone(s.zone) }
 func (s *Snapshot) Bootable() bool {
 	if s.bootable == nil {
 		return false
@@ -165,6 +165,13 @@ func (s *Snapshot) fromResponse(resp *types.SnapshotResponse) {
 }
 
 func snapshotDerefString(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
+
+func snapshotDerefZone(p *Zone) Zone {
 	if p == nil {
 		return ""
 	}

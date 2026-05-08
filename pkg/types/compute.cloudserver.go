@@ -1,7 +1,7 @@
 package types
 
 type CloudServerPropertiesRequest struct {
-	Zone string `json:"dataCenter"`
+	Zone Zone `json:"dataCenter"`
 
 	VPC ReferenceResource `json:"vpc"`
 
@@ -47,7 +47,7 @@ type CloudServerNetworkInterfaceDetails struct {
 type CloudServerPropertiesResult struct {
 	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
 
-	Zone string `json:"dataCenter"`
+	Zone Zone `json:"dataCenter"`
 
 	VPC ReferenceResource `json:"vpc"`
 

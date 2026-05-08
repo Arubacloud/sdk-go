@@ -32,8 +32,8 @@ func (r *StorageRestore) WithName(n string) *StorageRestore        { r.withName(
 func (r *StorageRestore) AddTag(t string) *StorageRestore          { r.addTag(t); return r }
 func (r *StorageRestore) RemoveTag(t string) *StorageRestore       { r.removeTag(t); return r }
 func (r *StorageRestore) ReplaceTags(ts ...string) *StorageRestore { r.replaceTags(ts...); return r }
-func (r *StorageRestore) WithLocation(loc string) *StorageRestore  { r.withLocation(loc); return r }
-func (r *StorageRestore) InRegion(region string) *StorageRestore   { r.withLocation(region); return r }
+func (r *StorageRestore) WithLocation(loc Region) *StorageRestore  { r.withLocation(loc); return r }
+func (r *StorageRestore) InRegion(region Region) *StorageRestore   { r.withLocation(region); return r }
 
 // WithTarget binds the destination volume (where the backup will be restored to)
 // via its URI. Pass any Ref (typed or aruba.URI(...)). Empty URIs are recorded

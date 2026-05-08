@@ -1,7 +1,7 @@
 package types
 
 type BackupPropertiesRequest struct {
-	Zone string `json:"datacenter"`
+	Zone Zone `json:"datacenter"`
 
 	DBaaS ReferenceResource `json:"dbaas"`
 
@@ -17,7 +17,7 @@ type BackupStorageResponse struct {
 type BackupPropertiesResponse struct {
 	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
 
-	Zone string `json:"datacenter"`
+	Zone Zone `json:"datacenter"`
 
 	DBaaS ReferenceResource `json:"dbaas"`
 

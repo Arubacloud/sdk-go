@@ -45,7 +45,7 @@ type DBaaS struct {
 	httpEnvelopeMixin
 
 	// Request-side scalars.
-	zone                      *string
+	zone                      *Zone
 	engine                    *string // wire: Engine.ID
 	flavor                    *string // wire: Flavor.Name
 	storageGB                 *int32  // wire: Storage.SizeGB
@@ -71,10 +71,10 @@ func (d *DBaaS) WithName(n string) *DBaaS        { d.withName(n); return d }
 func (d *DBaaS) AddTag(t string) *DBaaS          { d.addTag(t); return d }
 func (d *DBaaS) RemoveTag(t string) *DBaaS       { d.removeTag(t); return d }
 func (d *DBaaS) ReplaceTags(ts ...string) *DBaaS { d.replaceTags(ts...); return d }
-func (d *DBaaS) WithLocation(loc string) *DBaaS  { d.withLocation(loc); return d }
-func (d *DBaaS) InRegion(region string) *DBaaS   { d.withLocation(region); return d }
+func (d *DBaaS) WithLocation(loc Region) *DBaaS  { d.withLocation(loc); return d }
+func (d *DBaaS) InRegion(region Region) *DBaaS   { d.withLocation(region); return d }
 
-func (d *DBaaS) InZone(zone string) *DBaaS       { d.zone = &zone; return d }
+func (d *DBaaS) InZone(zone Zone) *DBaaS         { d.zone = &zone; return d }
 func (d *DBaaS) WithEngine(engine string) *DBaaS { d.engine = &engine; return d }
 func (d *DBaaS) WithFlavor(flavor string) *DBaaS { d.flavor = &flavor; return d }
 func (d *DBaaS) WithStorageGB(gb int) *DBaaS     { v := int32(gb); d.storageGB = &v; return d }
@@ -131,7 +131,7 @@ func (d *DBaaS) DBaaSID() string { return d.ID() }
 func (d *DBaaS) Raw() *types.DBaaSResponse      { return d.response }
 func (d *DBaaS) RawRequest() types.DBaaSRequest { return d.toRequest() }
 
-func (d *DBaaS) Zone() string { return dbaasDerefString(d.zone) }
+func (d *DBaaS) Zone() Zone { return dbaasDerefZone(d.zone) }
 
 // Engine returns the engine identifier. On a hydrated response the value comes
 // from Engine.Type; before hydration it returns what was passed to WithEngine.
@@ -400,6 +400,13 @@ func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 }
 
 func dbaasDerefString(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
+
+func dbaasDerefZone(p *Zone) Zone {
 	if p == nil {
 		return ""
 	}
