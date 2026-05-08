@@ -3,7 +3,6 @@ package aruba
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/Arubacloud/sdk-go/internal/clients/container"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
@@ -37,7 +36,7 @@ type ContainerRegistry struct {
 
 	// Registry-specific scalars.
 	adminUsername   *string
-	concurrentUsers *string // wire "size" — we accept int and itoa; stored as *string
+	concurrentUsers *string // wire "size" — flavor enum string ("Small", "Medium", "HighPerf")
 	billingPeriod   *string
 
 	response *types.ContainerRegistryResponse
@@ -98,10 +97,11 @@ func (r *ContainerRegistry) WithAdminUsername(u string) *ContainerRegistry {
 	return r
 }
 
-// WithSize sets the concurrent-users limit. The value is converted to the wire
-// string representation ("size" JSON field).
-func (r *ContainerRegistry) WithSize(concurrentUsers int) *ContainerRegistry {
-	s := strconv.Itoa(concurrentUsers)
+// WithSizeFlavor sets the concurrent-users tier for the registry.
+// Accepted values per the platform: "Small", "Medium", "HighPerf".
+// Use the ContainerRegistrySizeFlavor* constants.
+func (r *ContainerRegistry) WithSizeFlavor(flavor types.ContainerRegistrySizeFlavor) *ContainerRegistry {
+	s := string(flavor)
 	r.concurrentUsers = &s
 	return r
 }
@@ -154,20 +154,16 @@ func (r *ContainerRegistry) AdminUsername() string {
 	return containerRegistryDeref(r.adminUsername)
 }
 
-// Size returns the concurrent-users limit. Returns 0 when not set or when the
-// wire string cannot be parsed as an integer.
-func (r *ContainerRegistry) Size() int {
+// SizeFlavor returns the registry's concurrent-users tier as the typed enum.
+// Returns "" if the wire field has not been populated.
+func (r *ContainerRegistry) SizeFlavor() types.ContainerRegistrySizeFlavor {
 	if r.response != nil && r.response.Properties.ConcurrentUsers != nil {
-		if n, err := strconv.Atoi(*r.response.Properties.ConcurrentUsers); err == nil {
-			return n
-		}
+		return types.ContainerRegistrySizeFlavor(*r.response.Properties.ConcurrentUsers)
 	}
 	if r.concurrentUsers != nil {
-		if n, err := strconv.Atoi(*r.concurrentUsers); err == nil {
-			return n
-		}
+		return types.ContainerRegistrySizeFlavor(*r.concurrentUsers)
 	}
-	return 0
+	return ""
 }
 
 func (r *ContainerRegistry) BillingPeriod() string {
@@ -281,6 +277,7 @@ func containerRegistryDeref(p *string) string {
 var containerRegistryTerminalStates = map[string]bool{
 	"Active": true,
 	"Error":  false,
+	"Failed": false,
 }
 
 // ---------------------------------------------------------------------------
