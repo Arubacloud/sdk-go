@@ -108,8 +108,11 @@ func TestAuditEvent_FromResponse_FullyPopulated(t *testing.T) {
 	if ev.Category().Value != "resource" {
 		t.Errorf("Category().Value = %q", ev.Category().Value)
 	}
-	if ev.Region() == nil || *ev.Region().Name != "IT-MIL" {
-		t.Error("Region() unexpected")
+	if ev.Region() != "IT-MIL" {
+		t.Errorf("Region() = %q, want IT-MIL", ev.Region())
+	}
+	if ev.Zone() != "az1" {
+		t.Errorf("Zone() = %q, want az1", ev.Zone())
 	}
 	if ev.Status().Value != "Success" {
 		t.Errorf("Status().Value = %q", ev.Status().Value)
@@ -180,8 +183,11 @@ func TestAuditEvent_Accessors_ZeroValue(t *testing.T) {
 	if ev.Category() != (types.EventCategory{}) {
 		t.Error("Category() on zero should be zero value")
 	}
-	if ev.Region() != nil {
-		t.Error("Region() on zero should be nil")
+	if ev.Region() != "" {
+		t.Errorf("Region() on zero should be empty, got %q", ev.Region())
+	}
+	if ev.Zone() != "" {
+		t.Errorf("Zone() on zero should be empty, got %q", ev.Zone())
 	}
 	if ev.Status().Value != "" {
 		t.Error("Status() on zero should have empty Value")
