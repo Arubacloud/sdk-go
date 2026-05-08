@@ -900,15 +900,15 @@ func TestStorageRestoresClientAdapter_List_TwoItems(t *testing.T) {
 
 func TestStorageRestore_FromResponse_SetsTerminalStates(t *testing.T) {
 	r := &StorageRestore{}
-	state := "Available"
+	state := "Active"
 	r.fromResponse(&types.StorageRestoreResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
 	if len(r.terminalStates) == 0 {
 		t.Error("fromResponse should set terminalStates on the wrapper")
 	}
-	if !r.terminalStates["Available"] {
-		t.Error("terminalStates[Available] should be true for StorageRestore")
+	if !r.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for StorageRestore")
 	}
 	if r.terminalStates["Error"] {
 		t.Error("terminalStates[Error] should be false for StorageRestore")
