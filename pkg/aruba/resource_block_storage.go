@@ -41,7 +41,7 @@ func (b *BlockStorage) ReplaceTags(ts ...string) *BlockStorage { b.replaceTags(t
 func (b *BlockStorage) InRegion(region Region) *BlockStorage   { b.inRegion(region); return b }
 func (b *BlockStorage) InZone(zone Zone) *BlockStorage         { b.zone = &zone; return b }
 func (b *BlockStorage) WithSizeGB(gb int) *BlockStorage        { b.sizeGB = gb; return b }
-func (b *BlockStorage) WithType(t types.BlockStorageType) *BlockStorage {
+func (b *BlockStorage) OfType(t types.BlockStorageType) *BlockStorage {
 	b.storageType = &t
 	return b
 }

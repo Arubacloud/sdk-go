@@ -11,7 +11,7 @@ import (
 
 // DBaaS is the wrapper for an Aruba Cloud Database-as-a-Service instance
 // (a direct child of a Project). Construct with aruba.NewDBaaS() and bind
-// it via IntoProject(project), WithEngine, WithFlavor, WithStorage,
+// it via IntoProject(project), OfEngine, WithServerFlavor, WithStorage,
 // WithNetworking(vpc, subnet, sg, eip), etc.
 //
 // Schema asymmetries:
@@ -73,10 +73,10 @@ func (d *DBaaS) RemoveTag(t string) *DBaaS       { d.removeTag(t); return d }
 func (d *DBaaS) ReplaceTags(ts ...string) *DBaaS { d.replaceTags(ts...); return d }
 func (d *DBaaS) InRegion(region Region) *DBaaS   { d.inRegion(region); return d }
 
-func (d *DBaaS) InZone(zone Zone) *DBaaS                 { d.zone = &zone; return d }
-func (d *DBaaS) WithEngine(engine DatabaseEngine) *DBaaS { d.engine = &engine; return d }
-func (d *DBaaS) WithFlavor(flavor DBaaSFlavor) *DBaaS    { d.flavor = &flavor; return d }
-func (d *DBaaS) WithStorageGB(gb int) *DBaaS             { v := int32(gb); d.storageGB = &v; return d }
+func (d *DBaaS) InZone(zone Zone) *DBaaS                    { d.zone = &zone; return d }
+func (d *DBaaS) OfEngine(engine DatabaseEngine) *DBaaS      { d.engine = &engine; return d }
+func (d *DBaaS) WithServerFlavor(flavor DBaaSFlavor) *DBaaS { d.flavor = &flavor; return d }
+func (d *DBaaS) WithStorageGB(gb int) *DBaaS                { v := int32(gb); d.storageGB = &v; return d }
 
 // WithAutoscaling enables autoscaling and pins the available-space threshold and
 // step size in GB. Mirrors NodePool.WithAutoscaling(min, max) from resource_kaas_nodepool.go.
@@ -133,7 +133,7 @@ func (d *DBaaS) RawRequest() types.DBaaSRequest { return d.toRequest() }
 func (d *DBaaS) Zone() Zone { return dbaasDerefZone(d.zone) }
 
 // Engine returns the engine identifier. On a hydrated response the value comes
-// from Engine.Type; before hydration it returns what was passed to WithEngine.
+// from Engine.Type; before hydration it returns what was passed to OfEngine.
 func (d *DBaaS) Engine() DatabaseEngine {
 	if d.response != nil && d.response.Properties.Engine != nil && d.response.Properties.Engine.Type != nil {
 		return DatabaseEngine(*d.response.Properties.Engine.Type)
@@ -153,7 +153,7 @@ func (d *DBaaS) EngineRaw() *types.DBaaSEngineResponse {
 }
 
 // Flavor returns the flavor name. On a hydrated response the value comes from
-// Flavor.Name; before hydration it returns what was passed to WithFlavor.
+// Flavor.Name; before hydration it returns what was passed to WithServerFlavor.
 func (d *DBaaS) Flavor() DBaaSFlavor {
 	if d.response != nil && d.response.Properties.Flavor != nil && d.response.Properties.Flavor.Name != nil {
 		return DBaaSFlavor(*d.response.Properties.Flavor.Name)
