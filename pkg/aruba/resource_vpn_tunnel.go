@@ -21,8 +21,8 @@ type VPNTunnel struct {
 	linkedMixin
 	httpEnvelopeMixin
 
-	vpnType            *string
-	vpnClientProtocol  *string
+	vpnType           *VPNType
+	vpnClientProtocol *VPNClientProtocol
 	billingPeriod      *BillingPeriod
 	peerClientPublicIP *string
 
@@ -43,8 +43,11 @@ func (t *VPNTunnel) RemoveTag(tag string) *VPNTunnel              { t.removeTag(
 func (t *VPNTunnel) ReplaceTags(tags ...string) *VPNTunnel        { t.replaceTags(tags...); return t }
 func (t *VPNTunnel) WithLocation(loc Region) *VPNTunnel           { t.withLocation(loc); return t }
 func (t *VPNTunnel) InRegion(r Region) *VPNTunnel                 { t.inRegion(r); return t }
-func (t *VPNTunnel) WithVPNType(s string) *VPNTunnel              { t.vpnType = &s; return t }
-func (t *VPNTunnel) WithVPNClientProtocol(s string) *VPNTunnel    { t.vpnClientProtocol = &s; return t }
+func (t *VPNTunnel) WithVPNType(s VPNType) *VPNTunnel              { t.vpnType = &s; return t }
+func (t *VPNTunnel) WithVPNClientProtocol(s VPNClientProtocol) *VPNTunnel {
+	t.vpnClientProtocol = &s
+	return t
+}
 func (t *VPNTunnel) WithBillingPeriod(s BillingPeriod) *VPNTunnel { t.billingPeriod = &s; return t }
 func (t *VPNTunnel) WithPeerClientPublicIP(s string) *VPNTunnel   { t.peerClientPublicIP = &s; return t }
 
@@ -106,8 +109,18 @@ func (t *VPNTunnel) IPConfig() *VPNIPConfig    { return t.ipConfig }
 func (t *VPNTunnel) IKE() *VPNIKE              { return t.ike }
 func (t *VPNTunnel) ESP() *VPNESP              { return t.esp }
 func (t *VPNTunnel) PSK() *VPNPSK              { return t.psk }
-func (t *VPNTunnel) VPNType() string           { return vpnTunnelDerefString(t.vpnType) }
-func (t *VPNTunnel) VPNClientProtocol() string { return vpnTunnelDerefString(t.vpnClientProtocol) }
+func (t *VPNTunnel) VPNType() VPNType {
+	if t.vpnType == nil {
+		return ""
+	}
+	return *t.vpnType
+}
+func (t *VPNTunnel) VPNClientProtocol() VPNClientProtocol {
+	if t.vpnClientProtocol == nil {
+		return ""
+	}
+	return *t.vpnClientProtocol
+}
 func (t *VPNTunnel) BillingPeriod() BillingPeriod {
 	if t.billingPeriod == nil {
 		return ""
@@ -170,8 +183,8 @@ func (t *VPNTunnel) fromResponse(resp *types.VPNTunnelResponse) {
 		t.vpnType = &v
 	}
 	if resp.Properties.VPNClientProtocol != nil {
-		v := *resp.Properties.VPNClientProtocol
-		t.vpnClientProtocol = &v
+		p := *resp.Properties.VPNClientProtocol
+		t.vpnClientProtocol = &p
 	}
 	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != "" {
 		bp := resp.Properties.BillingPlan.BillingPeriod

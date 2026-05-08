@@ -229,6 +229,20 @@ const (
 	ESPPFSGroupDHGroup32 ESPPFSGroup = "dh-group32"
 )
 
+// VPNType is the type of VPN tunnel.
+type VPNType string
+
+const (
+	VPNTypeSiteToSite VPNType = "Site-To-Site"
+)
+
+// VPNClientProtocol is the client protocol for a VPN tunnel.
+type VPNClientProtocol string
+
+const (
+	VPNClientProtocolIKEv2 VPNClientProtocol = "ikev2"
+)
+
 // SubnetInfo contains subnet CIDR and name for VPN tunnel IP configuration
 type SubnetInfo struct {
 	CIDR string `json:"cidr,omitempty"`
@@ -316,10 +330,10 @@ type VPNClientSettings struct {
 // VPNTunnelPropertiesRequest contains properties of a VPN tunnel
 type VPNTunnelPropertiesRequest struct {
 	// VPNType Type of VPN tunnel. Admissible values: Site-To-Site (nullable)
-	VPNType *string `json:"vpnType,omitempty"`
+	VPNType *VPNType `json:"vpnType,omitempty"`
 
 	// VPNClientProtocol Protocol of the VPN tunnel. Admissible values: ikev2 (nullable)
-	VPNClientProtocol *string `json:"vpnClientProtocol,omitempty"`
+	VPNClientProtocol *VPNClientProtocol `json:"vpnClientProtocol,omitempty"`
 
 	// IPConfigurations Network configuration of the VPN tunnel (nullable)
 	IPConfigurations *IPConfigurations `json:"ipConfigurations,omitempty"`
@@ -334,10 +348,10 @@ type VPNTunnelPropertiesRequest struct {
 // VPNTunnelPropertiesResponse contains the response properties of a VPN tunnel
 type VPNTunnelPropertiesResponse struct {
 	// VPNType Type of the VPN tunnel (nullable)
-	VPNType *string `json:"vpnType,omitempty"`
+	VPNType *VPNType `json:"vpnType,omitempty"`
 
 	// VPNClientProtocol Protocol of the VPN tunnel (nullable)
-	VPNClientProtocol *string `json:"vpnClientProtocol,omitempty"`
+	VPNClientProtocol *VPNClientProtocol `json:"vpnClientProtocol,omitempty"`
 
 	// IPConfigurations Network configuration of the VPN tunnel (nullable)
 	IPConfigurations *IPConfigurations `json:"ipConfigurations,omitempty"`
