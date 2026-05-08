@@ -21,7 +21,7 @@ type SecurityRule struct {
 	httpEnvelopeMixin
 
 	direction *types.RuleDirection
-	protocol  *string
+	protocol  *RuleProtocol
 	port      *string
 	target    *types.RuleTarget
 	response  *types.SecurityRuleResponse
@@ -37,15 +37,14 @@ func (r *SecurityRule) ReplaceTags(ts ...string) *SecurityRule { r.replaceTags(t
 func (r *SecurityRule) WithLocation(loc Region) *SecurityRule  { r.withLocation(loc); return r }
 func (r *SecurityRule) InRegion(region Region) *SecurityRule   { r.inRegion(region); return r }
 
-// WithDirection sets the rule direction. Accepts "Ingress" or "Egress".
-func (r *SecurityRule) WithDirection(dir string) *SecurityRule {
-	d := types.RuleDirection(dir)
-	r.direction = &d
+// WithDirection sets the rule direction.
+func (r *SecurityRule) WithDirection(dir types.RuleDirection) *SecurityRule {
+	r.direction = &dir
 	return r
 }
 
-// WithProtocol sets the L4 protocol. Accepts "ANY", "TCP", "UDP", "ICMP".
-func (r *SecurityRule) WithProtocol(proto string) *SecurityRule {
+// WithProtocol sets the L4 protocol.
+func (r *SecurityRule) WithProtocol(proto RuleProtocol) *SecurityRule {
 	r.protocol = &proto
 	return r
 }
@@ -104,7 +103,7 @@ func (r *SecurityRule) Direction() types.RuleDirection {
 }
 
 // Protocol returns the configured protocol ("" if unset).
-func (r *SecurityRule) Protocol() string {
+func (r *SecurityRule) Protocol() RuleProtocol {
 	if r.protocol == nil {
 		return ""
 	}
