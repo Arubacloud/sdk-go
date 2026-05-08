@@ -12,7 +12,7 @@ type VPNESP struct {
 	pfs        *string
 }
 
-func (e *VPNESP) WithLifetime(s int32) *VPNESP    { e.lifetime = s; return e }
+func (e *VPNESP) WithLifetimeSeconds(s int) *VPNESP { e.lifetime = int32(s); return e }
 func (e *VPNESP) WithEncryption(v string) *VPNESP { e.encryption = &v; return e }
 func (e *VPNESP) WithHash(v string) *VPNESP       { e.hash = &v; return e }
 func (e *VPNESP) WithPFS(v string) *VPNESP        { e.pfs = &v; return e }
