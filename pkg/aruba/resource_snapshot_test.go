@@ -146,7 +146,7 @@ func TestSnapshot_ToRequestRoundTrip(t *testing.T) {
 	snap := NewSnapshot().
 		WithName("snap-rt").
 		AddTag("t1").AddTag("t2").
-		WithLocation("ITBG-Bergamo").
+		InRegion("ITBG-Bergamo").
 		WithBillingPeriod("Hour").
 		OfVolume(URI(volURI))
 

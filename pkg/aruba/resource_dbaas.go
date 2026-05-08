@@ -71,8 +71,7 @@ func (d *DBaaS) WithName(n string) *DBaaS        { d.withName(n); return d }
 func (d *DBaaS) AddTag(t string) *DBaaS          { d.addTag(t); return d }
 func (d *DBaaS) RemoveTag(t string) *DBaaS       { d.removeTag(t); return d }
 func (d *DBaaS) ReplaceTags(ts ...string) *DBaaS { d.replaceTags(ts...); return d }
-func (d *DBaaS) WithLocation(loc Region) *DBaaS  { d.withLocation(loc); return d }
-func (d *DBaaS) InRegion(region Region) *DBaaS   { d.withLocation(region); return d }
+func (d *DBaaS) InRegion(region Region) *DBaaS   { d.inRegion(region); return d }
 
 func (d *DBaaS) InZone(zone Zone) *DBaaS                 { d.zone = &zone; return d }
 func (d *DBaaS) WithEngine(engine DatabaseEngine) *DBaaS { d.engine = &engine; return d }
@@ -352,7 +351,7 @@ func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 		d.replaceTags(resp.Metadata.Tags...)
 	}
 	if resp.Metadata.LocationResponse != nil {
-		d.withLocation(resp.Metadata.LocationResponse.Value)
+		d.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	d.setLinked(resp.Properties.LinkedResources)
 	d.setStatus(&resp.Status)

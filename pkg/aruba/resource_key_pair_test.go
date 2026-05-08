@@ -121,7 +121,7 @@ func TestKeyPair_ToRequestRoundTrip(t *testing.T) {
 	kp := NewKeyPair().
 		WithName("my-keypair").
 		AddTag("t1").AddTag("t2").
-		WithLocation("ITBG-Bergamo").
+		InRegion("ITBG-Bergamo").
 		WithPublicKey("ssh-rsa AAAA...")
 
 	req := kp.RawRequest()
