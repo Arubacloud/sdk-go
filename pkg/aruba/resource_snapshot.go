@@ -72,11 +72,11 @@ func (s *Snapshot) BillingPeriod() string { return snapshotDerefString(s.billing
 func (s *Snapshot) VolumeURI() string     { return snapshotDerefString(s.volumeRef) }
 
 // Read-only accessors hydrated from response.
-func (s *Snapshot) Size() int32 {
+func (s *Snapshot) SizeGB() int {
 	if s.sizeGB == nil {
 		return 0
 	}
-	return *s.sizeGB
+	return int(*s.sizeGB)
 }
 func (s *Snapshot) Type() types.BlockStorageType {
 	if s.storageType == nil {
