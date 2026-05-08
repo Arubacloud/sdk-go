@@ -199,10 +199,10 @@ func TestVPNIPConfig_Build_NilReceiver(t *testing.T) {
 func TestVPNIKE_FluentSetters(t *testing.T) {
 	ike := NewVPNIKE().
 		WithLifetimeSeconds(28800).
-		WithEncryption(types.VPNEncryptionAES256).
-		WithHash(types.VPNHashSHA256).
-		WithDHGroup(types.VPNDHGroup14).
-		WithDPDAction(types.VPNDPDActionRestart).
+		WithEncryption(types.IKEEncryptionAES256).
+		WithHash(types.IKEHashSHA256).
+		WithDHGroup(types.IKEDHGroup14).
+		WithDPDAction(types.IKEDPDActionRestart).
 		WithDPDIntervalSeconds(30).
 		WithDPDTimeoutSeconds(120)
 
@@ -213,16 +213,16 @@ func TestVPNIKE_FluentSetters(t *testing.T) {
 	if built.Lifetime != 28800 {
 		t.Errorf("Lifetime = %d", built.Lifetime)
 	}
-	if built.Encryption == nil || *built.Encryption != types.VPNEncryptionAES256 {
+	if built.Encryption == nil || *built.Encryption != types.IKEEncryptionAES256 {
 		t.Errorf("Encryption = %v", built.Encryption)
 	}
-	if built.Hash == nil || *built.Hash != types.VPNHashSHA256 {
+	if built.Hash == nil || *built.Hash != types.IKEHashSHA256 {
 		t.Errorf("Hash = %v", built.Hash)
 	}
-	if built.DHGroup == nil || *built.DHGroup != types.VPNDHGroup14 {
+	if built.DHGroup == nil || *built.DHGroup != types.IKEDHGroup14 {
 		t.Errorf("DHGroup = %v", built.DHGroup)
 	}
-	if built.DPDAction == nil || *built.DPDAction != types.VPNDPDActionRestart {
+	if built.DPDAction == nil || *built.DPDAction != types.IKEDPDActionRestart {
 		t.Errorf("DPDAction = %v", built.DPDAction)
 	}
 	if built.DPDInterval != 30 {
@@ -261,8 +261,8 @@ func TestVPNIKE_Build_NilReceiver(t *testing.T) {
 func TestVPNESP_FluentSetters(t *testing.T) {
 	esp := NewVPNESP().
 		WithLifetimeSeconds(3600).
-		WithEncryption(types.VPNEncryptionAES128).
-		WithHash(types.VPNHashSHA1).
+		WithEncryption("aes128").
+		WithHash("sha1").
 		WithPFS(types.VPNPFSDHGroup14)
 
 	built := esp.build()
@@ -272,10 +272,10 @@ func TestVPNESP_FluentSetters(t *testing.T) {
 	if built.Lifetime != 3600 {
 		t.Errorf("Lifetime = %d", built.Lifetime)
 	}
-	if built.Encryption == nil || *built.Encryption != types.VPNEncryptionAES128 {
+	if built.Encryption == nil || *built.Encryption != "aes128" {
 		t.Errorf("Encryption = %v", built.Encryption)
 	}
-	if built.Hash == nil || *built.Hash != types.VPNHashSHA1 {
+	if built.Hash == nil || *built.Hash != "sha1" {
 		t.Errorf("Hash = %v", built.Hash)
 	}
 	if built.PFS == nil || *built.PFS != types.VPNPFSDHGroup14 {
@@ -362,9 +362,9 @@ func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
 		WithIKESettings(
 			NewVPNIKE().
 				WithLifetimeSeconds(28800).
-				WithEncryption(types.VPNEncryptionAES256).
-				WithHash(types.VPNHashSHA256).
-				WithDHGroup(types.VPNDHGroup14),
+				WithEncryption(types.IKEEncryptionAES256).
+				WithHash(types.IKEHashSHA256).
+				WithDHGroup(types.IKEDHGroup14),
 		).
 		WithESPSettings(
 			NewVPNESP().
@@ -406,7 +406,7 @@ func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
 		if cs.IKE == nil {
 			t.Fatal("IKE must be set")
 		}
-		if cs.IKE.Encryption == nil || *cs.IKE.Encryption != types.VPNEncryptionAES256 {
+		if cs.IKE.Encryption == nil || *cs.IKE.Encryption != types.IKEEncryptionAES256 {
 			t.Errorf("IKE.Encryption = %v", cs.IKE.Encryption)
 		}
 		if cs.ESP == nil {
@@ -723,7 +723,7 @@ func TestVPNTunnelsClientAdapter_Create_Success(t *testing.T) {
 		InRegion("ITBG-Bergamo").
 		WithVPNType("ipsec").
 		WithVPNClientProtocol("ikev2").
-		WithIKESettings(NewVPNIKE().WithEncryption(types.VPNEncryptionAES256))
+		WithIKESettings(NewVPNIKE().WithEncryption(types.IKEEncryptionAES256))
 
 	result, err := adapter.Create(context.Background(), tun)
 	if err != nil {
