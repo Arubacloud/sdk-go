@@ -26,9 +26,9 @@ func (c *VPNIPConfig) WithVPC(v Ref) *VPNIPConfig {
 	return c
 }
 
-func (c *VPNIPConfig) WithPublicIP(v Ref) *VPNIPConfig {
+func (c *VPNIPConfig) WithElasticIP(v Ref) *VPNIPConfig {
 	if v == nil || v.URI() == "" {
-		c.addErr(fmt.Errorf("WithPublicIP: PublicIP Ref has empty URI"))
+		c.addErr(fmt.Errorf("WithElasticIP: PublicIP Ref has empty URI"))
 		return c
 	}
 	c.publicIP = &types.ReferenceResource{URI: v.URI()}

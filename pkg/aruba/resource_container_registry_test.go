@@ -46,7 +46,7 @@ func TestContainerRegistry_FluentSetters(t *testing.T) {
 		WithVPC(vpcURI).
 		WithSubnet(subnetURI).
 		WithSecurityGroup(sgURI).
-		WithPublicIP(eipURI).
+		WithElasticIP(eipURI).
 		WithBlockStorage(bsURI).
 		WithAdminUsername("admin").
 		WithSizeFlavor(types.ContainerRegistrySizeFlavorSmall).
@@ -137,12 +137,12 @@ func TestContainerRegistry_IntoProject_BadRef(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// WithPublicIP body-ref setter
+// WithElasticIP body-ref setter
 // --------------------------------------------------------------------------
 
-func TestContainerRegistry_WithPublicIP_URIRef(t *testing.T) {
+func TestContainerRegistry_WithElasticIP_URIRef(t *testing.T) {
 	uri := "/projects/p-1/providers/Aruba.Network/elasticips/eip-1"
-	cr := NewContainerRegistry().WithPublicIP(URI(uri))
+	cr := NewContainerRegistry().WithElasticIP(URI(uri))
 	if cr.PublicIP() != uri {
 		t.Errorf("PublicIP() = %q", cr.PublicIP())
 	}
@@ -151,9 +151,9 @@ func TestContainerRegistry_WithPublicIP_URIRef(t *testing.T) {
 	}
 }
 
-func TestContainerRegistry_WithPublicIP_TypedRef(t *testing.T) {
+func TestContainerRegistry_WithElasticIP_TypedRef(t *testing.T) {
 	ref := URI("/projects/p-1/providers/Aruba.Network/elasticips/eip-1")
-	cr := NewContainerRegistry().WithPublicIP(ref)
+	cr := NewContainerRegistry().WithElasticIP(ref)
 	if cr.PublicIP() != ref.URI() {
 		t.Errorf("PublicIP() = %q, want %q", cr.PublicIP(), ref.URI())
 	}
@@ -162,8 +162,8 @@ func TestContainerRegistry_WithPublicIP_TypedRef(t *testing.T) {
 	}
 }
 
-func TestContainerRegistry_WithPublicIP_EmptyURI(t *testing.T) {
-	cr := NewContainerRegistry().WithPublicIP(URI(""))
+func TestContainerRegistry_WithElasticIP_EmptyURI(t *testing.T) {
+	cr := NewContainerRegistry().WithElasticIP(URI(""))
 	if cr.Err() == nil {
 		t.Error("expected Err() != nil for empty PublicIP URI")
 	}
@@ -354,7 +354,7 @@ func TestContainerRegistry_ToRequest(t *testing.T) {
 		WithVPC(URI(vpcURI)).
 		WithSubnet(URI(subnetURI)).
 		WithSecurityGroup(URI(sgURI)).
-		WithPublicIP(URI(eipURI)).
+		WithElasticIP(URI(eipURI)).
 		WithBlockStorage(URI(bsURI)).
 		WithAdminUsername("admin").
 		WithSizeFlavor(types.ContainerRegistrySizeFlavorHighPerf).
@@ -655,7 +655,7 @@ func TestContainerRegistriesClientAdapter_Create_Success(t *testing.T) {
 		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1")).
 		WithSubnet(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1")).
 		WithSecurityGroup(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1")).
-		WithPublicIP(URI("/projects/p/providers/Aruba.Network/elasticips/eip-1")).
+		WithElasticIP(URI("/projects/p/providers/Aruba.Network/elasticips/eip-1")).
 		WithBlockStorage(URI("/projects/p/providers/Aruba.Storage/blockstorages/bs-1")).
 		WithAdminUsername("admin").
 		WithSizeFlavor(types.ContainerRegistrySizeFlavorSmall).
@@ -774,7 +774,7 @@ func TestContainerRegistriesClientAdapter_Create_WithBodyRefs_ViaFake(t *testing
 		WithVPC(URI(vpcURI)).
 		WithSubnet(URI(subnetURI)).
 		WithSecurityGroup(URI(sgURI)).
-		WithPublicIP(URI(eipURI)).
+		WithElasticIP(URI(eipURI)).
 		WithBlockStorage(URI(bsURI)).
 		WithAdminUsername("admin").
 		WithSizeFlavor(types.ContainerRegistrySizeFlavorHighPerf)
