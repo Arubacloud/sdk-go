@@ -37,7 +37,7 @@ import (
 type DBaaS struct {
 	errMixin
 	metadataMixin
-	regionalMixin
+	zonalMixin
 	projectScopedMixin
 	responseMetadataMixin
 	statusMixin
@@ -45,7 +45,6 @@ type DBaaS struct {
 	httpEnvelopeMixin
 
 	// Request-side scalars.
-	zone                      *Zone
 	engine                    *DatabaseEngine // wire: Engine.ID
 	flavor                    *DBaaSFlavor    // wire: Flavor.Name
 	storageGB                 *int32          // wire: Storage.SizeGB
@@ -73,7 +72,7 @@ func (d *DBaaS) RemoveTag(t string) *DBaaS       { d.removeTag(t); return d }
 func (d *DBaaS) ReplaceTags(ts ...string) *DBaaS { d.replaceTags(ts...); return d }
 func (d *DBaaS) InRegion(region Region) *DBaaS   { d.inRegion(region); return d }
 
-func (d *DBaaS) InZone(zone Zone) *DBaaS                    { d.zone = &zone; return d }
+func (d *DBaaS) InZone(zone Zone) *DBaaS                    { d.inZone(zone); return d }
 func (d *DBaaS) OfEngine(engine DatabaseEngine) *DBaaS      { d.engine = &engine; return d }
 func (d *DBaaS) WithServerFlavor(flavor DBaaSFlavor) *DBaaS { d.flavor = &flavor; return d }
 func (d *DBaaS) WithStorageGB(gb int) *DBaaS                { v := int32(gb); d.storageGB = &v; return d }
@@ -128,8 +127,6 @@ func (d *DBaaS) DBaaSID() string { return d.ID() }
 
 func (d *DBaaS) Raw() *types.DBaaSResponse      { return d.response }
 func (d *DBaaS) RawRequest() types.DBaaSRequest { return d.toRequest() }
-
-func (d *DBaaS) Zone() Zone { return dbaasDerefZone(d.zone) }
 
 // Engine returns the engine identifier. On a hydrated response the value comes
 // from Engine.Type; before hydration it returns what was passed to OfEngine.
@@ -280,10 +277,7 @@ func (d *DBaaS) ElasticIP() string {
 
 func (d *DBaaS) toRequest() types.DBaaSRequest {
 	props := types.DBaaSPropertiesRequest{}
-	if d.zone != nil {
-		v := *d.zone
-		props.Zone = &v
-	}
+	props.Zone = d.zonePtr()
 	if d.engine != nil {
 		props.Engine = &types.DBaaSEngine{ID: d.engine}
 	}
@@ -402,13 +396,6 @@ func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 }
 
 func dbaasDerefString(p *string) string {
-	if p == nil {
-		return ""
-	}
-	return *p
-}
-
-func dbaasDerefZone(p *Zone) Zone {
 	if p == nil {
 		return ""
 	}
