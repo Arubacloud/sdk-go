@@ -22,7 +22,7 @@ func createBlockStorage(ctx context.Context, arubaClient aruba.Client, proj arub
 		OfType(aruba.BlockStorageTypeStandard).
 		WithBillingPeriod(aruba.BillingPeriodHour).
 		SetBootable().
-		FromImage("LU22-001")
+		FromImage(aruba.VolumeImageLU22001)
 
 	bs, err := arubaClient.FromStorage().Volumes().Create(ctx, bs)
 	if err != nil {
