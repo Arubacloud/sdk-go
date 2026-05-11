@@ -119,10 +119,6 @@ type OpenstackProjectResponse struct {
 	ID *string `json:"id,omitempty"`
 }
 
-type BillingPeriodResourceResponse struct {
-	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
-}
-
 type KaaSPropertiesRequest struct {
 
 	//LinkedResources linked resources to the KaaS cluster
@@ -148,7 +144,7 @@ type KaaSPropertiesRequest struct {
 
 	Storage StorageKubernetes `json:"storage,omitempty"`
 
-	BillingPlan BillingPeriodResource `json:"billingPlan"`
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 
 	Identity *IdentityProperties `json:"identity,omitempty"`
 
@@ -272,7 +268,7 @@ type KaaSPropertiesResponse struct {
 
 	Storage *StorageKubernetes `json:"storage,omitempty"`
 
-	BillingPlan *BillingPeriodResourceResponse `json:"billingPlan,omitempty"`
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 
 	ManagementIP *string `json:"managementIp,omitempty"`
 
@@ -292,7 +288,7 @@ type KaaSPropertiesUpdateRequest struct {
 
 	Storage *StorageKubernetes `json:"storage,omitempty"`
 
-	BillingPlan *BillingPeriodResource `json:"billingPlan,omitempty"`
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 }
 
 type KaaSRequest struct {

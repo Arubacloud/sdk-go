@@ -9,6 +9,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // ContainerRegistry is the wrapper for an Aruba Cloud Container Registry
 // (a direct child of a Project). Construct with aruba.NewContainerRegistry()
 // and bind it via IntoProject(project), WithVPC(vpc), etc.
@@ -28,7 +30,7 @@ type ContainerRegistry struct {
 	httpEnvelopeMixin
 
 	// Body-refs (single).
-	publicIPRef      *string
+	elasticIPRef     *string
 	vpcRef           *string
 	subnetRef        *string
 	securityGroupRef *string
@@ -42,16 +44,29 @@ type ContainerRegistry struct {
 	response *types.ContainerRegistryResponse
 }
 
+// Setters — chainable, general → specific
+
 // Standard setters.
 
-func (r *ContainerRegistry) IntoProject(p Ref) *ContainerRegistry  { r.intoProject(p); return r }
-func (r *ContainerRegistry) WithName(n string) *ContainerRegistry  { r.withName(n); return r }
-func (r *ContainerRegistry) AddTag(t string) *ContainerRegistry    { r.addTag(t); return r }
+// IntoProject binds this ContainerRegistry to its parent project. Required before Create.
+func (r *ContainerRegistry) IntoProject(p Ref) *ContainerRegistry { r.intoProject(p); return r }
+
+// WithName sets the resource name. Required by the API.
+func (r *ContainerRegistry) WithName(n string) *ContainerRegistry { r.withName(n); return r }
+
+// AddTag appends a tag for filtering and accounting.
+func (r *ContainerRegistry) AddTag(t string) *ContainerRegistry { r.addTag(t); return r }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
 func (r *ContainerRegistry) RemoveTag(t string) *ContainerRegistry { r.removeTag(t); return r }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (r *ContainerRegistry) ReplaceTags(ts ...string) *ContainerRegistry {
 	r.replaceTags(ts...)
 	return r
 }
+
+// InRegion sets the region for this resource.
 func (r *ContainerRegistry) InRegion(region Region) *ContainerRegistry {
 	r.inRegion(region)
 	return r
@@ -60,18 +75,27 @@ func (r *ContainerRegistry) InRegion(region Region) *ContainerRegistry {
 // Body-ref setters. Empty URIs are recorded on the error sink and the field
 // remains unset.
 
+// WithElasticIP binds the elastic IP to the registry. Errors if the URI is empty.
 func (r *ContainerRegistry) WithElasticIP(eip Ref) *ContainerRegistry {
-	return r.setSingleRef("WithElasticIP", eip, &r.publicIPRef)
+	return r.setSingleRef("WithElasticIP", eip, &r.elasticIPRef)
 }
+
+// WithVPC binds the registry to the given VPC. Errors if the URI is empty.
 func (r *ContainerRegistry) WithVPC(v Ref) *ContainerRegistry {
 	return r.setSingleRef("WithVPC", v, &r.vpcRef)
 }
+
+// WithSubnet binds the registry to the given subnet. Errors if the URI is empty.
 func (r *ContainerRegistry) WithSubnet(s Ref) *ContainerRegistry {
 	return r.setSingleRef("WithSubnet", s, &r.subnetRef)
 }
+
+// WithSecurityGroup binds the registry to the given security group. Errors if the URI is empty.
 func (r *ContainerRegistry) WithSecurityGroup(sg Ref) *ContainerRegistry {
 	return r.setSingleRef("WithSecurityGroup", sg, &r.securityGroupRef)
 }
+
+// WithBlockStorage binds a block storage volume for registry data. Errors if the URI is empty.
 func (r *ContainerRegistry) WithBlockStorage(vol Ref) *ContainerRegistry {
 	return r.setSingleRef("WithBlockStorage", vol, &r.blockStorageRef)
 }
@@ -88,49 +112,68 @@ func (r *ContainerRegistry) setSingleRef(label string, ref Ref, dst **string) *C
 
 // Registry-specific scalar setters.
 
+// WithAdminUsername sets the admin username for the registry.
 func (r *ContainerRegistry) WithAdminUsername(u string) *ContainerRegistry {
 	r.adminUsername = &u
 	return r
 }
 
-// WithSizeFlavor sets the concurrent-users tier for the registry.
+// OfSize sets the concurrent-users tier for the registry.
 // Accepted values per the platform: "Small", "Medium", "HighPerf".
 // Use the ContainerRegistrySizeFlavor* constants.
-func (r *ContainerRegistry) WithSizeFlavor(flavor types.ContainerRegistrySizeFlavor) *ContainerRegistry {
+func (r *ContainerRegistry) OfSize(flavor types.ContainerRegistrySizeFlavor) *ContainerRegistry {
 	s := string(flavor)
 	r.concurrentUsers = &s
 	return r
 }
 
+// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
 func (r *ContainerRegistry) WithBillingPeriod(p BillingPeriod) *ContainerRegistry {
 	r.billingPeriod = &p
 	return r
 }
 
+// Getters — general → specific
+
 // Ref + ID accessors.
 
-func (r *ContainerRegistry) URI() string                 { return r.RespURI() }
+// URI satisfies Ref by returning the server-assigned canonical URI, or "" if Create hasn't run yet.
+func (r *ContainerRegistry) URI() string { return r.RespURI() }
+
+// ContainerRegistryID satisfies withContainerRegistryID so child wrappers can extract this ID by typed assertion.
 func (r *ContainerRegistry) ContainerRegistryID() string { return r.ID() }
 
 // Raw accessors.
 
-func (r *ContainerRegistry) Raw() *types.ContainerRegistryResponse      { return r.response }
+// Raw shadows responseMetadataMixin.Raw() with the typed ContainerRegistry response.
+func (r *ContainerRegistry) Raw() *types.ContainerRegistryResponse { return r.response }
+
+// RawRequest returns what toRequest() would emit right now.
 func (r *ContainerRegistry) RawRequest() types.ContainerRegistryRequest { return r.toRequest() }
 
 // Response-preferring accessors (fall back to request-side field when not hydrated).
 
-func (r *ContainerRegistry) PublicIP() string {
-	return r.responseURIField(func() string { return r.response.Properties.PublicIp.URI }, r.publicIPRef)
+// ElasticIP returns the public endpoint URI for the registry (wire field: properties.publicIp.uri).
+func (r *ContainerRegistry) ElasticIP() string {
+	return r.responseURIField(func() string { return r.response.Properties.PublicIp.URI }, r.elasticIPRef)
 }
+
+// VPC returns the VPC URI for the registry, or "" if unset.
 func (r *ContainerRegistry) VPC() string {
 	return r.responseURIField(func() string { return r.response.Properties.VPC.URI }, r.vpcRef)
 }
+
+// Subnet returns the subnet URI for the registry, or "" if unset.
 func (r *ContainerRegistry) Subnet() string {
 	return r.responseURIField(func() string { return r.response.Properties.Subnet.URI }, r.subnetRef)
 }
+
+// SecurityGroup returns the security group URI for the registry, or "" if unset.
 func (r *ContainerRegistry) SecurityGroup() string {
 	return r.responseURIField(func() string { return r.response.Properties.SecurityGroup.URI }, r.securityGroupRef)
 }
+
+// BlockStorage returns the block storage URI attached to the registry, or "" if unset.
 func (r *ContainerRegistry) BlockStorage() string {
 	return r.responseURIField(func() string { return r.response.Properties.BlockStorage.URI }, r.blockStorageRef)
 }
@@ -143,6 +186,7 @@ func (r *ContainerRegistry) responseURIField(fromResp func() string, fallback *s
 	return containerRegistryDeref(fallback)
 }
 
+// AdminUsername returns the admin username for the registry, or "" if unset.
 func (r *ContainerRegistry) AdminUsername() string {
 	if r.response != nil && r.response.Properties.AdminUser != nil {
 		return r.response.Properties.AdminUser.Username
@@ -162,9 +206,10 @@ func (r *ContainerRegistry) SizeFlavor() types.ContainerRegistrySizeFlavor {
 	return ""
 }
 
+// BillingPeriod returns the billing period for the registry, or "" if unset.
 func (r *ContainerRegistry) BillingPeriod() BillingPeriod {
-	if r.response != nil && r.response.Properties.BillingPlan != nil {
-		return r.response.Properties.BillingPlan.BillingPeriod
+	if r.response != nil && r.response.Properties.BillingPeriod != nil {
+		return *r.response.Properties.BillingPeriod
 	}
 	if r.billingPeriod == nil {
 		return ""
@@ -172,10 +217,13 @@ func (r *ContainerRegistry) BillingPeriod() BillingPeriod {
 	return *r.billingPeriod
 }
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (r *ContainerRegistry) toRequest() types.ContainerRegistryRequest {
 	props := types.ContainerRegistryPropertiesRequest{}
-	if r.publicIPRef != nil {
-		props.PublicIp = types.ReferenceResource{URI: *r.publicIPRef}
+	if r.elasticIPRef != nil {
+		props.PublicIp = types.ReferenceResource{URI: *r.elasticIPRef}
 	}
 	if r.vpcRef != nil {
 		props.VPC = types.ReferenceResource{URI: *r.vpcRef}
@@ -195,9 +243,7 @@ func (r *ContainerRegistry) toRequest() types.ContainerRegistryRequest {
 	if r.concurrentUsers != nil {
 		props.ConcurrentUsers = r.concurrentUsers
 	}
-	if r.billingPeriod != nil {
-		props.BillingPlan = &types.BillingPeriodResource{BillingPeriod: *r.billingPeriod}
-	}
+	props.BillingPeriod = defaultBillingPeriod(r.billingPeriod)
 	return types.ContainerRegistryRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: r.toMetadata(),
@@ -207,6 +253,7 @@ func (r *ContainerRegistry) toRequest() types.ContainerRegistryRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (r *ContainerRegistry) fromResponse(resp *types.ContainerRegistryResponse) {
 	if resp == nil {
 		return
@@ -225,7 +272,7 @@ func (r *ContainerRegistry) fromResponse(resp *types.ContainerRegistryResponse) 
 
 	if resp.Properties.PublicIp.URI != "" {
 		v := resp.Properties.PublicIp.URI
-		r.publicIPRef = &v
+		r.elasticIPRef = &v
 	}
 	if resp.Properties.VPC.URI != "" {
 		v := resp.Properties.VPC.URI
@@ -251,9 +298,8 @@ func (r *ContainerRegistry) fromResponse(resp *types.ContainerRegistryResponse) 
 		v := *resp.Properties.ConcurrentUsers
 		r.concurrentUsers = &v
 	}
-	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != "" {
-		v := resp.Properties.BillingPlan.BillingPeriod
-		r.billingPeriod = &v
+	if resp.Properties.BillingPeriod != nil {
+		r.billingPeriod = resp.Properties.BillingPeriod
 	}
 
 	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
@@ -279,9 +325,7 @@ var containerRegistryTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level client interface, adapter, constructor, and methods
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
 // containerRegistryIDsFromRef extracts (projectID, registryID) from a Ref.
 // Uses URI segment fallback on "registries" — no typed ancestor interface needed
@@ -305,6 +349,9 @@ func containerRegistryIDsFromRef(ref Ref) (projectID, registryID string, err err
 	return pid, rid, nil
 }
 
+// containerRegistriesLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type containerRegistriesLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ContainerRegistryList], error)
 	Get(ctx context.Context, projectID, registryID string, params *types.RequestParameters) (*types.Response[types.ContainerRegistryResponse], error)
@@ -313,6 +360,12 @@ type containerRegistriesLowLevelClient interface {
 	Delete(ctx context.Context, projectID, registryID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// containerRegistriesClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates ContainerRegistry ↔ types.ContainerRegistryRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type containerRegistriesClientAdapter struct {
 	low containerRegistriesLowLevelClient
 }
@@ -324,6 +377,7 @@ func newContainerRegistriesClientAdapter(rest *restclient.Client) *containerRegi
 	return &containerRegistriesClientAdapter{low: container.NewContainerRegistryClientImpl(rest)}
 }
 
+// Create posts a new ContainerRegistry to the API and hydrates the wrapper from the response.
 func (a *containerRegistriesClientAdapter) Create(ctx context.Context, r *ContainerRegistry, opts ...CallOption) (*ContainerRegistry, error) {
 	if err := r.Err(); err != nil {
 		return r, err
@@ -357,6 +411,7 @@ func (a *containerRegistriesClientAdapter) Create(ctx context.Context, r *Contai
 	return r, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *containerRegistriesClientAdapter) Update(ctx context.Context, r *ContainerRegistry, opts ...CallOption) (*ContainerRegistry, error) {
 	if err := r.Err(); err != nil {
 		return r, err
@@ -393,6 +448,7 @@ func (a *containerRegistriesClientAdapter) Update(ctx context.Context, r *Contai
 	return r, nil
 }
 
+// Get fetches a ContainerRegistry by Ref and returns a freshly hydrated wrapper.
 func (a *containerRegistriesClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*ContainerRegistry, error) {
 	projectID, registryID, err := containerRegistryIDsFromRef(ref)
 	if err != nil {
@@ -429,6 +485,7 @@ func (a *containerRegistriesClientAdapter) Get(ctx context.Context, ref Ref, opt
 	return out, nil
 }
 
+// Delete removes the ContainerRegistry identified by Ref.
 func (a *containerRegistriesClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, registryID, err := containerRegistryIDsFromRef(ref)
 	if err != nil {
@@ -446,6 +503,7 @@ func (a *containerRegistriesClientAdapter) Delete(ctx context.Context, ref Ref, 
 	return nil
 }
 
+// List returns a paginated list of ContainerRegistry in the given parent scope.
 func (a *containerRegistriesClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOption) (*List[*ContainerRegistry], error) {
 	projectID, err := projectIDFromRef(parent)
 	if err != nil {

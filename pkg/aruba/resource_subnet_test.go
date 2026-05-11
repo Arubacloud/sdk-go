@@ -134,8 +134,8 @@ func TestSubnet_DHCPSubBuilder(t *testing.T) {
 
 	// Nil DHCP toType must return nil.
 	var nilDHCP *SubnetDHCP
-	if nilDHCP.toType() != nil {
-		t.Error("nil.toType() should return nil")
+	if nilDHCP.build() != nil {
+		t.Error("nil.build() should return nil")
 	}
 }
 

@@ -9,6 +9,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // StorageBackup is the wrapper for an Aruba Cloud Storage Backup (a direct
 // child of a Project, derived from a BlockStorage volume). Construct with
 // aruba.NewStorageBackup() and bind it via IntoProject(project) and
@@ -31,12 +33,25 @@ type StorageBackup struct {
 	response *types.StorageBackupResponse
 }
 
-func (b *StorageBackup) IntoProject(p Ref) *StorageBackup        { b.intoProject(p); return b }
-func (b *StorageBackup) WithName(n string) *StorageBackup        { b.withName(n); return b }
-func (b *StorageBackup) AddTag(t string) *StorageBackup          { b.addTag(t); return b }
-func (b *StorageBackup) RemoveTag(t string) *StorageBackup       { b.removeTag(t); return b }
+// Setters — chainable, general → specific
+
+// IntoProject binds this StorageBackup to its parent project. Required before Create.
+func (b *StorageBackup) IntoProject(p Ref) *StorageBackup { b.intoProject(p); return b }
+
+// WithName sets the resource name. Required by the API.
+func (b *StorageBackup) WithName(n string) *StorageBackup { b.withName(n); return b }
+
+// AddTag appends a tag for filtering and accounting.
+func (b *StorageBackup) AddTag(t string) *StorageBackup { b.addTag(t); return b }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (b *StorageBackup) RemoveTag(t string) *StorageBackup { b.removeTag(t); return b }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (b *StorageBackup) ReplaceTags(ts ...string) *StorageBackup { b.replaceTags(ts...); return b }
-func (b *StorageBackup) InRegion(region Region) *StorageBackup   { b.inRegion(region); return b }
+
+// InRegion sets the region for this resource.
+func (b *StorageBackup) InRegion(region Region) *StorageBackup { b.inRegion(region); return b }
 
 // OfType sets the backup type (Full or Incremental).
 func (b *StorageBackup) OfType(t types.StorageBackupType) *StorageBackup {
@@ -52,6 +67,7 @@ func (b *StorageBackup) WithRetentionDays(days int) *StorageBackup {
 	return b
 }
 
+// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
 func (b *StorageBackup) WithBillingPeriod(p BillingPeriod) *StorageBackup {
 	b.billingPeriod = &p
 	return b
@@ -70,6 +86,8 @@ func (b *StorageBackup) FromVolume(vol Ref) *StorageBackup {
 	return b
 }
 
+// Getters — general → specific
+
 // URI satisfies Ref.
 func (b *StorageBackup) URI() string { return b.RespURI() }
 
@@ -82,6 +100,7 @@ func (b *StorageBackup) Raw() *types.StorageBackupResponse { return b.response }
 // RawRequest returns what toRequest() would emit right now.
 func (b *StorageBackup) RawRequest() types.StorageBackupRequest { return b.toRequest() }
 
+// Type returns the backup type (Full or Incremental) set via OfType, or "" if unset.
 func (b *StorageBackup) Type() types.StorageBackupType {
 	if b.backupType == nil {
 		return ""
@@ -89,7 +108,10 @@ func (b *StorageBackup) Type() types.StorageBackupType {
 	return *b.backupType
 }
 
+// OriginURI returns the source volume URI bound via FromVolume, or "" if unset.
 func (b *StorageBackup) OriginURI() string { return storageBackupDerefString(b.originRef) }
+
+// BillingPeriod returns the billing period set on this backup, or "" if unset.
 func (b *StorageBackup) BillingPeriod() BillingPeriod {
 	if b.billingPeriod == nil {
 		return ""
@@ -97,6 +119,7 @@ func (b *StorageBackup) BillingPeriod() BillingPeriod {
 	return *b.billingPeriod
 }
 
+// RetentionDays returns the retention period in days, or 0 if unset.
 func (b *StorageBackup) RetentionDays() int {
 	if b.retentionDays == nil {
 		return 0
@@ -104,10 +127,13 @@ func (b *StorageBackup) RetentionDays() int {
 	return *b.retentionDays
 }
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (b *StorageBackup) toRequest() types.StorageBackupRequest {
 	props := types.StorageBackupPropertiesRequest{
 		RetentionDays: b.retentionDays,
-		BillingPeriod: b.billingPeriod,
+		BillingPeriod: defaultBillingPeriod(b.billingPeriod),
 	}
 	if b.backupType != nil {
 		props.StorageBackupType = *b.backupType
@@ -124,6 +150,7 @@ func (b *StorageBackup) toRequest() types.StorageBackupRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (b *StorageBackup) fromResponse(resp *types.StorageBackupResponse) {
 	if resp == nil {
 		return
@@ -180,10 +207,11 @@ var storageBackupTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level client interface, adapter, constructor, and methods
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// storageBackupLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type storageBackupLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.StorageBackupList], error)
 	Get(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[types.StorageBackupResponse], error)
@@ -192,7 +220,15 @@ type storageBackupLowLevelClient interface {
 	Delete(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// storageBackupsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates StorageBackup ↔ types.StorageBackupRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type storageBackupsClientAdapter struct{ low storageBackupLowLevelClient }
+
+var _ StorageBackupsClient = (*storageBackupsClientAdapter)(nil)
 
 func newStorageBackupsClientAdapter(rest *restclient.Client) *storageBackupsClientAdapter {
 	if rest == nil {
@@ -201,6 +237,7 @@ func newStorageBackupsClientAdapter(rest *restclient.Client) *storageBackupsClie
 	return &storageBackupsClientAdapter{low: storage.NewBackupClientImpl(rest)}
 }
 
+// Create posts a new StorageBackup to the API and hydrates the wrapper from the response.
 func (a *storageBackupsClientAdapter) Create(ctx context.Context, b *StorageBackup, opts ...CallOption) (*StorageBackup, error) {
 	if err := b.Err(); err != nil {
 		return b, err
@@ -234,6 +271,7 @@ func (a *storageBackupsClientAdapter) Create(ctx context.Context, b *StorageBack
 	return b, nil
 }
 
+// Get fetches a StorageBackup by Ref and returns a freshly hydrated wrapper.
 func (a *storageBackupsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*StorageBackup, error) {
 	projectID, backupID, err := backupIDsFromRef(ref)
 	if err != nil {
@@ -269,6 +307,7 @@ func (a *storageBackupsClientAdapter) Get(ctx context.Context, ref Ref, opts ...
 	return out, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *storageBackupsClientAdapter) Update(ctx context.Context, b *StorageBackup, opts ...CallOption) (*StorageBackup, error) {
 	if err := b.Err(); err != nil {
 		return b, err
@@ -305,6 +344,7 @@ func (a *storageBackupsClientAdapter) Update(ctx context.Context, b *StorageBack
 	return b, nil
 }
 
+// Delete removes the StorageBackup identified by Ref.
 func (a *storageBackupsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, backupID, err := backupIDsFromRef(ref)
 	if err != nil {
@@ -322,6 +362,7 @@ func (a *storageBackupsClientAdapter) Delete(ctx context.Context, ref Ref, opts 
 	return nil
 }
 
+// List returns a paginated list of StorageBackup entries in the given parent scope.
 func (a *storageBackupsClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*StorageBackup], error) {
 	projectID, err := projectIDFromRef(project)
 	if err != nil {

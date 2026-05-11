@@ -9,6 +9,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // CloudServer is the wrapper for an Aruba Cloud Compute server (a direct child of a Project).
 // Construct with aruba.NewCloudServer() and bind it via IntoProject(project), WithVPC(vpc),
 // WithBootVolume(volume), etc.
@@ -45,50 +47,77 @@ type CloudServer struct {
 	subnetRefs        []string
 	securityGroupRefs []string
 
-	// Hydrated response.
-	response *types.CloudServerResponse
-
 	// Action executor — set by the adapter when this wrapper is produced by a real client
 	// call. Locally-constructed wrappers (NewCloudServer()) have actions == nil and will
 	// return a clear error when PowerOn/PowerOff/SetPassword are called.
 	actions cloudServerActions
+
+	response *types.CloudServerResponse
 }
 
-// Setters (chainable).
+// Setters — chainable, general → specific
 
-func (cs *CloudServer) IntoProject(p Ref) *CloudServer        { cs.intoProject(p); return cs }
-func (cs *CloudServer) WithName(n string) *CloudServer        { cs.withName(n); return cs }
-func (cs *CloudServer) AddTag(t string) *CloudServer          { cs.addTag(t); return cs }
-func (cs *CloudServer) RemoveTag(t string) *CloudServer       { cs.removeTag(t); return cs }
+// IntoProject binds this CloudServer to its parent project. Required before Create.
+func (cs *CloudServer) IntoProject(p Ref) *CloudServer { cs.intoProject(p); return cs }
+
+// WithName sets the resource name. Required by the API.
+func (cs *CloudServer) WithName(n string) *CloudServer { cs.withName(n); return cs }
+
+// AddTag appends a tag for filtering and accounting.
+func (cs *CloudServer) AddTag(t string) *CloudServer { cs.addTag(t); return cs }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (cs *CloudServer) RemoveTag(t string) *CloudServer { cs.removeTag(t); return cs }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (cs *CloudServer) ReplaceTags(ts ...string) *CloudServer { cs.replaceTags(ts...); return cs }
-func (cs *CloudServer) InRegion(region Region) *CloudServer   { cs.inRegion(region); return cs }
 
+// InRegion sets the region for this resource.
+func (cs *CloudServer) InRegion(region Region) *CloudServer { cs.inRegion(region); return cs }
+
+// InZone sets the availability zone. More specific than InRegion.
 func (cs *CloudServer) InZone(zone Zone) *CloudServer { cs.inZone(zone); return cs }
+
+// OfFlavor sets the server flavor (instance size). Maps to wire field "flavorName".
 func (cs *CloudServer) OfFlavor(flavor CloudServerFlavor) *CloudServer {
 	cs.flavor = &flavor
 	return cs
 }
+
+// WithUserData sets the base64-encoded cloud-init user data.
 func (cs *CloudServer) WithUserData(b64 string) *CloudServer { cs.userData = &b64; return cs }
-func (cs *CloudServer) WithVPCPreset(b bool) *CloudServer    { cs.vpcPreset = &b; return cs }
+
+// WithVPCPreset marks the server to use VPC preset networking.
+func (cs *CloudServer) WithVPCPreset(b bool) *CloudServer { cs.vpcPreset = &b; return cs }
 
 // Single body-ref setters.
 
+// WithVPC attaches the server to the given VPC by URI reference.
 func (cs *CloudServer) WithVPC(v Ref) *CloudServer { return cs.setSingleRef("WithVPC", v, &cs.vpcRef) }
+
+// WithBootVolume sets the boot volume by URI reference.
 func (cs *CloudServer) WithBootVolume(vol Ref) *CloudServer {
 	return cs.setSingleRef("WithBootVolume", vol, &cs.bootVolumeRef)
 }
+
+// WithKeyPair attaches an SSH key pair by URI reference.
 func (cs *CloudServer) WithKeyPair(kp Ref) *CloudServer {
 	return cs.setSingleRef("WithKeyPair", kp, &cs.keyPairRef)
 }
+
+// WithElasticIP attaches an elastic IP by URI reference.
 func (cs *CloudServer) WithElasticIP(eip Ref) *CloudServer {
 	return cs.setSingleRef("WithElasticIP", eip, &cs.elasticIPRef)
 }
 
 // Multi-ref slice setters.
 
+// AddSubnet appends a subnet by URI reference.
 func (cs *CloudServer) AddSubnet(s Ref) *CloudServer {
 	return cs.appendRef("AddSubnet", s, &cs.subnetRefs)
 }
+
+// AddSecurityGroup appends a security group by URI reference.
 func (cs *CloudServer) AddSecurityGroup(sg Ref) *CloudServer {
 	return cs.appendRef("AddSecurityGroup", sg, &cs.securityGroupRefs)
 }
@@ -115,14 +144,22 @@ func (cs *CloudServer) appendRef(label string, r Ref, dst *[]string) *CloudServe
 	return cs
 }
 
+// Getters — general → specific
+
 // Ref + ID accessors.
 
-func (cs *CloudServer) URI() string           { return cs.RespURI() }
+// URI satisfies Ref by returning the server-assigned canonical URI, or "" if Create hasn't run yet.
+func (cs *CloudServer) URI() string { return cs.RespURI() }
+
+// CloudServerID satisfies withCloudServerID so child wrappers can extract this ID by typed assertion.
 func (cs *CloudServer) CloudServerID() string { return cs.ID() }
 
 // Accessors.
 
-func (cs *CloudServer) Raw() *types.CloudServerResponse      { return cs.response }
+// Raw shadows responseMetadataMixin.Raw() with the typed CloudServer response.
+func (cs *CloudServer) Raw() *types.CloudServerResponse { return cs.response }
+
+// RawRequest returns what toRequest() would emit right now.
 func (cs *CloudServer) RawRequest() types.CloudServerRequest { return cs.toRequest() }
 
 // Flavor returns the flavor name. On a hydrated response the value comes from the
@@ -153,6 +190,7 @@ func (cs *CloudServer) Template() string {
 	return cs.response.Properties.Template.URI
 }
 
+// VPC returns the VPC URI from the response, or the locally-set ref URI if unhydrated.
 func (cs *CloudServer) VPC() string {
 	if cs.response != nil && cs.response.Properties.VPC.URI != "" {
 		return cs.response.Properties.VPC.URI
@@ -160,6 +198,7 @@ func (cs *CloudServer) VPC() string {
 	return cloudServerDerefString(cs.vpcRef)
 }
 
+// BootVolume returns the boot volume URI from the response, or the locally-set ref URI if unhydrated.
 func (cs *CloudServer) BootVolume() string {
 	if cs.response != nil && cs.response.Properties.BootVolume.URI != "" {
 		return cs.response.Properties.BootVolume.URI
@@ -167,6 +206,7 @@ func (cs *CloudServer) BootVolume() string {
 	return cloudServerDerefString(cs.bootVolumeRef)
 }
 
+// KeyPair returns the key pair URI from the response, or the locally-set ref URI if unhydrated.
 func (cs *CloudServer) KeyPair() string {
 	if cs.response != nil && cs.response.Properties.KeyPair.URI != "" {
 		return cs.response.Properties.KeyPair.URI
@@ -174,6 +214,7 @@ func (cs *CloudServer) KeyPair() string {
 	return cloudServerDerefString(cs.keyPairRef)
 }
 
+// NetworkInterfaces returns the list of network interface details from the last response, or nil.
 func (cs *CloudServer) NetworkInterfaces() []types.CloudServerNetworkInterfaceDetails {
 	if cs.response == nil {
 		return nil
@@ -181,8 +222,18 @@ func (cs *CloudServer) NetworkInterfaces() []types.CloudServerNetworkInterfaceDe
 	return cs.response.Properties.NetworkInterfaces
 }
 
+// IsVPCPreset returns whether VPC preset networking was requested.
+// Returns false if unset.
+func (cs *CloudServer) IsVPCPreset() bool {
+	if cs.vpcPreset == nil {
+		return false
+	}
+	return *cs.vpcPreset
+}
+
 // Action methods (require hydration via a client Get/Create/Update/List call).
 
+// PowerOn powers on the cloud server. Requires the wrapper to be obtained via a client call.
 func (cs *CloudServer) PowerOn(ctx context.Context, opts ...CallOption) error {
 	if err := cs.preActionCheck("PowerOn"); err != nil {
 		return err
@@ -203,6 +254,7 @@ func (cs *CloudServer) PowerOn(ctx context.Context, opts ...CallOption) error {
 	return nil
 }
 
+// PowerOff powers off the cloud server. Requires the wrapper to be obtained via a client call.
 func (cs *CloudServer) PowerOff(ctx context.Context, opts ...CallOption) error {
 	if err := cs.preActionCheck("PowerOff"); err != nil {
 		return err
@@ -223,6 +275,7 @@ func (cs *CloudServer) PowerOff(ctx context.Context, opts ...CallOption) error {
 	return nil
 }
 
+// SetPassword sets the administrative password for the cloud server. Requires a client-obtained wrapper.
 func (cs *CloudServer) SetPassword(ctx context.Context, password string, opts ...CallOption) error {
 	if err := cs.preActionCheck("SetPassword"); err != nil {
 		return err
@@ -253,8 +306,9 @@ func (cs *CloudServer) preActionCheck(label string) error {
 	return nil
 }
 
-// Wire conversions.
+// Wire converters
 
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (cs *CloudServer) toRequest() types.CloudServerRequest {
 	props := types.CloudServerPropertiesRequest{}
 	props.Zone = cs.Zone()
@@ -301,6 +355,7 @@ func (cs *CloudServer) toRequest() types.CloudServerRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (cs *CloudServer) fromResponse(resp *types.CloudServerResponse) {
 	if resp == nil {
 		return
@@ -361,9 +416,7 @@ var cloudServerTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level client seam + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
 // cloudServerActions is an internal interface satisfied by cloudServersClientAdapter. It
 // allows *CloudServer to dispatch PowerOn/PowerOff/SetPassword without leaking the adapter
@@ -374,6 +427,9 @@ type cloudServerActions interface {
 	setPassword(ctx context.Context, projectID, cloudServerID, password string, rp *types.RequestParameters) (*types.Response[any], error)
 }
 
+// cloudServerLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type cloudServerLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.CloudServerList], error)
 	Get(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
@@ -385,9 +441,16 @@ type cloudServerLowLevelClient interface {
 	SetPassword(ctx context.Context, projectID, cloudServerID string, body types.CloudServerPasswordRequest, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// cloudServersClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates CloudServer ↔ types.CloudServerRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type cloudServersClientAdapter struct{ low cloudServerLowLevelClient }
 
 var _ cloudServerActions = (*cloudServersClientAdapter)(nil)
+var _ CloudServersClient = (*cloudServersClientAdapter)(nil)
 
 func newCloudServersClientAdapter(rest *restclient.Client) *cloudServersClientAdapter {
 	if rest == nil {
@@ -396,6 +459,7 @@ func newCloudServersClientAdapter(rest *restclient.Client) *cloudServersClientAd
 	return &cloudServersClientAdapter{low: compute.NewCloudServersClientImpl(rest)}
 }
 
+// Create posts a new CloudServer to the API and hydrates the wrapper from the response.
 func (a *cloudServersClientAdapter) Create(ctx context.Context, cs *CloudServer, opts ...CallOption) (*CloudServer, error) {
 	if err := cs.Err(); err != nil {
 		return cs, err
@@ -430,6 +494,7 @@ func (a *cloudServersClientAdapter) Create(ctx context.Context, cs *CloudServer,
 	return cs, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *cloudServersClientAdapter) Update(ctx context.Context, cs *CloudServer, opts ...CallOption) (*CloudServer, error) {
 	if err := cs.Err(); err != nil {
 		return cs, err
@@ -467,6 +532,7 @@ func (a *cloudServersClientAdapter) Update(ctx context.Context, cs *CloudServer,
 	return cs, nil
 }
 
+// Get fetches a CloudServer by Ref and returns a freshly hydrated wrapper.
 func (a *cloudServersClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*CloudServer, error) {
 	projectID, cloudServerID, err := cloudServerIDsFromRef(ref)
 	if err != nil {
@@ -503,6 +569,7 @@ func (a *cloudServersClientAdapter) Get(ctx context.Context, ref Ref, opts ...Ca
 	return out, nil
 }
 
+// Delete removes the CloudServer identified by Ref.
 func (a *cloudServersClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, cloudServerID, err := cloudServerIDsFromRef(ref)
 	if err != nil {
@@ -520,6 +587,7 @@ func (a *cloudServersClientAdapter) Delete(ctx context.Context, ref Ref, opts ..
 	return nil
 }
 
+// List returns a paginated list of CloudServer in the given parent scope.
 func (a *cloudServersClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*CloudServer], error) {
 	projectID, err := projectIDFromRef(project)
 	if err != nil {
@@ -575,14 +643,17 @@ func (a *cloudServersClientAdapter) List(ctx context.Context, project Ref, opts 
 
 // Internal action methods — satisfy cloudServerActions; called by *CloudServer action methods.
 
+// powerOn sends a power-on action to the API for the given server.
 func (a *cloudServersClientAdapter) powerOn(ctx context.Context, projectID, cloudServerID string, rp *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
 	return a.low.PowerOn(ctx, projectID, cloudServerID, rp)
 }
 
+// powerOff sends a power-off action to the API for the given server.
 func (a *cloudServersClientAdapter) powerOff(ctx context.Context, projectID, cloudServerID string, rp *types.RequestParameters) (*types.Response[types.CloudServerResponse], error) {
 	return a.low.PowerOff(ctx, projectID, cloudServerID, rp)
 }
 
+// setPassword sends a set-password action to the API for the given server.
 func (a *cloudServersClientAdapter) setPassword(ctx context.Context, projectID, cloudServerID, password string, rp *types.RequestParameters) (*types.Response[any], error) {
 	return a.low.SetPassword(ctx, projectID, cloudServerID, types.CloudServerPasswordRequest{Password: password}, rp)
 }

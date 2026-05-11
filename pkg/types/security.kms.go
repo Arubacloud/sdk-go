@@ -2,11 +2,11 @@ package types
 
 // KMS Properties
 type KmsPropertiesRequest struct {
-	BillingPeriod BillingPeriod `json:"billingPeriod"`
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 }
 
 type KmsPropertiesResponse struct {
-	BillingPeriod BillingPeriod `json:"billingPeriod"`
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 }
 
 // KMS Request/Response

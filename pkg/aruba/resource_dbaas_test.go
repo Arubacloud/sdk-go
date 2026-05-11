@@ -35,8 +35,8 @@ func TestDBaaS_FluentSetters(t *testing.T) {
 		InRegion("ITBG-Bergamo").
 		InZone("ITBG-1").
 		OfEngine("mysql-8.0").
-		WithServerFlavor("DBO2A4").
-		WithStorageGB(20).
+		OfFlavor("DBO2A4").
+		WithSizeGB(20).
 		WithBillingPeriod("Hour").
 		WithAutoscaling(50, 10)
 
@@ -58,8 +58,8 @@ func TestDBaaS_FluentSetters(t *testing.T) {
 	if d.Flavor() != "DBO2A4" {
 		t.Errorf("Flavor() = %q", d.Flavor())
 	}
-	if d.StorageGB() != 20 {
-		t.Errorf("Storage() = %d", d.StorageGB())
+	if d.SizeGB() != 20 {
+		t.Errorf("Storage() = %d", d.SizeGB())
 	}
 	if d.BillingPeriod() != "Hour" {
 		t.Errorf("BillingPeriod() = %q", d.BillingPeriod())
@@ -198,17 +198,17 @@ func TestDBaaS_OfEngine(t *testing.T) {
 	}
 }
 
-func TestDBaaS_WithServerFlavor(t *testing.T) {
-	d := NewDBaaS().WithServerFlavor("DBO2A4")
+func TestDBaaS_OfFlavor(t *testing.T) {
+	d := NewDBaaS().OfFlavor("DBO2A4")
 	if d.Flavor() != "DBO2A4" {
 		t.Errorf("Flavor() = %q", d.Flavor())
 	}
 }
 
-func TestDBaaS_WithStorageGB(t *testing.T) {
-	d := NewDBaaS().WithStorageGB(50)
-	if d.StorageGB() != 50 {
-		t.Errorf("Storage() = %d", d.StorageGB())
+func TestDBaaS_WithSizeGB(t *testing.T) {
+	d := NewDBaaS().WithSizeGB(50)
+	if d.SizeGB() != 50 {
+		t.Errorf("Storage() = %d", d.SizeGB())
 	}
 }
 
@@ -277,8 +277,8 @@ func TestDBaaS_ToRequestRoundTrip(t *testing.T) {
 		InRegion("ITBG-Bergamo").
 		InZone("ITBG-1").
 		OfEngine("mysql-8.0").
-		WithServerFlavor("DBO2A4").
-		WithStorageGB(20).
+		OfFlavor("DBO2A4").
+		WithSizeGB(20).
 		WithBillingPeriod("Hour").
 		WithAutoscaling(50, 10).
 		WithVPC(URI("/vpcs/v")).
@@ -306,8 +306,8 @@ func TestDBaaS_ToRequestRoundTrip(t *testing.T) {
 	if req.Properties.Storage == nil || req.Properties.Storage.SizeGB == nil || *req.Properties.Storage.SizeGB != 20 {
 		t.Errorf("Storage.SizeGB = %v", req.Properties.Storage)
 	}
-	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != "Hour" {
-		t.Errorf("BillingPlan.BillingPeriod = %v", req.Properties.BillingPlan)
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Hour" {
+		t.Errorf("BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 	if req.Properties.Autoscaling == nil || req.Properties.Autoscaling.Enabled == nil || !*req.Properties.Autoscaling.Enabled {
 		t.Errorf("Autoscaling.Enabled = %v", req.Properties.Autoscaling)
@@ -376,10 +376,10 @@ func dbaasTestResponse(id, name, uri string) *types.DBaaSResponse {
 			LocationResponse: loc,
 		},
 		Properties: types.DBaaSPropertiesResponse{
-			Engine:      &types.DBaaSEngineResponse{Type: &engineType},
-			Flavor:      &types.DBaaSFlavorResponse{Name: &flavorName},
-			Storage:     &types.DBaaSStorageResponse{SizeGB: &sizeGB},
-			BillingPlan: &types.DBaaSBillingPlanResponse{BillingPeriod: &billingPeriod},
+			Engine:        &types.DBaaSEngineResponse{Type: &engineType},
+			Flavor:        &types.DBaaSFlavorResponse{Name: &flavorName},
+			Storage:       &types.DBaaSStorageResponse{SizeGB: &sizeGB},
+			BillingPeriod: &billingPeriod,
 			Networking: &types.DBaaSNetworkingResponse{
 				VPC:           &types.ReferenceResource{URI: vpcURI},
 				Subnet:        &types.ReferenceResource{URI: subnetURI},
@@ -426,8 +426,8 @@ func TestDBaaS_FromResponseHydration(t *testing.T) {
 	if d.FlavorRaw() == nil || d.FlavorRaw().Name == nil {
 		t.Error("FlavorRaw() should carry full struct")
 	}
-	if d.StorageGB() != 20 {
-		t.Errorf("Storage() = %d", d.StorageGB())
+	if d.SizeGB() != 20 {
+		t.Errorf("Storage() = %d", d.SizeGB())
 	}
 	if d.BillingPeriod() != "Hour" {
 		t.Errorf("BillingPeriod() = %q", d.BillingPeriod())
@@ -514,7 +514,7 @@ func TestDBaaS_Engine_Asymmetry(t *testing.T) {
 
 func TestDBaaS_Flavor_Asymmetry(t *testing.T) {
 	flavorName := "DBO4A8"
-	d := NewDBaaS().WithServerFlavor("DBO2A4")
+	d := NewDBaaS().OfFlavor("DBO2A4")
 	if d.Flavor() != "DBO2A4" {
 		t.Errorf("pre-response Flavor() = %q", d.Flavor())
 	}
@@ -542,7 +542,7 @@ func TestDBaaS_RoundTripUpdateFlow(t *testing.T) {
 	d.fromResponse(resp)
 
 	// Mutate storage; networking URIs should still come from the hydrated response.
-	d.WithStorageGB(40)
+	d.WithSizeGB(40)
 
 	req := d.RawRequest()
 	if req.Properties.Storage == nil || req.Properties.Storage.SizeGB == nil || *req.Properties.Storage.SizeGB != 40 {
@@ -642,7 +642,7 @@ const dbaasSuccessBody = `{` +
 	`"engine":{"type":"mysql-8.0"},` +
 	`"flavor":{"name":"DBO2A4"},` +
 	`"storage":{"sizeGb":20},` +
-	`"billingPlan":{"billingPeriod":"Hour"},` +
+	`"billingPeriod":"Hour",` +
 	`"networking":{"vpc":{"uri":"/vpcs/v"},"subnet":{"uri":"/subnets/s"},"securityGroup":{"uri":"/sgs/sg"},"elasticIp":{"uri":"/eips/e"}}` +
 	`},` +
 	`"status":{"state":"Active"}}`
@@ -666,8 +666,8 @@ func TestDBaaSClientAdapter_Create_Success(t *testing.T) {
 		WithName("my-dbaas").
 		InZone("ITBG-1").
 		OfEngine("mysql-8.0").
-		WithServerFlavor("DBO2A4").
-		WithStorageGB(20).
+		OfFlavor("DBO2A4").
+		WithSizeGB(20).
 		WithBillingPeriod("Hour").
 		WithAutoscaling(50, 10).
 		WithVPC(URI("/vpcs/v")).
@@ -908,8 +908,8 @@ func TestDBaaS_InRegion(t *testing.T) {
 
 func TestDBaaS_Accessors_ZeroValue(t *testing.T) {
 	d := &DBaaS{}
-	if d.StorageGB() != 0 {
-		t.Errorf("Storage() zero = %d", d.StorageGB())
+	if d.SizeGB() != 0 {
+		t.Errorf("Storage() zero = %d", d.SizeGB())
 	}
 	if d.AutoscalingEnabled() {
 		t.Error("AutoscalingEnabled() zero should be false")

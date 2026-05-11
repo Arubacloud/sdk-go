@@ -9,8 +9,14 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // Subnet is the wrapper for an Aruba Cloud subnet (a child of a VPC).
-// Construct with aruba.NewSubnet() and bind it to a parent VPC via IntoVPC(vpc).
+// Construct with aruba.NewSubnet() and bind it via IntoVPC(vpc).
+//
+// Wraps types.SubnetResponse / types.SubnetRequest. The wrapper carries
+// pointer-typed private fields so unset values round-trip through
+// the JSON layer correctly.
 type Subnet struct {
 	errMixin
 	metadataMixin
@@ -28,17 +34,42 @@ type Subnet struct {
 	response      *types.SubnetResponse // backs Raw()
 }
 
-func (s *Subnet) IntoVPC(v Ref) *Subnet            { s.intoVPC(v); return s }
-func (s *Subnet) WithName(n string) *Subnet        { s.withName(n); return s }
-func (s *Subnet) AddTag(t string) *Subnet          { s.addTag(t); return s }
-func (s *Subnet) RemoveTag(t string) *Subnet       { s.removeTag(t); return s }
+// Setters — chainable, general → specific
+
+// IntoVPC binds this Subnet to its parent VPC. Required before Create.
+func (s *Subnet) IntoVPC(v Ref) *Subnet { s.intoVPC(v); return s }
+
+// WithName sets the resource name. Required by the API.
+func (s *Subnet) WithName(n string) *Subnet { s.withName(n); return s }
+
+// AddTag appends a tag for filtering and accounting.
+func (s *Subnet) AddTag(t string) *Subnet { s.addTag(t); return s }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (s *Subnet) RemoveTag(t string) *Subnet { s.removeTag(t); return s }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (s *Subnet) ReplaceTags(ts ...string) *Subnet { s.replaceTags(ts...); return s }
-func (s *Subnet) InRegion(region Region) *Subnet   { s.inRegion(region); return s }
-func (s *Subnet) OfType(t SubnetType) *Subnet      { s.subnetType = &t; return s }
-func (s *Subnet) AsDefault() *Subnet               { t := true; s.defaultSubnet = &t; return s }
-func (s *Subnet) NotDefault() *Subnet              { f := false; s.defaultSubnet = &f; return s }
-func (s *Subnet) WithCIDR(cidr string) *Subnet     { s.cidr = &cidr; return s }
-func (s *Subnet) WithDHCP(d *SubnetDHCP) *Subnet   { s.dhcp = d; return s }
+
+// InRegion sets the region for this resource.
+func (s *Subnet) InRegion(region Region) *Subnet { s.inRegion(region); return s }
+
+// OfType sets the subnet type (Basic or Advanced).
+func (s *Subnet) OfType(t SubnetType) *Subnet { s.subnetType = &t; return s }
+
+// AsDefault marks this subnet as the VPC default.
+func (s *Subnet) AsDefault() *Subnet { t := true; s.defaultSubnet = &t; return s }
+
+// NotDefault explicitly unsets the default flag.
+func (s *Subnet) NotDefault() *Subnet { f := false; s.defaultSubnet = &f; return s }
+
+// WithCIDR sets the subnet network address (CIDR notation).
+func (s *Subnet) WithCIDR(cidr string) *Subnet { s.cidr = &cidr; return s }
+
+// WithDHCP attaches a DHCP configuration sub-builder to the subnet.
+func (s *Subnet) WithDHCP(d *SubnetDHCP) *Subnet { s.dhcp = d; return s }
+
+// Getters — general → specific
 
 // URI satisfies Ref.
 func (s *Subnet) URI() string { return s.RespURI() }
@@ -52,26 +83,36 @@ func (s *Subnet) Raw() *types.SubnetResponse { return s.response }
 // RawRequest returns what toRequest() would emit right now.
 func (s *Subnet) RawRequest() types.SubnetRequest { return s.toRequest() }
 
+// Type returns the subnet type (Basic or Advanced), or "" if unset.
 func (s *Subnet) Type() SubnetType {
 	if s.subnetType == nil {
 		return ""
 	}
 	return *s.subnetType
 }
+
+// IsDefault reports whether this subnet is marked as the VPC default.
 func (s *Subnet) IsDefault() bool {
 	if s.defaultSubnet == nil {
 		return false
 	}
 	return *s.defaultSubnet
 }
+
+// CIDR returns the subnet network address in CIDR notation, or "" if unset.
 func (s *Subnet) CIDR() string {
 	if s.cidr == nil {
 		return ""
 	}
 	return *s.cidr
 }
+
+// DHCP returns the attached DHCP configuration sub-builder, or nil if not set.
 func (s *Subnet) DHCP() *SubnetDHCP { return s.dhcp }
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (s *Subnet) toRequest() types.SubnetRequest {
 	props := types.SubnetPropertiesRequest{}
 	if s.subnetType != nil {
@@ -84,7 +125,7 @@ func (s *Subnet) toRequest() types.SubnetRequest {
 		props.Network = &types.SubnetNetwork{Address: *s.cidr}
 	}
 	if s.dhcp != nil {
-		props.DHCP = s.dhcp.toType()
+		props.DHCP = s.dhcp.build()
 	}
 	return types.SubnetRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
@@ -95,6 +136,7 @@ func (s *Subnet) toRequest() types.SubnetRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (s *Subnet) fromResponse(resp *types.SubnetResponse) {
 	if resp == nil {
 		return
@@ -154,10 +196,11 @@ var subnetTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// subnetLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type subnetLowLevelClient interface {
 	List(ctx context.Context, projectID, vpcID string, params *types.RequestParameters) (*types.Response[types.SubnetList], error)
 	Get(ctx context.Context, projectID, vpcID, subnetID string, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error)
@@ -166,7 +209,15 @@ type subnetLowLevelClient interface {
 	Delete(ctx context.Context, projectID, vpcID, subnetID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// subnetsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates Subnet ↔ types.SubnetRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type subnetsClientAdapter struct{ low subnetLowLevelClient }
+
+var _ SubnetsClient = (*subnetsClientAdapter)(nil)
 
 func newSubnetsClientAdapter(rest *restclient.Client) *subnetsClientAdapter {
 	if rest == nil {
@@ -177,6 +228,7 @@ func newSubnetsClientAdapter(rest *restclient.Client) *subnetsClientAdapter {
 	}
 }
 
+// Create posts a new Subnet to the API and hydrates the wrapper from the response.
 func (a *subnetsClientAdapter) Create(ctx context.Context, s *Subnet, opts ...CallOption) (*Subnet, error) {
 	if err := s.Err(); err != nil {
 		return s, err
@@ -210,6 +262,7 @@ func (a *subnetsClientAdapter) Create(ctx context.Context, s *Subnet, opts ...Ca
 	return s, nil
 }
 
+// Get fetches a Subnet by Ref and returns a freshly hydrated wrapper.
 func (a *subnetsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*Subnet, error) {
 	projectID, vpcID, subnetID, err := subnetIDsFromRef(ref)
 	if err != nil {
@@ -244,6 +297,7 @@ func (a *subnetsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOpt
 	return out, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *subnetsClientAdapter) Update(ctx context.Context, s *Subnet, opts ...CallOption) (*Subnet, error) {
 	if err := s.Err(); err != nil {
 		return s, err
@@ -280,6 +334,7 @@ func (a *subnetsClientAdapter) Update(ctx context.Context, s *Subnet, opts ...Ca
 	return s, nil
 }
 
+// Delete removes the Subnet identified by Ref.
 func (a *subnetsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, vpcID, subnetID, err := subnetIDsFromRef(ref)
 	if err != nil {
@@ -297,6 +352,7 @@ func (a *subnetsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...Call
 	return nil
 }
 
+// List returns a paginated list of Subnet in the given parent scope.
 func (a *subnetsClientAdapter) List(ctx context.Context, vpc Ref, opts ...CallOption) (*List[*Subnet], error) {
 	projectID, vpcID, err := vpcIDsFromRef(vpc)
 	if err != nil {

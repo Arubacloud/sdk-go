@@ -2,9 +2,12 @@ package aruba
 
 import "github.com/Arubacloud/sdk-go/pkg/types"
 
+// ---- Sub-builder ----
+
 // SubnetDHCP is the fluent sub-builder for Properties.DHCP on a Subnet.
-// Construct with aruba.NewSubnetDHCP() and pass to (*Subnet).WithDHCP.
+// Construct with aruba.NewSubnetDHCP() and attach via (*Subnet).WithDHCP.
 type SubnetDHCP struct {
+	errMixin
 	inner types.SubnetDHCP
 }
 
@@ -32,19 +35,26 @@ func (d *SubnetDHCP) AddDNS(ip string) *SubnetDHCP {
 	return d
 }
 
+// IsEnabled reports whether DHCP is enabled on this subnet.
 func (d *SubnetDHCP) IsEnabled() bool { return d.inner.Enabled }
+
+// RangeStart returns the start address of the DHCP allocation range, or "" if unset.
 func (d *SubnetDHCP) RangeStart() string {
 	if d.inner.Range == nil {
 		return ""
 	}
 	return d.inner.Range.Start
 }
+
+// RangeCount returns the number of addresses in the DHCP allocation range, or 0 if unset.
 func (d *SubnetDHCP) RangeCount() int {
 	if d.inner.Range == nil {
 		return 0
 	}
 	return d.inner.Range.Count
 }
+
+// Routes returns a copy of the static routes advertised via DHCP, or nil if none.
 func (d *SubnetDHCP) Routes() []SubnetDHCPRoute {
 	if len(d.inner.Routes) == 0 {
 		return nil
@@ -55,6 +65,8 @@ func (d *SubnetDHCP) Routes() []SubnetDHCPRoute {
 	}
 	return out
 }
+
+// DNS returns a copy of the DNS server list advertised via DHCP, or nil if none.
 func (d *SubnetDHCP) DNS() []string {
 	if len(d.inner.DNS) == 0 {
 		return nil
@@ -68,7 +80,7 @@ type SubnetDHCPRoute struct {
 	Gateway string
 }
 
-func (d *SubnetDHCP) toType() *types.SubnetDHCP {
+func (d *SubnetDHCP) build() *types.SubnetDHCP {
 	if d == nil {
 		return nil
 	}
