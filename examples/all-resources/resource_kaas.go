@@ -8,6 +8,7 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
+// createKaaS provisions a Kubernetes-as-a-Service cluster with all dependencies and waits until Ready.
 func createKaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, vpc *aruba.VPC, subnet *aruba.Subnet) *aruba.KaaS {
 	fmt.Println("--- KaaS (Kubernetes) ---")
 
@@ -25,7 +26,7 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, v
 		WithName(resourceName(NameKaaS)).
 		AddTag("kubernetes").
 		AddTag("container").
-		InRegion("ITBG-Bergamo").
+		InRegion(defaultRegion).
 		WithVPC(vpc).
 		WithSubnet(subnet).
 		WithSecurityGroup(kaasSG).
@@ -39,11 +40,11 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, v
 			WithCount(2).
 			WithAutoscaling(1, 5).
 			OfInstance("K2A4").
-			InZone("ITBG-1"))
+			InZone(defaultZone))
 
 	result, err := arubaClient.FromContainer().KaaS().Create(ctx, k)
 	if err != nil {
-		log.Printf("Error creating KaaS cluster: %v", err)
+		log.Fatalf("Error creating KaaS cluster: %s", formatErr(err))
 		return nil
 	}
 
@@ -58,6 +59,7 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, v
 	return result
 }
 
+// updateKaaS applies name, tag, storage-quota, and node-pool changes to the cluster.
 func updateKaaS(ctx context.Context, arubaClient aruba.Client, k *aruba.KaaS) {
 	fmt.Println("--- Updating KaaS Cluster ---")
 
@@ -73,22 +75,23 @@ func updateKaaS(ctx context.Context, arubaClient aruba.Client, k *aruba.KaaS) {
 			WithCount(5).
 			WithAutoscaling(1, 5).
 			OfInstance("K2A4").
-			InZone("ITBG-1"))
+			InZone(defaultZone))
 
 	result, err := arubaClient.FromContainer().KaaS().Update(ctx, k)
 	if err != nil {
-		log.Printf("Error updating KaaS cluster: %v", err)
+		log.Printf("Error updating KaaS cluster: %s", formatErr(err))
 		return
 	}
 
 	fmt.Printf("✓ Updated KaaS cluster: %s (K8s: %s)\n", result.Name(), result.KubernetesVersion())
 }
 
+// deleteKaaS tears down the KaaS cluster.
 func deleteKaaS(ctx context.Context, arubaClient aruba.Client, k *aruba.KaaS) {
 	fmt.Println("--- Deleting KaaS Cluster ---")
 
 	if err := arubaClient.FromContainer().KaaS().Delete(ctx, k); err != nil {
-		log.Printf("Error deleting KaaS cluster: %v", err)
+		log.Printf("Error deleting KaaS cluster: %s", formatErr(err))
 		return
 	}
 	fmt.Printf("✓ Deleted KaaS cluster: %s\n", k.KaaSID())

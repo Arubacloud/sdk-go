@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
+// createKeyPair uploads an SSH public key and waits until Ready.
 func createKeyPair(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *aruba.KeyPair {
 	fmt.Println("--- SSH Key Pair ---")
 
@@ -19,38 +19,28 @@ func createKeyPair(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref
 		WithName(resourceName(NameKeyPair)).
 		AddTag("ssh-access").
 		AddTag("ingress").
-		InRegion("ITBG-Bergamo").
+		InRegion(defaultRegion).
 		WithPublicKey(sshPublicKey)
 
 	kp, err := arubaClient.FromCompute().KeyPairs().Create(ctx, kp)
 	if err != nil {
-		var httpErr *aruba.HTTPError
-		if errors.As(err, &httpErr) {
-			log.Printf("Failed to create SSH key pair - Status: %d, Error: %s", httpErr.StatusCode, httpErr.Error())
-		} else {
-			log.Printf("Error creating SSH key pair: %v", err)
-		}
-	} else {
-		fmt.Printf("✓ Created SSH Key Pair: %s\n", kp.Name())
-		if err := kp.WaitUntilReady(ctx); err != nil {
-			log.Printf("SSH Key Pair %s did not become Ready: %v", kp.Name(), err)
-		}
+		log.Fatalf("Error creating SSH key pair: %s", formatErr(err))
+	}
+	fmt.Printf("✓ Created SSH Key Pair: %s\n", kp.Name())
+	if err := kp.WaitUntilReady(ctx); err != nil {
+		log.Printf("SSH Key Pair %s did not become Ready: %v", kp.Name(), err)
 	}
 
 	return kp
 }
 
+// deleteKeyPair removes the SSH key pair.
 func deleteKeyPair(ctx context.Context, arubaClient aruba.Client, kp *aruba.KeyPair) {
 	fmt.Println("--- Deleting SSH Key Pair ---")
 
 	err := arubaClient.FromCompute().KeyPairs().Delete(ctx, kp)
 	if err != nil {
-		var httpErr *aruba.HTTPError
-		if errors.As(err, &httpErr) {
-			log.Printf("Failed to delete SSH key pair - Status: %d, Error: %s", httpErr.StatusCode, httpErr.Error())
-		} else {
-			log.Printf("Error deleting SSH key pair: %v", err)
-		}
+		log.Printf("Error deleting SSH key pair: %s", formatErr(err))
 		return
 	}
 	fmt.Printf("✓ Deleted SSH key pair: %s\n", kp.Name())

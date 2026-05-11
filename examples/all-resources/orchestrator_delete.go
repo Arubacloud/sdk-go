@@ -54,7 +54,7 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, proj *arub
 	fmt.Println("Fetching all resources...")
 
 	serverList, err := arubaClient.FromCompute().CloudServers().List(ctx, proj)
-	if err == nil && len(serverList.Items()) > 0 {
+	if err == nil && serverList.Total() > 0 {
 		firstServer := serverList.Items()[0]
 		serverResp, err := arubaClient.FromCompute().CloudServers().Get(ctx, firstServer)
 		if err == nil {
@@ -114,7 +114,7 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, proj *arub
 	}
 
 	keyPairList, err := arubaClient.FromCompute().KeyPairs().List(ctx, proj)
-	if err == nil && len(keyPairList.Items()) > 0 {
+	if err == nil && keyPairList.Total() > 0 {
 		firstKP := keyPairList.Items()[0]
 		keyPairResp, err := arubaClient.FromCompute().KeyPairs().Get(ctx, firstKP)
 		if err == nil {
@@ -124,7 +124,7 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, proj *arub
 	}
 
 	vpcList, err := arubaClient.FromNetwork().VPCs().List(ctx, proj)
-	if err == nil && len(vpcList.Items()) > 0 {
+	if err == nil && vpcList.Total() > 0 {
 		firstVPC := vpcList.Items()[0]
 		vpcResp, err := arubaClient.FromNetwork().VPCs().Get(ctx, firstVPC)
 		if err == nil {
@@ -132,7 +132,7 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, proj *arub
 			fmt.Printf("✓ Found VPC: %s\n", vpcResp.Name())
 
 			sgList, err := arubaClient.FromNetwork().SecurityGroups().List(ctx, firstVPC)
-			if err == nil && len(sgList.Items()) > 0 {
+			if err == nil && sgList.Total() > 0 {
 				sg := sgList.Items()[0]
 				resources.SecurityGroup = sg
 				fmt.Printf("✓ Found Security Group: %s\n", sg.Name())
@@ -169,7 +169,7 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, proj *arub
 	}
 
 	backupList, err := arubaClient.FromStorage().Backups().List(ctx, proj)
-	if err == nil && len(backupList.Items()) > 0 {
+	if err == nil && backupList.Total() > 0 {
 		backupItem := backupList.Items()[0]
 		backupResp, err := arubaClient.FromStorage().Backups().Get(ctx, backupItem)
 		if err == nil {
@@ -177,7 +177,7 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, proj *arub
 			fmt.Printf("✓ Found Backup: %s\n", backupResp.Name())
 		}
 		restoreList, err := arubaClient.FromStorage().Restores().List(ctx, backupItem)
-		if err == nil && len(restoreList.Items()) > 0 {
+		if err == nil && restoreList.Total() > 0 {
 			restoreItem := restoreList.Items()[0]
 			restoreResp, err := arubaClient.FromStorage().Restores().Get(ctx, restoreItem)
 			if err == nil {
@@ -188,7 +188,7 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, proj *arub
 	}
 
 	containerRegistryList, err := arubaClient.FromContainer().ContainerRegistry().List(ctx, proj)
-	if err == nil && containerRegistryList != nil && len(containerRegistryList.Items()) > 0 {
+	if err == nil && containerRegistryList.Total() > 0 {
 		first := containerRegistryList.Items()[0]
 		containerRegistryResp, err := arubaClient.FromContainer().ContainerRegistry().Get(ctx, first)
 		if err == nil {
@@ -198,14 +198,14 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, proj *arub
 	}
 
 	kmsList, err := arubaClient.FromSecurity().KMS().List(ctx, proj)
-	if err == nil && len(kmsList.Items()) > 0 {
+	if err == nil && kmsList.Total() > 0 {
 		kmsResp, err := arubaClient.FromSecurity().KMS().Get(ctx, kmsList.Items()[0])
 		if err == nil {
 			resources.KMS = kmsResp
 			fmt.Printf("✓ Found KMS: %s\n", kmsResp.Name())
 
 			keysList, err := arubaClient.FromSecurity().Keys().List(ctx, kmsResp)
-			if err == nil && len(keysList.Items()) > 0 {
+			if err == nil && keysList.Total() > 0 {
 				keyResp, err := arubaClient.FromSecurity().Keys().Get(ctx, keysList.Items()[0])
 				if err == nil {
 					resources.KMSKey = keyResp
@@ -214,7 +214,7 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, proj *arub
 			}
 
 			kmipList, err := arubaClient.FromSecurity().Kmips().List(ctx, kmsResp)
-			if err == nil && len(kmipList.Items()) > 0 {
+			if err == nil && kmipList.Total() > 0 {
 				kmipResp, err := arubaClient.FromSecurity().Kmips().Get(ctx, kmipList.Items()[0])
 				if err == nil {
 					resources.Kmip = kmipResp
@@ -237,7 +237,11 @@ func deleteAllResources(ctx context.Context, arubaClient aruba.Client, resources
 	}
 
 	if resources.Backup != nil && resources.Backup.ID() != "" {
-		deleteBackup(ctx, arubaClient, resources.Backup)
+		deleteStorageBackup(ctx, arubaClient, resources.Backup)
+	}
+
+	if resources.Snapshot != nil && resources.Snapshot.ID() != "" {
+		deleteSnapshot(ctx, arubaClient, resources.Snapshot)
 	}
 
 	if resources.ContainerRegistry != nil && resources.ContainerRegistry.ContainerRegistryID() != "" {

@@ -2,15 +2,15 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
+// createRestore provisions a restore of the given backup into the target block storage and waits until Ready.
 func createRestore(ctx context.Context, arubaClient aruba.Client, b *aruba.StorageBackup, target *aruba.BlockStorage) *aruba.StorageRestore {
-	fmt.Println("--- Restore ---")
+	fmt.Println("--- Storage Restore ---")
 
 	if err := waitForDependencies(ctx, "Restore", map[string]waitFunc{
 		"Backup":               b.WaitUntilReady,
@@ -22,19 +22,13 @@ func createRestore(ctx context.Context, arubaClient aruba.Client, b *aruba.Stora
 
 	r := aruba.NewStorageRestore().
 		IntoBackup(b).
-		InRegion("ITBG-Bergamo").
+		InRegion(defaultRegion).
 		WithName(resourceName(NameStorageRestore)).
 		ToVolume(target)
 
 	r, err := arubaClient.FromStorage().Restores().Create(ctx, r)
 	if err != nil {
-		var httpErr *aruba.HTTPError
-		if errors.As(err, &httpErr) {
-			log.Printf("Failed to create restore - Status: %d, Body: %s", httpErr.StatusCode, string(httpErr.Body))
-		} else {
-			log.Printf("Error creating restore: %v", err)
-		}
-		return nil
+		log.Fatalf("Error creating restore: %s", formatErr(err))
 	}
 	fmt.Printf("✓ Created restore: %s\n", r.Name())
 
@@ -45,18 +39,13 @@ func createRestore(ctx context.Context, arubaClient aruba.Client, b *aruba.Stora
 	return r
 }
 
-// deleteRestore deletes a restore resource
+// deleteRestore tears down the restore resource.
 func deleteRestore(ctx context.Context, arubaClient aruba.Client, r *aruba.StorageRestore) {
-	fmt.Println("--- Deleting Restore ---")
+	fmt.Println("--- Deleting Storage Restore ---")
 	err := arubaClient.FromStorage().Restores().Delete(ctx, r)
 	if err != nil {
-		var httpErr *aruba.HTTPError
-		if errors.As(err, &httpErr) {
-			log.Printf("Failed to delete restore - Status: %d, Body: %s", httpErr.StatusCode, string(httpErr.Body))
-		} else {
-			log.Printf("Error deleting restore: %v", err)
-		}
+		log.Printf("Error deleting restore: %s", formatErr(err))
 		return
 	}
-	fmt.Printf("✓ Deleted Restore: %s\n", r.Name())
+	fmt.Printf("✓ Deleted storage restore: %s\n", r.Name())
 }

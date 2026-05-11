@@ -49,3 +49,6 @@ docs/website/.vscode/
 docs/website/*.swp
 docs/website/*.swo
 docs/website/*~
+
+# Example binaries
+examples/all-resources/all-resources
