@@ -29,7 +29,7 @@ func TestProject_FluentSetters(t *testing.T) {
 		AddTag("b").
 		AddTag("a"). // dedupe
 		WithDescription("desc").
-		WithDefault(true)
+		AsDefault()
 
 	if p.Name() != "my-project" {
 		t.Errorf("Name() = %q", p.Name())
@@ -72,7 +72,7 @@ func TestProject_ToRequestRoundTrip(t *testing.T) {
 		AddTag("t1").
 		AddTag("t2").
 		WithDescription("d").
-		WithDefault(true)
+		AsDefault()
 
 	req := p.toRequest()
 	if req.Metadata.Name != "proj" {

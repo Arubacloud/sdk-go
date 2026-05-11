@@ -34,7 +34,7 @@ func TestSubnet_FluentSetters(t *testing.T) {
 		AddTag("net"). // dedupe
 		InRegion("ITBG-Bergamo").
 		OfType("Advanced").
-		WithDefault(false).
+		NotDefault().
 		WithCIDR("10.0.0.0/24")
 
 	if s.Name() != "my-subnet" {
@@ -163,7 +163,7 @@ func TestSubnet_ToRequestRoundTrip(t *testing.T) {
 		AddTag("t2").
 		InRegion("ITBG-Bergamo").
 		OfType("Basic").
-		WithDefault(true).
+		AsDefault().
 		WithCIDR("10.1.2.0/24").
 		WithDHCP(NewSubnetDHCP().
 			Enabled().
@@ -185,7 +185,7 @@ func TestSubnet_ToRequestRoundTrip(t *testing.T) {
 	if req.Properties.Type != types.SubnetTypeBasic {
 		t.Errorf("Properties.Type = %q", req.Properties.Type)
 	}
-	if !req.Properties.Default {
+	if req.Properties.Default == nil || !*req.Properties.Default {
 		t.Error("Properties.Default should be true")
 	}
 	if req.Properties.Network == nil || req.Properties.Network.Address != "10.1.2.0/24" {

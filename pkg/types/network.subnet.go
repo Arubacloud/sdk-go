@@ -47,7 +47,7 @@ type SubnetPropertiesRequest struct {
 	Type SubnetType `json:"type,omitempty"`
 
 	// Default indicates if the subnet must be a default subnet
-	Default bool `json:"default,omitempty"`
+	Default *bool `json:"default,omitempty"`
 
 	// Network configuration
 	Network *SubnetNetwork `json:"network,omitempty"`
