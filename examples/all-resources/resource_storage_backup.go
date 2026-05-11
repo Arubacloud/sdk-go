@@ -2,14 +2,13 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
+// createStorageBackup provisions a full backup of the given block storage volume and waits until Ready.
 func createStorageBackup(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, bs *aruba.BlockStorage) *aruba.StorageBackup {
 	fmt.Println("--- Storage Backup ---")
 
@@ -22,7 +21,7 @@ func createStorageBackup(ctx context.Context, arubaClient aruba.Client, proj aru
 
 	b := aruba.NewStorageBackup().
 		IntoProject(proj).
-		InRegion("ITBG-Bergamo").
+		InRegion(defaultRegion).
 		WithName(resourceName(NameStorageBackup)).
 		OfType(aruba.StorageBackupTypeFull).
 		FromVolume(bs).
@@ -31,15 +30,7 @@ func createStorageBackup(ctx context.Context, arubaClient aruba.Client, proj aru
 
 	result, err := arubaClient.FromStorage().Backups().Create(ctx, b)
 	if err != nil {
-		var httpErr *aruba.HTTPError
-		if errors.As(err, &httpErr) {
-			log.Printf("Failed to create storage backup - Status: %d, Error: %s",
-				httpErr.StatusCode,
-				httpErr.Error())
-		} else {
-			log.Printf("Error creating storage backup: %v", err)
-		}
-		os.Exit(1)
+		log.Fatalf("Error creating storage backup: %s", formatErr(err))
 	}
 	fmt.Printf("✓ Created storage backup: %s\n", result.Name())
 
@@ -50,19 +41,13 @@ func createStorageBackup(ctx context.Context, arubaClient aruba.Client, proj aru
 	return result
 }
 
-func deleteBackup(ctx context.Context, arubaClient aruba.Client, b *aruba.StorageBackup) {
-	fmt.Println("--- Deleting Backup ---")
+// deleteStorageBackup tears down the storage backup.
+func deleteStorageBackup(ctx context.Context, arubaClient aruba.Client, b *aruba.StorageBackup) {
+	fmt.Println("--- Deleting Storage Backup ---")
 	err := arubaClient.FromStorage().Backups().Delete(ctx, b)
 	if err != nil {
-		var httpErr *aruba.HTTPError
-		if errors.As(err, &httpErr) {
-			log.Printf("Failed to delete backup - Status: %d, Error: %s",
-				httpErr.StatusCode,
-				httpErr.Error())
-		} else {
-			log.Printf("Error deleting backup: %v", err)
-		}
+		log.Printf("Error deleting storage backup: %s", formatErr(err))
 		return
 	}
-	fmt.Printf("✓ Deleted Backup: %s\n", b.Name())
+	fmt.Printf("✓ Deleted storage backup: %s\n", b.Name())
 }

@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
@@ -18,8 +16,8 @@ func createBlockStorage(ctx context.Context, arubaClient aruba.Client, proj arub
 		WithName(name).
 		AddTag("storage").
 		AddTag("data").
-		InRegion("ITBG-Bergamo").
-		InZone("ITBG-1").
+		InRegion(defaultRegion).
+		InZone(defaultZone).
 		WithSizeGB(20).
 		OfType(aruba.BlockStorageTypeStandard).
 		WithBillingPeriod("Hour").
@@ -28,8 +26,7 @@ func createBlockStorage(ctx context.Context, arubaClient aruba.Client, proj arub
 
 	bs, err := arubaClient.FromStorage().Volumes().Create(ctx, bs)
 	if err != nil {
-		log.Printf("Error creating block storage: %v", err)
-		os.Exit(1)
+		log.Fatalf("Error creating block storage: %s", formatErr(err))
 	}
 	fmt.Printf("✓ Created block storage: %s (%d GB, %s)\n", bs.Name(), bs.SizeGB(), bs.Type())
 
@@ -47,7 +44,7 @@ func deleteBlockStorage(ctx context.Context, arubaClient aruba.Client, bs *aruba
 	fmt.Println("--- Deleting Block Storage ---")
 
 	if err := arubaClient.FromStorage().Volumes().Delete(ctx, bs); err != nil {
-		log.Printf("Error deleting block storage: %v", err)
+		log.Printf("Error deleting block storage: %s", formatErr(err))
 		return
 	}
 	fmt.Printf("✓ Deleted block storage: %s\n", bs.ID())

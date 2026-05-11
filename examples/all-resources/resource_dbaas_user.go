@@ -8,8 +8,9 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
+// createDBaaSUser creates a database user inside the given DBaaS instance.
 func createDBaaSUser(ctx context.Context, arubaClient aruba.Client, dbaas *aruba.DBaaS) *aruba.User {
-	fmt.Println("--- DBaaS: User ---")
+	fmt.Println("--- DBaaS (User) ---")
 
 	if err := waitForDependencies(ctx, "DBaaS User", map[string]waitFunc{
 		"DBaaS": dbaas.WaitUntilReady,
@@ -25,17 +26,18 @@ func createDBaaSUser(ctx context.Context, arubaClient aruba.Client, dbaas *aruba
 
 	res, err := arubaClient.FromDatabase().Users().Create(ctx, u)
 	if err != nil {
-		log.Printf("Error creating DBaaS User: %v", err)
+		log.Fatalf("Error creating DBaaS User: %s", formatErr(err))
 		return nil
 	}
 	fmt.Printf("✓ Created DBaaS User: %s\n", res.Username())
 	return res
 }
 
+// deleteDBaaSUser removes the database user from its DBaaS instance.
 func deleteDBaaSUser(ctx context.Context, arubaClient aruba.Client, u *aruba.User) {
 	fmt.Println("--- Deleting DBaaS User ---")
 	if err := arubaClient.FromDatabase().Users().Delete(ctx, u); err != nil {
-		log.Printf("Error deleting DBaaS User: %v", err)
+		log.Printf("Error deleting DBaaS User: %s", formatErr(err))
 		return
 	}
 	fmt.Printf("✓ Deleted DBaaS User: %s\n", u.Username())

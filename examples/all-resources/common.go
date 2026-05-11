@@ -17,7 +17,18 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// Name constants, vars, and helpers (formerly names.go)
+// Region / zone defaults
+// ---------------------------------------------------------------------------
+
+const (
+	// defaultRegion is the region every example resource is created in.
+	defaultRegion = "ITBG-Bergamo"
+	// defaultZone is the zone within defaultRegion for zonal resources.
+	defaultZone = "ITBG-1"
+)
+
+// ---------------------------------------------------------------------------
+// Name constants, vars, and helpers
 // ---------------------------------------------------------------------------
 
 // Fixed (resource-specific) parts of every name produced by createAllResources.
@@ -31,6 +42,7 @@ const (
 	NameBlockStorageCS            = "cs-bs"
 	NameBlockStorageCR            = "cr-bs"
 	NameBlockStorageRestoreTarget = "restore-target-bs"
+	NameSnapshot                  = "snapshot"
 	NameVPC                       = "vpc"
 	NameSubnetAdvanced            = "subnet-advanced"
 	NameSubnetBasic               = "subnet-basic"
@@ -123,6 +135,7 @@ type ResourceCollection struct {
 	CloudServerBlockStorage  *aruba.BlockStorage // boot volume for CloudServer
 	ContainerRegistryStorage *aruba.BlockStorage // storage for ContainerRegistry
 	RestoreTargetStorage     *aruba.BlockStorage // dedicated unattached volume used as Restore destination
+	Snapshot                 *aruba.Snapshot
 	Backup                   *aruba.StorageBackup
 	Restore                  *aruba.StorageRestore
 	ContainerRegistry        *aruba.ContainerRegistry
@@ -151,8 +164,16 @@ type ResourceCollection struct {
 // Wait helpers
 // ---------------------------------------------------------------------------
 
+// longWaitOpts is the wait-option set for resources whose Ready transition
+// routinely exceeds the SDK default (DBaaS, ContainerRegistry).
+var longWaitOpts = []aruba.WaitOption{
+	aruba.WithTimeout(20 * time.Minute),
+	aruba.WithRetries(120),
+}
+
 type waitFunc func(context.Context, ...aruba.WaitOption) error
 
+// waitForDependencies blocks until every entry in deps reaches its ready state.
 func waitForDependencies(ctx context.Context, resourceLabel string, deps map[string]waitFunc) error {
 	fmt.Printf("⏳ Waiting for %s dependencies...\n", resourceLabel)
 	for label, wait := range deps {
@@ -163,6 +184,8 @@ func waitForDependencies(ctx context.Context, resourceLabel string, deps map[str
 	return nil
 }
 
+// waitPostDependencies waits for downstream effects after a resource is created
+// (e.g., an Elastic IP or Block Storage transitioning to Used state).
 func waitPostDependencies(ctx context.Context, resourceLabel string, deps map[string]waitFunc) {
 	for label, wait := range deps {
 		if err := wait(ctx); err != nil {
@@ -225,7 +248,7 @@ func waitAllReady(ctx context.Context, r *ResourceCollection) {
 	}
 	if r.DBaaS != nil {
 		ws = append(ws, waiter{"DBaaS", func(ctx context.Context, _ ...aruba.WaitOption) error {
-			return r.DBaaS.WaitUntilReady(ctx, aruba.WithTimeout(20*time.Minute), aruba.WithRetries(120))
+			return r.DBaaS.WaitUntilReady(ctx, longWaitOpts...)
 		}})
 	}
 	if r.KaaS != nil {
@@ -236,7 +259,7 @@ func waitAllReady(ctx context.Context, r *ResourceCollection) {
 	}
 	if r.ContainerRegistry != nil {
 		ws = append(ws, waiter{"ContainerRegistry", func(ctx context.Context, _ ...aruba.WaitOption) error {
-			return r.ContainerRegistry.WaitUntilReady(ctx, aruba.WithTimeout(20*time.Minute), aruba.WithRetries(120))
+			return r.ContainerRegistry.WaitUntilReady(ctx, longWaitOpts...)
 		}})
 	}
 	if r.Backup != nil {
@@ -295,6 +318,24 @@ func waitUntilGone(ctx context.Context, label string, poll func(context.Context)
 }
 
 // ---------------------------------------------------------------------------
+// Error formatting
+// ---------------------------------------------------------------------------
+
+// formatErr returns a human-friendly error string. If err wraps an
+// *aruba.HTTPError, the status code and API title are surfaced when available;
+// otherwise err.Error() is returned verbatim.
+func formatErr(err error) string {
+	var httpErr *aruba.HTTPError
+	if errors.As(err, &httpErr) {
+		if httpErr.ErrResp != nil && httpErr.ErrResp.Title != nil {
+			return fmt.Sprintf("HTTP %d: %s", httpErr.StatusCode, *httpErr.ErrResp.Title)
+		}
+		return fmt.Sprintf("HTTP %d: %s", httpErr.StatusCode, string(httpErr.Body))
+	}
+	return err.Error()
+}
+
+// ---------------------------------------------------------------------------
 // Output helpers
 // ---------------------------------------------------------------------------
 
@@ -321,6 +362,10 @@ func printResourceSummary(resources *ResourceCollection) {
 	}
 	if resources.ContainerRegistryStorage != nil && resources.ContainerRegistryStorage.ID() != "" {
 		fmt.Println("- CR Block Storage ID:", resources.ContainerRegistryStorage.ID())
+	}
+
+	if resources.Snapshot != nil && resources.Snapshot.ID() != "" {
+		fmt.Printf("- Snapshot: %s (ID: %s)\n", resources.Snapshot.Name(), resources.Snapshot.ID())
 	}
 
 	if resources.VPC != nil && resources.VPC.ID() != "" {
@@ -397,6 +442,7 @@ func printResourceSummary(resources *ResourceCollection) {
 	}
 }
 
+// stringValue dereferences a *string and returns "" when nil.
 func stringValue(s *string) string {
 	if s == nil {
 		return ""
