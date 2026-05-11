@@ -19,7 +19,7 @@ go test -v -run TestName ./internal/...
 
 ## Linting
 
-The CI pipeline uses golangci-lint v2.11.4 (timeout 5 min). Active linters: `errcheck`, `govet`, `ineffassign`, `staticcheck`, `unused`, `misspell`, `unparam`, `unconvert`, `goconst`, `gocyclo`. Generated code in `pkg/generated` and examples in `cmd/example` are excluded.
+The CI pipeline uses golangci-lint v2.11.4 (timeout 5 min). Active linters: `errcheck`, `govet`, `ineffassign`, `staticcheck`, `unused`, `misspell`, `unparam`, `unconvert`, `goconst`, `gocyclo`. Generated code in `pkg/generated` and examples in `examples/all-resources` are excluded.
 
 ## Reference documentation
 
