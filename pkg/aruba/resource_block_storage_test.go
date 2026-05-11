@@ -37,7 +37,7 @@ func TestBlockStorage_FluentSetters(t *testing.T) {
 		OfType(types.BlockStorageTypeStandard).
 		WithBillingPeriod("Hour").
 		FromImage("LU22-001").
-		WithBootable(true)
+		SetBootable()
 
 	if bs.Name() != "my-bs" {
 		t.Errorf("Name() = %q", bs.Name())
@@ -165,7 +165,7 @@ func TestBlockStorage_ToRequestRoundTrip(t *testing.T) {
 		OfType(types.BlockStorageTypePerformance).
 		InZone("ITBG-1").
 		WithBillingPeriod("Hour").
-		WithBootable(true).
+		SetBootable().
 		FromImage("LU22-001").
 		FromSnapshot(URI(snapURI))
 
@@ -207,8 +207,8 @@ func TestBlockStorage_ToRequest_UnsetOptionals_AreNilOrZero(t *testing.T) {
 	bs := NewBlockStorage().WithName("bare").WithSizeGB(10).OfType(types.BlockStorageTypeStandard)
 	req := bs.RawRequest()
 
-	if req.Properties.Bootable != nil {
-		t.Errorf("Bootable should be nil, got %v", req.Properties.Bootable)
+	if req.Properties.Bootable == nil || *req.Properties.Bootable != false {
+		t.Errorf("Bootable should default to false, got %v", req.Properties.Bootable)
 	}
 	if req.Properties.Image != nil {
 		t.Errorf("Image should be nil, got %v", req.Properties.Image)
