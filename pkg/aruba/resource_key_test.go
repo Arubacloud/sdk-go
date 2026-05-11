@@ -46,12 +46,12 @@ func TestKey_FluentSetters(t *testing.T) {
 	k := NewKey().
 		IntoKMS(parent).
 		WithName("my-key").
-		OfAlgorithm("Aes")
+		OfAlgorithm(KeyAlgorithmAes)
 
 	if k.Name() != "my-key" {
 		t.Errorf("Name() = %q", k.Name())
 	}
-	if k.Algorithm() != "Aes" {
+	if k.Algorithm() != KeyAlgorithmAes {
 		t.Errorf("Algorithm() = %q", k.Algorithm())
 	}
 	if k.KMSID() != "kms-1" {
@@ -115,12 +115,12 @@ func TestKey_IntoKMS_BadRef_NoProject(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestKey_ToRequest_FullyPopulated(t *testing.T) {
-	k := NewKey().WithName("enc-key").OfAlgorithm("Rsa")
+	k := NewKey().WithName("enc-key").OfAlgorithm(KeyAlgorithmRsa)
 	req := k.RawRequest()
 	if req.Name != "enc-key" {
 		t.Errorf("Name = %q", req.Name)
 	}
-	if string(req.Algorithm) != "Rsa" {
+	if req.Algorithm != KeyAlgorithmRsa {
 		t.Errorf("Algorithm = %q", req.Algorithm)
 	}
 }
@@ -149,10 +149,10 @@ const keySuccessBody = `{` +
 	`"status":"Active"}`
 
 func TestKey_FromResponseHydration(t *testing.T) {
-	algo := types.KeyAlgorithmAes
-	cs := types.KeyCreationSourceCmp
-	kt := types.KeyTypeSymmetric
-	ks := types.KeyStatusActive
+	algo := KeyAlgorithmAes
+	cs := KeyCreationSourceCmp
+	kt := KeyTypeSymmetric
+	ks := KeyStatusActive
 	keyID := "key-1"
 	pkID := "pk-1"
 	name := "my-key"
@@ -184,13 +184,13 @@ func TestKey_FromResponseHydration(t *testing.T) {
 	if k.Name() != "my-key" {
 		t.Errorf("Name() = %q", k.Name())
 	}
-	if k.Algorithm() != "Aes" {
+	if k.Algorithm() != KeyAlgorithmAes {
 		t.Errorf("Algorithm() = %q", k.Algorithm())
 	}
-	if k.CreationSource() != "Cmp" {
+	if k.CreationSource() != string(KeyCreationSourceCmp) {
 		t.Errorf("CreationSource() = %q", k.CreationSource())
 	}
-	if k.Type() != "Symmetric" {
+	if k.Type() != string(KeyTypeSymmetric) {
 		t.Errorf("Type() = %q", k.Type())
 	}
 	if k.KeyStatus() != "Active" {
@@ -297,8 +297,8 @@ func TestKey_Accessors_ZeroValue(t *testing.T) {
 
 // Algorithm falls back to local field (no response)
 func TestKey_Algorithm_LocalFallback(t *testing.T) {
-	k := NewKey().OfAlgorithm("Rsa")
-	if k.Algorithm() != "Rsa" {
+	k := NewKey().OfAlgorithm(KeyAlgorithmRsa)
+	if k.Algorithm() != KeyAlgorithmRsa {
 		t.Errorf("Algorithm() = %q, want Rsa", k.Algorithm())
 	}
 }
@@ -388,7 +388,7 @@ func TestKeysClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	parent := keyMakeKMSParent("p-1", "kms-1")
-	k := NewKey().IntoKMS(parent).WithName("my-key").OfAlgorithm("Aes")
+	k := NewKey().IntoKMS(parent).WithName("my-key").OfAlgorithm(KeyAlgorithmAes)
 
 	result, err := adapter.Create(context.Background(), k)
 	if err != nil {
@@ -400,7 +400,7 @@ func TestKeysClientAdapter_Create_Success(t *testing.T) {
 	if result.Name() != "my-key" {
 		t.Errorf("Name() = %q", result.Name())
 	}
-	if result.Algorithm() != "Aes" {
+	if result.Algorithm() != KeyAlgorithmAes {
 		t.Errorf("Algorithm() = %q", result.Algorithm())
 	}
 	if result.StatusCode() != http.StatusCreated {
@@ -417,7 +417,7 @@ func TestKeysClientAdapter_Create_NoProject(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusCreated)
 	})
-	k := NewKey().WithName("x").OfAlgorithm("Aes")
+	k := NewKey().WithName("x").OfAlgorithm(KeyAlgorithmAes)
 	_, err := adapter.Create(context.Background(), k)
 	if err == nil {
 		t.Fatal("expected error when Key has no project")
@@ -435,7 +435,7 @@ func TestKeysClientAdapter_Create_NoKMS(t *testing.T) {
 	})
 	k := NewKey()
 	k.projectID = "p-1" // project set but not KMS
-	k.WithName("x").OfAlgorithm("Aes")
+	k.WithName("x").OfAlgorithm(KeyAlgorithmAes)
 	_, err := adapter.Create(context.Background(), k)
 	if err == nil {
 		t.Fatal("expected error when Key has no KMS ID")
@@ -463,7 +463,7 @@ func TestKeysClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, `{"message":"bad request"}`)
 	})
 	parent := keyMakeKMSParent("p-1", "kms-1")
-	_, err := adapter.Create(context.Background(), NewKey().IntoKMS(parent).WithName("k").OfAlgorithm("Aes"))
+	_, err := adapter.Create(context.Background(), NewKey().IntoKMS(parent).WithName("k").OfAlgorithm(KeyAlgorithmAes))
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {
 		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
@@ -614,7 +614,7 @@ func TestKeysClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].KeyID() != "key-1" {
 		t.Errorf("items[0].KeyID() = %q", items[0].KeyID())
 	}
-	if items[1].Algorithm() != "Rsa" {
+	if items[1].Algorithm() != KeyAlgorithmRsa {
 		t.Errorf("items[1].Algorithm() = %q", items[1].Algorithm())
 	}
 }

@@ -33,7 +33,7 @@ func TestVPC_FluentSetters(t *testing.T) {
 		AddTag("net").
 		AddTag("infra").
 		AddTag("net"). // dedupe
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		AsDefault().
 		WithPreset(true)
 
@@ -43,7 +43,7 @@ func TestVPC_FluentSetters(t *testing.T) {
 	if tags := v.Tags(); len(tags) != 2 || tags[0] != "net" || tags[1] != "infra" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if v.Region() != "ITBG-Bergamo" {
+	if v.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", v.Region())
 	}
 	if !v.IsDefault() {
@@ -90,7 +90,7 @@ func TestVPC_ToRequestRoundTrip(t *testing.T) {
 		WithName("vpc-1").
 		AddTag("t1").
 		AddTag("t2").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		AsDefault().
 		WithPreset(false)
 
@@ -102,7 +102,7 @@ func TestVPC_ToRequestRoundTrip(t *testing.T) {
 	if len(req.Metadata.Tags) != 2 {
 		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Location.Value = %q", req.Metadata.Location.Value)
 	}
 	if req.Properties.Properties == nil {
@@ -132,7 +132,7 @@ func TestVPC_ToRequestRoundTrip(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func vpcTestResponse(id, name, uri, projectID string) *types.VPCResponse {
-	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
+	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	state := "Active"
 	return &types.VPCResponse{
 		Metadata: types.ResourceMetadataResponse{
@@ -180,7 +180,7 @@ func TestVPC_FromResponseHydration(t *testing.T) {
 	if tags := v.Tags(); len(tags) != 1 || tags[0] != "tag1" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if v.Region() != "ITBG-Bergamo" {
+	if v.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", v.Region())
 	}
 	if v.State() != "Active" {
