@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
@@ -18,13 +16,12 @@ func createElasticIP(ctx context.Context, arubaClient aruba.Client, proj aruba.R
 		WithName(name).
 		AddTag("network").
 		AddTag("public").
-		InRegion("ITBG-Bergamo").
+		InRegion(defaultRegion).
 		WithBillingPeriod("Hour")
 
 	created, err := arubaClient.FromNetwork().ElasticIPs().Create(ctx, eip)
 	if err != nil {
-		log.Printf("Error creating Elastic IP: %v", err)
-		os.Exit(1)
+		log.Fatalf("Error creating Elastic IP: %s", formatErr(err))
 	}
 	fmt.Printf("✓ Created Elastic IP: %s (ObjectID: %s)\n", created.Name(), created.ID())
 

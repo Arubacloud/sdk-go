@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"log"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
+// createCloudServer provisions a cloud server with all dependencies and waits until Ready.
 func createCloudServer(ctx context.Context, arubaClient aruba.Client, resources *ResourceCollection) *aruba.CloudServer {
 	fmt.Println("--- Cloud Server ---")
 
@@ -45,8 +45,8 @@ write_files:
 		WithName(resourceName(NameCloudServer)).
 		AddTag("virtualmachine").
 		AddTag("container").
-		InRegion("ITBG-Bergamo").
-		InZone("ITBG-1").
+		InRegion(defaultRegion).
+		InZone(defaultZone).
 		OfFlavor("CSO4A8").
 		WithVPC(resources.VPC).
 		WithElasticIP(resources.CloudServerEIP).
@@ -58,12 +58,7 @@ write_files:
 
 	cs, err := arubaClient.FromCompute().CloudServers().Create(ctx, cs)
 	if err != nil {
-		var httpErr *aruba.HTTPError
-		if errors.As(err, &httpErr) {
-			log.Printf("Failed to create Cloud Server - Status: %d, Error: %s", httpErr.StatusCode, httpErr.Error())
-		} else {
-			log.Printf("Error creating Cloud Server: %v", err)
-		}
+		log.Fatalf("Error creating Cloud Server: %s", formatErr(err))
 		return nil
 	}
 
@@ -93,12 +88,7 @@ func deleteCloudServer(ctx context.Context, arubaClient aruba.Client, cs *aruba.
 	fmt.Println("--- Deleting Cloud Server ---")
 
 	if err := arubaClient.FromCompute().CloudServers().Delete(ctx, cs); err != nil {
-		var httpErr *aruba.HTTPError
-		if errors.As(err, &httpErr) {
-			log.Printf("Failed to delete cloud server - Status: %d, Error: %s", httpErr.StatusCode, httpErr.Error())
-		} else {
-			log.Printf("Error deleting cloud server: %v", err)
-		}
+		log.Printf("Error deleting cloud server: %s", formatErr(err))
 		return
 	}
 	fmt.Printf("✓ Deleted cloud server: %s\n", cs.Name())
