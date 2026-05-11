@@ -61,6 +61,51 @@ const (
 	StorageBackupTypeIncremental = types.StorageBackupTypeIncremental // captures only blocks changed since the last backup
 )
 
+// VolumeImage identifies a stock OS template (and any bundled software)
+// used to provision a bootable BlockStorage volume.
+//
+// The constants below are derived from Aruba's published catalog at
+// https://kb.arubacloud.com/en/computing/template-datasheets/template.aspx
+// (plus the OpenClaw and Proxmox VE 8 datasheets on separate pages).
+// Aruba may add or retire templates without bumping the API; treat this
+// set as a snapshot.
+
+const (
+	VolumeImageWS22001   = types.VolumeImageWS22001   // Windows Server 2022 64-bit
+	VolumeImageWS19001   = types.VolumeImageWS19001   // Windows Server 2019 64-bit
+	VolumeImageWS16001   = types.VolumeImageWS16001   // Windows Server 2016 64-bit
+	VolumeImageLU24001   = types.VolumeImageLU24001   // Ubuntu Server 24.04
+	VolumeImageLU22001   = types.VolumeImageLU22001   // Ubuntu Server 22.04 LTS 64-bit
+	VolumeImageLU20001   = types.VolumeImageLU20001   // Ubuntu Server 20.04 LTS 64-bit
+	VolumeImageDE12001   = types.VolumeImageDE12001   // Debian 12
+	VolumeImageDE11001   = types.VolumeImageDE11001   // Debian 11 64-bit
+	VolumeImageRO09001   = types.VolumeImageRO09001   // Rocky Linux 9
+	VolumeImageLC09001   = types.VolumeImageLC09001   // CentOS 9
+	VolumeImageAL90001   = types.VolumeImageAL90001   // AlmaLinux 9.x 64-bit
+	VolumeImageAL85001   = types.VolumeImageAL85001   // AlmaLinux 8.x 64-bit
+	VolumeImageLO15001   = types.VolumeImageLO15001   // openSUSE 15.2 64-bit
+	VolumeImageBS13001   = types.VolumeImageBS13001   // FreeBSD 13 64-bit
+	VolumeImageAP85001   = types.VolumeImageAP85001   // AlmaLinux 8.x 64-bit + Plesk
+	VolumeImageSQLW22    = types.VolumeImageSQLW22    // Windows Server 2022 64-bit + SQL Server 2022 Web
+	VolumeImageSQLS22    = types.VolumeImageSQLS22    // Windows Server 2022 64-bit + SQL Server 2022 Standard
+	VolumeImageADW132    = types.VolumeImageADW132    // Windows Server 2022 64-bit + SQL Server 2019 Web
+	VolumeImageADW131    = types.VolumeImageADW131    // Windows Server 2022 64-bit + SQL Server 2019 Standard
+	VolumeImageADW122    = types.VolumeImageADW122    // Windows Server 2019 64-bit + SQL Server 2016 Standard
+	VolumeImageADW121    = types.VolumeImageADW121    // Windows Server 2019 64-bit + SQL Server 2016 Web
+	VolumeImageARW004    = types.VolumeImageARW004    // Windows Server 2022 64-bit + RDS (5/10/15/30 CAL)
+	VolumeImageARW003    = types.VolumeImageARW003    // Windows Server 2016 64-bit + RDS (5/10/15/30 CAL)
+	VolumeImageAFE001    = types.VolumeImageAFE001    // pfSense 2.4.5 64-bit firewall/load balancer appliance
+	VolumeImageAFL001    = types.VolumeImageAFL001    // Endian Firewall Community 3.3.2 firewall/load balancer appliance
+	VolumeImageLU20MAI01 = types.VolumeImageLU20MAI01 // Ubuntu Server 20.04 LTS 64-bit + Mail Server
+	VolumeImageLU24MN01  = types.VolumeImageLU24MN01  // Ubuntu Server 24.04 + MinIO
+	VolumeImageLU22MN01  = types.VolumeImageLU22MN01  // Ubuntu Server 22.04 LTS 64-bit + MinIO
+	VolumeImageLU24VD01  = types.VolumeImageLU24VD01  // Ubuntu Server 24.04 Virtual Desktop
+	VolumeImageLU22VD01  = types.VolumeImageLU22VD01  // Ubuntu Server 22.04 LTS Virtual Desktop
+	VolumeImageAVL005    = types.VolumeImageAVL005    // Ubuntu Server 20.04 LTS 64-bit Virtual Desktop
+	VolumeImageLU24OC01  = types.VolumeImageLU24OC01  // Ubuntu Server 24.04 + OpenClaw AI assistant (NGINX, Fail2ban, UFW, Certbot)
+	VolumeImagePX08001   = types.VolumeImagePX08001   // Debian 12 (Proxmox kernel) + Proxmox VE 8 + Fail2ban
+)
+
 // ---------------------------------------------------------------------------
 // Container Registry
 // ---------------------------------------------------------------------------
