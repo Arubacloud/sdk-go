@@ -125,16 +125,15 @@ func TestDBaaS_IntoProject_BadRef(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// WithNetworking — 4-tuple setters
+// Per-ref networking setters
 // --------------------------------------------------------------------------
 
-func TestDBaaS_WithNetworking_AllFour_URIRef(t *testing.T) {
-	d := NewDBaaS().WithNetworking(
-		URI("/vpcs/v"),
-		URI("/subnets/s"),
-		URI("/sgs/sg"),
-		URI("/eips/e"),
-	)
+func TestDBaaS_WithVPC_Subnet_SecurityGroup_ElasticIP_URIRef(t *testing.T) {
+	d := NewDBaaS().
+		WithVPC(URI("/vpcs/v")).
+		WithSubnet(URI("/subnets/s")).
+		WithSecurityGroup(URI("/sgs/sg")).
+		WithElasticIP(URI("/eips/e"))
 	if d.VPC() != "/vpcs/v" {
 		t.Errorf("VPC() = %q", d.VPC())
 	}
@@ -152,14 +151,17 @@ func TestDBaaS_WithNetworking_AllFour_URIRef(t *testing.T) {
 	}
 }
 
-func TestDBaaS_WithNetworking_AllFour_TypedRef(t *testing.T) {
-	// Simulate 4 typed wrappers (use URI-backed refs for simplicity in this test).
+func TestDBaaS_WithVPC_Subnet_SecurityGroup_ElasticIP_TypedRef(t *testing.T) {
 	vpc := URI("/vpcs/v1")
 	subnet := URI("/subnets/s1")
 	sg := URI("/sgs/sg1")
 	eip := URI("/eips/e1")
 
-	d := NewDBaaS().WithNetworking(vpc, subnet, sg, eip)
+	d := NewDBaaS().
+		WithVPC(vpc).
+		WithSubnet(subnet).
+		WithSecurityGroup(sg).
+		WithElasticIP(eip)
 	if d.Err() != nil {
 		t.Errorf("Err() = %v", d.Err())
 	}
@@ -168,28 +170,13 @@ func TestDBaaS_WithNetworking_AllFour_TypedRef(t *testing.T) {
 	}
 }
 
-func TestDBaaS_WithNetworking_OneEmpty(t *testing.T) {
-	d := NewDBaaS().WithNetworking(
-		URI("/vpcs/v"),
-		URI(""), // empty — triggers error
-		URI("/sgs/sg"),
-		URI("/eips/e"),
-	)
+func TestDBaaS_WithVPC_EmptyURI_AddsErr(t *testing.T) {
+	d := NewDBaaS().WithVPC(URI(""))
 	if d.Err() == nil {
-		t.Error("expected Err() to be set for empty subnet URI")
+		t.Error("expected Err() to be set for empty VPC URI")
 	}
-	// Other refs should still be set.
-	if d.vpcRef == nil {
-		t.Error("vpcRef should be set even when subnet is empty")
-	}
-	if d.securityGroupRef == nil {
-		t.Error("securityGroupRef should be set even when subnet is empty")
-	}
-	if d.elasticIPRef == nil {
-		t.Error("elasticIPRef should be set even when subnet is empty")
-	}
-	if d.subnetRef != nil {
-		t.Error("subnetRef should remain nil on error")
+	if d.vpcRef != nil {
+		t.Error("vpcRef should remain nil on error")
 	}
 }
 
@@ -294,7 +281,10 @@ func TestDBaaS_ToRequestRoundTrip(t *testing.T) {
 		WithStorageGB(20).
 		WithBillingPeriod("Hour").
 		WithAutoscaling(50, 10).
-		WithNetworking(URI("/vpcs/v"), URI("/subnets/s"), URI("/sgs/sg"), URI("/eips/e"))
+		WithVPC(URI("/vpcs/v")).
+		WithSubnet(URI("/subnets/s")).
+		WithSecurityGroup(URI("/sgs/sg")).
+		WithElasticIP(URI("/eips/e"))
 
 	req := d.RawRequest()
 
@@ -680,7 +670,10 @@ func TestDBaaSClientAdapter_Create_Success(t *testing.T) {
 		WithStorageGB(20).
 		WithBillingPeriod("Hour").
 		WithAutoscaling(50, 10).
-		WithNetworking(URI("/vpcs/v"), URI("/subnets/s"), URI("/sgs/sg"), URI("/eips/e"))
+		WithVPC(URI("/vpcs/v")).
+		WithSubnet(URI("/subnets/s")).
+		WithSecurityGroup(URI("/sgs/sg")).
+		WithElasticIP(URI("/eips/e"))
 
 	result, err := adapter.Create(context.Background(), d)
 	if err != nil {

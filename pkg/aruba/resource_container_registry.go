@@ -60,8 +60,8 @@ func (r *ContainerRegistry) InRegion(region Region) *ContainerRegistry {
 // Body-ref setters. Empty URIs are recorded on the error sink and the field
 // remains unset.
 
-func (r *ContainerRegistry) WithPublicIP(eip Ref) *ContainerRegistry {
-	return r.setSingleRef("WithPublicIP", eip, &r.publicIPRef)
+func (r *ContainerRegistry) WithElasticIP(eip Ref) *ContainerRegistry {
+	return r.setSingleRef("WithElasticIP", eip, &r.publicIPRef)
 }
 func (r *ContainerRegistry) WithVPC(v Ref) *ContainerRegistry {
 	return r.setSingleRef("WithVPC", v, &r.vpcRef)
