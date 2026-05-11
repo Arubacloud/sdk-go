@@ -18,7 +18,7 @@ func createRecurringJob(ctx context.Context, arubaClient aruba.Client, proj arub
 		WithName(resourceName(NameJobRecurring)).
 		AddTag("schedule").
 		AddTag("recurring").
-		InRegion(defaultRegion).
+		InRegion(aruba.RegionITBGBergamo).
 		WithEnabled(true).
 		WithCron("0 10 * * *").
 		RecurringUntil(time.Now().AddDate(0, 2, 0)).
@@ -26,7 +26,7 @@ func createRecurringJob(ctx context.Context, arubaClient aruba.Client, proj arub
 			Named("poweroff-step").
 			OfResource(target).
 			WithAction("poweroff").
-			WithVerb("POST"))
+			WithVerb(aruba.HTTPVerbPOST))
 
 	res, err := arubaClient.FromSchedule().Jobs().Create(ctx, j)
 	if err != nil {
@@ -46,14 +46,14 @@ func createOneShotJob(ctx context.Context, arubaClient aruba.Client, proj aruba.
 		WithName(resourceName(NameJobOneShot)).
 		AddTag("schedule").
 		AddTag("oneshot").
-		InRegion(defaultRegion).
+		InRegion(aruba.RegionITBGBergamo).
 		WithEnabled(true).
 		OneShotAt(time.Now().Add(24 * time.Hour)).
 		AddStep(aruba.NewJobStep().
 			Named("poweroff-step").
 			OfResource(target).
 			WithAction("poweroff").
-			WithVerb("POST"))
+			WithVerb(aruba.HTTPVerbPOST))
 
 	res, err := arubaClient.FromSchedule().Jobs().Create(ctx, j)
 	if err != nil {

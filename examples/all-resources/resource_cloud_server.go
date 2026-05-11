@@ -45,9 +45,9 @@ write_files:
 		WithName(resourceName(NameCloudServer)).
 		AddTag("virtualmachine").
 		AddTag("container").
-		InRegion(defaultRegion).
-		InZone(defaultZone).
-		OfFlavor("CSO4A8").
+		InRegion(aruba.RegionITBGBergamo).
+		InZone(aruba.ZoneITBG1).
+		OfFlavor(aruba.CloudServerFlavorCSO4A8).
 		WithVPC(resources.VPC).
 		WithElasticIP(resources.CloudServerEIP).
 		WithBootVolume(resources.CloudServerBlockStorage).
