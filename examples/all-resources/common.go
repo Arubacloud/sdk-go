@@ -17,17 +17,6 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// Region / zone defaults
-// ---------------------------------------------------------------------------
-
-const (
-	// defaultRegion is the region every example resource is created in.
-	defaultRegion = "ITBG-Bergamo"
-	// defaultZone is the zone within defaultRegion for zonal resources.
-	defaultZone = "ITBG-1"
-)
-
-// ---------------------------------------------------------------------------
 // Name constants, vars, and helpers
 // ---------------------------------------------------------------------------
 
