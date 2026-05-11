@@ -15,7 +15,7 @@ import (
 type BlockStorage struct {
 	errMixin
 	metadataMixin
-	regionalMixin
+	zonalMixin
 	projectScopedMixin
 	responseMetadataMixin
 	statusMixin
@@ -24,7 +24,6 @@ type BlockStorage struct {
 
 	sizeGB        int
 	storageType   *types.BlockStorageType
-	zone          *Zone
 	billingPeriod *BillingPeriod
 	snapshotRef   *string // body URI
 	image         *string
@@ -39,7 +38,7 @@ func (b *BlockStorage) AddTag(t string) *BlockStorage          { b.addTag(t); re
 func (b *BlockStorage) RemoveTag(t string) *BlockStorage       { b.removeTag(t); return b }
 func (b *BlockStorage) ReplaceTags(ts ...string) *BlockStorage { b.replaceTags(ts...); return b }
 func (b *BlockStorage) InRegion(region Region) *BlockStorage   { b.inRegion(region); return b }
-func (b *BlockStorage) InZone(zone Zone) *BlockStorage         { b.zone = &zone; return b }
+func (b *BlockStorage) InZone(zone Zone) *BlockStorage         { b.inZone(zone); return b }
 func (b *BlockStorage) WithSizeGB(gb int) *BlockStorage        { b.sizeGB = gb; return b }
 func (b *BlockStorage) OfType(t types.BlockStorageType) *BlockStorage {
 	b.storageType = &t
@@ -84,7 +83,6 @@ func (b *BlockStorage) Type() types.BlockStorageType {
 	}
 	return *b.storageType
 }
-func (b *BlockStorage) Zone() Zone { return blockStorageDerefZone(b.zone) }
 func (b *BlockStorage) BillingPeriod() BillingPeriod {
 	if b.billingPeriod == nil {
 		return ""
@@ -112,7 +110,7 @@ func (b *BlockStorage) toRequest() types.BlockStorageRequest {
 	props := types.BlockStoragePropertiesRequest{
 		SizeGB:        b.sizeGB,
 		BillingPeriod: bp,
-		Zone:          b.zone,
+		Zone:          b.zonePtr(),
 		Type:          t,
 		Bootable:      b.bootable,
 		Image:         b.image,
@@ -185,13 +183,6 @@ func (b *BlockStorage) fromResponse(resp *types.BlockStorageResponse) {
 }
 
 func blockStorageDerefString(p *string) string {
-	if p == nil {
-		return ""
-	}
-	return *p
-}
-
-func blockStorageDerefZone(p *Zone) Zone {
 	if p == nil {
 		return ""
 	}

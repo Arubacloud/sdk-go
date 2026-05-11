@@ -23,7 +23,7 @@ import (
 type CloudServer struct {
 	errMixin
 	metadataMixin
-	regionalMixin
+	zonalMixin
 	projectScopedMixin
 	responseMetadataMixin
 	statusMixin
@@ -31,7 +31,6 @@ type CloudServer struct {
 	httpEnvelopeMixin
 
 	// Request-side scalars.
-	zone      *Zone
 	flavor    *CloudServerFlavor
 	userData  *string
 	vpcPreset *bool
@@ -64,7 +63,7 @@ func (cs *CloudServer) RemoveTag(t string) *CloudServer       { cs.removeTag(t);
 func (cs *CloudServer) ReplaceTags(ts ...string) *CloudServer { cs.replaceTags(ts...); return cs }
 func (cs *CloudServer) InRegion(region Region) *CloudServer   { cs.inRegion(region); return cs }
 
-func (cs *CloudServer) InZone(zone Zone) *CloudServer { cs.zone = &zone; return cs }
+func (cs *CloudServer) InZone(zone Zone) *CloudServer { cs.inZone(zone); return cs }
 func (cs *CloudServer) OfFlavor(flavor CloudServerFlavor) *CloudServer {
 	cs.flavor = &flavor
 	return cs
@@ -125,10 +124,6 @@ func (cs *CloudServer) CloudServerID() string { return cs.ID() }
 
 func (cs *CloudServer) Raw() *types.CloudServerResponse      { return cs.response }
 func (cs *CloudServer) RawRequest() types.CloudServerRequest { return cs.toRequest() }
-
-func (cs *CloudServer) Zone() Zone {
-	return cloudServerDerefZone(cs.zone)
-}
 
 // Flavor returns the flavor name. On a hydrated response the value comes from the
 // response's Flavor.Name; before hydration it returns what was passed to OfFlavor.
@@ -262,9 +257,7 @@ func (cs *CloudServer) preActionCheck(label string) error {
 
 func (cs *CloudServer) toRequest() types.CloudServerRequest {
 	props := types.CloudServerPropertiesRequest{}
-	if cs.zone != nil {
-		props.Zone = *cs.zone
-	}
+	props.Zone = cs.Zone()
 	if cs.vpcPreset != nil {
 		props.VPCPreset = *cs.vpcPreset
 	}
@@ -356,13 +349,6 @@ func (cs *CloudServer) fromResponse(resp *types.CloudServerResponse) {
 }
 
 func cloudServerDerefString(p *string) string {
-	if p == nil {
-		return ""
-	}
-	return *p
-}
-
-func cloudServerDerefZone(p *Zone) Zone {
 	if p == nil {
 		return ""
 	}
