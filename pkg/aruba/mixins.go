@@ -101,6 +101,39 @@ func (m *regionalMixin) toLocation() types.LocationRequest {
 }
 
 // --------------------------------------------------------------------------
+// zonalMixin — resource zone (extends regionalMixin)
+// --------------------------------------------------------------------------
+
+// zonalMixin extends regionalMixin with zone tracking. Zones are always within
+// a region (e.g. "ITBG-1" lives in region "ITBG"), so zonalMixin embeds
+// regionalMixin and inherits its setter/getter/toLocation helper.
+//
+// The zone wire field is NOT part of types.LocationRequest — every zonal
+// resource carries it on its own *PropertiesRequest under JSON tag "dataCenter".
+// This mixin therefore only owns the value; each wrapper's toRequest() reads it
+// via Zone() (for required Zone wire fields) or zonePtr() (for *Zone omitempty
+// fields) and places it itself.
+type zonalMixin struct {
+	regionalMixin
+	zone *Zone
+}
+
+func (m *zonalMixin) inZone(z Zone) { m.zone = &z }
+
+// Zone returns the configured zone, or "" if InZone was never called.
+func (m *zonalMixin) Zone() Zone {
+	if m.zone == nil {
+		return ""
+	}
+	return *m.zone
+}
+
+// zonePtr returns the underlying *Zone for resources whose wire field is
+// *Zone with omitempty (e.g. BlockStorage, DBaaS). Returns nil if InZone
+// was not called.
+func (m *zonalMixin) zonePtr() *Zone { return m.zone }
+
+// --------------------------------------------------------------------------
 // Scoped mixins — parent hierarchy
 // --------------------------------------------------------------------------
 
