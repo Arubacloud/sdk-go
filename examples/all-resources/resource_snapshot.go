@@ -2,58 +2,52 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
-// createSnapshot creates a snapshot from block storage
+// createSnapshot creates a volume snapshot from the given block storage and waits until Ready.
 func createSnapshot(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, bs *aruba.BlockStorage) *aruba.Snapshot {
 	fmt.Println("--- Snapshot ---")
 
+	if err := waitForDependencies(ctx, "Snapshot", map[string]waitFunc{
+		"Block Storage": bs.WaitUntilReady,
+	}); err != nil {
+		log.Printf("%v", err)
+		return nil
+	}
+
 	snap := aruba.NewSnapshot().
 		IntoProject(proj).
-		WithName(resourceName("snapshot")).
+		WithName(resourceName(NameSnapshot)).
 		AddTag("backup").
 		AddTag("snapshot").
-		InRegion("ITBG-Bergamo").
+		InRegion(defaultRegion).
 		WithBillingPeriod("Hour").
 		FromVolume(bs)
 
 	snap, err := arubaClient.FromStorage().Snapshots().Create(ctx, snap)
 	if err != nil {
-		var httpErr *aruba.HTTPError
-		if errors.As(err, &httpErr) {
-			log.Printf("Failed to create snapshot - Status: %d, Error: %s",
-				httpErr.StatusCode,
-				stringValue(httpErr.ErrResp.Title))
-		} else {
-			log.Printf("Error creating snapshot: %v", err)
-		}
-		os.Exit(1)
+		log.Fatalf("Error creating snapshot: %s", formatErr(err))
 	}
 	fmt.Printf("✓ Created snapshot: %s from volume %s\n", snap.Name(), bs.Name())
+
+	if err := snap.WaitUntilReady(ctx); err != nil {
+		log.Printf("Snapshot %s did not become Ready: %v", snap.Name(), err)
+	}
 
 	return snap
 }
 
-// deleteSnapshot deletes a snapshot
+// deleteSnapshot tears down the snapshot.
 func deleteSnapshot(ctx context.Context, arubaClient aruba.Client, snap *aruba.Snapshot) {
 	fmt.Println("--- Deleting Snapshot ---")
 
 	err := arubaClient.FromStorage().Snapshots().Delete(ctx, snap)
 	if err != nil {
-		var httpErr *aruba.HTTPError
-		if errors.As(err, &httpErr) {
-			log.Printf("Failed to delete snapshot - Status: %d, Error: %s",
-				httpErr.StatusCode,
-				stringValue(httpErr.ErrResp.Title))
-		} else {
-			log.Printf("Error deleting snapshot: %v", err)
-		}
+		log.Printf("Error deleting snapshot: %s", formatErr(err))
 		return
 	}
 	fmt.Printf("✓ Deleted snapshot: %s\n", snap.ID())

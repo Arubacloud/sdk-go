@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
+// createVPC provisions a VPC and waits until Ready.
 func createVPC(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *aruba.VPC {
 	fmt.Println("--- VPC ---")
 
@@ -16,13 +15,12 @@ func createVPC(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *a
 		IntoProject(proj).
 		WithName(resourceName(NameVPC)).
 		AddTag("network").AddTag("infrastructure").
-		InRegion("ITBG-Bergamo").
+		InRegion(defaultRegion).
 		WithPreset(false)
 
 	created, err := arubaClient.FromNetwork().VPCs().Create(ctx, vpc)
 	if err != nil {
-		log.Printf("Error creating VPC: %v", err)
-		os.Exit(1)
+		log.Fatalf("Error creating VPC: %s", formatErr(err))
 	}
 
 	fmt.Printf("✓ Created VPC: %s (Default: %t)\n", created.Name(), created.IsDefault())
@@ -34,6 +32,7 @@ func createVPC(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *a
 	return created
 }
 
+// deleteVPC tears down the VPC and waits until gone.
 func deleteVPC(ctx context.Context, arubaClient aruba.Client, vpc *aruba.VPC) {
 	fmt.Println("--- Deleting VPC ---")
 

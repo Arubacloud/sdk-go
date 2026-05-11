@@ -8,6 +8,7 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
+// createKMS provisions a Key Management Service instance and waits until Ready.
 func createKMS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *aruba.KMS {
 	fmt.Println("--- KMS Instance ---")
 
@@ -16,12 +17,12 @@ func createKMS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *a
 		WithName(resourceName(NameKMS)).
 		AddTag("security").
 		AddTag("encryption").
-		InRegion("ITBG-Bergamo").
+		InRegion(defaultRegion).
 		WithBillingPeriod("Hour")
 
 	result, err := arubaClient.FromSecurity().KMS().Create(ctx, k)
 	if err != nil {
-		log.Printf("Error creating KMS: %v", err)
+		log.Fatalf("Error creating KMS: %s", formatErr(err))
 		return nil
 	}
 
@@ -34,6 +35,7 @@ func createKMS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *a
 	return result
 }
 
+// createKMS provisions a Key Management Service instance and waits until Ready.
 func createKMSKey(ctx context.Context, arubaClient aruba.Client, kmsParent *aruba.KMS) *aruba.Key {
 	fmt.Println("--- KMS Cryptographic Key ---")
 
@@ -51,7 +53,7 @@ func createKMSKey(ctx context.Context, arubaClient aruba.Client, kmsParent *arub
 
 	result, err := arubaClient.FromSecurity().Keys().Create(ctx, key)
 	if err != nil {
-		log.Printf("Error creating Key: %v", err)
+		log.Fatalf("Error creating Key: %s", formatErr(err))
 		return nil
 	}
 
@@ -69,6 +71,7 @@ func createKMSKey(ctx context.Context, arubaClient aruba.Client, kmsParent *arub
 	return result
 }
 
+// createKmip provisions a KMIP service inside the KMS instance and waits until Ready.
 func createKmip(ctx context.Context, arubaClient aruba.Client, kmsParent *aruba.KMS) *aruba.Kmip {
 	fmt.Println("--- KMIP Service ---")
 
@@ -83,7 +86,7 @@ func createKmip(ctx context.Context, arubaClient aruba.Client, kmsParent *aruba.
 
 	created, err := arubaClient.FromSecurity().Kmips().Create(ctx, km)
 	if err != nil {
-		log.Printf("Error creating KMIP service: %v", err)
+		log.Fatalf("Error creating KMIP service: %s", formatErr(err))
 		return nil
 	}
 
@@ -99,6 +102,7 @@ func createKmip(ctx context.Context, arubaClient aruba.Client, kmsParent *aruba.
 	return created
 }
 
+// downloadKmipCertificate waits for the KMIP certificate to become available and downloads it.
 func downloadKmipCertificate(ctx context.Context, arubaClient aruba.Client, kmip *aruba.Kmip) *aruba.KmipCertificate {
 	fmt.Println("--- KMIP Certificate Download ---")
 
@@ -111,7 +115,7 @@ func downloadKmipCertificate(ctx context.Context, arubaClient aruba.Client, kmip
 
 	cert, err := arubaClient.FromSecurity().Kmips().Download(ctx, kmip)
 	if err != nil {
-		log.Printf("Error downloading KMIP certificate: %v", err)
+		log.Printf("Error downloading KMIP certificate: %s", formatErr(err))
 		return nil
 	}
 
@@ -124,33 +128,36 @@ func downloadKmipCertificate(ctx context.Context, arubaClient aruba.Client, kmip
 	return cert
 }
 
+// deleteKMS tears down the KMS instance.
 func deleteKMS(ctx context.Context, arubaClient aruba.Client, k *aruba.KMS) {
 	fmt.Println("--- Deleting KMS Instance ---")
 
 	if err := arubaClient.FromSecurity().KMS().Delete(ctx, k); err != nil {
-		log.Printf("Error deleting KMS: %v", err)
+		log.Printf("Error deleting KMS: %s", formatErr(err))
 		return
 	}
 	fmt.Printf("✓ Deleted KMS instance: %s\n", k.KMSID())
 }
 
+// deleteKMS tears down the KMS instance.
 func deleteKMSKey(ctx context.Context, arubaClient aruba.Client, key *aruba.Key) {
 	fmt.Println("--- Deleting KMS Key ---")
 
 	err := arubaClient.FromSecurity().Keys().Delete(ctx, key)
 	if err != nil {
-		log.Printf("Error deleting KMS key: %v", err)
+		log.Printf("Error deleting KMS key: %s", formatErr(err))
 		return
 	}
 	fmt.Printf("✓ Deleted KMS key: %s\n", key.KeyID())
 }
 
+// deleteKmip tears down the KMIP service.
 func deleteKmip(ctx context.Context, arubaClient aruba.Client, km *aruba.Kmip) {
 	fmt.Println("--- Deleting KMIP Service ---")
 
 	err := arubaClient.FromSecurity().Kmips().Delete(ctx, km)
 	if err != nil {
-		log.Printf("Error deleting KMIP service: %v", err)
+		log.Printf("Error deleting KMIP service: %s", formatErr(err))
 		return
 	}
 	fmt.Printf("✓ Deleted KMIP service: %s\n", km.KmipID())

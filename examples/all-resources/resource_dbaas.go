@@ -2,14 +2,13 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
+// createDBaaS provisions a DBaaS instance with all dependencies and waits until Ready.
 func createDBaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, vpc *aruba.VPC, subnet *aruba.Subnet, sg *aruba.SecurityGroup, eip *aruba.ElasticIP) *aruba.DBaaS {
 	fmt.Println("--- DBaaS ---")
 
@@ -28,8 +27,8 @@ func createDBaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, 
 		WithName(resourceName(NameDBaaS)).
 		AddTag("database").
 		AddTag("mysql").
-		InRegion("ITBG-Bergamo").
-		InZone("ITBG-1").
+		InRegion(defaultRegion).
+		InZone(defaultZone).
 		OfEngine("mysql-8.0").
 		OfFlavor("DBO2A8").
 		WithSizeGB(10).
@@ -40,25 +39,20 @@ func createDBaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, 
 		WithSecurityGroup(sg).
 		WithElasticIP(eip)
 	if err := d.Err(); err != nil {
-		log.Printf("Error building DBaaS request: %v", err)
+		log.Fatalf("Error building DBaaS request: %v", err)
 		return nil
 	}
 
 	result, err := arubaClient.FromDatabase().DBaaS().Create(ctx, d)
 	if err != nil {
-		var httpErr *aruba.HTTPError
-		if errors.As(err, &httpErr) {
-			log.Printf("Failed to create DBaaS - Status: %d, Error: %s", httpErr.StatusCode, httpErr.Error())
-		} else {
-			log.Printf("Error creating DBaaS: %v", err)
-		}
+		log.Fatalf("Error creating DBaaS: %s", formatErr(err))
 		return nil
 	}
 
 	fmt.Printf("✓ Created DBaaS: %s (Engine: %s, Flavor: %s, Storage: %d GB)\n",
 		result.Name(), result.Engine(), result.Flavor(), result.SizeGB())
 
-	if err := result.WaitUntilReady(ctx, aruba.WithTimeout(20*time.Minute), aruba.WithRetries(120)); err != nil {
+	if err := result.WaitUntilReady(ctx, longWaitOpts...); err != nil {
 		log.Printf("DBaaS %s did not become Ready: %v", result.Name(), err)
 	}
 
@@ -69,6 +63,7 @@ func createDBaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, 
 	return result
 }
 
+// updateDBaaS applies name, tag, and storage-size changes to the DBaaS instance.
 func updateDBaaS(ctx context.Context, arubaClient aruba.Client, d *aruba.DBaaS) {
 	fmt.Println("--- Updating DBaaS ---")
 
@@ -87,17 +82,13 @@ func updateDBaaS(ctx context.Context, arubaClient aruba.Client, d *aruba.DBaaS) 
 	fmt.Printf("✓ Updated DBaaS: %s (Storage: %d GB)\n", result.Name(), result.SizeGB())
 }
 
+// deleteDBaaS tears down the DBaaS instance.
 func deleteDBaaS(ctx context.Context, arubaClient aruba.Client, d *aruba.DBaaS) {
 	fmt.Println("--- Deleting DBaaS ---")
 
 	err := arubaClient.FromDatabase().DBaaS().Delete(ctx, d)
 	if err != nil {
-		var httpErr *aruba.HTTPError
-		if errors.As(err, &httpErr) {
-			log.Printf("Failed to delete DBaaS - Status: %d, Error: %s", httpErr.StatusCode, httpErr.Error())
-		} else {
-			log.Printf("Error deleting DBaaS: %v", err)
-		}
+		log.Printf("Error deleting DBaaS: %s", formatErr(err))
 		return
 	}
 	fmt.Printf("✓ Deleted DBaaS: %s\n", d.Name())
