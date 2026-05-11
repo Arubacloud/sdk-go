@@ -9,6 +9,8 @@ func URI(s string) Ref {
 	return uriRef{uri: s}
 }
 
+func boolPtr(b bool) *bool { return &b }
+
 // NewProject returns a fresh *Project ready for fluent setters and a Create call.
 func NewProject() *Project { return &Project{} }
 
@@ -16,7 +18,7 @@ func NewProject() *Project { return &Project{} }
 // Binds the projectScopedMixin's error sink to the VPC's errMixin so IntoProject
 // failures surface via Err().
 func NewVPC() *VPC {
-	v := &VPC{}
+	v := &VPC{defaultVPC: boolPtr(false)}
 	v.projectScopedMixin = bindProjectScoped(&v.errMixin)
 	return v
 }
@@ -24,7 +26,7 @@ func NewVPC() *VPC {
 // NewSubnet returns a fresh *Subnet ready for fluent setters and a Create call.
 // Binds vpcScopedMixin's error sink so IntoVPC failures surface via Err().
 func NewSubnet() *Subnet {
-	s := &Subnet{}
+	s := &Subnet{defaultSubnet: boolPtr(false)}
 	s.vpcScopedMixin = bindVPCScoped(&s.errMixin)
 	return s
 }
@@ -40,7 +42,7 @@ func NewElasticIP() *ElasticIP {
 // NewSecurityGroup returns a fresh *SecurityGroup ready for fluent setters and a Create call.
 // Binds vpcScopedMixin's error sink so IntoVPC failures surface via Err().
 func NewSecurityGroup() *SecurityGroup {
-	sg := &SecurityGroup{}
+	sg := &SecurityGroup{defaultSG: boolPtr(false)}
 	sg.vpcScopedMixin = bindVPCScoped(&sg.errMixin)
 	return sg
 }
