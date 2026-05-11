@@ -9,8 +9,14 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
-// SecurityGroup is the wrapper for an Aruba Cloud Security Group (a direct child of a VPC).
-// Construct with aruba.NewSecurityGroup() and bind it to a parent VPC via IntoVPC(vpc).
+// ---- Wrapper ----
+
+// SecurityGroup is the wrapper for an Aruba Cloud Security Group (a child of a VPC).
+// Construct with aruba.NewSecurityGroup() and bind it via IntoVPC(vpc).
+//
+// Wraps types.SecurityGroupResponse / types.SecurityGroupRequest. The wrapper carries
+// pointer-typed private fields so unset values round-trip through
+// the JSON layer correctly.
 type SecurityGroup struct {
 	errMixin
 	metadataMixin
@@ -24,14 +30,30 @@ type SecurityGroup struct {
 	response  *types.SecurityGroupResponse // backs Raw()
 }
 
-// Setters (chainable; promoted methods re-exposed at *SecurityGroup level).
-func (sg *SecurityGroup) IntoVPC(v Ref) *SecurityGroup            { sg.intoVPC(v); return sg }
-func (sg *SecurityGroup) WithName(n string) *SecurityGroup        { sg.withName(n); return sg }
-func (sg *SecurityGroup) AddTag(t string) *SecurityGroup          { sg.addTag(t); return sg }
-func (sg *SecurityGroup) RemoveTag(t string) *SecurityGroup       { sg.removeTag(t); return sg }
+// Setters — chainable, general → specific
+
+// IntoVPC binds this SecurityGroup to its parent VPC. Required before Create.
+func (sg *SecurityGroup) IntoVPC(v Ref) *SecurityGroup { sg.intoVPC(v); return sg }
+
+// WithName sets the resource name. Required by the API.
+func (sg *SecurityGroup) WithName(n string) *SecurityGroup { sg.withName(n); return sg }
+
+// AddTag appends a tag for filtering and accounting.
+func (sg *SecurityGroup) AddTag(t string) *SecurityGroup { sg.addTag(t); return sg }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (sg *SecurityGroup) RemoveTag(t string) *SecurityGroup { sg.removeTag(t); return sg }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (sg *SecurityGroup) ReplaceTags(ts ...string) *SecurityGroup { sg.replaceTags(ts...); return sg }
-func (sg *SecurityGroup) AsDefault() *SecurityGroup               { t := true; sg.defaultSG = &t; return sg }
-func (sg *SecurityGroup) NotDefault() *SecurityGroup              { f := false; sg.defaultSG = &f; return sg }
+
+// AsDefault marks this security group as the VPC default.
+func (sg *SecurityGroup) AsDefault() *SecurityGroup { t := true; sg.defaultSG = &t; return sg }
+
+// NotDefault explicitly unsets the default flag.
+func (sg *SecurityGroup) NotDefault() *SecurityGroup { f := false; sg.defaultSG = &f; return sg }
+
+// Getters — general → specific
 
 // URI satisfies Ref.
 func (sg *SecurityGroup) URI() string { return sg.RespURI() }
@@ -46,14 +68,17 @@ func (sg *SecurityGroup) Raw() *types.SecurityGroupResponse { return sg.response
 // RawRequest returns what toRequest() would emit right now.
 func (sg *SecurityGroup) RawRequest() types.SecurityGroupRequest { return sg.toRequest() }
 
-// Default returns the security group's default flag, or false if unset.
-func (sg *SecurityGroup) Default() bool {
+// IsDefault returns the security group's default flag, or false if unset.
+func (sg *SecurityGroup) IsDefault() bool {
 	if sg.defaultSG == nil {
 		return false
 	}
 	return *sg.defaultSG
 }
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (sg *SecurityGroup) toRequest() types.SecurityGroupRequest {
 	return types.SecurityGroupRequest{
 		Metadata: sg.toMetadata(),
@@ -63,6 +88,7 @@ func (sg *SecurityGroup) toRequest() types.SecurityGroupRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (sg *SecurityGroup) fromResponse(resp *types.SecurityGroupResponse) {
 	if resp == nil {
 		return
@@ -109,10 +135,11 @@ var securityGroupTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// securityGroupLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type securityGroupLowLevelClient interface {
 	List(ctx context.Context, projectID, vpcID string, params *types.RequestParameters) (*types.Response[types.SecurityGroupList], error)
 	Get(ctx context.Context, projectID, vpcID, securityGroupID string, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error)
@@ -121,7 +148,15 @@ type securityGroupLowLevelClient interface {
 	Delete(ctx context.Context, projectID, vpcID, securityGroupID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// securityGroupsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates SecurityGroup ↔ types.SecurityGroupRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type securityGroupsClientAdapter struct{ low securityGroupLowLevelClient }
+
+var _ SecurityGroupsClient = (*securityGroupsClientAdapter)(nil)
 
 func newSecurityGroupsClientAdapter(rest *restclient.Client) *securityGroupsClientAdapter {
 	if rest == nil {
@@ -132,6 +167,7 @@ func newSecurityGroupsClientAdapter(rest *restclient.Client) *securityGroupsClie
 	}
 }
 
+// Create posts a new SecurityGroup to the API and hydrates the wrapper from the response.
 func (a *securityGroupsClientAdapter) Create(ctx context.Context, sg *SecurityGroup, opts ...CallOption) (*SecurityGroup, error) {
 	if err := sg.Err(); err != nil {
 		return sg, err
@@ -165,6 +201,7 @@ func (a *securityGroupsClientAdapter) Create(ctx context.Context, sg *SecurityGr
 	return sg, nil
 }
 
+// Get fetches a SecurityGroup by Ref and returns a freshly hydrated wrapper.
 func (a *securityGroupsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*SecurityGroup, error) {
 	projectID, vpcID, securityGroupID, err := securityGroupIDsFromRef(ref)
 	if err != nil {
@@ -199,6 +236,7 @@ func (a *securityGroupsClientAdapter) Get(ctx context.Context, ref Ref, opts ...
 	return out, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *securityGroupsClientAdapter) Update(ctx context.Context, sg *SecurityGroup, opts ...CallOption) (*SecurityGroup, error) {
 	if err := sg.Err(); err != nil {
 		return sg, err
@@ -235,6 +273,7 @@ func (a *securityGroupsClientAdapter) Update(ctx context.Context, sg *SecurityGr
 	return sg, nil
 }
 
+// Delete removes the SecurityGroup identified by Ref.
 func (a *securityGroupsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, vpcID, securityGroupID, err := securityGroupIDsFromRef(ref)
 	if err != nil {
@@ -252,6 +291,7 @@ func (a *securityGroupsClientAdapter) Delete(ctx context.Context, ref Ref, opts 
 	return nil
 }
 
+// List returns a paginated list of SecurityGroup in the given parent scope.
 func (a *securityGroupsClientAdapter) List(ctx context.Context, vpc Ref, opts ...CallOption) (*List[*SecurityGroup], error) {
 	projectID, vpcID, err := vpcIDsFromRef(vpc)
 	if err != nil {

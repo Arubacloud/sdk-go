@@ -26,11 +26,11 @@ func TestListBackups(t *testing.T) {
 								ID:   types.StringPtr("bk-123"),
 							},
 							Properties: types.BackupPropertiesResponse{
-								Zone:        "ITBG-1",
-								DBaaS:       types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
-								Database:    types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
-								BillingPlan: types.BillingPeriodResource{BillingPeriod: "Hour"},
-								Storage:     types.BackupStorageResponse{Size: 10},
+								Zone:          "ITBG-1",
+								DBaaS:         types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
+								Database:      types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
+								BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
+								Storage:       types.BackupStorageResponse{Size: 10},
 							},
 							Status: types.ResourceStatus{State: types.StringPtr("active")},
 						},
@@ -151,11 +151,11 @@ func TestGetBackup(t *testing.T) {
 						ID:   types.StringPtr("bk-123"),
 					},
 					Properties: types.BackupPropertiesResponse{
-						Zone:        "ITBG-1",
-						DBaaS:       types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
-						Database:    types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
-						BillingPlan: types.BillingPeriodResource{BillingPeriod: "Hour"},
-						Storage:     types.BackupStorageResponse{Size: 10},
+						Zone:          "ITBG-1",
+						DBaaS:         types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
+						Database:      types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
+						BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
+						Storage:       types.BackupStorageResponse{Size: 10},
 					},
 					Status: types.ResourceStatus{State: types.StringPtr("active")},
 				}
@@ -285,10 +285,10 @@ func TestCreateBackup(t *testing.T) {
 						URI:  types.StringPtr("/projects/test-project/providers/Aruba.Database/backups/bk-123"),
 					},
 					Properties: types.BackupPropertiesResponse{
-						Zone:        "ITBG-1",
-						DBaaS:       types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
-						Database:    types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
-						BillingPlan: types.BillingPeriodResource{BillingPeriod: "Hour"},
+						Zone:          "ITBG-1",
+						DBaaS:         types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
+						Database:      types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
+						BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
 					},
 					Status: types.ResourceStatus{State: types.StringPtr("creating")},
 				}
@@ -305,10 +305,10 @@ func TestCreateBackup(t *testing.T) {
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "backup-1"},
 			},
 			Properties: types.BackupPropertiesRequest{
-				Zone:        "ITBG-1",
-				DBaaS:       types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
-				Database:    types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
-				BillingPlan: types.BillingPeriodResource{BillingPeriod: "Hour"},
+				Zone:          "ITBG-1",
+				DBaaS:         types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
+				Database:      types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
+				BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
 			},
 		}
 

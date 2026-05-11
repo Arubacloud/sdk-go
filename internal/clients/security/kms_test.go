@@ -129,8 +129,8 @@ func TestGetKMSKey(t *testing.T) {
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "my-encryption-key" {
 			t.Errorf("expected name 'my-encryption-key', got %v", resp.Data.Metadata.Name)
 		}
-		if resp.Data.Properties.BillingPeriod != "Month" {
-			t.Errorf("expected billing period 'Month', got %q", resp.Data.Properties.BillingPeriod)
+		if resp.Data.Properties.BillingPeriod == nil || *resp.Data.Properties.BillingPeriod != "Month" {
+			t.Errorf("expected billing period 'Month', got %v", resp.Data.Properties.BillingPeriod)
 		}
 	})
 
@@ -238,7 +238,7 @@ func TestCreateKMSKey(t *testing.T) {
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-encryption-key"},
 				Location:                types.LocationRequest{Value: "it-eur"},
 			},
-			Properties: types.KmsPropertiesRequest{BillingPeriod: "Month"},
+			Properties: types.KmsPropertiesRequest{BillingPeriod: (*types.BillingPeriod)(types.StringPtr("Month"))},
 		}
 		resp, err := svc.Create(context.Background(), "test-project", body, nil)
 		if err != nil {
@@ -400,7 +400,7 @@ func TestUpdateKMSKey(t *testing.T) {
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "updated-encryption-key"},
 				Location:                types.LocationRequest{Value: "it-eur"},
 			},
-			Properties: types.KmsPropertiesRequest{BillingPeriod: "Year"},
+			Properties: types.KmsPropertiesRequest{BillingPeriod: (*types.BillingPeriod)(types.StringPtr("Year"))},
 		}
 		resp, err := svc.Update(context.Background(), "test-project", "kms-123", body, nil)
 		if err != nil {
@@ -409,8 +409,8 @@ func TestUpdateKMSKey(t *testing.T) {
 		if resp.Data.Metadata.Name == nil || *resp.Data.Metadata.Name != "updated-encryption-key" {
 			t.Errorf("expected name 'updated-encryption-key', got %v", resp.Data.Metadata.Name)
 		}
-		if resp.Data.Properties.BillingPeriod != "Year" {
-			t.Errorf("expected billing period 'Year', got %q", resp.Data.Properties.BillingPeriod)
+		if resp.Data.Properties.BillingPeriod == nil || *resp.Data.Properties.BillingPeriod != "Year" {
+			t.Errorf("expected billing period 'Year', got %v", resp.Data.Properties.BillingPeriod)
 		}
 	})
 

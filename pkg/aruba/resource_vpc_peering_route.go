@@ -9,9 +9,14 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
-// VPCPeeringRoute is the wrapper for an Aruba Cloud VPC Peering Route
-// (a direct child of a VPCPeering, grandchild of a VPC).
+// ---- Wrapper ----
+
+// VPCPeeringRoute is the wrapper for an Aruba Cloud VPC Peering Route (a child of a VPCPeering).
 // Construct with aruba.NewVPCPeeringRoute() and bind it via IntoVPCPeering(peering).
+//
+// Wraps types.VPCPeeringRouteResponse / types.VPCPeeringRouteRequest. The wrapper carries
+// pointer-typed private fields so unset values round-trip through
+// the JSON layer correctly.
 type VPCPeeringRoute struct {
 	errMixin
 	metadataMixin
@@ -27,24 +32,42 @@ type VPCPeeringRoute struct {
 	response      *types.VPCPeeringRouteResponse
 }
 
-// Setters (chainable).
+// Setters — chainable, general → specific
 
-func (r *VPCPeeringRoute) IntoVPCPeering(p Ref) *VPCPeeringRoute     { r.intoVPCPeering(p); return r }
-func (r *VPCPeeringRoute) WithName(n string) *VPCPeeringRoute        { r.withName(n); return r }
-func (r *VPCPeeringRoute) AddTag(t string) *VPCPeeringRoute          { r.addTag(t); return r }
-func (r *VPCPeeringRoute) RemoveTag(t string) *VPCPeeringRoute       { r.removeTag(t); return r }
+// IntoVPCPeering binds this VPCPeeringRoute to its parent VPCPeering. Required before Create.
+func (r *VPCPeeringRoute) IntoVPCPeering(p Ref) *VPCPeeringRoute { r.intoVPCPeering(p); return r }
+
+// WithName sets the resource name. Required by the API.
+func (r *VPCPeeringRoute) WithName(n string) *VPCPeeringRoute { r.withName(n); return r }
+
+// AddTag appends a tag for filtering and accounting.
+func (r *VPCPeeringRoute) AddTag(t string) *VPCPeeringRoute { r.addTag(t); return r }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (r *VPCPeeringRoute) RemoveTag(t string) *VPCPeeringRoute { r.removeTag(t); return r }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (r *VPCPeeringRoute) ReplaceTags(ts ...string) *VPCPeeringRoute { r.replaceTags(ts...); return r }
-func (r *VPCPeeringRoute) InRegion(region Region) *VPCPeeringRoute   { r.inRegion(region); return r }
 
+// InRegion sets the region for this resource.
+func (r *VPCPeeringRoute) InRegion(region Region) *VPCPeeringRoute { r.inRegion(region); return r }
+
+// WithLocalCIDR sets the local network CIDR for the peering route.
 func (r *VPCPeeringRoute) WithLocalCIDR(cidr string) *VPCPeeringRoute { r.localCIDR = &cidr; return r }
+
+// WithRemoteCIDR sets the remote network CIDR for the peering route.
 func (r *VPCPeeringRoute) WithRemoteCIDR(cidr string) *VPCPeeringRoute {
 	r.remoteCIDR = &cidr
 	return r
 }
+
+// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
 func (r *VPCPeeringRoute) WithBillingPeriod(p BillingPeriod) *VPCPeeringRoute {
 	r.billingPeriod = &p
 	return r
 }
+
+// Getters — general → specific
 
 // URI satisfies Ref.
 func (r *VPCPeeringRoute) URI() string { return r.RespURI() }
@@ -82,13 +105,12 @@ func (r *VPCPeeringRoute) BillingPeriod() BillingPeriod {
 	return *r.billingPeriod
 }
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (r *VPCPeeringRoute) toRequest() types.VPCPeeringRouteRequest {
-	var bp BillingPeriod
-	if r.billingPeriod != nil {
-		bp = *r.billingPeriod
-	}
 	props := types.VPCPeeringRoutePropertiesRequest{
-		BillingPlan: types.BillingPeriodResource{BillingPeriod: bp},
+		BillingPeriod: defaultBillingPeriod(r.billingPeriod),
 	}
 	if r.localCIDR != nil {
 		props.LocalNetworkAddress = *r.localCIDR
@@ -105,6 +127,7 @@ func (r *VPCPeeringRoute) toRequest() types.VPCPeeringRouteRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (r *VPCPeeringRoute) fromResponse(resp *types.VPCPeeringRouteResponse) {
 	if resp == nil {
 		return
@@ -129,9 +152,8 @@ func (r *VPCPeeringRoute) fromResponse(resp *types.VPCPeeringRouteResponse) {
 		v := resp.Properties.RemoteNetworkAddress
 		r.remoteCIDR = &v
 	}
-	if resp.Properties.BillingPlan.BillingPeriod != "" {
-		v := resp.Properties.BillingPlan.BillingPeriod
-		r.billingPeriod = &v
+	if resp.Properties.BillingPeriod != nil {
+		r.billingPeriod = resp.Properties.BillingPeriod
 	}
 
 	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
@@ -170,10 +192,11 @@ var vpcPeeringRouteTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// vpcPeeringRouteLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type vpcPeeringRouteLowLevelClient interface {
 	List(ctx context.Context, projectID, vpcID, vpcPeeringID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteList], error)
 	Get(ctx context.Context, projectID, vpcID, vpcPeeringID, vpcPeeringRouteID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error)
@@ -182,7 +205,15 @@ type vpcPeeringRouteLowLevelClient interface {
 	Delete(ctx context.Context, projectID, vpcID, vpcPeeringID, vpcPeeringRouteID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// vpcPeeringRoutesClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates VPCPeeringRoute ↔ types.VPCPeeringRouteRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type vpcPeeringRoutesClientAdapter struct{ low vpcPeeringRouteLowLevelClient }
+
+var _ VPCPeeringRoutesClient = (*vpcPeeringRoutesClientAdapter)(nil)
 
 func newVPCPeeringRoutesClientAdapter(rest *restclient.Client) *vpcPeeringRoutesClientAdapter {
 	if rest == nil {
@@ -191,6 +222,7 @@ func newVPCPeeringRoutesClientAdapter(rest *restclient.Client) *vpcPeeringRoutes
 	return &vpcPeeringRoutesClientAdapter{low: network.NewVPCPeeringRoutesClientImpl(rest)}
 }
 
+// Create posts a new VPCPeeringRoute to the API and hydrates the wrapper from the response.
 func (a *vpcPeeringRoutesClientAdapter) Create(ctx context.Context, route *VPCPeeringRoute, opts ...CallOption) (*VPCPeeringRoute, error) {
 	if err := route.Err(); err != nil {
 		return route, err
@@ -224,6 +256,7 @@ func (a *vpcPeeringRoutesClientAdapter) Create(ctx context.Context, route *VPCPe
 	return route, nil
 }
 
+// Get fetches a VPCPeeringRoute by Ref and returns a freshly hydrated wrapper.
 func (a *vpcPeeringRoutesClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*VPCPeeringRoute, error) {
 	projectID, vpcID, vpcPeeringID, routeID, err := vpcPeeringRouteIDsFromRef(ref)
 	if err != nil {
@@ -265,6 +298,7 @@ func (a *vpcPeeringRoutesClientAdapter) Get(ctx context.Context, ref Ref, opts .
 	return out, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *vpcPeeringRoutesClientAdapter) Update(ctx context.Context, route *VPCPeeringRoute, opts ...CallOption) (*VPCPeeringRoute, error) {
 	if err := route.Err(); err != nil {
 		return route, err
@@ -301,6 +335,7 @@ func (a *vpcPeeringRoutesClientAdapter) Update(ctx context.Context, route *VPCPe
 	return route, nil
 }
 
+// Delete removes the VPCPeeringRoute identified by Ref.
 func (a *vpcPeeringRoutesClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, vpcID, vpcPeeringID, routeID, err := vpcPeeringRouteIDsFromRef(ref)
 	if err != nil {
@@ -318,6 +353,7 @@ func (a *vpcPeeringRoutesClientAdapter) Delete(ctx context.Context, ref Ref, opt
 	return nil
 }
 
+// List returns a paginated list of VPCPeeringRoute in the given parent scope.
 func (a *vpcPeeringRoutesClientAdapter) List(ctx context.Context, peering Ref, opts ...CallOption) (*List[*VPCPeeringRoute], error) {
 	projectID, vpcID, vpcPeeringID, err := vpcPeeringIDsFromRef(peering)
 	if err != nil {

@@ -341,8 +341,8 @@ type VPNTunnelPropertiesRequest struct {
 	// VPNClientSettings Client settings of the VPN tunnel (nullable)
 	VPNClientSettings *VPNClientSettings `json:"vpnClientSettings,omitempty"`
 
-	// BillingPlan Billing plan
-	BillingPlan *BillingPeriodResource `json:"billingPlan,omitempty"`
+	// BillingPeriod Billing period
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 }
 
 // VPNTunnelPropertiesResponse contains the response properties of a VPN tunnel
@@ -362,8 +362,8 @@ type VPNTunnelPropertiesResponse struct {
 	// RoutesNumber Number of valid VPN routes of the VPN tunnel
 	RoutesNumber int32 `json:"routesNumber,omitempty"`
 
-	// BillingPlan Billing plan (nullable)
-	BillingPlan *BillingPeriodResource `json:"billingPlan,omitempty"`
+	// BillingPeriod Billing period (nullable)
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 }
 
 type VPNTunnelRequest struct {

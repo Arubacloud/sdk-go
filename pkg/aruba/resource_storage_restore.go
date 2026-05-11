@@ -9,6 +9,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // StorageRestore is the wrapper for an Aruba Cloud Storage Restore (a direct
 // child of a StorageBackup, grandchild of a Project). Construct with
 // aruba.NewStorageRestore() and bind it via IntoBackup(backup) and ToVolume(volume).
@@ -27,12 +29,25 @@ type StorageRestore struct {
 	response *types.StorageRestoreResponse
 }
 
-func (r *StorageRestore) IntoBackup(b Ref) *StorageRestore         { r.intoBackup(b); return r }
-func (r *StorageRestore) WithName(n string) *StorageRestore        { r.withName(n); return r }
-func (r *StorageRestore) AddTag(t string) *StorageRestore          { r.addTag(t); return r }
-func (r *StorageRestore) RemoveTag(t string) *StorageRestore       { r.removeTag(t); return r }
+// Setters — chainable, general → specific
+
+// IntoBackup binds this StorageRestore to its parent StorageBackup. Required before Create.
+func (r *StorageRestore) IntoBackup(b Ref) *StorageRestore { r.intoBackup(b); return r }
+
+// WithName sets the resource name. Required by the API.
+func (r *StorageRestore) WithName(n string) *StorageRestore { r.withName(n); return r }
+
+// AddTag appends a tag for filtering and accounting.
+func (r *StorageRestore) AddTag(t string) *StorageRestore { r.addTag(t); return r }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (r *StorageRestore) RemoveTag(t string) *StorageRestore { r.removeTag(t); return r }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (r *StorageRestore) ReplaceTags(ts ...string) *StorageRestore { r.replaceTags(ts...); return r }
-func (r *StorageRestore) InRegion(region Region) *StorageRestore   { r.inRegion(region); return r }
+
+// InRegion sets the region for this resource.
+func (r *StorageRestore) InRegion(region Region) *StorageRestore { r.inRegion(region); return r }
 
 // ToVolume binds the destination volume (where the backup will be restored to)
 // via its URI. Pass any Ref (typed or aruba.URI(...)). Empty URIs are recorded
@@ -46,6 +61,8 @@ func (r *StorageRestore) ToVolume(vol Ref) *StorageRestore {
 	r.targetRef = &uri
 	return r
 }
+
+// Getters — general → specific
 
 // URI satisfies Ref.
 func (r *StorageRestore) URI() string { return r.RespURI() }
@@ -63,6 +80,9 @@ func (r *StorageRestore) RawRequest() types.StorageRestoreRequest { return r.toR
 // On a hydrated response wrapper this surfaces the response's "Destination" field.
 func (r *StorageRestore) TargetURI() string { return storageRestoreDerefString(r.targetRef) }
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (r *StorageRestore) toRequest() types.StorageRestoreRequest {
 	props := types.StorageRestorePropertiesRequest{}
 	if r.targetRef != nil {
@@ -77,6 +97,7 @@ func (r *StorageRestore) toRequest() types.StorageRestoreRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (r *StorageRestore) fromResponse(resp *types.StorageRestoreResponse) {
 	if resp == nil {
 		return
@@ -126,10 +147,11 @@ var storageRestoreTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level client interface, adapter, constructor, and methods
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// storageRestoreLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type storageRestoreLowLevelClient interface {
 	List(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[types.StorageRestoreList], error)
 	Get(ctx context.Context, projectID, backupID, restoreID string, params *types.RequestParameters) (*types.Response[types.StorageRestoreResponse], error)
@@ -138,7 +160,15 @@ type storageRestoreLowLevelClient interface {
 	Delete(ctx context.Context, projectID, backupID, restoreID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// storageRestoresClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates StorageRestore ↔ types.StorageRestoreRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type storageRestoresClientAdapter struct{ low storageRestoreLowLevelClient }
+
+var _ StorageRestoreClient = (*storageRestoresClientAdapter)(nil)
 
 func newStorageRestoresClientAdapter(rest *restclient.Client) *storageRestoresClientAdapter {
 	if rest == nil {
@@ -151,6 +181,7 @@ func newStorageRestoresClientAdapter(rest *restclient.Client) *storageRestoresCl
 	}
 }
 
+// Create posts a new StorageRestore to the API and hydrates the wrapper from the response.
 func (a *storageRestoresClientAdapter) Create(ctx context.Context, r *StorageRestore, opts ...CallOption) (*StorageRestore, error) {
 	if err := r.Err(); err != nil {
 		return r, err
@@ -187,6 +218,7 @@ func (a *storageRestoresClientAdapter) Create(ctx context.Context, r *StorageRes
 	return r, nil
 }
 
+// Get fetches a StorageRestore by Ref and returns a freshly hydrated wrapper.
 func (a *storageRestoresClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*StorageRestore, error) {
 	projectID, backupID, restoreID, err := restoreIDsFromRef(ref)
 	if err != nil {
@@ -225,6 +257,7 @@ func (a *storageRestoresClientAdapter) Get(ctx context.Context, ref Ref, opts ..
 	return out, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *storageRestoresClientAdapter) Update(ctx context.Context, r *StorageRestore, opts ...CallOption) (*StorageRestore, error) {
 	if err := r.Err(); err != nil {
 		return r, err
@@ -261,6 +294,7 @@ func (a *storageRestoresClientAdapter) Update(ctx context.Context, r *StorageRes
 	return r, nil
 }
 
+// Delete removes the StorageRestore identified by Ref.
 func (a *storageRestoresClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, backupID, restoreID, err := restoreIDsFromRef(ref)
 	if err != nil {
@@ -278,6 +312,7 @@ func (a *storageRestoresClientAdapter) Delete(ctx context.Context, ref Ref, opts
 	return nil
 }
 
+// List returns a paginated list of StorageRestore entries for the given backup.
 func (a *storageRestoresClientAdapter) List(ctx context.Context, backup Ref, opts ...CallOption) (*List[*StorageRestore], error) {
 	projectID, backupID, err := backupIDsFromRef(backup)
 	if err != nil {

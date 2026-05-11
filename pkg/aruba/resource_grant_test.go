@@ -30,11 +30,11 @@ var (
 func TestGrant_FluentSetters(t *testing.T) {
 	g := NewGrant().
 		IntoDatabase(URI("/projects/p-1/providers/Aruba.Database/dbaas/d-1/databases/db-1")).
-		WithUserName("alice").
+		WithUsername("alice").
 		WithRoleName("READ_WRITE")
 
-	if g.UserName() != "alice" {
-		t.Errorf("UserName() = %q", g.UserName())
+	if g.Username() != "alice" {
+		t.Errorf("UserName() = %q", g.Username())
 	}
 	if g.RoleName() != "READ_WRITE" {
 		t.Errorf("RoleName() = %q", g.RoleName())
@@ -167,7 +167,7 @@ func TestGrant_URI_MissingGrantID(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestGrant_ToRequest(t *testing.T) {
-	g := NewGrant().WithUserName("alice").WithRoleName("READ_WRITE")
+	g := NewGrant().WithUsername("alice").WithRoleName("READ_WRITE")
 	req := g.toRequest()
 	if req.User.Username != "alice" {
 		t.Errorf("toRequest().User.Username = %q", req.User.Username)
@@ -209,8 +209,8 @@ func TestGrant_FromResponseHydration(t *testing.T) {
 	g := &Grant{}
 	g.fromResponse(resp)
 
-	if g.UserName() != "alice" {
-		t.Errorf("UserName() = %q", g.UserName())
+	if g.Username() != "alice" {
+		t.Errorf("UserName() = %q", g.Username())
 	}
 	if g.RoleName() != "READ_WRITE" {
 		t.Errorf("RoleName() = %q", g.RoleName())
@@ -232,13 +232,13 @@ func TestGrant_FromResponseHydration(t *testing.T) {
 func TestGrant_FromResponse_NilSafe(t *testing.T) {
 	g := &Grant{}
 	g.fromResponse(nil) // must not panic
-	if g.ID() != "" || g.UserName() != "" {
+	if g.ID() != "" || g.Username() != "" {
 		t.Error("fromResponse(nil) should be a no-op")
 	}
 
 	g2 := &Grant{}
 	g2.fromResponse(&types.GrantResponse{}) // empty response
-	if g2.UserName() != "" || g2.RoleName() != "" {
+	if g2.Username() != "" || g2.RoleName() != "" {
 		t.Error("empty response should yield zero accessor values")
 	}
 }
@@ -342,7 +342,7 @@ func TestGrantsClientAdapter_Create_Success(t *testing.T) {
 
 	g := NewGrant().
 		IntoDatabase(URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/db-1")).
-		WithUserName("alice").
+		WithUsername("alice").
 		WithRoleName("READ_WRITE")
 
 	result, err := adapter.Create(context.Background(), g)
@@ -352,8 +352,8 @@ func TestGrantsClientAdapter_Create_Success(t *testing.T) {
 	if callCount != 1 {
 		t.Errorf("expected 1 call, got %d", callCount)
 	}
-	if result.UserName() != "alice" {
-		t.Errorf("UserName() = %q", result.UserName())
+	if result.Username() != "alice" {
+		t.Errorf("UserName() = %q", result.Username())
 	}
 	if result.StatusCode() != http.StatusCreated {
 		t.Errorf("StatusCode() = %d", result.StatusCode())
@@ -375,7 +375,7 @@ func TestGrantsClientAdapter_Create_NoParent(t *testing.T) {
 	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 	})
-	g := NewGrant().WithUserName("alice").WithRoleName("READ_WRITE") // no IntoDatabase
+	g := NewGrant().WithUsername("alice").WithRoleName("READ_WRITE") // no IntoDatabase
 	_, err := adapter.Create(context.Background(), g)
 	if err == nil {
 		t.Error("expected error when parent database is missing")
@@ -385,7 +385,7 @@ func TestGrantsClientAdapter_Create_NoParent(t *testing.T) {
 	}
 }
 
-func TestGrantsClientAdapter_Create_NoUserName(t *testing.T) {
+func TestGrantsClientAdapter_Create_NoUsername(t *testing.T) {
 	callCount := 0
 	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		callCount++
@@ -409,7 +409,7 @@ func TestGrantsClientAdapter_Create_NoRoleName(t *testing.T) {
 	})
 	g := NewGrant().
 		IntoDatabase(URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/db-1")).
-		WithUserName("alice") // no WithRoleName
+		WithUsername("alice") // no WithRoleName
 	_, err := adapter.Create(context.Background(), g)
 	if err == nil {
 		t.Error("expected error when role is missing")
@@ -428,7 +428,7 @@ func TestGrantsClientAdapter_Create_NonTwoXX(t *testing.T) {
 
 	g := NewGrant().
 		IntoDatabase(URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/db-1")).
-		WithUserName("alice").
+		WithUsername("alice").
 		WithRoleName("READ_WRITE")
 	_, err := adapter.Create(context.Background(), g)
 	var httpErr *HTTPError
@@ -456,7 +456,7 @@ func TestGrantsClientAdapter_Update_Success(t *testing.T) {
 
 	g := NewGrant().
 		IntoDatabase(URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/db-1")).
-		WithUserName("alice").
+		WithUsername("alice").
 		WithRoleName("READ_WRITE")
 	gid := "g-789"
 	g.id = &gid // white-box: simulate prior Get populating the opaque ID
@@ -465,8 +465,8 @@ func TestGrantsClientAdapter_Update_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Update error: %v", err)
 	}
-	if result.UserName() != "alice" {
-		t.Errorf("UserName() = %q", result.UserName())
+	if result.Username() != "alice" {
+		t.Errorf("UserName() = %q", result.Username())
 	}
 	if gotBody.User.Username != "alice" {
 		t.Errorf("wire body User.Username = %q", gotBody.User.Username)
@@ -484,7 +484,7 @@ func TestGrantsClientAdapter_Update_NoID(t *testing.T) {
 	})
 	g := NewGrant().
 		IntoDatabase(URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/db-1")).
-		WithUserName("alice").
+		WithUsername("alice").
 		WithRoleName("READ_WRITE") // all ancestor IDs set, but no g.id
 	_, err := adapter.Update(context.Background(), g)
 	if err == nil {
@@ -537,8 +537,8 @@ func TestGrantsClientAdapter_Get_URIRef(t *testing.T) {
 	if result.ProjectID() != "p" {
 		t.Errorf("ProjectID() = %q", result.ProjectID())
 	}
-	if result.UserName() != "alice" {
-		t.Errorf("UserName() = %q", result.UserName())
+	if result.Username() != "alice" {
+		t.Errorf("UserName() = %q", result.Username())
 	}
 }
 
@@ -598,7 +598,7 @@ func TestGrantsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestGrant_RawRequest(t *testing.T) {
-	g := NewGrant().WithUserName("alice").WithRoleName("READ_WRITE")
+	g := NewGrant().WithUsername("alice").WithRoleName("READ_WRITE")
 	req := g.RawRequest()
 	if req.User.Username != "alice" {
 		t.Errorf("RawRequest().User.Username = %q", req.User.Username)
@@ -639,7 +639,7 @@ func TestGrantsClientAdapter_Create_NoDBaaS(t *testing.T) {
 	// Has database in path but no DBaaS — bad URI produces no dbaasID
 	g := NewGrant().
 		IntoDatabase(URI("/projects/p/providers/Aruba.Database/databases/db-1")).
-		WithUserName("alice").
+		WithUsername("alice").
 		WithRoleName("READ_WRITE")
 	_, err := adapter.Create(context.Background(), g)
 	if err == nil {
@@ -666,7 +666,7 @@ func TestGrantsClientAdapter_Update_NoDatabase(t *testing.T) {
 	g.dbaasID = "d-1"
 	g.projectID = "p"
 	uname := "alice"
-	g.userName = &uname
+	g.username = &uname
 	rname := "READ_WRITE"
 	g.roleName = &rname
 	_, err := adapter.Update(context.Background(), g)
@@ -690,7 +690,7 @@ func TestGrantsClientAdapter_Update_NoDBaaS(t *testing.T) {
 	g.databaseID = "db-1"
 	g.projectID = "p"
 	uname := "alice"
-	g.userName = &uname
+	g.username = &uname
 	rname := "READ_WRITE"
 	g.roleName = &rname
 	_, err := adapter.Update(context.Background(), g)
@@ -714,7 +714,7 @@ func TestGrantsClientAdapter_Update_NoProject(t *testing.T) {
 	g.databaseID = "db-1"
 	g.dbaasID = "d-1"
 	uname := "alice"
-	g.userName = &uname
+	g.username = &uname
 	rname := "READ_WRITE"
 	g.roleName = &rname
 	_, err := adapter.Update(context.Background(), g)
@@ -726,7 +726,7 @@ func TestGrantsClientAdapter_Update_NoProject(t *testing.T) {
 	}
 }
 
-func TestGrantsClientAdapter_Update_NoUserName(t *testing.T) {
+func TestGrantsClientAdapter_Update_NoUsername(t *testing.T) {
 	callCount := 0
 	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
 		callCount++
@@ -760,7 +760,7 @@ func TestGrantsClientAdapter_Update_NoRoleName(t *testing.T) {
 	g.dbaasID = "d-1"
 	g.projectID = "p"
 	uname := "alice"
-	g.userName = &uname
+	g.username = &uname
 	_, err := adapter.Update(context.Background(), g)
 	if err == nil {
 		t.Fatal("expected error when roleName is missing")
@@ -778,7 +778,7 @@ func TestGrantsClientAdapter_Update_NonTwoXX(t *testing.T) {
 	})
 	g := NewGrant().
 		IntoDatabase(URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/db-1")).
-		WithUserName("alice").
+		WithUsername("alice").
 		WithRoleName("READ_WRITE")
 	gid := "g-1"
 	g.id = &gid
@@ -831,7 +831,7 @@ func TestGrantsClientAdapter_Create_BrokenClient(t *testing.T) {
 	adapter := &grantsClientAdapter{low: database.NewGrantsClientImpl(testutil.NewBrokenClient(t, "http://localhost:9"))}
 	g := NewGrant().
 		IntoDatabase(URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/db-1")).
-		WithUserName("alice").
+		WithUsername("alice").
 		WithRoleName("READ_WRITE")
 	_, err := adapter.Create(context.Background(), g)
 	if err == nil {
@@ -849,7 +849,7 @@ func TestGrantsClientAdapter_Create_ErrMixin(t *testing.T) {
 		callCount++
 	})
 	// IntoDatabase with bad URI sets errMixin
-	g := NewGrant().IntoDatabase(URI("/garbage")).WithUserName("alice").WithRoleName("READ_WRITE")
+	g := NewGrant().IntoDatabase(URI("/garbage")).WithUsername("alice").WithRoleName("READ_WRITE")
 	_, err := adapter.Create(context.Background(), g)
 	if err == nil {
 		t.Fatal("expected error from errMixin")
@@ -923,11 +923,11 @@ func TestGrantsClientAdapter_List_TwoItems(t *testing.T) {
 	if len(items) != 2 {
 		t.Fatalf("expected 2 items, got %d", len(items))
 	}
-	if items[0].UserName() != "alice" {
-		t.Errorf("items[0].UserName() = %q", items[0].UserName())
+	if items[0].Username() != "alice" {
+		t.Errorf("items[0].Username() = %q", items[0].Username())
 	}
-	if items[1].UserName() != "bob" {
-		t.Errorf("items[1].UserName() = %q", items[1].UserName())
+	if items[1].Username() != "bob" {
+		t.Errorf("items[1].Username() = %q", items[1].Username())
 	}
 	for i, item := range items {
 		if item.DatabaseID() != "db-1" {

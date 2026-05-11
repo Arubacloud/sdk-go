@@ -550,7 +550,7 @@ func buildLoadBalancersClient(restClient *restclient.Client) (LoadBalancersClien
 }
 
 func buildSecurityGroupRulesClient(restClient *restclient.Client) (SecurityGroupRulesClient, error) {
-	return newSecurityGroupRulesClientAdapter(restClient), nil
+	return newSecurityRulesClientAdapter(restClient), nil
 }
 
 func buildSecurityGroupsClient(restClient *restclient.Client) (SecurityGroupsClient, error) {

@@ -9,8 +9,14 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
-// SecurityRule is the wrapper for an Aruba Cloud Security Rule (a direct child of a SecurityGroup).
+// ---- Wrapper ----
+
+// SecurityRule is the wrapper for an Aruba Cloud Security Rule (a child of a SecurityGroup).
 // Construct with aruba.NewSecurityRule() and bind it via IntoSecurityGroup(sg).
+//
+// Wraps types.SecurityRuleResponse / types.SecurityRuleRequest. The wrapper carries
+// pointer-typed private fields so unset values round-trip through
+// the JSON layer correctly.
 type SecurityRule struct {
 	errMixin
 	metadataMixin
@@ -18,6 +24,7 @@ type SecurityRule struct {
 	securityGroupScopedMixin
 	responseMetadataMixin
 	statusMixin
+	linkedMixin
 	httpEnvelopeMixin
 
 	direction *types.RuleDirection
@@ -27,14 +34,25 @@ type SecurityRule struct {
 	response  *types.SecurityRuleResponse
 }
 
-// Setters (chainable; promoted methods re-exposed at *SecurityRule level).
+// Setters — chainable, general → specific
 
+// IntoSecurityGroup binds this SecurityRule to its parent SecurityGroup. Required before Create.
 func (r *SecurityRule) IntoSecurityGroup(sg Ref) *SecurityRule { r.intoSecurityGroup(sg); return r }
-func (r *SecurityRule) WithName(n string) *SecurityRule        { r.withName(n); return r }
-func (r *SecurityRule) AddTag(t string) *SecurityRule          { r.addTag(t); return r }
-func (r *SecurityRule) RemoveTag(t string) *SecurityRule       { r.removeTag(t); return r }
+
+// WithName sets the resource name. Required by the API.
+func (r *SecurityRule) WithName(n string) *SecurityRule { r.withName(n); return r }
+
+// AddTag appends a tag for filtering and accounting.
+func (r *SecurityRule) AddTag(t string) *SecurityRule { r.addTag(t); return r }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (r *SecurityRule) RemoveTag(t string) *SecurityRule { r.removeTag(t); return r }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (r *SecurityRule) ReplaceTags(ts ...string) *SecurityRule { r.replaceTags(ts...); return r }
-func (r *SecurityRule) InRegion(region Region) *SecurityRule   { r.inRegion(region); return r }
+
+// InRegion sets the region for this resource.
+func (r *SecurityRule) InRegion(region Region) *SecurityRule { r.inRegion(region); return r }
 
 // WithDirection sets the rule direction.
 func (r *SecurityRule) WithDirection(dir types.RuleDirection) *SecurityRule {
@@ -80,6 +98,8 @@ func (r *SecurityRule) WithTargetSecurityGroup(sg Ref) *SecurityRule {
 	r.target = &types.RuleTarget{Kind: types.EndpointTypeSecurityGroup, Value: uri}
 	return r
 }
+
+// Getters — general → specific
 
 // URI satisfies Ref.
 func (r *SecurityRule) URI() string { return r.RespURI() }
@@ -133,6 +153,9 @@ func (r *SecurityRule) TargetValue() string {
 	return r.target.Value
 }
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (r *SecurityRule) toRequest() types.SecurityRuleRequest {
 	props := types.SecurityRulePropertiesRequest{}
 	if r.direction != nil {
@@ -156,6 +179,7 @@ func (r *SecurityRule) toRequest() types.SecurityRuleRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (r *SecurityRule) fromResponse(resp *types.SecurityRuleResponse) {
 	if resp == nil {
 		return
@@ -171,6 +195,7 @@ func (r *SecurityRule) fromResponse(resp *types.SecurityRuleResponse) {
 	}
 	r.setStatus(&resp.Status)
 	r.setTerminalStates(securityRuleTerminalStates)
+	r.setLinked(resp.Properties.LinkedResources)
 
 	if resp.Properties.Direction != "" {
 		d := resp.Properties.Direction
@@ -225,10 +250,11 @@ var securityRuleTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// securityRuleLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type securityRuleLowLevelClient interface {
 	List(ctx context.Context, projectID, vpcID, securityGroupID string, params *types.RequestParameters) (*types.Response[types.SecurityRuleList], error)
 	Get(ctx context.Context, projectID, vpcID, securityGroupID, securityRuleID string, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error)
@@ -237,13 +263,21 @@ type securityRuleLowLevelClient interface {
 	Delete(ctx context.Context, projectID, vpcID, securityGroupID, securityRuleID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
-type securityGroupRulesClientAdapter struct{ low securityRuleLowLevelClient }
+// ---- Adapter ----
 
-func newSecurityGroupRulesClientAdapter(rest *restclient.Client) *securityGroupRulesClientAdapter {
+// securityRulesClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates SecurityRule ↔ types.SecurityRuleRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
+type securityRulesClientAdapter struct{ low securityRuleLowLevelClient }
+
+var _ SecurityGroupRulesClient = (*securityRulesClientAdapter)(nil)
+
+func newSecurityRulesClientAdapter(rest *restclient.Client) *securityRulesClientAdapter {
 	if rest == nil {
-		return &securityGroupRulesClientAdapter{}
+		return &securityRulesClientAdapter{}
 	}
-	return &securityGroupRulesClientAdapter{
+	return &securityRulesClientAdapter{
 		low: network.NewSecurityGroupRulesClientImpl(
 			rest,
 			network.NewSecurityGroupsClientImpl(rest, network.NewVPCsClientImpl(rest)),
@@ -251,7 +285,8 @@ func newSecurityGroupRulesClientAdapter(rest *restclient.Client) *securityGroupR
 	}
 }
 
-func (a *securityGroupRulesClientAdapter) Create(ctx context.Context, rule *SecurityRule, opts ...CallOption) (*SecurityRule, error) {
+// Create posts a new SecurityRule to the API and hydrates the wrapper from the response.
+func (a *securityRulesClientAdapter) Create(ctx context.Context, rule *SecurityRule, opts ...CallOption) (*SecurityRule, error) {
 	if err := rule.Err(); err != nil {
 		return rule, err
 	}
@@ -284,7 +319,8 @@ func (a *securityGroupRulesClientAdapter) Create(ctx context.Context, rule *Secu
 	return rule, nil
 }
 
-func (a *securityGroupRulesClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*SecurityRule, error) {
+// Get fetches a SecurityRule by Ref and returns a freshly hydrated wrapper.
+func (a *securityRulesClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*SecurityRule, error) {
 	projectID, vpcID, securityGroupID, securityRuleID, err := securityRuleIDsFromRef(ref)
 	if err != nil {
 		return nil, err
@@ -325,7 +361,8 @@ func (a *securityGroupRulesClientAdapter) Get(ctx context.Context, ref Ref, opts
 	return out, nil
 }
 
-func (a *securityGroupRulesClientAdapter) Update(ctx context.Context, rule *SecurityRule, opts ...CallOption) (*SecurityRule, error) {
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
+func (a *securityRulesClientAdapter) Update(ctx context.Context, rule *SecurityRule, opts ...CallOption) (*SecurityRule, error) {
 	if err := rule.Err(); err != nil {
 		return rule, err
 	}
@@ -361,7 +398,8 @@ func (a *securityGroupRulesClientAdapter) Update(ctx context.Context, rule *Secu
 	return rule, nil
 }
 
-func (a *securityGroupRulesClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
+// Delete removes the SecurityRule identified by Ref.
+func (a *securityRulesClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, vpcID, securityGroupID, securityRuleID, err := securityRuleIDsFromRef(ref)
 	if err != nil {
 		return err
@@ -378,7 +416,8 @@ func (a *securityGroupRulesClientAdapter) Delete(ctx context.Context, ref Ref, o
 	return nil
 }
 
-func (a *securityGroupRulesClientAdapter) List(ctx context.Context, sg Ref, opts ...CallOption) (*List[*SecurityRule], error) {
+// List returns a paginated list of SecurityRule in the given parent scope.
+func (a *securityRulesClientAdapter) List(ctx context.Context, sg Ref, opts ...CallOption) (*List[*SecurityRule], error) {
 	projectID, vpcID, securityGroupID, err := securityGroupIDsFromRef(sg)
 	if err != nil {
 		return nil, err

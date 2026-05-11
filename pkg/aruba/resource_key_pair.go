@@ -9,6 +9,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // KeyPair is the wrapper for an Aruba Cloud Compute SSH Key Pair (a direct
 // child of a Project). Construct with aruba.NewKeyPair() and bind it via
 // IntoProject(project) and WithPublicKey(key).
@@ -27,20 +29,33 @@ type KeyPair struct {
 	response *types.KeyPairResponse
 }
 
-// Setters (chainable).
+// Setters — chainable, general → specific
 
-func (k *KeyPair) IntoProject(p Ref) *KeyPair        { k.intoProject(p); return k }
-func (k *KeyPair) WithName(n string) *KeyPair        { k.withName(n); return k }
-func (k *KeyPair) AddTag(t string) *KeyPair          { k.addTag(t); return k }
-func (k *KeyPair) RemoveTag(t string) *KeyPair       { k.removeTag(t); return k }
+// IntoProject binds this KeyPair to its parent project. Required before Create.
+func (k *KeyPair) IntoProject(p Ref) *KeyPair { k.intoProject(p); return k }
+
+// WithName sets the resource name. Required by the API.
+func (k *KeyPair) WithName(n string) *KeyPair { k.withName(n); return k }
+
+// AddTag appends a tag for filtering and accounting.
+func (k *KeyPair) AddTag(t string) *KeyPair { k.addTag(t); return k }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (k *KeyPair) RemoveTag(t string) *KeyPair { k.removeTag(t); return k }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (k *KeyPair) ReplaceTags(ts ...string) *KeyPair { k.replaceTags(ts...); return k }
-func (k *KeyPair) InRegion(region Region) *KeyPair   { k.inRegion(region); return k }
+
+// InRegion sets the region for this resource.
+func (k *KeyPair) InRegion(region Region) *KeyPair { k.inRegion(region); return k }
 
 // WithPublicKey sets the SSH public key (mapped to wire field "value").
 func (k *KeyPair) WithPublicKey(key string) *KeyPair {
 	k.publicKey = &key
 	return k
 }
+
+// Getters — general → specific
 
 // URI satisfies Ref.
 func (k *KeyPair) URI() string { return k.RespURI() }
@@ -58,6 +73,9 @@ func (k *KeyPair) RawRequest() types.KeyPairRequest { return k.toRequest() }
 // response wrapper this surfaces the response's Properties.Value.
 func (k *KeyPair) PublicKey() string { return keyPairDerefString(k.publicKey) }
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (k *KeyPair) toRequest() types.KeyPairRequest {
 	props := types.KeyPairPropertiesRequest{}
 	if k.publicKey != nil {
@@ -72,6 +90,7 @@ func (k *KeyPair) toRequest() types.KeyPairRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (k *KeyPair) fromResponse(resp *types.KeyPairResponse) {
 	if resp == nil {
 		return
@@ -116,10 +135,11 @@ func keyPairDerefString(p *string) string {
 	return *p
 }
 
-// ---------------------------------------------------------------------------
-// Low-level client seam + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// keyPairLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type keyPairLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KeyPairListResponse], error)
 	Get(ctx context.Context, projectID, keyPairID string, params *types.RequestParameters) (*types.Response[types.KeyPairResponse], error)
@@ -127,7 +147,15 @@ type keyPairLowLevelClient interface {
 	Delete(ctx context.Context, projectID, keyPairID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// keyPairsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates KeyPair ↔ types.KeyPairRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type keyPairsClientAdapter struct{ low keyPairLowLevelClient }
+
+var _ KeyPairsClient = (*keyPairsClientAdapter)(nil)
 
 func newKeyPairsClientAdapter(rest *restclient.Client) *keyPairsClientAdapter {
 	if rest == nil {
@@ -136,6 +164,7 @@ func newKeyPairsClientAdapter(rest *restclient.Client) *keyPairsClientAdapter {
 	return &keyPairsClientAdapter{low: compute.NewKeyPairsClientImpl(rest)}
 }
 
+// Create posts a new KeyPair to the API and hydrates the wrapper from the response.
 func (a *keyPairsClientAdapter) Create(ctx context.Context, kp *KeyPair, opts ...CallOption) (*KeyPair, error) {
 	if err := kp.Err(); err != nil {
 		return kp, err
@@ -169,6 +198,7 @@ func (a *keyPairsClientAdapter) Create(ctx context.Context, kp *KeyPair, opts ..
 	return kp, nil
 }
 
+// Get fetches a KeyPair by Ref and returns a freshly hydrated wrapper.
 func (a *keyPairsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*KeyPair, error) {
 	projectID, keyPairID, err := keyPairIDsFromRef(ref)
 	if err != nil {
@@ -204,6 +234,7 @@ func (a *keyPairsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOp
 	return out, nil
 }
 
+// Delete removes the KeyPair identified by Ref.
 func (a *keyPairsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, keyPairID, err := keyPairIDsFromRef(ref)
 	if err != nil {
@@ -221,6 +252,7 @@ func (a *keyPairsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...Cal
 	return nil
 }
 
+// List returns a paginated list of KeyPair in the given parent scope.
 func (a *keyPairsClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*KeyPair], error) {
 	projectID, err := projectIDFromRef(project)
 	if err != nil {

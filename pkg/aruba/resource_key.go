@@ -9,6 +9,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // Key is the wrapper for a cryptographic key nested inside a KMS instance.
 // Construct with aruba.NewKey() and bind via IntoKMS(parent).
 //
@@ -30,17 +32,18 @@ type Key struct {
 	response  *types.KeyResponse
 }
 
-// ---------------------------------------------------------------------------
-// Standard setters
-// ---------------------------------------------------------------------------
+// Setters — chainable, general → specific
 
-func (k *Key) IntoKMS(parent Ref) *Key               { k.intoKMS(parent); return k }
-func (k *Key) WithName(n string) *Key                { k.name = &n; return k }
+// IntoKMS binds this Key to its parent KMS instance. Required before Create.
+func (k *Key) IntoKMS(parent Ref) *Key { k.intoKMS(parent); return k }
+
+// WithName sets the key name. Required by the API.
+func (k *Key) WithName(n string) *Key { k.name = &n; return k }
+
+// OfAlgorithm sets the cryptographic algorithm for this key.
 func (k *Key) OfAlgorithm(a types.KeyAlgorithm) *Key { k.algorithm = &a; return k }
 
-// ---------------------------------------------------------------------------
-// Ref + ID accessors (shadow responseMetadataMixin)
-// ---------------------------------------------------------------------------
+// Getters — general → specific
 
 // ID returns the key's unique ID from the response, or "" before a Create/Get.
 func (k *Key) ID() string {
@@ -63,17 +66,13 @@ func (k *Key) URI() string {
 	return fmt.Sprintf("/projects/%s/providers/Aruba.Security/kms/%s/keys/%s", pid, kid, keyID)
 }
 
-// ---------------------------------------------------------------------------
-// Raw accessors
-// ---------------------------------------------------------------------------
+// Raw shadows responseMetadataMixin.Raw() with the typed Key response.
+func (k *Key) Raw() *types.KeyResponse { return k.response }
 
-func (k *Key) Raw() *types.KeyResponse      { return k.response }
+// RawRequest returns what toRequest() would emit right now.
 func (k *Key) RawRequest() types.KeyRequest { return k.toRequest() }
 
-// ---------------------------------------------------------------------------
-// Response-preferring read accessors
-// ---------------------------------------------------------------------------
-
+// Name returns the key name from the response, or the locally-set name if unhydrated.
 func (k *Key) Name() string {
 	if k.response != nil && k.response.Name != nil {
 		return *k.response.Name
@@ -81,6 +80,7 @@ func (k *Key) Name() string {
 	return keyDeref(k.name)
 }
 
+// Algorithm returns the cryptographic algorithm from the response, or the locally-set value if unhydrated.
 func (k *Key) Algorithm() types.KeyAlgorithm {
 	if k.response != nil && k.response.Algorithm != nil {
 		return *k.response.Algorithm
@@ -91,6 +91,7 @@ func (k *Key) Algorithm() types.KeyAlgorithm {
 	return ""
 }
 
+// Type returns the key type from the response, or "" if unhydrated.
 func (k *Key) Type() string {
 	if k.response != nil && k.response.Type != nil {
 		return string(*k.response.Type)
@@ -98,6 +99,7 @@ func (k *Key) Type() string {
 	return ""
 }
 
+// KeyStatus returns the lifecycle status of the key from the response, or "" if unhydrated.
 func (k *Key) KeyStatus() string {
 	if k.response != nil && k.response.Status != nil {
 		return string(*k.response.Status)
@@ -105,6 +107,7 @@ func (k *Key) KeyStatus() string {
 	return ""
 }
 
+// CreationSource returns the creation source of the key from the response, or "" if unhydrated.
 func (k *Key) CreationSource() string {
 	if k.response != nil && k.response.CreationSource != nil {
 		return string(*k.response.CreationSource)
@@ -112,6 +115,7 @@ func (k *Key) CreationSource() string {
 	return ""
 }
 
+// PrivateKeyID returns the associated private key ID from the response, or "" if unhydrated.
 func (k *Key) PrivateKeyID() string {
 	if k.response != nil && k.response.PrivateKeyID != nil {
 		return *k.response.PrivateKeyID
@@ -119,10 +123,9 @@ func (k *Key) PrivateKeyID() string {
 	return ""
 }
 
-// ---------------------------------------------------------------------------
-// Wire conversions
-// ---------------------------------------------------------------------------
+// Wire converters
 
+// toRequest assembles the Create body from current setter state. Defaults are applied at the wire boundary.
 func (k *Key) toRequest() types.KeyRequest {
 	req := types.KeyRequest{}
 	if k.name != nil {
@@ -134,6 +137,7 @@ func (k *Key) toRequest() types.KeyRequest {
 	return req
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (k *Key) fromResponse(resp *types.KeyResponse) {
 	if resp == nil {
 		return
@@ -155,10 +159,6 @@ func keyDeref(p *string) string {
 	}
 	return *p
 }
-
-// ---------------------------------------------------------------------------
-// keyIDsFromRef
-// ---------------------------------------------------------------------------
 
 func keyIDsFromRef(ref Ref) (projectID, kmsID, keyID string, err error) {
 	keyID, ok := extractID(ref, func(r Ref) (string, bool) {
@@ -191,10 +191,11 @@ func keyIDsFromRef(ref Ref) (projectID, kmsID, keyID string, err error) {
 	return projectID, kmsID, keyID, nil
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// keysLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type keysLowLevelClient interface {
 	List(ctx context.Context, projectID, kmsID string, params *types.RequestParameters) (*types.Response[types.KeyList], error)
 	Get(ctx context.Context, projectID, kmsID, keyID string, params *types.RequestParameters) (*types.Response[types.KeyResponse], error)
@@ -202,7 +203,15 @@ type keysLowLevelClient interface {
 	Delete(ctx context.Context, projectID, kmsID, keyID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// keysClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates Key ↔ types.KeyRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type keysClientAdapter struct{ low keysLowLevelClient }
+
+var _ KeysClient = (*keysClientAdapter)(nil)
 
 func newKeysClientAdapter(rest *restclient.Client) *keysClientAdapter {
 	if rest == nil {
@@ -211,6 +220,7 @@ func newKeysClientAdapter(rest *restclient.Client) *keysClientAdapter {
 	return &keysClientAdapter{low: security.NewKeyClientImpl(rest)}
 }
 
+// Create posts a new Key to the API and hydrates the wrapper from the response.
 func (a *keysClientAdapter) Create(ctx context.Context, k *Key, opts ...CallOption) (*Key, error) {
 	if err := k.Err(); err != nil {
 		return k, err
@@ -237,6 +247,7 @@ func (a *keysClientAdapter) Create(ctx context.Context, k *Key, opts ...CallOpti
 	return k, nil
 }
 
+// Get fetches a Key by Ref and returns a freshly hydrated wrapper.
 func (a *keysClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*Key, error) {
 	projectID, kmsID, keyID, err := keyIDsFromRef(ref)
 	if err != nil {
@@ -261,6 +272,7 @@ func (a *keysClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption
 	return out, nil
 }
 
+// Delete removes the Key identified by Ref.
 func (a *keysClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, kmsID, keyID, err := keyIDsFromRef(ref)
 	if err != nil {
@@ -278,6 +290,7 @@ func (a *keysClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOpt
 	return nil
 }
 
+// List returns a paginated list of Key in the given KMS parent scope.
 func (a *keysClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOption) (*List[*Key], error) {
 	projectID, kmsID, err := kmsIDsFromRef(parent)
 	if err != nil {
