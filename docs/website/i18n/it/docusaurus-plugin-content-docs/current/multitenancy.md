@@ -116,11 +116,11 @@ Valori di default:
 - Ciclo di vita tenant basato su `lastUsage`.
 - `CleanUp` rimuove anche entry non valide (`nil` entry/client).
 
-## Esempio di Utilizzo (`cmd/example/multitenancy.go`)
+## Esempio di Utilizzo (`examples/all-resources/orchestrator_multitenancy.go`)
 
 Per un esempio completo vedi:
 
-- `cmd/example/multitenancy.go`
+- `examples/all-resources/orchestrator_multitenancy.go`
 
 Snippet principale (cache + credenziali Vault per tenant):
 

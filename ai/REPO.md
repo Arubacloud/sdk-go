@@ -14,7 +14,7 @@ pkg/multitenant/     — Multi-tenant client management
 internal/clients/    — Service-specific HTTP client implementations (one dir per service)
 internal/impl/       — Pluggable subsystems: auth, interceptor, logger
 internal/restclient/ — Low-level HTTP execution layer
-cmd/example/         — Usage examples (excluded from linting)
+examples/all-resources/ — Usage examples (excluded from linting)
 docs/                — Testing docs, versioning scripts, and Docusaurus site
 docs/website/        — Docusaurus documentation site (multi-locale, includes Italian)
 ```

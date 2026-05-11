@@ -119,11 +119,11 @@ Defaults:
 - Tenant lifecycle is based on `lastUsage`.
 - `CleanUp` removes stale and invalid entries (`nil` entry/client).
 
-## Example Usage (`cmd/example/multitenancy.go`)
+## Example Usage (`examples/all-resources/orchestrator_multitenancy.go`)
 
 For a complete example see:
 
-- `cmd/example/multitenancy.go`
+- `examples/all-resources/orchestrator_multitenancy.go`
 
 Key snippet (cache + per-tenant Vault credentials):
 

@@ -96,7 +96,7 @@ jobs:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
       run: |
-        go build -v -o build/sdk-go-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/example
+        go build -v -o build/sdk-go-${{ matrix.goos }}-${{ matrix.goarch }} ./examples/all-resources
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4

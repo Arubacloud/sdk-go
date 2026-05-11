@@ -18,7 +18,7 @@ const (
 // NodePoolInstance identifies a KaaS node pool instance type.
 //
 // Pattern: K<vCPU>A<RAM>. The constant below covers the SKU referenced in
-// the cmd/example reference app. The authoritative list is available via:
+// the examples/all-resources reference app. The authoritative list is available via:
 //
 //	GET /providers/Aruba.Container/instances
 type NodePoolInstance string
