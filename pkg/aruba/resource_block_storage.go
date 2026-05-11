@@ -75,8 +75,11 @@ func (b *BlockStorage) WithBillingPeriod(p BillingPeriod) *BlockStorage {
 // FromImage sets the source image name for bootable volumes.
 func (b *BlockStorage) FromImage(img string) *BlockStorage { b.image = &img; return b }
 
-// WithBootable marks the volume as bootable.
-func (b *BlockStorage) WithBootable(boot bool) *BlockStorage { b.bootable = &boot; return b }
+// SetBootable marks the volume as bootable.
+func (b *BlockStorage) SetBootable() *BlockStorage { v := true; b.bootable = &v; return b }
+
+// UnsetBootable explicitly marks the volume as non-bootable.
+func (b *BlockStorage) UnsetBootable() *BlockStorage { v := false; b.bootable = &v; return b }
 
 // FromSnapshot binds the source snapshot via its URI. Pass any Ref (typed or
 // aruba.URI(...)). Empty URIs are recorded on the error sink and the field
@@ -160,7 +163,7 @@ func (b *BlockStorage) toRequest() types.BlockStorageRequest {
 		BillingPeriod: defaultBillingPeriod(b.billingPeriod),
 		Zone:          b.zonePtr(),
 		Type:          t,
-		Bootable:      b.bootable,
+		Bootable:      blockStorageBootable(b.bootable),
 		Image:         b.image,
 	}
 	if b.snapshotRef != nil {
@@ -230,6 +233,16 @@ func (b *BlockStorage) fromResponse(resp *types.BlockStorageResponse) {
 			b.projectID = pid
 		}
 	}
+}
+
+// blockStorageBootable returns p when non-nil, or a pointer to false as the
+// wire default (the API treats unset the same as false, so we always send the field).
+func blockStorageBootable(p *bool) *bool {
+	if p != nil {
+		return p
+	}
+	f := false
+	return &f
 }
 
 func blockStorageDerefString(p *string) string {
