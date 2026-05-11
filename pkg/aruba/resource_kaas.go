@@ -75,7 +75,29 @@ func (k *KaaS) WithKubernetesVersion(v KubernetesVersion) *KaaS { k.kubernetesVe
 func (k *KaaS) WithPodCIDR(cidr string) *KaaS                   { k.podCIDR = &cidr; return k }
 func (k *KaaS) WithHA(enabled bool) *KaaS                       { k.ha = &enabled; return k }
 func (k *KaaS) WithBillingPeriod(period BillingPeriod) *KaaS    { k.billingPeriod = &period; return k }
-func (k *KaaS) WithSecurityGroupName(name string) *KaaS         { k.securityGroupName = &name; return k }
+
+// WithSecurityGroup attaches a SecurityGroup to the cluster. The KaaS API
+// stores only the SG's name (not its URI), so the supplied Ref must be a
+// *SecurityGroup whose Name() is non-empty. Bare URI refs are rejected
+// because the name cannot be recovered from a URI.
+func (k *KaaS) WithSecurityGroup(sg Ref) *KaaS {
+	if sg == nil {
+		k.addErr(fmt.Errorf("WithSecurityGroup: nil Ref"))
+		return k
+	}
+	typed, ok := sg.(*SecurityGroup)
+	if !ok {
+		k.addErr(fmt.Errorf("WithSecurityGroup: requires *SecurityGroup, got %T", sg))
+		return k
+	}
+	name := typed.Name()
+	if name == "" {
+		k.addErr(fmt.Errorf("WithSecurityGroup: SecurityGroup has empty Name"))
+		return k
+	}
+	k.securityGroupName = &name
+	return k
+}
 
 // WithNodeCIDR sets the node CIDR block (address and name).
 // The wire type is NodeCIDRProperties{Address, Name}.

@@ -32,6 +32,7 @@ func TestKaaS_FluentSetters(t *testing.T) {
 
 	vpcURI := URI("/projects/p-1/providers/Aruba.Network/vpcs/vpc-1")
 	subnetURI := URI("/projects/p-1/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1")
+	sgFixture := NewSecurityGroup().WithName("sg-name")
 
 	k := NewKaaS().
 		IntoProject(proj).
@@ -42,7 +43,7 @@ func TestKaaS_FluentSetters(t *testing.T) {
 		InRegion("ITBG-Bergamo").
 		WithVPC(vpcURI).
 		WithSubnet(subnetURI).
-		WithSecurityGroupName("sg-name").
+		WithSecurityGroup(sgFixture).
 		WithNodeCIDR("10.100.0.0/16", "node-cidr").
 		WithPodCIDR("10.200.0.0/16").
 		WithKubernetesVersion("1.32.3").
@@ -166,10 +167,26 @@ func TestKaaS_WithSubnet_EmptyURI(t *testing.T) {
 // Scalar setters
 // --------------------------------------------------------------------------
 
-func TestKaaS_WithSecurityGroupName(t *testing.T) {
-	k := NewKaaS().WithSecurityGroupName("my-sg")
+func TestKaaS_WithSecurityGroup(t *testing.T) {
+	sg := NewSecurityGroup().WithName("my-sg")
+	k := NewKaaS().WithSecurityGroup(sg)
 	if k.SecurityGroupName() != "my-sg" {
 		t.Errorf("SecurityGroupName() = %q", k.SecurityGroupName())
+	}
+}
+
+func TestKaaS_WithSecurityGroup_RejectsURIRef(t *testing.T) {
+	k := NewKaaS().WithSecurityGroup(URI("/sgs/x"))
+	if k.Err() == nil {
+		t.Error("expected Err() != nil when passing a URI ref instead of *SecurityGroup")
+	}
+}
+
+func TestKaaS_WithSecurityGroup_RejectsEmptyName(t *testing.T) {
+	sg := NewSecurityGroup() // Name() == ""
+	k := NewKaaS().WithSecurityGroup(sg)
+	if k.Err() == nil {
+		t.Error("expected Err() != nil when SecurityGroup has empty Name")
 	}
 }
 
@@ -299,6 +316,7 @@ func TestKaaS_AddNodePool_Nil(t *testing.T) {
 func TestKaaS_ToRequest(t *testing.T) {
 	vpcURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1"
 	subnetURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1"
+	sgFixture := NewSecurityGroup().WithName("sg-name")
 
 	k := NewKaaS().
 		WithName("my-cluster").
@@ -306,7 +324,7 @@ func TestKaaS_ToRequest(t *testing.T) {
 		InRegion("ITBG-Bergamo").
 		WithVPC(URI(vpcURI)).
 		WithSubnet(URI(subnetURI)).
-		WithSecurityGroupName("sg-name").
+		WithSecurityGroup(sgFixture).
 		WithNodeCIDR("10.100.0.0/16", "node-cidr").
 		WithPodCIDR("10.200.0.0/16").
 		WithKubernetesVersion("1.32.3").
@@ -692,13 +710,14 @@ func TestKaaSClientAdapter_Create_Success(t *testing.T) {
 		fmt.Fprint(w, kaasSuccessBody)
 	})
 
+	sgFixture := NewSecurityGroup().WithName("sg-name")
 	k := NewKaaS().
 		IntoProject(URI("/projects/p")).
 		WithName("my-cluster").
 		InRegion("ITBG-Bergamo").
 		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1")).
 		WithSubnet(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1")).
-		WithSecurityGroupName("sg-name").
+		WithSecurityGroup(sgFixture).
 		WithNodeCIDR("10.100.0.0/16", "node-cidr").
 		WithKubernetesVersion("1.32.3").
 		WithBillingPeriod("Hour").
