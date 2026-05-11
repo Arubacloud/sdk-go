@@ -21,7 +21,7 @@ linters:
   exclusions:
     paths:
       - pkg/generated
-      - cmd/example
+      - examples/all-resources
     rules:
       - linters:
           - errcheck

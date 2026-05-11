@@ -107,7 +107,7 @@ subnet, err := arubaClient.FromNetwork().Subnets().Create(
         WithDHCP(aruba.NewSubnetDHCP().
             Enabled().
             WithRange("192.168.1.10", 50).
-            AddRoute("0.0.0.0/0", "192.168.1.1").
+            AddRoute("10.0.0.0/8", "192.168.1.1").
             AddDNS("8.8.8.8").
             AddDNS("8.8.4.4")))
 if err != nil {
@@ -217,18 +217,66 @@ vpcs, err := arubaClient.FromNetwork().VPCs().List(ctx, proj)
 
 ## 6. Eliminazione (Ordine Inverso)
 
-Elimina i figli prima dei genitori. Eliminare una VPC che ha ancora subnet o security group fallirà con un 409 o 422 dall'API.
+Elimina i figli prima dei genitori. L'API Aruba Cloud restituisce **HTTP 400** quando si tenta di eliminare un genitore che ha ancora risorse figlio attive o in fase di eliminazione — non 409/422. Il pattern sicuro è emettere ogni delete sul figlio, poi attendere che la risorsa sia completamente sparita (HTTP 404) prima di salire nella catena delle dipendenze.
+
+Usa `pkg/async.WaitFor` per attendere il 404 — centralizza la logica di retry/timeout/cadenza:
 
 ```go
-// Elimina in ordine inverso di dipendenza:
-// subnet → VPC → progetto
+import (
+    "errors"
+    "net/http"
 
+    "github.com/Arubacloud/sdk-go/pkg/aruba"
+    "github.com/Arubacloud/sdk-go/pkg/async"
+    "github.com/Arubacloud/sdk-go/pkg/types"
+)
+
+// waitUntilGone blocca finché il Get della risorsa restituisce HTTP 404.
+func waitUntilGone(ctx context.Context, poll func(context.Context) error) error {
+    const gone = "gone"
+    fut := async.DefaultWaitFor(ctx,
+        func(ctx context.Context) (*types.Response[string], error) {
+            err := poll(ctx)
+            if err == nil {
+                return &types.Response[string]{}, nil // esiste ancora
+            }
+            var httpErr *aruba.HTTPError
+            if errors.As(err, &httpErr) && httpErr.StatusCode == http.StatusNotFound {
+                return &types.Response[string]{Data: &[]string{gone}[0]}, nil // eliminata
+            }
+            return nil, err // transitorio — riprova
+        },
+        func(resp *types.Response[string]) (bool, error) {
+            return resp != nil && resp.Data != nil, nil
+        },
+    )
+    _, err := fut.Await(ctx)
+    return err
+}
+```
+
+Poi elimina in ordine inverso delle dipendenze, attendendo che ogni figlio sparisca completamente prima di eliminare il suo genitore:
+
+```go
+// subnet → VPC → progetto
 if err := arubaClient.FromNetwork().Subnets().Delete(ctx, subnet); err != nil {
     log.Printf("Delete subnet: %v", err)
+} else {
+    waitUntilGone(ctx, func(ctx context.Context) error {
+        _, err := arubaClient.FromNetwork().Subnets().Get(ctx, subnet)
+        return err
+    })
 }
+
 if err := arubaClient.FromNetwork().VPCs().Delete(ctx, vpc); err != nil {
     log.Printf("Delete VPC: %v", err)
+} else {
+    waitUntilGone(ctx, func(ctx context.Context) error {
+        _, err := arubaClient.FromNetwork().VPCs().Get(ctx, vpc)
+        return err
+    })
 }
+
 if err := arubaClient.FromProject().Delete(ctx, proj); err != nil {
     log.Printf("Delete project: %v", err)
 }
@@ -264,7 +312,7 @@ if err := vpc.WaitUntilActive(ctx,
 }
 ```
 
-Per `WaitUntilState` (qualsiasi stato target, non solo `"Active"`), gli accessor di stato (`State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`), e il primitivo di basso livello `pkg/async.WaitFor` per il polling concorrente, vedi la guida [Async / Await](./async).
+Per `WaitUntilStates` (qualsiasi stato target, non solo `"Active"`), gli accessor di stato (`State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`), e il primitivo di basso livello `pkg/async.WaitFor` per il polling concorrente, vedi la guida [Async / Await](./async).
 
 ---
 
@@ -292,7 +340,7 @@ if err := rule.Err(); err != nil {
 Chiamare `WaitUntilActive` su un wrapper costruito manualmente (senza `Create`/`Get`/`Update`/`List`) restituisce:
 
 ```
-WaitUntilState: refresh callback not set; call Create/Get/Update/List first
+WaitUntilStates: refresh callback not set; call Create/Get/Update/List first
 ```
 
 Usa sempre il wrapper restituito dalla chiamata API, non il builder della richiesta.
@@ -319,10 +367,13 @@ Vedi [Gestione delle Risposte](./response-handling) per la guida completa alla g
 
 ## Esempio Completo
 
-La directory `cmd/example/` nel repository contiene un esempio end-to-end eseguibile che dimostra tutte le risorse:
+La directory `examples/all-resources/` nel repository contiene un esempio end-to-end eseguibile che dimostra tutte le risorse:
 
 ```bash
-go run ./cmd/example/ -mode=create -clientID=… -clientSecret=…
-go run ./cmd/example/ -mode=update -clientID=… -clientSecret=…  # PROJECT_ID=…
-go run ./cmd/example/ -mode=delete -clientID=… -clientSecret=…  # PROJECT_ID=…
+go run ./examples/all-resources/ -mode=create -clientID=… -clientSecret=…
+go run ./examples/all-resources/ -mode=update -clientID=… -clientSecret=… -projectID=…
+go run ./examples/all-resources/ -mode=delete -clientID=… -clientSecret=… -projectID=…
+
+# Aggiungi -debug per il logging verboso dell'SDK:
+go run ./examples/all-resources/ -mode=create -clientID=… -clientSecret=… -debug
 ```
