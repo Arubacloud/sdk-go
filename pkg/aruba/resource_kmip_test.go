@@ -143,7 +143,7 @@ func TestKmip_FromResponseHydration(t *testing.T) {
 	id := "kmip-1"
 	name := "my-kmip"
 	typ := "Kmip"
-	status := types.ServiceStatusActive
+	status := ServiceStatusActive
 	creation := "2024-01-01T00:00:00Z"
 	deletion := "2024-12-31T00:00:00Z"
 
@@ -770,11 +770,11 @@ func TestNewKmipsClientAdapter_Nil(t *testing.T) {
 func TestKmip_WaitUntilCertificateAvailable_HappyPath(t *testing.T) {
 	km := &Kmip{}
 	calls := 0
-	status := types.ServiceStatusInCreation
+	status := ServiceStatusInCreation
 	km.setRefresh(func(_ context.Context) error {
 		calls++
 		if calls >= 2 {
-			status = types.ServiceStatusCertificateAvailable
+			status = ServiceStatusCertificateAvailable
 		}
 		st := status
 		km.response = &types.KmipResponse{Status: &st}
@@ -783,14 +783,14 @@ func TestKmip_WaitUntilCertificateAvailable_HappyPath(t *testing.T) {
 	if err := km.WaitUntilCertificateAvailable(context.Background(), fastOpts()...); err != nil {
 		t.Fatalf("WaitUntilCertificateAvailable error: %v", err)
 	}
-	if km.KmipStatus() != string(types.ServiceStatusCertificateAvailable) {
+	if km.KmipStatus() != string(ServiceStatusCertificateAvailable) {
 		t.Errorf("KmipStatus() = %q after wait", km.KmipStatus())
 	}
 }
 
 func TestKmip_WaitUntilCertificateAvailable_TerminalFailure(t *testing.T) {
 	km := &Kmip{}
-	failed := types.ServiceStatusFailed
+	failed := ServiceStatusFailed
 	km.setRefresh(func(_ context.Context) error {
 		km.response = &types.KmipResponse{Status: &failed}
 		return nil
@@ -847,11 +847,11 @@ func TestKmipsClientAdapter_Get_InjectsRefresh(t *testing.T) {
 func TestKmip_WaitUntilReady_HappyPath(t *testing.T) {
 	km := &Kmip{}
 	calls := 0
-	status := types.ServiceStatusInCreation
+	status := ServiceStatusInCreation
 	km.setRefresh(func(_ context.Context) error {
 		calls++
 		if calls >= 2 {
-			status = types.ServiceStatusCertificateAvailable
+			status = ServiceStatusCertificateAvailable
 		}
 		s := status
 		km.response = &types.KmipResponse{Status: &s}
@@ -860,8 +860,8 @@ func TestKmip_WaitUntilReady_HappyPath(t *testing.T) {
 	if err := km.WaitUntilReady(context.Background(), fastOpts()...); err != nil {
 		t.Fatalf("WaitUntilReady error: %v", err)
 	}
-	if km.KmipStatus() != string(types.ServiceStatusCertificateAvailable) {
-		t.Errorf("KmipStatus() = %q after wait, want %q", km.KmipStatus(), types.ServiceStatusCertificateAvailable)
+	if km.KmipStatus() != string(ServiceStatusCertificateAvailable) {
+		t.Errorf("KmipStatus() = %q after wait, want %q", km.KmipStatus(), ServiceStatusCertificateAvailable)
 	}
 }
 

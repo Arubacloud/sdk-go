@@ -40,7 +40,7 @@ func TestKaaS_FluentSetters(t *testing.T) {
 		AddTag("env:prod").
 		AddTag("k8s").
 		AddTag("env:prod"). // dedupe
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithVPC(vpcURI).
 		WithSubnet(subnetURI).
 		WithSecurityGroup(sgFixture).
@@ -49,7 +49,7 @@ func TestKaaS_FluentSetters(t *testing.T) {
 		WithKubernetesVersion("1.32.3").
 		WithHA(true).
 		WithMaxStorageQuotaGB(100).
-		WithBillingPeriod("Hour").
+		WithBillingPeriod(BillingPeriodHour).
 		WithIdentity("cid", "csecret")
 
 	if k.Name() != "my-cluster" {
@@ -58,7 +58,7 @@ func TestKaaS_FluentSetters(t *testing.T) {
 	if tags := k.Tags(); len(tags) != 2 || tags[0] != "env:prod" || tags[1] != "k8s" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if k.Region() != "ITBG-Bergamo" {
+	if k.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", k.Region())
 	}
 	if k.VPC() != vpcURI.URI() {
@@ -73,7 +73,7 @@ func TestKaaS_FluentSetters(t *testing.T) {
 	if k.KubernetesVersion() != "1.32.3" {
 		t.Errorf("KubernetesVersion() = %q", k.KubernetesVersion())
 	}
-	if k.BillingPeriod() != "Hour" {
+	if k.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", k.BillingPeriod())
 	}
 	if k.ProjectID() != "p-1" {
@@ -233,8 +233,8 @@ func TestKaaS_WithKubernetesVersion(t *testing.T) {
 }
 
 func TestKaaS_WithBillingPeriod(t *testing.T) {
-	k := NewKaaS().WithBillingPeriod("Monthly")
-	if k.BillingPeriod() != "Monthly" {
+	k := NewKaaS().WithBillingPeriod(BillingPeriodHour)
+	if k.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", k.BillingPeriod())
 	}
 }
@@ -258,15 +258,15 @@ func TestKaaS_WithIdentity(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestNodePool_Build_Basic(t *testing.T) {
-	np := NewNodePool().Named("pool-1").OfInstance("K4A8").InZone("ITBG-1").WithCount(3)
+	np := NewNodePool().Named("pool-1").OfInstance(NodePoolInstanceK4A8).InZone(ZoneITBG1).WithCount(3)
 	p := np.build()
 	if p.Name != "pool-1" {
 		t.Errorf("Name = %q", p.Name)
 	}
-	if p.Instance != "K4A8" {
+	if p.Instance != NodePoolInstanceK4A8 {
 		t.Errorf("Instance = %q", p.Instance)
 	}
-	if p.Zone != "ITBG-1" {
+	if p.Zone != ZoneITBG1 {
 		t.Errorf("Zone (dataCenter) = %q", p.Zone)
 	}
 	if p.Nodes != 3 {
@@ -321,7 +321,7 @@ func TestKaaS_ToRequest(t *testing.T) {
 	k := NewKaaS().
 		WithName("my-cluster").
 		AddTag("t1").AddTag("t2").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithVPC(URI(vpcURI)).
 		WithSubnet(URI(subnetURI)).
 		WithSecurityGroup(sgFixture).
@@ -330,9 +330,9 @@ func TestKaaS_ToRequest(t *testing.T) {
 		WithKubernetesVersion("1.32.3").
 		WithHA(true).
 		WithMaxStorageQuotaGB(100).
-		WithBillingPeriod("Hour").
+		WithBillingPeriod(BillingPeriodHour).
 		WithIdentity("cid", "csecret").
-		AddNodePool(NewNodePool().Named("pool-1").OfInstance("K4A8").InZone("ITBG-1").WithCount(3))
+		AddNodePool(NewNodePool().Named("pool-1").OfInstance(NodePoolInstanceK4A8).InZone(ZoneITBG1).WithCount(3))
 
 	req := k.RawRequest()
 
@@ -342,7 +342,7 @@ func TestKaaS_ToRequest(t *testing.T) {
 	if len(req.Metadata.Tags) != 2 {
 		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Location.Value = %q", req.Metadata.Location.Value)
 	}
 	if req.Properties.VPC.URI != vpcURI {
@@ -369,7 +369,7 @@ func TestKaaS_ToRequest(t *testing.T) {
 	if req.Properties.Storage.MaxCumulativeVolumeSize == nil || *req.Properties.Storage.MaxCumulativeVolumeSize != 100 {
 		t.Errorf("Storage = %+v", req.Properties.Storage)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Hour" {
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 	if req.Properties.Identity == nil {
@@ -397,13 +397,13 @@ func TestKaaS_ToUpdateRequest_MutableOnly(t *testing.T) {
 	vpcURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1"
 	k := NewKaaS().
 		WithName("updated-cluster").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithVPC(URI(vpcURI)). // set but must NOT appear in update request
 		WithKubernetesVersion("1.33.0").
 		WithHA(true).
 		WithMaxStorageQuotaGB(200).
-		WithBillingPeriod("Monthly").
-		AddNodePool(NewNodePool().Named("pool-1").WithCount(5).OfInstance("K4A8").InZone("ITBG-1"))
+		WithBillingPeriod(BillingPeriodHour).
+		AddNodePool(NewNodePool().Named("pool-1").WithCount(5).OfInstance(NodePoolInstanceK4A8).InZone(ZoneITBG1))
 
 	upd := k.toUpdateRequest()
 
@@ -416,7 +416,7 @@ func TestKaaS_ToUpdateRequest_MutableOnly(t *testing.T) {
 	if upd.Properties.Storage == nil || upd.Properties.Storage.MaxCumulativeVolumeSize == nil || *upd.Properties.Storage.MaxCumulativeVolumeSize != 200 {
 		t.Errorf("Storage = %v", upd.Properties.Storage)
 	}
-	if upd.Properties.BillingPeriod == nil || *upd.Properties.BillingPeriod != "Monthly" {
+	if upd.Properties.BillingPeriod == nil || *upd.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("BillingPeriod = %v", upd.Properties.BillingPeriod)
 	}
 	if len(upd.Properties.NodePools) != 1 || upd.Properties.NodePools[0].Nodes != 5 {
@@ -453,11 +453,11 @@ func kaasTestResponse(name string) *types.KaaSResponse {
 	nodeCIDRName := "node-cidr"
 	podCIDRAddr := "10.200.0.0/16"
 	k8sVersion := "1.32.3"
-	billingPeriod := BillingPeriod("Hour")
+	billingPeriod := BillingPeriodHour
 	haTrue := true
 	maxVol := int32(100)
-	instanceName := "K4A8"
-	dcCode := "ITBG-1"
+	instanceName := string(NodePoolInstanceK4A8)
+	dcCode := string(ZoneITBG1)
 	poolName := "pool-1"
 	poolNodes := int32(3)
 	autoFalse := false
@@ -467,7 +467,7 @@ func kaasTestResponse(name string) *types.KaaSResponse {
 			URI:              &uri,
 			Name:             func() *string { s := name; return &s }(),
 			Tags:             []string{"tag1"},
-			LocationResponse: &types.LocationResponse{Value: "ITBG-Bergamo"},
+			LocationResponse: &types.LocationResponse{Value: RegionITBGBergamo},
 			ProjectResponseMetadata: &types.ProjectResponseMetadata{
 				ID: "p",
 			},
@@ -530,7 +530,7 @@ func TestKaaS_FromResponseHydration(t *testing.T) {
 	if tags := k.Tags(); len(tags) != 1 || tags[0] != "tag1" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if k.Region() != "ITBG-Bergamo" {
+	if k.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", k.Region())
 	}
 	if k.State() != "Active" {
@@ -548,7 +548,7 @@ func TestKaaS_FromResponseHydration(t *testing.T) {
 	if k.KubernetesVersion() != "1.32.3" {
 		t.Errorf("KubernetesVersion() = %q", k.KubernetesVersion())
 	}
-	if k.BillingPeriod() != "Hour" {
+	if k.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", k.BillingPeriod())
 	}
 	if k.ProjectID() != "p" {
@@ -559,10 +559,10 @@ func TestKaaS_FromResponseHydration(t *testing.T) {
 		t.Fatalf("nodePools len = %d", len(k.nodePools))
 	}
 	np := k.nodePools[0]
-	if np.instance == nil || *np.instance != "K4A8" {
+	if np.instance == nil || *np.instance != NodePoolInstanceK4A8 {
 		t.Errorf("nodePool.instance = %v", np.instance)
 	}
-	if np.zone == nil || *np.zone != "ITBG-1" {
+	if np.zone == nil || *np.zone != ZoneITBG1 {
 		t.Errorf("nodePool.zone (dataCenter code) = %v", np.zone)
 	}
 }
@@ -712,15 +712,15 @@ func TestKaaSClientAdapter_Create_Success(t *testing.T) {
 	k := NewKaaS().
 		IntoProject(URI("/projects/p")).
 		WithName("my-cluster").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1")).
 		WithSubnet(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1")).
 		WithSecurityGroup(sgFixture).
 		WithNodeCIDR("10.100.0.0/16", "node-cidr").
 		WithKubernetesVersion("1.32.3").
-		WithBillingPeriod("Hour").
+		WithBillingPeriod(BillingPeriodHour).
 		WithHA(true).
-		AddNodePool(NewNodePool().Named("pool-1").WithCount(3).OfInstance("K4A8").InZone("ITBG-1"))
+		AddNodePool(NewNodePool().Named("pool-1").WithCount(3).OfInstance(NodePoolInstanceK4A8).InZone(ZoneITBG1))
 
 	result, err := adapter.Create(context.Background(), k)
 	if err != nil {
@@ -882,7 +882,7 @@ func TestKaaSClientAdapter_Update_Success(t *testing.T) {
 		},
 	})
 	k.WithKubernetesVersion("1.33.0").
-		AddNodePool(NewNodePool().Named("pool-1").WithCount(5).OfInstance("K4A8").InZone("ITBG-1"))
+		AddNodePool(NewNodePool().Named("pool-1").WithCount(5).OfInstance(NodePoolInstanceK4A8).InZone(ZoneITBG1))
 
 	result, err := adapter.Update(context.Background(), k)
 	if err != nil {
@@ -1053,7 +1053,7 @@ func TestKaaSClientAdapter_List_TwoItems(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
 			`{"metadata":{"id":"kaas-1","name":"c1","uri":"/projects/p/providers/Aruba.Container/kaas/kaas-1","project":{"id":"p"}},"properties":{"kubernetesVersion":{"value":"1.32.3"},"billingPeriod":"Hour"},"status":{}},`+
-			`{"metadata":{"id":"kaas-2","name":"c2","uri":"/projects/p/providers/Aruba.Container/kaas/kaas-2","project":{"id":"p"}},"properties":{"kubernetesVersion":{"value":"1.31.0"},"billingPeriod":"Monthly"},"status":{}}`+
+			`{"metadata":{"id":"kaas-2","name":"c2","uri":"/projects/p/providers/Aruba.Container/kaas/kaas-2","project":{"id":"p"}},"properties":{"kubernetesVersion":{"value":"1.31.0"},"billingPeriod":"Hour"},"status":{}}`+
 			`]}`)
 	})
 
@@ -1071,7 +1071,7 @@ func TestKaaSClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].ID() != "kaas-1" || items[0].Name() != "c1" {
 		t.Errorf("items[0] = {%q, %q}", items[0].ID(), items[0].Name())
 	}
-	if items[1].ID() != "kaas-2" || items[1].BillingPeriod() != "Monthly" {
+	if items[1].ID() != "kaas-2" || items[1].BillingPeriod() != BillingPeriodHour {
 		t.Errorf("items[1] ID=%q BillingPeriod=%q", items[1].ID(), items[1].BillingPeriod())
 	}
 	if items[0].ProjectID() != "p" {

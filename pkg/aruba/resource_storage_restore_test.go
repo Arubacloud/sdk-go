@@ -32,7 +32,7 @@ func TestStorageRestore_FluentSetters(t *testing.T) {
 		AddTag("restore").
 		AddTag("storage").
 		AddTag("restore"). // dedupe
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		ToVolume(URI("/projects/p/providers/Aruba.Storage/blockstorages/bs-1"))
 
 	if r.Name() != "my-restore" {
@@ -41,7 +41,7 @@ func TestStorageRestore_FluentSetters(t *testing.T) {
 	if tags := r.Tags(); len(tags) != 2 || tags[0] != "restore" || tags[1] != "storage" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if r.Region() != "ITBG-Bergamo" {
+	if r.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", r.Region())
 	}
 	if r.TargetURI() != "/projects/p/providers/Aruba.Storage/blockstorages/bs-1" {
@@ -155,7 +155,7 @@ func TestStorageRestore_ToRequestRoundTrip(t *testing.T) {
 	r := NewStorageRestore().
 		WithName("rt-restore").
 		AddTag("t1").AddTag("t2").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		ToVolume(URI(volURI))
 
 	req := r.RawRequest()
@@ -166,7 +166,7 @@ func TestStorageRestore_ToRequestRoundTrip(t *testing.T) {
 	if len(req.Metadata.Tags) != 2 {
 		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Location.Value = %q", req.Metadata.Location.Value)
 	}
 	if req.Properties.Target.URI != volURI {
@@ -188,7 +188,7 @@ func TestStorageRestore_ToRequest_UnsetTarget(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func storageRestoreTestResponse(id, name, uri, targetURI string) *types.StorageRestoreResponse {
-	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
+	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	state := "Active"
 	return &types.StorageRestoreResponse{
 		Metadata: types.ResourceMetadataResponse{
@@ -229,7 +229,7 @@ func TestStorageRestore_FromResponseHydration(t *testing.T) {
 	if tags := r.Tags(); len(tags) != 1 || tags[0] != "tag1" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if r.Region() != "ITBG-Bergamo" {
+	if r.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", r.Region())
 	}
 	if r.State() != "Active" {
@@ -434,7 +434,7 @@ func TestStorageRestoresClientAdapter_Create_Success(t *testing.T) {
 	r := NewStorageRestore().
 		IntoBackup(bkp).
 		WithName("my-restore").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		ToVolume(URI("/projects/p/providers/Aruba.Storage/blockstorages/bs-1"))
 
 	result, err := adapter.Create(context.Background(), r)

@@ -33,7 +33,7 @@ func TestVPCPeering_FluentSetters(t *testing.T) {
 		AddTag("peering").
 		AddTag("cross-vpc").
 		AddTag("peering"). // dedupe
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithRemoteVPC(URI("/projects/p2/network/vpcs/v2"))
 
 	if p.Name() != "my-peering" {
@@ -42,7 +42,7 @@ func TestVPCPeering_FluentSetters(t *testing.T) {
 	if tags := p.Tags(); len(tags) != 2 || tags[0] != "peering" || tags[1] != "cross-vpc" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if p.Region() != "ITBG-Bergamo" {
+	if p.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", p.Region())
 	}
 	if p.RemoteVPCURI() != "/projects/p2/network/vpcs/v2" {
@@ -171,7 +171,7 @@ func TestVPCPeering_ToRequestRoundTrip(t *testing.T) {
 		WithName("my-peering").
 		AddTag("t1").
 		AddTag("t2").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithRemoteVPC(URI("/projects/p2/network/vpcs/v2"))
 
 	req := p.RawRequest()
@@ -182,7 +182,7 @@ func TestVPCPeering_ToRequestRoundTrip(t *testing.T) {
 	if len(req.Metadata.Tags) != 2 {
 		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Metadata.Location.Value = %q", req.Metadata.Location.Value)
 	}
 	if req.Properties.RemoteVPC == nil || req.Properties.RemoteVPC.URI != "/projects/p2/network/vpcs/v2" {
@@ -203,7 +203,7 @@ func TestVPCPeering_ToRequestRoundTrip(t *testing.T) {
 
 func vpcPeeringTestResponse(id, name, uri, projectID string) *types.VPCPeeringResponse {
 	state := "Active"
-	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
+	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	remoteURI := "/projects/p2/providers/Aruba.Network/vpcs/v2"
 	return &types.VPCPeeringResponse{
 		Metadata: types.ResourceMetadataResponse{
@@ -249,7 +249,7 @@ func TestVPCPeering_FromResponseHydration(t *testing.T) {
 	if tags := p.Tags(); len(tags) != 1 || tags[0] != "peer-tag" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if p.Region() != "ITBG-Bergamo" {
+	if p.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", p.Region())
 	}
 	if p.State() != "Active" {
@@ -436,7 +436,7 @@ func TestVPCPeeringsClientAdapter_Create_Success(t *testing.T) {
 	p := NewVPCPeering().
 		IntoVPC(vpc).
 		WithName("my-peering").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithRemoteVPC(URI("/projects/p2/network/vpcs/v2"))
 
 	result, err := adapter.Create(context.Background(), p)
@@ -455,7 +455,7 @@ func TestVPCPeeringsClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "my-peering" {
 		t.Errorf("request Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Metadata.Location.Value != "ITBG-Bergamo" {
+	if gotBody.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("request Location = %q", gotBody.Metadata.Location.Value)
 	}
 	if gotBody.Properties.RemoteVPC == nil || gotBody.Properties.RemoteVPC.URI != "/projects/p2/network/vpcs/v2" {

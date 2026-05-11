@@ -33,9 +33,9 @@ func TestSecurityRule_FluentSetters(t *testing.T) {
 		AddTag("t1").
 		AddTag("t2").
 		AddTag("t1"). // dedupe
-		InRegion("ITBG-Bergamo").
-		WithDirection(types.RuleDirectionIngress).
-		WithProtocol("TCP").
+		InRegion(RegionITBGBergamo).
+		WithDirection(RuleDirectionIngress).
+		WithProtocol(RuleProtocolTCP).
 		WithPort("22").
 		WithTargetCIDR("0.0.0.0/0")
 
@@ -45,19 +45,19 @@ func TestSecurityRule_FluentSetters(t *testing.T) {
 	if tags := rule.Tags(); len(tags) != 2 || tags[0] != "t1" || tags[1] != "t2" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if rule.Region() != "ITBG-Bergamo" {
+	if rule.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", rule.Region())
 	}
-	if rule.Direction() != types.RuleDirectionIngress {
+	if rule.Direction() != RuleDirectionIngress {
 		t.Errorf("Direction() = %q", rule.Direction())
 	}
-	if rule.Protocol() != "TCP" {
+	if rule.Protocol() != RuleProtocolTCP {
 		t.Errorf("Protocol() = %q", rule.Protocol())
 	}
 	if rule.Port() != "22" {
 		t.Errorf("Port() = %q", rule.Port())
 	}
-	if rule.TargetKind() != types.EndpointTypeIP {
+	if rule.TargetKind() != EndpointTypeIP {
 		t.Errorf("TargetKind() = %q", rule.TargetKind())
 	}
 	if rule.TargetValue() != "0.0.0.0/0" {
@@ -160,7 +160,7 @@ func TestSecurityRule_TargetMutuallyExclusive_CIDRThenSG(t *testing.T) {
 		t.Errorf("error message = %q, expected 'pick one'", rule.Err().Error())
 	}
 	// Target must remain the first (CIDR).
-	if rule.TargetKind() != types.EndpointTypeIP {
+	if rule.TargetKind() != EndpointTypeIP {
 		t.Errorf("TargetKind() = %q, expected IP (first setter wins)", rule.TargetKind())
 	}
 }
@@ -178,7 +178,7 @@ func TestSecurityRule_TargetMutuallyExclusive_SGThenCIDR(t *testing.T) {
 		t.Errorf("error message = %q, expected 'pick one'", rule.Err().Error())
 	}
 	// Target must remain the first (SG).
-	if rule.TargetKind() != types.EndpointTypeSecurityGroup {
+	if rule.TargetKind() != EndpointTypeSecurityGroup {
 		t.Errorf("TargetKind() = %q, expected SecurityGroup (first setter wins)", rule.TargetKind())
 	}
 }
@@ -202,9 +202,9 @@ func TestSecurityRule_ToRequestRoundTrip(t *testing.T) {
 		WithName("allow-ssh").
 		AddTag("t1").
 		AddTag("t2").
-		InRegion("ITBG-Bergamo").
-		WithDirection(types.RuleDirectionIngress).
-		WithProtocol("TCP").
+		InRegion(RegionITBGBergamo).
+		WithDirection(RuleDirectionIngress).
+		WithProtocol(RuleProtocolTCP).
 		WithPort("22").
 		WithTargetCIDR("0.0.0.0/0")
 
@@ -216,24 +216,24 @@ func TestSecurityRule_ToRequestRoundTrip(t *testing.T) {
 	if len(req.Metadata.Tags) != 2 {
 		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Metadata.Location.Value = %q", req.Metadata.Location.Value)
 	}
-	if req.Properties.Direction != types.RuleDirectionIngress {
+	if req.Properties.Direction != RuleDirectionIngress {
 		t.Errorf("Properties.Direction = %q", req.Properties.Direction)
 	}
-	if req.Properties.Protocol != "TCP" {
+	if req.Properties.Protocol != RuleProtocolTCP {
 		t.Errorf("Properties.Protocol = %q", req.Properties.Protocol)
 	}
 	if req.Properties.Port != "22" {
 		t.Errorf("Properties.Port = %q", req.Properties.Port)
 	}
-	if req.Properties.Target == nil || req.Properties.Target.Kind != types.EndpointTypeIP || req.Properties.Target.Value != "0.0.0.0/0" {
+	if req.Properties.Target == nil || req.Properties.Target.Kind != EndpointTypeIP || req.Properties.Target.Value != "0.0.0.0/0" {
 		t.Errorf("Properties.Target = %v", req.Properties.Target)
 	}
 
 	// Unset target → Properties.Target must be nil.
-	rule2 := NewSecurityRule().WithName("no-target").WithDirection("Ingress")
+	rule2 := NewSecurityRule().WithName("no-target").WithDirection(RuleDirectionIngress)
 	req2 := rule2.RawRequest()
 	if req2.Properties.Target != nil {
 		t.Errorf("Properties.Target should be nil when not set, got %v", req2.Properties.Target)
@@ -246,8 +246,8 @@ func TestSecurityRule_ToRequestRoundTrip(t *testing.T) {
 
 func securityRuleTestResponse(id, name, uri, projectID string) *types.SecurityRuleResponse {
 	state := "Active"
-	dir := types.RuleDirectionEgress
-	proto := types.RuleProtocol("UDP")
+	dir := RuleDirectionEgress
+	proto := RuleProtocolUDP
 	port := "53"
 	return &types.SecurityRuleResponse{
 		Metadata: types.ResourceMetadataResponse{
@@ -259,14 +259,14 @@ func securityRuleTestResponse(id, name, uri, projectID string) *types.SecurityRu
 				ID: projectID,
 			},
 			LocationResponse: &types.LocationResponse{
-				Value: "ITBG-Bergamo",
+				Value: RegionITBGBergamo,
 			},
 		},
 		Properties: types.SecurityRulePropertiesResponse{
 			Direction: dir,
 			Protocol:  proto,
 			Port:      port,
-			Target:    &types.RuleTarget{Kind: types.EndpointTypeIP, Value: "1.2.3.4/32"},
+			Target:    &types.RuleTarget{Kind: EndpointTypeIP, Value: "1.2.3.4/32"},
 		},
 		Status: types.ResourceStatus{
 			State: &state,
@@ -293,22 +293,22 @@ func TestSecurityRule_FromResponseHydration(t *testing.T) {
 	if tags := rule.Tags(); len(tags) != 1 || tags[0] != "rule-tag" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if rule.Region() != "ITBG-Bergamo" {
+	if rule.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", rule.Region())
 	}
 	if rule.State() != "Active" {
 		t.Errorf("State() = %q", rule.State())
 	}
-	if rule.Direction() != types.RuleDirectionEgress {
+	if rule.Direction() != RuleDirectionEgress {
 		t.Errorf("Direction() = %q", rule.Direction())
 	}
-	if rule.Protocol() != "UDP" {
+	if rule.Protocol() != RuleProtocolUDP {
 		t.Errorf("Protocol() = %q", rule.Protocol())
 	}
 	if rule.Port() != "53" {
 		t.Errorf("Port() = %q", rule.Port())
 	}
-	if rule.TargetKind() != types.EndpointTypeIP {
+	if rule.TargetKind() != EndpointTypeIP {
 		t.Errorf("TargetKind() = %q", rule.TargetKind())
 	}
 	if rule.TargetValue() != "1.2.3.4/32" {
@@ -510,9 +510,9 @@ func TestSecurityGroupRulesClientAdapter_Create_Success(t *testing.T) {
 	rule := NewSecurityRule().
 		IntoSecurityGroup(sg).
 		WithName("allow-ssh").
-		InRegion("ITBG-Bergamo").
-		WithDirection(types.RuleDirectionIngress).
-		WithProtocol("TCP").
+		InRegion(RegionITBGBergamo).
+		WithDirection(RuleDirectionIngress).
+		WithProtocol(RuleProtocolTCP).
 		WithPort("22").
 		WithTargetCIDR("0.0.0.0/0")
 
@@ -532,7 +532,7 @@ func TestSecurityGroupRulesClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "allow-ssh" {
 		t.Errorf("request Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Properties.Protocol != "TCP" {
+	if gotBody.Properties.Protocol != RuleProtocolTCP {
 		t.Errorf("request Protocol = %q", gotBody.Properties.Protocol)
 	}
 }
@@ -1097,10 +1097,10 @@ func TestSecurityGroupRulesClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].ID() != "r-1" || items[0].Name() != "rule-a" {
 		t.Errorf("items[0] = {%q, %q}", items[0].ID(), items[0].Name())
 	}
-	if items[0].Direction() != types.RuleDirectionIngress {
+	if items[0].Direction() != RuleDirectionIngress {
 		t.Errorf("items[0].Direction() = %q", items[0].Direction())
 	}
-	if items[1].ID() != "r-2" || items[1].Direction() != types.RuleDirectionEgress {
+	if items[1].ID() != "r-2" || items[1].Direction() != RuleDirectionEgress {
 		t.Errorf("items[1] = {%q, %q}", items[1].ID(), items[1].Direction())
 	}
 	if items[0].SecurityGroupID() != "sg" {

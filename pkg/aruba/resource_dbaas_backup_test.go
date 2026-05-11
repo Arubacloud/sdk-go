@@ -41,10 +41,10 @@ func TestDBaaSBackup_FluentSetters(t *testing.T) {
 		AddTag("backup").
 		AddTag("dbaas").
 		AddTag("backup"). // dedupe
-		InRegion("ITBG-1").
+		InRegion(RegionITBGBergamo).
 		FromDBaaS(dbaasURI).
 		FromDatabase(dbURI).
-		WithBillingPeriod("Hour")
+		WithBillingPeriod(BillingPeriodHour)
 
 	if bkp.Name() != "my-dbaas-backup" {
 		t.Errorf("Name() = %q", bkp.Name())
@@ -52,7 +52,7 @@ func TestDBaaSBackup_FluentSetters(t *testing.T) {
 	if tags := bkp.Tags(); len(tags) != 2 || tags[0] != "backup" || tags[1] != "dbaas" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if bkp.Region() != "ITBG-1" {
+	if bkp.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", bkp.Region())
 	}
 	if bkp.DBaaSURI() != dbaasURI.URI() {
@@ -61,7 +61,7 @@ func TestDBaaSBackup_FluentSetters(t *testing.T) {
 	if bkp.DatabaseURI() != dbURI.URI() {
 		t.Errorf("DatabaseURI() = %q", bkp.DatabaseURI())
 	}
-	if bkp.BillingPeriod() != "Hour" {
+	if bkp.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", bkp.BillingPeriod())
 	}
 	if bkp.ProjectID() != "p-1" {
@@ -202,10 +202,10 @@ func TestDBaaSBackup_ToRequest(t *testing.T) {
 	bkp := NewDBaaSBackup().
 		WithName("bkp-rt").
 		AddTag("t1").AddTag("t2").
-		InRegion("ITBG-1").
+		InRegion(RegionITBGBergamo).
 		FromDBaaS(URI(dbaasURI)).
 		FromDatabase(URI(dbURI)).
-		WithBillingPeriod("Hour")
+		WithBillingPeriod(BillingPeriodHour)
 
 	req := bkp.RawRequest()
 
@@ -215,7 +215,7 @@ func TestDBaaSBackup_ToRequest(t *testing.T) {
 	if len(req.Metadata.Tags) != 2 {
 		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
 	}
-	if req.Metadata.Location.Value != "ITBG-1" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Location.Value = %q", req.Metadata.Location.Value)
 	}
 	if req.Properties.DBaaS.URI != dbaasURI {
@@ -224,16 +224,16 @@ func TestDBaaSBackup_ToRequest(t *testing.T) {
 	if req.Properties.Database.URI != dbURI {
 		t.Errorf("Properties.Database.URI = %q", req.Properties.Database.URI)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Hour" {
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("Properties.BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 }
 
 func TestDBaaSBackup_ToRequest_ZoneFromLocation(t *testing.T) {
-	bkp := NewDBaaSBackup().InRegion("ITBG-1")
+	bkp := NewDBaaSBackup().InRegion(RegionITBGBergamo)
 	req := bkp.RawRequest()
-	if req.Properties.Zone != "ITBG-1" {
-		t.Errorf("Properties.Zone = %q, want ITBG-1 (auto-derived from location)", req.Properties.Zone)
+	if req.Properties.Zone != Zone(RegionITBGBergamo) {
+		t.Errorf("Properties.Zone = %q, want ITBG-Bergamo (auto-derived from location)", req.Properties.Zone)
 	}
 }
 
@@ -267,16 +267,16 @@ func dbaasBackupTestResponse(name string) *types.BackupResponse {
 			URI:              &uri,
 			Name:             func() *string { s := name; return &s }(),
 			Tags:             []string{"tag1"},
-			LocationResponse: &types.LocationResponse{Value: "ITBG-1"},
+			LocationResponse: &types.LocationResponse{Value: RegionITBGBergamo},
 			ProjectResponseMetadata: &types.ProjectResponseMetadata{
 				ID: "p",
 			},
 		},
 		Properties: types.BackupPropertiesResponse{
-			Zone:          "ITBG-1",
+			Zone:          ZoneITBG1,
 			DBaaS:         types.ReferenceResource{URI: dbaasURI},
 			Database:      types.ReferenceResource{URI: dbURI},
-			BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
+			BillingPeriod: func() *BillingPeriod { v := BillingPeriodHour; return &v }(),
 			Storage:       types.BackupStorageResponse{Size: 50},
 		},
 		Status: types.ResourceStatus{
@@ -309,7 +309,7 @@ func TestDBaaSBackup_FromResponseHydration(t *testing.T) {
 	if tags := bkp.Tags(); len(tags) != 1 || tags[0] != "tag1" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if bkp.Region() != "ITBG-1" {
+	if bkp.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", bkp.Region())
 	}
 	if bkp.State() != "Active" {
@@ -321,10 +321,10 @@ func TestDBaaSBackup_FromResponseHydration(t *testing.T) {
 	if bkp.DatabaseURI() != "/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb" {
 		t.Errorf("DatabaseURI() = %q", bkp.DatabaseURI())
 	}
-	if bkp.BillingPeriod() != "Hour" {
+	if bkp.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", bkp.BillingPeriod())
 	}
-	if bkp.Zone() != "ITBG-1" {
+	if bkp.Zone() != ZoneITBG1 {
 		t.Errorf("Zone() = %q", bkp.Zone())
 	}
 	if bkp.SizeGB() != 50 {
@@ -470,10 +470,10 @@ func TestDBaaSBackupsClientAdapter_Create_Success(t *testing.T) {
 	bkp := NewDBaaSBackup().
 		IntoProject(URI("/projects/p")).
 		WithName("my-backup").
-		InRegion("ITBG-1").
+		InRegion(RegionITBGBergamo).
 		FromDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		FromDatabase(URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb")).
-		WithBillingPeriod("Hour")
+		WithBillingPeriod(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), bkp)
 	if err != nil {
@@ -492,10 +492,10 @@ func TestDBaaSBackupsClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "my-backup" {
 		t.Errorf("request Metadata.Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Metadata.Location.Value != "ITBG-1" {
+	if gotBody.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("request Metadata.Location.Value = %q", gotBody.Metadata.Location.Value)
 	}
-	if gotBody.Properties.Zone != "ITBG-1" {
+	if gotBody.Properties.Zone != Zone(RegionITBGBergamo) {
 		t.Errorf("request Properties.Zone = %q", gotBody.Properties.Zone)
 	}
 	if gotBody.Properties.DBaaS.URI != "/projects/p/providers/Aruba.Database/dbaas/d-1" {
@@ -504,7 +504,7 @@ func TestDBaaSBackupsClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Properties.Database.URI != "/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb" {
 		t.Errorf("request Properties.Database.URI = %q", gotBody.Properties.Database.URI)
 	}
-	if gotBody.Properties.BillingPeriod == nil || *gotBody.Properties.BillingPeriod != "Hour" {
+	if gotBody.Properties.BillingPeriod == nil || *gotBody.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("request Properties.BillingPeriod = %v", gotBody.Properties.BillingPeriod)
 	}
 }
@@ -590,10 +590,10 @@ func TestDBaaSBackupsClientAdapter_Create_WithBodyRefs_ViaFake(t *testing.T) {
 
 	bkp := NewDBaaSBackup().
 		IntoProject(URI("/projects/p")).
-		InRegion("ITBG-1").
+		InRegion(RegionITBGBergamo).
 		FromDBaaS(URI(dbaasURI)).
 		FromDatabase(URI(dbURI)).
-		WithBillingPeriod("Hour")
+		WithBillingPeriod(BillingPeriodHour)
 
 	_, err := adapter.Create(context.Background(), bkp)
 	if err != nil {
@@ -605,10 +605,10 @@ func TestDBaaSBackupsClientAdapter_Create_WithBodyRefs_ViaFake(t *testing.T) {
 	if captured.Properties.Database.URI != dbURI {
 		t.Errorf("captured Database.URI = %q", captured.Properties.Database.URI)
 	}
-	if captured.Properties.Zone != "ITBG-1" {
+	if captured.Properties.Zone != Zone(RegionITBGBergamo) {
 		t.Errorf("captured Zone = %q", captured.Properties.Zone)
 	}
-	if captured.Properties.BillingPeriod == nil || *captured.Properties.BillingPeriod != "Hour" {
+	if captured.Properties.BillingPeriod == nil || *captured.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("captured BillingPeriod = %v", captured.Properties.BillingPeriod)
 	}
 }
@@ -709,8 +709,8 @@ func TestDBaaSBackupsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestDBaaSBackup_InRegion(t *testing.T) {
-	bkp := NewDBaaSBackup().InRegion("ITBG-Bergamo")
-	if bkp.Region() != "ITBG-Bergamo" {
+	bkp := NewDBaaSBackup().InRegion(RegionITBGBergamo)
+	if bkp.Region() != RegionITBGBergamo {
 		t.Errorf("Region() after InRegion = %q", bkp.Region())
 	}
 }
@@ -832,7 +832,7 @@ func TestDBaaSBackupsClientAdapter_List_TwoItems(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
 			`{"metadata":{"id":"bkp-1","name":"n1","uri":"/projects/p/providers/Aruba.Database/backups/bkp-1","project":{"id":"p"}},"properties":{"datacenter":"ITBG-1","dbaas":{"uri":"/projects/p/providers/Aruba.Database/dbaas/d-1"},"database":{"uri":"/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb"},"billingPeriod":"Hour"},"status":{}},`+
-			`{"metadata":{"id":"bkp-2","name":"n2","uri":"/projects/p/providers/Aruba.Database/backups/bkp-2","project":{"id":"p"}},"properties":{"datacenter":"ITBG-1","dbaas":{"uri":"/projects/p/providers/Aruba.Database/dbaas/d-1"},"database":{"uri":"/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb"},"billingPeriod":"Monthly"},"status":{}}`+
+			`{"metadata":{"id":"bkp-2","name":"n2","uri":"/projects/p/providers/Aruba.Database/backups/bkp-2","project":{"id":"p"}},"properties":{"datacenter":"ITBG-1","dbaas":{"uri":"/projects/p/providers/Aruba.Database/dbaas/d-1"},"database":{"uri":"/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb"},"billingPeriod":"Hour"},"status":{}}`+
 			`]}`)
 	})
 
@@ -850,10 +850,10 @@ func TestDBaaSBackupsClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].ID() != "bkp-1" || items[0].Name() != "n1" {
 		t.Errorf("items[0] = {%q, %q}", items[0].ID(), items[0].Name())
 	}
-	if items[0].BillingPeriod() != "Hour" {
+	if items[0].BillingPeriod() != BillingPeriodHour {
 		t.Errorf("items[0].BillingPeriod() = %q", items[0].BillingPeriod())
 	}
-	if items[1].ID() != "bkp-2" || items[1].BillingPeriod() != "Monthly" {
+	if items[1].ID() != "bkp-2" || items[1].BillingPeriod() != BillingPeriodHour {
 		t.Errorf("items[1] ID=%q BillingPeriod=%q", items[1].ID(), items[1].BillingPeriod())
 	}
 	if items[0].ProjectID() != "p" {
