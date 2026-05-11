@@ -9,8 +9,14 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
-// ElasticIP is the wrapper for an Aruba Cloud Elastic IP (a direct child of a Project).
-// Construct with aruba.NewElasticIP() and bind it to a parent project via IntoProject(project).
+// ---- Wrapper ----
+
+// ElasticIP is the wrapper for an Aruba Cloud Elastic IP (a child of a Project).
+// Construct with aruba.NewElasticIP() and bind it via IntoProject(project).
+//
+// Wraps types.ElasticIPResponse / types.ElasticIPRequest. The wrapper carries
+// pointer-typed private fields so unset values round-trip through
+// the JSON layer correctly.
 type ElasticIP struct {
 	errMixin
 	metadataMixin
@@ -26,13 +32,30 @@ type ElasticIP struct {
 	response      *types.ElasticIPResponse // backs Raw()
 }
 
-func (e *ElasticIP) IntoProject(p Ref) *ElasticIP                 { e.intoProject(p); return e }
-func (e *ElasticIP) WithName(n string) *ElasticIP                 { e.withName(n); return e }
-func (e *ElasticIP) AddTag(t string) *ElasticIP                   { e.addTag(t); return e }
-func (e *ElasticIP) RemoveTag(t string) *ElasticIP                { e.removeTag(t); return e }
-func (e *ElasticIP) ReplaceTags(ts ...string) *ElasticIP          { e.replaceTags(ts...); return e }
-func (e *ElasticIP) InRegion(region Region) *ElasticIP            { e.inRegion(region); return e }
+// Setters — chainable, general → specific
+
+// IntoProject binds this ElasticIP to its parent project. Required before Create.
+func (e *ElasticIP) IntoProject(p Ref) *ElasticIP { e.intoProject(p); return e }
+
+// WithName sets the resource name. Required by the API.
+func (e *ElasticIP) WithName(n string) *ElasticIP { e.withName(n); return e }
+
+// AddTag appends a tag for filtering and accounting.
+func (e *ElasticIP) AddTag(t string) *ElasticIP { e.addTag(t); return e }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (e *ElasticIP) RemoveTag(t string) *ElasticIP { e.removeTag(t); return e }
+
+// ReplaceTags replaces the entire tag set with the given values.
+func (e *ElasticIP) ReplaceTags(ts ...string) *ElasticIP { e.replaceTags(ts...); return e }
+
+// InRegion sets the region for this resource.
+func (e *ElasticIP) InRegion(region Region) *ElasticIP { e.inRegion(region); return e }
+
+// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
 func (e *ElasticIP) WithBillingPeriod(p BillingPeriod) *ElasticIP { e.billingPeriod = &p; return e }
+
+// Getters — general → specific
 
 // URI satisfies Ref.
 func (e *ElasticIP) URI() string { return e.RespURI() }
@@ -46,6 +69,7 @@ func (e *ElasticIP) Raw() *types.ElasticIPResponse { return e.response }
 // RawRequest returns what toRequest() would emit right now.
 func (e *ElasticIP) RawRequest() types.ElasticIPRequest { return e.toRequest() }
 
+// BillingPeriod returns the configured billing period ("" if unset).
 func (e *ElasticIP) BillingPeriod() BillingPeriod {
 	if e.billingPeriod == nil {
 		return ""
@@ -53,6 +77,7 @@ func (e *ElasticIP) BillingPeriod() BillingPeriod {
 	return *e.billingPeriod
 }
 
+// Address returns the server-assigned public IP address ("" if unassigned).
 func (e *ElasticIP) Address() string {
 	if e.address == nil {
 		return ""
@@ -60,22 +85,22 @@ func (e *ElasticIP) Address() string {
 	return *e.address
 }
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (e *ElasticIP) toRequest() types.ElasticIPRequest {
-	var bp BillingPeriod
-	if e.billingPeriod != nil {
-		bp = *e.billingPeriod
-	}
 	return types.ElasticIPRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: e.toMetadata(),
 			Location:                e.toLocation(),
 		},
 		Properties: types.ElasticIPPropertiesRequest{
-			BillingPlan: types.BillingPeriodResource{BillingPeriod: bp},
+			BillingPeriod: defaultBillingPeriod(e.billingPeriod),
 		},
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (e *ElasticIP) fromResponse(resp *types.ElasticIPResponse) {
 	if resp == nil {
 		return
@@ -93,9 +118,8 @@ func (e *ElasticIP) fromResponse(resp *types.ElasticIPResponse) {
 	e.setTerminalStates(elasticIPTerminalStates)
 	e.setLinked(resp.Properties.LinkedResources)
 
-	if resp.Properties.BillingPlan.BillingPeriod != "" {
-		bp := resp.Properties.BillingPlan.BillingPeriod
-		e.billingPeriod = &bp
+	if resp.Properties.BillingPeriod != nil {
+		e.billingPeriod = resp.Properties.BillingPeriod
 	}
 	if resp.Properties.Address != nil && *resp.Properties.Address != "" {
 		addr := *resp.Properties.Address
@@ -140,10 +164,11 @@ func (e *ElasticIP) WaitUntilUsed(ctx context.Context, opts ...WaitOption) error
 	return e.WaitUntilStates(ctx, []string{"InUse", "Used"}, opts...)
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// elasticIPLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type elasticIPLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ElasticList], error)
 	Get(ctx context.Context, projectID, elasticIPID string, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error)
@@ -152,7 +177,15 @@ type elasticIPLowLevelClient interface {
 	Delete(ctx context.Context, projectID, elasticIPID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// elasticIPsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates ElasticIP ↔ types.ElasticIPRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type elasticIPsClientAdapter struct{ low elasticIPLowLevelClient }
+
+var _ ElasticIPsClient = (*elasticIPsClientAdapter)(nil)
 
 func newElasticIPsClientAdapter(rest *restclient.Client) *elasticIPsClientAdapter {
 	if rest == nil {
@@ -161,6 +194,7 @@ func newElasticIPsClientAdapter(rest *restclient.Client) *elasticIPsClientAdapte
 	return &elasticIPsClientAdapter{low: network.NewElasticIPsClientImpl(rest)}
 }
 
+// Create posts a new ElasticIP to the API and hydrates the wrapper from the response.
 func (a *elasticIPsClientAdapter) Create(ctx context.Context, e *ElasticIP, opts ...CallOption) (*ElasticIP, error) {
 	if err := e.Err(); err != nil {
 		return e, err
@@ -194,6 +228,7 @@ func (a *elasticIPsClientAdapter) Create(ctx context.Context, e *ElasticIP, opts
 	return e, nil
 }
 
+// Get fetches an ElasticIP by Ref and returns a freshly hydrated wrapper.
 func (a *elasticIPsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*ElasticIP, error) {
 	projectID, elasticIPID, err := elasticIPIDsFromRef(ref)
 	if err != nil {
@@ -227,6 +262,7 @@ func (a *elasticIPsClientAdapter) Get(ctx context.Context, ref Ref, opts ...Call
 	return out, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *elasticIPsClientAdapter) Update(ctx context.Context, e *ElasticIP, opts ...CallOption) (*ElasticIP, error) {
 	if err := e.Err(); err != nil {
 		return e, err
@@ -263,6 +299,7 @@ func (a *elasticIPsClientAdapter) Update(ctx context.Context, e *ElasticIP, opts
 	return e, nil
 }
 
+// Delete removes the ElasticIP identified by Ref.
 func (a *elasticIPsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, elasticIPID, err := elasticIPIDsFromRef(ref)
 	if err != nil {
@@ -280,6 +317,7 @@ func (a *elasticIPsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...C
 	return nil
 }
 
+// List returns a paginated list of ElasticIP in the given parent scope.
 func (a *elasticIPsClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*ElasticIP], error) {
 	projectID, err := projectIDFromRef(project)
 	if err != nil {

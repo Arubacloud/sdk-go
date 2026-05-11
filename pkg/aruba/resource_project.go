@@ -9,6 +9,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // Project is the wrapper for an Aruba Cloud project.
 // Construct with aruba.Project(); pass it to ProjectClient.Create / .Update,
 // or receive it from .Get / .List.
@@ -22,6 +24,8 @@ type Project struct {
 	description *string
 	defaultProj bool // ProjectPropertiesRequest.Default is plain bool — no tri-state needed
 }
+
+// Setters — chainable, general → specific
 
 // WithName sets the project name.
 func (p *Project) WithName(n string) *Project { p.withName(n); return p }
@@ -44,6 +48,8 @@ func (p *Project) AsDefault() *Project { p.defaultProj = true; return p }
 // NotDefault marks the project as not the account default.
 func (p *Project) NotDefault() *Project { p.defaultProj = false; return p }
 
+// Getters — general → specific
+
 // URI satisfies Ref; returns the server-assigned URI, or "" before the first reply.
 // ID() is promoted from responseMetadataMixin and needs no override.
 func (p *Project) URI() string { return p.RespURI() }
@@ -59,7 +65,9 @@ func (p *Project) Description() string {
 // IsDefault returns true if this project is marked as the account default.
 func (p *Project) IsDefault() bool { return p.defaultProj }
 
-// toRequest builds the wire-level request from the wrapper's slots.
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (p *Project) toRequest() types.ProjectRequest {
 	return types.ProjectRequest{
 		Metadata: p.toMetadata(),
@@ -96,9 +104,7 @@ func projectDerefString(s *string) string {
 	return *s
 }
 
-// ---------------------------------------------------------------------------
-// Low-level client seam + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
 // projectLowLevelClient is the package-internal seam the adapter consumes.
 // Satisfied by *project.projectsClientImpl. Defined here so tests can substitute
@@ -111,15 +117,23 @@ type projectLowLevelClient interface {
 	Delete(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
-// projectClientAdapter bridges the wrapper interface to the existing raw-types impl.
+// ---- Adapter ----
+
+// projectClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates Project ↔ types.ProjectRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type projectClientAdapter struct {
 	low projectLowLevelClient
 }
+
+var _ ProjectClient = (*projectClientAdapter)(nil)
 
 func newProjectClientAdapter(rest *restclient.Client) *projectClientAdapter {
 	return &projectClientAdapter{low: project.NewProjectsClientImpl(rest)}
 }
 
+// Create posts a new Project to the API and hydrates the wrapper from the response.
 func (a *projectClientAdapter) Create(ctx context.Context, p *Project, opts ...CallOption) (*Project, error) {
 	if err := p.Err(); err != nil {
 		return p, err
@@ -143,6 +157,7 @@ func (a *projectClientAdapter) Create(ctx context.Context, p *Project, opts ...C
 	return p, nil
 }
 
+// Get fetches a Project by Ref and returns a freshly hydrated wrapper.
 func (a *projectClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*Project, error) {
 	id, err := projectIDFromRef(ref)
 	if err != nil {
@@ -165,6 +180,7 @@ func (a *projectClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOpt
 	return out, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *projectClientAdapter) Update(ctx context.Context, p *Project, opts ...CallOption) (*Project, error) {
 	if err := p.Err(); err != nil {
 		return p, err
@@ -188,6 +204,7 @@ func (a *projectClientAdapter) Update(ctx context.Context, p *Project, opts ...C
 	return p, nil
 }
 
+// Delete removes the Project identified by Ref.
 func (a *projectClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	id, err := projectIDFromRef(ref)
 	if err != nil {
@@ -205,6 +222,7 @@ func (a *projectClientAdapter) Delete(ctx context.Context, ref Ref, opts ...Call
 	return nil
 }
 
+// List returns a paginated list of all Projects accessible to the caller.
 func (a *projectClientAdapter) List(ctx context.Context, opts ...CallOption) (*List[*Project], error) {
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

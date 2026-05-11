@@ -10,16 +10,20 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // Alert is the wrapper for an Aruba Cloud metric alert.
 // Instances are read-only and can only be obtained via Client.FromMetric().Alerts().List.
 // There is no factory, no setters, and no individual-fetch endpoint.
 type Alert struct {
+	projectScopedMixin    // ProjectID() — back-filled from parent Ref at List time
 	responseMetadataMixin // shadowed: ID(), Raw(); no metadata envelope on the wire
 	httpEnvelopeMixin     // RawHTTP(), StatusCode(), Headers(), RawError()
 
-	projectID string // back-filled from the parent Ref at List time
-	response  *types.AlertResponse
+	response *types.AlertResponse
 }
+
+// Getters — general → specific
 
 // ID returns the alert ID, or "" when unset. Shadows responseMetadataMixin.ID().
 func (a *Alert) ID() string {
@@ -34,10 +38,6 @@ func (a *Alert) URI() string { return "" }
 
 // Raw returns the underlying wire payload. Shadows responseMetadataMixin.Raw().
 func (a *Alert) Raw() *types.AlertResponse { return a.response }
-
-// ProjectID returns the project that owns this alert.
-// The value is back-filled from the parent Ref used in the List call.
-func (a *Alert) ProjectID() string { return a.projectID }
 
 // EventID returns the event ID associated with this alert, or "" when unset.
 func (a *Alert) EventID() string {
@@ -256,15 +256,24 @@ func (a *Alert) fromResponse(resp *types.AlertResponse) {
 	a.response = resp
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// alertsLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type alertsLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.AlertsListResponse], error)
 }
 
+// ---- Adapter ----
+
+// alertsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates Alert ↔ types.AlertResponse and surfaces HTTP
+// errors as *aruba.HTTPError.
 type alertsClientAdapter struct{ low alertsLowLevelClient }
+
+var _ AlertsClient = (*alertsClientAdapter)(nil)
 
 func newAlertsClientAdapter(rest *restclient.Client) *alertsClientAdapter {
 	if rest == nil {
@@ -273,6 +282,7 @@ func newAlertsClientAdapter(rest *restclient.Client) *alertsClientAdapter {
 	return &alertsClientAdapter{low: metric.NewAlertsClientImpl(rest)}
 }
 
+// List returns a paginated list of Alert in the given parent scope.
 func (a *alertsClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*Alert], error) {
 	projectID, err := projectIDFromRef(project)
 	if err != nil {

@@ -191,8 +191,8 @@ func TestVPCPeeringRoute_ToRequestRoundTrip(t *testing.T) {
 	if req.Properties.RemoteNetworkAddress != "192.168.0.0/24" {
 		t.Errorf("Properties.RemoteNetworkAddress = %q", req.Properties.RemoteNetworkAddress)
 	}
-	if req.Properties.BillingPlan.BillingPeriod != "Hourly" {
-		t.Errorf("Properties.BillingPlan.BillingPeriod = %q", req.Properties.BillingPlan.BillingPeriod)
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Hourly" {
+		t.Errorf("Properties.BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 
 	// Unset CIDRs must produce empty strings.
@@ -213,10 +213,9 @@ func TestVPCPeeringRoute_ToRequestRoundTrip(t *testing.T) {
 func TestVPCPeeringRoute_ToRequest_BillingPeriodAlwaysEmitted(t *testing.T) {
 	r := NewVPCPeeringRoute().WithName("bare")
 	req := r.RawRequest()
-	// BillingPlan is a value type — always present in the request struct (zero value).
-	// This mirrors ElasticIP behavior.
-	if req.Properties.BillingPlan.BillingPeriod != "" {
-		t.Errorf("BillingPlan.BillingPeriod should be empty string when not set, got %q", req.Properties.BillingPlan.BillingPeriod)
+	// BillingPeriod is always emitted — defaults to Hour when not explicitly set.
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPeriod should default to Hour when not set, got %v", req.Properties.BillingPeriod)
 	}
 }
 
@@ -241,7 +240,7 @@ func vpcPeeringRouteTestResponse(id, name, uri, projectID string) *types.VPCPeer
 		Properties: types.VPCPeeringRoutePropertiesResponse{
 			LocalNetworkAddress:  "10.0.0.0/24",
 			RemoteNetworkAddress: "192.168.0.0/24",
-			BillingPlan:          types.BillingPeriodResource{BillingPeriod: "Hourly"},
+			BillingPeriod:        func() *types.BillingPeriod { v := types.BillingPeriod("Hourly"); return &v }(),
 		},
 		Status: types.ResourceStatus{
 			State: &state,
@@ -466,7 +465,7 @@ func buildVPCPeeringRouteTestAdapter(t *testing.T, handler http.HandlerFunc) *vp
 
 const vpcPeeringRouteSuccessBody = `{` +
 	`"metadata":{"id":"route-1","name":"my-route","uri":"/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1/vpcPeeringRoutes/route-1","project":{"id":"p"}},` +
-	`"properties":{"localNetworkAddress":"10.0.0.0/24","remoteNetworkAddress":"192.168.0.0/24","billingPlan":{"billingPeriod":"Hourly"}},` +
+	`"properties":{"localNetworkAddress":"10.0.0.0/24","remoteNetworkAddress":"192.168.0.0/24","billingPeriod":"Hourly"},` +
 	`"status":{"state":"Active"}}`
 
 func TestVPCPeeringRoutesClientAdapter_Create_Success(t *testing.T) {
@@ -520,8 +519,8 @@ func TestVPCPeeringRoutesClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Properties.LocalNetworkAddress != "10.0.0.0/24" {
 		t.Errorf("request LocalNetworkAddress = %q", gotBody.Properties.LocalNetworkAddress)
 	}
-	if gotBody.Properties.BillingPlan.BillingPeriod != "Hourly" {
-		t.Errorf("request BillingPeriod = %q", gotBody.Properties.BillingPlan.BillingPeriod)
+	if gotBody.Properties.BillingPeriod == nil || *gotBody.Properties.BillingPeriod != "Hourly" {
+		t.Errorf("request BillingPeriod = %v", gotBody.Properties.BillingPeriod)
 	}
 }
 
@@ -1004,7 +1003,7 @@ func TestVPCPeeringRoutesClientAdapter_List_AncestorIDBackfill(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":1,"self":"","prev":"","next":"","first":"","last":"","values":[`+
-			`{"metadata":{"id":"route-x","name":"route-x"},"properties":{"localNetworkAddress":"10.0.0.0/24","remoteNetworkAddress":"192.168.0.0/24","billingPlan":{}},"status":{}}`+
+			`{"metadata":{"id":"route-x","name":"route-x"},"properties":{"localNetworkAddress":"10.0.0.0/24","remoteNetworkAddress":"192.168.0.0/24"},"status":{}}`+
 			`]}`)
 	})
 
@@ -1033,8 +1032,8 @@ func TestVPCPeeringRoutesClientAdapter_List_TwoItems(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
-			`{"metadata":{"id":"route-1","name":"route-a","uri":"/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1/vpcPeeringRoutes/route-1","project":{"id":"p"}},"properties":{"localNetworkAddress":"10.0.0.0/24","remoteNetworkAddress":"192.168.0.0/24","billingPlan":{}},"status":{"state":"Active"}},`+
-			`{"metadata":{"id":"route-2","name":"route-b","uri":"/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1/vpcPeeringRoutes/route-2","project":{"id":"p"}},"properties":{"localNetworkAddress":"10.1.0.0/24","remoteNetworkAddress":"192.168.1.0/24","billingPlan":{}},"status":{"state":"Inactive"}}`+
+			`{"metadata":{"id":"route-1","name":"route-a","uri":"/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1/vpcPeeringRoutes/route-1","project":{"id":"p"}},"properties":{"localNetworkAddress":"10.0.0.0/24","remoteNetworkAddress":"192.168.0.0/24"},"status":{"state":"Active"}},`+
+			`{"metadata":{"id":"route-2","name":"route-b","uri":"/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1/vpcPeeringRoutes/route-2","project":{"id":"p"}},"properties":{"localNetworkAddress":"10.1.0.0/24","remoteNetworkAddress":"192.168.1.0/24"},"status":{"state":"Inactive"}}`+
 			`]}`)
 	})
 

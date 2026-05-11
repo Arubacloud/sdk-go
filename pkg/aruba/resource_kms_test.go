@@ -97,8 +97,8 @@ func TestKMS_IntoProject_BadRef(t *testing.T) {
 func TestKMS_WithBillingPeriod_RoundTrip(t *testing.T) {
 	k := NewKMS().WithBillingPeriod("Monthly")
 	req := k.RawRequest()
-	if req.Properties.BillingPeriod != "Monthly" {
-		t.Errorf("Properties.BillingPeriod = %q", req.Properties.BillingPeriod)
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Monthly" {
+		t.Errorf("Properties.BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 }
 
@@ -121,8 +121,8 @@ func TestKMS_ToRequest_FullyPopulated(t *testing.T) {
 	if req.Metadata.Location.Value != "ITBG-Bergamo" {
 		t.Errorf("Metadata.Location.Value = %q", req.Metadata.Location.Value)
 	}
-	if req.Properties.BillingPeriod != "Hour" {
-		t.Errorf("Properties.BillingPeriod = %q", req.Properties.BillingPeriod)
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Hour" {
+		t.Errorf("Properties.BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 }
 
@@ -146,7 +146,7 @@ func kmsTestResponse(name string) *types.KmsResponse {
 			},
 		},
 		Properties: types.KmsPropertiesResponse{
-			BillingPeriod: "Hour",
+			BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
 		},
 		Status: types.ResourceStatus{State: &state},
 	}
@@ -299,8 +299,8 @@ func TestKMSClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "my-kms" {
 		t.Errorf("request Metadata.Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Properties.BillingPeriod != "Hour" {
-		t.Errorf("request BillingPeriod = %q", gotBody.Properties.BillingPeriod)
+	if gotBody.Properties.BillingPeriod == nil || *gotBody.Properties.BillingPeriod != "Hour" {
+		t.Errorf("request BillingPeriod = %v", gotBody.Properties.BillingPeriod)
 	}
 }
 

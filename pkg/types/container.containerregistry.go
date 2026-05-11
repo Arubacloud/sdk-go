@@ -33,8 +33,8 @@ type ContainerRegistryPropertiesRequest struct {
 	// BlockStorage is the block storage associated with the container registry
 	BlockStorage ReferenceResource `json:"blockStorage"`
 
-	// BillingPlan is the billing plan associated with the container registry
-	BillingPlan *BillingPeriodResource `json:"billingPlan,omitempty"`
+	// BillingPeriod is the billing period for the container registry
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 
 	// AdminUser is the administrator user for the container registry
 	AdminUser *UserCredential `json:"adminUser,omitempty"`
@@ -60,8 +60,8 @@ type ContainerRegistryPropertiesResult struct {
 	// BlockStorage is the block storage associated with the container registry
 	BlockStorage ReferenceResource `json:"blockStorage"`
 
-	// BillingPlan is the billing plan associated with the container registry
-	BillingPlan *BillingPeriodResource `json:"billingPlan,omitempty"`
+	// BillingPeriod is the billing period for the container registry
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 
 	// AdminUser is the administrator user for the container registry
 	AdminUser *UserCredential `json:"adminUser,omitempty"`

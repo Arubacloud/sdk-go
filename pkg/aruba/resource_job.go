@@ -10,6 +10,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // Job is the wrapper for an Aruba Cloud scheduled job (a direct child of a Project).
 // Construct with aruba.NewJob() and bind via IntoProject(project).
 //
@@ -46,16 +48,25 @@ type Job struct {
 	response *types.JobResponse
 }
 
-// ---------------------------------------------------------------------------
-// Standard setters
-// ---------------------------------------------------------------------------
+// Setters — chainable, general → specific
 
-func (j *Job) IntoProject(p Ref) *Job        { j.intoProject(p); return j }
-func (j *Job) WithName(n string) *Job        { j.withName(n); return j }
-func (j *Job) AddTag(t string) *Job          { j.addTag(t); return j }
-func (j *Job) RemoveTag(t string) *Job       { j.removeTag(t); return j }
+// IntoProject binds this Job to its parent project. Required before Create.
+func (j *Job) IntoProject(p Ref) *Job { j.intoProject(p); return j }
+
+// WithName sets the resource name. Required by the API.
+func (j *Job) WithName(n string) *Job { j.withName(n); return j }
+
+// AddTag appends a tag for filtering and accounting.
+func (j *Job) AddTag(t string) *Job { j.addTag(t); return j }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (j *Job) RemoveTag(t string) *Job { j.removeTag(t); return j }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (j *Job) ReplaceTags(ts ...string) *Job { j.replaceTags(ts...); return j }
-func (j *Job) InRegion(region Region) *Job   { j.inRegion(region); return j }
+
+// InRegion sets the region for this resource.
+func (j *Job) InRegion(region Region) *Job { j.inRegion(region); return j }
 
 // WithEnabled sets whether the job is active.
 // Note: the underlying wire type uses bool with omitempty, so false is dropped
@@ -116,24 +127,21 @@ func (j *Job) AddStep(step *JobStep) *Job {
 	return j
 }
 
-// ---------------------------------------------------------------------------
-// Ref + ID accessors
-// ---------------------------------------------------------------------------
+// Getters — general → specific
 
-func (j *Job) URI() string   { return j.RespURI() }
+// URI satisfies Ref by returning the server-assigned canonical URI, or "" if Create hasn't run yet.
+func (j *Job) URI() string { return j.RespURI() }
+
+// JobID satisfies withJobID so child wrappers can extract this ID by typed assertion.
 func (j *Job) JobID() string { return j.ID() }
 
-// ---------------------------------------------------------------------------
-// Raw accessors
-// ---------------------------------------------------------------------------
+// Raw shadows responseMetadataMixin.Raw() with the typed Job response.
+func (j *Job) Raw() *types.JobResponse { return j.response }
 
-func (j *Job) Raw() *types.JobResponse      { return j.response }
+// RawRequest returns what toRequest() would emit right now.
 func (j *Job) RawRequest() types.JobRequest { return j.toRequest() }
 
-// ---------------------------------------------------------------------------
-// Response-preferring accessors
-// ---------------------------------------------------------------------------
-
+// Enabled returns whether the job is active.
 func (j *Job) Enabled() bool {
 	if j.response != nil {
 		return j.response.Properties.Enabled
@@ -144,6 +152,7 @@ func (j *Job) Enabled() bool {
 	return false
 }
 
+// JobType returns the schedule type (OneShot or Recurring) from the response or local state.
 func (j *Job) JobType() types.JobType {
 	if j.response != nil && j.response.Properties.JobType != "" {
 		return j.response.Properties.JobType
@@ -154,6 +163,7 @@ func (j *Job) JobType() types.JobType {
 	return ""
 }
 
+// Cron returns the cron expression from the response or local state, or "" if unset.
 func (j *Job) Cron() string {
 	if j.response != nil && j.response.Properties.Cron != nil {
 		return *j.response.Properties.Cron
@@ -164,10 +174,9 @@ func (j *Job) Cron() string {
 	return ""
 }
 
-// ---------------------------------------------------------------------------
-// Wire conversions
-// ---------------------------------------------------------------------------
+// Wire converters
 
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (j *Job) toRequest() types.JobRequest {
 	props := types.JobPropertiesRequest{
 		ScheduleAt:   j.scheduleAt,
@@ -195,6 +204,7 @@ func (j *Job) toRequest() types.JobRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (j *Job) fromResponse(resp *types.JobResponse) {
 	if resp == nil {
 		return
@@ -283,10 +293,6 @@ func jobDeref(p *string) string {
 	return *p
 }
 
-// ---------------------------------------------------------------------------
-// jobIDsFromRef
-// ---------------------------------------------------------------------------
-
 func jobIDsFromRef(ref Ref) (projectID, jobID string, err error) {
 	jid, ok := extractID(ref, func(r Ref) (string, bool) {
 		if w, ok := r.(withJobID); ok {
@@ -315,10 +321,11 @@ var jobTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// jobsLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type jobsLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.JobList], error)
 	Get(ctx context.Context, projectID, jobID string, params *types.RequestParameters) (*types.Response[types.JobResponse], error)
@@ -327,9 +334,17 @@ type jobsLowLevelClient interface {
 	Delete(ctx context.Context, projectID, jobID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// jobsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates Job ↔ types.JobRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type jobsClientAdapter struct {
 	low jobsLowLevelClient
 }
+
+var _ JobsClient = (*jobsClientAdapter)(nil)
 
 func newJobsClientAdapter(rest *restclient.Client) *jobsClientAdapter {
 	if rest == nil {
@@ -338,6 +353,7 @@ func newJobsClientAdapter(rest *restclient.Client) *jobsClientAdapter {
 	return &jobsClientAdapter{low: schedule.NewJobsClientImpl(rest)}
 }
 
+// Create posts a new Job to the API and hydrates the wrapper from the response.
 func (a *jobsClientAdapter) Create(ctx context.Context, j *Job, opts ...CallOption) (*Job, error) {
 	if err := j.Err(); err != nil {
 		return j, err
@@ -371,6 +387,7 @@ func (a *jobsClientAdapter) Create(ctx context.Context, j *Job, opts ...CallOpti
 	return j, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *jobsClientAdapter) Update(ctx context.Context, j *Job, opts ...CallOption) (*Job, error) {
 	if err := j.Err(); err != nil {
 		return j, err
@@ -407,6 +424,7 @@ func (a *jobsClientAdapter) Update(ctx context.Context, j *Job, opts ...CallOpti
 	return j, nil
 }
 
+// Get fetches a Job by Ref and returns a freshly hydrated wrapper.
 func (a *jobsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*Job, error) {
 	projectID, jobID, err := jobIDsFromRef(ref)
 	if err != nil {
@@ -443,6 +461,7 @@ func (a *jobsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption
 	return out, nil
 }
 
+// Delete removes the Job identified by Ref.
 func (a *jobsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, jobID, err := jobIDsFromRef(ref)
 	if err != nil {
@@ -460,6 +479,7 @@ func (a *jobsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOpt
 	return nil
 }
 
+// List returns a paginated list of Jobs in the given parent scope.
 func (a *jobsClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOption) (*List[*Job], error) {
 	projectID, err := projectIDFromRef(parent)
 	if err != nil {

@@ -9,8 +9,14 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
-// VPNRoute is the wrapper for an Aruba Cloud VPN Route (a direct child of a VPNTunnel).
-// Construct with NewVPNRoute() and bind it via IntoVPNTunnel(tunnel).
+// ---- Wrapper ----
+
+// VPNRoute is the wrapper for an Aruba Cloud VPN Route (a child of a VPNTunnel).
+// Construct with aruba.NewVPNRoute() and bind it via IntoVPNTunnel(tunnel).
+//
+// Wraps types.VPNRouteResponse / types.VPNRouteRequest. The wrapper carries
+// pointer-typed private fields so unset values round-trip through
+// the JSON layer correctly.
 type VPNRoute struct {
 	errMixin
 	metadataMixin
@@ -27,17 +33,33 @@ type VPNRoute struct {
 	response *types.VPNRouteResponse
 }
 
-// Setters (chainable).
+// Setters — chainable, general → specific
 
-func (r *VPNRoute) IntoVPNTunnel(t Ref) *VPNRoute        { r.intoVPNTunnel(t); return r }
-func (r *VPNRoute) WithName(n string) *VPNRoute          { r.withName(n); return r }
-func (r *VPNRoute) AddTag(tag string) *VPNRoute          { r.addTag(tag); return r }
-func (r *VPNRoute) RemoveTag(tag string) *VPNRoute       { r.removeTag(tag); return r }
+// IntoVPNTunnel binds this VPNRoute to its parent VPNTunnel. Required before Create.
+func (r *VPNRoute) IntoVPNTunnel(t Ref) *VPNRoute { r.intoVPNTunnel(t); return r }
+
+// WithName sets the resource name. Required by the API.
+func (r *VPNRoute) WithName(n string) *VPNRoute { r.withName(n); return r }
+
+// AddTag appends a tag for filtering and accounting.
+func (r *VPNRoute) AddTag(tag string) *VPNRoute { r.addTag(tag); return r }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (r *VPNRoute) RemoveTag(tag string) *VPNRoute { r.removeTag(tag); return r }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (r *VPNRoute) ReplaceTags(tags ...string) *VPNRoute { r.replaceTags(tags...); return r }
-func (r *VPNRoute) InRegion(region Region) *VPNRoute     { r.inRegion(region); return r }
 
-func (r *VPNRoute) WithCloudSubnet(cidr string) *VPNRoute  { r.cloudSubnet = &cidr; return r }
+// InRegion sets the region for this resource.
+func (r *VPNRoute) InRegion(region Region) *VPNRoute { r.inRegion(region); return r }
+
+// WithCloudSubnet sets the cloud-side subnet CIDR for this VPN route.
+func (r *VPNRoute) WithCloudSubnet(cidr string) *VPNRoute { r.cloudSubnet = &cidr; return r }
+
+// WithOnPremSubnet sets the on-premises subnet CIDR for this VPN route.
 func (r *VPNRoute) WithOnPremSubnet(cidr string) *VPNRoute { r.onPremSubnet = &cidr; return r }
+
+// Getters — general → specific
 
 // URI satisfies Ref.
 func (r *VPNRoute) URI() string { return r.RespURI() }
@@ -57,6 +79,9 @@ func (r *VPNRoute) CloudSubnet() string { return vpnRouteDerefString(r.cloudSubn
 // OnPremSubnet returns the configured on-premises subnet CIDR ("" if unset).
 func (r *VPNRoute) OnPremSubnet() string { return vpnRouteDerefString(r.onPremSubnet) }
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (r *VPNRoute) toRequest() types.VPNRouteRequest {
 	props := types.VPNRoutePropertiesRequest{
 		CloudSubnet:  vpnRouteDerefString(r.cloudSubnet),
@@ -71,6 +96,7 @@ func (r *VPNRoute) toRequest() types.VPNRouteRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (r *VPNRoute) fromResponse(resp *types.VPNRouteResponse) {
 	if resp == nil {
 		return
@@ -129,10 +155,11 @@ var vpnRouteTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// vpnRouteLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type vpnRouteLowLevelClient interface {
 	List(ctx context.Context, projectID, vpnTunnelID string, params *types.RequestParameters) (*types.Response[types.VPNRouteList], error)
 	Get(ctx context.Context, projectID, vpnTunnelID, vpnRouteID string, params *types.RequestParameters) (*types.Response[types.VPNRouteResponse], error)
@@ -141,7 +168,15 @@ type vpnRouteLowLevelClient interface {
 	Delete(ctx context.Context, projectID, vpnTunnelID, vpnRouteID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// vpnRoutesClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates VPNRoute ↔ types.VPNRouteRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type vpnRoutesClientAdapter struct{ low vpnRouteLowLevelClient }
+
+var _ VPNRoutesClient = (*vpnRoutesClientAdapter)(nil)
 
 func newVPNRoutesClientAdapter(rest *restclient.Client) *vpnRoutesClientAdapter {
 	if rest == nil {
@@ -150,6 +185,7 @@ func newVPNRoutesClientAdapter(rest *restclient.Client) *vpnRoutesClientAdapter 
 	return &vpnRoutesClientAdapter{low: network.NewVPNRoutesClientImpl(rest)}
 }
 
+// Create posts a new VPNRoute to the API and hydrates the wrapper from the response.
 func (a *vpnRoutesClientAdapter) Create(ctx context.Context, r *VPNRoute, opts ...CallOption) (*VPNRoute, error) {
 	if err := r.Err(); err != nil {
 		return r, err
@@ -183,6 +219,7 @@ func (a *vpnRoutesClientAdapter) Create(ctx context.Context, r *VPNRoute, opts .
 	return r, nil
 }
 
+// Get fetches a VPNRoute by Ref and returns a freshly hydrated wrapper.
 func (a *vpnRoutesClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*VPNRoute, error) {
 	projectID, vpnTunnelID, vpnRouteID, err := vpnRouteIDsFromRef(ref)
 	if err != nil {
@@ -221,6 +258,7 @@ func (a *vpnRoutesClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallO
 	return out, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *vpnRoutesClientAdapter) Update(ctx context.Context, r *VPNRoute, opts ...CallOption) (*VPNRoute, error) {
 	if err := r.Err(); err != nil {
 		return r, err
@@ -257,6 +295,7 @@ func (a *vpnRoutesClientAdapter) Update(ctx context.Context, r *VPNRoute, opts .
 	return r, nil
 }
 
+// Delete removes the VPNRoute identified by Ref.
 func (a *vpnRoutesClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, vpnTunnelID, vpnRouteID, err := vpnRouteIDsFromRef(ref)
 	if err != nil {
@@ -274,6 +313,7 @@ func (a *vpnRoutesClientAdapter) Delete(ctx context.Context, ref Ref, opts ...Ca
 	return nil
 }
 
+// List returns a paginated list of VPNRoute in the given parent scope.
 func (a *vpnRoutesClientAdapter) List(ctx context.Context, tunnel Ref, opts ...CallOption) (*List[*VPNRoute], error) {
 	projectID, vpnTunnelID, err := vpnTunnelIDsFromRef(tunnel)
 	if err != nil {

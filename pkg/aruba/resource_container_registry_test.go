@@ -49,7 +49,7 @@ func TestContainerRegistry_FluentSetters(t *testing.T) {
 		WithElasticIP(eipURI).
 		WithBlockStorage(bsURI).
 		WithAdminUsername("admin").
-		WithSizeFlavor(types.ContainerRegistrySizeFlavorSmall).
+		OfSize(types.ContainerRegistrySizeFlavorSmall).
 		WithBillingPeriod("Hour")
 
 	if cr.Name() != "my-registry" {
@@ -70,8 +70,8 @@ func TestContainerRegistry_FluentSetters(t *testing.T) {
 	if cr.SecurityGroup() != sgURI.URI() {
 		t.Errorf("SecurityGroup() = %q", cr.SecurityGroup())
 	}
-	if cr.PublicIP() != eipURI.URI() {
-		t.Errorf("PublicIP() = %q", cr.PublicIP())
+	if cr.ElasticIP() != eipURI.URI() {
+		t.Errorf("PublicIP() = %q", cr.ElasticIP())
 	}
 	if cr.BlockStorage() != bsURI.URI() {
 		t.Errorf("BlockStorage() = %q", cr.BlockStorage())
@@ -143,8 +143,8 @@ func TestContainerRegistry_IntoProject_BadRef(t *testing.T) {
 func TestContainerRegistry_WithElasticIP_URIRef(t *testing.T) {
 	uri := "/projects/p-1/providers/Aruba.Network/elasticips/eip-1"
 	cr := NewContainerRegistry().WithElasticIP(URI(uri))
-	if cr.PublicIP() != uri {
-		t.Errorf("PublicIP() = %q", cr.PublicIP())
+	if cr.ElasticIP() != uri {
+		t.Errorf("PublicIP() = %q", cr.ElasticIP())
 	}
 	if cr.Err() != nil {
 		t.Errorf("Err() = %v", cr.Err())
@@ -154,8 +154,8 @@ func TestContainerRegistry_WithElasticIP_URIRef(t *testing.T) {
 func TestContainerRegistry_WithElasticIP_TypedRef(t *testing.T) {
 	ref := URI("/projects/p-1/providers/Aruba.Network/elasticips/eip-1")
 	cr := NewContainerRegistry().WithElasticIP(ref)
-	if cr.PublicIP() != ref.URI() {
-		t.Errorf("PublicIP() = %q, want %q", cr.PublicIP(), ref.URI())
+	if cr.ElasticIP() != ref.URI() {
+		t.Errorf("PublicIP() = %q, want %q", cr.ElasticIP(), ref.URI())
 	}
 	if cr.Err() != nil {
 		t.Errorf("Err() = %v", cr.Err())
@@ -167,8 +167,8 @@ func TestContainerRegistry_WithElasticIP_EmptyURI(t *testing.T) {
 	if cr.Err() == nil {
 		t.Error("expected Err() != nil for empty PublicIP URI")
 	}
-	if cr.PublicIP() != "" {
-		t.Errorf("PublicIP() should remain empty, got %q", cr.PublicIP())
+	if cr.ElasticIP() != "" {
+		t.Errorf("PublicIP() should remain empty, got %q", cr.ElasticIP())
 	}
 }
 
@@ -318,8 +318,8 @@ func TestContainerRegistry_WithAdminUsername(t *testing.T) {
 	}
 }
 
-func TestContainerRegistry_WithSizeFlavor(t *testing.T) {
-	cr := NewContainerRegistry().WithSizeFlavor(types.ContainerRegistrySizeFlavorSmall)
+func TestContainerRegistry_OfSize(t *testing.T) {
+	cr := NewContainerRegistry().OfSize(types.ContainerRegistrySizeFlavorSmall)
 	if cr.SizeFlavor() != types.ContainerRegistrySizeFlavorSmall {
 		t.Errorf("SizeFlavor() = %q", cr.SizeFlavor())
 	}
@@ -357,7 +357,7 @@ func TestContainerRegistry_ToRequest(t *testing.T) {
 		WithElasticIP(URI(eipURI)).
 		WithBlockStorage(URI(bsURI)).
 		WithAdminUsername("admin").
-		WithSizeFlavor(types.ContainerRegistrySizeFlavorHighPerf).
+		OfSize(types.ContainerRegistrySizeFlavorHighPerf).
 		WithBillingPeriod("Hour")
 
 	req := cr.RawRequest()
@@ -392,8 +392,8 @@ func TestContainerRegistry_ToRequest(t *testing.T) {
 	if req.Properties.ConcurrentUsers == nil || *req.Properties.ConcurrentUsers != "HighPerf" {
 		t.Errorf("Properties.ConcurrentUsers = %v", req.Properties.ConcurrentUsers)
 	}
-	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod != "Hour" {
-		t.Errorf("Properties.BillingPlan = %v", req.Properties.BillingPlan)
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Hour" {
+		t.Errorf("Properties.BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 }
 
@@ -408,8 +408,8 @@ func TestContainerRegistry_ToRequest_Empty(t *testing.T) {
 	if req.Properties.ConcurrentUsers != nil {
 		t.Errorf("ConcurrentUsers should be nil, got %v", req.Properties.ConcurrentUsers)
 	}
-	if req.Properties.BillingPlan != nil {
-		t.Errorf("BillingPlan should be nil, got %v", req.Properties.BillingPlan)
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPeriod should default to Hour, got %v", req.Properties.BillingPeriod)
 	}
 	// Body-ref ReferenceResource fields should have empty URIs.
 	if req.Properties.VPC.URI != "" {
@@ -450,7 +450,7 @@ func containerRegistryTestResponse(name string) *types.ContainerRegistryResponse
 			BlockStorage:    types.ReferenceResource{URI: bsURI},
 			AdminUser:       &types.UserCredential{Username: "admin"},
 			ConcurrentUsers: &size,
-			BillingPlan:     &types.BillingPeriodResource{BillingPeriod: "Hour"},
+			BillingPeriod:   func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
 		},
 		Status: types.ResourceStatus{
 			State: &state,
@@ -497,8 +497,8 @@ func TestContainerRegistry_FromResponseHydration(t *testing.T) {
 	if cr.SecurityGroup() != "/projects/p/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1" {
 		t.Errorf("SecurityGroup() = %q", cr.SecurityGroup())
 	}
-	if cr.PublicIP() != "/projects/p/providers/Aruba.Network/elasticips/eip-1" {
-		t.Errorf("PublicIP() = %q", cr.PublicIP())
+	if cr.ElasticIP() != "/projects/p/providers/Aruba.Network/elasticips/eip-1" {
+		t.Errorf("PublicIP() = %q", cr.ElasticIP())
 	}
 	if cr.BlockStorage() != "/projects/p/providers/Aruba.Storage/blockstorages/bs-1" {
 		t.Errorf("BlockStorage() = %q", cr.BlockStorage())
@@ -626,7 +626,7 @@ const containerRegistrySuccessBody = `{` +
 	`"securityGroup":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1"},` +
 	`"publicIp":{"uri":"/projects/p/providers/Aruba.Network/elasticips/eip-1"},` +
 	`"blockStorage":{"uri":"/projects/p/providers/Aruba.Storage/blockstorages/bs-1"},` +
-	`"adminUser":{"username":"admin"},"size":"Small","billingPlan":{"billingPeriod":"Hour"}` +
+	`"adminUser":{"username":"admin"},"size":"Small","billingPeriod":"Hour"` +
 	`},` +
 	`"status":{"state":"Active"}}`
 
@@ -658,7 +658,7 @@ func TestContainerRegistriesClientAdapter_Create_Success(t *testing.T) {
 		WithElasticIP(URI("/projects/p/providers/Aruba.Network/elasticips/eip-1")).
 		WithBlockStorage(URI("/projects/p/providers/Aruba.Storage/blockstorages/bs-1")).
 		WithAdminUsername("admin").
-		WithSizeFlavor(types.ContainerRegistrySizeFlavorSmall).
+		OfSize(types.ContainerRegistrySizeFlavorSmall).
 		WithBillingPeriod("Hour")
 
 	result, err := adapter.Create(context.Background(), cr)
@@ -777,7 +777,7 @@ func TestContainerRegistriesClientAdapter_Create_WithBodyRefs_ViaFake(t *testing
 		WithElasticIP(URI(eipURI)).
 		WithBlockStorage(URI(bsURI)).
 		WithAdminUsername("admin").
-		WithSizeFlavor(types.ContainerRegistrySizeFlavorHighPerf)
+		OfSize(types.ContainerRegistrySizeFlavorHighPerf)
 
 	_, err := adapter.Create(context.Background(), cr)
 	if err != nil {
@@ -1003,8 +1003,8 @@ func TestContainerRegistriesClientAdapter_List_TwoItems(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
-			`{"metadata":{"id":"cr-1","name":"n1","uri":"/projects/p/providers/Aruba.Container/registries/cr-1","project":{"id":"p"}},"properties":{"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},"size":"Small","billingPlan":{"billingPeriod":"Hour"}},"status":{}},`+
-			`{"metadata":{"id":"cr-2","name":"n2","uri":"/projects/p/providers/Aruba.Container/registries/cr-2","project":{"id":"p"}},"properties":{"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},"size":"Medium","billingPlan":{"billingPeriod":"Monthly"}},"status":{}}`+
+			`{"metadata":{"id":"cr-1","name":"n1","uri":"/projects/p/providers/Aruba.Container/registries/cr-1","project":{"id":"p"}},"properties":{"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},"size":"Small","billingPeriod":"Hour"},"status":{}},`+
+			`{"metadata":{"id":"cr-2","name":"n2","uri":"/projects/p/providers/Aruba.Container/registries/cr-2","project":{"id":"p"}},"properties":{"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},"size":"Medium","billingPeriod":"Monthly"},"status":{}}`+
 			`]}`)
 	})
 
@@ -1180,8 +1180,8 @@ func TestContainerRegistriesClientAdapter_List_NonTwoXX(t *testing.T) {
 func TestContainerRegistry_Accessors_ZeroValue(t *testing.T) {
 	cr := NewContainerRegistry()
 
-	if cr.PublicIP() != "" {
-		t.Errorf("PublicIP() = %q, want empty", cr.PublicIP())
+	if cr.ElasticIP() != "" {
+		t.Errorf("PublicIP() = %q, want empty", cr.ElasticIP())
 	}
 	if cr.VPC() != "" {
 		t.Errorf("VPC() = %q, want empty", cr.VPC())

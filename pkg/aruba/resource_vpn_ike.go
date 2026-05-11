@@ -2,6 +2,8 @@ package aruba
 
 import "github.com/Arubacloud/sdk-go/pkg/types"
 
+// ---- Sub-builder ----
+
 // VPNIKE is a fluent builder for the IKESettings block of a VPNTunnel.
 // Construct with NewVPNIKE() and attach via VPNTunnel.WithIKESettings.
 type VPNIKE struct {
@@ -15,13 +17,26 @@ type VPNIKE struct {
 	dpdTimeout  int32
 }
 
-func (k *VPNIKE) WithLifetimeSeconds(s int) *VPNIKE      { k.lifetime = int32(s); return k }
+// WithLifetimeSeconds sets the IKE SA lifetime in seconds.
+func (k *VPNIKE) WithLifetimeSeconds(s int) *VPNIKE { k.lifetime = int32(s); return k }
+
+// WithEncryption sets the IKE encryption algorithm.
 func (k *VPNIKE) WithEncryption(v IKEEncryption) *VPNIKE { k.encryption = &v; return k }
-func (k *VPNIKE) WithHash(v IKEHash) *VPNIKE             { k.hash = &v; return k }
-func (k *VPNIKE) WithDHGroup(v IKEDHGroup) *VPNIKE       { k.dhGroup = &v; return k }
-func (k *VPNIKE) WithDPDAction(v IKEDPDAction) *VPNIKE   { k.dpdAction = &v; return k }
-func (k *VPNIKE) WithDPDIntervalSeconds(s int) *VPNIKE   { k.dpdInterval = int32(s); return k }
-func (k *VPNIKE) WithDPDTimeoutSeconds(s int) *VPNIKE    { k.dpdTimeout = int32(s); return k }
+
+// WithHash sets the IKE integrity hash algorithm.
+func (k *VPNIKE) WithHash(v IKEHash) *VPNIKE { k.hash = &v; return k }
+
+// WithDHGroup sets the IKE Diffie-Hellman group.
+func (k *VPNIKE) WithDHGroup(v IKEDHGroup) *VPNIKE { k.dhGroup = &v; return k }
+
+// WithDPDAction sets the IKE Dead Peer Detection action.
+func (k *VPNIKE) WithDPDAction(v IKEDPDAction) *VPNIKE { k.dpdAction = &v; return k }
+
+// WithDPDIntervalSeconds sets the DPD keepalive interval in seconds.
+func (k *VPNIKE) WithDPDIntervalSeconds(s int) *VPNIKE { k.dpdInterval = int32(s); return k }
+
+// WithDPDTimeoutSeconds sets the DPD timeout in seconds.
+func (k *VPNIKE) WithDPDTimeoutSeconds(s int) *VPNIKE { k.dpdTimeout = int32(s); return k }
 
 func (k *VPNIKE) build() *types.IKESettings {
 	if k == nil {

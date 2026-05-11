@@ -105,18 +105,6 @@ type DBaaSStorageResponse struct {
 	SizeGB *int32 `json:"sizeGb,omitempty"`
 }
 
-// DBaaSBillingPlan contains the billing plan configuration
-type DBaaSBillingPlan struct {
-	// BillingPeriod Type of billing period to use (nullable)
-	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
-}
-
-// DBaaSBillingPlanResponse contains the billing plan response configuration
-type DBaaSBillingPlanResponse struct {
-	// BillingPeriod Billing period (nullable)
-	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
-}
-
 // DBaaSNetworking contains the network information to use when creating the new DBaaS
 type DBaaSNetworking struct {
 	// VPCURI The URI of the VPC resource to bind to this DBaaS instance (nullable)
@@ -194,8 +182,8 @@ type DBaaSPropertiesRequest struct {
 	// Storage Storage configuration
 	Storage *DBaaSStorage `json:"storage,omitempty"`
 
-	// BillingPlan Billing plan configuration
-	BillingPlan *DBaaSBillingPlan `json:"billingPlan,omitempty"`
+	// BillingPeriod Billing period
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 
 	// Networking Network information for the DBaaS instance
 	Networking *DBaaSNetworking `json:"networking,omitempty"`
@@ -221,8 +209,8 @@ type DBaaSPropertiesResponse struct {
 	// Storage Storage response configuration
 	Storage *DBaaSStorageResponse `json:"storage,omitempty"`
 
-	// BillingPlan Billing plan response configuration
-	BillingPlan *DBaaSBillingPlanResponse `json:"billingPlan,omitempty"`
+	// BillingPeriod Billing period
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 
 	// Autoscaling Autoscaling response configuration
 	Autoscaling *DBaaSAutoscalingResponse `json:"autoscaling,omitempty"`

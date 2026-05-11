@@ -41,8 +41,8 @@ func TestSecurityGroup_FluentSetters(t *testing.T) {
 	if tags := sg.Tags(); len(tags) != 2 || tags[0] != "security" || tags[1] != "network" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if sg.Default() != true {
-		t.Errorf("Default() = %v", sg.Default())
+	if sg.IsDefault() != true {
+		t.Errorf("Default() = %v", sg.IsDefault())
 	}
 	if sg.VPCID() != "v1" {
 		t.Errorf("VPCID() = %q", sg.VPCID())
@@ -167,8 +167,8 @@ func TestSecurityGroup_FromResponseHydration(t *testing.T) {
 	if linked := sg.LinkedResources(); len(linked) != 1 {
 		t.Errorf("LinkedResources() len = %d", len(linked))
 	}
-	if sg.Default() != true {
-		t.Errorf("Default() = %v", sg.Default())
+	if sg.IsDefault() != true {
+		t.Errorf("Default() = %v", sg.IsDefault())
 	}
 	if sg.ProjectID() != "p1" {
 		t.Errorf("ProjectID() = %q", sg.ProjectID())
@@ -199,8 +199,8 @@ func TestSecurityGroup_FromResponsePartial(t *testing.T) {
 		t.Error("empty response should yield zero accessor values")
 	}
 	// Default is plain bool: response's zero value is false → our *bool points to false
-	if sg2.Default() != false {
-		t.Errorf("Default() from zero response = %v", sg2.Default())
+	if sg2.IsDefault() != false {
+		t.Errorf("Default() from zero response = %v", sg2.IsDefault())
 	}
 }
 
@@ -621,8 +621,8 @@ func TestSecurityGroupsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 // Default() zero-value test covers the 66.7% branch.
 func TestSecurityGroup_Default_ZeroValue(t *testing.T) {
 	sg := NewSecurityGroup()
-	if sg.Default() != false {
-		t.Errorf("Default() on zero value = %v", sg.Default())
+	if sg.IsDefault() != false {
+		t.Errorf("Default() on zero value = %v", sg.IsDefault())
 	}
 }
 
@@ -864,8 +864,8 @@ func TestSecurityGroupsClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].ID() != "sg-1" || items[0].Name() != "sg-a" {
 		t.Errorf("items[0] = {%q, %q}", items[0].ID(), items[0].Name())
 	}
-	if items[0].Default() != false {
-		t.Errorf("items[0].Default() = %v", items[0].Default())
+	if items[0].IsDefault() != false {
+		t.Errorf("items[0].IsDefault() = %v", items[0].IsDefault())
 	}
 	if items[1].ID() != "sg-2" || items[1].State() != "Inactive" {
 		t.Errorf("items[1] ID=%q State=%q", items[1].ID(), items[1].State())
