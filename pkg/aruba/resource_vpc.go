@@ -33,7 +33,8 @@ func (v *VPC) AddTag(t string) *VPC          { v.addTag(t); return v }
 func (v *VPC) RemoveTag(t string) *VPC       { v.removeTag(t); return v }
 func (v *VPC) ReplaceTags(ts ...string) *VPC { v.replaceTags(ts...); return v }
 func (v *VPC) InRegion(region Region) *VPC   { v.inRegion(region); return v }
-func (v *VPC) WithDefault(b bool) *VPC       { v.defaultVPC = &b; return v }
+func (v *VPC) AsDefault() *VPC               { t := true; v.defaultVPC = &t; return v }
+func (v *VPC) NotDefault() *VPC              { f := false; v.defaultVPC = &f; return v }
 func (v *VPC) WithPreset(b bool) *VPC        { v.preset = &b; return v }
 
 // URI satisfies Ref.

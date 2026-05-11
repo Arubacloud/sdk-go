@@ -38,8 +38,11 @@ func (p *Project) ReplaceTags(ts ...string) *Project { p.replaceTags(ts...); ret
 // WithDescription sets the project description.
 func (p *Project) WithDescription(d string) *Project { p.description = &d; return p }
 
-// WithDefault marks the project as the account default.
-func (p *Project) WithDefault(b bool) *Project { p.defaultProj = b; return p }
+// AsDefault marks the project as the account default.
+func (p *Project) AsDefault() *Project { p.defaultProj = true; return p }
+
+// NotDefault marks the project as not the account default.
+func (p *Project) NotDefault() *Project { p.defaultProj = false; return p }
 
 // URI satisfies Ref; returns the server-assigned URI, or "" before the first reply.
 // ID() is promoted from responseMetadataMixin and needs no override.

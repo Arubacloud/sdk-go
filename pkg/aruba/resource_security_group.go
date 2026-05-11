@@ -30,7 +30,8 @@ func (sg *SecurityGroup) WithName(n string) *SecurityGroup        { sg.withName(
 func (sg *SecurityGroup) AddTag(t string) *SecurityGroup          { sg.addTag(t); return sg }
 func (sg *SecurityGroup) RemoveTag(t string) *SecurityGroup       { sg.removeTag(t); return sg }
 func (sg *SecurityGroup) ReplaceTags(ts ...string) *SecurityGroup { sg.replaceTags(ts...); return sg }
-func (sg *SecurityGroup) WithDefault(b bool) *SecurityGroup       { sg.defaultSG = &b; return sg }
+func (sg *SecurityGroup) AsDefault() *SecurityGroup               { t := true; sg.defaultSG = &t; return sg }
+func (sg *SecurityGroup) NotDefault() *SecurityGroup              { f := false; sg.defaultSG = &f; return sg }
 
 // URI satisfies Ref.
 func (sg *SecurityGroup) URI() string { return sg.RespURI() }
