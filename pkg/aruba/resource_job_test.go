@@ -38,7 +38,7 @@ func TestJob_FluentSetters(t *testing.T) {
 		AddTag("env:prod").
 		AddTag("schedule").
 		AddTag("env:prod"). // dedupe
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithEnabled(true)
 
 	if j.Name() != "my-job" {
@@ -47,7 +47,7 @@ func TestJob_FluentSetters(t *testing.T) {
 	if tags := j.Tags(); len(tags) != 2 || tags[0] != "env:prod" || tags[1] != "schedule" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if j.Region() != "ITBG-Bergamo" {
+	if j.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", j.Region())
 	}
 	if !j.Enabled() {
@@ -120,7 +120,7 @@ func TestJob_OneShotAt(t *testing.T) {
 	if j.Err() != nil {
 		t.Fatalf("Err() = %v", j.Err())
 	}
-	if j.JobType() != types.JobTypeOneShot {
+	if j.JobType() != JobTypeOneShot {
 		t.Errorf("JobType() = %q", j.JobType())
 	}
 	if j.scheduleAt == nil || *j.scheduleAt != "2026-05-01T12:00:00Z" {
@@ -133,7 +133,7 @@ func TestJob_WithCron(t *testing.T) {
 	if j.Err() != nil {
 		t.Fatalf("Err() = %v", j.Err())
 	}
-	if j.JobType() != types.JobTypeRecurring {
+	if j.JobType() != JobTypeRecurring {
 		t.Errorf("JobType() = %q", j.JobType())
 	}
 	if j.Cron() != "0 8 * * 1-5" {
@@ -147,7 +147,7 @@ func TestJob_RecurringUntil(t *testing.T) {
 	if j.Err() != nil {
 		t.Fatalf("Err() = %v", j.Err())
 	}
-	if j.JobType() != types.JobTypeRecurring {
+	if j.JobType() != JobTypeRecurring {
 		t.Errorf("JobType() = %q", j.JobType())
 	}
 	if j.executeUntil == nil || *j.executeUntil != "2026-12-31T00:00:00Z" {
@@ -161,7 +161,7 @@ func TestJob_WithCron_And_RecurringUntil(t *testing.T) {
 	if j.Err() != nil {
 		t.Fatalf("Cron+Until should not error, got: %v", j.Err())
 	}
-	if j.JobType() != types.JobTypeRecurring {
+	if j.JobType() != JobTypeRecurring {
 		t.Errorf("JobType() = %q", j.JobType())
 	}
 	if j.Cron() != "0 8 * * 1-5" {
@@ -209,7 +209,7 @@ func TestJobStep_Build_Basic(t *testing.T) {
 		Named("restart").
 		OfResource(URI("/projects/p/providers/Aruba.Compute/cloudServers/srv-1")).
 		WithAction("/projects/p/providers/Aruba.Compute/cloudServers/srv-1/providers/Aruba.Compute/actions/reboot").
-		WithVerb("POST").
+		WithVerb(HTTPVerbPOST).
 		WithBody(`{"force":true}`)
 
 	out := s.build()
@@ -219,7 +219,7 @@ func TestJobStep_Build_Basic(t *testing.T) {
 	if out.ResourceURI != "/projects/p/providers/Aruba.Compute/cloudServers/srv-1" {
 		t.Errorf("ResourceURI = %q", out.ResourceURI)
 	}
-	if out.HttpVerb != "POST" {
+	if out.HttpVerb != HTTPVerbPOST {
 		t.Errorf("HttpVerb = %q", out.HttpVerb)
 	}
 	if out.Body == nil || *out.Body != `{"force":true}` {
@@ -258,20 +258,20 @@ func TestJob_ToRequest_OneShot(t *testing.T) {
 	j := NewJob().
 		IntoProject(URI("/projects/p")).
 		WithName("one-shot-job").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithEnabled(true).
 		OneShotAt(ts).
 		AddStep(NewJobStep().
 			Named("step-1").
 			OfResource(URI("/projects/p/providers/Aruba.Compute/cloudServers/s-1")).
 			WithAction("/projects/p/providers/Aruba.Compute/cloudServers/s-1/actions/start").
-			WithVerb("POST"))
+			WithVerb(HTTPVerbPOST))
 
 	req := j.RawRequest()
 	if req.Metadata.Name != "one-shot-job" {
 		t.Errorf("Metadata.Name = %q", req.Metadata.Name)
 	}
-	if req.Properties.JobType != types.JobTypeOneShot {
+	if req.Properties.JobType != JobTypeOneShot {
 		t.Errorf("JobType = %q", req.Properties.JobType)
 	}
 	if req.Properties.ScheduleAt == nil || *req.Properties.ScheduleAt != "2026-05-01T12:00:00Z" {
@@ -283,7 +283,7 @@ func TestJob_ToRequest_OneShot(t *testing.T) {
 	if len(req.Properties.Steps) != 1 {
 		t.Fatalf("Steps len = %d", len(req.Properties.Steps))
 	}
-	if req.Properties.Steps[0].HttpVerb != "POST" {
+	if req.Properties.Steps[0].HttpVerb != HTTPVerbPOST {
 		t.Errorf("Step.HttpVerb = %q", req.Properties.Steps[0].HttpVerb)
 	}
 }
@@ -297,7 +297,7 @@ func TestJob_ToRequest_Recurring(t *testing.T) {
 		RecurringUntil(until)
 
 	req := j.RawRequest()
-	if req.Properties.JobType != types.JobTypeRecurring {
+	if req.Properties.JobType != JobTypeRecurring {
 		t.Errorf("JobType = %q", req.Properties.JobType)
 	}
 	if req.Properties.Cron == nil || *req.Properties.Cron != "0 8 * * 1-5" {
@@ -319,10 +319,10 @@ func jobTestResponse(name string) *types.JobResponse {
 	schedAt := "2026-05-01T12:00:00Z"
 	cronExpr := "0 8 * * 1-5"
 	execUntil := "2026-12-31T00:00:00Z"
-	jt := types.JobTypeOneShot
+	jt := JobTypeOneShot
 	resURI := "/projects/p/providers/Aruba.Compute/cloudServers/s-1"
 	actionURI := "/projects/p/providers/Aruba.Compute/cloudServers/s-1/actions/start"
-	verb := "POST"
+	verb := string(HTTPVerbPOST)
 	stepName := "step-1"
 	return &types.JobResponse{
 		Metadata: types.ResourceMetadataResponse{
@@ -330,7 +330,7 @@ func jobTestResponse(name string) *types.JobResponse {
 			URI:              &uri,
 			Name:             func() *string { s := name; return &s }(),
 			Tags:             []string{"tag1"},
-			LocationResponse: &types.LocationResponse{Value: "ITBG-Bergamo"},
+			LocationResponse: &types.LocationResponse{Value: RegionITBGBergamo},
 			ProjectResponseMetadata: &types.ProjectResponseMetadata{
 				ID: "p",
 			},
@@ -367,13 +367,13 @@ func TestJob_FromResponseHydration(t *testing.T) {
 	if j.ID() != "job-1" {
 		t.Errorf("ID() = %q", j.ID())
 	}
-	if j.Region() != "ITBG-Bergamo" {
+	if j.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", j.Region())
 	}
 	if !j.Enabled() {
 		t.Error("Enabled() should be true")
 	}
-	if j.JobType() != types.JobTypeOneShot {
+	if j.JobType() != JobTypeOneShot {
 		t.Errorf("JobType() = %q", j.JobType())
 	}
 	if j.scheduleAt == nil || *j.scheduleAt != "2026-05-01T12:00:00Z" {
@@ -395,7 +395,7 @@ func TestJob_FromResponseHydration(t *testing.T) {
 	if step.resourceURI == nil || *step.resourceURI != "/projects/p/providers/Aruba.Compute/cloudServers/s-1" {
 		t.Errorf("steps[0].resourceURI = %v", step.resourceURI)
 	}
-	if step.httpVerb == nil || *step.httpVerb != "POST" {
+	if step.httpVerb == nil || *step.httpVerb != HTTPVerbPOST {
 		t.Errorf("steps[0].httpVerb = %v", step.httpVerb)
 	}
 }
@@ -506,7 +506,7 @@ func TestJobsClientAdapter_Create_Success(t *testing.T) {
 	j := NewJob().
 		IntoProject(URI("/projects/p")).
 		WithName("my-job").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithEnabled(true).
 		OneShotAt(ts)
 
@@ -526,7 +526,7 @@ func TestJobsClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "my-job" {
 		t.Errorf("request Metadata.Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Properties.JobType != types.JobTypeOneShot {
+	if gotBody.Properties.JobType != JobTypeOneShot {
 		t.Errorf("request JobType = %q", gotBody.Properties.JobType)
 	}
 }
@@ -761,13 +761,13 @@ func TestJob_SetterDelegation(t *testing.T) {
 		AddTag("c").
 		RemoveTag("b").
 		ReplaceTags("x", "y").
-		InRegion("ITBG-Bergamo")
+		InRegion(RegionITBGBergamo)
 
 	tags := j.Tags()
 	if len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("Tags() after ReplaceTags = %v", tags)
 	}
-	if j.Region() != "ITBG-Bergamo" {
+	if j.Region() != RegionITBGBergamo {
 		t.Errorf("Region() after InRegion = %q", j.Region())
 	}
 }
@@ -828,7 +828,7 @@ func TestJob_Enabled_RequestFallback(t *testing.T) {
 func TestJob_JobType_RequestFallback(t *testing.T) {
 	ts := time.Date(2026, 5, 1, 12, 0, 0, 0, time.UTC)
 	j := NewJob().OneShotAt(ts)
-	if j.JobType() != types.JobTypeOneShot {
+	if j.JobType() != JobTypeOneShot {
 		t.Errorf("JobType() request fallback = %q", j.JobType())
 	}
 }
@@ -986,7 +986,7 @@ func TestJob_Cron_ResponseNilCron(t *testing.T) {
 	j := &Job{}
 	id := "job-x"
 	uri := "/projects/p/providers/Aruba.Schedule/jobs/job-x"
-	jt := types.JobTypeOneShot
+	jt := JobTypeOneShot
 	resp := &types.JobResponse{
 		Metadata: types.ResourceMetadataResponse{ID: &id, URI: &uri},
 		Properties: types.JobPropertiesResponse{

@@ -32,10 +32,10 @@ func TestStorageBackup_FluentSetters(t *testing.T) {
 		AddTag("backup").
 		AddTag("storage").
 		AddTag("backup"). // dedupe
-		InRegion("ITBG-Bergamo").
-		OfType(types.StorageBackupTypeFull).
+		InRegion(RegionITBGBergamo).
+		OfType(StorageBackupTypeFull).
 		WithRetentionDays(30).
-		WithBillingPeriod("Monthly")
+		WithBillingPeriod(BillingPeriodHour)
 
 	if bkp.Name() != "my-backup" {
 		t.Errorf("Name() = %q", bkp.Name())
@@ -43,16 +43,16 @@ func TestStorageBackup_FluentSetters(t *testing.T) {
 	if tags := bkp.Tags(); len(tags) != 2 || tags[0] != "backup" || tags[1] != "storage" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if bkp.Region() != "ITBG-Bergamo" {
+	if bkp.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", bkp.Region())
 	}
-	if bkp.Type() != types.StorageBackupTypeFull {
+	if bkp.Type() != StorageBackupTypeFull {
 		t.Errorf("Type() = %q", bkp.Type())
 	}
 	if bkp.RetentionDays() != 30 {
 		t.Errorf("RetentionDays() = %d", bkp.RetentionDays())
 	}
-	if bkp.BillingPeriod() != "Monthly" {
+	if bkp.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", bkp.BillingPeriod())
 	}
 	if bkp.ProjectID() != "p-1" {
@@ -149,12 +149,12 @@ func TestStorageBackup_FromVolume_EmptyURI(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestStorageBackup_OfType_Enum(t *testing.T) {
-	bkp := NewStorageBackup().OfType(types.StorageBackupTypeFull)
-	if bkp.Type() != types.StorageBackupTypeFull {
+	bkp := NewStorageBackup().OfType(StorageBackupTypeFull)
+	if bkp.Type() != StorageBackupTypeFull {
 		t.Errorf("Type() = %q", bkp.Type())
 	}
 	req := bkp.RawRequest()
-	if req.Properties.StorageBackupType != types.StorageBackupTypeFull {
+	if req.Properties.StorageBackupType != StorageBackupTypeFull {
 		t.Errorf("RawRequest().Properties.StorageBackupType = %q", req.Properties.StorageBackupType)
 	}
 }
@@ -168,11 +168,11 @@ func TestStorageBackup_ToRequestRoundTrip(t *testing.T) {
 	bkp := NewStorageBackup().
 		WithName("bkp-rt").
 		AddTag("t1").AddTag("t2").
-		InRegion("ITBG-Bergamo").
-		OfType(types.StorageBackupTypeFull).
+		InRegion(RegionITBGBergamo).
+		OfType(StorageBackupTypeFull).
 		FromVolume(URI(volURI)).
 		WithRetentionDays(14).
-		WithBillingPeriod("Hour")
+		WithBillingPeriod(BillingPeriodHour)
 
 	req := bkp.RawRequest()
 
@@ -182,10 +182,10 @@ func TestStorageBackup_ToRequestRoundTrip(t *testing.T) {
 	if len(req.Metadata.Tags) != 2 {
 		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Location.Value = %q", req.Metadata.Location.Value)
 	}
-	if req.Properties.StorageBackupType != types.StorageBackupTypeFull {
+	if req.Properties.StorageBackupType != StorageBackupTypeFull {
 		t.Errorf("StorageBackupType = %q", req.Properties.StorageBackupType)
 	}
 	if req.Properties.Origin.URI != volURI {
@@ -194,7 +194,7 @@ func TestStorageBackup_ToRequestRoundTrip(t *testing.T) {
 	if req.Properties.RetentionDays == nil || *req.Properties.RetentionDays != 14 {
 		t.Errorf("RetentionDays = %v", req.Properties.RetentionDays)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Hour" {
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 }
@@ -222,9 +222,9 @@ func TestStorageBackup_ToRequest_UnsetOptionals_AreNilOrEmpty(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func storageBackupTestResponse(id, name, uri, projectID string) *types.StorageBackupResponse {
-	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
+	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	state := "Active"
-	billingPeriod := BillingPeriod("Monthly")
+	billingPeriod := BillingPeriodHour
 	retentionDays := 30
 	originURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
 	return &types.StorageBackupResponse{
@@ -239,7 +239,7 @@ func storageBackupTestResponse(id, name, uri, projectID string) *types.StorageBa
 			},
 		},
 		Properties: types.StorageBackupPropertiesResult{
-			Type:          types.StorageBackupTypeFull,
+			Type:          StorageBackupTypeFull,
 			Origin:        types.ReferenceResource{URI: originURI},
 			RetentionDays: &retentionDays,
 			BillingPeriod: &billingPeriod,
@@ -273,7 +273,7 @@ func TestStorageBackup_FromResponseHydration(t *testing.T) {
 	if tags := bkp.Tags(); len(tags) != 1 || tags[0] != "tag1" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if bkp.Region() != "ITBG-Bergamo" {
+	if bkp.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", bkp.Region())
 	}
 	if bkp.State() != "Active" {
@@ -282,7 +282,7 @@ func TestStorageBackup_FromResponseHydration(t *testing.T) {
 	if bkp.IsDisabled() {
 		t.Error("IsDisabled() should be false")
 	}
-	if bkp.Type() != types.StorageBackupTypeFull {
+	if bkp.Type() != StorageBackupTypeFull {
 		t.Errorf("Type() = %q", bkp.Type())
 	}
 	if bkp.OriginURI() != "/projects/p/providers/Aruba.Storage/blockstorages/bs-1" {
@@ -291,7 +291,7 @@ func TestStorageBackup_FromResponseHydration(t *testing.T) {
 	if bkp.RetentionDays() != 30 {
 		t.Errorf("RetentionDays() = %d", bkp.RetentionDays())
 	}
-	if bkp.BillingPeriod() != "Monthly" {
+	if bkp.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", bkp.BillingPeriod())
 	}
 	if bkp.ProjectID() != "p1" {
@@ -452,7 +452,7 @@ func buildStorageBackupsTestAdapter(t *testing.T, handler http.HandlerFunc) *sto
 
 const storageBackupSuccessBody = `{` +
 	`"metadata":{"id":"bkp-1","name":"my-backup","uri":"/projects/p/providers/Aruba.Storage/backups/bkp-1","project":{"id":"p"}},` +
-	`"properties":{"type":"Full","sourceVolume":{"uri":"/projects/p/providers/Aruba.Storage/blockstorages/bs-1"},"retentionDays":30,"billingPeriod":"Monthly"},` +
+	`"properties":{"type":"Full","sourceVolume":{"uri":"/projects/p/providers/Aruba.Storage/blockstorages/bs-1"},"retentionDays":30,"billingPeriod":"Hour"},` +
 	`"status":{"state":"Active"}}`
 
 func TestStorageBackupsClientAdapter_Create_Success(t *testing.T) {
@@ -472,10 +472,10 @@ func TestStorageBackupsClientAdapter_Create_Success(t *testing.T) {
 	bkp := NewStorageBackup().
 		IntoProject(URI("/projects/p")).
 		WithName("my-backup").
-		InRegion("ITBG-Bergamo").
-		OfType(types.StorageBackupTypeFull).
+		InRegion(RegionITBGBergamo).
+		OfType(StorageBackupTypeFull).
 		WithRetentionDays(30).
-		WithBillingPeriod("Monthly")
+		WithBillingPeriod(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), bkp)
 	if err != nil {
@@ -493,7 +493,7 @@ func TestStorageBackupsClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "my-backup" {
 		t.Errorf("request Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Properties.StorageBackupType != types.StorageBackupTypeFull {
+	if gotBody.Properties.StorageBackupType != StorageBackupTypeFull {
 		t.Errorf("request StorageBackupType = %q", gotBody.Properties.StorageBackupType)
 	}
 }
@@ -898,13 +898,13 @@ func TestStorageBackupsClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].ID() != "bkp-1" || items[0].Name() != "n1" {
 		t.Errorf("items[0] = {%q, %q}", items[0].ID(), items[0].Name())
 	}
-	if items[0].Type() != types.StorageBackupTypeFull {
+	if items[0].Type() != StorageBackupTypeFull {
 		t.Errorf("items[0].Type() = %q", items[0].Type())
 	}
 	if items[0].RetentionDays() != 10 {
 		t.Errorf("items[0].RetentionDays() = %d", items[0].RetentionDays())
 	}
-	if items[1].ID() != "bkp-2" || items[1].Type() != types.StorageBackupTypeIncremental {
+	if items[1].ID() != "bkp-2" || items[1].Type() != StorageBackupTypeIncremental {
 		t.Errorf("items[1] ID=%q Type=%q", items[1].ID(), items[1].Type())
 	}
 	if items[0].ProjectID() != "p" {

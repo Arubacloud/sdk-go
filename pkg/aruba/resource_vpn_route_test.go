@@ -34,7 +34,7 @@ func TestVPNRoute_FluentSetters(t *testing.T) {
 		AddTag("cloud").
 		AddTag("vpn").
 		AddTag("cloud"). // dedupe
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithCloudSubnet("10.0.0.0/24").
 		WithOnPremSubnet("192.168.0.0/24")
 
@@ -44,7 +44,7 @@ func TestVPNRoute_FluentSetters(t *testing.T) {
 	if tags := r.Tags(); len(tags) != 2 || tags[0] != "cloud" || tags[1] != "vpn" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if r.Region() != "ITBG-Bergamo" {
+	if r.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", r.Region())
 	}
 	if r.CloudSubnet() != "10.0.0.0/24" {
@@ -148,7 +148,7 @@ func TestVPNRoute_ToRequestRoundTrip(t *testing.T) {
 	r := NewVPNRoute().
 		WithName("my-route").
 		AddTag("t1").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithCloudSubnet("10.1.0.0/16").
 		WithOnPremSubnet("172.16.0.0/12")
 
@@ -160,7 +160,7 @@ func TestVPNRoute_ToRequestRoundTrip(t *testing.T) {
 	if len(req.Metadata.Tags) != 1 || req.Metadata.Tags[0] != "t1" {
 		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Metadata.Location.Value = %q", req.Metadata.Location.Value)
 	}
 	if req.Properties.CloudSubnet != "10.1.0.0/16" {
@@ -234,7 +234,7 @@ func vpnRouteTestResponse(id, name, uri, projectID string) *types.VPNRouteRespon
 	state := "Active"
 	cloud := "10.0.0.0/24"
 	onPrem := "192.168.0.0/24"
-	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
+	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	return &types.VPNRouteResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:               &id,
@@ -278,7 +278,7 @@ func TestVPNRoute_FromResponseHydration(t *testing.T) {
 	if tags := r.Tags(); len(tags) != 1 || tags[0] != "route-tag" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if r.Region() != "ITBG-Bergamo" {
+	if r.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", r.Region())
 	}
 	if r.State() != "Active" {
@@ -461,7 +461,7 @@ func TestVPNRoutesClientAdapter_Create_Success(t *testing.T) {
 	route := NewVPNRoute().
 		IntoVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")).
 		WithName("my-route").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithCloudSubnet("10.0.0.0/24").
 		WithOnPremSubnet("192.168.0.0/24")
 
@@ -481,7 +481,7 @@ func TestVPNRoutesClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "my-route" {
 		t.Errorf("request Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Metadata.Location.Value != "ITBG-Bergamo" {
+	if gotBody.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("request Location = %q", gotBody.Metadata.Location.Value)
 	}
 	if gotBody.Properties.CloudSubnet != "10.0.0.0/24" {

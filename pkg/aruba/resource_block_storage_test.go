@@ -32,11 +32,11 @@ func TestBlockStorage_FluentSetters(t *testing.T) {
 		AddTag("storage").
 		AddTag("data").
 		AddTag("storage"). // dedupe
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithSizeGB(50).
-		OfType(types.BlockStorageTypeStandard).
-		WithBillingPeriod("Hour").
-		FromImage("LU22-001").
+		OfType(BlockStorageTypeStandard).
+		WithBillingPeriod(BillingPeriodHour).
+		FromImage(VolumeImageLU22001).
 		SetBootable()
 
 	if bs.Name() != "my-bs" {
@@ -45,19 +45,19 @@ func TestBlockStorage_FluentSetters(t *testing.T) {
 	if tags := bs.Tags(); len(tags) != 2 || tags[0] != "storage" || tags[1] != "data" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if bs.Region() != "ITBG-Bergamo" {
+	if bs.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", bs.Region())
 	}
 	if bs.SizeGB() != 50 {
 		t.Errorf("Size() = %d", bs.SizeGB())
 	}
-	if bs.Type() != types.BlockStorageTypeStandard {
+	if bs.Type() != BlockStorageTypeStandard {
 		t.Errorf("Type() = %q", bs.Type())
 	}
-	if bs.BillingPeriod() != "Hour" {
+	if bs.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", bs.BillingPeriod())
 	}
-	if bs.Image() != "LU22-001" {
+	if bs.Image() != VolumeImageLU22001 {
 		t.Errorf("Image() = %q", bs.Image())
 	}
 	if !bs.Bootable() {
@@ -160,13 +160,13 @@ func TestBlockStorage_ToRequestRoundTrip(t *testing.T) {
 	bs := NewBlockStorage().
 		WithName("bs-rt").
 		AddTag("t1").AddTag("t2").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithSizeGB(30).
-		OfType(types.BlockStorageTypePerformance).
-		InZone("ITBG-1").
-		WithBillingPeriod("Hour").
+		OfType(BlockStorageTypePerformance).
+		InZone(ZoneITBG1).
+		WithBillingPeriod(BillingPeriodHour).
 		SetBootable().
-		FromImage("LU22-001").
+		FromImage(VolumeImageLU22001).
 		FromSnapshot(URI(snapURI))
 
 	req := bs.RawRequest()
@@ -177,25 +177,25 @@ func TestBlockStorage_ToRequestRoundTrip(t *testing.T) {
 	if len(req.Metadata.Tags) != 2 {
 		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Location.Value = %q", req.Metadata.Location.Value)
 	}
 	if req.Properties.SizeGB != 30 {
 		t.Errorf("SizeGB = %d", req.Properties.SizeGB)
 	}
-	if req.Properties.Type != types.BlockStorageTypePerformance {
+	if req.Properties.Type != BlockStorageTypePerformance {
 		t.Errorf("Type = %q", req.Properties.Type)
 	}
-	if req.Properties.Zone == nil || *req.Properties.Zone != "ITBG-1" {
+	if req.Properties.Zone == nil || *req.Properties.Zone != ZoneITBG1 {
 		t.Errorf("Zone = %v", req.Properties.Zone)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Hour" {
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 	if req.Properties.Bootable == nil || !*req.Properties.Bootable {
 		t.Error("Bootable should be true")
 	}
-	if req.Properties.Image == nil || *req.Properties.Image != "LU22-001" {
+	if req.Properties.Image == nil || *req.Properties.Image != VolumeImageLU22001 {
 		t.Errorf("Image = %v", req.Properties.Image)
 	}
 	if req.Properties.Snapshot == nil || req.Properties.Snapshot.URI != snapURI {
@@ -204,7 +204,7 @@ func TestBlockStorage_ToRequestRoundTrip(t *testing.T) {
 }
 
 func TestBlockStorage_ToRequest_UnsetOptionals_AreNilOrZero(t *testing.T) {
-	bs := NewBlockStorage().WithName("bare").WithSizeGB(10).OfType(types.BlockStorageTypeStandard)
+	bs := NewBlockStorage().WithName("bare").WithSizeGB(10).OfType(BlockStorageTypeStandard)
 	req := bs.RawRequest()
 
 	if req.Properties.Bootable == nil || *req.Properties.Bootable != false {
@@ -226,22 +226,22 @@ func TestBlockStorage_ToRequest_UnsetOptionals_AreNilOrZero(t *testing.T) {
 
 func TestBlockStorage_ToRequest_ZonalVsRegional(t *testing.T) {
 	// Region only — Zone must be nil.
-	bs1 := NewBlockStorage().InRegion("ITBG-Bergamo")
+	bs1 := NewBlockStorage().InRegion(RegionITBGBergamo)
 	req1 := bs1.RawRequest()
 	if req1.Properties.Zone != nil {
 		t.Errorf("Zone should be nil when only region set, got %v", req1.Properties.Zone)
 	}
-	if req1.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req1.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Location.Value = %q", req1.Metadata.Location.Value)
 	}
 
 	// Region + Zone — both set.
-	bs2 := NewBlockStorage().InRegion("ITBG-Bergamo").InZone("ITBG-1")
+	bs2 := NewBlockStorage().InRegion(RegionITBGBergamo).InZone(ZoneITBG1)
 	req2 := bs2.RawRequest()
-	if req2.Properties.Zone == nil || *req2.Properties.Zone != "ITBG-1" {
+	if req2.Properties.Zone == nil || *req2.Properties.Zone != ZoneITBG1 {
 		t.Errorf("Zone = %v", req2.Properties.Zone)
 	}
-	if req2.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req2.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Location.Value = %q", req2.Metadata.Location.Value)
 	}
 }
@@ -251,11 +251,11 @@ func TestBlockStorage_ToRequest_ZonalVsRegional(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func blockStorageTestResponse(id, name, uri, projectID string) *types.BlockStorageResponse {
-	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
+	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	state := "Active"
-	img := "LU22-001"
+	img := VolumeImageLU22001
 	boot := true
-	zone := Zone("ITBG-1")
+	zone := ZoneITBG1
 	snap := &types.ReferenceResource{URI: "/projects/p/providers/Aruba.Storage/snapshots/s1"}
 	return &types.BlockStorageResponse{
 		Metadata: types.ResourceMetadataResponse{
@@ -270,9 +270,9 @@ func blockStorageTestResponse(id, name, uri, projectID string) *types.BlockStora
 		},
 		Properties: types.BlockStoragePropertiesResponse{
 			SizeGB:        20,
-			Type:          types.BlockStorageTypeStandard,
+			Type:          BlockStorageTypeStandard,
 			Zone:          zone,
-			BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
+			BillingPeriod: func() *BillingPeriod { v := BillingPeriodHour; return &v }(),
 			Image:         &img,
 			Bootable:      &boot,
 			Snapshot:      snap,
@@ -309,7 +309,7 @@ func TestBlockStorage_FromResponseHydration(t *testing.T) {
 	if tags := bs.Tags(); len(tags) != 1 || tags[0] != "tag1" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if bs.Region() != "ITBG-Bergamo" {
+	if bs.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", bs.Region())
 	}
 	if bs.State() != "Active" {
@@ -324,16 +324,16 @@ func TestBlockStorage_FromResponseHydration(t *testing.T) {
 	if bs.SizeGB() != 20 {
 		t.Errorf("Size() = %d", bs.SizeGB())
 	}
-	if bs.Type() != types.BlockStorageTypeStandard {
+	if bs.Type() != BlockStorageTypeStandard {
 		t.Errorf("Type() = %q", bs.Type())
 	}
-	if bs.Zone() != "ITBG-1" {
+	if bs.Zone() != ZoneITBG1 {
 		t.Errorf("Zone() = %q", bs.Zone())
 	}
-	if bs.BillingPeriod() != "Hour" {
+	if bs.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", bs.BillingPeriod())
 	}
-	if bs.Image() != "LU22-001" {
+	if bs.Image() != VolumeImageLU22001 {
 		t.Errorf("Image() = %q", bs.Image())
 	}
 	if !bs.Bootable() {
@@ -491,10 +491,10 @@ func TestVolumesClientAdapter_Create_Success(t *testing.T) {
 	bs := NewBlockStorage().
 		IntoProject(URI("/projects/p")).
 		WithName("my-bs").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithSizeGB(20).
-		OfType(types.BlockStorageTypeStandard).
-		WithBillingPeriod("Hour")
+		OfType(BlockStorageTypeStandard).
+		WithBillingPeriod(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), bs)
 	if err != nil {
@@ -750,7 +750,7 @@ func TestVolumesClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].SizeGB() != 10 {
 		t.Errorf("items[0].SizeGB() = %d", items[0].SizeGB())
 	}
-	if items[1].ID() != "bs-2" || items[1].Type() != types.BlockStorageTypePerformance {
+	if items[1].ID() != "bs-2" || items[1].Type() != BlockStorageTypePerformance {
 		t.Errorf("items[1] ID=%q Type=%q", items[1].ID(), items[1].Type())
 	}
 	if items[0].ProjectID() != "p" {

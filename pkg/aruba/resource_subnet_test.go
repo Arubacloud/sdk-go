@@ -32,8 +32,8 @@ func TestSubnet_FluentSetters(t *testing.T) {
 		AddTag("net").
 		AddTag("infra").
 		AddTag("net"). // dedupe
-		InRegion("ITBG-Bergamo").
-		OfType("Advanced").
+		InRegion(RegionITBGBergamo).
+		OfType(SubnetTypeAdvanced).
 		NotDefault().
 		WithCIDR("10.0.0.0/24")
 
@@ -43,10 +43,10 @@ func TestSubnet_FluentSetters(t *testing.T) {
 	if tags := s.Tags(); len(tags) != 2 || tags[0] != "net" || tags[1] != "infra" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if s.Region() != "ITBG-Bergamo" {
+	if s.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", s.Region())
 	}
-	if s.Type() != "Advanced" {
+	if s.Type() != SubnetTypeAdvanced {
 		t.Errorf("Type() = %q", s.Type())
 	}
 	if s.IsDefault() {
@@ -161,8 +161,8 @@ func TestSubnet_ToRequestRoundTrip(t *testing.T) {
 		WithName("sn-1").
 		AddTag("t1").
 		AddTag("t2").
-		InRegion("ITBG-Bergamo").
-		OfType("Basic").
+		InRegion(RegionITBGBergamo).
+		OfType(SubnetTypeBasic).
 		AsDefault().
 		WithCIDR("10.1.2.0/24").
 		WithDHCP(NewSubnetDHCP().
@@ -179,10 +179,10 @@ func TestSubnet_ToRequestRoundTrip(t *testing.T) {
 	if len(req.Metadata.Tags) != 2 {
 		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Location.Value = %q", req.Metadata.Location.Value)
 	}
-	if req.Properties.Type != types.SubnetTypeBasic {
+	if req.Properties.Type != SubnetTypeBasic {
 		t.Errorf("Properties.Type = %q", req.Properties.Type)
 	}
 	if req.Properties.Default == nil || !*req.Properties.Default {
@@ -214,7 +214,7 @@ func TestSubnet_ToRequestRoundTrip(t *testing.T) {
 
 func subnetTestResponse(id, name, uri, projectID string) *types.SubnetResponse {
 	state := "Active"
-	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
+	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	addr := "10.0.0.0/24"
 	return &types.SubnetResponse{
 		Metadata: types.ResourceMetadataResponse{
@@ -228,7 +228,7 @@ func subnetTestResponse(id, name, uri, projectID string) *types.SubnetResponse {
 			},
 		},
 		Properties: types.SubnetPropertiesResponse{
-			Type:    types.SubnetTypeAdvanced,
+			Type:    SubnetTypeAdvanced,
 			Default: true,
 			Network: &types.SubnetNetwork{Address: addr},
 			DHCP: &types.SubnetDHCP{
@@ -271,7 +271,7 @@ func TestSubnet_FromResponseHydration(t *testing.T) {
 	if tags := s.Tags(); len(tags) != 1 || tags[0] != "tag1" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if s.Region() != "ITBG-Bergamo" {
+	if s.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", s.Region())
 	}
 	if s.State() != "Active" {
@@ -283,7 +283,7 @@ func TestSubnet_FromResponseHydration(t *testing.T) {
 	if linked := s.LinkedResources(); len(linked) != 1 {
 		t.Errorf("LinkedResources() len = %d", len(linked))
 	}
-	if s.Type() != "Advanced" {
+	if s.Type() != SubnetTypeAdvanced {
 		t.Errorf("Type() = %q", s.Type())
 	}
 	if !s.IsDefault() {
@@ -450,7 +450,7 @@ func TestSubnetsClientAdapter_Create_Success(t *testing.T) {
 	s := NewSubnet().
 		IntoVPC(vpc).
 		WithName("my-subnet").
-		OfType("Advanced").
+		OfType(SubnetTypeAdvanced).
 		WithCIDR("10.0.0.0/24")
 
 	result, err := adapter.Create(context.Background(), s)
@@ -469,7 +469,7 @@ func TestSubnetsClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "my-subnet" {
 		t.Errorf("request Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Properties.Type != types.SubnetTypeAdvanced {
+	if gotBody.Properties.Type != SubnetTypeAdvanced {
 		t.Errorf("request Type = %q", gotBody.Properties.Type)
 	}
 }
