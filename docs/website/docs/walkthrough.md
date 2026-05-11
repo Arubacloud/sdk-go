@@ -107,7 +107,7 @@ subnet, err := arubaClient.FromNetwork().Subnets().Create(
         WithDHCP(aruba.NewSubnetDHCP().
             Enabled().
             WithRange("192.168.1.10", 50).
-            AddRoute("0.0.0.0/0", "192.168.1.1").
+            AddRoute("10.0.0.0/8", "192.168.1.1").
             AddDNS("8.8.8.8").
             AddDNS("8.8.4.4")))
 if err != nil {
@@ -217,18 +217,66 @@ vpcs, err := arubaClient.FromNetwork().VPCs().List(ctx, proj)
 
 ## 6. Tear Down (Reverse Order)
 
-Delete children before parents. Deleting a VPC that still has subnets or security groups will fail with a 409 or 422 from the API.
+Delete children before parents. The Aruba Cloud API returns **HTTP 400** when you try to delete a parent that still has live or still-deleting children — not 409/422. The safe pattern is to issue each child delete, then poll until the resource is fully gone (HTTP 404) before moving up the dependency chain.
+
+Use `pkg/async.WaitFor` to poll for 404 — it centralises the retry/timeout/cadence logic:
 
 ```go
-// Delete in reverse dependency order:
-// subnet → VPC → project
+import (
+    "errors"
+    "net/http"
 
+    "github.com/Arubacloud/sdk-go/pkg/aruba"
+    "github.com/Arubacloud/sdk-go/pkg/async"
+    "github.com/Arubacloud/sdk-go/pkg/types"
+)
+
+// waitUntilGone blocks until the resource's Get returns HTTP 404.
+func waitUntilGone(ctx context.Context, poll func(context.Context) error) error {
+    const gone = "gone"
+    fut := async.DefaultWaitFor(ctx,
+        func(ctx context.Context) (*types.Response[string], error) {
+            err := poll(ctx)
+            if err == nil {
+                return &types.Response[string]{}, nil // still exists
+            }
+            var httpErr *aruba.HTTPError
+            if errors.As(err, &httpErr) && httpErr.StatusCode == http.StatusNotFound {
+                return &types.Response[string]{Data: &[]string{gone}[0]}, nil // gone
+            }
+            return nil, err // transient — retry
+        },
+        func(resp *types.Response[string]) (bool, error) {
+            return resp != nil && resp.Data != nil, nil
+        },
+    )
+    _, err := fut.Await(ctx)
+    return err
+}
+```
+
+Then delete in reverse dependency order, waiting for each child to fully disappear before deleting its parent:
+
+```go
+// subnet → VPC → project
 if err := arubaClient.FromNetwork().Subnets().Delete(ctx, subnet); err != nil {
     log.Printf("Delete subnet: %v", err)
+} else {
+    waitUntilGone(ctx, func(ctx context.Context) error {
+        _, err := arubaClient.FromNetwork().Subnets().Get(ctx, subnet)
+        return err
+    })
 }
+
 if err := arubaClient.FromNetwork().VPCs().Delete(ctx, vpc); err != nil {
     log.Printf("Delete VPC: %v", err)
+} else {
+    waitUntilGone(ctx, func(ctx context.Context) error {
+        _, err := arubaClient.FromNetwork().VPCs().Get(ctx, vpc)
+        return err
+    })
 }
+
 if err := arubaClient.FromProject().Delete(ctx, proj); err != nil {
     log.Printf("Delete project: %v", err)
 }
@@ -264,7 +312,7 @@ if err := vpc.WaitUntilActive(ctx,
 }
 ```
 
-For `WaitUntilState` (any target state, not just `"Active"`), status accessors (`State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`), and the low-level `pkg/async.WaitFor` future for concurrent polling, see the [Async / Await](./async) guide.
+For `WaitUntilStates` (any target states, not just `"Active"`), status accessors (`State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`), and the low-level `pkg/async.WaitFor` future for concurrent polling, see the [Async / Await](./async) guide.
 
 ---
 
@@ -292,7 +340,7 @@ if err := rule.Err(); err != nil {
 Calling `WaitUntilActive` on a wrapper you constructed manually (without `Create`/`Get`/`Update`/`List`) returns:
 
 ```
-WaitUntilState: refresh callback not set; call Create/Get/Update/List first
+WaitUntilStates: refresh callback not set; call Create/Get/Update/List first
 ```
 
 Always use the wrapper returned by the API call, not the request builder.
@@ -319,10 +367,13 @@ See [Response Handling](./response-handling) for the full error handling guide.
 
 ## Full Example
 
-The `cmd/example/` directory in the repository contains a runnable end-to-end example demonstrating all resources:
+The `examples/all-resources/` directory in the repository contains a runnable end-to-end example demonstrating all resources:
 
 ```bash
-go run ./cmd/example/ -mode=create -clientID=… -clientSecret=…
-go run ./cmd/example/ -mode=update -clientID=… -clientSecret=…  # PROJECT_ID=…
-go run ./cmd/example/ -mode=delete -clientID=… -clientSecret=…  # PROJECT_ID=…
+go run ./examples/all-resources/ -mode=create -clientID=… -clientSecret=…
+go run ./examples/all-resources/ -mode=update -clientID=… -clientSecret=… -projectID=…
+go run ./examples/all-resources/ -mode=delete -clientID=… -clientSecret=… -projectID=…
+
+# Add -debug for verbose SDK logging:
+go run ./examples/all-resources/ -mode=create -clientID=… -clientSecret=… -debug
 ```
