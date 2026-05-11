@@ -8,8 +8,9 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
+// createSecurityGroup provisions a security group inside the VPC and waits until Ready.
 func createSecurityGroup(ctx context.Context, arubaClient aruba.Client, vpc *aruba.VPC) *aruba.SecurityGroup {
-	fmt.Println("\n--- Network: Security Group ---")
+	fmt.Println("--- Network: Security Group ---")
 
 	if err := waitForDependencies(ctx, "Security Group", map[string]waitFunc{
 		"VPC": vpc.WaitUntilActive,
@@ -26,7 +27,7 @@ func createSecurityGroup(ctx context.Context, arubaClient aruba.Client, vpc *aru
 
 	created, err := arubaClient.FromNetwork().SecurityGroups().Create(ctx, sg)
 	if err != nil {
-		log.Printf("Error creating security group: %v", err)
+		log.Fatalf("Error creating security group: %s", formatErr(err))
 		return nil
 	}
 	fmt.Printf("✓ Created Security Group: %s (ObjectID: %s)\n", created.Name(), created.ID())
@@ -38,8 +39,9 @@ func createSecurityGroup(ctx context.Context, arubaClient aruba.Client, vpc *aru
 	return created
 }
 
+// createSecurityGroup provisions a security group inside the VPC and waits until Ready.
 func createSecurityGroupIngressRule(ctx context.Context, arubaClient aruba.Client, sg *aruba.SecurityGroup, name, tag string, protocol aruba.RuleProtocol, port string) *aruba.SecurityRule {
-	fmt.Printf("\n--- Network: Security Group Rule (Ingress/%s) ---\n", name)
+	fmt.Printf("--- Network: Security Group Rule (Ingress/%s) ---\n", name)
 
 	if err := waitForDependencies(ctx, "Ingress Rule", map[string]waitFunc{
 		"Security Group": sg.WaitUntilActive,
@@ -53,7 +55,7 @@ func createSecurityGroupIngressRule(ctx context.Context, arubaClient aruba.Clien
 		WithName(name).
 		AddTag(tag).
 		AddTag("ingress").
-		InRegion("ITBG-Bergamo").
+		InRegion(defaultRegion).
 		WithDirection(aruba.RuleDirectionIngress).
 		WithProtocol(protocol).
 		WithPort(port).
@@ -61,7 +63,7 @@ func createSecurityGroupIngressRule(ctx context.Context, arubaClient aruba.Clien
 
 	created, err := arubaClient.FromNetwork().SecurityGroupRules().Create(ctx, rule)
 	if err != nil {
-		log.Printf("Error creating ingress rule %s: %v", name, err)
+		log.Fatalf("Error creating ingress rule %s: %s", name, formatErr(err))
 		return nil
 	}
 	fmt.Printf("✓ Created Ingress Rule: %s (ID: %s)\n", created.Name(), created.ID())
@@ -75,8 +77,9 @@ func createSecurityGroupIngressRule(ctx context.Context, arubaClient aruba.Clien
 
 // createSecurityGroupEgressRule allows all outbound traffic from the security group.
 // Without this, DBaaS and other resources cannot initiate outbound connections.
+// createSecurityGroup provisions a security group inside the VPC and waits until Ready.
 func createSecurityGroupEgressRule(ctx context.Context, arubaClient aruba.Client, sg *aruba.SecurityGroup) *aruba.SecurityRule {
-	fmt.Println("\n--- Network: Security Group Rule (Egress) ---")
+	fmt.Println("--- Network: Security Group Rule (Egress) ---")
 
 	if err := waitForDependencies(ctx, "Egress Rule", map[string]waitFunc{
 		"Security Group": sg.WaitUntilActive,
@@ -89,7 +92,7 @@ func createSecurityGroupEgressRule(ctx context.Context, arubaClient aruba.Client
 		IntoSecurityGroup(sg).
 		WithName(resourceName(NameSGRuleEgress)).
 		AddTag("egress").
-		InRegion("ITBG-Bergamo").
+		InRegion(defaultRegion).
 		WithDirection(aruba.RuleDirectionEgress).
 		WithProtocol(aruba.RuleProtocolANY).
 		WithPort("*").
@@ -97,7 +100,7 @@ func createSecurityGroupEgressRule(ctx context.Context, arubaClient aruba.Client
 
 	created, err := arubaClient.FromNetwork().SecurityGroupRules().Create(ctx, rule)
 	if err != nil {
-		log.Printf("Error creating egress rule: %v", err)
+		log.Fatalf("Error creating egress rule: %s", formatErr(err))
 		return nil
 	}
 	fmt.Printf("✓ Created Egress Rule: %s (ID: %s)\n", created.Name(), created.ID())
@@ -117,7 +120,7 @@ func deleteSecurityGroup(ctx context.Context, arubaClient aruba.Client, sg *arub
 
 	err := arubaClient.FromNetwork().SecurityGroups().Delete(ctx, sg)
 	if err != nil {
-		log.Printf("Error deleting security group: %v", err)
+		log.Printf("Error deleting security group: %s", formatErr(err))
 		return
 	}
 	fmt.Printf("✓ Deleted security group: %s\n", sg.ID())
@@ -127,11 +130,12 @@ func deleteSecurityGroup(ctx context.Context, arubaClient aruba.Client, sg *arub
 	})
 }
 
+// deleteSecurityGroupRule removes the security group rule.
 func deleteSecurityGroupRule(ctx context.Context, arubaClient aruba.Client, rule *aruba.SecurityRule) {
 	fmt.Println("--- Deleting Security Group Rule ---")
 
 	if err := arubaClient.FromNetwork().SecurityGroupRules().Delete(ctx, rule); err != nil {
-		log.Printf("Error deleting security rule: %v", err)
+		log.Printf("Error deleting security rule: %s", formatErr(err))
 		return
 	}
 	fmt.Printf("✓ Deleted security rule: %s\n", rule.ID())
