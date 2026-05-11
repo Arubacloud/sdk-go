@@ -25,14 +25,14 @@ func createContainerRegistry(ctx context.Context, arubaClient aruba.Client, reso
 
 	r := aruba.NewContainerRegistry().
 		IntoProject(resources.Project).
-		InRegion(defaultRegion).
+		InRegion(aruba.RegionITBGBergamo).
 		WithName(resourceName(NameContainerRegistry)).
 		WithVPC(resources.VPC).
 		WithSubnet(resources.SubnetBasic).
 		WithSecurityGroup(resources.SecurityGroup).
 		WithElasticIP(resources.ContainerRegistryEIP).
 		WithBlockStorage(resources.ContainerRegistryStorage).
-		WithBillingPeriod("Hour").
+		WithBillingPeriod(aruba.BillingPeriodHour).
 		WithAdminUsername("adminuser").
 		OfSize(aruba.ContainerRegistrySizeFlavorSmall)
 

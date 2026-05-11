@@ -16,11 +16,11 @@ func createBlockStorage(ctx context.Context, arubaClient aruba.Client, proj arub
 		WithName(name).
 		AddTag("storage").
 		AddTag("data").
-		InRegion(defaultRegion).
-		InZone(defaultZone).
+		InRegion(aruba.RegionITBGBergamo).
+		InZone(aruba.ZoneITBG1).
 		WithSizeGB(20).
 		OfType(aruba.BlockStorageTypeStandard).
-		WithBillingPeriod("Hour").
+		WithBillingPeriod(aruba.BillingPeriodHour).
 		SetBootable().
 		FromImage("LU22-001")
 

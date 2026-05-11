@@ -26,21 +26,21 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, v
 		WithName(resourceName(NameKaaS)).
 		AddTag("kubernetes").
 		AddTag("container").
-		InRegion(defaultRegion).
+		InRegion(aruba.RegionITBGBergamo).
 		WithVPC(vpc).
 		WithSubnet(subnet).
 		WithSecurityGroup(kaasSG).
 		WithNodeCIDR("172.16.0.0/16", resourceName(NameKaaSNodeCIDR)).
-		WithKubernetesVersion("1.33.2").
+		WithKubernetesVersion(aruba.KubernetesVersion1332).
 		WithPodCIDR("10.0.3.0/24").
 		WithHA(true).
-		WithBillingPeriod("Hour").
+		WithBillingPeriod(aruba.BillingPeriodHour).
 		AddNodePool(aruba.NewNodePool().
 			Named(resourceName(NameNodePool)).
 			WithCount(2).
 			WithAutoscaling(1, 5).
-			OfInstance("K2A4").
-			InZone(defaultZone))
+			OfInstance(aruba.NodePoolInstanceK2A4).
+			InZone(aruba.ZoneITBG1))
 
 	result, err := arubaClient.FromContainer().KaaS().Create(ctx, k)
 	if err != nil {
@@ -68,14 +68,14 @@ func updateKaaS(ctx context.Context, arubaClient aruba.Client, k *aruba.KaaS) {
 	k.WithName(updatedName(k.Name())).
 		ReplaceTags("kubernetes", "container", "updated").
 		WithMaxStorageQuotaGB(100).
-		WithBillingPeriod("Hour").
+		WithBillingPeriod(aruba.BillingPeriodHour).
 		WithHA(true).
 		AddNodePool(aruba.NewNodePool().
 			Named(resourceName(NameNodePool)).
 			WithCount(5).
 			WithAutoscaling(1, 5).
-			OfInstance("K2A4").
-			InZone(defaultZone))
+			OfInstance(aruba.NodePoolInstanceK2A4).
+			InZone(aruba.ZoneITBG1))
 
 	result, err := arubaClient.FromContainer().KaaS().Update(ctx, k)
 	if err != nil {
