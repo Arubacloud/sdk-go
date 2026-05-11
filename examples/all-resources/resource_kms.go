@@ -17,8 +17,8 @@ func createKMS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *a
 		WithName(resourceName(NameKMS)).
 		AddTag("security").
 		AddTag("encryption").
-		InRegion(defaultRegion).
-		WithBillingPeriod("Hour")
+		InRegion(aruba.RegionITBGBergamo).
+		WithBillingPeriod(aruba.BillingPeriodHour)
 
 	result, err := arubaClient.FromSecurity().KMS().Create(ctx, k)
 	if err != nil {

@@ -21,12 +21,12 @@ func createStorageBackup(ctx context.Context, arubaClient aruba.Client, proj aru
 
 	b := aruba.NewStorageBackup().
 		IntoProject(proj).
-		InRegion(defaultRegion).
+		InRegion(aruba.RegionITBGBergamo).
 		WithName(resourceName(NameStorageBackup)).
 		OfType(aruba.StorageBackupTypeFull).
 		FromVolume(bs).
 		WithRetentionDays(10).
-		WithBillingPeriod("Monthly")
+		WithBillingPeriod("Monthly") // no BillingPeriodMonthly constant — see pkg/aruba/aliases.go
 
 	result, err := arubaClient.FromStorage().Backups().Create(ctx, b)
 	if err != nil {

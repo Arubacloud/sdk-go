@@ -24,7 +24,7 @@ func createAdvancedSubnet(ctx context.Context, arubaClient aruba.Client, vpc *ar
 		WithName(resourceName(NameSubnetAdvanced)).
 		AddTag("network").
 		AddTag("subnet").
-		InRegion(defaultRegion).
+		InRegion(aruba.RegionITBGBergamo).
 		OfType(aruba.SubnetTypeAdvanced).
 		WithCIDR("10.0.1.0/24").
 		WithDHCP(aruba.NewSubnetDHCP().
@@ -64,7 +64,7 @@ func createBasicSubnet(ctx context.Context, arubaClient aruba.Client, vpc *aruba
 		WithName(resourceName(NameSubnetBasic)).
 		AddTag("network").
 		AddTag("subnet").
-		InRegion(defaultRegion).
+		InRegion(aruba.RegionITBGBergamo).
 		OfType(aruba.SubnetTypeBasic)
 
 	result, err := arubaClient.FromNetwork().Subnets().Create(ctx, subnet)

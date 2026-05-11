@@ -55,7 +55,7 @@ func createSecurityGroupIngressRule(ctx context.Context, arubaClient aruba.Clien
 		WithName(name).
 		AddTag(tag).
 		AddTag("ingress").
-		InRegion(defaultRegion).
+		InRegion(aruba.RegionITBGBergamo).
 		WithDirection(aruba.RuleDirectionIngress).
 		WithProtocol(protocol).
 		WithPort(port).
@@ -92,7 +92,7 @@ func createSecurityGroupEgressRule(ctx context.Context, arubaClient aruba.Client
 		IntoSecurityGroup(sg).
 		WithName(resourceName(NameSGRuleEgress)).
 		AddTag("egress").
-		InRegion(defaultRegion).
+		InRegion(aruba.RegionITBGBergamo).
 		WithDirection(aruba.RuleDirectionEgress).
 		WithProtocol(aruba.RuleProtocolANY).
 		WithPort("*").

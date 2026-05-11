@@ -19,7 +19,7 @@ func createKeyPair(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref
 		WithName(resourceName(NameKeyPair)).
 		AddTag("ssh-access").
 		AddTag("ingress").
-		InRegion(defaultRegion).
+		InRegion(aruba.RegionITBGBergamo).
 		WithPublicKey(sshPublicKey)
 
 	kp, err := arubaClient.FromCompute().KeyPairs().Create(ctx, kp)

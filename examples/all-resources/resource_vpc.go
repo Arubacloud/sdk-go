@@ -15,7 +15,7 @@ func createVPC(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *a
 		IntoProject(proj).
 		WithName(resourceName(NameVPC)).
 		AddTag("network").AddTag("infrastructure").
-		InRegion(defaultRegion).
+		InRegion(aruba.RegionITBGBergamo).
 		WithPreset(false)
 
 	created, err := arubaClient.FromNetwork().VPCs().Create(ctx, vpc)
