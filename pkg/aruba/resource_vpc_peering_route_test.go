@@ -34,10 +34,10 @@ func TestVPCPeeringRoute_FluentSetters(t *testing.T) {
 		AddTag("route").
 		AddTag("billing").
 		AddTag("route"). // dedupe
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithLocalCIDR("10.0.0.0/24").
 		WithRemoteCIDR("192.168.0.0/24").
-		WithBillingPeriod("Hourly")
+		WithBillingPeriod(BillingPeriodHour)
 
 	if r.Name() != "my-route" {
 		t.Errorf("Name() = %q", r.Name())
@@ -45,7 +45,7 @@ func TestVPCPeeringRoute_FluentSetters(t *testing.T) {
 	if tags := r.Tags(); len(tags) != 2 || tags[0] != "route" || tags[1] != "billing" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if r.Region() != "ITBG-Bergamo" {
+	if r.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", r.Region())
 	}
 	if r.LocalCIDR() != "10.0.0.0/24" {
@@ -54,7 +54,7 @@ func TestVPCPeeringRoute_FluentSetters(t *testing.T) {
 	if r.RemoteCIDR() != "192.168.0.0/24" {
 		t.Errorf("RemoteCIDR() = %q", r.RemoteCIDR())
 	}
-	if r.BillingPeriod() != "Hourly" {
+	if r.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", r.BillingPeriod())
 	}
 	if r.VPCPeeringID() != "peer-1" {
@@ -169,10 +169,10 @@ func TestVPCPeeringRoute_ToRequestRoundTrip(t *testing.T) {
 		WithName("my-route").
 		AddTag("t1").
 		AddTag("t2").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithLocalCIDR("10.0.0.0/24").
 		WithRemoteCIDR("192.168.0.0/24").
-		WithBillingPeriod("Hourly")
+		WithBillingPeriod(BillingPeriodHour)
 
 	req := r.RawRequest()
 
@@ -182,7 +182,7 @@ func TestVPCPeeringRoute_ToRequestRoundTrip(t *testing.T) {
 	if len(req.Metadata.Tags) != 2 {
 		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Metadata.Location.Value = %q", req.Metadata.Location.Value)
 	}
 	if req.Properties.LocalNetworkAddress != "10.0.0.0/24" {
@@ -191,7 +191,7 @@ func TestVPCPeeringRoute_ToRequestRoundTrip(t *testing.T) {
 	if req.Properties.RemoteNetworkAddress != "192.168.0.0/24" {
 		t.Errorf("Properties.RemoteNetworkAddress = %q", req.Properties.RemoteNetworkAddress)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Hourly" {
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("Properties.BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 
@@ -225,7 +225,7 @@ func TestVPCPeeringRoute_ToRequest_BillingPeriodAlwaysEmitted(t *testing.T) {
 
 func vpcPeeringRouteTestResponse(id, name, uri, projectID string) *types.VPCPeeringRouteResponse {
 	state := "Active"
-	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
+	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	return &types.VPCPeeringRouteResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:               &id,
@@ -240,7 +240,7 @@ func vpcPeeringRouteTestResponse(id, name, uri, projectID string) *types.VPCPeer
 		Properties: types.VPCPeeringRoutePropertiesResponse{
 			LocalNetworkAddress:  "10.0.0.0/24",
 			RemoteNetworkAddress: "192.168.0.0/24",
-			BillingPeriod:        func() *types.BillingPeriod { v := types.BillingPeriod("Hourly"); return &v }(),
+			BillingPeriod:        func() *BillingPeriod { v := BillingPeriod(BillingPeriodHour); return &v }(),
 		},
 		Status: types.ResourceStatus{
 			State: &state,
@@ -269,7 +269,7 @@ func TestVPCPeeringRoute_FromResponseHydration(t *testing.T) {
 	if tags := r.Tags(); len(tags) != 1 || tags[0] != "route-tag" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if r.Region() != "ITBG-Bergamo" {
+	if r.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", r.Region())
 	}
 	if r.State() != "Active" {
@@ -281,7 +281,7 @@ func TestVPCPeeringRoute_FromResponseHydration(t *testing.T) {
 	if r.RemoteCIDR() != "192.168.0.0/24" {
 		t.Errorf("RemoteCIDR() = %q", r.RemoteCIDR())
 	}
-	if r.BillingPeriod() != "Hourly" {
+	if r.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", r.BillingPeriod())
 	}
 	if r.ProjectID() != "p1" {
@@ -465,7 +465,7 @@ func buildVPCPeeringRouteTestAdapter(t *testing.T, handler http.HandlerFunc) *vp
 
 const vpcPeeringRouteSuccessBody = `{` +
 	`"metadata":{"id":"route-1","name":"my-route","uri":"/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1/vpcPeeringRoutes/route-1","project":{"id":"p"}},` +
-	`"properties":{"localNetworkAddress":"10.0.0.0/24","remoteNetworkAddress":"192.168.0.0/24","billingPeriod":"Hourly"},` +
+	`"properties":{"localNetworkAddress":"10.0.0.0/24","remoteNetworkAddress":"192.168.0.0/24","billingPeriod":"Hour"},` +
 	`"status":{"state":"Active"}}`
 
 func TestVPCPeeringRoutesClientAdapter_Create_Success(t *testing.T) {
@@ -486,10 +486,10 @@ func TestVPCPeeringRoutesClientAdapter_Create_Success(t *testing.T) {
 	route := NewVPCPeeringRoute().
 		IntoVPCPeering(peering).
 		WithName("my-route").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithLocalCIDR("10.0.0.0/24").
 		WithRemoteCIDR("192.168.0.0/24").
-		WithBillingPeriod("Hourly")
+		WithBillingPeriod(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), route)
 	if err != nil {
@@ -504,7 +504,7 @@ func TestVPCPeeringRoutesClientAdapter_Create_Success(t *testing.T) {
 	if result.LocalCIDR() != "10.0.0.0/24" {
 		t.Errorf("LocalCIDR() = %q", result.LocalCIDR())
 	}
-	if result.BillingPeriod() != "Hourly" {
+	if result.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", result.BillingPeriod())
 	}
 	if result.StatusCode() != http.StatusCreated {
@@ -513,13 +513,13 @@ func TestVPCPeeringRoutesClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "my-route" {
 		t.Errorf("request Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Metadata.Location.Value != "ITBG-Bergamo" {
+	if gotBody.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("request Location = %q", gotBody.Metadata.Location.Value)
 	}
 	if gotBody.Properties.LocalNetworkAddress != "10.0.0.0/24" {
 		t.Errorf("request LocalNetworkAddress = %q", gotBody.Properties.LocalNetworkAddress)
 	}
-	if gotBody.Properties.BillingPeriod == nil || *gotBody.Properties.BillingPeriod != "Hourly" {
+	if gotBody.Properties.BillingPeriod == nil || *gotBody.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("request BillingPeriod = %v", gotBody.Properties.BillingPeriod)
 	}
 }

@@ -32,8 +32,8 @@ func TestElasticIP_FluentSetters(t *testing.T) {
 		AddTag("net").
 		AddTag("public").
 		AddTag("net"). // dedupe
-		InRegion("ITBG-Bergamo").
-		WithBillingPeriod("Hour")
+		InRegion(RegionITBGBergamo).
+		WithBillingPeriod(BillingPeriodHour)
 
 	if e.Name() != "my-eip" {
 		t.Errorf("Name() = %q", e.Name())
@@ -41,10 +41,10 @@ func TestElasticIP_FluentSetters(t *testing.T) {
 	if tags := e.Tags(); len(tags) != 2 || tags[0] != "net" || tags[1] != "public" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if e.Region() != "ITBG-Bergamo" {
+	if e.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", e.Region())
 	}
-	if e.BillingPeriod() != "Hour" {
+	if e.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", e.BillingPeriod())
 	}
 	if e.ProjectID() != "proj-1" {
@@ -85,8 +85,8 @@ func TestElasticIP_ToRequestRoundTrip(t *testing.T) {
 		WithName("eip-1").
 		AddTag("t1").
 		AddTag("t2").
-		InRegion("ITBG-Bergamo").
-		WithBillingPeriod("monthly")
+		InRegion(RegionITBGBergamo).
+		WithBillingPeriod(BillingPeriodHour)
 
 	req := e.RawRequest()
 
@@ -96,10 +96,10 @@ func TestElasticIP_ToRequestRoundTrip(t *testing.T) {
 	if len(req.Metadata.Tags) != 2 {
 		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Location.Value = %q", req.Metadata.Location.Value)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "monthly" {
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 
@@ -116,7 +116,7 @@ func TestElasticIP_ToRequestRoundTrip(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func elasticIPTestResponse(id, name, uri, projectID string) *types.ElasticIPResponse {
-	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
+	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	state := "Active"
 	addr := "1.2.3.4"
 	return &types.ElasticIPResponse{
@@ -131,7 +131,7 @@ func elasticIPTestResponse(id, name, uri, projectID string) *types.ElasticIPResp
 			},
 		},
 		Properties: types.ElasticIPPropertiesResponse{
-			BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
+			BillingPeriod: func() *BillingPeriod { v := BillingPeriodHour; return &v }(),
 			Address:       &addr,
 			LinkedResources: []types.LinkedResource{
 				{URI: "/projects/p/providers/Aruba.Compute/cloudservers/cs1", StrictCorrelation: true},
@@ -166,7 +166,7 @@ func TestElasticIP_FromResponseHydration(t *testing.T) {
 	if tags := e.Tags(); len(tags) != 1 || tags[0] != "tag1" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if e.Region() != "ITBG-Bergamo" {
+	if e.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", e.Region())
 	}
 	if e.State() != "Active" {
@@ -178,7 +178,7 @@ func TestElasticIP_FromResponseHydration(t *testing.T) {
 	if linked := e.LinkedResources(); len(linked) != 1 {
 		t.Errorf("LinkedResources() len = %d", len(linked))
 	}
-	if e.BillingPeriod() != "Hour" {
+	if e.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", e.BillingPeriod())
 	}
 	if e.Address() != "1.2.3.4" {
@@ -296,8 +296,8 @@ func TestElasticIPsClientAdapter_Create_Success(t *testing.T) {
 	eip := NewElasticIP().
 		IntoProject(URI("/projects/p")).
 		WithName("my-eip").
-		InRegion("ITBG-Bergamo").
-		WithBillingPeriod("Hour")
+		InRegion(RegionITBGBergamo).
+		WithBillingPeriod(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), eip)
 	if err != nil {
@@ -315,7 +315,7 @@ func TestElasticIPsClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "my-eip" {
 		t.Errorf("request Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Properties.BillingPeriod == nil || *gotBody.Properties.BillingPeriod != "Hour" {
+	if gotBody.Properties.BillingPeriod == nil || *gotBody.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("request BillingPeriod = %v", gotBody.Properties.BillingPeriod)
 	}
 }
@@ -433,12 +433,12 @@ func TestElasticIPsClientAdapter_Update_Success(t *testing.T) {
 		_ = json.NewDecoder(r.Body).Decode(&capturedBody)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, `{"metadata":{"id":"eid","name":"renamed","uri":"/projects/p/providers/Aruba.Network/elasticIps/eid","project":{"id":"p"}},"properties":{"billingPeriod":"monthly"},"status":{}}`)
+		fmt.Fprint(w, `{"metadata":{"id":"eid","name":"renamed","uri":"/projects/p/providers/Aruba.Network/elasticIps/eid","project":{"id":"p"}},"properties":{"billingPeriod":"Hour"},"status":{}}`)
 	})
 
 	e := &ElasticIP{}
 	e.fromResponse(elasticIPTestResponse("eid", "orig", "/projects/p/providers/Aruba.Network/elasticIps/eid", "p"))
-	e.WithName("renamed").WithBillingPeriod("monthly")
+	e.WithName("renamed").WithBillingPeriod(BillingPeriodHour)
 
 	result, err := adapter.Update(context.Background(), e)
 	if err != nil {
@@ -532,7 +532,7 @@ func TestElasticIPsClientAdapter_List_TwoItems(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
 			`{"metadata":{"id":"e1","name":"n1","uri":"/projects/p/providers/Aruba.Network/elasticIps/e1","project":{"id":"p"}},"properties":{"billingPeriod":"Hour"},"status":{}},`+
-			`{"metadata":{"id":"e2","name":"n2","uri":"/projects/p/providers/Aruba.Network/elasticIps/e2","project":{"id":"p"}},"properties":{"billingPeriod":"monthly"},"status":{}}`+
+			`{"metadata":{"id":"e2","name":"n2","uri":"/projects/p/providers/Aruba.Network/elasticIps/e2","project":{"id":"p"}},"properties":{"billingPeriod":"Hour"},"status":{}}`+
 			`]}`)
 	})
 
@@ -550,10 +550,10 @@ func TestElasticIPsClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].ID() != "e1" || items[0].Name() != "n1" {
 		t.Errorf("items[0] = {%q, %q}", items[0].ID(), items[0].Name())
 	}
-	if items[0].BillingPeriod() != "Hour" {
+	if items[0].BillingPeriod() != BillingPeriodHour {
 		t.Errorf("items[0].BillingPeriod() = %q", items[0].BillingPeriod())
 	}
-	if items[1].ID() != "e2" || items[1].BillingPeriod() != "monthly" {
+	if items[1].ID() != "e2" || items[1].BillingPeriod() != BillingPeriodHour {
 		t.Errorf("items[1] ID=%q BillingPeriod=%q", items[1].ID(), items[1].BillingPeriod())
 	}
 	if items[0].ProjectID() != "p" {

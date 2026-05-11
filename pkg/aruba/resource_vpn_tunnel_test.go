@@ -33,10 +33,10 @@ func TestVPNTunnel_FluentSetters(t *testing.T) {
 		AddTag("vpn").
 		AddTag("ipsec").
 		AddTag("vpn"). // dedupe
-		InRegion("ITBG-Bergamo").
-		OfType("ipsec").
-		WithVPNClientProtocol("ikev2").
-		WithBillingPeriod("monthly").
+		InRegion(RegionITBGBergamo).
+		OfType(VPNTypeSiteToSite).
+		WithVPNClientProtocol(VPNClientProtocolIKEv2).
+		WithBillingPeriod(BillingPeriodHour).
 		WithPeerClientPublicIP("1.2.3.4")
 
 	if tun.Name() != "my-tunnel" {
@@ -45,16 +45,16 @@ func TestVPNTunnel_FluentSetters(t *testing.T) {
 	if tags := tun.Tags(); len(tags) != 2 || tags[0] != "vpn" || tags[1] != "ipsec" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if tun.Region() != "ITBG-Bergamo" {
+	if tun.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", tun.Region())
 	}
-	if tun.VPNType() != "ipsec" {
+	if tun.VPNType() != VPNTypeSiteToSite {
 		t.Errorf("VPNType() = %q", tun.VPNType())
 	}
-	if tun.VPNClientProtocol() != "ikev2" {
+	if tun.VPNClientProtocol() != VPNClientProtocolIKEv2 {
 		t.Errorf("VPNClientProtocol() = %q", tun.VPNClientProtocol())
 	}
-	if tun.BillingPeriod() != "monthly" {
+	if tun.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", tun.BillingPeriod())
 	}
 	if tun.PeerClientPublicIP() != "1.2.3.4" {
@@ -199,10 +199,10 @@ func TestVPNIPConfig_Build_NilReceiver(t *testing.T) {
 func TestVPNIKE_FluentSetters(t *testing.T) {
 	ike := NewVPNIKE().
 		WithLifetimeSeconds(28800).
-		WithEncryption(types.IKEEncryptionAES256).
-		WithHash(types.IKEHashSHA256).
-		WithDHGroup(types.IKEDHGroup14).
-		WithDPDAction(types.IKEDPDActionRestart).
+		WithEncryption(IKEEncryptionAES256).
+		WithHash(IKEHashSHA256).
+		WithDHGroup(IKEDHGroup14).
+		WithDPDAction(IKEDPDActionRestart).
 		WithDPDIntervalSeconds(30).
 		WithDPDTimeoutSeconds(120)
 
@@ -213,16 +213,16 @@ func TestVPNIKE_FluentSetters(t *testing.T) {
 	if built.Lifetime != 28800 {
 		t.Errorf("Lifetime = %d", built.Lifetime)
 	}
-	if built.Encryption == nil || *built.Encryption != types.IKEEncryptionAES256 {
+	if built.Encryption == nil || *built.Encryption != IKEEncryptionAES256 {
 		t.Errorf("Encryption = %v", built.Encryption)
 	}
-	if built.Hash == nil || *built.Hash != types.IKEHashSHA256 {
+	if built.Hash == nil || *built.Hash != IKEHashSHA256 {
 		t.Errorf("Hash = %v", built.Hash)
 	}
-	if built.DHGroup == nil || *built.DHGroup != types.IKEDHGroup14 {
+	if built.DHGroup == nil || *built.DHGroup != IKEDHGroup14 {
 		t.Errorf("DHGroup = %v", built.DHGroup)
 	}
-	if built.DPDAction == nil || *built.DPDAction != types.IKEDPDActionRestart {
+	if built.DPDAction == nil || *built.DPDAction != IKEDPDActionRestart {
 		t.Errorf("DPDAction = %v", built.DPDAction)
 	}
 	if built.DPDInterval != 30 {
@@ -261,9 +261,9 @@ func TestVPNIKE_Build_NilReceiver(t *testing.T) {
 func TestVPNESP_FluentSetters(t *testing.T) {
 	esp := NewVPNESP().
 		WithLifetimeSeconds(3600).
-		WithEncryption(types.ESPEncryptionAES128).
-		WithHash(types.ESPHashSHA1).
-		WithPFS(types.ESPPFSGroupDHGroup14)
+		WithEncryption(ESPEncryptionAES128).
+		WithHash(ESPHashSHA1).
+		WithPFS(ESPPFSGroupDHGroup14)
 
 	built := esp.build()
 	if built == nil {
@@ -272,13 +272,13 @@ func TestVPNESP_FluentSetters(t *testing.T) {
 	if built.Lifetime != 3600 {
 		t.Errorf("Lifetime = %d", built.Lifetime)
 	}
-	if built.Encryption == nil || *built.Encryption != types.ESPEncryptionAES128 {
+	if built.Encryption == nil || *built.Encryption != ESPEncryptionAES128 {
 		t.Errorf("Encryption = %v", built.Encryption)
 	}
-	if built.Hash == nil || *built.Hash != types.ESPHashSHA1 {
+	if built.Hash == nil || *built.Hash != ESPHashSHA1 {
 		t.Errorf("Hash = %v", built.Hash)
 	}
-	if built.PFS == nil || *built.PFS != types.ESPPFSGroupDHGroup14 {
+	if built.PFS == nil || *built.PFS != ESPPFSGroupDHGroup14 {
 		t.Errorf("PFS = %v", built.PFS)
 	}
 }
@@ -349,10 +349,10 @@ func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
 	tun := NewVPNTunnel().
 		WithName("my-tunnel").
 		AddTag("t1").
-		InRegion("ITBG-Bergamo").
-		OfType("ipsec").
-		WithVPNClientProtocol("ikev2").
-		WithBillingPeriod("monthly").
+		InRegion(RegionITBGBergamo).
+		OfType(VPNTypeSiteToSite).
+		WithVPNClientProtocol(VPNClientProtocolIKEv2).
+		WithBillingPeriod(BillingPeriodHour).
 		WithPeerClientPublicIP("1.2.3.4").
 		WithIPConfig(
 			NewVPNIPConfig().
@@ -362,14 +362,14 @@ func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
 		WithIKESettings(
 			NewVPNIKE().
 				WithLifetimeSeconds(28800).
-				WithEncryption(types.IKEEncryptionAES256).
-				WithHash(types.IKEHashSHA256).
-				WithDHGroup(types.IKEDHGroup14),
+				WithEncryption(IKEEncryptionAES256).
+				WithHash(IKEHashSHA256).
+				WithDHGroup(IKEDHGroup14),
 		).
 		WithESPSettings(
 			NewVPNESP().
 				WithLifetimeSeconds(3600).
-				WithPFS(types.ESPPFSGroupEnable),
+				WithPFS(ESPPFSGroupEnable),
 		).
 		WithPSKSettings(
 			NewVPNPSK().
@@ -385,16 +385,16 @@ func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
 	if len(req.Metadata.Tags) != 1 {
 		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Metadata.Location.Value = %q", req.Metadata.Location.Value)
 	}
-	if req.Properties.VPNType == nil || *req.Properties.VPNType != "ipsec" {
+	if req.Properties.VPNType == nil || *req.Properties.VPNType != VPNTypeSiteToSite {
 		t.Errorf("Properties.VPNType = %v", req.Properties.VPNType)
 	}
-	if req.Properties.VPNClientProtocol == nil || *req.Properties.VPNClientProtocol != "ikev2" {
+	if req.Properties.VPNClientProtocol == nil || *req.Properties.VPNClientProtocol != VPNClientProtocolIKEv2 {
 		t.Errorf("Properties.VPNClientProtocol = %v", req.Properties.VPNClientProtocol)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "monthly" {
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 	if cs := req.Properties.VPNClientSettings; cs == nil {
@@ -406,7 +406,7 @@ func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
 		if cs.IKE == nil {
 			t.Fatal("IKE must be set")
 		}
-		if cs.IKE.Encryption == nil || *cs.IKE.Encryption != types.IKEEncryptionAES256 {
+		if cs.IKE.Encryption == nil || *cs.IKE.Encryption != IKEEncryptionAES256 {
 			t.Errorf("IKE.Encryption = %v", cs.IKE.Encryption)
 		}
 		if cs.ESP == nil {
@@ -485,11 +485,11 @@ func TestVPNTunnel_AbsorbsSubBuilderErrors(t *testing.T) {
 
 func vpnTunnelTestResponse(id, name, uri, projectID string) *types.VPNTunnelResponse {
 	state := "Active"
-	vpnType := types.VPNType("ipsec")
-	proto := types.VPNClientProtocol("ikev2")
-	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
+	vpnType := VPNType(VPNTypeSiteToSite)
+	proto := VPNClientProtocolIKEv2
+	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	peerIP := "1.2.3.4"
-	bp := BillingPeriod("monthly")
+	bp := BillingPeriodHour
 	return &types.VPNTunnelResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:               &id,
@@ -536,19 +536,19 @@ func TestVPNTunnel_FromResponseHydration(t *testing.T) {
 	if tags := tun.Tags(); len(tags) != 1 || tags[0] != "vpn-tag" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if tun.Region() != "ITBG-Bergamo" {
+	if tun.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", tun.Region())
 	}
 	if tun.State() != "Active" {
 		t.Errorf("State() = %q", tun.State())
 	}
-	if tun.VPNType() != "ipsec" {
+	if tun.VPNType() != VPNTypeSiteToSite {
 		t.Errorf("VPNType() = %q", tun.VPNType())
 	}
-	if tun.VPNClientProtocol() != "ikev2" {
+	if tun.VPNClientProtocol() != VPNClientProtocolIKEv2 {
 		t.Errorf("VPNClientProtocol() = %q", tun.VPNClientProtocol())
 	}
-	if tun.BillingPeriod() != "monthly" {
+	if tun.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", tun.BillingPeriod())
 	}
 	if tun.PeerClientPublicIP() != "1.2.3.4" {
@@ -702,7 +702,7 @@ const vpnTunnelSuccessBody = `{` +
 	`"project":{"id":"p"}` +
 	`},` +
 	`"properties":{` +
-	`"vpnType":"ipsec","vpnClientProtocol":"ikev2"` +
+	`"vpnType":"Site-To-Site","vpnClientProtocol":"ikev2"` +
 	`},` +
 	`"status":{"state":"Active"}}`
 
@@ -720,10 +720,10 @@ func TestVPNTunnelsClientAdapter_Create_Success(t *testing.T) {
 	tun := NewVPNTunnel().
 		IntoProject(URI("/projects/p")).
 		WithName("my-tunnel").
-		InRegion("ITBG-Bergamo").
-		OfType("ipsec").
-		WithVPNClientProtocol("ikev2").
-		WithIKESettings(NewVPNIKE().WithEncryption(types.IKEEncryptionAES256))
+		InRegion(RegionITBGBergamo).
+		OfType(VPNTypeSiteToSite).
+		WithVPNClientProtocol(VPNClientProtocolIKEv2).
+		WithIKESettings(NewVPNIKE().WithEncryption(IKEEncryptionAES256))
 
 	result, err := adapter.Create(context.Background(), tun)
 	if err != nil {
@@ -741,10 +741,10 @@ func TestVPNTunnelsClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "my-tunnel" {
 		t.Errorf("request Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Metadata.Location.Value != "ITBG-Bergamo" {
+	if gotBody.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("request Location = %q", gotBody.Metadata.Location.Value)
 	}
-	if gotBody.Properties.VPNType == nil || *gotBody.Properties.VPNType != "ipsec" {
+	if gotBody.Properties.VPNType == nil || *gotBody.Properties.VPNType != VPNTypeSiteToSite {
 		t.Errorf("request VPNType = %v", gotBody.Properties.VPNType)
 	}
 	if gotBody.Properties.VPNClientSettings == nil || gotBody.Properties.VPNClientSettings.IKE == nil {
