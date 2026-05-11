@@ -107,10 +107,6 @@ const (
 	BillingPeriodHour BillingPeriod = "Hour"
 )
 
-type BillingPeriodResource struct {
-	BillingPeriod BillingPeriod `json:"billingPeriod"`
-}
-
 type ReferenceResource struct {
 	URI string `json:"uri"`
 }

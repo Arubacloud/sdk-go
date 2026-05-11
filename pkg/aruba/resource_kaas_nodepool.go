@@ -2,6 +2,8 @@ package aruba
 
 import "github.com/Arubacloud/sdk-go/pkg/types"
 
+// ---- Sub-builder ----
+
 // NodePool is a fluent builder for a single KaaS node pool.
 // Construct with NewNodePool() and attach via KaaS.AddNodePool.
 //
@@ -20,10 +22,19 @@ type NodePool struct {
 	autoscaling *bool
 }
 
-func (n *NodePool) Named(name string) *NodePool                    { n.name = &name; return n }
-func (n *NodePool) OfInstance(instance NodePoolInstance) *NodePool { n.instance = &instance; return n }
-func (n *NodePool) InZone(zone Zone) *NodePool                     { n.zone = &zone; return n }
+// Named sets the node pool name.
+func (n *NodePool) Named(name string) *NodePool { n.name = &name; return n }
 
+// OfInstance sets the machine instance type for this node pool.
+func (n *NodePool) OfInstance(instance NodePoolInstance) *NodePool {
+	n.instance = &instance
+	return n
+}
+
+// InZone sets the availability zone (dataCenter) for this node pool.
+func (n *NodePool) InZone(zone Zone) *NodePool { n.zone = &zone; return n }
+
+// WithCount sets the fixed number of nodes in this pool. Mutually exclusive with WithAutoscaling.
 func (n *NodePool) WithCount(count int) *NodePool { v := int32(count); n.nodes = &v; return n }
 
 // WithAutoscaling enables autoscaling with the given min and max node counts.

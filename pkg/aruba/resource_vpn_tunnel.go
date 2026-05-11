@@ -9,8 +9,14 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
-// VPNTunnel is the wrapper for an Aruba Cloud VPN Tunnel (direct child of a project).
-// Construct with NewVPNTunnel() and bind it via IntoProject(project).
+// ---- Wrapper ----
+
+// VPNTunnel is the wrapper for an Aruba Cloud VPN Tunnel (a child of a Project).
+// Construct with aruba.NewVPNTunnel() and bind it via IntoProject(project).
+//
+// Wraps types.VPNTunnelResponse / types.VPNTunnelRequest. The wrapper carries
+// pointer-typed private fields so unset values round-trip through
+// the JSON layer correctly.
 type VPNTunnel struct {
 	errMixin
 	metadataMixin
@@ -34,22 +40,45 @@ type VPNTunnel struct {
 	response *types.VPNTunnelResponse
 }
 
-// Setters (chainable).
+// Setters — chainable, general → specific
 
-func (t *VPNTunnel) IntoProject(p Ref) *VPNTunnel          { t.intoProject(p); return t }
-func (t *VPNTunnel) WithName(n string) *VPNTunnel          { t.withName(n); return t }
-func (t *VPNTunnel) AddTag(tag string) *VPNTunnel          { t.addTag(tag); return t }
-func (t *VPNTunnel) RemoveTag(tag string) *VPNTunnel       { t.removeTag(tag); return t }
+// IntoProject binds this VPNTunnel to its parent project. Required before Create.
+func (t *VPNTunnel) IntoProject(p Ref) *VPNTunnel { t.intoProject(p); return t }
+
+// WithName sets the resource name. Required by the API.
+func (t *VPNTunnel) WithName(n string) *VPNTunnel { t.withName(n); return t }
+
+// AddTag appends a tag for filtering and accounting.
+func (t *VPNTunnel) AddTag(tag string) *VPNTunnel { t.addTag(tag); return t }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (t *VPNTunnel) RemoveTag(tag string) *VPNTunnel { t.removeTag(tag); return t }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (t *VPNTunnel) ReplaceTags(tags ...string) *VPNTunnel { t.replaceTags(tags...); return t }
-func (t *VPNTunnel) InRegion(r Region) *VPNTunnel          { t.inRegion(r); return t }
-func (t *VPNTunnel) OfType(s VPNType) *VPNTunnel           { t.vpnType = &s; return t }
+
+// InRegion sets the region for this resource.
+func (t *VPNTunnel) InRegion(r Region) *VPNTunnel { t.inRegion(r); return t }
+
+// OfType sets the VPN tunnel type (Site-to-Site, Client, etc.).
+func (t *VPNTunnel) OfType(s VPNType) *VPNTunnel { t.vpnType = &s; return t }
+
+// WithVPNClientProtocol sets the client VPN protocol (e.g. IKEv2).
 func (t *VPNTunnel) WithVPNClientProtocol(s VPNClientProtocol) *VPNTunnel {
 	t.vpnClientProtocol = &s
 	return t
 }
-func (t *VPNTunnel) WithBillingPeriod(s BillingPeriod) *VPNTunnel { t.billingPeriod = &s; return t }
-func (t *VPNTunnel) WithPeerClientPublicIP(s string) *VPNTunnel   { t.peerClientPublicIP = &s; return t }
 
+// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
+func (t *VPNTunnel) WithBillingPeriod(s BillingPeriod) *VPNTunnel { t.billingPeriod = &s; return t }
+
+// WithPeerClientPublicIP sets the public IP of the remote VPN peer.
+func (t *VPNTunnel) WithPeerClientPublicIP(s string) *VPNTunnel {
+	t.peerClientPublicIP = &s
+	return t
+}
+
+// WithIPConfig attaches a VPNIPConfig sub-builder. Errors from c are drained into the tunnel.
 func (t *VPNTunnel) WithIPConfig(c *VPNIPConfig) *VPNTunnel {
 	t.ipConfig = c
 	if c != nil {
@@ -60,6 +89,7 @@ func (t *VPNTunnel) WithIPConfig(c *VPNIPConfig) *VPNTunnel {
 	return t
 }
 
+// WithIKESettings attaches an IKE settings sub-builder. Errors from k are drained into the tunnel.
 func (t *VPNTunnel) WithIKESettings(k *VPNIKE) *VPNTunnel {
 	t.ike = k
 	if k != nil {
@@ -70,6 +100,7 @@ func (t *VPNTunnel) WithIKESettings(k *VPNIKE) *VPNTunnel {
 	return t
 }
 
+// WithESPSettings attaches an ESP settings sub-builder. Errors from e are drained into the tunnel.
 func (t *VPNTunnel) WithESPSettings(e *VPNESP) *VPNTunnel {
 	t.esp = e
 	if e != nil {
@@ -80,6 +111,7 @@ func (t *VPNTunnel) WithESPSettings(e *VPNESP) *VPNTunnel {
 	return t
 }
 
+// WithPSKSettings attaches a PSK settings sub-builder. Errors from p are drained into the tunnel.
 func (t *VPNTunnel) WithPSKSettings(p *VPNPSK) *VPNTunnel {
 	t.psk = p
 	if p != nil {
@@ -89,6 +121,8 @@ func (t *VPNTunnel) WithPSKSettings(p *VPNPSK) *VPNTunnel {
 	}
 	return t
 }
+
+// Getters — general → specific
 
 // URI satisfies Ref.
 func (t *VPNTunnel) URI() string { return t.RespURI() }
@@ -104,30 +138,48 @@ func (t *VPNTunnel) RawRequest() types.VPNTunnelRequest { return t.toRequest() }
 
 // Read accessors.
 
+// IPConfig returns the current IP configuration sub-builder (nil if unset).
 func (t *VPNTunnel) IPConfig() *VPNIPConfig { return t.ipConfig }
-func (t *VPNTunnel) IKE() *VPNIKE           { return t.ike }
-func (t *VPNTunnel) ESP() *VPNESP           { return t.esp }
-func (t *VPNTunnel) PSK() *VPNPSK           { return t.psk }
+
+// IKE returns the IKE settings sub-builder (nil if unset).
+func (t *VPNTunnel) IKE() *VPNIKE { return t.ike }
+
+// ESP returns the ESP settings sub-builder (nil if unset).
+func (t *VPNTunnel) ESP() *VPNESP { return t.esp }
+
+// PSK returns the Pre-Shared Key settings sub-builder (nil if unset).
+func (t *VPNTunnel) PSK() *VPNPSK { return t.psk }
+
+// VPNType returns the configured VPN tunnel type ("" if unset).
 func (t *VPNTunnel) VPNType() VPNType {
 	if t.vpnType == nil {
 		return ""
 	}
 	return *t.vpnType
 }
+
+// VPNClientProtocol returns the configured client VPN protocol ("" if unset).
 func (t *VPNTunnel) VPNClientProtocol() VPNClientProtocol {
 	if t.vpnClientProtocol == nil {
 		return ""
 	}
 	return *t.vpnClientProtocol
 }
+
+// BillingPeriod returns the configured billing period ("" if unset).
 func (t *VPNTunnel) BillingPeriod() BillingPeriod {
 	if t.billingPeriod == nil {
 		return ""
 	}
 	return *t.billingPeriod
 }
+
+// PeerClientPublicIP returns the peer client public IP address, or "" if unset.
 func (t *VPNTunnel) PeerClientPublicIP() string { return vpnTunnelDerefString(t.peerClientPublicIP) }
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (t *VPNTunnel) toRequest() types.VPNTunnelRequest {
 	props := types.VPNTunnelPropertiesRequest{
 		VPNType:           t.vpnType,
@@ -149,9 +201,7 @@ func (t *VPNTunnel) toRequest() types.VPNTunnelRequest {
 		}
 		props.VPNClientSettings = cs
 	}
-	if t.billingPeriod != nil {
-		props.BillingPlan = &types.BillingPeriodResource{BillingPeriod: *t.billingPeriod}
-	}
+	props.BillingPeriod = defaultBillingPeriod(t.billingPeriod)
 	return types.VPNTunnelRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: t.toMetadata(),
@@ -161,6 +211,7 @@ func (t *VPNTunnel) toRequest() types.VPNTunnelRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (t *VPNTunnel) fromResponse(resp *types.VPNTunnelResponse) {
 	if resp == nil {
 		return
@@ -185,9 +236,8 @@ func (t *VPNTunnel) fromResponse(resp *types.VPNTunnelResponse) {
 		p := *resp.Properties.VPNClientProtocol
 		t.vpnClientProtocol = &p
 	}
-	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != "" {
-		bp := resp.Properties.BillingPlan.BillingPeriod
-		t.billingPeriod = &bp
+	if resp.Properties.BillingPeriod != nil {
+		t.billingPeriod = resp.Properties.BillingPeriod
 	}
 	if cs := resp.Properties.VPNClientSettings; cs != nil && cs.PeerClientPublicIP != nil {
 		v := *cs.PeerClientPublicIP
@@ -217,10 +267,11 @@ var vpnTunnelTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// vpnTunnelLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type vpnTunnelLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.VPNTunnelList], error)
 	Get(ctx context.Context, projectID, vpnTunnelID string, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error)
@@ -229,7 +280,15 @@ type vpnTunnelLowLevelClient interface {
 	Delete(ctx context.Context, projectID, vpnTunnelID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// vpnTunnelsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates VPNTunnel ↔ types.VPNTunnelRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type vpnTunnelsClientAdapter struct{ low vpnTunnelLowLevelClient }
+
+var _ VPNTunnelsClient = (*vpnTunnelsClientAdapter)(nil)
 
 func newVPNTunnelsClientAdapter(rest *restclient.Client) *vpnTunnelsClientAdapter {
 	if rest == nil {
@@ -238,6 +297,7 @@ func newVPNTunnelsClientAdapter(rest *restclient.Client) *vpnTunnelsClientAdapte
 	return &vpnTunnelsClientAdapter{low: network.NewVPNTunnelsClientImpl(rest)}
 }
 
+// Create posts a new VPNTunnel to the API and hydrates the wrapper from the response.
 func (a *vpnTunnelsClientAdapter) Create(ctx context.Context, t *VPNTunnel, opts ...CallOption) (*VPNTunnel, error) {
 	if err := t.Err(); err != nil {
 		return t, err
@@ -271,6 +331,7 @@ func (a *vpnTunnelsClientAdapter) Create(ctx context.Context, t *VPNTunnel, opts
 	return t, nil
 }
 
+// Get fetches a VPNTunnel by Ref and returns a freshly hydrated wrapper.
 func (a *vpnTunnelsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*VPNTunnel, error) {
 	projectID, vpnTunnelID, err := vpnTunnelIDsFromRef(ref)
 	if err != nil {
@@ -306,6 +367,7 @@ func (a *vpnTunnelsClientAdapter) Get(ctx context.Context, ref Ref, opts ...Call
 	return out, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *vpnTunnelsClientAdapter) Update(ctx context.Context, t *VPNTunnel, opts ...CallOption) (*VPNTunnel, error) {
 	if err := t.Err(); err != nil {
 		return t, err
@@ -342,6 +404,7 @@ func (a *vpnTunnelsClientAdapter) Update(ctx context.Context, t *VPNTunnel, opts
 	return t, nil
 }
 
+// Delete removes the VPNTunnel identified by Ref.
 func (a *vpnTunnelsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, vpnTunnelID, err := vpnTunnelIDsFromRef(ref)
 	if err != nil {
@@ -359,6 +422,7 @@ func (a *vpnTunnelsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...C
 	return nil
 }
 
+// List returns a paginated list of VPNTunnel in the given parent scope.
 func (a *vpnTunnelsClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*VPNTunnel], error) {
 	projectID, err := projectIDFromRef(project)
 	if err != nil {

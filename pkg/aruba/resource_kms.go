@@ -9,6 +9,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // KMS is the wrapper for an Aruba Cloud Key Management Service instance
 // (a direct child of a Project). Construct with aruba.NewKMS() and bind it
 // via IntoProject(project).
@@ -34,39 +36,47 @@ type KMS struct {
 	response *types.KmsResponse
 }
 
-// ---------------------------------------------------------------------------
-// Standard setters
-// ---------------------------------------------------------------------------
+// Setters — chainable, general → specific
 
-func (k *KMS) IntoProject(p Ref) *KMS                 { k.intoProject(p); return k }
-func (k *KMS) WithName(n string) *KMS                 { k.withName(n); return k }
-func (k *KMS) AddTag(t string) *KMS                   { k.addTag(t); return k }
-func (k *KMS) RemoveTag(t string) *KMS                { k.removeTag(t); return k }
-func (k *KMS) ReplaceTags(ts ...string) *KMS          { k.replaceTags(ts...); return k }
-func (k *KMS) InRegion(region Region) *KMS            { k.inRegion(region); return k }
+// IntoProject binds this KMS to its parent project. Required before Create.
+func (k *KMS) IntoProject(p Ref) *KMS { k.intoProject(p); return k }
+
+// WithName sets the resource name. Required by the API.
+func (k *KMS) WithName(n string) *KMS { k.withName(n); return k }
+
+// AddTag appends a tag for filtering and accounting.
+func (k *KMS) AddTag(t string) *KMS { k.addTag(t); return k }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (k *KMS) RemoveTag(t string) *KMS { k.removeTag(t); return k }
+
+// ReplaceTags replaces the entire tag set with the given values.
+func (k *KMS) ReplaceTags(ts ...string) *KMS { k.replaceTags(ts...); return k }
+
+// InRegion sets the region for this resource.
+func (k *KMS) InRegion(region Region) *KMS { k.inRegion(region); return k }
+
+// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
 func (k *KMS) WithBillingPeriod(p BillingPeriod) *KMS { k.billingPeriod = &p; return k }
 
-// ---------------------------------------------------------------------------
-// Ref + ID accessors
-// ---------------------------------------------------------------------------
+// Getters — general → specific
 
-func (k *KMS) URI() string   { return k.RespURI() }
+// URI satisfies Ref by returning the server-assigned canonical URI, or "" if Create hasn't run yet.
+func (k *KMS) URI() string { return k.RespURI() }
+
+// KMSID satisfies withKMSID so child wrappers can extract this ID by typed assertion.
 func (k *KMS) KMSID() string { return k.ID() }
 
-// ---------------------------------------------------------------------------
-// Raw accessors
-// ---------------------------------------------------------------------------
+// Raw shadows responseMetadataMixin.Raw() with the typed KMS response.
+func (k *KMS) Raw() *types.KmsResponse { return k.response }
 
-func (k *KMS) Raw() *types.KmsResponse      { return k.response }
+// RawRequest returns what toRequest() would emit right now.
 func (k *KMS) RawRequest() types.KmsRequest { return k.toRequest() }
 
-// ---------------------------------------------------------------------------
-// Response-preferring accessors
-// ---------------------------------------------------------------------------
-
+// BillingPeriod returns the billing period for this KMS instance, or "" if unset.
 func (k *KMS) BillingPeriod() BillingPeriod {
-	if k.response != nil && k.response.Properties.BillingPeriod != "" {
-		return k.response.Properties.BillingPeriod
+	if k.response != nil && k.response.Properties.BillingPeriod != nil {
+		return *k.response.Properties.BillingPeriod
 	}
 	if k.billingPeriod != nil {
 		return *k.billingPeriod
@@ -74,14 +84,12 @@ func (k *KMS) BillingPeriod() BillingPeriod {
 	return ""
 }
 
-// ---------------------------------------------------------------------------
-// Wire conversions
-// ---------------------------------------------------------------------------
+// Wire converters
 
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (k *KMS) toRequest() types.KmsRequest {
-	props := types.KmsPropertiesRequest{}
-	if k.billingPeriod != nil {
-		props.BillingPeriod = *k.billingPeriod
+	props := types.KmsPropertiesRequest{
+		BillingPeriod: defaultBillingPeriod(k.billingPeriod),
 	}
 	return types.KmsRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
@@ -92,6 +100,7 @@ func (k *KMS) toRequest() types.KmsRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (k *KMS) fromResponse(resp *types.KmsResponse) {
 	if resp == nil {
 		return
@@ -108,9 +117,8 @@ func (k *KMS) fromResponse(resp *types.KmsResponse) {
 	k.setStatus(&resp.Status)
 	k.setTerminalStates(kmsTerminalStates)
 
-	if resp.Properties.BillingPeriod != "" {
-		v := resp.Properties.BillingPeriod
-		k.billingPeriod = &v
+	if resp.Properties.BillingPeriod != nil {
+		k.billingPeriod = resp.Properties.BillingPeriod
 	}
 
 	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
@@ -129,10 +137,6 @@ func kmsDeref(p *string) string {
 	}
 	return *p
 }
-
-// ---------------------------------------------------------------------------
-// kmsIDsFromRef
-// ---------------------------------------------------------------------------
 
 func kmsIDsFromRef(ref Ref) (projectID, kmsID string, err error) {
 	kid, ok := extractID(ref, func(r Ref) (string, bool) {
@@ -162,10 +166,11 @@ var kmsTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// kmsLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type kmsLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KmsList], error)
 	Get(ctx context.Context, projectID, kmsID string, params *types.RequestParameters) (*types.Response[types.KmsResponse], error)
@@ -174,6 +179,12 @@ type kmsLowLevelClient interface {
 	Delete(ctx context.Context, projectID, kmsID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// kmsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates KMS ↔ types.KmsRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type kmsClientAdapter struct {
 	low kmsLowLevelClient
 }
@@ -187,6 +198,7 @@ func newKMSClientAdapter(rest *restclient.Client) *kmsClientAdapter {
 	}
 }
 
+// Create posts a new KMS to the API and hydrates the wrapper from the response.
 func (a *kmsClientAdapter) Create(ctx context.Context, k *KMS, opts ...CallOption) (*KMS, error) {
 	if err := k.Err(); err != nil {
 		return k, err
@@ -220,6 +232,7 @@ func (a *kmsClientAdapter) Create(ctx context.Context, k *KMS, opts ...CallOptio
 	return k, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *kmsClientAdapter) Update(ctx context.Context, k *KMS, opts ...CallOption) (*KMS, error) {
 	if err := k.Err(); err != nil {
 		return k, err
@@ -256,6 +269,7 @@ func (a *kmsClientAdapter) Update(ctx context.Context, k *KMS, opts ...CallOptio
 	return k, nil
 }
 
+// Get fetches a KMS by Ref and returns a freshly hydrated wrapper.
 func (a *kmsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*KMS, error) {
 	projectID, kmsID, err := kmsIDsFromRef(ref)
 	if err != nil {
@@ -292,6 +306,7 @@ func (a *kmsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption)
 	return out, nil
 }
 
+// Delete removes the KMS identified by Ref.
 func (a *kmsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, kmsID, err := kmsIDsFromRef(ref)
 	if err != nil {
@@ -309,6 +324,7 @@ func (a *kmsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOpti
 	return nil
 }
 
+// List returns a paginated list of KMS in the given parent scope.
 func (a *kmsClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOption) (*List[*KMS], error) {
 	projectID, err := projectIDFromRef(parent)
 	if err != nil {

@@ -9,16 +9,20 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // Metric is the wrapper for an Aruba Cloud metric.
 // Instances are read-only and can only be obtained via Client.FromMetric().Metrics().List.
 // There is no factory, no setters, and no individual-fetch endpoint.
 type Metric struct {
+	projectScopedMixin    // ProjectID() — back-filled from parent Ref at List time
 	responseMetadataMixin // shadowed: ID(), Raw(); no metadata envelope on the wire
 	httpEnvelopeMixin     // RawHTTP(), StatusCode(), Headers(), RawError()
 
-	projectID string // back-filled from the parent Ref at List time
-	response  *types.MetricResponse
+	response *types.MetricResponse
 }
+
+// Getters — general → specific
 
 // ID returns the metric reference ID, or "" when unset. Shadows responseMetadataMixin.ID().
 func (m *Metric) ID() string {
@@ -33,10 +37,6 @@ func (m *Metric) URI() string { return "" }
 
 // Raw returns the underlying wire payload. Shadows responseMetadataMixin.Raw().
 func (m *Metric) Raw() *types.MetricResponse { return m.response }
-
-// ProjectID returns the project that owns this metric.
-// The value is back-filled from the parent Ref used in the List call.
-func (m *Metric) ProjectID() string { return m.projectID }
 
 // ReferenceID returns the metric reference ID, or "" when unset.
 func (m *Metric) ReferenceID() string {
@@ -87,15 +87,24 @@ func (m *Metric) fromResponse(resp *types.MetricResponse) {
 	m.response = resp
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// metricsLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type metricsLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.MetricListResponse], error)
 }
 
+// ---- Adapter ----
+
+// metricsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates Metric ↔ types.MetricResponse and surfaces HTTP
+// errors as *aruba.HTTPError.
 type metricsClientAdapter struct{ low metricsLowLevelClient }
+
+var _ MetricsClient = (*metricsClientAdapter)(nil)
 
 func newMetricsClientAdapter(rest *restclient.Client) *metricsClientAdapter {
 	if rest == nil {
@@ -104,6 +113,7 @@ func newMetricsClientAdapter(rest *restclient.Client) *metricsClientAdapter {
 	return &metricsClientAdapter{low: metric.NewMetricsClientImpl(rest)}
 }
 
+// List returns a paginated list of Metric in the given parent scope.
 func (a *metricsClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*Metric], error) {
 	projectID, err := projectIDFromRef(project)
 	if err != nil {

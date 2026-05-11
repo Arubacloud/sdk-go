@@ -9,6 +9,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // KaaS is the wrapper for an Aruba Cloud Kubernetes-as-a-Service cluster
 // (a direct child of a Project). Construct with aruba.NewKaaS() and bind it
 // via IntoProject(project), WithVPC(vpc), WithSubnet(subnet), etc.
@@ -61,20 +63,43 @@ type KaaS struct {
 	response *types.KaaSResponse
 }
 
-// ---------------------------------------------------------------------------
-// Standard setters
-// ---------------------------------------------------------------------------
+// Setters — chainable, general → specific
 
-func (k *KaaS) IntoProject(p Ref) *KaaS                         { k.intoProject(p); return k }
-func (k *KaaS) WithName(n string) *KaaS                         { k.withName(n); return k }
-func (k *KaaS) AddTag(t string) *KaaS                           { k.addTag(t); return k }
-func (k *KaaS) RemoveTag(t string) *KaaS                        { k.removeTag(t); return k }
-func (k *KaaS) ReplaceTags(ts ...string) *KaaS                  { k.replaceTags(ts...); return k }
-func (k *KaaS) InRegion(region Region) *KaaS                    { k.inRegion(region); return k }
-func (k *KaaS) WithKubernetesVersion(v KubernetesVersion) *KaaS { k.kubernetesVersion = &v; return k }
-func (k *KaaS) WithPodCIDR(cidr string) *KaaS                   { k.podCIDR = &cidr; return k }
-func (k *KaaS) WithHA(enabled bool) *KaaS                       { k.ha = &enabled; return k }
-func (k *KaaS) WithBillingPeriod(period BillingPeriod) *KaaS    { k.billingPeriod = &period; return k }
+// IntoProject binds this KaaS to its parent project. Required before Create.
+func (k *KaaS) IntoProject(p Ref) *KaaS { k.intoProject(p); return k }
+
+// WithName sets the resource name. Required by the API.
+func (k *KaaS) WithName(n string) *KaaS { k.withName(n); return k }
+
+// AddTag appends a tag for filtering and accounting.
+func (k *KaaS) AddTag(t string) *KaaS { k.addTag(t); return k }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (k *KaaS) RemoveTag(t string) *KaaS { k.removeTag(t); return k }
+
+// ReplaceTags replaces the entire tag set with the given values.
+func (k *KaaS) ReplaceTags(ts ...string) *KaaS { k.replaceTags(ts...); return k }
+
+// InRegion sets the region for this resource.
+func (k *KaaS) InRegion(region Region) *KaaS { k.inRegion(region); return k }
+
+// WithKubernetesVersion sets the Kubernetes version for the cluster.
+func (k *KaaS) WithKubernetesVersion(v KubernetesVersion) *KaaS {
+	k.kubernetesVersion = &v
+	return k
+}
+
+// WithPodCIDR sets the pod CIDR block for the cluster network.
+func (k *KaaS) WithPodCIDR(cidr string) *KaaS { k.podCIDR = &cidr; return k }
+
+// WithHA enables or disables high-availability mode for the control plane.
+func (k *KaaS) WithHA(enabled bool) *KaaS { k.ha = &enabled; return k }
+
+// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
+func (k *KaaS) WithBillingPeriod(period BillingPeriod) *KaaS {
+	k.billingPeriod = &period
+	return k
+}
 
 // WithSecurityGroup attaches a SecurityGroup to the cluster. The KaaS API
 // stores only the SG's name (not its URI), so the supplied Ref must be a
@@ -107,8 +132,8 @@ func (k *KaaS) WithNodeCIDR(address, name string) *KaaS {
 	return k
 }
 
-// WithStorageGB sets the maximum cumulative volume size in GB.
-func (k *KaaS) WithStorageGB(gb int) *KaaS {
+// WithMaxStorageQuotaGB sets the maximum cumulative volume size in GB.
+func (k *KaaS) WithMaxStorageQuotaGB(gb int) *KaaS {
 	v := int32(gb)
 	k.storageMaxCumulative = &v
 	return k
@@ -127,11 +152,10 @@ func (k *KaaS) WithAPIServerAccessProfile(p *types.APIServerAccessProfilePropert
 	return k
 }
 
-// ---------------------------------------------------------------------------
-// Body-ref setters
-// ---------------------------------------------------------------------------
+// WithVPC binds the KaaS cluster to the given VPC by URI. Required before Create.
+func (k *KaaS) WithVPC(v Ref) *KaaS { return k.setSingleRef("WithVPC", v, &k.vpcRef) }
 
-func (k *KaaS) WithVPC(v Ref) *KaaS    { return k.setSingleRef("WithVPC", v, &k.vpcRef) }
+// WithSubnet binds the KaaS cluster to the given subnet by URI. Required before Create.
 func (k *KaaS) WithSubnet(s Ref) *KaaS { return k.setSingleRef("WithSubnet", s, &k.subnetRef) }
 
 func (k *KaaS) setSingleRef(label string, ref Ref, dst **string) *KaaS {
@@ -143,10 +167,6 @@ func (k *KaaS) setSingleRef(label string, ref Ref, dst **string) *KaaS {
 	*dst = &uri
 	return k
 }
-
-// ---------------------------------------------------------------------------
-// Node pool sub-builder
-// ---------------------------------------------------------------------------
 
 // AddNodePool appends np to the cluster's node pool list.
 // Errors accumulated on np are drained into k at attachment time.
@@ -160,10 +180,6 @@ func (k *KaaS) AddNodePool(np *NodePool) *KaaS {
 	k.nodePools = append(k.nodePools, np)
 	return k
 }
-
-// ---------------------------------------------------------------------------
-// Action method
-// ---------------------------------------------------------------------------
 
 // DownloadKubeconfig downloads the kubeconfig for this cluster and returns it
 // as raw bytes (the YAML content). Requires the wrapper to have been obtained
@@ -202,24 +218,21 @@ func (k *KaaS) preActionCheck(label string) error {
 	return nil
 }
 
-// ---------------------------------------------------------------------------
-// Ref + ID accessors
-// ---------------------------------------------------------------------------
+// Getters — general → specific
 
-func (k *KaaS) URI() string    { return k.RespURI() }
+// URI satisfies Ref by returning the server-assigned canonical URI, or "" if Create hasn't run yet.
+func (k *KaaS) URI() string { return k.RespURI() }
+
+// KaaSID satisfies withKaaSID so child wrappers can extract this ID by typed assertion.
 func (k *KaaS) KaaSID() string { return k.ID() }
 
-// ---------------------------------------------------------------------------
-// Raw accessors
-// ---------------------------------------------------------------------------
+// Raw shadows responseMetadataMixin.Raw() with the typed KaaS response.
+func (k *KaaS) Raw() *types.KaaSResponse { return k.response }
 
-func (k *KaaS) Raw() *types.KaaSResponse      { return k.response }
+// RawRequest returns what toRequest() would emit right now.
 func (k *KaaS) RawRequest() types.KaaSRequest { return k.toRequest() }
 
-// ---------------------------------------------------------------------------
-// Response-preferring accessors
-// ---------------------------------------------------------------------------
-
+// VPC returns the VPC URI for this cluster, or "" if unset.
 func (k *KaaS) VPC() string {
 	if k.response != nil && k.response.Properties.VPC.URI != nil {
 		return *k.response.Properties.VPC.URI
@@ -227,6 +240,7 @@ func (k *KaaS) VPC() string {
 	return kaasDeref(k.vpcRef)
 }
 
+// Subnet returns the subnet URI for this cluster, or "" if unset.
 func (k *KaaS) Subnet() string {
 	if k.response != nil && k.response.Properties.Subnet.URI != nil {
 		return *k.response.Properties.Subnet.URI
@@ -234,6 +248,7 @@ func (k *KaaS) Subnet() string {
 	return kaasDeref(k.subnetRef)
 }
 
+// SecurityGroupName returns the associated security group name, or "" if unset.
 func (k *KaaS) SecurityGroupName() string {
 	if k.response != nil && k.response.Properties.SecurityGroup.Name != nil {
 		return *k.response.Properties.SecurityGroup.Name
@@ -241,6 +256,7 @@ func (k *KaaS) SecurityGroupName() string {
 	return kaasDeref(k.securityGroupName)
 }
 
+// KubernetesVersion returns the Kubernetes version configured for this cluster, or "" if unset.
 func (k *KaaS) KubernetesVersion() KubernetesVersion {
 	if k.response != nil && k.response.Properties.KubernetesVersion.Value != nil {
 		return KubernetesVersion(*k.response.Properties.KubernetesVersion.Value)
@@ -251,9 +267,10 @@ func (k *KaaS) KubernetesVersion() KubernetesVersion {
 	return *k.kubernetesVersion
 }
 
+// BillingPeriod returns the billing period for this cluster, or "" if unset.
 func (k *KaaS) BillingPeriod() BillingPeriod {
-	if k.response != nil && k.response.Properties.BillingPlan != nil && k.response.Properties.BillingPlan.BillingPeriod != nil {
-		return *k.response.Properties.BillingPlan.BillingPeriod
+	if k.response != nil && k.response.Properties.BillingPeriod != nil {
+		return *k.response.Properties.BillingPeriod
 	}
 	if k.billingPeriod == nil {
 		return ""
@@ -261,10 +278,21 @@ func (k *KaaS) BillingPeriod() BillingPeriod {
 	return *k.billingPeriod
 }
 
-// ---------------------------------------------------------------------------
-// Wire conversions
-// ---------------------------------------------------------------------------
+// MaxStorageQuotaGB returns the maximum cumulative volume size in GB.
+// Returns 0 if not set.
+func (k *KaaS) MaxStorageQuotaGB() int {
+	if k.response != nil && k.response.Properties.Storage != nil && k.response.Properties.Storage.MaxCumulativeVolumeSize != nil {
+		return int(*k.response.Properties.Storage.MaxCumulativeVolumeSize)
+	}
+	if k.storageMaxCumulative == nil {
+		return 0
+	}
+	return int(*k.storageMaxCumulative)
+}
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (k *KaaS) toRequest() types.KaaSRequest {
 	props := types.KaaSPropertiesRequest{
 		VPC:    types.ReferenceResource{URI: kaasDeref(k.vpcRef)},
@@ -283,14 +311,8 @@ func (k *KaaS) toRequest() types.KaaSRequest {
 			}
 			return ""
 		}()},
-		HA: k.ha,
-		BillingPlan: func() types.BillingPeriodResource {
-			var bp BillingPeriod
-			if k.billingPeriod != nil {
-				bp = *k.billingPeriod
-			}
-			return types.BillingPeriodResource{BillingPeriod: bp}
-		}(),
+		HA:            k.ha,
+		BillingPeriod: defaultBillingPeriod(k.billingPeriod),
 	}
 	if k.storageMaxCumulative != nil {
 		props.Storage = types.StorageKubernetes{MaxCumulativeVolumeSize: k.storageMaxCumulative}
@@ -344,8 +366,7 @@ func (k *KaaS) toUpdateRequest() types.KaaSUpdateRequest {
 		props.Storage = &types.StorageKubernetes{MaxCumulativeVolumeSize: k.storageMaxCumulative}
 	}
 	if k.billingPeriod != nil {
-		v := *k.billingPeriod
-		props.BillingPlan = &types.BillingPeriodResource{BillingPeriod: v}
+		props.BillingPeriod = k.billingPeriod
 	}
 	return types.KaaSUpdateRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
@@ -356,6 +377,7 @@ func (k *KaaS) toUpdateRequest() types.KaaSUpdateRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (k *KaaS) fromResponse(resp *types.KaaSResponse) {
 	if resp == nil {
 		return
@@ -418,10 +440,8 @@ func (k *KaaS) kaasHydrateCacheFromProps(props types.KaaSPropertiesResponse) {
 		v := *props.Storage.MaxCumulativeVolumeSize
 		k.storageMaxCumulative = &v
 	}
-	if props.BillingPlan != nil && props.BillingPlan.BillingPeriod != nil &&
-		*props.BillingPlan.BillingPeriod != "" {
-		v := *props.BillingPlan.BillingPeriod
-		k.billingPeriod = &v
+	if props.BillingPeriod != nil {
+		k.billingPeriod = props.BillingPeriod
 	}
 	if props.Identity != nil && props.Identity.ClientID != nil {
 		v := *props.Identity.ClientID
@@ -477,10 +497,6 @@ func kaasDeref(p *string) string {
 	return *p
 }
 
-// ---------------------------------------------------------------------------
-// kaasIDsFromRef
-// ---------------------------------------------------------------------------
-
 func kaasIDsFromRef(ref Ref) (projectID, kaasID string, err error) {
 	kid, ok := extractID(ref, func(r Ref) (string, bool) {
 		if w, ok := r.(withKaaSID); ok {
@@ -503,10 +519,7 @@ func kaasIDsFromRef(ref Ref) (projectID, kaasID string, err error) {
 	return pid, kid, nil
 }
 
-// ---------------------------------------------------------------------------
-// kaasActions — internal interface for action dispatch
-// ---------------------------------------------------------------------------
-
+// kaasActions is the contract for KaaS lifecycle action operations (Start, Stop, etc.).
 type kaasActions interface {
 	downloadKubeconfig(ctx context.Context, projectID, kaasID string, rp *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error)
 }
@@ -517,10 +530,11 @@ var kaasTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// kaasLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type kaasLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KaaSList], error)
 	Get(ctx context.Context, projectID, kaasID string, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
@@ -530,6 +544,12 @@ type kaasLowLevelClient interface {
 	DownloadKubeconfig(ctx context.Context, projectID, kaasID string, params *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error)
 }
 
+// ---- Adapter ----
+
+// kaasClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates KaaS ↔ types.KaaSRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type kaasClientAdapter struct {
 	low kaasLowLevelClient
 }
@@ -543,6 +563,7 @@ func newKaaSClientAdapter(rest *restclient.Client) *kaasClientAdapter {
 	return &kaasClientAdapter{low: container.NewKaaSClientImpl(rest)}
 }
 
+// Create posts a new KaaS to the API and hydrates the wrapper from the response.
 func (a *kaasClientAdapter) Create(ctx context.Context, k *KaaS, opts ...CallOption) (*KaaS, error) {
 	if err := k.Err(); err != nil {
 		return k, err
@@ -577,6 +598,7 @@ func (a *kaasClientAdapter) Create(ctx context.Context, k *KaaS, opts ...CallOpt
 	return k, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *kaasClientAdapter) Update(ctx context.Context, k *KaaS, opts ...CallOption) (*KaaS, error) {
 	if err := k.Err(); err != nil {
 		return k, err
@@ -614,6 +636,7 @@ func (a *kaasClientAdapter) Update(ctx context.Context, k *KaaS, opts ...CallOpt
 	return k, nil
 }
 
+// Get fetches a KaaS by Ref and returns a freshly hydrated wrapper.
 func (a *kaasClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*KaaS, error) {
 	projectID, kaasID, err := kaasIDsFromRef(ref)
 	if err != nil {
@@ -651,6 +674,7 @@ func (a *kaasClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption
 	return out, nil
 }
 
+// Delete removes the KaaS identified by Ref.
 func (a *kaasClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, kaasID, err := kaasIDsFromRef(ref)
 	if err != nil {
@@ -668,6 +692,7 @@ func (a *kaasClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOpt
 	return nil
 }
 
+// List returns a paginated list of KaaS in the given parent scope.
 func (a *kaasClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOption) (*List[*KaaS], error) {
 	projectID, err := projectIDFromRef(parent)
 	if err != nil {

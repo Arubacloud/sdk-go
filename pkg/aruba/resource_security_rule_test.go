@@ -482,10 +482,10 @@ func TestSecurityRuleIDsFromRef_BadURI_MissingAll(t *testing.T) {
 // securityGroupRulesClientAdapter — CRUD integration tests
 // --------------------------------------------------------------------------
 
-func buildSecurityRuleTestAdapter(t *testing.T, handler http.HandlerFunc) *securityGroupRulesClientAdapter {
+func buildSecurityRuleTestAdapter(t *testing.T, handler http.HandlerFunc) *securityRulesClientAdapter {
 	t.Helper()
 	server := testutil.NewMockServer(t, handler)
-	return newSecurityGroupRulesClientAdapter(testutil.NewClient(t, server.URL))
+	return newSecurityRulesClientAdapter(testutil.NewClient(t, server.URL))
 }
 
 const securityRuleSuccessBody = `{` +
@@ -951,7 +951,7 @@ func TestSecurityGroupRulesClientAdapter_Get_TransportError(t *testing.T) {
 		conn, _, _ := hj.Hijack()
 		conn.Close()
 	})
-	adapter := newSecurityGroupRulesClientAdapter(testutil.NewClient(t, server.URL))
+	adapter := newSecurityRulesClientAdapter(testutil.NewClient(t, server.URL))
 	result, err := adapter.Get(context.Background(), URI("/projects/p/network/vpcs/v/security-groups/sg/security-rules/r"))
 	if err == nil {
 		t.Fatal("expected transport error")
@@ -985,7 +985,7 @@ func TestSecurityGroupRulesClientAdapter_Update_TransportError(t *testing.T) {
 		conn, _, _ := hj.Hijack()
 		conn.Close()
 	})
-	adapter := newSecurityGroupRulesClientAdapter(testutil.NewClient(t, server.URL))
+	adapter := newSecurityRulesClientAdapter(testutil.NewClient(t, server.URL))
 	rule := &SecurityRule{}
 	rule.fromResponse(securityRuleTestResponse("r-1", "rule-a", "/projects/p/network/vpcs/v/securitygroups/sg/securityrules/r-1", "p"))
 	_, err := adapter.Update(context.Background(), rule)
@@ -1004,7 +1004,7 @@ func TestSecurityGroupRulesClientAdapter_Delete_TransportError(t *testing.T) {
 		conn, _, _ := hj.Hijack()
 		conn.Close()
 	})
-	adapter := newSecurityGroupRulesClientAdapter(testutil.NewClient(t, server.URL))
+	adapter := newSecurityRulesClientAdapter(testutil.NewClient(t, server.URL))
 	err := adapter.Delete(context.Background(), URI("/projects/p/network/vpcs/v/security-groups/sg/security-rules/r"))
 	if err == nil {
 		t.Fatal("expected transport error")
@@ -1036,7 +1036,7 @@ func TestSecurityGroupRulesClientAdapter_List_TransportError(t *testing.T) {
 		conn, _, _ := hj.Hijack()
 		conn.Close()
 	})
-	adapter := newSecurityGroupRulesClientAdapter(testutil.NewClient(t, server.URL))
+	adapter := newSecurityRulesClientAdapter(testutil.NewClient(t, server.URL))
 	_, err := adapter.List(context.Background(), URI("/projects/p/network/vpcs/v/security-groups/sg"))
 	if err == nil {
 		t.Fatal("expected transport error")
@@ -1137,7 +1137,7 @@ func TestSecurityGroupRulesClientAdapter_Get_InjectsRefresh(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, securityRuleSuccessBody)
 	})
-	adapter := newSecurityGroupRulesClientAdapter(testutil.NewClient(t, server.URL))
+	adapter := newSecurityRulesClientAdapter(testutil.NewClient(t, server.URL))
 	rule, err := adapter.Get(context.Background(), URI("/projects/p/network/vpcs/v/securitygroups/sg/security-rules/r-1"))
 	if err != nil {
 		t.Fatalf("Get error: %v", err)

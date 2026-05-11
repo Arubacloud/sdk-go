@@ -10,16 +10,20 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // AuditEvent is the wrapper for an Aruba Cloud audit event.
 // Instances are read-only and can only be obtained via Client.FromAudit().Events().List.
 // There is no factory, no setters, and no individual-fetch endpoint.
 type AuditEvent struct {
+	projectScopedMixin    // ProjectID() — back-filled from parent Ref at List time
 	responseMetadataMixin // shadowed: ID(), URI(), CreatedAt(), Raw()
 	httpEnvelopeMixin     // RawHTTP(), StatusCode(), Headers(), RawError()
 
-	projectID string            // back-filled from the parent Ref at List time
-	response  *types.AuditEvent // backs Raw() and all field accessors
+	response *types.AuditEvent // backs Raw() and all field accessors
 }
+
+// Getters — general → specific
 
 // ID returns the event identifier (from Event.ID), or "" when unset.
 // Shadows responseMetadataMixin.ID().
@@ -43,10 +47,6 @@ func (e *AuditEvent) CreatedAt() time.Time {
 
 // Raw returns the underlying wire payload. Shadows responseMetadataMixin.Raw().
 func (e *AuditEvent) Raw() *types.AuditEvent { return e.response }
-
-// ProjectID returns the project that owns this event.
-// The value is back-filled from the parent Ref used in the List call.
-func (e *AuditEvent) ProjectID() string { return e.projectID }
 
 // SeverityLevel returns the event severity level, or "" when unset.
 func (e *AuditEvent) SeverityLevel() string {
@@ -191,15 +191,24 @@ func (e *AuditEvent) fromResponse(resp *types.AuditEvent) {
 	e.response = resp
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// auditEventsLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type auditEventsLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.AuditEventListResponse], error)
 }
 
+// ---- Adapter ----
+
+// auditEventsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates AuditEvent ↔ types.AuditEventListResponse and surfaces HTTP
+// errors as *aruba.HTTPError.
 type auditEventsClientAdapter struct{ low auditEventsLowLevelClient }
+
+var _ EventsClient = (*auditEventsClientAdapter)(nil)
 
 func newAuditEventsClientAdapter(rest *restclient.Client) *auditEventsClientAdapter {
 	if rest == nil {
@@ -208,6 +217,7 @@ func newAuditEventsClientAdapter(rest *restclient.Client) *auditEventsClientAdap
 	return &auditEventsClientAdapter{low: audit.NewEventsClientImpl(rest)}
 }
 
+// List returns a paginated list of AuditEvent in the given parent scope.
 func (a *auditEventsClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*AuditEvent], error) {
 	projectID, err := projectIDFromRef(project)
 	if err != nil {

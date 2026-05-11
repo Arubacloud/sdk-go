@@ -9,10 +9,13 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // LoadBalancer is the wrapper for an Aruba Cloud Load Balancer (a direct child of a Project).
 // LoadBalancer is read-only: instances are obtained via Client.FromNetwork().LoadBalancers().Get/List.
 // There is no NewLoadBalancer() factory — the resource cannot be created or mutated through the SDK.
 type LoadBalancer struct {
+	errMixin
 	metadataMixin         // Name(), Tags() — populated from response metadata
 	regionalMixin         // Region() — populated from response location
 	projectScopedMixin    // ProjectID() — back-filled from response/URI; intoProject() is unexported and unused
@@ -25,6 +28,8 @@ type LoadBalancer struct {
 	vpc      *types.ReferenceResource    // Properties.VPC (linked VPC reference)
 	response *types.LoadBalancerResponse // backs Raw()
 }
+
+// Getters — general → specific
 
 // URI satisfies Ref.
 func (l *LoadBalancer) URI() string { return l.RespURI() }
@@ -100,16 +105,25 @@ var loadBalancerTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// loadBalancerLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type loadBalancerLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.LoadBalancerList], error)
 	Get(ctx context.Context, projectID, loadBalancerID string, params *types.RequestParameters) (*types.Response[types.LoadBalancerResponse], error)
 }
 
+// ---- Adapter ----
+
+// loadBalancersClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates LoadBalancer ↔ types.LoadBalancerResponse and surfaces HTTP
+// errors as *aruba.HTTPError.
 type loadBalancersClientAdapter struct{ low loadBalancerLowLevelClient }
+
+var _ LoadBalancersClient = (*loadBalancersClientAdapter)(nil)
 
 func newLoadBalancersClientAdapter(rest *restclient.Client) *loadBalancersClientAdapter {
 	if rest == nil {
@@ -118,6 +132,7 @@ func newLoadBalancersClientAdapter(rest *restclient.Client) *loadBalancersClient
 	return &loadBalancersClientAdapter{low: network.NewLoadBalancersClientImpl(rest)}
 }
 
+// Get fetches a LoadBalancer by Ref and returns a freshly hydrated wrapper.
 func (a *loadBalancersClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*LoadBalancer, error) {
 	projectID, loadBalancerID, err := loadBalancerIDsFromRef(ref)
 	if err != nil {
@@ -151,6 +166,7 @@ func (a *loadBalancersClientAdapter) Get(ctx context.Context, ref Ref, opts ...C
 	return out, nil
 }
 
+// List returns a paginated list of LoadBalancer in the given parent scope.
 func (a *loadBalancersClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*LoadBalancer], error) {
 	projectID, err := projectIDFromRef(project)
 	if err != nil {

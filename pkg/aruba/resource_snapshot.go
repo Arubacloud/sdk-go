@@ -9,9 +9,11 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // Snapshot is the wrapper for an Aruba Cloud Snapshot (a direct child of a
 // Project, derived from a BlockStorage volume). Construct with
-// aruba.NewSnapshot() and bind it via IntoProject(project) and OfVolume(bs).
+// aruba.NewSnapshot() and bind it via IntoProject(project) and FromVolume(bs).
 type Snapshot struct {
 	errMixin
 	metadataMixin
@@ -34,26 +36,43 @@ type Snapshot struct {
 	response *types.SnapshotResponse
 }
 
-func (s *Snapshot) IntoProject(p Ref) *Snapshot                 { s.intoProject(p); return s }
-func (s *Snapshot) WithName(n string) *Snapshot                 { s.withName(n); return s }
-func (s *Snapshot) AddTag(t string) *Snapshot                   { s.addTag(t); return s }
-func (s *Snapshot) RemoveTag(t string) *Snapshot                { s.removeTag(t); return s }
-func (s *Snapshot) ReplaceTags(ts ...string) *Snapshot          { s.replaceTags(ts...); return s }
-func (s *Snapshot) InRegion(region Region) *Snapshot            { s.inRegion(region); return s }
+// Setters — chainable, general → specific
+
+// IntoProject binds this Snapshot to its parent project. Required before Create.
+func (s *Snapshot) IntoProject(p Ref) *Snapshot { s.intoProject(p); return s }
+
+// WithName sets the resource name. Required by the API.
+func (s *Snapshot) WithName(n string) *Snapshot { s.withName(n); return s }
+
+// AddTag appends a tag for filtering and accounting.
+func (s *Snapshot) AddTag(t string) *Snapshot { s.addTag(t); return s }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (s *Snapshot) RemoveTag(t string) *Snapshot { s.removeTag(t); return s }
+
+// ReplaceTags replaces the entire tag set with the given values.
+func (s *Snapshot) ReplaceTags(ts ...string) *Snapshot { s.replaceTags(ts...); return s }
+
+// InRegion sets the region for this resource.
+func (s *Snapshot) InRegion(region Region) *Snapshot { s.inRegion(region); return s }
+
+// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
 func (s *Snapshot) WithBillingPeriod(p BillingPeriod) *Snapshot { s.billingPeriod = &p; return s }
 
-// OfVolume binds the source BlockStorage via its URI. Pass any Ref (typed or
+// FromVolume binds the source BlockStorage via its URI. Pass any Ref (typed or
 // aruba.URI(...)). Empty URIs are recorded on the error sink and the field
 // remains unset.
-func (s *Snapshot) OfVolume(vol Ref) *Snapshot {
+func (s *Snapshot) FromVolume(vol Ref) *Snapshot {
 	uri := vol.URI()
 	if uri == "" {
-		s.addErr(fmt.Errorf("OfVolume: empty URI"))
+		s.addErr(fmt.Errorf("FromVolume: empty URI"))
 		return s
 	}
 	s.volumeRef = &uri
 	return s
 }
+
+// Getters — general → specific
 
 // URI satisfies Ref.
 func (s *Snapshot) URI() string { return s.RespURI() }
@@ -67,28 +86,39 @@ func (s *Snapshot) Raw() *types.SnapshotResponse { return s.response }
 // RawRequest returns what toRequest() would emit right now.
 func (s *Snapshot) RawRequest() types.SnapshotRequest { return s.toRequest() }
 
+// BillingPeriod returns the billing period, or "" if unset.
 func (s *Snapshot) BillingPeriod() BillingPeriod {
 	if s.billingPeriod == nil {
 		return ""
 	}
 	return *s.billingPeriod
 }
+
+// VolumeURI returns the source volume URI, or "" if unset.
 func (s *Snapshot) VolumeURI() string { return snapshotDerefString(s.volumeRef) }
 
 // Read-only accessors hydrated from response.
+
+// SizeGB returns the snapshot size in GiB, or 0 if unset.
 func (s *Snapshot) SizeGB() int {
 	if s.sizeGB == nil {
 		return 0
 	}
 	return int(*s.sizeGB)
 }
+
+// Type returns the storage type of the source volume, or "" if unset.
 func (s *Snapshot) Type() types.BlockStorageType {
 	if s.storageType == nil {
 		return ""
 	}
 	return *s.storageType
 }
+
+// Zone returns the availability zone of the snapshot, or "" if unset.
 func (s *Snapshot) Zone() Zone { return snapshotDerefZone(s.zone) }
+
+// Bootable returns whether the snapshot was taken from a bootable volume, or false if unset.
 func (s *Snapshot) Bootable() bool {
 	if s.bootable == nil {
 		return false
@@ -96,9 +126,12 @@ func (s *Snapshot) Bootable() bool {
 	return *s.bootable
 }
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (s *Snapshot) toRequest() types.SnapshotRequest {
 	props := types.SnapshotPropertiesRequest{
-		BillingPeriod: s.billingPeriod,
+		BillingPeriod: defaultBillingPeriod(s.billingPeriod),
 	}
 	if s.volumeRef != nil {
 		props.Volume = types.ReferenceResource{URI: *s.volumeRef}
@@ -112,6 +145,7 @@ func (s *Snapshot) toRequest() types.SnapshotRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (s *Snapshot) fromResponse(resp *types.SnapshotResponse) {
 	if resp == nil {
 		return
@@ -183,10 +217,11 @@ var snapshotTerminalStates = map[string]bool{
 	"Failed":    false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level client interface, adapter, constructor, and methods
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// snapshotLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type snapshotLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.SnapshotList], error)
 	Get(ctx context.Context, projectID, snapshotID string, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error)
@@ -195,7 +230,15 @@ type snapshotLowLevelClient interface {
 	Delete(ctx context.Context, projectID, snapshotID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// snapshotsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates Snapshot ↔ types.SnapshotRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type snapshotsClientAdapter struct{ low snapshotLowLevelClient }
+
+var _ SnapshotsClient = (*snapshotsClientAdapter)(nil)
 
 func newSnapshotsClientAdapter(rest *restclient.Client) *snapshotsClientAdapter {
 	if rest == nil {
@@ -206,6 +249,7 @@ func newSnapshotsClientAdapter(rest *restclient.Client) *snapshotsClientAdapter 
 	}
 }
 
+// Create posts a new Snapshot to the API and hydrates the wrapper from the response.
 func (a *snapshotsClientAdapter) Create(ctx context.Context, snap *Snapshot, opts ...CallOption) (*Snapshot, error) {
 	if err := snap.Err(); err != nil {
 		return snap, err
@@ -239,6 +283,7 @@ func (a *snapshotsClientAdapter) Create(ctx context.Context, snap *Snapshot, opt
 	return snap, nil
 }
 
+// Get fetches a Snapshot by Ref and returns a freshly hydrated wrapper.
 func (a *snapshotsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*Snapshot, error) {
 	projectID, snapshotID, err := snapshotIDsFromRef(ref)
 	if err != nil {
@@ -274,6 +319,7 @@ func (a *snapshotsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallO
 	return out, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *snapshotsClientAdapter) Update(ctx context.Context, snap *Snapshot, opts ...CallOption) (*Snapshot, error) {
 	if err := snap.Err(); err != nil {
 		return snap, err
@@ -310,6 +356,7 @@ func (a *snapshotsClientAdapter) Update(ctx context.Context, snap *Snapshot, opt
 	return snap, nil
 }
 
+// Delete removes the Snapshot identified by Ref.
 func (a *snapshotsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, snapshotID, err := snapshotIDsFromRef(ref)
 	if err != nil {
@@ -327,6 +374,7 @@ func (a *snapshotsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...Ca
 	return nil
 }
 
+// List returns a paginated list of Snapshot in the given parent scope.
 func (a *snapshotsClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*Snapshot], error) {
 	projectID, err := projectIDFromRef(project)
 	if err != nil {

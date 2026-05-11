@@ -10,6 +10,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // Database is the wrapper for an Aruba Cloud database (a child of a DBaaS
 // instance). Construct with aruba.NewDatabase() and bind via IntoDBaaS(parent).
 //
@@ -29,10 +31,15 @@ type Database struct {
 	response *types.DatabaseResponse
 }
 
-// Setters.
+// Setters — chainable, general → specific
 
+// IntoDBaaS binds this Database to its parent DBaaS instance. Required before Create.
 func (d *Database) IntoDBaaS(parent Ref) *Database { d.intoDBaaS(parent); return d }
+
+// WithName sets the resource name. Required by the API.
 func (d *Database) WithName(name string) *Database { d.name = &name; return d }
+
+// Getters — general → specific
 
 // Ref + ID accessors.
 
@@ -80,15 +87,20 @@ func (d *Database) CreatedBy() string {
 	return ""
 }
 
-func (d *Database) Raw() *types.DatabaseResponse      { return d.response }
+// Raw shadows responseMetadataMixin.Raw() with the typed Database response.
+func (d *Database) Raw() *types.DatabaseResponse { return d.response }
+
+// RawRequest returns what toRequest() would emit right now.
 func (d *Database) RawRequest() types.DatabaseRequest { return d.toRequest() }
 
-// Wire conversions.
+// Wire converters
 
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (d *Database) toRequest() types.DatabaseRequest {
 	return types.DatabaseRequest{Name: dbDerefString(d.name)}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (d *Database) fromResponse(resp *types.DatabaseResponse) {
 	if resp == nil {
 		return
@@ -107,10 +119,11 @@ func dbDerefString(p *string) string {
 	return *p
 }
 
-// ---------------------------------------------------------------------------
-// Databases low-level client, adapter, and helpers
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// databasesLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type databasesLowLevelClient interface {
 	List(ctx context.Context, projectID, dbaasID string, params *types.RequestParameters) (*types.Response[types.DatabaseList], error)
 	Get(ctx context.Context, projectID, dbaasID, databaseID string, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error)
@@ -119,6 +132,12 @@ type databasesLowLevelClient interface {
 	Delete(ctx context.Context, projectID, dbaasID, databaseID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// databasesClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates Database ↔ types.DatabaseRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type databasesClientAdapter struct{ low databasesLowLevelClient }
 
 func newDatabasesClientAdapter(rest *restclient.Client) *databasesClientAdapter {
@@ -128,6 +147,7 @@ func newDatabasesClientAdapter(rest *restclient.Client) *databasesClientAdapter 
 	return &databasesClientAdapter{low: database.NewDatabasesClientImpl(rest)}
 }
 
+// Create posts a new Database to the API and hydrates the wrapper from the response.
 func (a *databasesClientAdapter) Create(ctx context.Context, db *Database, opts ...CallOption) (*Database, error) {
 	if err := db.Err(); err != nil {
 		return db, err
@@ -157,6 +177,7 @@ func (a *databasesClientAdapter) Create(ctx context.Context, db *Database, opts 
 	return db, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *databasesClientAdapter) Update(ctx context.Context, db *Database, opts ...CallOption) (*Database, error) {
 	if err := db.Err(); err != nil {
 		return db, err
@@ -186,6 +207,7 @@ func (a *databasesClientAdapter) Update(ctx context.Context, db *Database, opts 
 	return db, nil
 }
 
+// Get fetches a Database by Ref and returns a freshly hydrated wrapper.
 func (a *databasesClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*Database, error) {
 	projectID, dbaasID, databaseID, err := databaseIDsFromRef(ref)
 	if err != nil {
@@ -212,6 +234,7 @@ func (a *databasesClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallO
 	return out, nil
 }
 
+// Delete removes the Database identified by Ref.
 func (a *databasesClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, dbaasID, databaseID, err := databaseIDsFromRef(ref)
 	if err != nil {
@@ -229,6 +252,7 @@ func (a *databasesClientAdapter) Delete(ctx context.Context, ref Ref, opts ...Ca
 	return nil
 }
 
+// List returns a paginated list of Database in the given parent scope.
 func (a *databasesClientAdapter) List(ctx context.Context, dbaas Ref, opts ...CallOption) (*List[*Database], error) {
 	projectID, dbaasID, err := dbaasIDsFromRef(dbaas)
 	if err != nil {

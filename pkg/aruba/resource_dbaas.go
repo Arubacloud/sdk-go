@@ -9,9 +9,11 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // DBaaS is the wrapper for an Aruba Cloud Database-as-a-Service instance
 // (a direct child of a Project). Construct with aruba.NewDBaaS() and bind
-// it via IntoProject(project), OfEngine, WithServerFlavor, WithStorage,
+// it via IntoProject(project), OfEngine, OfFlavor, WithSizeGB,
 // WithVPC/WithSubnet/WithSecurityGroup/WithElasticIP, etc.
 //
 // Schema asymmetries:
@@ -47,7 +49,7 @@ type DBaaS struct {
 	// Request-side scalars.
 	engine                    *DatabaseEngine // wire: Engine.ID
 	flavor                    *DBaaSFlavor    // wire: Flavor.Name
-	storageGB                 *int32          // wire: Storage.SizeGB
+	sizeGB                    *int32          // wire: Storage.SizeGB
 	autoscalingEnabled        *bool           // wire: Autoscaling.Enabled
 	autoscalingAvailableSpace *int32          // wire: Autoscaling.AvailableSpace
 	autoscalingStepSize       *int32          // wire: Autoscaling.StepSize
@@ -63,19 +65,37 @@ type DBaaS struct {
 	response *types.DBaaSResponse
 }
 
-// Setters (chainable).
+// Setters — chainable, general → specific
 
-func (d *DBaaS) IntoProject(p Ref) *DBaaS        { d.intoProject(p); return d }
-func (d *DBaaS) WithName(n string) *DBaaS        { d.withName(n); return d }
-func (d *DBaaS) AddTag(t string) *DBaaS          { d.addTag(t); return d }
-func (d *DBaaS) RemoveTag(t string) *DBaaS       { d.removeTag(t); return d }
+// IntoProject binds this DBaaS to its parent project. Required before Create.
+func (d *DBaaS) IntoProject(p Ref) *DBaaS { d.intoProject(p); return d }
+
+// WithName sets the resource name. Required by the API.
+func (d *DBaaS) WithName(n string) *DBaaS { d.withName(n); return d }
+
+// AddTag appends a tag for filtering and accounting.
+func (d *DBaaS) AddTag(t string) *DBaaS { d.addTag(t); return d }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (d *DBaaS) RemoveTag(t string) *DBaaS { d.removeTag(t); return d }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (d *DBaaS) ReplaceTags(ts ...string) *DBaaS { d.replaceTags(ts...); return d }
-func (d *DBaaS) InRegion(region Region) *DBaaS   { d.inRegion(region); return d }
 
-func (d *DBaaS) InZone(zone Zone) *DBaaS                    { d.inZone(zone); return d }
-func (d *DBaaS) OfEngine(engine DatabaseEngine) *DBaaS      { d.engine = &engine; return d }
-func (d *DBaaS) WithServerFlavor(flavor DBaaSFlavor) *DBaaS { d.flavor = &flavor; return d }
-func (d *DBaaS) WithStorageGB(gb int) *DBaaS                { v := int32(gb); d.storageGB = &v; return d }
+// InRegion sets the region for this resource.
+func (d *DBaaS) InRegion(region Region) *DBaaS { d.inRegion(region); return d }
+
+// InZone sets the availability zone (wire field: dataCenter) for this resource.
+func (d *DBaaS) InZone(zone Zone) *DBaaS { d.inZone(zone); return d }
+
+// OfEngine sets the database engine. The wire request emits Engine.ID.
+func (d *DBaaS) OfEngine(engine DatabaseEngine) *DBaaS { d.engine = &engine; return d }
+
+// OfFlavor sets the database flavor (size/performance tier). The wire request emits Flavor.Name.
+func (d *DBaaS) OfFlavor(flavor DBaaSFlavor) *DBaaS { d.flavor = &flavor; return d }
+
+// WithSizeGB sets the storage size in GB. The wire request emits Storage.SizeGB.
+func (d *DBaaS) WithSizeGB(gb int) *DBaaS { v := int32(gb); d.sizeGB = &v; return d }
 
 // WithAutoscaling enables autoscaling and pins the available-space threshold and
 // step size in GB. Mirrors NodePool.WithAutoscaling(min, max) from resource_kaas_nodepool.go.
@@ -97,13 +117,22 @@ func (d *DBaaS) WithoutAutoscaling() *DBaaS {
 	d.autoscalingStepSize = nil
 	return d
 }
+
+// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
 func (d *DBaaS) WithBillingPeriod(period BillingPeriod) *DBaaS { d.billingPeriod = &period; return d }
 
-func (d *DBaaS) WithVPC(v Ref) *DBaaS    { return d.setSingleRef("WithVPC", v, &d.vpcRef) }
+// WithVPC sets the VPC for this DBaaS via its URI. Wire field: VPCURI.
+func (d *DBaaS) WithVPC(v Ref) *DBaaS { return d.setSingleRef("WithVPC", v, &d.vpcRef) }
+
+// WithSubnet sets the subnet for this DBaaS via its URI. Wire field: SubnetURI.
 func (d *DBaaS) WithSubnet(s Ref) *DBaaS { return d.setSingleRef("WithSubnet", s, &d.subnetRef) }
+
+// WithSecurityGroup sets the security group for this DBaaS via its URI. Wire field: SecurityGroupURI.
 func (d *DBaaS) WithSecurityGroup(sg Ref) *DBaaS {
 	return d.setSingleRef("WithSecurityGroup", sg, &d.securityGroupRef)
 }
+
+// WithElasticIP sets the elastic IP for this DBaaS via its URI. Wire field: ElasticIPURI.
 func (d *DBaaS) WithElasticIP(eip Ref) *DBaaS {
 	return d.setSingleRef("WithElasticIP", eip, &d.elasticIPRef)
 }
@@ -118,14 +147,22 @@ func (d *DBaaS) setSingleRef(label string, r Ref, dst **string) *DBaaS {
 	return d
 }
 
+// Getters — general → specific
+
 // Ref + ID accessors.
 
-func (d *DBaaS) URI() string     { return d.RespURI() }
+// URI satisfies Ref by returning the server-assigned canonical URI, or "" if Create hasn't run yet.
+func (d *DBaaS) URI() string { return d.RespURI() }
+
+// DBaaSID satisfies withDBaaSID so child wrappers can extract this ID by typed assertion.
 func (d *DBaaS) DBaaSID() string { return d.ID() }
 
 // Accessors.
 
-func (d *DBaaS) Raw() *types.DBaaSResponse      { return d.response }
+// Raw shadows responseMetadataMixin.Raw() with the typed DBaaS response.
+func (d *DBaaS) Raw() *types.DBaaSResponse { return d.response }
+
+// RawRequest returns what toRequest() would emit right now.
 func (d *DBaaS) RawRequest() types.DBaaSRequest { return d.toRequest() }
 
 // Engine returns the engine identifier. On a hydrated response the value comes
@@ -149,7 +186,7 @@ func (d *DBaaS) EngineRaw() *types.DBaaSEngineResponse {
 }
 
 // Flavor returns the flavor name. On a hydrated response the value comes from
-// Flavor.Name; before hydration it returns what was passed to WithServerFlavor.
+// Flavor.Name; before hydration it returns what was passed to OfFlavor.
 func (d *DBaaS) Flavor() DBaaSFlavor {
 	if d.response != nil && d.response.Properties.Flavor != nil && d.response.Properties.Flavor.Name != nil {
 		return DBaaSFlavor(*d.response.Properties.Flavor.Name)
@@ -168,14 +205,14 @@ func (d *DBaaS) FlavorRaw() *types.DBaaSFlavorResponse {
 	return d.response.Properties.Flavor
 }
 
-// StorageGB returns the storage size in GB. On a hydrated response the value comes
-// from Storage.SizeGB; before hydration it returns what was passed to WithStorageGB.
-func (d *DBaaS) StorageGB() int {
+// SizeGB returns the storage size in GB. On a hydrated response the value comes
+// from Storage.SizeGB; before hydration it returns what was passed to WithSizeGB.
+func (d *DBaaS) SizeGB() int {
 	if d.response != nil && d.response.Properties.Storage != nil && d.response.Properties.Storage.SizeGB != nil {
 		return int(*d.response.Properties.Storage.SizeGB)
 	}
-	if d.storageGB != nil {
-		return int(*d.storageGB)
+	if d.sizeGB != nil {
+		return int(*d.sizeGB)
 	}
 	return 0
 }
@@ -184,8 +221,8 @@ func (d *DBaaS) StorageGB() int {
 // from BillingPlan.BillingPeriod; before hydration it returns what was passed to
 // WithBillingPeriod.
 func (d *DBaaS) BillingPeriod() BillingPeriod {
-	if d.response != nil && d.response.Properties.BillingPlan != nil && d.response.Properties.BillingPlan.BillingPeriod != nil {
-		return *d.response.Properties.BillingPlan.BillingPeriod
+	if d.response != nil && d.response.Properties.BillingPeriod != nil {
+		return *d.response.Properties.BillingPeriod
 	}
 	if d.billingPeriod == nil {
 		return ""
@@ -257,24 +294,29 @@ func (d *DBaaS) AutoscalingRaw() *types.DBaaSAutoscalingResponse {
 	return d.response.Properties.Autoscaling
 }
 
+// VPC returns the VPC URI for this DBaaS instance, or "" if unset.
 func (d *DBaaS) VPC() string {
 	return dbaasNetworkingURI(d.response, func(n *types.DBaaSNetworkingResponse) *types.ReferenceResource { return n.VPC }, d.vpcRef)
 }
 
+// Subnet returns the subnet URI for this DBaaS instance, or "" if unset.
 func (d *DBaaS) Subnet() string {
 	return dbaasNetworkingURI(d.response, func(n *types.DBaaSNetworkingResponse) *types.ReferenceResource { return n.Subnet }, d.subnetRef)
 }
 
+// SecurityGroup returns the security group URI for this DBaaS instance, or "" if unset.
 func (d *DBaaS) SecurityGroup() string {
 	return dbaasNetworkingURI(d.response, func(n *types.DBaaSNetworkingResponse) *types.ReferenceResource { return n.SecurityGroup }, d.securityGroupRef)
 }
 
+// ElasticIP returns the elastic IP URI for this DBaaS instance, or "" if unset.
 func (d *DBaaS) ElasticIP() string {
 	return dbaasNetworkingURI(d.response, func(n *types.DBaaSNetworkingResponse) *types.ReferenceResource { return n.ElasticIP }, d.elasticIPRef)
 }
 
-// Wire conversions.
+// Wire converters
 
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (d *DBaaS) toRequest() types.DBaaSRequest {
 	props := types.DBaaSPropertiesRequest{}
 	props.Zone = d.zonePtr()
@@ -284,8 +326,8 @@ func (d *DBaaS) toRequest() types.DBaaSRequest {
 	if d.flavor != nil {
 		props.Flavor = &types.DBaaSFlavorSpec{Name: d.flavor}
 	}
-	if d.storageGB != nil {
-		v := *d.storageGB
+	if d.sizeGB != nil {
+		v := *d.sizeGB
 		props.Storage = &types.DBaaSStorage{SizeGB: &v}
 	}
 	if d.autoscalingEnabled != nil || d.autoscalingAvailableSpace != nil || d.autoscalingStepSize != nil {
@@ -304,10 +346,7 @@ func (d *DBaaS) toRequest() types.DBaaSRequest {
 		}
 		props.Autoscaling = a
 	}
-	if d.billingPeriod != nil {
-		v := *d.billingPeriod
-		props.BillingPlan = &types.DBaaSBillingPlan{BillingPeriod: &v}
-	}
+	props.BillingPeriod = defaultBillingPeriod(d.billingPeriod)
 	if d.vpcRef != nil || d.subnetRef != nil || d.securityGroupRef != nil || d.elasticIPRef != nil {
 		net := &types.DBaaSNetworking{}
 		if d.vpcRef != nil {
@@ -333,6 +372,7 @@ func (d *DBaaS) toRequest() types.DBaaSRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 	if resp == nil {
 		return
@@ -361,11 +401,10 @@ func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 	}
 	if resp.Properties.Storage != nil && resp.Properties.Storage.SizeGB != nil {
 		v := *resp.Properties.Storage.SizeGB
-		d.storageGB = &v
+		d.sizeGB = &v
 	}
-	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
-		v := *resp.Properties.BillingPlan.BillingPeriod
-		d.billingPeriod = &v
+	if resp.Properties.BillingPeriod != nil {
+		d.billingPeriod = resp.Properties.BillingPeriod
 	}
 	if resp.Properties.Networking != nil {
 		if resp.Properties.Networking.VPC != nil && resp.Properties.Networking.VPC.URI != "" {
@@ -417,10 +456,11 @@ var dbaasTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// DBaaS low-level client, adapter, and helpers
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// dbaasLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type dbaasLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.DBaaSList], error)
 	Get(ctx context.Context, projectID, dbaasID string, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error)
@@ -429,7 +469,15 @@ type dbaasLowLevelClient interface {
 	Delete(ctx context.Context, projectID, dbaasID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// dbaasClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates DBaaS ↔ types.DBaaSRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type dbaasClientAdapter struct{ low dbaasLowLevelClient }
+
+var _ DBaaSClient = (*dbaasClientAdapter)(nil)
 
 func newDBaaSClientAdapter(rest *restclient.Client) *dbaasClientAdapter {
 	if rest == nil {
@@ -438,6 +486,7 @@ func newDBaaSClientAdapter(rest *restclient.Client) *dbaasClientAdapter {
 	return &dbaasClientAdapter{low: database.NewDBaaSClientImpl(rest)}
 }
 
+// Create posts a new DBaaS to the API and hydrates the wrapper from the response.
 func (a *dbaasClientAdapter) Create(ctx context.Context, d *DBaaS, opts ...CallOption) (*DBaaS, error) {
 	if err := d.Err(); err != nil {
 		return d, err
@@ -471,6 +520,7 @@ func (a *dbaasClientAdapter) Create(ctx context.Context, d *DBaaS, opts ...CallO
 	return d, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *dbaasClientAdapter) Update(ctx context.Context, d *DBaaS, opts ...CallOption) (*DBaaS, error) {
 	if err := d.Err(); err != nil {
 		return d, err
@@ -507,6 +557,7 @@ func (a *dbaasClientAdapter) Update(ctx context.Context, d *DBaaS, opts ...CallO
 	return d, nil
 }
 
+// Get fetches a DBaaS by Ref and returns a freshly hydrated wrapper.
 func (a *dbaasClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*DBaaS, error) {
 	projectID, dbaasID, err := dbaasIDsFromRef(ref)
 	if err != nil {
@@ -542,6 +593,7 @@ func (a *dbaasClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOptio
 	return out, nil
 }
 
+// Delete removes the DBaaS identified by Ref.
 func (a *dbaasClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, dbaasID, err := dbaasIDsFromRef(ref)
 	if err != nil {
@@ -559,6 +611,7 @@ func (a *dbaasClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOp
 	return nil
 }
 
+// List returns a paginated list of DBaaS instances in the given parent scope.
 func (a *dbaasClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*DBaaS], error) {
 	projectID, err := projectIDFromRef(project)
 	if err != nil {

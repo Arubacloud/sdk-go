@@ -206,8 +206,8 @@ func TestStorageBackup_ToRequest_UnsetOptionals_AreNilOrEmpty(t *testing.T) {
 	if req.Properties.RetentionDays != nil {
 		t.Errorf("RetentionDays should be nil, got %v", req.Properties.RetentionDays)
 	}
-	if req.Properties.BillingPeriod != nil {
-		t.Errorf("BillingPeriod should be nil, got %v", req.Properties.BillingPeriod)
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPeriod should default to Hour, got %v", req.Properties.BillingPeriod)
 	}
 	if req.Properties.Origin.URI != "" {
 		t.Errorf("Origin.URI should be empty, got %q", req.Properties.Origin.URI)
