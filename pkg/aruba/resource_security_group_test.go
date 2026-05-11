@@ -33,7 +33,7 @@ func TestSecurityGroup_FluentSetters(t *testing.T) {
 		AddTag("security").
 		AddTag("network").
 		AddTag("security"). // dedupe
-		WithDefault(true)
+		AsDefault()
 
 	if sg.Name() != "my-sg" {
 		t.Errorf("Name() = %q", sg.Name())
@@ -85,7 +85,7 @@ func TestSecurityGroup_ToRequestRoundTrip(t *testing.T) {
 		WithName("sg-1").
 		AddTag("t1").
 		AddTag("t2").
-		WithDefault(false)
+		NotDefault()
 
 	req := sg.RawRequest()
 
@@ -99,11 +99,11 @@ func TestSecurityGroup_ToRequestRoundTrip(t *testing.T) {
 		t.Errorf("Properties.Default = %v", req.Properties.Default)
 	}
 
-	// When WithDefault is not called, Default pointer must be nil (omitempty).
+	// New construction default: bare NewSecurityGroup() sets Default to *false.
 	sg2 := NewSecurityGroup().WithName("bare")
 	req2 := sg2.RawRequest()
-	if req2.Properties.Default != nil {
-		t.Errorf("Default should be nil when not set, got %v", *req2.Properties.Default)
+	if req2.Properties.Default == nil || *req2.Properties.Default {
+		t.Errorf("Default should default to *false, got %v", req2.Properties.Default)
 	}
 }
 
@@ -344,7 +344,7 @@ func TestSecurityGroupsClientAdapter_Create_Success(t *testing.T) {
 	sg := NewSecurityGroup().
 		IntoVPC(vpc).
 		WithName("my-sg").
-		WithDefault(false)
+		NotDefault()
 
 	result, err := adapter.Create(context.Background(), sg)
 	if err != nil {
@@ -514,7 +514,7 @@ func TestSecurityGroupsClientAdapter_Update_Success(t *testing.T) {
 
 	sg := &SecurityGroup{}
 	sg.fromResponse(securityGroupTestResponse("sg-1", "orig", "/projects/p/network/vpcs/v/security-groups/sg-1", "p"))
-	sg.WithName("renamed").WithDefault(true)
+	sg.WithName("renamed").AsDefault()
 
 	result, err := adapter.Update(context.Background(), sg)
 	if err != nil {
