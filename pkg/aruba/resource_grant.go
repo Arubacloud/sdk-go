@@ -10,6 +10,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // Grant is the wrapper for an Aruba Cloud DBaaS grant (a child of a Database).
 // Construct with aruba.NewGrant() and bind via IntoDatabase(parent).
 //
@@ -33,18 +35,23 @@ type Grant struct {
 	httpEnvelopeMixin
 
 	id       *string
-	userName *string
+	username *string
 	roleName *string
 	response *types.GrantResponse
 }
 
-// Setters.
+// Setters — chainable, general → specific
 
-func (g *Grant) IntoDatabase(parent Ref) *Grant  { g.intoDatabase(parent); return g }
-func (g *Grant) WithUserName(name string) *Grant { g.userName = &name; return g }
+// IntoDatabase binds this Grant to its parent Database. Required before Create.
+func (g *Grant) IntoDatabase(parent Ref) *Grant { g.intoDatabase(parent); return g }
+
+// WithUsername sets the database username this grant applies to. Wire field: User.Username.
+func (g *Grant) WithUsername(name string) *Grant { g.username = &name; return g }
+
+// WithRoleName sets the role to grant to the user. Wire field: Role.Name.
 func (g *Grant) WithRoleName(name string) *Grant { g.roleName = &name; return g }
 
-// Ref + ID accessors.
+// Getters — general → specific
 
 // ID returns the opaque server-supplied grantID. See type docstring for when
 // this is and isn't populated. Shadows responseMetadataMixin.ID() since the
@@ -66,13 +73,13 @@ func (g *Grant) URI() string {
 
 // Read accessors.
 
-// UserName returns the username from the response if available, else from the
+// Username returns the username from the response if available, else from the
 // locally-set value.
-func (g *Grant) UserName() string {
+func (g *Grant) Username() string {
 	if g.response != nil && g.response.User.Username != "" {
 		return g.response.User.Username
 	}
-	return grantDerefString(g.userName)
+	return grantDerefString(g.username)
 }
 
 // RoleName returns the role name from the response if available, else from the
@@ -108,18 +115,23 @@ func (g *Grant) CreatedBy() string {
 	return ""
 }
 
-func (g *Grant) Raw() *types.GrantResponse      { return g.response }
+// Raw shadows responseMetadataMixin.Raw() with the typed Grant response.
+func (g *Grant) Raw() *types.GrantResponse { return g.response }
+
+// RawRequest returns what toRequest() would emit right now.
 func (g *Grant) RawRequest() types.GrantRequest { return g.toRequest() }
 
-// Wire conversions.
+// Wire converters
 
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (g *Grant) toRequest() types.GrantRequest {
 	return types.GrantRequest{
-		User: types.GrantUser{Username: grantDerefString(g.userName)},
+		User: types.GrantUser{Username: grantDerefString(g.username)},
 		Role: types.GrantRole{Name: grantDerefString(g.roleName)},
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (g *Grant) fromResponse(resp *types.GrantResponse) {
 	if resp == nil {
 		return
@@ -127,7 +139,7 @@ func (g *Grant) fromResponse(resp *types.GrantResponse) {
 	g.response = resp
 	if resp.User.Username != "" {
 		v := resp.User.Username
-		g.userName = &v
+		g.username = &v
 	}
 	if resp.Role.Name != "" {
 		v := resp.Role.Name
@@ -144,9 +156,7 @@ func grantDerefString(p *string) string {
 	return *p
 }
 
-// ---------------------------------------------------------------------------
-// Grants low-level client, adapter, and helpers
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
 // grantIDsFromRef extracts (projectID, dbaasID, databaseID, grantID) from a Ref.
 func grantIDsFromRef(ref Ref) (projectID, dbaasID, databaseID, grantID string, err error) {
@@ -186,6 +196,9 @@ func grantIDsFromRef(ref Ref) (projectID, dbaasID, databaseID, grantID string, e
 	return pid, did, dbid, gid, nil
 }
 
+// grantsLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type grantsLowLevelClient interface {
 	List(ctx context.Context, projectID, dbaasID, databaseID string, params *types.RequestParameters) (*types.Response[types.GrantList], error)
 	Get(ctx context.Context, projectID, dbaasID, databaseID, grantID string, params *types.RequestParameters) (*types.Response[types.GrantResponse], error)
@@ -194,7 +207,15 @@ type grantsLowLevelClient interface {
 	Delete(ctx context.Context, projectID, dbaasID, databaseID, grantID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// grantsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates Grant ↔ types.GrantRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type grantsClientAdapter struct{ low grantsLowLevelClient }
+
+var _ GrantsClient = (*grantsClientAdapter)(nil)
 
 func newGrantsClientAdapter(rest *restclient.Client) *grantsClientAdapter {
 	if rest == nil {
@@ -203,6 +224,7 @@ func newGrantsClientAdapter(rest *restclient.Client) *grantsClientAdapter {
 	return &grantsClientAdapter{low: database.NewGrantsClientImpl(rest)}
 }
 
+// Create posts a new Grant to the API and hydrates the wrapper from the response.
 func (a *grantsClientAdapter) Create(ctx context.Context, g *Grant, opts ...CallOption) (*Grant, error) {
 	if err := g.Err(); err != nil {
 		return g, err
@@ -216,8 +238,8 @@ func (a *grantsClientAdapter) Create(ctx context.Context, g *Grant, opts ...Call
 	if g.DatabaseID() == "" {
 		return g, fmt.Errorf("Create: Grant has no parent database — call IntoDatabase first")
 	}
-	if g.userName == nil {
-		return g, fmt.Errorf("Create: Grant has no username — call WithUserName first")
+	if g.username == nil {
+		return g, fmt.Errorf("Create: Grant has no username — call WithUsername first")
 	}
 	if g.roleName == nil {
 		return g, fmt.Errorf("Create: Grant has no role — call WithRoleName first")
@@ -238,6 +260,7 @@ func (a *grantsClientAdapter) Create(ctx context.Context, g *Grant, opts ...Call
 	return g, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *grantsClientAdapter) Update(ctx context.Context, g *Grant, opts ...CallOption) (*Grant, error) {
 	if err := g.Err(); err != nil {
 		return g, err
@@ -254,8 +277,8 @@ func (a *grantsClientAdapter) Update(ctx context.Context, g *Grant, opts ...Call
 	if g.ProjectID() == "" {
 		return g, fmt.Errorf("Update: Grant has no parent project — call IntoDatabase first")
 	}
-	if g.userName == nil {
-		return g, fmt.Errorf("Update: Grant has no username — call WithUserName first")
+	if g.username == nil {
+		return g, fmt.Errorf("Update: Grant has no username — call WithUsername first")
 	}
 	if g.roleName == nil {
 		return g, fmt.Errorf("Update: Grant has no role — call WithRoleName first")
@@ -276,6 +299,7 @@ func (a *grantsClientAdapter) Update(ctx context.Context, g *Grant, opts ...Call
 	return g, nil
 }
 
+// Get fetches a Grant by Ref and returns a freshly hydrated wrapper.
 func (a *grantsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*Grant, error) {
 	projectID, dbaasID, databaseID, grantID, err := grantIDsFromRef(ref)
 	if err != nil {
@@ -302,6 +326,7 @@ func (a *grantsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOpti
 	return out, nil
 }
 
+// Delete removes the Grant identified by Ref.
 func (a *grantsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, dbaasID, databaseID, grantID, err := grantIDsFromRef(ref)
 	if err != nil {
@@ -319,6 +344,7 @@ func (a *grantsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallO
 	return nil
 }
 
+// List returns a paginated list of Grants in the given Database scope.
 func (a *grantsClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOption) (*List[*Grant], error) {
 	projectID, dbaasID, databaseID, err := databaseIDsFromRef(parent)
 	if err != nil {

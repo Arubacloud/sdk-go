@@ -40,9 +40,7 @@ func TestListContainerRegistry(t *testing.T) {
 								BlockStorage: types.ReferenceResource{
 									URI: *types.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
 								},
-								BillingPlan: &types.BillingPeriodResource{
-									BillingPeriod: types.BillingPeriodHour,
-								},
+								BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriodHour; return &v }(),
 								AdminUser: &types.UserCredential{
 									Username: "admin",
 								},
@@ -96,8 +94,8 @@ func TestListContainerRegistry(t *testing.T) {
 		if resp.Data.Values[0].Properties.BlockStorage.URI != "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321" {
 			t.Errorf("expected BlockStorage URI")
 		}
-		if resp.Data.Values[0].Properties.BillingPlan == nil || resp.Data.Values[0].Properties.BillingPlan.BillingPeriod != "Hour" {
-			t.Errorf("expected BillingPlan Hour")
+		if resp.Data.Values[0].Properties.BillingPeriod == nil || *resp.Data.Values[0].Properties.BillingPeriod != "Hour" {
+			t.Errorf("expected BillingPeriod Hour")
 		}
 		if resp.Data.Values[0].Properties.AdminUser == nil || resp.Data.Values[0].Properties.AdminUser.Username != "admin" {
 			t.Errorf("expected AdminUser username")
@@ -207,9 +205,7 @@ func TestGetContainerRegistry(t *testing.T) {
 						BlockStorage: types.ReferenceResource{
 							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
 						},
-						BillingPlan: &types.BillingPeriodResource{
-							BillingPeriod: types.BillingPeriodHour,
-						},
+						BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriodHour; return &v }(),
 						AdminUser: &types.UserCredential{
 							Username: "admin",
 						},
@@ -252,8 +248,8 @@ func TestGetContainerRegistry(t *testing.T) {
 		if resp.Data.Properties.BlockStorage.URI != "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321" {
 			t.Errorf("expected BlockStorage URI")
 		}
-		if resp.Data.Properties.BillingPlan == nil || resp.Data.Properties.BillingPlan.BillingPeriod != "Hour" {
-			t.Errorf("expected BillingPlan Hour")
+		if resp.Data.Properties.BillingPeriod == nil || *resp.Data.Properties.BillingPeriod != "Hour" {
+			t.Errorf("expected BillingPeriod Hour")
 		}
 		if resp.Data.Properties.AdminUser == nil || resp.Data.Properties.AdminUser.Username != "admin" {
 			t.Errorf("expected AdminUser username")
@@ -365,9 +361,7 @@ func TestCreateContainerRegistry(t *testing.T) {
 						BlockStorage: types.ReferenceResource{
 							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
 						},
-						BillingPlan: &types.BillingPeriodResource{
-							BillingPeriod: types.BillingPeriodHour,
-						},
+						BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriodHour; return &v }(),
 						AdminUser: &types.UserCredential{
 							Username: "admin",
 						},
@@ -397,7 +391,7 @@ func TestCreateContainerRegistry(t *testing.T) {
 				Subnet:          types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"},
 				SecurityGroup:   types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"},
 				BlockStorage:    types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"},
-				BillingPlan:     &types.BillingPeriodResource{BillingPeriod: "Hour"},
+				BillingPeriod:   func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
 				AdminUser:       &types.UserCredential{Username: "admin"},
 				ConcurrentUsers: types.StringPtr("100"),
 			},
@@ -428,8 +422,8 @@ func TestCreateContainerRegistry(t *testing.T) {
 		if resp.Data.Properties.BlockStorage.URI != "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321" {
 			t.Errorf("expected BlockStorage URI")
 		}
-		if resp.Data.Properties.BillingPlan == nil || resp.Data.Properties.BillingPlan.BillingPeriod != "Hour" {
-			t.Errorf("expected BillingPlan Hour")
+		if resp.Data.Properties.BillingPeriod == nil || *resp.Data.Properties.BillingPeriod != "Hour" {
+			t.Errorf("expected BillingPeriod Hour")
 		}
 		if resp.Data.Properties.AdminUser == nil || resp.Data.Properties.AdminUser.Username != "admin" {
 			t.Errorf("expected AdminUser username")
@@ -602,9 +596,7 @@ func TestUpdateContainerRegistry(t *testing.T) {
 						BlockStorage: types.ReferenceResource{
 							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
 						},
-						BillingPlan: &types.BillingPeriodResource{
-							BillingPeriod: types.BillingPeriodHour,
-						},
+						BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriodHour; return &v }(),
 						AdminUser: &types.UserCredential{
 							Username: "admin",
 						},
@@ -634,7 +626,7 @@ func TestUpdateContainerRegistry(t *testing.T) {
 				Subnet:          types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"},
 				SecurityGroup:   types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"},
 				BlockStorage:    types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"},
-				BillingPlan:     &types.BillingPeriodResource{BillingPeriod: "Hour"},
+				BillingPeriod:   func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
 				AdminUser:       &types.UserCredential{Username: "admin"},
 				ConcurrentUsers: types.StringPtr("100"),
 			},
@@ -665,8 +657,8 @@ func TestUpdateContainerRegistry(t *testing.T) {
 		if resp.Data.Properties.BlockStorage.URI != "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321" {
 			t.Errorf("expected BlockStorage URI")
 		}
-		if resp.Data.Properties.BillingPlan == nil || resp.Data.Properties.BillingPlan.BillingPeriod != "Hour" {
-			t.Errorf("expected BillingPlan Hour")
+		if resp.Data.Properties.BillingPeriod == nil || *resp.Data.Properties.BillingPeriod != "Hour" {
+			t.Errorf("expected BillingPeriod Hour")
 		}
 		if resp.Data.Properties.AdminUser == nil || resp.Data.Properties.AdminUser.Username != "admin" {
 			t.Errorf("expected AdminUser username")

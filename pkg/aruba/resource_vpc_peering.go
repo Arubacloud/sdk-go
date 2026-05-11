@@ -9,8 +9,14 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
-// VPCPeering wraps an Aruba Cloud VPC Peering (a direct child of a VPC, with regional metadata).
-// Construct with aruba.NewVPCPeering() and bind it to a parent VPC via IntoVPC(vpc).
+// ---- Wrapper ----
+
+// VPCPeering is the wrapper for an Aruba Cloud VPC Peering (a child of a VPC).
+// Construct with aruba.NewVPCPeering() and bind it via IntoVPC(vpc).
+//
+// Wraps types.VPCPeeringResponse / types.VPCPeeringRequest. The wrapper carries
+// pointer-typed private fields so unset values round-trip through
+// the JSON layer correctly.
 type VPCPeering struct {
 	errMixin
 	metadataMixin
@@ -25,14 +31,25 @@ type VPCPeering struct {
 	response  *types.VPCPeeringResponse
 }
 
-// Setters (chainable).
+// Setters — chainable, general → specific
 
-func (p *VPCPeering) IntoVPC(v Ref) *VPCPeering            { p.intoVPC(v); return p }
-func (p *VPCPeering) WithName(n string) *VPCPeering        { p.withName(n); return p }
-func (p *VPCPeering) AddTag(t string) *VPCPeering          { p.addTag(t); return p }
-func (p *VPCPeering) RemoveTag(t string) *VPCPeering       { p.removeTag(t); return p }
+// IntoVPC binds this VPCPeering to its parent VPC. Required before Create.
+func (p *VPCPeering) IntoVPC(v Ref) *VPCPeering { p.intoVPC(v); return p }
+
+// WithName sets the resource name. Required by the API.
+func (p *VPCPeering) WithName(n string) *VPCPeering { p.withName(n); return p }
+
+// AddTag appends a tag for filtering and accounting.
+func (p *VPCPeering) AddTag(t string) *VPCPeering { p.addTag(t); return p }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (p *VPCPeering) RemoveTag(t string) *VPCPeering { p.removeTag(t); return p }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (p *VPCPeering) ReplaceTags(ts ...string) *VPCPeering { p.replaceTags(ts...); return p }
-func (p *VPCPeering) InRegion(region Region) *VPCPeering   { p.inRegion(region); return p }
+
+// InRegion sets the region for this resource.
+func (p *VPCPeering) InRegion(region Region) *VPCPeering { p.inRegion(region); return p }
 
 // WithRemoteVPC stores the remote VPC URI in the request body Properties.
 // Records a setter-time error if the supplied Ref's URI is empty.
@@ -45,6 +62,8 @@ func (p *VPCPeering) WithRemoteVPC(v Ref) *VPCPeering {
 	p.remoteVPC = &types.ReferenceResource{URI: uri}
 	return p
 }
+
+// Getters — general → specific
 
 // URI satisfies Ref.
 func (p *VPCPeering) URI() string { return p.RespURI() }
@@ -67,6 +86,9 @@ func (p *VPCPeering) RemoteVPCURI() string {
 	return p.remoteVPC.URI
 }
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (p *VPCPeering) toRequest() types.VPCPeeringRequest {
 	props := types.VPCPeeringPropertiesRequest{}
 	if p.remoteVPC != nil {
@@ -81,6 +103,7 @@ func (p *VPCPeering) toRequest() types.VPCPeeringRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (p *VPCPeering) fromResponse(resp *types.VPCPeeringResponse) {
 	if resp == nil {
 		return
@@ -130,10 +153,11 @@ var vpcPeeringTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// vpcPeeringLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type vpcPeeringLowLevelClient interface {
 	List(ctx context.Context, projectID, vpcID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringList], error)
 	Get(ctx context.Context, projectID, vpcID, vpcPeeringID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringResponse], error)
@@ -142,7 +166,15 @@ type vpcPeeringLowLevelClient interface {
 	Delete(ctx context.Context, projectID, vpcID, vpcPeeringID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// vpcPeeringsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates VPCPeering ↔ types.VPCPeeringRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type vpcPeeringsClientAdapter struct{ low vpcPeeringLowLevelClient }
+
+var _ VPCPeeringsClient = (*vpcPeeringsClientAdapter)(nil)
 
 func newVPCPeeringsClientAdapter(rest *restclient.Client) *vpcPeeringsClientAdapter {
 	if rest == nil {
@@ -151,6 +183,7 @@ func newVPCPeeringsClientAdapter(rest *restclient.Client) *vpcPeeringsClientAdap
 	return &vpcPeeringsClientAdapter{low: network.NewVPCPeeringsClientImpl(rest)}
 }
 
+// Create posts a new VPCPeering to the API and hydrates the wrapper from the response.
 func (a *vpcPeeringsClientAdapter) Create(ctx context.Context, peering *VPCPeering, opts ...CallOption) (*VPCPeering, error) {
 	if err := peering.Err(); err != nil {
 		return peering, err
@@ -184,6 +217,7 @@ func (a *vpcPeeringsClientAdapter) Create(ctx context.Context, peering *VPCPeeri
 	return peering, nil
 }
 
+// Get fetches a VPCPeering by Ref and returns a freshly hydrated wrapper.
 func (a *vpcPeeringsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*VPCPeering, error) {
 	projectID, vpcID, vpcPeeringID, err := vpcPeeringIDsFromRef(ref)
 	if err != nil {
@@ -222,6 +256,7 @@ func (a *vpcPeeringsClientAdapter) Get(ctx context.Context, ref Ref, opts ...Cal
 	return out, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *vpcPeeringsClientAdapter) Update(ctx context.Context, peering *VPCPeering, opts ...CallOption) (*VPCPeering, error) {
 	if err := peering.Err(); err != nil {
 		return peering, err
@@ -258,6 +293,7 @@ func (a *vpcPeeringsClientAdapter) Update(ctx context.Context, peering *VPCPeeri
 	return peering, nil
 }
 
+// Delete removes the VPCPeering identified by Ref.
 func (a *vpcPeeringsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, vpcID, vpcPeeringID, err := vpcPeeringIDsFromRef(ref)
 	if err != nil {
@@ -275,6 +311,7 @@ func (a *vpcPeeringsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...
 	return nil
 }
 
+// List returns a paginated list of VPCPeering in the given parent scope.
 func (a *vpcPeeringsClientAdapter) List(ctx context.Context, vpc Ref, opts ...CallOption) (*List[*VPCPeering], error) {
 	projectID, vpcID, err := vpcIDsFromRef(vpc)
 	if err != nil {

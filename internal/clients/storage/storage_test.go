@@ -252,7 +252,7 @@ func TestCreateBlockStorageVolume(t *testing.T) {
 			},
 			Properties: types.BlockStoragePropertiesRequest{
 				SizeGB:        50,
-				BillingPeriod: "Hour",
+				BillingPeriod: (*types.BillingPeriod)(types.StringPtr("Hour")),
 				Zone:          (*types.Zone)(types.StringPtr("it-eur-1")),
 				Type:          types.BlockStorageTypeStandard,
 			},
@@ -419,7 +419,7 @@ func TestUpdateBlockStorageVolume(t *testing.T) {
 			},
 			Properties: types.BlockStoragePropertiesRequest{
 				SizeGB:        100,
-				BillingPeriod: "Hour",
+				BillingPeriod: (*types.BillingPeriod)(types.StringPtr("Hour")),
 				Type:          types.BlockStorageTypeStandard,
 			},
 		}

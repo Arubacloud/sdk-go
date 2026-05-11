@@ -189,8 +189,8 @@ func TestBlockStorage_ToRequestRoundTrip(t *testing.T) {
 	if req.Properties.Zone == nil || *req.Properties.Zone != "ITBG-1" {
 		t.Errorf("Zone = %v", req.Properties.Zone)
 	}
-	if req.Properties.BillingPeriod != "Hour" {
-		t.Errorf("BillingPeriod = %q", req.Properties.BillingPeriod)
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Hour" {
+		t.Errorf("BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 	if req.Properties.Bootable == nil || !*req.Properties.Bootable {
 		t.Error("Bootable should be true")
@@ -219,8 +219,8 @@ func TestBlockStorage_ToRequest_UnsetOptionals_AreNilOrZero(t *testing.T) {
 	if req.Properties.Snapshot != nil {
 		t.Errorf("Snapshot should be nil, got %v", req.Properties.Snapshot)
 	}
-	if req.Properties.BillingPeriod != "" {
-		t.Errorf("BillingPeriod should be empty, got %q", req.Properties.BillingPeriod)
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPeriod should default to Hour, got %v", req.Properties.BillingPeriod)
 	}
 }
 
@@ -272,7 +272,7 @@ func blockStorageTestResponse(id, name, uri, projectID string) *types.BlockStora
 			SizeGB:        20,
 			Type:          types.BlockStorageTypeStandard,
 			Zone:          zone,
-			BillingPeriod: "Hour",
+			BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
 			Image:         &img,
 			Bootable:      &boot,
 			Snapshot:      snap,

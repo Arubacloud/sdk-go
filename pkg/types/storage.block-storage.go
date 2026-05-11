@@ -14,7 +14,7 @@ type BlockStoragePropertiesRequest struct {
 	SizeGB int `json:"sizeGb"`
 
 	// BillingPeriod of the block storage
-	BillingPeriod BillingPeriod `json:"billingPeriod"`
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 
 	// Zone where blockstorage will be created (optional).
 	// If specified, the resource is zonal; otherwise, it is regional.
@@ -37,7 +37,7 @@ type BlockStoragePropertiesResponse struct {
 	SizeGB int `json:"sizeGb"`
 
 	// BillingPeriod Billing plan of the block storage
-	BillingPeriod BillingPeriod `json:"billingPeriod"`
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 
 	//Zone where blockstorage will be created
 	Zone Zone `json:"dataCenter"`

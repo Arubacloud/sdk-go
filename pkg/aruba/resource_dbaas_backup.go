@@ -9,6 +9,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // DBaaSBackup is the wrapper for an Aruba Cloud DBaaS Backup (a direct child
 // of a Project; the source DBaaS and Database are body-refs, not path-parents).
 // Construct with aruba.NewDBaaSBackup() and bind it via IntoProject(project),
@@ -35,12 +37,25 @@ type DBaaSBackup struct {
 	response *types.BackupResponse
 }
 
-func (b *DBaaSBackup) IntoProject(p Ref) *DBaaSBackup        { b.intoProject(p); return b }
-func (b *DBaaSBackup) WithName(n string) *DBaaSBackup        { b.withName(n); return b }
-func (b *DBaaSBackup) AddTag(t string) *DBaaSBackup          { b.addTag(t); return b }
-func (b *DBaaSBackup) RemoveTag(t string) *DBaaSBackup       { b.removeTag(t); return b }
+// Setters — chainable, general → specific
+
+// IntoProject binds this DBaaSBackup to its parent project. Required before Create.
+func (b *DBaaSBackup) IntoProject(p Ref) *DBaaSBackup { b.intoProject(p); return b }
+
+// WithName sets the resource name. Required by the API.
+func (b *DBaaSBackup) WithName(n string) *DBaaSBackup { b.withName(n); return b }
+
+// AddTag appends a tag for filtering and accounting.
+func (b *DBaaSBackup) AddTag(t string) *DBaaSBackup { b.addTag(t); return b }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (b *DBaaSBackup) RemoveTag(t string) *DBaaSBackup { b.removeTag(t); return b }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (b *DBaaSBackup) ReplaceTags(ts ...string) *DBaaSBackup { b.replaceTags(ts...); return b }
-func (b *DBaaSBackup) InRegion(region Region) *DBaaSBackup   { b.inRegion(region); return b }
+
+// InRegion sets the region for this resource.
+func (b *DBaaSBackup) InRegion(region Region) *DBaaSBackup { b.inRegion(region); return b }
 
 // FromDBaaS binds the source DBaaS via its URI. Empty URIs are recorded on the
 // error sink and the field remains unset.
@@ -66,10 +81,13 @@ func (b *DBaaSBackup) FromDatabase(db Ref) *DBaaSBackup {
 	return b
 }
 
+// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
 func (b *DBaaSBackup) WithBillingPeriod(p BillingPeriod) *DBaaSBackup {
 	b.billingPeriod = &p
 	return b
 }
+
+// Getters — general → specific
 
 // URI satisfies Ref.
 func (b *DBaaSBackup) URI() string { return b.RespURI() }
@@ -83,15 +101,21 @@ func (b *DBaaSBackup) Raw() *types.BackupResponse { return b.response }
 // RawRequest returns what toRequest() would emit right now.
 func (b *DBaaSBackup) RawRequest() types.BackupRequest { return b.toRequest() }
 
+// BillingPeriod returns the billing period set on this backup, or "" if unset.
 func (b *DBaaSBackup) BillingPeriod() BillingPeriod {
 	if b.billingPeriod == nil {
 		return ""
 	}
 	return *b.billingPeriod
 }
-func (b *DBaaSBackup) DBaaSURI() string    { return dbaasBackupDerefString(b.dbaasRef) }
+
+// DBaaSURI returns the source DBaaS URI bound via FromDBaaS, or "" if unset.
+func (b *DBaaSBackup) DBaaSURI() string { return dbaasBackupDerefString(b.dbaasRef) }
+
+// DatabaseURI returns the source database URI bound via FromDatabase, or "" if unset.
 func (b *DBaaSBackup) DatabaseURI() string { return dbaasBackupDerefString(b.databaseRef) }
 
+// SizeGB returns the backup storage size in GB from the response, or 0 before hydration.
 func (b *DBaaSBackup) SizeGB() int {
 	if b.response == nil {
 		return 0
@@ -99,6 +123,7 @@ func (b *DBaaSBackup) SizeGB() int {
 	return int(b.response.Properties.Storage.Size)
 }
 
+// Zone returns the availability zone from the response, or "" before hydration.
 func (b *DBaaSBackup) Zone() Zone {
 	if b.response == nil {
 		return ""
@@ -106,6 +131,9 @@ func (b *DBaaSBackup) Zone() Zone {
 	return b.response.Properties.Zone
 }
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (b *DBaaSBackup) toRequest() types.BackupRequest {
 	props := types.BackupPropertiesRequest{
 		Zone: Zone(b.Region()), // auto-derive from regionalMixin (no separate setter)
@@ -116,9 +144,7 @@ func (b *DBaaSBackup) toRequest() types.BackupRequest {
 	if b.databaseRef != nil {
 		props.Database = types.ReferenceResource{URI: *b.databaseRef}
 	}
-	if b.billingPeriod != nil {
-		props.BillingPlan = types.BillingPeriodResource{BillingPeriod: *b.billingPeriod}
-	}
+	props.BillingPeriod = defaultBillingPeriod(b.billingPeriod)
 	return types.BackupRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: b.toMetadata(),
@@ -128,6 +154,7 @@ func (b *DBaaSBackup) toRequest() types.BackupRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (b *DBaaSBackup) fromResponse(resp *types.BackupResponse) {
 	if resp == nil {
 		return
@@ -152,9 +179,8 @@ func (b *DBaaSBackup) fromResponse(resp *types.BackupResponse) {
 		v := resp.Properties.Database.URI
 		b.databaseRef = &v
 	}
-	if resp.Properties.BillingPlan.BillingPeriod != "" {
-		v := resp.Properties.BillingPlan.BillingPeriod
-		b.billingPeriod = &v
+	if resp.Properties.BillingPeriod != nil {
+		b.billingPeriod = resp.Properties.BillingPeriod
 	}
 
 	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
@@ -180,9 +206,7 @@ var dbaasBackupTerminalStates = map[string]bool{
 	"Failed":    false,
 }
 
-// ---------------------------------------------------------------------------
-// DBaaS Backups low-level client, adapter, and helpers
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
 // dbaasBackupIDsFromRef extracts (projectID, backupID) from a Ref. Uses the
 // dedicated withDBaaSBackupID interface for typed extraction so a typed
@@ -211,6 +235,9 @@ func dbaasBackupIDsFromRef(ref Ref) (projectID, backupID string, err error) {
 	return pid, bid, nil
 }
 
+// dbaasBackupsLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type dbaasBackupsLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.BackupList], error)
 	Get(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[types.BackupResponse], error)
@@ -218,7 +245,15 @@ type dbaasBackupsLowLevelClient interface {
 	Delete(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// dbaasBackupsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates DBaaSBackup ↔ types.BackupRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type dbaasBackupsClientAdapter struct{ low dbaasBackupsLowLevelClient }
+
+var _ BackupsClient = (*dbaasBackupsClientAdapter)(nil)
 
 func newDBaaSBackupsClientAdapter(rest *restclient.Client) *dbaasBackupsClientAdapter {
 	if rest == nil {
@@ -227,6 +262,7 @@ func newDBaaSBackupsClientAdapter(rest *restclient.Client) *dbaasBackupsClientAd
 	return &dbaasBackupsClientAdapter{low: database.NewBackupsClientImpl(rest)}
 }
 
+// Create posts a new DBaaSBackup to the API and hydrates the wrapper from the response.
 func (a *dbaasBackupsClientAdapter) Create(ctx context.Context, b *DBaaSBackup, opts ...CallOption) (*DBaaSBackup, error) {
 	if err := b.Err(); err != nil {
 		return b, err
@@ -260,6 +296,7 @@ func (a *dbaasBackupsClientAdapter) Create(ctx context.Context, b *DBaaSBackup, 
 	return b, nil
 }
 
+// Get fetches a DBaaSBackup by Ref and returns a freshly hydrated wrapper.
 func (a *dbaasBackupsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*DBaaSBackup, error) {
 	projectID, backupID, err := dbaasBackupIDsFromRef(ref)
 	if err != nil {
@@ -296,6 +333,7 @@ func (a *dbaasBackupsClientAdapter) Get(ctx context.Context, ref Ref, opts ...Ca
 	return out, nil
 }
 
+// Delete removes the DBaaSBackup identified by Ref.
 func (a *dbaasBackupsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, backupID, err := dbaasBackupIDsFromRef(ref)
 	if err != nil {
@@ -313,6 +351,7 @@ func (a *dbaasBackupsClientAdapter) Delete(ctx context.Context, ref Ref, opts ..
 	return nil
 }
 
+// List returns a paginated list of DBaaSBackup entries in the given parent scope.
 func (a *dbaasBackupsClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOption) (*List[*DBaaSBackup], error) {
 	projectID, err := projectIDFromRef(parent)
 	if err != nil {

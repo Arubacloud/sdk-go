@@ -6,6 +6,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Sub-builder ----
+
 // JobStep is a fluent builder for a single step within a Job.
 // Construct with NewJobStep() and attach via Job.AddStep.
 //
@@ -22,10 +24,17 @@ type JobStep struct {
 	body        *string
 }
 
-func (s *JobStep) Named(name string) *JobStep        { s.name = &name; return s }
+// Named sets the step name.
+func (s *JobStep) Named(name string) *JobStep { s.name = &name; return s }
+
+// WithAction sets the action URI to invoke for this step.
 func (s *JobStep) WithAction(action string) *JobStep { s.actionURI = &action; return s }
-func (s *JobStep) WithVerb(verb HTTPVerb) *JobStep   { s.httpVerb = &verb; return s }
-func (s *JobStep) WithBody(body string) *JobStep     { s.body = &body; return s }
+
+// WithVerb sets the HTTP verb for this step (e.g. POST, PUT).
+func (s *JobStep) WithVerb(verb HTTPVerb) *JobStep { s.httpVerb = &verb; return s }
+
+// WithBody sets the JSON request body for this step.
+func (s *JobStep) WithBody(body string) *JobStep { s.body = &body; return s }
 
 // OfResource sets the resource URI for this step. Errors if the ref's URI is empty.
 func (s *JobStep) OfResource(res Ref) *JobStep {

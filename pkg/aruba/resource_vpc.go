@@ -9,9 +9,14 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
-// VPC is the wrapper for an Aruba Cloud VPC. Construct with aruba.NewVPC()
-// and bind it to a project via IntoProject(parent). Pass to VPCsClient.Create
-// / .Update or receive from .Get / .List.
+// ---- Wrapper ----
+
+// VPC is the wrapper for an Aruba Cloud VPC (a child of a Project).
+// Construct with aruba.NewVPC() and bind it via IntoProject(parent).
+//
+// Wraps types.VPCResponse / types.VPCRequest. The wrapper carries
+// pointer-typed private fields so unset values round-trip through
+// the JSON layer correctly.
 type VPC struct {
 	errMixin
 	metadataMixin
@@ -27,15 +32,36 @@ type VPC struct {
 	response   *types.VPCResponse
 }
 
-func (v *VPC) IntoProject(p Ref) *VPC        { v.intoProject(p); return v }
-func (v *VPC) WithName(n string) *VPC        { v.withName(n); return v }
-func (v *VPC) AddTag(t string) *VPC          { v.addTag(t); return v }
-func (v *VPC) RemoveTag(t string) *VPC       { v.removeTag(t); return v }
+// Setters — chainable, general → specific
+
+// IntoProject binds this VPC to its parent project. Required before Create.
+func (v *VPC) IntoProject(p Ref) *VPC { v.intoProject(p); return v }
+
+// WithName sets the resource name. Required by the API.
+func (v *VPC) WithName(n string) *VPC { v.withName(n); return v }
+
+// AddTag appends a tag for filtering and accounting.
+func (v *VPC) AddTag(t string) *VPC { v.addTag(t); return v }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (v *VPC) RemoveTag(t string) *VPC { v.removeTag(t); return v }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (v *VPC) ReplaceTags(ts ...string) *VPC { v.replaceTags(ts...); return v }
-func (v *VPC) InRegion(region Region) *VPC   { v.inRegion(region); return v }
-func (v *VPC) AsDefault() *VPC               { t := true; v.defaultVPC = &t; return v }
-func (v *VPC) NotDefault() *VPC              { f := false; v.defaultVPC = &f; return v }
-func (v *VPC) WithPreset(b bool) *VPC        { v.preset = &b; return v }
+
+// InRegion sets the region for this resource.
+func (v *VPC) InRegion(region Region) *VPC { v.inRegion(region); return v }
+
+// AsDefault marks this VPC as the account-region default.
+func (v *VPC) AsDefault() *VPC { t := true; v.defaultVPC = &t; return v }
+
+// NotDefault explicitly unsets the default flag.
+func (v *VPC) NotDefault() *VPC { f := false; v.defaultVPC = &f; return v }
+
+// WithPreset enables or disables preset subnet/security-group creation.
+func (v *VPC) WithPreset(b bool) *VPC { v.preset = &b; return v }
+
+// Getters — general → specific
 
 // URI satisfies Ref.
 func (v *VPC) URI() string { return v.RespURI() }
@@ -65,6 +91,9 @@ func (v *VPC) IsPreset() bool {
 	return *v.preset
 }
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (v *VPC) toRequest() types.VPCRequest {
 	var props *types.VPCProperties
 	if v.defaultVPC != nil || v.preset != nil {
@@ -79,6 +108,7 @@ func (v *VPC) toRequest() types.VPCRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (v *VPC) fromResponse(resp *types.VPCResponse) {
 	if resp == nil {
 		return
@@ -115,10 +145,11 @@ var vpcTerminalStates = map[string]bool{
 	"Failed": false,
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// vpcLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type vpcLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.VPCList], error)
 	Get(ctx context.Context, projectID, vpcID string, params *types.RequestParameters) (*types.Response[types.VPCResponse], error)
@@ -127,7 +158,15 @@ type vpcLowLevelClient interface {
 	Delete(ctx context.Context, projectID, vpcID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// vpcsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates VPC ↔ types.VPCRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type vpcsClientAdapter struct{ low vpcLowLevelClient }
+
+var _ VPCsClient = (*vpcsClientAdapter)(nil)
 
 func newVPCsClientAdapter(rest *restclient.Client) *vpcsClientAdapter {
 	if rest == nil {
@@ -136,6 +175,7 @@ func newVPCsClientAdapter(rest *restclient.Client) *vpcsClientAdapter {
 	return &vpcsClientAdapter{low: network.NewVPCsClientImpl(rest)}
 }
 
+// Create posts a new VPC to the API and hydrates the wrapper from the response.
 func (a *vpcsClientAdapter) Create(ctx context.Context, v *VPC, opts ...CallOption) (*VPC, error) {
 	if err := v.Err(); err != nil {
 		return v, err
@@ -169,6 +209,7 @@ func (a *vpcsClientAdapter) Create(ctx context.Context, v *VPC, opts ...CallOpti
 	return v, nil
 }
 
+// Get fetches a VPC by Ref and returns a freshly hydrated wrapper.
 func (a *vpcsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*VPC, error) {
 	projectID, vpcID, err := vpcIDsFromRef(ref)
 	if err != nil {
@@ -201,6 +242,7 @@ func (a *vpcsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption
 	return out, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *vpcsClientAdapter) Update(ctx context.Context, v *VPC, opts ...CallOption) (*VPC, error) {
 	if err := v.Err(); err != nil {
 		return v, err
@@ -237,6 +279,7 @@ func (a *vpcsClientAdapter) Update(ctx context.Context, v *VPC, opts ...CallOpti
 	return v, nil
 }
 
+// Delete removes the VPC identified by Ref.
 func (a *vpcsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, vpcID, err := vpcIDsFromRef(ref)
 	if err != nil {
@@ -254,6 +297,7 @@ func (a *vpcsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOpt
 	return nil
 }
 
+// List returns a paginated list of VPC in the given parent scope.
 func (a *vpcsClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*VPC], error) {
 	projectID, err := projectIDFromRef(project)
 	if err != nil {

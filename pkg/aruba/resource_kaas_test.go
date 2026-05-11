@@ -48,7 +48,7 @@ func TestKaaS_FluentSetters(t *testing.T) {
 		WithPodCIDR("10.200.0.0/16").
 		WithKubernetesVersion("1.32.3").
 		WithHA(true).
-		WithStorageGB(100).
+		WithMaxStorageQuotaGB(100).
 		WithBillingPeriod("Hour").
 		WithIdentity("cid", "csecret")
 
@@ -218,7 +218,7 @@ func TestKaaS_WithHA(t *testing.T) {
 }
 
 func TestKaaS_WithStorage(t *testing.T) {
-	k := NewKaaS().WithStorageGB(200)
+	k := NewKaaS().WithMaxStorageQuotaGB(200)
 	req := k.RawRequest()
 	if req.Properties.Storage.MaxCumulativeVolumeSize == nil || *req.Properties.Storage.MaxCumulativeVolumeSize != 200 {
 		t.Errorf("Storage.MaxCumulativeVolumeSize = %v", req.Properties.Storage.MaxCumulativeVolumeSize)
@@ -329,7 +329,7 @@ func TestKaaS_ToRequest(t *testing.T) {
 		WithPodCIDR("10.200.0.0/16").
 		WithKubernetesVersion("1.32.3").
 		WithHA(true).
-		WithStorageGB(100).
+		WithMaxStorageQuotaGB(100).
 		WithBillingPeriod("Hour").
 		WithIdentity("cid", "csecret").
 		AddNodePool(NewNodePool().Named("pool-1").OfInstance("K4A8").InZone("ITBG-1").WithCount(3))
@@ -369,8 +369,8 @@ func TestKaaS_ToRequest(t *testing.T) {
 	if req.Properties.Storage.MaxCumulativeVolumeSize == nil || *req.Properties.Storage.MaxCumulativeVolumeSize != 100 {
 		t.Errorf("Storage = %+v", req.Properties.Storage)
 	}
-	if req.Properties.BillingPlan.BillingPeriod != "Hour" {
-		t.Errorf("BillingPlan.BillingPeriod = %q", req.Properties.BillingPlan.BillingPeriod)
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Hour" {
+		t.Errorf("BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 	if req.Properties.Identity == nil {
 		t.Fatal("Identity is nil")
@@ -401,7 +401,7 @@ func TestKaaS_ToUpdateRequest_MutableOnly(t *testing.T) {
 		WithVPC(URI(vpcURI)). // set but must NOT appear in update request
 		WithKubernetesVersion("1.33.0").
 		WithHA(true).
-		WithStorageGB(200).
+		WithMaxStorageQuotaGB(200).
 		WithBillingPeriod("Monthly").
 		AddNodePool(NewNodePool().Named("pool-1").WithCount(5).OfInstance("K4A8").InZone("ITBG-1"))
 
@@ -416,8 +416,8 @@ func TestKaaS_ToUpdateRequest_MutableOnly(t *testing.T) {
 	if upd.Properties.Storage == nil || upd.Properties.Storage.MaxCumulativeVolumeSize == nil || *upd.Properties.Storage.MaxCumulativeVolumeSize != 200 {
 		t.Errorf("Storage = %v", upd.Properties.Storage)
 	}
-	if upd.Properties.BillingPlan == nil || upd.Properties.BillingPlan.BillingPeriod != "Monthly" {
-		t.Errorf("BillingPlan = %v", upd.Properties.BillingPlan)
+	if upd.Properties.BillingPeriod == nil || *upd.Properties.BillingPeriod != "Monthly" {
+		t.Errorf("BillingPeriod = %v", upd.Properties.BillingPeriod)
 	}
 	if len(upd.Properties.NodePools) != 1 || upd.Properties.NodePools[0].Nodes != 5 {
 		t.Errorf("NodePools = %+v", upd.Properties.NodePools)
@@ -432,8 +432,8 @@ func TestKaaS_ToUpdateRequest_Empty(t *testing.T) {
 	if upd.Properties.Storage != nil {
 		t.Errorf("Storage should be nil when not set, got %v", upd.Properties.Storage)
 	}
-	if upd.Properties.BillingPlan != nil {
-		t.Errorf("BillingPlan should be nil when not set, got %v", upd.Properties.BillingPlan)
+	if upd.Properties.BillingPeriod != nil {
+		t.Errorf("BillingPeriod should be nil when not set, got %v", upd.Properties.BillingPeriod)
 	}
 }
 
@@ -493,9 +493,7 @@ func kaasTestResponse(name string) *types.KaaSResponse {
 			Storage: &types.StorageKubernetes{
 				MaxCumulativeVolumeSize: &maxVol,
 			},
-			BillingPlan: &types.BillingPeriodResourceResponse{
-				BillingPeriod: &billingPeriod,
-			},
+			BillingPeriod: &billingPeriod,
 			NodePools: &[]types.NodePoolPropertiesResponse{
 				{
 					Name:        &poolName,
@@ -687,7 +685,7 @@ const kaasSuccessBody = `{` +
 	`"securityGroup":{"name":"sg-name"},` +
 	`"nodeCidr":{"address":"10.100.0.0/16","name":"node-cidr"},` +
 	`"kubernetesVersion":{"value":"1.32.3"},` +
-	`"billingPlan":{"billingPeriod":"Hour"},` +
+	`"billingPeriod":"Hour",` +
 	`"ha":true` +
 	`},` +
 	`"status":{"state":"Active"}}`
@@ -1054,8 +1052,8 @@ func TestKaaSClientAdapter_List_TwoItems(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
-			`{"metadata":{"id":"kaas-1","name":"c1","uri":"/projects/p/providers/Aruba.Container/kaas/kaas-1","project":{"id":"p"}},"properties":{"kubernetesVersion":{"value":"1.32.3"},"billingPlan":{"billingPeriod":"Hour"}},"status":{}},`+
-			`{"metadata":{"id":"kaas-2","name":"c2","uri":"/projects/p/providers/Aruba.Container/kaas/kaas-2","project":{"id":"p"}},"properties":{"kubernetesVersion":{"value":"1.31.0"},"billingPlan":{"billingPeriod":"Monthly"}},"status":{}}`+
+			`{"metadata":{"id":"kaas-1","name":"c1","uri":"/projects/p/providers/Aruba.Container/kaas/kaas-1","project":{"id":"p"}},"properties":{"kubernetesVersion":{"value":"1.32.3"},"billingPeriod":"Hour"},"status":{}},`+
+			`{"metadata":{"id":"kaas-2","name":"c2","uri":"/projects/p/providers/Aruba.Container/kaas/kaas-2","project":{"id":"p"}},"properties":{"kubernetesVersion":{"value":"1.31.0"},"billingPeriod":"Monthly"},"status":{}}`+
 			`]}`)
 	})
 

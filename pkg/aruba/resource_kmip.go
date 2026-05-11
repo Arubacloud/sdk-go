@@ -11,6 +11,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // Kmip is the wrapper for a KMIP service nested inside a KMS instance.
 // Construct with aruba.NewKmip() and bind via IntoKMS(parent).
 //
@@ -28,9 +30,10 @@ type Kmip struct {
 	responseMetadataMixin // present but never populated; ID/URI shadowed below
 	httpEnvelopeMixin
 
-	name     *string
+	name    *string
+	refresh func(ctx context.Context) error
+
 	response *types.KmipResponse
-	refresh  func(ctx context.Context) error
 }
 
 func (km *Kmip) setRefresh(fn func(context.Context) error) { km.refresh = fn }
@@ -83,16 +86,15 @@ func (km *Kmip) WaitUntilCertificateAvailable(ctx context.Context, opts ...WaitO
 	return err
 }
 
-// ---------------------------------------------------------------------------
-// Standard setters
-// ---------------------------------------------------------------------------
+// Setters — chainable, general → specific
 
+// IntoKMS binds this Kmip to its parent KMS instance. Required before Create.
 func (km *Kmip) IntoKMS(parent Ref) *Kmip { km.intoKMS(parent); return km }
-func (km *Kmip) WithName(n string) *Kmip  { km.name = &n; return km }
 
-// ---------------------------------------------------------------------------
-// Ref + ID accessors (shadow responseMetadataMixin)
-// ---------------------------------------------------------------------------
+// WithName sets the resource name. Required by the API.
+func (km *Kmip) WithName(n string) *Kmip { km.name = &n; return km }
+
+// Getters — general → specific
 
 // ID returns the KMIP service's unique ID from the response, or "" before a Create/Get.
 func (km *Kmip) ID() string {
@@ -115,17 +117,13 @@ func (km *Kmip) URI() string {
 	return fmt.Sprintf("/projects/%s/providers/Aruba.Security/kms/%s/kmips/%s", pid, kid, kmipID)
 }
 
-// ---------------------------------------------------------------------------
-// Raw accessors
-// ---------------------------------------------------------------------------
+// Raw shadows responseMetadataMixin.Raw() with the typed Kmip response.
+func (km *Kmip) Raw() *types.KmipResponse { return km.response }
 
-func (km *Kmip) Raw() *types.KmipResponse      { return km.response }
+// RawRequest returns what toRequest() would emit right now.
 func (km *Kmip) RawRequest() types.KmipRequest { return km.toRequest() }
 
-// ---------------------------------------------------------------------------
-// Response-preferring read accessors
-// ---------------------------------------------------------------------------
-
+// Name returns the KMIP service name, or "" if unset.
 func (km *Kmip) Name() string {
 	if km.response != nil && km.response.Name != nil {
 		return *km.response.Name
@@ -133,6 +131,7 @@ func (km *Kmip) Name() string {
 	return kmipDeref(km.name)
 }
 
+// Type returns the KMIP service type string, or "" if unset.
 func (km *Kmip) Type() string {
 	if km.response != nil && km.response.Type != nil {
 		return *km.response.Type
@@ -140,6 +139,7 @@ func (km *Kmip) Type() string {
 	return ""
 }
 
+// KmipStatus returns the current KMIP service status string, or "" if unset.
 func (km *Kmip) KmipStatus() string {
 	if km.response != nil && km.response.Status != nil {
 		return string(*km.response.Status)
@@ -147,6 +147,7 @@ func (km *Kmip) KmipStatus() string {
 	return ""
 }
 
+// CreationDate returns the ISO-8601 creation timestamp, or "" if unset.
 func (km *Kmip) CreationDate() string {
 	if km.response != nil && km.response.CreationDate != nil {
 		return *km.response.CreationDate
@@ -154,6 +155,7 @@ func (km *Kmip) CreationDate() string {
 	return ""
 }
 
+// DeletionDate returns the ISO-8601 deletion timestamp, or "" if unset.
 func (km *Kmip) DeletionDate() string {
 	if km.response != nil && km.response.DeletionDate != nil {
 		return *km.response.DeletionDate
@@ -161,10 +163,9 @@ func (km *Kmip) DeletionDate() string {
 	return ""
 }
 
-// ---------------------------------------------------------------------------
-// Wire conversions
-// ---------------------------------------------------------------------------
+// Wire converters
 
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (km *Kmip) toRequest() types.KmipRequest {
 	req := types.KmipRequest{}
 	if km.name != nil {
@@ -173,6 +174,7 @@ func (km *Kmip) toRequest() types.KmipRequest {
 	return req
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (km *Kmip) fromResponse(resp *types.KmipResponse) {
 	if resp == nil {
 		return
@@ -190,10 +192,6 @@ func kmipDeref(p *string) string {
 	}
 	return *p
 }
-
-// ---------------------------------------------------------------------------
-// kmipIDsFromRef
-// ---------------------------------------------------------------------------
 
 func kmipIDsFromRef(ref Ref) (projectID, kmsID, kmipID string, err error) {
 	kmipID, ok := extractID(ref, func(r Ref) (string, bool) {
@@ -226,10 +224,11 @@ func kmipIDsFromRef(ref Ref) (projectID, kmsID, kmipID string, err error) {
 	return projectID, kmsID, kmipID, nil
 }
 
-// ---------------------------------------------------------------------------
-// Low-level interface + adapter
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// kmipsLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type kmipsLowLevelClient interface {
 	List(ctx context.Context, projectID, kmsID string, params *types.RequestParameters) (*types.Response[types.KmipList], error)
 	Get(ctx context.Context, projectID, kmsID, kmipID string, params *types.RequestParameters) (*types.Response[types.KmipResponse], error)
@@ -238,6 +237,12 @@ type kmipsLowLevelClient interface {
 	Download(ctx context.Context, projectID, kmsID, kmipID string, params *types.RequestParameters) (*types.Response[types.KmipCertificateResponse], error)
 }
 
+// ---- Adapter ----
+
+// kmipsClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates Kmip ↔ types.KmipRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type kmipsClientAdapter struct{ low kmipsLowLevelClient }
 
 func newKmipsClientAdapter(rest *restclient.Client) *kmipsClientAdapter {
@@ -247,6 +252,7 @@ func newKmipsClientAdapter(rest *restclient.Client) *kmipsClientAdapter {
 	return &kmipsClientAdapter{low: security.NewKmipClientImpl(rest)}
 }
 
+// Create posts a new Kmip to the API and hydrates the wrapper from the response.
 func (a *kmipsClientAdapter) Create(ctx context.Context, km *Kmip, opts ...CallOption) (*Kmip, error) {
 	if err := km.Err(); err != nil {
 		return km, err
@@ -283,6 +289,7 @@ func (a *kmipsClientAdapter) Create(ctx context.Context, km *Kmip, opts ...CallO
 	return km, nil
 }
 
+// Get fetches a Kmip by Ref and returns a freshly hydrated wrapper.
 func (a *kmipsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*Kmip, error) {
 	projectID, kmsID, kmipID, err := kmipIDsFromRef(ref)
 	if err != nil {
@@ -317,6 +324,7 @@ func (a *kmipsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOptio
 	return out, nil
 }
 
+// Delete removes the Kmip identified by Ref.
 func (a *kmipsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, kmsID, kmipID, err := kmipIDsFromRef(ref)
 	if err != nil {
@@ -334,6 +342,7 @@ func (a *kmipsClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOp
 	return nil
 }
 
+// List returns a paginated list of Kmip in the given parent scope.
 func (a *kmipsClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOption) (*List[*Kmip], error) {
 	projectID, kmsID, err := kmsIDsFromRef(parent)
 	if err != nil {
@@ -385,6 +394,7 @@ func (a *kmipsClientAdapter) List(ctx context.Context, parent Ref, opts ...CallO
 	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
 }
 
+// Download retrieves the KMIP certificate key+cert pair for the given Ref.
 func (a *kmipsClientAdapter) Download(ctx context.Context, ref Ref, opts ...CallOption) (*KmipCertificate, error) {
 	projectID, kmsID, kmipID, err := kmipIDsFromRef(ref)
 	if err != nil {

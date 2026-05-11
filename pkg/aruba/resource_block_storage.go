@@ -9,6 +9,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // BlockStorage is the wrapper for an Aruba Cloud BlockStorage volume
 // (a direct child of a Project). Construct with aruba.NewBlockStorage()
 // and bind it via IntoProject(project).
@@ -22,7 +24,7 @@ type BlockStorage struct {
 	linkedMixin
 	httpEnvelopeMixin
 
-	sizeGB        int
+	sizeGB        *int32
 	storageType   *types.BlockStorageType
 	billingPeriod *BillingPeriod
 	snapshotRef   *string // body URI
@@ -32,23 +34,48 @@ type BlockStorage struct {
 	response *types.BlockStorageResponse
 }
 
-func (b *BlockStorage) IntoProject(p Ref) *BlockStorage        { b.intoProject(p); return b }
-func (b *BlockStorage) WithName(n string) *BlockStorage        { b.withName(n); return b }
-func (b *BlockStorage) AddTag(t string) *BlockStorage          { b.addTag(t); return b }
-func (b *BlockStorage) RemoveTag(t string) *BlockStorage       { b.removeTag(t); return b }
+// Setters — chainable, general → specific
+
+// IntoProject binds this BlockStorage to its parent project. Required before Create.
+func (b *BlockStorage) IntoProject(p Ref) *BlockStorage { b.intoProject(p); return b }
+
+// WithName sets the resource name. Required by the API.
+func (b *BlockStorage) WithName(n string) *BlockStorage { b.withName(n); return b }
+
+// AddTag appends a tag for filtering and accounting.
+func (b *BlockStorage) AddTag(t string) *BlockStorage { b.addTag(t); return b }
+
+// RemoveTag removes a previously-added tag. No-op if absent.
+func (b *BlockStorage) RemoveTag(t string) *BlockStorage { b.removeTag(t); return b }
+
+// ReplaceTags replaces the entire tag set with the given values.
 func (b *BlockStorage) ReplaceTags(ts ...string) *BlockStorage { b.replaceTags(ts...); return b }
-func (b *BlockStorage) InRegion(region Region) *BlockStorage   { b.inRegion(region); return b }
-func (b *BlockStorage) InZone(zone Zone) *BlockStorage         { b.inZone(zone); return b }
-func (b *BlockStorage) WithSizeGB(gb int) *BlockStorage        { b.sizeGB = gb; return b }
+
+// InRegion sets the region for this resource.
+func (b *BlockStorage) InRegion(region Region) *BlockStorage { b.inRegion(region); return b }
+
+// InZone sets the availability zone. More specific than InRegion.
+func (b *BlockStorage) InZone(zone Zone) *BlockStorage { b.inZone(zone); return b }
+
+// WithSizeGB sets the volume size in GiB.
+func (b *BlockStorage) WithSizeGB(gb int) *BlockStorage { v := int32(gb); b.sizeGB = &v; return b }
+
+// OfType sets the storage type (e.g. SSD, HDD).
 func (b *BlockStorage) OfType(t types.BlockStorageType) *BlockStorage {
 	b.storageType = &t
 	return b
 }
+
+// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
 func (b *BlockStorage) WithBillingPeriod(p BillingPeriod) *BlockStorage {
 	b.billingPeriod = &p
 	return b
 }
-func (b *BlockStorage) FromImage(img string) *BlockStorage   { b.image = &img; return b }
+
+// FromImage sets the source image name for bootable volumes.
+func (b *BlockStorage) FromImage(img string) *BlockStorage { b.image = &img; return b }
+
+// WithBootable marks the volume as bootable.
 func (b *BlockStorage) WithBootable(boot bool) *BlockStorage { b.bootable = &boot; return b }
 
 // FromSnapshot binds the source snapshot via its URI. Pass any Ref (typed or
@@ -64,6 +91,8 @@ func (b *BlockStorage) FromSnapshot(snap Ref) *BlockStorage {
 	return b
 }
 
+// Getters — general → specific
+
 // URI satisfies Ref.
 func (b *BlockStorage) URI() string { return b.RespURI() }
 
@@ -76,40 +105,59 @@ func (b *BlockStorage) Raw() *types.BlockStorageResponse { return b.response }
 // RawRequest returns what toRequest() would emit right now.
 func (b *BlockStorage) RawRequest() types.BlockStorageRequest { return b.toRequest() }
 
-func (b *BlockStorage) SizeGB() int { return b.sizeGB }
+// SizeGB returns the volume size in GiB, or 0 if unset.
+func (b *BlockStorage) SizeGB() int {
+	if b.sizeGB == nil {
+		return 0
+	}
+	return int(*b.sizeGB)
+}
+
+// Type returns the storage type (e.g. SSD, HDD), or "" if unset.
 func (b *BlockStorage) Type() types.BlockStorageType {
 	if b.storageType == nil {
 		return ""
 	}
 	return *b.storageType
 }
+
+// BillingPeriod returns the billing period, or "" if unset.
 func (b *BlockStorage) BillingPeriod() BillingPeriod {
 	if b.billingPeriod == nil {
 		return ""
 	}
 	return *b.billingPeriod
 }
+
+// Image returns the source image name, or "" if unset.
 func (b *BlockStorage) Image() string { return blockStorageDerefString(b.image) }
+
+// Bootable returns whether the volume is bootable, or false if unset.
 func (b *BlockStorage) Bootable() bool {
 	if b.bootable == nil {
 		return false
 	}
 	return *b.bootable
 }
+
+// SnapshotURI returns the source snapshot URI, or "" if unset.
 func (b *BlockStorage) SnapshotURI() string { return blockStorageDerefString(b.snapshotRef) }
 
+// Wire converters
+
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (b *BlockStorage) toRequest() types.BlockStorageRequest {
-	var bp BillingPeriod
-	if b.billingPeriod != nil {
-		bp = *b.billingPeriod
-	}
 	var t types.BlockStorageType
 	if b.storageType != nil {
 		t = *b.storageType
 	}
+	var sizeGB int
+	if b.sizeGB != nil {
+		sizeGB = int(*b.sizeGB)
+	}
 	props := types.BlockStoragePropertiesRequest{
-		SizeGB:        b.sizeGB,
-		BillingPeriod: bp,
+		SizeGB:        sizeGB,
+		BillingPeriod: defaultBillingPeriod(b.billingPeriod),
 		Zone:          b.zonePtr(),
 		Type:          t,
 		Bootable:      b.bootable,
@@ -127,6 +175,7 @@ func (b *BlockStorage) toRequest() types.BlockStorageRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (b *BlockStorage) fromResponse(resp *types.BlockStorageResponse) {
 	if resp == nil {
 		return
@@ -145,7 +194,8 @@ func (b *BlockStorage) fromResponse(resp *types.BlockStorageResponse) {
 	b.setLinked(resp.Properties.LinkedResources)
 
 	if resp.Properties.SizeGB != 0 {
-		b.sizeGB = resp.Properties.SizeGB
+		v := int32(resp.Properties.SizeGB)
+		b.sizeGB = &v
 	}
 	if resp.Properties.Type != "" {
 		v := resp.Properties.Type
@@ -155,10 +205,10 @@ func (b *BlockStorage) fromResponse(resp *types.BlockStorageResponse) {
 		v := resp.Properties.Zone
 		b.zone = &v
 	}
-	if resp.Properties.BillingPeriod != "" {
-		v := resp.Properties.BillingPeriod
-		b.billingPeriod = &v
+	if resp.Properties.BillingPeriod != nil {
+		b.billingPeriod = resp.Properties.BillingPeriod
 	}
+
 	if resp.Properties.Image != nil && *resp.Properties.Image != "" {
 		v := *resp.Properties.Image
 		b.image = &v
@@ -211,10 +261,11 @@ func (b *BlockStorage) WaitUntilUsed(ctx context.Context, opts ...WaitOption) er
 	return b.WaitUntilStates(ctx, []string{"InUse", "Used"}, opts...)
 }
 
-// ---------------------------------------------------------------------------
-// Low-level client interface, adapter, constructor, and methods
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
+// volumeLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type volumeLowLevelClient interface {
 	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.BlockStorageList], error)
 	Get(ctx context.Context, projectID, volumeID string, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error)
@@ -223,7 +274,15 @@ type volumeLowLevelClient interface {
 	Delete(ctx context.Context, projectID, volumeID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// volumesClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates BlockStorage ↔ types.BlockStorageRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type volumesClientAdapter struct{ low volumeLowLevelClient }
+
+var _ VolumesClient = (*volumesClientAdapter)(nil)
 
 func newVolumesClientAdapter(rest *restclient.Client) *volumesClientAdapter {
 	if rest == nil {
@@ -232,6 +291,7 @@ func newVolumesClientAdapter(rest *restclient.Client) *volumesClientAdapter {
 	return &volumesClientAdapter{low: storage.NewVolumesClientImpl(rest)}
 }
 
+// Create posts a new BlockStorage to the API and hydrates the wrapper from the response.
 func (a *volumesClientAdapter) Create(ctx context.Context, vol *BlockStorage, opts ...CallOption) (*BlockStorage, error) {
 	if err := vol.Err(); err != nil {
 		return vol, err
@@ -265,6 +325,7 @@ func (a *volumesClientAdapter) Create(ctx context.Context, vol *BlockStorage, op
 	return vol, nil
 }
 
+// Get fetches a BlockStorage by Ref and returns a freshly hydrated wrapper.
 func (a *volumesClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*BlockStorage, error) {
 	projectID, blockStorageID, err := blockStorageIDsFromRef(ref)
 	if err != nil {
@@ -300,6 +361,7 @@ func (a *volumesClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOpt
 	return out, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *volumesClientAdapter) Update(ctx context.Context, vol *BlockStorage, opts ...CallOption) (*BlockStorage, error) {
 	if err := vol.Err(); err != nil {
 		return vol, err
@@ -336,6 +398,7 @@ func (a *volumesClientAdapter) Update(ctx context.Context, vol *BlockStorage, op
 	return vol, nil
 }
 
+// Delete removes the BlockStorage identified by Ref.
 func (a *volumesClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, blockStorageID, err := blockStorageIDsFromRef(ref)
 	if err != nil {
@@ -353,6 +416,7 @@ func (a *volumesClientAdapter) Delete(ctx context.Context, ref Ref, opts ...Call
 	return nil
 }
 
+// List returns a paginated list of BlockStorage in the given parent scope.
 func (a *volumesClientAdapter) List(ctx context.Context, project Ref, opts ...CallOption) (*List[*BlockStorage], error) {
 	projectID, err := projectIDFromRef(project)
 	if err != nil {

@@ -99,12 +99,12 @@ func TestSnapshot_IntoProject_BadRef(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// OfVolume
+// FromVolume
 // --------------------------------------------------------------------------
 
-func TestSnapshot_OfVolume_URIRef(t *testing.T) {
+func TestSnapshot_FromVolume_URIRef(t *testing.T) {
 	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
-	snap := NewSnapshot().OfVolume(URI(volURI))
+	snap := NewSnapshot().FromVolume(URI(volURI))
 	if snap.VolumeURI() != volURI {
 		t.Errorf("VolumeURI() = %q", snap.VolumeURI())
 	}
@@ -113,12 +113,12 @@ func TestSnapshot_OfVolume_URIRef(t *testing.T) {
 	}
 }
 
-func TestSnapshot_OfVolume_TypedRef(t *testing.T) {
+func TestSnapshot_FromVolume_TypedRef(t *testing.T) {
 	// Simulate a typed BlockStorage with a known URI.
 	bs := &BlockStorage{}
 	bs.fromResponse(blockStorageTestResponse("bs-42", "n", "/projects/p/providers/Aruba.Storage/blockstorages/bs-42", "p"))
 
-	snap := NewSnapshot().OfVolume(bs)
+	snap := NewSnapshot().FromVolume(bs)
 	if snap.VolumeURI() != bs.URI() {
 		t.Errorf("VolumeURI() = %q, want %q", snap.VolumeURI(), bs.URI())
 	}
@@ -127,8 +127,8 @@ func TestSnapshot_OfVolume_TypedRef(t *testing.T) {
 	}
 }
 
-func TestSnapshot_OfVolume_EmptyURI(t *testing.T) {
-	snap := NewSnapshot().OfVolume(URI(""))
+func TestSnapshot_FromVolume_EmptyURI(t *testing.T) {
+	snap := NewSnapshot().FromVolume(URI(""))
 	if snap.Err() == nil {
 		t.Error("expected Err() != nil for empty volume URI")
 	}
@@ -148,7 +148,7 @@ func TestSnapshot_ToRequestRoundTrip(t *testing.T) {
 		AddTag("t1").AddTag("t2").
 		InRegion("ITBG-Bergamo").
 		WithBillingPeriod("Hour").
-		OfVolume(URI(volURI))
+		FromVolume(URI(volURI))
 
 	req := snap.RawRequest()
 
@@ -173,8 +173,8 @@ func TestSnapshot_ToRequest_UnsetOptionals_AreNilOrEmpty(t *testing.T) {
 	snap := NewSnapshot().WithName("bare")
 	req := snap.RawRequest()
 
-	if req.Properties.BillingPeriod != nil {
-		t.Errorf("BillingPeriod should be nil, got %v", req.Properties.BillingPeriod)
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPeriod should default to Hour, got %v", req.Properties.BillingPeriod)
 	}
 	if req.Properties.Volume.URI != "" {
 		t.Errorf("Volume.URI should be empty, got %q", req.Properties.Volume.URI)
@@ -582,7 +582,7 @@ func TestSnapshotsClientAdapter_Create_WithVolume(t *testing.T) {
 	snap := NewSnapshot().
 		IntoProject(URI("/projects/p")).
 		WithName("my-snap").
-		OfVolume(URI(volURI))
+		FromVolume(URI(volURI))
 
 	result, err := adapter.Create(context.Background(), snap)
 	if err != nil {
@@ -769,7 +769,7 @@ func TestSnapshotsClientAdapter_Update_Err(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	snap := NewSnapshot().OfVolume(URI("")) // seeds an error
+	snap := NewSnapshot().FromVolume(URI("")) // seeds an error
 	_, err := adapter.Update(context.Background(), snap)
 	if err == nil {
 		t.Fatal("expected error when Snapshot has a pre-existing Err()")

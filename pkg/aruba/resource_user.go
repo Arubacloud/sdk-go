@@ -10,6 +10,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ---- Wrapper ----
+
 // User is the wrapper for an Aruba Cloud DBaaS user (a child of a DBaaS
 // instance). Construct with aruba.NewUser() and bind via IntoDBaaS(parent).
 //
@@ -35,13 +37,18 @@ type User struct {
 	response *types.UserResponse
 }
 
-// Setters.
+// Setters — chainable, general → specific
 
-func (u *User) IntoDBaaS(parent Ref) *User     { u.intoDBaaS(parent); return u }
+// IntoDBaaS binds this User to its parent DBaaS instance. Required before Create.
+func (u *User) IntoDBaaS(parent Ref) *User { u.intoDBaaS(parent); return u }
+
+// WithUsername sets the username. Used as the path identifier; required before Create.
 func (u *User) WithUsername(name string) *User { u.username = &name; return u }
-func (u *User) WithPassword(pw string) *User   { u.password = &pw; return u }
 
-// Ref + ID accessors.
+// WithPassword sets the password for Create/Update. Write-only: no Password() getter is exposed.
+func (u *User) WithPassword(pw string) *User { u.password = &pw; return u }
+
+// Getters — general → specific
 
 // ID returns the user's username (which serves as its path identifier).
 // Shadows responseMetadataMixin.ID() since the response has no id field.
@@ -84,6 +91,7 @@ func (u *User) CreatedBy() string {
 	return ""
 }
 
+// Raw shadows responseMetadataMixin.Raw() with the typed User response.
 func (u *User) Raw() *types.UserResponse { return u.response }
 
 // RawRequest returns the wire body that would be sent on Create/Update. It
@@ -93,8 +101,9 @@ func (u *User) Raw() *types.UserResponse { return u.response }
 // through any read-only path other than this wire mirror.
 func (u *User) RawRequest() types.UserRequest { return u.toRequest() }
 
-// Wire conversions.
+// Wire converters
 
+// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (u *User) toRequest() types.UserRequest {
 	return types.UserRequest{
 		Username: userDerefString(u.username),
@@ -102,6 +111,7 @@ func (u *User) toRequest() types.UserRequest {
 	}
 }
 
+// fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (u *User) fromResponse(resp *types.UserResponse) {
 	if resp == nil {
 		return
@@ -123,9 +133,7 @@ func userDerefString(p *string) string {
 	return *p
 }
 
-// ---------------------------------------------------------------------------
-// Users low-level client, adapter, and helpers
-// ---------------------------------------------------------------------------
+// ---- Low-level client interface ----
 
 // userIDsFromRef extracts (projectID, dbaasID, userID) from a Ref.
 func userIDsFromRef(ref Ref) (projectID, dbaasID, userID string, err error) {
@@ -156,6 +164,9 @@ func userIDsFromRef(ref Ref) (projectID, dbaasID, userID string, err error) {
 	return pid, did, name, nil
 }
 
+// usersLowLevelClient is the contract the wrapper depends on. Returning
+// *types.Response[T] preserves HTTP envelope details (status code, headers,
+// raw body) for the wrapper's diagnostics.
 type usersLowLevelClient interface {
 	List(ctx context.Context, projectID, dbaasID string, params *types.RequestParameters) (*types.Response[types.UserList], error)
 	Get(ctx context.Context, projectID, dbaasID, userID string, params *types.RequestParameters) (*types.Response[types.UserResponse], error)
@@ -164,7 +175,15 @@ type usersLowLevelClient interface {
 	Delete(ctx context.Context, projectID, dbaasID, userID string, params *types.RequestParameters) (*types.Response[any], error)
 }
 
+// ---- Adapter ----
+
+// usersClientAdapter bridges the wrapper API (chainable, error-accumulating,
+// wire-shape-hidden) to the low-level client (parameter-explicit, returning
+// typed wire structs). Translates User ↔ types.UserRequest/Response and
+// surfaces HTTP errors as *aruba.HTTPError.
 type usersClientAdapter struct{ low usersLowLevelClient }
+
+var _ UsersClient = (*usersClientAdapter)(nil)
 
 func newUsersClientAdapter(rest *restclient.Client) *usersClientAdapter {
 	if rest == nil {
@@ -173,6 +192,7 @@ func newUsersClientAdapter(rest *restclient.Client) *usersClientAdapter {
 	return &usersClientAdapter{low: database.NewUsersClientImpl(rest)}
 }
 
+// Create posts a new User to the API and hydrates the wrapper from the response.
 func (a *usersClientAdapter) Create(ctx context.Context, u *User, opts ...CallOption) (*User, error) {
 	if err := u.Err(); err != nil {
 		return u, err
@@ -205,6 +225,7 @@ func (a *usersClientAdapter) Create(ctx context.Context, u *User, opts ...CallOp
 	return u, nil
 }
 
+// Update sends a PUT for the current wrapper state. Requires ID and parent.
 func (a *usersClientAdapter) Update(ctx context.Context, u *User, opts ...CallOption) (*User, error) {
 	if err := u.Err(); err != nil {
 		return u, err
@@ -237,6 +258,7 @@ func (a *usersClientAdapter) Update(ctx context.Context, u *User, opts ...CallOp
 	return u, nil
 }
 
+// Get fetches a User by Ref and returns a freshly hydrated wrapper.
 func (a *usersClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption) (*User, error) {
 	projectID, dbaasID, userID, err := userIDsFromRef(ref)
 	if err != nil {
@@ -263,6 +285,7 @@ func (a *usersClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOptio
 	return out, nil
 }
 
+// Delete removes the User identified by Ref.
 func (a *usersClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOption) error {
 	projectID, dbaasID, userID, err := userIDsFromRef(ref)
 	if err != nil {
@@ -280,6 +303,7 @@ func (a *usersClientAdapter) Delete(ctx context.Context, ref Ref, opts ...CallOp
 	return nil
 }
 
+// List returns a paginated list of Users in the given DBaaS scope.
 func (a *usersClientAdapter) List(ctx context.Context, dbaas Ref, opts ...CallOption) (*List[*User], error) {
 	projectID, dbaasID, err := dbaasIDsFromRef(dbaas)
 	if err != nil {
