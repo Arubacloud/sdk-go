@@ -121,7 +121,7 @@ func TestVPNTunnel_IntoProject_BadRef(t *testing.T) {
 func TestVPNIPConfig_FluentSetters(t *testing.T) {
 	cfg := NewVPNIPConfig().
 		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/v")).
-		WithPublicIP(URI("/projects/p/providers/Aruba.Network/elasticIps/eip-1")).
+		WithElasticIP(URI("/projects/p/providers/Aruba.Network/elasticIps/eip-1")).
 		WithSubnet("my-subnet", "10.0.0.0/24")
 
 	if cfg.Err() != nil {
@@ -166,8 +166,8 @@ func TestVPNIPConfig_WithVPC_EmptyURI(t *testing.T) {
 	}
 }
 
-func TestVPNIPConfig_WithPublicIP_EmptyURI(t *testing.T) {
-	cfg := NewVPNIPConfig().WithPublicIP(URI(""))
+func TestVPNIPConfig_WithElasticIP_EmptyURI(t *testing.T) {
+	cfg := NewVPNIPConfig().WithElasticIP(URI(""))
 	if cfg.Err() == nil {
 		t.Fatal("expected Err() != nil for empty URI PublicIP")
 	}

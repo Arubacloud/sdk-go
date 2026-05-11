@@ -12,7 +12,7 @@ import (
 // DBaaS is the wrapper for an Aruba Cloud Database-as-a-Service instance
 // (a direct child of a Project). Construct with aruba.NewDBaaS() and bind
 // it via IntoProject(project), OfEngine, WithServerFlavor, WithStorage,
-// WithNetworking(vpc, subnet, sg, eip), etc.
+// WithVPC/WithSubnet/WithSecurityGroup/WithElasticIP, etc.
 //
 // Schema asymmetries:
 //   - Engine: request emits Engine.ID; response returns a full
@@ -100,24 +100,23 @@ func (d *DBaaS) WithoutAutoscaling() *DBaaS {
 }
 func (d *DBaaS) WithBillingPeriod(period BillingPeriod) *DBaaS { d.billingPeriod = &period; return d }
 
-// WithNetworking sets VPC, Subnet, SecurityGroup, and ElasticIP in a single call.
-// Each Ref is validated independently; an empty URI records an error but does not
-// prevent the other three from being set.
-func (d *DBaaS) WithNetworking(vpc, subnet, sg, eip Ref) *DBaaS {
-	d.setSingleRef("WithNetworking[vpc]", vpc, &d.vpcRef)
-	d.setSingleRef("WithNetworking[subnet]", subnet, &d.subnetRef)
-	d.setSingleRef("WithNetworking[sg]", sg, &d.securityGroupRef)
-	d.setSingleRef("WithNetworking[eip]", eip, &d.elasticIPRef)
-	return d
+func (d *DBaaS) WithVPC(v Ref) *DBaaS    { return d.setSingleRef("WithVPC", v, &d.vpcRef) }
+func (d *DBaaS) WithSubnet(s Ref) *DBaaS { return d.setSingleRef("WithSubnet", s, &d.subnetRef) }
+func (d *DBaaS) WithSecurityGroup(sg Ref) *DBaaS {
+	return d.setSingleRef("WithSecurityGroup", sg, &d.securityGroupRef)
+}
+func (d *DBaaS) WithElasticIP(eip Ref) *DBaaS {
+	return d.setSingleRef("WithElasticIP", eip, &d.elasticIPRef)
 }
 
-func (d *DBaaS) setSingleRef(label string, r Ref, dst **string) {
+func (d *DBaaS) setSingleRef(label string, r Ref, dst **string) *DBaaS {
 	uri := r.URI()
 	if uri == "" {
 		d.addErr(fmt.Errorf("%s: empty URI", label))
-		return
+		return d
 	}
 	*dst = &uri
+	return d
 }
 
 // Ref + ID accessors.
