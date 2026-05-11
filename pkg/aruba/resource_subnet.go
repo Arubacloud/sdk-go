@@ -35,7 +35,8 @@ func (s *Subnet) RemoveTag(t string) *Subnet       { s.removeTag(t); return s }
 func (s *Subnet) ReplaceTags(ts ...string) *Subnet { s.replaceTags(ts...); return s }
 func (s *Subnet) InRegion(region Region) *Subnet   { s.inRegion(region); return s }
 func (s *Subnet) OfType(t SubnetType) *Subnet      { s.subnetType = &t; return s }
-func (s *Subnet) WithDefault(b bool) *Subnet       { s.defaultSubnet = &b; return s }
+func (s *Subnet) AsDefault() *Subnet               { t := true; s.defaultSubnet = &t; return s }
+func (s *Subnet) NotDefault() *Subnet              { f := false; s.defaultSubnet = &f; return s }
 func (s *Subnet) WithCIDR(cidr string) *Subnet     { s.cidr = &cidr; return s }
 func (s *Subnet) WithDHCP(d *SubnetDHCP) *Subnet   { s.dhcp = d; return s }
 
@@ -77,7 +78,7 @@ func (s *Subnet) toRequest() types.SubnetRequest {
 		props.Type = *s.subnetType
 	}
 	if s.defaultSubnet != nil {
-		props.Default = *s.defaultSubnet
+		props.Default = s.defaultSubnet
 	}
 	if s.cidr != nil {
 		props.Network = &types.SubnetNetwork{Address: *s.cidr}

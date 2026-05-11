@@ -34,7 +34,7 @@ func TestVPC_FluentSetters(t *testing.T) {
 		AddTag("infra").
 		AddTag("net"). // dedupe
 		InRegion("ITBG-Bergamo").
-		WithDefault(true).
+		AsDefault().
 		WithPreset(true)
 
 	if v.Name() != "my-vpc" {
@@ -91,7 +91,7 @@ func TestVPC_ToRequestRoundTrip(t *testing.T) {
 		AddTag("t1").
 		AddTag("t2").
 		InRegion("ITBG-Bergamo").
-		WithDefault(true).
+		AsDefault().
 		WithPreset(false)
 
 	req := v.RawRequest()
@@ -115,11 +115,15 @@ func TestVPC_ToRequestRoundTrip(t *testing.T) {
 		t.Error("Properties.Properties.Preset should be false")
 	}
 
-	// When neither Default nor Preset set, Properties field should be nil.
+	// New construction default: Default is explicitly set to false, so
+	// Properties.Properties is non-nil and Default points to false.
 	v2 := NewVPC().WithName("bare")
 	req2 := v2.RawRequest()
-	if req2.Properties.Properties != nil {
-		t.Error("Properties.Properties should be nil when neither Default nor Preset is set")
+	if req2.Properties.Properties == nil {
+		t.Fatal("Properties.Properties should be non-nil after construction (Default defaults to false)")
+	}
+	if req2.Properties.Properties.Default == nil || *req2.Properties.Properties.Default {
+		t.Errorf("Default should default to *false, got %v", req2.Properties.Properties.Default)
 	}
 }
 
@@ -308,7 +312,7 @@ func TestVPCsClientAdapter_Create_Success(t *testing.T) {
 	vpc := NewVPC().
 		IntoProject(URI("/projects/p")).
 		WithName("my-vpc").
-		WithDefault(false)
+		NotDefault()
 
 	result, err := adapter.Create(context.Background(), vpc)
 	if err != nil {
