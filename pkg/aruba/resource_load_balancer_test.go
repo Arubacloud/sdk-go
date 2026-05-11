@@ -22,7 +22,7 @@ var _ Ref = (*LoadBalancer)(nil)
 // --------------------------------------------------------------------------
 
 func loadBalancerTestResponse(id, name, uri, projectID string) *types.LoadBalancerResponse {
-	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
+	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	state := "Active"
 	addr := "10.0.0.1"
 	vpcURI := "/projects/" + projectID + "/providers/Aruba.Network/vpcs/vpc-1"
@@ -73,7 +73,7 @@ func TestLoadBalancer_FromResponseHydration(t *testing.T) {
 	if tags := lb.Tags(); len(tags) != 1 || tags[0] != "lb-tag" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if lb.Region() != "ITBG-Bergamo" {
+	if lb.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", lb.Region())
 	}
 	if lb.State() != "Active" {

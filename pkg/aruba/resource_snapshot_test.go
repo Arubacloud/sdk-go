@@ -32,8 +32,8 @@ func TestSnapshot_FluentSetters(t *testing.T) {
 		AddTag("backup").
 		AddTag("storage").
 		AddTag("backup"). // dedupe
-		InRegion("ITBG-Bergamo").
-		WithBillingPeriod("Hour")
+		InRegion(RegionITBGBergamo).
+		WithBillingPeriod(BillingPeriodHour)
 
 	if snap.Name() != "my-snap" {
 		t.Errorf("Name() = %q", snap.Name())
@@ -41,10 +41,10 @@ func TestSnapshot_FluentSetters(t *testing.T) {
 	if tags := snap.Tags(); len(tags) != 2 || tags[0] != "backup" || tags[1] != "storage" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if snap.Region() != "ITBG-Bergamo" {
+	if snap.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", snap.Region())
 	}
-	if snap.BillingPeriod() != "Hour" {
+	if snap.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", snap.BillingPeriod())
 	}
 	if snap.ProjectID() != "p-1" {
@@ -146,8 +146,8 @@ func TestSnapshot_ToRequestRoundTrip(t *testing.T) {
 	snap := NewSnapshot().
 		WithName("snap-rt").
 		AddTag("t1").AddTag("t2").
-		InRegion("ITBG-Bergamo").
-		WithBillingPeriod("Hour").
+		InRegion(RegionITBGBergamo).
+		WithBillingPeriod(BillingPeriodHour).
 		FromVolume(URI(volURI))
 
 	req := snap.RawRequest()
@@ -158,10 +158,10 @@ func TestSnapshot_ToRequestRoundTrip(t *testing.T) {
 	if len(req.Metadata.Tags) != 2 {
 		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Location.Value = %q", req.Metadata.Location.Value)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Hour" {
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 	if req.Properties.Volume.URI != volURI {
@@ -186,12 +186,12 @@ func TestSnapshot_ToRequest_UnsetOptionals_AreNilOrEmpty(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func snapshotTestResponse(id, name, uri, projectID string) *types.SnapshotResponse {
-	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
+	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	state := "Active"
-	billingPeriod := BillingPeriod("Hour")
+	billingPeriod := BillingPeriodHour
 	sizeGB := int32(20)
 	boot := true
-	zone := Zone("ITBG-1")
+	zone := ZoneITBG1
 	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
 	return &types.SnapshotResponse{
 		Metadata: types.ResourceMetadataResponse{
@@ -207,7 +207,7 @@ func snapshotTestResponse(id, name, uri, projectID string) *types.SnapshotRespon
 		Properties: types.SnapshotPropertiesResponse{
 			SizeGB:        &sizeGB,
 			BillingPeriod: &billingPeriod,
-			Type:          types.BlockStorageTypeStandard,
+			Type:          BlockStorageTypeStandard,
 			Zone:          zone,
 			Bootable:      &boot,
 			Volume: &types.VolumeInfo{
@@ -243,7 +243,7 @@ func TestSnapshot_FromResponseHydration(t *testing.T) {
 	if tags := snap.Tags(); len(tags) != 1 || tags[0] != "tag1" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if snap.Region() != "ITBG-Bergamo" {
+	if snap.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", snap.Region())
 	}
 	if snap.State() != "Active" {
@@ -255,13 +255,13 @@ func TestSnapshot_FromResponseHydration(t *testing.T) {
 	if snap.SizeGB() != 20 {
 		t.Errorf("Size() = %d", snap.SizeGB())
 	}
-	if snap.Type() != types.BlockStorageTypeStandard {
+	if snap.Type() != BlockStorageTypeStandard {
 		t.Errorf("Type() = %q", snap.Type())
 	}
-	if snap.Zone() != "ITBG-1" {
+	if snap.Zone() != ZoneITBG1 {
 		t.Errorf("Zone() = %q", snap.Zone())
 	}
-	if snap.BillingPeriod() != "Hour" {
+	if snap.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", snap.BillingPeriod())
 	}
 	if !snap.Bootable() {
@@ -473,8 +473,8 @@ func TestSnapshotsClientAdapter_Create_Success(t *testing.T) {
 	snap := NewSnapshot().
 		IntoProject(URI("/projects/p")).
 		WithName("my-snap").
-		InRegion("ITBG-Bergamo").
-		WithBillingPeriod("Hour")
+		InRegion(RegionITBGBergamo).
+		WithBillingPeriod(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), snap)
 	if err != nil {
@@ -492,7 +492,7 @@ func TestSnapshotsClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "my-snap" {
 		t.Errorf("request Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Properties.BillingPeriod == nil || *gotBody.Properties.BillingPeriod != "Hour" {
+	if gotBody.Properties.BillingPeriod == nil || *gotBody.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("request BillingPeriod = %v", gotBody.Properties.BillingPeriod)
 	}
 }
@@ -651,16 +651,16 @@ func TestSnapshotsClientAdapter_Update_Success(t *testing.T) {
 
 	snap := &Snapshot{}
 	snap.fromResponse(snapshotTestResponse("snap-1", "my-snap", "/projects/p/providers/Aruba.Storage/snapshots/snap-1", "p"))
-	snap.WithBillingPeriod("Hour")
+	snap.WithBillingPeriod(BillingPeriodHour)
 
 	result, err := adapter.Update(context.Background(), snap)
 	if err != nil {
 		t.Fatalf("Update error: %v", err)
 	}
-	if result.BillingPeriod() != "Hour" {
+	if result.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", result.BillingPeriod())
 	}
-	if capturedBody.Properties.BillingPeriod == nil || *capturedBody.Properties.BillingPeriod != "Hour" {
+	if capturedBody.Properties.BillingPeriod == nil || *capturedBody.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("request BillingPeriod = %v", capturedBody.Properties.BillingPeriod)
 	}
 }
@@ -905,7 +905,7 @@ func TestSnapshotsClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].SizeGB() != 10 {
 		t.Errorf("items[0].SizeGB() = %d", items[0].SizeGB())
 	}
-	if items[1].ID() != "snap-2" || items[1].Type() != types.BlockStorageTypePerformance {
+	if items[1].ID() != "snap-2" || items[1].Type() != BlockStorageTypePerformance {
 		t.Errorf("items[1] ID=%q Type=%q", items[1].ID(), items[1].Type())
 	}
 	if items[0].ProjectID() != "p" {

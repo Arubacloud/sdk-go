@@ -42,15 +42,15 @@ func TestContainerRegistry_FluentSetters(t *testing.T) {
 		AddTag("env:prod").
 		AddTag("registry").
 		AddTag("env:prod"). // dedupe
-		InRegion("ITBG-1").
+		InRegion(RegionITBGBergamo).
 		WithVPC(vpcURI).
 		WithSubnet(subnetURI).
 		WithSecurityGroup(sgURI).
 		WithElasticIP(eipURI).
 		WithBlockStorage(bsURI).
 		WithAdminUsername("admin").
-		OfSize(types.ContainerRegistrySizeFlavorSmall).
-		WithBillingPeriod("Hour")
+		OfSize(ContainerRegistrySizeFlavorSmall).
+		WithBillingPeriod(BillingPeriodHour)
 
 	if cr.Name() != "my-registry" {
 		t.Errorf("Name() = %q", cr.Name())
@@ -58,7 +58,7 @@ func TestContainerRegistry_FluentSetters(t *testing.T) {
 	if tags := cr.Tags(); len(tags) != 2 || tags[0] != "env:prod" || tags[1] != "registry" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if cr.Region() != "ITBG-1" {
+	if cr.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", cr.Region())
 	}
 	if cr.VPC() != vpcURI.URI() {
@@ -79,10 +79,10 @@ func TestContainerRegistry_FluentSetters(t *testing.T) {
 	if cr.AdminUsername() != "admin" {
 		t.Errorf("AdminUsername() = %q", cr.AdminUsername())
 	}
-	if cr.SizeFlavor() != types.ContainerRegistrySizeFlavorSmall {
+	if cr.SizeFlavor() != ContainerRegistrySizeFlavorSmall {
 		t.Errorf("SizeFlavor() = %q", cr.SizeFlavor())
 	}
-	if cr.BillingPeriod() != "Hour" {
+	if cr.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", cr.BillingPeriod())
 	}
 	if cr.ProjectID() != "p-1" {
@@ -319,8 +319,8 @@ func TestContainerRegistry_WithAdminUsername(t *testing.T) {
 }
 
 func TestContainerRegistry_OfSize(t *testing.T) {
-	cr := NewContainerRegistry().OfSize(types.ContainerRegistrySizeFlavorSmall)
-	if cr.SizeFlavor() != types.ContainerRegistrySizeFlavorSmall {
+	cr := NewContainerRegistry().OfSize(ContainerRegistrySizeFlavorSmall)
+	if cr.SizeFlavor() != ContainerRegistrySizeFlavorSmall {
 		t.Errorf("SizeFlavor() = %q", cr.SizeFlavor())
 	}
 	req := cr.RawRequest()
@@ -330,8 +330,8 @@ func TestContainerRegistry_OfSize(t *testing.T) {
 }
 
 func TestContainerRegistry_WithBillingPeriod(t *testing.T) {
-	cr := NewContainerRegistry().WithBillingPeriod("Monthly")
-	if cr.BillingPeriod() != "Monthly" {
+	cr := NewContainerRegistry().WithBillingPeriod(BillingPeriodHour)
+	if cr.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", cr.BillingPeriod())
 	}
 }
@@ -350,15 +350,15 @@ func TestContainerRegistry_ToRequest(t *testing.T) {
 	cr := NewContainerRegistry().
 		WithName("reg-rt").
 		AddTag("t1").AddTag("t2").
-		InRegion("ITBG-1").
+		InRegion(RegionITBGBergamo).
 		WithVPC(URI(vpcURI)).
 		WithSubnet(URI(subnetURI)).
 		WithSecurityGroup(URI(sgURI)).
 		WithElasticIP(URI(eipURI)).
 		WithBlockStorage(URI(bsURI)).
 		WithAdminUsername("admin").
-		OfSize(types.ContainerRegistrySizeFlavorHighPerf).
-		WithBillingPeriod("Hour")
+		OfSize(ContainerRegistrySizeFlavorHighPerf).
+		WithBillingPeriod(BillingPeriodHour)
 
 	req := cr.RawRequest()
 
@@ -368,7 +368,7 @@ func TestContainerRegistry_ToRequest(t *testing.T) {
 	if len(req.Metadata.Tags) != 2 {
 		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
 	}
-	if req.Metadata.Location.Value != "ITBG-1" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Location.Value = %q", req.Metadata.Location.Value)
 	}
 	if req.Properties.VPC.URI != vpcURI {
@@ -392,7 +392,7 @@ func TestContainerRegistry_ToRequest(t *testing.T) {
 	if req.Properties.ConcurrentUsers == nil || *req.Properties.ConcurrentUsers != "HighPerf" {
 		t.Errorf("Properties.ConcurrentUsers = %v", req.Properties.ConcurrentUsers)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Hour" {
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("Properties.BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 }
@@ -437,7 +437,7 @@ func containerRegistryTestResponse(name string) *types.ContainerRegistryResponse
 			URI:              &uri,
 			Name:             func() *string { s := name; return &s }(),
 			Tags:             []string{"tag1"},
-			LocationResponse: &types.LocationResponse{Value: "ITBG-1"},
+			LocationResponse: &types.LocationResponse{Value: RegionITBGBergamo},
 			ProjectResponseMetadata: &types.ProjectResponseMetadata{
 				ID: "p",
 			},
@@ -450,7 +450,7 @@ func containerRegistryTestResponse(name string) *types.ContainerRegistryResponse
 			BlockStorage:    types.ReferenceResource{URI: bsURI},
 			AdminUser:       &types.UserCredential{Username: "admin"},
 			ConcurrentUsers: &size,
-			BillingPeriod:   func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
+			BillingPeriod:   func() *BillingPeriod { v := BillingPeriodHour; return &v }(),
 		},
 		Status: types.ResourceStatus{
 			State: &state,
@@ -482,7 +482,7 @@ func TestContainerRegistry_FromResponseHydration(t *testing.T) {
 	if tags := cr.Tags(); len(tags) != 1 || tags[0] != "tag1" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if cr.Region() != "ITBG-1" {
+	if cr.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", cr.Region())
 	}
 	if cr.State() != "Active" {
@@ -506,10 +506,10 @@ func TestContainerRegistry_FromResponseHydration(t *testing.T) {
 	if cr.AdminUsername() != "admin" {
 		t.Errorf("AdminUsername() = %q", cr.AdminUsername())
 	}
-	if cr.SizeFlavor() != types.ContainerRegistrySizeFlavorSmall {
+	if cr.SizeFlavor() != ContainerRegistrySizeFlavorSmall {
 		t.Errorf("SizeFlavor() = %q", cr.SizeFlavor())
 	}
-	if cr.BillingPeriod() != "Hour" {
+	if cr.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", cr.BillingPeriod())
 	}
 	if cr.ProjectID() != "p" {
@@ -651,15 +651,15 @@ func TestContainerRegistriesClientAdapter_Create_Success(t *testing.T) {
 	cr := NewContainerRegistry().
 		IntoProject(URI("/projects/p")).
 		WithName("my-registry").
-		InRegion("ITBG-1").
+		InRegion(RegionITBGBergamo).
 		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1")).
 		WithSubnet(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1")).
 		WithSecurityGroup(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1")).
 		WithElasticIP(URI("/projects/p/providers/Aruba.Network/elasticips/eip-1")).
 		WithBlockStorage(URI("/projects/p/providers/Aruba.Storage/blockstorages/bs-1")).
 		WithAdminUsername("admin").
-		OfSize(types.ContainerRegistrySizeFlavorSmall).
-		WithBillingPeriod("Hour")
+		OfSize(ContainerRegistrySizeFlavorSmall).
+		WithBillingPeriod(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), cr)
 	if err != nil {
@@ -678,7 +678,7 @@ func TestContainerRegistriesClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "my-registry" {
 		t.Errorf("request Metadata.Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Metadata.Location.Value != "ITBG-1" {
+	if gotBody.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("request Metadata.Location.Value = %q", gotBody.Metadata.Location.Value)
 	}
 	if gotBody.Properties.VPC.URI != "/projects/p/providers/Aruba.Network/vpcs/vpc-1" {
@@ -770,14 +770,14 @@ func TestContainerRegistriesClientAdapter_Create_WithBodyRefs_ViaFake(t *testing
 
 	cr := NewContainerRegistry().
 		IntoProject(URI("/projects/p")).
-		InRegion("ITBG-1").
+		InRegion(RegionITBGBergamo).
 		WithVPC(URI(vpcURI)).
 		WithSubnet(URI(subnetURI)).
 		WithSecurityGroup(URI(sgURI)).
 		WithElasticIP(URI(eipURI)).
 		WithBlockStorage(URI(bsURI)).
 		WithAdminUsername("admin").
-		OfSize(types.ContainerRegistrySizeFlavorHighPerf)
+		OfSize(ContainerRegistrySizeFlavorHighPerf)
 
 	_, err := adapter.Create(context.Background(), cr)
 	if err != nil {
@@ -826,7 +826,7 @@ func TestContainerRegistriesClientAdapter_Update_Success(t *testing.T) {
 	cr := NewContainerRegistry().
 		IntoProject(URI("/projects/p")).
 		WithName("my-registry").
-		InRegion("ITBG-1").
+		InRegion(RegionITBGBergamo).
 		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1"))
 
 	// Hydrate to get an ID before Update.
@@ -1004,7 +1004,7 @@ func TestContainerRegistriesClientAdapter_List_TwoItems(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
 			`{"metadata":{"id":"cr-1","name":"n1","uri":"/projects/p/providers/Aruba.Container/registries/cr-1","project":{"id":"p"}},"properties":{"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},"size":"Small","billingPeriod":"Hour"},"status":{}},`+
-			`{"metadata":{"id":"cr-2","name":"n2","uri":"/projects/p/providers/Aruba.Container/registries/cr-2","project":{"id":"p"}},"properties":{"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},"size":"Medium","billingPeriod":"Monthly"},"status":{}}`+
+			`{"metadata":{"id":"cr-2","name":"n2","uri":"/projects/p/providers/Aruba.Container/registries/cr-2","project":{"id":"p"}},"properties":{"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},"size":"Medium","billingPeriod":"Hour"},"status":{}}`+
 			`]}`)
 	})
 
@@ -1022,10 +1022,10 @@ func TestContainerRegistriesClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].ID() != "cr-1" || items[0].Name() != "n1" {
 		t.Errorf("items[0] = {%q, %q}", items[0].ID(), items[0].Name())
 	}
-	if items[0].SizeFlavor() != types.ContainerRegistrySizeFlavorSmall {
+	if items[0].SizeFlavor() != ContainerRegistrySizeFlavorSmall {
 		t.Errorf("items[0].SizeFlavor() = %q", items[0].SizeFlavor())
 	}
-	if items[1].ID() != "cr-2" || items[1].BillingPeriod() != "Monthly" {
+	if items[1].ID() != "cr-2" || items[1].BillingPeriod() != BillingPeriodHour {
 		t.Errorf("items[1] ID=%q BillingPeriod=%q", items[1].ID(), items[1].BillingPeriod())
 	}
 	if items[0].ProjectID() != "p" {
@@ -1070,7 +1070,7 @@ func TestContainerRegistry_SizeFlavor_UnknownResponseString(t *testing.T) {
 			ConcurrentUsers: &unknown,
 		},
 	}
-	if cr.SizeFlavor() != types.ContainerRegistrySizeFlavor("not-a-flavor") {
+	if cr.SizeFlavor() != ContainerRegistrySizeFlavor("not-a-flavor") {
 		t.Errorf("SizeFlavor() = %q for unknown response string, want %q", cr.SizeFlavor(), "not-a-flavor")
 	}
 }
@@ -1079,7 +1079,7 @@ func TestContainerRegistry_SizeFlavor_UnknownLocalString(t *testing.T) {
 	cr := &ContainerRegistry{}
 	unknown := "not-a-flavor"
 	cr.concurrentUsers = &unknown
-	if cr.SizeFlavor() != types.ContainerRegistrySizeFlavor("not-a-flavor") {
+	if cr.SizeFlavor() != ContainerRegistrySizeFlavor("not-a-flavor") {
 		t.Errorf("SizeFlavor() = %q for unknown local string, want %q", cr.SizeFlavor(), "not-a-flavor")
 	}
 }

@@ -32,12 +32,12 @@ func TestDBaaS_FluentSetters(t *testing.T) {
 		WithName("my-dbaas").
 		AddTag("db").
 		AddTag("prod").
-		InRegion("ITBG-Bergamo").
-		InZone("ITBG-1").
-		OfEngine("mysql-8.0").
-		OfFlavor("DBO2A4").
+		InRegion(RegionITBGBergamo).
+		InZone(ZoneITBG1).
+		OfEngine(DatabaseEngineMySQL80).
+		OfFlavor(DBaaSFlavorDBO2A4).
 		WithSizeGB(20).
-		WithBillingPeriod("Hour").
+		WithBillingPeriod(BillingPeriodHour).
 		WithAutoscaling(50, 10)
 
 	if d.Name() != "my-dbaas" {
@@ -46,22 +46,22 @@ func TestDBaaS_FluentSetters(t *testing.T) {
 	if tags := d.Tags(); len(tags) != 2 || tags[0] != "db" || tags[1] != "prod" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if d.Region() != "ITBG-Bergamo" {
+	if d.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", d.Region())
 	}
-	if d.Zone() != "ITBG-1" {
+	if d.Zone() != ZoneITBG1 {
 		t.Errorf("Zone() = %q", d.Zone())
 	}
-	if d.Engine() != "mysql-8.0" {
+	if d.Engine() != DatabaseEngineMySQL80 {
 		t.Errorf("Engine() = %q", d.Engine())
 	}
-	if d.Flavor() != "DBO2A4" {
+	if d.Flavor() != DBaaSFlavorDBO2A4 {
 		t.Errorf("Flavor() = %q", d.Flavor())
 	}
 	if d.SizeGB() != 20 {
 		t.Errorf("Storage() = %d", d.SizeGB())
 	}
-	if d.BillingPeriod() != "Hour" {
+	if d.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", d.BillingPeriod())
 	}
 	if !d.AutoscalingEnabled() {
@@ -185,22 +185,22 @@ func TestDBaaS_WithVPC_EmptyURI_AddsErr(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestDBaaS_InZone(t *testing.T) {
-	d := NewDBaaS().InZone("ITBG-1")
-	if d.Zone() != "ITBG-1" {
+	d := NewDBaaS().InZone(ZoneITBG1)
+	if d.Zone() != ZoneITBG1 {
 		t.Errorf("Zone() = %q", d.Zone())
 	}
 }
 
 func TestDBaaS_OfEngine(t *testing.T) {
-	d := NewDBaaS().OfEngine("mysql-8.0")
-	if d.Engine() != "mysql-8.0" {
+	d := NewDBaaS().OfEngine(DatabaseEngineMySQL80)
+	if d.Engine() != DatabaseEngineMySQL80 {
 		t.Errorf("Engine() = %q", d.Engine())
 	}
 }
 
 func TestDBaaS_OfFlavor(t *testing.T) {
-	d := NewDBaaS().OfFlavor("DBO2A4")
-	if d.Flavor() != "DBO2A4" {
+	d := NewDBaaS().OfFlavor(DBaaSFlavorDBO2A4)
+	if d.Flavor() != DBaaSFlavorDBO2A4 {
 		t.Errorf("Flavor() = %q", d.Flavor())
 	}
 }
@@ -274,12 +274,12 @@ func TestDBaaS_ToRequestRoundTrip(t *testing.T) {
 		IntoProject(URI("/projects/p")).
 		WithName("my-dbaas").
 		AddTag("tag1").
-		InRegion("ITBG-Bergamo").
-		InZone("ITBG-1").
-		OfEngine("mysql-8.0").
-		OfFlavor("DBO2A4").
+		InRegion(RegionITBGBergamo).
+		InZone(ZoneITBG1).
+		OfEngine(DatabaseEngineMySQL80).
+		OfFlavor(DBaaSFlavorDBO2A4).
 		WithSizeGB(20).
-		WithBillingPeriod("Hour").
+		WithBillingPeriod(BillingPeriodHour).
 		WithAutoscaling(50, 10).
 		WithVPC(URI("/vpcs/v")).
 		WithSubnet(URI("/subnets/s")).
@@ -291,22 +291,22 @@ func TestDBaaS_ToRequestRoundTrip(t *testing.T) {
 	if req.Metadata.Name != "my-dbaas" {
 		t.Errorf("request name = %q", req.Metadata.Name)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("request location = %q", req.Metadata.Location.Value)
 	}
-	if req.Properties.Zone == nil || *req.Properties.Zone != "ITBG-1" {
+	if req.Properties.Zone == nil || *req.Properties.Zone != ZoneITBG1 {
 		t.Errorf("Zone = %v", req.Properties.Zone)
 	}
-	if req.Properties.Engine == nil || req.Properties.Engine.ID == nil || *req.Properties.Engine.ID != "mysql-8.0" {
+	if req.Properties.Engine == nil || req.Properties.Engine.ID == nil || *req.Properties.Engine.ID != DatabaseEngineMySQL80 {
 		t.Errorf("Engine.ID = %v", req.Properties.Engine)
 	}
-	if req.Properties.Flavor == nil || req.Properties.Flavor.Name == nil || *req.Properties.Flavor.Name != "DBO2A4" {
+	if req.Properties.Flavor == nil || req.Properties.Flavor.Name == nil || *req.Properties.Flavor.Name != DBaaSFlavorDBO2A4 {
 		t.Errorf("Flavor.Name = %v", req.Properties.Flavor)
 	}
 	if req.Properties.Storage == nil || req.Properties.Storage.SizeGB == nil || *req.Properties.Storage.SizeGB != 20 {
 		t.Errorf("Storage.SizeGB = %v", req.Properties.Storage)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Hour" {
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 	if req.Properties.Autoscaling == nil || req.Properties.Autoscaling.Enabled == nil || !*req.Properties.Autoscaling.Enabled {
@@ -357,11 +357,11 @@ func TestDBaaS_ToRequest_AllUnset(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func dbaasTestResponse(id, name, uri string) *types.DBaaSResponse {
-	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
-	engineType := "mysql-8.0"
-	flavorName := "DBO2A4"
+	loc := &types.LocationResponse{Value: RegionITBGBergamo}
+	engineType := string(DatabaseEngineMySQL80)
+	flavorName := string(DBaaSFlavorDBO2A4)
 	sizeGB := int32(20)
-	billingPeriod := BillingPeriod("Hour")
+	billingPeriod := BillingPeriodHour
 	state := "Active"
 	vpcURI := "/vpcs/v"
 	subnetURI := "/subnets/s"
@@ -411,16 +411,16 @@ func TestDBaaS_FromResponseHydration(t *testing.T) {
 	if tags := d.Tags(); len(tags) != 1 || tags[0] != "tag1" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if d.Region() != "ITBG-Bergamo" {
+	if d.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", d.Region())
 	}
-	if d.Engine() != "mysql-8.0" {
+	if d.Engine() != DatabaseEngineMySQL80 {
 		t.Errorf("Engine() = %q", d.Engine())
 	}
 	if d.EngineRaw() == nil || d.EngineRaw().Type == nil {
 		t.Error("EngineRaw() should carry full struct")
 	}
-	if d.Flavor() != "DBO2A4" {
+	if d.Flavor() != DBaaSFlavorDBO2A4 {
 		t.Errorf("Flavor() = %q", d.Flavor())
 	}
 	if d.FlavorRaw() == nil || d.FlavorRaw().Name == nil {
@@ -429,7 +429,7 @@ func TestDBaaS_FromResponseHydration(t *testing.T) {
 	if d.SizeGB() != 20 {
 		t.Errorf("Storage() = %d", d.SizeGB())
 	}
-	if d.BillingPeriod() != "Hour" {
+	if d.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", d.BillingPeriod())
 	}
 	if d.VPC() != "/vpcs/v" {
@@ -490,9 +490,9 @@ func TestDBaaS_FromResponse_NilSafe(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestDBaaS_Engine_Asymmetry(t *testing.T) {
-	engineType := "mysql-8.0"
-	d := NewDBaaS().OfEngine("mysql-8.0")
-	if d.Engine() != "mysql-8.0" {
+	engineType := string(DatabaseEngineMySQL80)
+	d := NewDBaaS().OfEngine(DatabaseEngineMySQL80)
+	if d.Engine() != DatabaseEngineMySQL80 {
 		t.Errorf("pre-response Engine() = %q", d.Engine())
 	}
 	if d.EngineRaw() != nil {
@@ -504,7 +504,7 @@ func TestDBaaS_Engine_Asymmetry(t *testing.T) {
 			Engine: &types.DBaaSEngineResponse{Type: &engineType},
 		},
 	})
-	if d.Engine() != "mysql-8.0" {
+	if d.Engine() != DatabaseEngineMySQL80 {
 		t.Errorf("post-response Engine() = %q", d.Engine())
 	}
 	if d.EngineRaw() == nil {
@@ -513,9 +513,9 @@ func TestDBaaS_Engine_Asymmetry(t *testing.T) {
 }
 
 func TestDBaaS_Flavor_Asymmetry(t *testing.T) {
-	flavorName := "DBO4A8"
-	d := NewDBaaS().OfFlavor("DBO2A4")
-	if d.Flavor() != "DBO2A4" {
+	flavorName := string(DBaaSFlavorDBO4A8)
+	d := NewDBaaS().OfFlavor(DBaaSFlavorDBO2A4)
+	if d.Flavor() != DBaaSFlavorDBO2A4 {
 		t.Errorf("pre-response Flavor() = %q", d.Flavor())
 	}
 	if d.FlavorRaw() != nil {
@@ -527,7 +527,7 @@ func TestDBaaS_Flavor_Asymmetry(t *testing.T) {
 			Flavor: &types.DBaaSFlavorResponse{Name: &flavorName},
 		},
 	})
-	if d.Flavor() != "DBO4A8" {
+	if d.Flavor() != DBaaSFlavorDBO4A8 {
 		t.Errorf("post-response Flavor() = %q (expected response value to win)", d.Flavor())
 	}
 }
@@ -664,11 +664,11 @@ func TestDBaaSClientAdapter_Create_Success(t *testing.T) {
 	d := NewDBaaS().
 		IntoProject(URI("/projects/p")).
 		WithName("my-dbaas").
-		InZone("ITBG-1").
-		OfEngine("mysql-8.0").
-		OfFlavor("DBO2A4").
+		InZone(ZoneITBG1).
+		OfEngine(DatabaseEngineMySQL80).
+		OfFlavor(DBaaSFlavorDBO2A4).
 		WithSizeGB(20).
-		WithBillingPeriod("Hour").
+		WithBillingPeriod(BillingPeriodHour).
 		WithAutoscaling(50, 10).
 		WithVPC(URI("/vpcs/v")).
 		WithSubnet(URI("/subnets/s")).
@@ -685,7 +685,7 @@ func TestDBaaSClientAdapter_Create_Success(t *testing.T) {
 	if result.Name() != "my-dbaas" {
 		t.Errorf("Name() = %q", result.Name())
 	}
-	if result.Engine() != "mysql-8.0" {
+	if result.Engine() != DatabaseEngineMySQL80 {
 		t.Errorf("Engine() = %q", result.Engine())
 	}
 	if result.State() != "Active" {
@@ -695,7 +695,7 @@ func TestDBaaSClientAdapter_Create_Success(t *testing.T) {
 		t.Errorf("StatusCode() = %d", result.StatusCode())
 	}
 	// Verify wire body.
-	if gotBody.Properties.Engine == nil || gotBody.Properties.Engine.ID == nil || *gotBody.Properties.Engine.ID != "mysql-8.0" {
+	if gotBody.Properties.Engine == nil || gotBody.Properties.Engine.ID == nil || *gotBody.Properties.Engine.ID != DatabaseEngineMySQL80 {
 		t.Errorf("request Engine.ID = %v", gotBody.Properties.Engine)
 	}
 	if gotBody.Properties.Networking == nil || gotBody.Properties.Networking.VPCURI == nil || *gotBody.Properties.Networking.VPCURI != "/vpcs/v" {
@@ -710,7 +710,7 @@ func TestDBaaSClientAdapter_Create_NoProject(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewDBaaS().WithName("x").OfEngine("mysql-8.0"))
+	_, err := adapter.Create(context.Background(), NewDBaaS().WithName("x").OfEngine(DatabaseEngineMySQL80))
 	if err == nil {
 		t.Fatal("expected error when DBaaS has no parent project")
 	}
@@ -727,7 +727,7 @@ func TestDBaaSClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"db","uri":"/projects/p/providers/Aruba.Database/dbaas/x"},"properties":{}}`)
 	})
 
-	d := NewDBaaS().IntoProject(URI("/projects/p")).WithName("db").OfEngine("mysql-8.0")
+	d := NewDBaaS().IntoProject(URI("/projects/p")).WithName("db").OfEngine(DatabaseEngineMySQL80)
 	result, err := adapter.Create(context.Background(), d)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -896,8 +896,8 @@ func TestDBaaSClientAdapter_Delete_NonTwoXX(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestDBaaS_InRegion(t *testing.T) {
-	d := NewDBaaS().InRegion("ITBG-Bergamo")
-	if d.Region() != "ITBG-Bergamo" {
+	d := NewDBaaS().InRegion(RegionITBGBergamo)
+	if d.Region() != RegionITBGBergamo {
 		t.Errorf("Region() after InRegion = %q", d.Region())
 	}
 }
@@ -1160,10 +1160,10 @@ func TestDBaaSClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].ID() != "db-1" || items[0].Name() != "dbaas1" {
 		t.Errorf("items[0] = {%q, %q}", items[0].ID(), items[0].Name())
 	}
-	if items[0].Engine() != "mysql-8.0" {
+	if items[0].Engine() != DatabaseEngineMySQL80 {
 		t.Errorf("items[0].Engine() = %q", items[0].Engine())
 	}
-	if items[1].ID() != "db-2" || items[1].Engine() != "postgres-14" {
+	if items[1].ID() != "db-2" || items[1].Engine() != DatabaseEnginePostgres14 {
 		t.Errorf("items[1] ID=%q Engine=%q", items[1].ID(), items[1].Engine())
 	}
 	if items[0].ProjectID() != "p" {

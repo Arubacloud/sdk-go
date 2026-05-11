@@ -37,8 +37,8 @@ func TestKMS_FluentSetters(t *testing.T) {
 		AddTag("security").
 		AddTag("encryption").
 		AddTag("security"). // dedupe
-		InRegion("ITBG-Bergamo").
-		WithBillingPeriod("Hour")
+		InRegion(RegionITBGBergamo).
+		WithBillingPeriod(BillingPeriodHour)
 
 	if k.Name() != "my-kms" {
 		t.Errorf("Name() = %q", k.Name())
@@ -46,10 +46,10 @@ func TestKMS_FluentSetters(t *testing.T) {
 	if tags := k.Tags(); len(tags) != 2 || tags[0] != "security" || tags[1] != "encryption" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if k.Region() != "ITBG-Bergamo" {
+	if k.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", k.Region())
 	}
-	if k.BillingPeriod() != "Hour" {
+	if k.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", k.BillingPeriod())
 	}
 	if k.ProjectID() != "p-1" {
@@ -95,9 +95,9 @@ func TestKMS_IntoProject_BadRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestKMS_WithBillingPeriod_RoundTrip(t *testing.T) {
-	k := NewKMS().WithBillingPeriod("Monthly")
+	k := NewKMS().WithBillingPeriod(BillingPeriodHour)
 	req := k.RawRequest()
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Monthly" {
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("Properties.BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 }
@@ -111,17 +111,17 @@ func TestKMS_ToRequest_FullyPopulated(t *testing.T) {
 		IntoProject(URI("/projects/p")).
 		WithName("kms-name").
 		AddTag("tag1").
-		InRegion("ITBG-Bergamo").
-		WithBillingPeriod("Hour")
+		InRegion(RegionITBGBergamo).
+		WithBillingPeriod(BillingPeriodHour)
 
 	req := k.RawRequest()
 	if req.Metadata.Name != "kms-name" {
 		t.Errorf("Metadata.Name = %q", req.Metadata.Name)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Metadata.Location.Value = %q", req.Metadata.Location.Value)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != "Hour" {
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("Properties.BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 }
@@ -140,13 +140,13 @@ func kmsTestResponse(name string) *types.KmsResponse {
 			URI:              &uri,
 			Name:             func() *string { s := name; return &s }(),
 			Tags:             []string{"tag1"},
-			LocationResponse: &types.LocationResponse{Value: "ITBG-Bergamo"},
+			LocationResponse: &types.LocationResponse{Value: RegionITBGBergamo},
 			ProjectResponseMetadata: &types.ProjectResponseMetadata{
 				ID: "p",
 			},
 		},
 		Properties: types.KmsPropertiesResponse{
-			BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
+			BillingPeriod: func() *BillingPeriod { v := BillingPeriodHour; return &v }(),
 		},
 		Status: types.ResourceStatus{State: &state},
 	}
@@ -165,10 +165,10 @@ func TestKMS_FromResponseHydration(t *testing.T) {
 	if k.ID() != "kms-1" {
 		t.Errorf("ID() = %q", k.ID())
 	}
-	if k.Region() != "ITBG-Bergamo" {
+	if k.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", k.Region())
 	}
-	if k.BillingPeriod() != "Hour" {
+	if k.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", k.BillingPeriod())
 	}
 	if k.State() != "Active" {
@@ -280,8 +280,8 @@ func TestKMSClientAdapter_Create_Success(t *testing.T) {
 	k := NewKMS().
 		IntoProject(URI("/projects/p")).
 		WithName("my-kms").
-		InRegion("ITBG-Bergamo").
-		WithBillingPeriod("Hour")
+		InRegion(RegionITBGBergamo).
+		WithBillingPeriod(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), k)
 	if err != nil {
@@ -299,7 +299,7 @@ func TestKMSClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "my-kms" {
 		t.Errorf("request Metadata.Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Properties.BillingPeriod == nil || *gotBody.Properties.BillingPeriod != "Hour" {
+	if gotBody.Properties.BillingPeriod == nil || *gotBody.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("request BillingPeriod = %v", gotBody.Properties.BillingPeriod)
 	}
 }
@@ -370,7 +370,7 @@ func TestKMSClientAdapter_Update_Success(t *testing.T) {
 
 	k := &KMS{}
 	k.fromResponse(kmsTestResponse("my-kms"))
-	k.WithBillingPeriod("Monthly")
+	k.WithBillingPeriod(BillingPeriodHour)
 
 	result, err := adapter.Update(context.Background(), k)
 	if err != nil {
@@ -493,7 +493,7 @@ func TestKMSClientAdapter_Delete_NonTwoXX(t *testing.T) {
 
 const kmsListBody = `{"total":2,"values":[` +
 	`{"metadata":{"id":"kms-1","name":"kms-one","uri":"/projects/p/providers/Aruba.Security/kms/kms-1","project":{"id":"p"}},"properties":{"billingPeriod":"Hour"},"status":{}},` +
-	`{"metadata":{"id":"kms-2","name":"kms-two","uri":"/projects/p/providers/Aruba.Security/kms/kms-2","project":{"id":"p"}},"properties":{"billingPeriod":"Monthly"},"status":{}}` +
+	`{"metadata":{"id":"kms-2","name":"kms-two","uri":"/projects/p/providers/Aruba.Security/kms/kms-2","project":{"id":"p"}},"properties":{"billingPeriod":"Hour"},"status":{}}` +
 	`]}`
 
 func TestKMSClientAdapter_List_TwoItems(t *testing.T) {
@@ -533,13 +533,13 @@ func TestKMS_SetterDelegation(t *testing.T) {
 		AddTag("c").
 		RemoveTag("b").
 		ReplaceTags("x", "y").
-		InRegion("ITBG-Bergamo")
+		InRegion(RegionITBGBergamo)
 
 	tags := k.Tags()
 	if len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("Tags() after ReplaceTags = %v", tags)
 	}
-	if k.Region() != "ITBG-Bergamo" {
+	if k.Region() != RegionITBGBergamo {
 		t.Errorf("Region() after InRegion = %q", k.Region())
 	}
 }
@@ -585,9 +585,9 @@ func TestKMS_Accessors_ZeroValue(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestKMS_BillingPeriod_RequestFallback(t *testing.T) {
-	k := NewKMS().WithBillingPeriod("Monthly")
+	k := NewKMS().WithBillingPeriod(BillingPeriodHour)
 	// response is nil, so it falls through to the request-side value
-	if k.BillingPeriod() != "Monthly" {
+	if k.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() request fallback = %q", k.BillingPeriod())
 	}
 }

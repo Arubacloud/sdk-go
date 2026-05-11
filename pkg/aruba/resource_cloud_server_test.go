@@ -31,9 +31,9 @@ func TestCloudServer_FluentSetters(t *testing.T) {
 		WithName("my-server").
 		AddTag("compute").
 		AddTag("prod").
-		InRegion("ITBG-Bergamo").
-		InZone("ITBG-1").
-		OfFlavor("CSO2A4").
+		InRegion(RegionITBGBergamo).
+		InZone(ZoneITBG1).
+		OfFlavor(CloudServerFlavorCSO2A4).
 		WithUserData("dGVzdA==").
 		WithVPCPreset(true)
 
@@ -43,13 +43,13 @@ func TestCloudServer_FluentSetters(t *testing.T) {
 	if tags := cs.Tags(); len(tags) != 2 || tags[0] != "compute" || tags[1] != "prod" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if cs.Region() != "ITBG-Bergamo" {
+	if cs.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", cs.Region())
 	}
-	if cs.Zone() != "ITBG-1" {
+	if cs.Zone() != ZoneITBG1 {
 		t.Errorf("Zone() = %q", cs.Zone())
 	}
-	if cs.Flavor() != "CSO2A4" {
+	if cs.Flavor() != CloudServerFlavorCSO2A4 {
 		t.Errorf("Flavor() = %q", cs.Flavor())
 	}
 	if cs.ProjectID() != "p-1" {
@@ -237,8 +237,8 @@ func TestCloudServer_AddSecurityGroup_EmptyURI(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestCloudServer_OfFlavor(t *testing.T) {
-	cs := NewCloudServer().OfFlavor("CSO2A4")
-	if cs.Flavor() != "CSO2A4" {
+	cs := NewCloudServer().OfFlavor(CloudServerFlavorCSO2A4)
+	if cs.Flavor() != CloudServerFlavorCSO2A4 {
 		t.Errorf("Flavor() = %q", cs.Flavor())
 	}
 }
@@ -260,12 +260,12 @@ func TestCloudServer_WithVPCPreset(t *testing.T) {
 }
 
 func TestCloudServer_InZone(t *testing.T) {
-	cs := NewCloudServer().InZone("ITBG-1")
-	if cs.Zone() != "ITBG-1" {
+	cs := NewCloudServer().InZone(ZoneITBG1)
+	if cs.Zone() != ZoneITBG1 {
 		t.Errorf("Zone() = %q", cs.Zone())
 	}
 	req := cs.toRequest()
-	if req.Properties.Zone != "ITBG-1" {
+	if req.Properties.Zone != ZoneITBG1 {
 		t.Errorf("request Zone = %q", req.Properties.Zone)
 	}
 }
@@ -279,9 +279,9 @@ func TestCloudServer_ToRequestRoundTrip(t *testing.T) {
 		IntoProject(URI("/projects/p")).
 		WithName("srv").
 		AddTag("tag1").
-		InRegion("ITBG-Bergamo").
-		InZone("ITBG-1").
-		OfFlavor("CSO2A4").
+		InRegion(RegionITBGBergamo).
+		InZone(ZoneITBG1).
+		OfFlavor(CloudServerFlavorCSO2A4).
 		WithVPC(URI("/vpcs/v")).
 		WithBootVolume(URI("/vols/bv")).
 		WithKeyPair(URI("/kps/kp")).
@@ -295,13 +295,13 @@ func TestCloudServer_ToRequestRoundTrip(t *testing.T) {
 	if req.Metadata.Name != "srv" {
 		t.Errorf("request name = %q", req.Metadata.Name)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("request location = %q", req.Metadata.Location.Value)
 	}
-	if req.Properties.Zone != "ITBG-1" {
+	if req.Properties.Zone != ZoneITBG1 {
 		t.Errorf("Zone = %q", req.Properties.Zone)
 	}
-	if req.Properties.FlavorName == nil || *req.Properties.FlavorName != "CSO2A4" {
+	if req.Properties.FlavorName == nil || *req.Properties.FlavorName != CloudServerFlavorCSO2A4 {
 		t.Errorf("FlavorName = %v", req.Properties.FlavorName)
 	}
 	if req.Properties.VPC.URI != "/vpcs/v" {
@@ -346,7 +346,7 @@ func TestCloudServer_ToRequest_AllUnset(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func cloudServerTestResponse(id, name, uri string) *types.CloudServerResponse {
-	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
+	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	state := "Running"
 	return &types.CloudServerResponse{
 		Metadata: types.ResourceMetadataResponse{
@@ -357,8 +357,8 @@ func cloudServerTestResponse(id, name, uri string) *types.CloudServerResponse {
 			LocationResponse: loc,
 		},
 		Properties: types.CloudServerPropertiesResult{
-			Zone:       "ITBG-1",
-			Flavor:     types.CloudServerFlavorResponse{Name: "CSO2A4", CPU: 2, RAM: 4096},
+			Zone:       ZoneITBG1,
+			Flavor:     types.CloudServerFlavorResponse{Name: CloudServerFlavorCSO2A4, CPU: 2, RAM: 4096},
 			VPC:        types.ReferenceResource{URI: "/vpcs/v"},
 			BootVolume: types.ReferenceResource{URI: "/vols/bv"},
 			KeyPair:    types.ReferenceResource{URI: "/kps/kp"},
@@ -387,14 +387,14 @@ func TestCloudServer_FromResponseHydration(t *testing.T) {
 	if tags := cs.Tags(); len(tags) != 1 || tags[0] != "tag1" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if cs.Region() != "ITBG-Bergamo" {
+	if cs.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", cs.Region())
 	}
-	if cs.Zone() != "ITBG-1" {
+	if cs.Zone() != ZoneITBG1 {
 		t.Errorf("Zone() = %q", cs.Zone())
 	}
 	// Flavor reads from response Flavor.Name
-	if cs.Flavor() != "CSO2A4" {
+	if cs.Flavor() != CloudServerFlavorCSO2A4 {
 		t.Errorf("Flavor() = %q", cs.Flavor())
 	}
 	if cs.FlavorRaw() == nil || cs.FlavorRaw().CPU != 2 {
@@ -458,8 +458,8 @@ func TestCloudServer_FromResponse_NilSafe(t *testing.T) {
 
 func TestCloudServer_Flavor_Asymmetry(t *testing.T) {
 	// Before any response: Flavor() returns what OfFlavor set.
-	cs := NewCloudServer().OfFlavor("CSO2A4")
-	if cs.Flavor() != "CSO2A4" {
+	cs := NewCloudServer().OfFlavor(CloudServerFlavorCSO2A4)
+	if cs.Flavor() != CloudServerFlavorCSO2A4 {
 		t.Errorf("pre-response Flavor() = %q", cs.Flavor())
 	}
 	if cs.FlavorRaw() != nil {
@@ -469,10 +469,10 @@ func TestCloudServer_Flavor_Asymmetry(t *testing.T) {
 	// After fromResponse: Flavor() returns the response Flavor.Name (response wins).
 	cs.fromResponse(&types.CloudServerResponse{
 		Properties: types.CloudServerPropertiesResult{
-			Flavor: types.CloudServerFlavorResponse{Name: "CSO4A8", CPU: 4, RAM: 8192},
+			Flavor: types.CloudServerFlavorResponse{Name: CloudServerFlavorCSO4A8, CPU: 4, RAM: 8192},
 		},
 	})
-	if cs.Flavor() != "CSO4A8" {
+	if cs.Flavor() != CloudServerFlavorCSO4A8 {
 		t.Errorf("post-response Flavor() = %q (expected response value to win)", cs.Flavor())
 	}
 	if cs.FlavorRaw() == nil || cs.FlavorRaw().CPU != 4 {
@@ -585,8 +585,8 @@ func TestCloudServersClientAdapter_Create_Success(t *testing.T) {
 	cs := NewCloudServer().
 		IntoProject(URI("/projects/p")).
 		WithName("my-server").
-		InZone("ITBG-1").
-		OfFlavor("CSO2A4").
+		InZone(ZoneITBG1).
+		OfFlavor(CloudServerFlavorCSO2A4).
 		WithVPC(URI("/vpcs/v")).
 		WithBootVolume(URI("/vols/bv")).
 		WithKeyPair(URI("/kps/kp")).
@@ -602,7 +602,7 @@ func TestCloudServersClientAdapter_Create_Success(t *testing.T) {
 	if result.Name() != "my-server" {
 		t.Errorf("Name() = %q", result.Name())
 	}
-	if result.Flavor() != "CSO2A4" {
+	if result.Flavor() != CloudServerFlavorCSO2A4 {
 		t.Errorf("Flavor() = %q", result.Flavor())
 	}
 	if result.State() != "Running" {
@@ -615,7 +615,7 @@ func TestCloudServersClientAdapter_Create_Success(t *testing.T) {
 		t.Errorf("StatusCode() = %d", result.StatusCode())
 	}
 	// Verify wire body: flavorName field (wire name, mapped from OfFlavor)
-	if gotBody.Properties.FlavorName == nil || *gotBody.Properties.FlavorName != "CSO2A4" {
+	if gotBody.Properties.FlavorName == nil || *gotBody.Properties.FlavorName != CloudServerFlavorCSO2A4 {
 		t.Errorf("request FlavorName = %v", gotBody.Properties.FlavorName)
 	}
 	if gotBody.Properties.VPC.URI != "/vpcs/v" {
@@ -633,7 +633,7 @@ func TestCloudServersClientAdapter_Create_NoProject(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewCloudServer().WithName("x").OfFlavor("CSO2A4"))
+	_, err := adapter.Create(context.Background(), NewCloudServer().WithName("x").OfFlavor(CloudServerFlavorCSO2A4))
 	if err == nil {
 		t.Fatal("expected error when CloudServer has no parent project")
 	}
@@ -650,7 +650,7 @@ func TestCloudServersClientAdapter_Create_MetadataValidationError(t *testing.T) 
 		fmt.Fprint(w, `{"metadata":{"name":"srv","uri":"/projects/p/providers/Aruba.Compute/cloudServers/x"},"properties":{}}`)
 	})
 
-	cs := NewCloudServer().IntoProject(URI("/projects/p")).WithName("srv").OfFlavor("CSO2A4")
+	cs := NewCloudServer().IntoProject(URI("/projects/p")).WithName("srv").OfFlavor(CloudServerFlavorCSO2A4)
 	result, err := adapter.Create(context.Background(), cs)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -844,10 +844,10 @@ func TestCloudServersClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].ID() != "cs-1" || items[0].Name() != "srv1" {
 		t.Errorf("items[0] = {%q, %q}", items[0].ID(), items[0].Name())
 	}
-	if items[0].Flavor() != "CSO2A4" {
+	if items[0].Flavor() != CloudServerFlavorCSO2A4 {
 		t.Errorf("items[0].Flavor() = %q", items[0].Flavor())
 	}
-	if items[1].ID() != "cs-2" || items[1].Flavor() != "CSO4A8" {
+	if items[1].ID() != "cs-2" || items[1].Flavor() != CloudServerFlavorCSO4A8 {
 		t.Errorf("items[1] ID=%q Flavor=%q", items[1].ID(), items[1].Flavor())
 	}
 	if items[0].ProjectID() != "p" {

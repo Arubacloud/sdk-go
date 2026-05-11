@@ -32,7 +32,7 @@ func TestKeyPair_FluentSetters(t *testing.T) {
 		AddTag("ssh-access").
 		AddTag("ingress").
 		AddTag("ssh-access"). // dedupe
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithPublicKey("ssh-rsa AAAA...")
 
 	if kp.Name() != "allow-ssh" {
@@ -41,7 +41,7 @@ func TestKeyPair_FluentSetters(t *testing.T) {
 	if tags := kp.Tags(); len(tags) != 2 || tags[0] != "ssh-access" || tags[1] != "ingress" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if kp.Region() != "ITBG-Bergamo" {
+	if kp.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", kp.Region())
 	}
 	if kp.PublicKey() != "ssh-rsa AAAA..." {
@@ -121,7 +121,7 @@ func TestKeyPair_ToRequestRoundTrip(t *testing.T) {
 	kp := NewKeyPair().
 		WithName("my-keypair").
 		AddTag("t1").AddTag("t2").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithPublicKey("ssh-rsa AAAA...")
 
 	req := kp.RawRequest()
@@ -132,7 +132,7 @@ func TestKeyPair_ToRequestRoundTrip(t *testing.T) {
 	if len(req.Metadata.Tags) != 2 {
 		t.Errorf("Metadata.Tags = %v", req.Metadata.Tags)
 	}
-	if req.Metadata.Location.Value != "ITBG-Bergamo" {
+	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Location.Value = %q", req.Metadata.Location.Value)
 	}
 	if req.Properties.Value != "ssh-rsa AAAA..." {
@@ -153,7 +153,7 @@ func TestKeyPair_ToRequest_UnsetPublicKey(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func keyPairTestResponse(id, name, uri string) *types.KeyPairResponse {
-	loc := &types.LocationResponse{Value: "ITBG-Bergamo"}
+	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	return &types.KeyPairResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:               &id,
@@ -188,7 +188,7 @@ func TestKeyPair_FromResponseHydration(t *testing.T) {
 	if tags := kp.Tags(); len(tags) != 1 || tags[0] != "tag1" {
 		t.Errorf("Tags() = %v", tags)
 	}
-	if kp.Region() != "ITBG-Bergamo" {
+	if kp.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", kp.Region())
 	}
 	if kp.PublicKey() != "ssh-rsa AAAA..." {
@@ -338,7 +338,7 @@ func TestKeyPairsClientAdapter_Create_Success(t *testing.T) {
 	kp := NewKeyPair().
 		IntoProject(URI("/projects/p")).
 		WithName("allow-ssh").
-		InRegion("ITBG-Bergamo").
+		InRegion(RegionITBGBergamo).
 		WithPublicKey("ssh-rsa AAAA...")
 
 	result, err := adapter.Create(context.Background(), kp)
