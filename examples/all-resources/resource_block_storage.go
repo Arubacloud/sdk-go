@@ -13,7 +13,7 @@ func createBlockStorage(ctx context.Context, arubaClient aruba.Client, proj arub
 
 	bs := aruba.NewBlockStorage().
 		IntoProject(proj).
-		WithName(name).
+		Named(name).
 		AddTag("storage").
 		AddTag("data").
 		InRegion(aruba.RegionITBGBergamo).

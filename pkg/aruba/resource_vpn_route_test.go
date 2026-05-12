@@ -30,7 +30,7 @@ func TestVPNRoute_FluentSetters(t *testing.T) {
 
 	r := NewVPNRoute().
 		IntoVPNTunnel(tun).
-		WithName("my-route").
+		Named("my-route").
 		AddTag("cloud").
 		AddTag("vpn").
 		AddTag("cloud"). // dedupe
@@ -145,8 +145,8 @@ func TestVPNRoute_IntoVPNTunnel_BadRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestVPNRoute_ToRequestRoundTrip(t *testing.T) {
-	r := NewVPNRoute().
-		WithName("my-route").
+	r := NewVPNRoute().Named(
+		"my-route").
 		AddTag("t1").
 		InRegion(RegionITBGBergamo).
 		WithCloudSubnet("10.1.0.0/16").
@@ -176,7 +176,8 @@ func TestVPNRoute_ToRequestRoundTrip(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestVPNRoute_ToRequest_UnsetSubnets_AreEmpty(t *testing.T) {
-	req := NewVPNRoute().WithName("bare").RawRequest()
+	req := NewVPNRoute().
+		Named("bare").RawRequest()
 	if req.Properties.CloudSubnet != "" {
 		t.Errorf("CloudSubnet = %q, want empty", req.Properties.CloudSubnet)
 	}
@@ -460,7 +461,7 @@ func TestVPNRoutesClientAdapter_Create_Success(t *testing.T) {
 
 	route := NewVPNRoute().
 		IntoVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")).
-		WithName("my-route").
+		Named("my-route").
 		InRegion(RegionITBGBergamo).
 		WithCloudSubnet("10.0.0.0/24").
 		WithOnPremSubnet("192.168.0.0/24")
@@ -499,7 +500,8 @@ func TestVPNRoutesClientAdapter_Create_NoTunnel(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewVPNRoute().WithName("x"))
+	_, err := adapter.Create(context.Background(), NewVPNRoute().
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when route has no parent tunnel")
 	}
@@ -518,7 +520,8 @@ func TestVPNRoutesClientAdapter_Create_MetadataValidationError(t *testing.T) {
 
 	route := NewVPNRoute().
 		IntoVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")).
-		WithName("route")
+		Named("route")
+
 	result, err := adapter.Create(context.Background(), route)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -619,7 +622,7 @@ func TestVPNRoutesClientAdapter_Update_Success(t *testing.T) {
 	r.fromResponse(vpnRouteTestResponse("r-1", "orig",
 		"/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-1", "p"))
 	r.vpnTunnelID = "t-1"
-	r.WithName("renamed")
+	r.Named("renamed")
 
 	result, err := adapter.Update(context.Background(), r)
 	if err != nil {
@@ -642,7 +645,8 @@ func TestVPNRoutesClientAdapter_Update_NoID(t *testing.T) {
 
 	r := NewVPNRoute().
 		IntoVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")).
-		WithName("x")
+		Named("x")
+
 	_, err := adapter.Update(context.Background(), r)
 	if err == nil {
 		t.Fatal("expected error when route has no ID")

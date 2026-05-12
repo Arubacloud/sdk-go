@@ -60,8 +60,8 @@ type CloudServer struct {
 // IntoProject binds this CloudServer to its parent project. Required before Create.
 func (cs *CloudServer) IntoProject(p Ref) *CloudServer { cs.intoProject(p); return cs }
 
-// WithName sets the resource name. Required by the API.
-func (cs *CloudServer) WithName(n string) *CloudServer { cs.withName(n); return cs }
+// Named sets the resource name. Required by the API.
+func (cs *CloudServer) Named(n string) *CloudServer { cs.named(n); return cs }
 
 // AddTag appends a tag for filtering and accounting.
 func (cs *CloudServer) AddTag(t string) *CloudServer { cs.addTag(t); return cs }
@@ -362,7 +362,7 @@ func (cs *CloudServer) fromResponse(resp *types.CloudServerResponse) {
 	}
 	cs.response = resp
 	cs.setMeta(&resp.Metadata)
-	cs.withName(cloudServerDerefString(resp.Metadata.Name))
+	cs.named(cloudServerDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		cs.replaceTags(resp.Metadata.Tags...)
 	}

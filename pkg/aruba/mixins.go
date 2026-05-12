@@ -39,7 +39,7 @@ type metadataMixin struct {
 	tags []string
 }
 
-func (m *metadataMixin) withName(name string) {
+func (m *metadataMixin) named(name string) {
 	m.name = name
 }
 
@@ -66,7 +66,7 @@ func (m *metadataMixin) replaceTags(tags ...string) {
 	m.tags = append([]string(nil), tags...)
 }
 
-// Name returns the name set via withName.
+// Name returns the name set via named.
 func (m *metadataMixin) Name() string { return m.name }
 
 // Tags returns a copy of the current tag slice.

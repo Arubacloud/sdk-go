@@ -19,7 +19,7 @@ func createAdvancedSubnet(ctx context.Context, arubaClient aruba.Client, vpc *ar
 
 	subnet := aruba.NewSubnet().
 		IntoVPC(vpc).
-		WithName(resourceName(NameSubnetAdvanced)).
+		Named(resourceName(NameSubnetAdvanced)).
 		AddTag("network").
 		AddTag("subnet").
 		InRegion(aruba.RegionITBGBergamo).
@@ -56,7 +56,7 @@ func createBasicSubnet(ctx context.Context, arubaClient aruba.Client, vpc *aruba
 
 	subnet := aruba.NewSubnet().
 		IntoVPC(vpc).
-		WithName(resourceName(NameSubnetBasic)).
+		Named(resourceName(NameSubnetBasic)).
 		AddTag("network").
 		AddTag("subnet").
 		InRegion(aruba.RegionITBGBergamo).

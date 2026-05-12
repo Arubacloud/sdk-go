@@ -30,7 +30,7 @@ func TestVPCPeeringRoute_FluentSetters(t *testing.T) {
 
 	r := NewVPCPeeringRoute().
 		IntoVPCPeering(parent).
-		WithName("my-route").
+		Named("my-route").
 		AddTag("route").
 		AddTag("billing").
 		AddTag("route"). // dedupe
@@ -165,8 +165,8 @@ func TestVPCPeeringRoute_IntoVPCPeering_BadRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestVPCPeeringRoute_ToRequestRoundTrip(t *testing.T) {
-	r := NewVPCPeeringRoute().
-		WithName("my-route").
+	r := NewVPCPeeringRoute().Named(
+		"my-route").
 		AddTag("t1").
 		AddTag("t2").
 		InRegion(RegionITBGBergamo).
@@ -196,7 +196,8 @@ func TestVPCPeeringRoute_ToRequestRoundTrip(t *testing.T) {
 	}
 
 	// Unset CIDRs must produce empty strings.
-	r2 := NewVPCPeeringRoute().WithName("bare")
+	r2 := NewVPCPeeringRoute().
+		Named("bare")
 	req2 := r2.RawRequest()
 	if req2.Properties.LocalNetworkAddress != "" {
 		t.Errorf("LocalNetworkAddress should be empty when not set, got %q", req2.Properties.LocalNetworkAddress)
@@ -211,7 +212,8 @@ func TestVPCPeeringRoute_ToRequestRoundTrip(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestVPCPeeringRoute_ToRequest_BillingPeriodAlwaysEmitted(t *testing.T) {
-	r := NewVPCPeeringRoute().WithName("bare")
+	r := NewVPCPeeringRoute().
+		Named("bare")
 	req := r.RawRequest()
 	// BillingPeriod is always emitted — defaults to Hour when not explicitly set.
 	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
@@ -485,7 +487,7 @@ func TestVPCPeeringRoutesClientAdapter_Create_Success(t *testing.T) {
 
 	route := NewVPCPeeringRoute().
 		IntoVPCPeering(peering).
-		WithName("my-route").
+		Named("my-route").
 		InRegion(RegionITBGBergamo).
 		WithLocalCIDR("10.0.0.0/24").
 		WithRemoteCIDR("192.168.0.0/24").
@@ -531,7 +533,8 @@ func TestVPCPeeringRoutesClientAdapter_Create_NoPeering(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewVPCPeeringRoute().WithName("x"))
+	_, err := adapter.Create(context.Background(), NewVPCPeeringRoute().
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when route has no parent peering")
 	}
@@ -552,7 +555,8 @@ func TestVPCPeeringRoutesClientAdapter_Create_MetadataValidationError(t *testing
 	peering.fromResponse(vpcPeeringTestResponse("peer-1", "my-peering",
 		"/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1", "p"))
 
-	route := NewVPCPeeringRoute().IntoVPCPeering(peering).WithName("route")
+	route := NewVPCPeeringRoute().IntoVPCPeering(peering).
+		Named("route")
 	result, err := adapter.Create(context.Background(), route)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -660,7 +664,7 @@ func TestVPCPeeringRoutesClientAdapter_Update_Success(t *testing.T) {
 	r := &VPCPeeringRoute{}
 	r.fromResponse(vpcPeeringRouteTestResponse("route-1", "orig",
 		"/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1/vpcPeeringRoutes/route-1", "p"))
-	r.WithName("renamed")
+	r.Named("renamed")
 
 	result, err := adapter.Update(context.Background(), r)
 	if err != nil {
@@ -683,7 +687,8 @@ func TestVPCPeeringRoutesClientAdapter_Update_NoID(t *testing.T) {
 
 	r := NewVPCPeeringRoute().
 		IntoVPCPeering(URI("/projects/p/network/vpcs/v/peerings/peer-1")).
-		WithName("x")
+		Named("x")
+
 	_, err := adapter.Update(context.Background(), r)
 	if err == nil {
 		t.Fatal("expected error when route has no ID")

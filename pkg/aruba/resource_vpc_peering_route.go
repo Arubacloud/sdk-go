@@ -37,8 +37,8 @@ type VPCPeeringRoute struct {
 // IntoVPCPeering binds this VPCPeeringRoute to its parent VPCPeering. Required before Create.
 func (r *VPCPeeringRoute) IntoVPCPeering(p Ref) *VPCPeeringRoute { r.intoVPCPeering(p); return r }
 
-// WithName sets the resource name. Required by the API.
-func (r *VPCPeeringRoute) WithName(n string) *VPCPeeringRoute { r.withName(n); return r }
+// Named sets the resource name. Required by the API.
+func (r *VPCPeeringRoute) Named(n string) *VPCPeeringRoute { r.named(n); return r }
 
 // AddTag appends a tag for filtering and accounting.
 func (r *VPCPeeringRoute) AddTag(t string) *VPCPeeringRoute { r.addTag(t); return r }
@@ -134,7 +134,7 @@ func (r *VPCPeeringRoute) fromResponse(resp *types.VPCPeeringRouteResponse) {
 	}
 	r.response = resp
 	r.setMeta(&resp.Metadata)
-	r.withName(vpcPeeringRouteDerefString(resp.Metadata.Name))
+	r.named(vpcPeeringRouteDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		r.replaceTags(resp.Metadata.Tags...)
 	}

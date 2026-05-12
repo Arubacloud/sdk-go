@@ -37,8 +37,8 @@ type Key struct {
 // IntoKMS binds this Key to its parent KMS instance. Required before Create.
 func (k *Key) IntoKMS(parent Ref) *Key { k.intoKMS(parent); return k }
 
-// WithName sets the key name. Required by the API.
-func (k *Key) WithName(n string) *Key { k.name = &n; return k }
+// Named sets the key name. Required by the API.
+func (k *Key) Named(n string) *Key { k.name = &n; return k }
 
 // OfAlgorithm sets the cryptographic algorithm for this key.
 func (k *Key) OfAlgorithm(a types.KeyAlgorithm) *Key { k.algorithm = &a; return k }

@@ -29,7 +29,7 @@ func TestVPNTunnel_FluentSetters(t *testing.T) {
 
 	tun := NewVPNTunnel().
 		IntoProject(proj).
-		WithName("my-tunnel").
+		Named("my-tunnel").
 		AddTag("vpn").
 		AddTag("ipsec").
 		AddTag("vpn"). // dedupe
@@ -346,8 +346,8 @@ func TestVPNPSK_Build_NilReceiver(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
-	tun := NewVPNTunnel().
-		WithName("my-tunnel").
+	tun := NewVPNTunnel().Named(
+		"my-tunnel").
 		AddTag("t1").
 		InRegion(RegionITBGBergamo).
 		OfType(VPNTypeSiteToSite).
@@ -434,7 +434,8 @@ func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
 }
 
 func TestVPNTunnel_ToRequest_NoBillingPeriod_DefaultsToHour(t *testing.T) {
-	tun := NewVPNTunnel().WithName("bare")
+	tun := NewVPNTunnel().
+		Named("bare")
 	req := tun.RawRequest()
 	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("BillingPeriod should default to Hour when not set, got %+v", req.Properties.BillingPeriod)
@@ -442,7 +443,8 @@ func TestVPNTunnel_ToRequest_NoBillingPeriod_DefaultsToHour(t *testing.T) {
 }
 
 func TestVPNTunnel_ToRequest_NoVPNClientSettings_OmitsObject(t *testing.T) {
-	tun := NewVPNTunnel().WithName("bare")
+	tun := NewVPNTunnel().
+		Named("bare")
 	req := tun.RawRequest()
 	if req.Properties.VPNClientSettings != nil {
 		t.Errorf("VPNClientSettings should be nil when IKE/ESP/PSK/PeerIP all unset")
@@ -719,7 +721,7 @@ func TestVPNTunnelsClientAdapter_Create_Success(t *testing.T) {
 
 	tun := NewVPNTunnel().
 		IntoProject(URI("/projects/p")).
-		WithName("my-tunnel").
+		Named("my-tunnel").
 		InRegion(RegionITBGBergamo).
 		OfType(VPNTypeSiteToSite).
 		WithVPNClientProtocol(VPNClientProtocolIKEv2).
@@ -759,7 +761,8 @@ func TestVPNTunnelsClientAdapter_Create_NoProject(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewVPNTunnel().WithName("x"))
+	_, err := adapter.Create(context.Background(), NewVPNTunnel().
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when tunnel has no project")
 	}
@@ -776,7 +779,8 @@ func TestVPNTunnelsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"tunnel","uri":"/projects/p/providers/Aruba.Network/vpnTunnels/x"},"properties":{},"status":{}}`)
 	})
 
-	tun := NewVPNTunnel().IntoProject(URI("/projects/p")).WithName("tunnel")
+	tun := NewVPNTunnel().IntoProject(URI("/projects/p")).
+		Named("tunnel")
 	result, err := adapter.Create(context.Background(), tun)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -874,7 +878,7 @@ func TestVPNTunnelsClientAdapter_Update_Success(t *testing.T) {
 	tun := &VPNTunnel{}
 	tun.fromResponse(vpnTunnelTestResponse("t-1", "orig",
 		"/projects/p/providers/Aruba.Network/vpnTunnels/t-1", "p"))
-	tun.WithName("renamed")
+	tun.Named("renamed")
 
 	result, err := adapter.Update(context.Background(), tun)
 	if err != nil {
@@ -895,7 +899,8 @@ func TestVPNTunnelsClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	tun := NewVPNTunnel().IntoProject(URI("/projects/p")).WithName("x")
+	tun := NewVPNTunnel().IntoProject(URI("/projects/p")).
+		Named("x")
 	_, err := adapter.Update(context.Background(), tun)
 	if err == nil {
 		t.Fatal("expected error when tunnel has no ID")

@@ -62,7 +62,7 @@ func (l *LoadBalancer) fromResponse(resp *types.LoadBalancerResponse) {
 	}
 	l.response = resp
 	l.setMeta(&resp.Metadata)
-	l.withName(loadBalancerDerefString(resp.Metadata.Name))
+	l.named(loadBalancerDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		l.replaceTags(resp.Metadata.Tags...)
 	}

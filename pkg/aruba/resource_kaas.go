@@ -68,8 +68,8 @@ type KaaS struct {
 // IntoProject binds this KaaS to its parent project. Required before Create.
 func (k *KaaS) IntoProject(p Ref) *KaaS { k.intoProject(p); return k }
 
-// WithName sets the resource name. Required by the API.
-func (k *KaaS) WithName(n string) *KaaS { k.withName(n); return k }
+// Named sets the resource name. Required by the API.
+func (k *KaaS) Named(n string) *KaaS { k.named(n); return k }
 
 // AddTag appends a tag for filtering and accounting.
 func (k *KaaS) AddTag(t string) *KaaS { k.addTag(t); return k }
@@ -384,7 +384,7 @@ func (k *KaaS) fromResponse(resp *types.KaaSResponse) {
 	}
 	k.response = resp
 	k.setMeta(&resp.Metadata)
-	k.withName(kaasDeref(resp.Metadata.Name))
+	k.named(kaasDeref(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		k.replaceTags(resp.Metadata.Tags...)
 	}

@@ -35,8 +35,8 @@ type SecurityGroup struct {
 // IntoVPC binds this SecurityGroup to its parent VPC. Required before Create.
 func (sg *SecurityGroup) IntoVPC(v Ref) *SecurityGroup { sg.intoVPC(v); return sg }
 
-// WithName sets the resource name. Required by the API.
-func (sg *SecurityGroup) WithName(n string) *SecurityGroup { sg.withName(n); return sg }
+// Named sets the resource name. Required by the API.
+func (sg *SecurityGroup) Named(n string) *SecurityGroup { sg.named(n); return sg }
 
 // AddTag appends a tag for filtering and accounting.
 func (sg *SecurityGroup) AddTag(t string) *SecurityGroup { sg.addTag(t); return sg }
@@ -95,7 +95,7 @@ func (sg *SecurityGroup) fromResponse(resp *types.SecurityGroupResponse) {
 	}
 	sg.response = resp
 	sg.setMeta(&resp.Metadata)
-	sg.withName(securityGroupDerefString(resp.Metadata.Name))
+	sg.named(securityGroupDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		sg.replaceTags(resp.Metadata.Tags...)
 	}

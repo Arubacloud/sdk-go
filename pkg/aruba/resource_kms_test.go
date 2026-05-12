@@ -33,7 +33,7 @@ func TestKMS_FluentSetters(t *testing.T) {
 
 	k := NewKMS().
 		IntoProject(proj).
-		WithName("my-kms").
+		Named("my-kms").
 		AddTag("security").
 		AddTag("encryption").
 		AddTag("security"). // dedupe
@@ -109,7 +109,7 @@ func TestKMS_WithBillingPeriod_RoundTrip(t *testing.T) {
 func TestKMS_ToRequest_FullyPopulated(t *testing.T) {
 	k := NewKMS().
 		IntoProject(URI("/projects/p")).
-		WithName("kms-name").
+		Named("kms-name").
 		AddTag("tag1").
 		InRegion(RegionITBGBergamo).
 		WithBillingPeriod(BillingPeriodHour)
@@ -279,7 +279,7 @@ func TestKMSClientAdapter_Create_Success(t *testing.T) {
 
 	k := NewKMS().
 		IntoProject(URI("/projects/p")).
-		WithName("my-kms").
+		Named("my-kms").
 		InRegion(RegionITBGBergamo).
 		WithBillingPeriod(BillingPeriodHour)
 
@@ -310,7 +310,8 @@ func TestKMSClientAdapter_Create_NoProject(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusCreated)
 	})
-	_, err := adapter.Create(context.Background(), NewKMS().WithName("x"))
+	_, err := adapter.Create(context.Background(), NewKMS().
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when KMS has no project")
 	}
@@ -327,7 +328,8 @@ func TestKMSClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"k","uri":"/projects/p/providers/Aruba.Security/kms/x"},"properties":{},"status":{}}`)
 	})
 
-	k := NewKMS().IntoProject(URI("/projects/p")).WithName("k")
+	k := NewKMS().IntoProject(URI("/projects/p")).
+		Named("k")
 	result, err := adapter.Create(context.Background(), k)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -347,7 +349,8 @@ func TestKMSClientAdapter_Create_NonTwoXX(t *testing.T) {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, `{"message":"bad request"}`)
 	})
-	_, err := adapter.Create(context.Background(), NewKMS().IntoProject(URI("/projects/p")).WithName("k"))
+	_, err := adapter.Create(context.Background(), NewKMS().IntoProject(URI("/projects/p")).
+		Named("k"))
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {
 		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
@@ -385,7 +388,8 @@ func TestKMSClientAdapter_Update_NoID(t *testing.T) {
 	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	k := NewKMS().IntoProject(URI("/projects/p")).WithName("x")
+	k := NewKMS().IntoProject(URI("/projects/p")).
+		Named("x")
 	_, err := adapter.Update(context.Background(), k)
 	if err == nil {
 		t.Fatal("expected error when KMS has no ID")
