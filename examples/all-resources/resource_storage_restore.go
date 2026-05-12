@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
@@ -40,13 +39,16 @@ func createRestore(ctx context.Context, arubaClient aruba.Client, b *aruba.Stora
 	return r
 }
 
-// deleteRestore tears down the restore resource.
+// deleteRestore tears down the restore resource and waits until it is fully gone.
 func deleteRestore(ctx context.Context, arubaClient aruba.Client, r *aruba.StorageRestore) {
-	fmt.Println("--- Deleting Storage Restore ---")
-	err := arubaClient.FromStorage().Restores().Delete(ctx, r)
-	if err != nil {
-		log.Printf("Error deleting restore: %s", formatErr(err))
+	printDeleteBanner("Storage Restore")
+	if err := arubaClient.FromStorage().Restores().Delete(ctx, r); err != nil {
+		printDeleteError("Storage Restore", err)
 		return
 	}
-	fmt.Printf("✓ Deleted storage restore: %s\n", r.Name())
+	printDeleteSubmitted("Storage Restore", r.Name())
+	waitUntilGone(ctx, "Storage Restore "+r.Name(), func(ctx context.Context) error {
+		_, err := arubaClient.FromStorage().Restores().Get(ctx, r)
+		return err
+	})
 }

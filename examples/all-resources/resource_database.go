@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
@@ -35,12 +33,16 @@ func createDatabase(ctx context.Context, arubaClient aruba.Client, dbaas *aruba.
 	return res
 }
 
-// deleteDatabase removes the database from its DBaaS instance.
+// deleteDatabase removes the database and waits until it is fully gone.
 func deleteDatabase(ctx context.Context, arubaClient aruba.Client, db *aruba.Database) {
-	fmt.Println("--- Deleting Database ---")
+	printDeleteBanner("DBaaS Database")
 	if err := arubaClient.FromDatabase().Databases().Delete(ctx, db); err != nil {
-		log.Printf("Error deleting Database: %s", formatErr(err))
+		printDeleteError("DBaaS Database", err)
 		return
 	}
-	fmt.Printf("✓ Deleted Database: %s\n", db.Name())
+	printDeleteSubmitted("DBaaS Database", db.Name())
+	waitUntilGone(ctx, "DBaaS Database "+db.Name(), func(ctx context.Context) error {
+		_, err := arubaClient.FromDatabase().Databases().Get(ctx, db)
+		return err
+	})
 }

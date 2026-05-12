@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"time"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
@@ -64,12 +62,17 @@ func createOneShotJob(ctx context.Context, arubaClient aruba.Client, proj aruba.
 	return res
 }
 
-// deleteJob removes the scheduled job identified by label.
+// deleteJob removes the scheduled job and waits until it is fully gone.
 func deleteJob(ctx context.Context, arubaClient aruba.Client, j *aruba.Job, label string) {
-	fmt.Printf("--- Deleting %s Job ---\n", label)
+	pretty := label + " Job"
+	printDeleteBanner(pretty)
 	if err := arubaClient.FromSchedule().Jobs().Delete(ctx, j); err != nil {
-		log.Printf("Error deleting %s Job: %s", label, formatErr(err))
+		printDeleteError(pretty, err)
 		return
 	}
-	fmt.Printf("✓ Deleted %s Job: %s\n", label, j.Name())
+	printDeleteSubmitted(pretty, j.Name())
+	waitUntilGone(ctx, pretty+" "+j.Name(), func(ctx context.Context) error {
+		_, err := arubaClient.FromSchedule().Jobs().Get(ctx, j)
+		return err
+	})
 }

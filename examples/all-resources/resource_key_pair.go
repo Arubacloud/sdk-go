@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
@@ -35,14 +34,16 @@ func createKeyPair(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref
 	return kp
 }
 
-// deleteKeyPair removes the SSH key pair.
+// deleteKeyPair removes the SSH key pair and waits until it is fully gone.
 func deleteKeyPair(ctx context.Context, arubaClient aruba.Client, kp *aruba.KeyPair) {
-	fmt.Println("--- Deleting SSH Key Pair ---")
-
-	err := arubaClient.FromCompute().KeyPairs().Delete(ctx, kp)
-	if err != nil {
-		log.Printf("Error deleting SSH key pair: %s", formatErr(err))
+	printDeleteBanner("SSH Key Pair")
+	if err := arubaClient.FromCompute().KeyPairs().Delete(ctx, kp); err != nil {
+		printDeleteError("SSH Key Pair", err)
 		return
 	}
-	fmt.Printf("✓ Deleted SSH key pair: %s\n", kp.Name())
+	printDeleteSubmitted("SSH Key Pair", kp.Name())
+	waitUntilGone(ctx, "SSH Key Pair "+kp.Name(), func(ctx context.Context) error {
+		_, err := arubaClient.FromCompute().KeyPairs().Get(ctx, kp)
+		return err
+	})
 }

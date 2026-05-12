@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
@@ -42,13 +41,16 @@ func createStorageBackup(ctx context.Context, arubaClient aruba.Client, proj aru
 	return result
 }
 
-// deleteStorageBackup tears down the storage backup.
+// deleteStorageBackup tears down the storage backup and waits until it is fully gone.
 func deleteStorageBackup(ctx context.Context, arubaClient aruba.Client, b *aruba.StorageBackup) {
-	fmt.Println("--- Deleting Storage Backup ---")
-	err := arubaClient.FromStorage().Backups().Delete(ctx, b)
-	if err != nil {
-		log.Printf("Error deleting storage backup: %s", formatErr(err))
+	printDeleteBanner("Storage Backup")
+	if err := arubaClient.FromStorage().Backups().Delete(ctx, b); err != nil {
+		printDeleteError("Storage Backup", err)
 		return
 	}
-	fmt.Printf("✓ Deleted storage backup: %s\n", b.Name())
+	printDeleteSubmitted("Storage Backup", b.Name())
+	waitUntilGone(ctx, "Storage Backup "+b.Name(), func(ctx context.Context) error {
+		_, err := arubaClient.FromStorage().Backups().Get(ctx, b)
+		return err
+	})
 }
