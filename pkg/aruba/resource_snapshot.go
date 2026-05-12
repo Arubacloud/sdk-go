@@ -41,8 +41,8 @@ type Snapshot struct {
 // IntoProject binds this Snapshot to its parent project. Required before Create.
 func (s *Snapshot) IntoProject(p Ref) *Snapshot { s.intoProject(p); return s }
 
-// WithName sets the resource name. Required by the API.
-func (s *Snapshot) WithName(n string) *Snapshot { s.withName(n); return s }
+// Named sets the resource name. Required by the API.
+func (s *Snapshot) Named(n string) *Snapshot { s.named(n); return s }
 
 // AddTag appends a tag for filtering and accounting.
 func (s *Snapshot) AddTag(t string) *Snapshot { s.addTag(t); return s }
@@ -152,7 +152,7 @@ func (s *Snapshot) fromResponse(resp *types.SnapshotResponse) {
 	}
 	s.response = resp
 	s.setMeta(&resp.Metadata)
-	s.withName(snapshotDerefString(resp.Metadata.Name))
+	s.named(snapshotDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		s.replaceTags(resp.Metadata.Tags...)
 	}

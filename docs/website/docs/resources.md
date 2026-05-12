@@ -26,7 +26,7 @@ client := arubaClient.FromX().Y()
 result, err := client.Create(ctx,
     aruba.NewX().
         IntoParent(parentRef).   // scope to project / VPC / etc.
-        WithName("my-resource").
+        Named("my-resource").
         AddTag("env:prod").
         WithFoo(...))
 
@@ -59,7 +59,7 @@ arubaClient.FromProject()
 proj, err := arubaClient.FromProject().Create(
     ctx,
     aruba.NewProject().
-        WithName("my-project").
+        Named("my-project").
         WithDescription("Production project").
         AddTag("env:prod").
         NotDefault())
@@ -131,7 +131,7 @@ cs, err := arubaClient.FromCompute().CloudServers().Create(
     ctx,
     aruba.NewCloudServer().
         IntoProject(proj).
-        WithName("my-server").
+        Named("my-server").
         AddTag("env:prod").
         InRegion(aruba.RegionITBGBergamo).
         InZone(aruba.ZoneITBG1).
@@ -191,7 +191,7 @@ kp, err := arubaClient.FromCompute().KeyPairs().Create(
     ctx,
     aruba.NewKeyPair().
         IntoProject(proj).
-        WithName("my-keypair").
+        Named("my-keypair").
         InRegion(aruba.RegionITBGBergamo).
         WithPublicKey("ssh-rsa AAAAB3NzaC1yc2E..."))
 if err != nil {
@@ -225,7 +225,7 @@ k, err := arubaClient.FromContainer().KaaS().Create(
     ctx,
     aruba.NewKaaS().
         IntoProject(proj).
-        WithName("my-cluster").
+        Named("my-cluster").
         AddTag("env:prod").
         InRegion(aruba.RegionITBGBergamo).
         WithVPC(vpc).
@@ -295,7 +295,7 @@ reg, err := arubaClient.FromContainer().ContainerRegistry().Create(
     ctx,
     aruba.NewContainerRegistry().
         IntoProject(proj).
-        WithName("my-registry").
+        Named("my-registry").
         AddTag("env:prod").
         WithVPC(vpc).
         WithSubnet(subnet).
@@ -344,7 +344,7 @@ db, err := arubaClient.FromDatabase().DBaaS().Create(
     ctx,
     aruba.NewDBaaS().
         IntoProject(proj).
-        WithName("my-database").
+        Named("my-database").
         AddTag("env:prod").
         InRegion(aruba.RegionITBGBergamo).
         InZone(aruba.ZoneITBG1).
@@ -397,7 +397,7 @@ database, err := arubaClient.FromDatabase().Databases().Create(
     ctx,
     aruba.NewDatabase().
         IntoDBaaS(db).
-        WithName("my-app-db").
+        Named("my-app-db").
         AddTag("app:backend"))
 if err != nil {
     log.Fatalf("Create Database: %v", err)
@@ -471,7 +471,7 @@ grant, err := arubaClient.FromDatabase().Grants().Create(
     ctx,
     aruba.NewGrant().
         IntoDatabase(database).
-        WithName("app_user-grant").
+        Named("app_user-grant").
         WithPrivileges("ALL"))
 if err != nil {
     log.Fatalf("Create Grant: %v", err)
@@ -508,7 +508,7 @@ backup, err := arubaClient.FromDatabase().DBaaSBackups().Create(
     ctx,
     aruba.NewDBaaSBackup().
         IntoProject(proj).
-        WithName("my-db-backup").
+        Named("my-db-backup").
         FromDBaaS(db).
         WithBillingPeriod(aruba.BillingPeriodHour).
         AddTag("backup"))
@@ -610,7 +610,7 @@ vpc, err := arubaClient.FromNetwork().VPCs().Create(
     ctx,
     aruba.NewVPC().
         IntoProject(proj).
-        WithName("my-vpc").
+        Named("my-vpc").
         AddTag("network").
         InRegion(aruba.RegionITBGBergamo).
         NotDefault().
@@ -654,7 +654,7 @@ subnet, err := arubaClient.FromNetwork().Subnets().Create(
     ctx,
     aruba.NewSubnet().
         IntoVPC(vpc).
-        WithName("my-subnet").
+        Named("my-subnet").
         AddTag("network").
         InRegion(aruba.RegionITBGBergamo).
         OfType(aruba.SubnetTypeAdvanced).
@@ -704,7 +704,7 @@ eip, err := arubaClient.FromNetwork().ElasticIPs().Create(
     ctx,
     aruba.NewElasticIP().
         IntoProject(proj).
-        WithName("my-eip").
+        Named("my-eip").
         AddTag("network").
         InRegion(aruba.RegionITBGBergamo).
         WithBillingPeriod(aruba.BillingPeriodHour))
@@ -744,7 +744,7 @@ sg, err := arubaClient.FromNetwork().SecurityGroups().Create(
     ctx,
     aruba.NewSecurityGroup().
         IntoVPC(vpc).
-        WithName("my-security-group").
+        Named("my-security-group").
         AddTag("security").
         NotDefault())
 if err != nil {
@@ -785,7 +785,7 @@ rule, err := arubaClient.FromNetwork().SecurityGroupRules().Create(
     ctx,
     aruba.NewSecurityRule().
         IntoSecurityGroup(sg).
-        WithName("allow-ssh").
+        Named("allow-ssh").
         AddTag("ssh").
         InRegion(aruba.RegionITBGBergamo).
         WithDirection(aruba.RuleDirectionIngress).
@@ -857,7 +857,7 @@ peering, err := arubaClient.FromNetwork().VPCPeerings().Create(
     ctx,
     aruba.NewVPCPeering().
         IntoVPC(vpc).
-        WithName("my-peering").
+        Named("my-peering").
         AddTag("network").
         InRegion(aruba.RegionITBGBergamo).
         WithPeerVPC(aruba.URI("/projects/"+peerProjectID+"/vpcs/"+peerVPCID)))
@@ -896,7 +896,7 @@ route, err := arubaClient.FromNetwork().VPCPeeringRoutes().Create(
     ctx,
     aruba.NewVPCPeeringRoute().
         IntoVPCPeering(peering).
-        WithName("my-peering-route").
+        Named("my-peering-route").
         AddTag("network").
         InRegion(aruba.RegionITBGBergamo).
         WithCIDR("10.0.0.0/8").
@@ -941,7 +941,7 @@ tunnel, err := arubaClient.FromNetwork().VPNTunnels().Create(
     ctx,
     aruba.NewVPNTunnel().
         IntoProject(proj).
-        WithName("my-vpn-tunnel").
+        Named("my-vpn-tunnel").
         AddTag("vpn").
         InRegion(aruba.RegionITBGBergamo).
         WithPeerClientPublicIP("203.0.113.1").
@@ -991,7 +991,7 @@ vpnRoute, err := arubaClient.FromNetwork().VPNRoutes().Create(
     ctx,
     aruba.NewVPNRoute().
         IntoVPNTunnel(tunnel).
-        WithName("my-vpn-route").
+        Named("my-vpn-route").
         AddTag("vpn").
         InRegion(aruba.RegionITBGBergamo).
         WithCIDR("10.0.0.0/8").
@@ -1036,7 +1036,7 @@ job, err := arubaClient.FromSchedule().Jobs().Create(
     ctx,
     aruba.NewJob().
         IntoProject(proj).
-        WithName("my-one-shot-job").
+        Named("my-one-shot-job").
         AddTag("automation").
         OneShotAt(time.Now().Add(10*time.Minute)))
 if err != nil {
@@ -1049,7 +1049,7 @@ cronJob, err := arubaClient.FromSchedule().Jobs().Create(
     ctx,
     aruba.NewJob().
         IntoProject(proj).
-        WithName("my-recurring-job").
+        Named("my-recurring-job").
         AddTag("automation").
         WithCron("0 * * * *"))
 if err != nil {
@@ -1085,7 +1085,7 @@ kms, err := arubaClient.FromSecurity().KMS().Create(
     ctx,
     aruba.NewKMS().
         IntoProject(proj).
-        WithName("my-kms").
+        Named("my-kms").
         AddTag("security").
         InRegion(aruba.RegionITBGBergamo).
         WithBillingPeriod(aruba.BillingPeriodHour))
@@ -1125,7 +1125,7 @@ key, err := arubaClient.FromSecurity().Keys().Create(
     ctx,
     aruba.NewKey().
         IntoKMS(kms).
-        WithName("my-encryption-key").
+        Named("my-encryption-key").
         AddTag("security").
         WithAlgorithm(aruba.KeyAlgorithmAes))
 if err != nil {
@@ -1160,7 +1160,7 @@ km, err := arubaClient.FromSecurity().Kmips().Create(
     ctx,
     aruba.NewKmip().
         IntoKMS(kms).
-        WithName("my-kmip").
+        Named("my-kmip").
         AddTag("security"))
 if err != nil {
     log.Fatalf("Create Kmip: %v", err)
@@ -1211,7 +1211,7 @@ bs, err := arubaClient.FromStorage().Volumes().Create(
     ctx,
     aruba.NewBlockStorage().
         IntoProject(proj).
-        WithName("my-volume").
+        Named("my-volume").
         AddTag("storage").
         InRegion(aruba.RegionITBGBergamo).
         InZone(aruba.ZoneITBG1).
@@ -1237,7 +1237,7 @@ bs, err := arubaClient.FromStorage().Volumes().Create(
     ctx,
     aruba.NewBlockStorage().
         IntoProject(proj).
-        WithName("restored-volume").
+        Named("restored-volume").
         InRegion(aruba.RegionITBGBergamo).
         InZone(aruba.ZoneITBG1).
         WithSizeGB(20).
@@ -1277,7 +1277,7 @@ snap, err := arubaClient.FromStorage().Snapshots().Create(
     ctx,
     aruba.NewSnapshot().
         IntoProject(proj).
-        WithName("my-snapshot").
+        Named("my-snapshot").
         AddTag("backup").
         InRegion(aruba.RegionITBGBergamo).
         WithBillingPeriod(aruba.BillingPeriodHour).
@@ -1323,7 +1323,7 @@ backup, err := arubaClient.FromStorage().Backups().Create(
     ctx,
     aruba.NewStorageBackup().
         IntoProject(proj).
-        WithName("my-backup").
+        Named("my-backup").
         AddTag("backup").
         FromVolume(bs).
         OfType(aruba.StorageBackupTypeFull).
@@ -1366,7 +1366,7 @@ restore, err := arubaClient.FromStorage().Restores().Create(
     ctx,
     aruba.NewStorageRestore().
         IntoBackup(backup).
-        WithName("my-restore").
+        Named("my-restore").
         AddTag("restore").
         WithTarget(aruba.URI(backup.OriginURI())))
 if err != nil {

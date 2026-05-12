@@ -39,8 +39,8 @@ type BlockStorage struct {
 // IntoProject binds this BlockStorage to its parent project. Required before Create.
 func (b *BlockStorage) IntoProject(p Ref) *BlockStorage { b.intoProject(p); return b }
 
-// WithName sets the resource name. Required by the API.
-func (b *BlockStorage) WithName(n string) *BlockStorage { b.withName(n); return b }
+// Named sets the resource name. Required by the API.
+func (b *BlockStorage) Named(n string) *BlockStorage { b.named(n); return b }
 
 // AddTag appends a tag for filtering and accounting.
 func (b *BlockStorage) AddTag(t string) *BlockStorage { b.addTag(t); return b }
@@ -185,7 +185,7 @@ func (b *BlockStorage) fromResponse(resp *types.BlockStorageResponse) {
 	}
 	b.response = resp
 	b.setMeta(&resp.Metadata)
-	b.withName(blockStorageDerefString(resp.Metadata.Name))
+	b.named(blockStorageDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		b.replaceTags(resp.Metadata.Tags...)
 	}

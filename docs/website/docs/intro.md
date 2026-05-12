@@ -56,7 +56,7 @@ func main() {
 	proj, err := arubaClient.FromProject().Create(
 		ctx,
 		aruba.NewProject().
-			WithName("my-first-project").
+			Named("my-first-project").
 			WithDescription("A project with the Go SDK").
 			AddTag("go-sdk").
 			AddTag("quick-start"))

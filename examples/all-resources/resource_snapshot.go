@@ -20,7 +20,7 @@ func createSnapshot(ctx context.Context, arubaClient aruba.Client, proj aruba.Re
 
 	snap := aruba.NewSnapshot().
 		IntoProject(proj).
-		WithName(resourceName(NameSnapshot)).
+		Named(resourceName(NameSnapshot)).
 		AddTag("backup").
 		AddTag("snapshot").
 		InRegion(aruba.RegionITBGBergamo).

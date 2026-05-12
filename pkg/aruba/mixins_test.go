@@ -59,7 +59,7 @@ func TestErrMixin_AddNilIsNoop(t *testing.T) {
 
 func TestMetadataMixin(t *testing.T) {
 	var m metadataMixin
-	m.withName("hello")
+	m.named("hello")
 	if m.Name() != "hello" {
 		t.Errorf("Name() = %q", m.Name())
 	}

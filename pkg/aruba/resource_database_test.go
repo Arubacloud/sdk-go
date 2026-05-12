@@ -30,7 +30,7 @@ var (
 func TestDatabase_FluentSetters(t *testing.T) {
 	db := NewDatabase().
 		IntoDBaaS(URI("/projects/p-1/providers/Aruba.Database/dbaas/d-1")).
-		WithName("mydb")
+		Named("mydb")
 
 	if db.Name() != "mydb" {
 		t.Errorf("Name() = %q", db.Name())
@@ -99,7 +99,8 @@ func TestDatabase_IntoDBaaS_BadRef(t *testing.T) {
 func TestDatabase_URI_Constructed(t *testing.T) {
 	db := NewDatabase().
 		IntoDBaaS(URI("/projects/p-1/providers/Aruba.Database/dbaas/d-1")).
-		WithName("mydb")
+		Named("mydb")
+
 	want := "/projects/p-1/providers/Aruba.Database/dbaas/d-1/databases/mydb"
 	if db.URI() != want {
 		t.Errorf("URI() = %q, want %q", db.URI(), want)
@@ -140,7 +141,8 @@ func TestDatabase_URI_MissingName(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestDatabase_ToRequest(t *testing.T) {
-	db := NewDatabase().WithName("mydb")
+	db := NewDatabase().
+		Named("mydb")
 	req := db.toRequest()
 	if req.Name != "mydb" {
 		t.Errorf("toRequest().Name = %q", req.Name)
@@ -215,7 +217,8 @@ func TestDatabase_FromResponse_NilSafe(t *testing.T) {
 func TestDatabaseIDsFromRef_TypedRef(t *testing.T) {
 	db := NewDatabase().
 		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
-		WithName("mydb")
+		Named("mydb")
+
 	pid, did, name, err := databaseIDsFromRef(db)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -290,7 +293,7 @@ func TestDatabasesClientAdapter_Create_Success(t *testing.T) {
 
 	db := NewDatabase().
 		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
-		WithName("my-db")
+		Named("my-db")
 
 	result, err := adapter.Create(context.Background(), db)
 	if err != nil {
@@ -315,7 +318,7 @@ func TestDatabasesClientAdapter_Create_NoParent(t *testing.T) {
 	adapter := buildDatabaseTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 	})
-	db := NewDatabase().WithName("my-db") // no IntoDBaaS
+	db := NewDatabase().Named("my-db") // no IntoDBaaS
 	_, err := adapter.Create(context.Background(), db)
 	if err == nil {
 		t.Error("expected error when parent DBaaS is missing")
@@ -330,7 +333,7 @@ func TestDatabasesClientAdapter_Create_NoName(t *testing.T) {
 	adapter := buildDatabaseTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 	})
-	db := NewDatabase().IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")) // no WithName
+	db := NewDatabase().IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")) // no Named
 	_, err := adapter.Create(context.Background(), db)
 	if err == nil {
 		t.Error("expected error when name is missing")
@@ -349,7 +352,8 @@ func TestDatabasesClientAdapter_Create_NonTwoXX(t *testing.T) {
 
 	db := NewDatabase().
 		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
-		WithName("my-db")
+		Named("my-db")
+
 	_, err := adapter.Create(context.Background(), db)
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {
@@ -376,7 +380,7 @@ func TestDatabasesClientAdapter_Update_Success(t *testing.T) {
 
 	db := NewDatabase().
 		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
-		WithName("my-db")
+		Named("my-db")
 
 	result, err := adapter.Update(context.Background(), db)
 	if err != nil {
@@ -395,7 +399,7 @@ func TestDatabasesClientAdapter_Update_NoIDs(t *testing.T) {
 	adapter := buildDatabaseTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 	})
-	db := NewDatabase() // no IntoDBaaS, no WithName
+	db := NewDatabase() // no IntoDBaaS, no Named
 	_, err := adapter.Update(context.Background(), db)
 	if err == nil {
 		t.Error("expected error when IDs are missing")
@@ -440,7 +444,7 @@ func TestDatabasesClientAdapter_Get_TypedRef(t *testing.T) {
 
 	db := NewDatabase().
 		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
-		WithName("my-db")
+		Named("my-db")
 
 	result, err := adapter.Get(context.Background(), db)
 	if err != nil {
@@ -486,7 +490,8 @@ func TestDatabasesClientAdapter_Delete_NonTwoXX(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestDatabase_RawRequest(t *testing.T) {
-	db := NewDatabase().WithName("mydb")
+	db := NewDatabase().
+		Named("mydb")
 	req := db.RawRequest()
 	if req.Name != "mydb" {
 		t.Errorf("RawRequest().Name = %q", req.Name)
@@ -564,7 +569,8 @@ func TestDatabasesClientAdapter_Update_NonTwoXX(t *testing.T) {
 	})
 	db := NewDatabase().
 		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
-		WithName("my-db")
+		Named("my-db")
+
 	_, err := adapter.Update(context.Background(), db)
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {
@@ -657,7 +663,8 @@ func TestDatabasesClientAdapter_Create_ErrMixin(t *testing.T) {
 		callCount++
 	})
 	// IntoDBaaS with bad URI sets errMixin
-	db := NewDatabase().IntoDBaaS(URI("/garbage")).WithName("mydb")
+	db := NewDatabase().IntoDBaaS(URI("/garbage")).
+		Named("mydb")
 	_, err := adapter.Create(context.Background(), db)
 	if err == nil {
 		t.Fatal("expected error from errMixin")
@@ -675,7 +682,8 @@ func TestDatabasesClientAdapter_Update_BrokenClient(t *testing.T) {
 	adapter := &databasesClientAdapter{low: database.NewDatabasesClientImpl(testutil.NewBrokenClient(t, "http://localhost:9"))}
 	db := NewDatabase().
 		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
-		WithName("my-db")
+		Named("my-db")
+
 	_, err := adapter.Update(context.Background(), db)
 	if err == nil {
 		t.Fatal("expected network error from broken client")

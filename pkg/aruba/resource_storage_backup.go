@@ -38,8 +38,8 @@ type StorageBackup struct {
 // IntoProject binds this StorageBackup to its parent project. Required before Create.
 func (b *StorageBackup) IntoProject(p Ref) *StorageBackup { b.intoProject(p); return b }
 
-// WithName sets the resource name. Required by the API.
-func (b *StorageBackup) WithName(n string) *StorageBackup { b.withName(n); return b }
+// Named sets the resource name. Required by the API.
+func (b *StorageBackup) Named(n string) *StorageBackup { b.named(n); return b }
 
 // AddTag appends a tag for filtering and accounting.
 func (b *StorageBackup) AddTag(t string) *StorageBackup { b.addTag(t); return b }
@@ -157,7 +157,7 @@ func (b *StorageBackup) fromResponse(resp *types.StorageBackupResponse) {
 	}
 	b.response = resp
 	b.setMeta(&resp.Metadata)
-	b.withName(storageBackupDerefString(resp.Metadata.Name))
+	b.named(storageBackupDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		b.replaceTags(resp.Metadata.Tags...)
 	}
