@@ -1142,7 +1142,7 @@ func TestDBaaSClientAdapter_List_TwoItems(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
 			`{"metadata":{"id":"db-1","name":"dbaas1","uri":"/projects/p/providers/Aruba.Database/dbaas/db-1"},"properties":{"engine":{"type":"mysql-8.0"},"flavor":{"name":"DBO2A4"}}},`+
-			`{"metadata":{"id":"db-2","name":"dbaas2","uri":"/projects/p/providers/Aruba.Database/dbaas/db-2"},"properties":{"engine":{"type":"postgres-14"},"flavor":{"name":"DBO4A8"}}}`+
+			`{"metadata":{"id":"db-2","name":"dbaas2","uri":"/projects/p/providers/Aruba.Database/dbaas/db-2"},"properties":{"engine":{"type":"mssql-2022-web"},"flavor":{"name":"DBO4A8"}}}`+
 			`]}`)
 	})
 
@@ -1163,7 +1163,7 @@ func TestDBaaSClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].Engine() != DatabaseEngineMySQL80 {
 		t.Errorf("items[0].Engine() = %q", items[0].Engine())
 	}
-	if items[1].ID() != "db-2" || items[1].Engine() != DatabaseEnginePostgres14 {
+	if items[1].ID() != "db-2" || items[1].Engine() != DatabaseEngineMSSQL2022Web {
 		t.Errorf("items[1] ID=%q Engine=%q", items[1].ID(), items[1].Engine())
 	}
 	if items[0].ProjectID() != "p" {
