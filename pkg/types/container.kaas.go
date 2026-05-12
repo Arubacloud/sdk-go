@@ -2,16 +2,16 @@ package types
 
 // KubernetesVersion identifies a KaaS Kubernetes version.
 //
-// The constants below cover versions referenced in SDK fixtures and the KB
-// upgrade-versions page. The authoritative list is available via:
+// The constants below mirror the official catalog at
+// https://api.arubacloud.com/docs/metadata/ — values not in the catalog
+// will be rejected by the API. The authoritative live catalog is at:
 //
 //	GET /providers/Aruba.Container/kubernetesVersions
 type KubernetesVersion string
 
 const (
-	KubernetesVersion1282 KubernetesVersion = "1.28.2"
-	KubernetesVersion1292 KubernetesVersion = "1.29.2"
-	KubernetesVersion1302 KubernetesVersion = "1.30.2"
+	KubernetesVersion1313 KubernetesVersion = "1.31.3"
+	KubernetesVersion1323 KubernetesVersion = "1.32.3"
 	KubernetesVersion1332 KubernetesVersion = "1.33.2"
 )
 
