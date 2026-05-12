@@ -10,12 +10,12 @@ import (
 
 // createDatabase provisions a database inside the given DBaaS instance.
 func createDatabase(ctx context.Context, arubaClient aruba.Client, dbaas *aruba.DBaaS) *aruba.Database {
-	fmt.Println("--- DBaaS (Database) ---")
+	printBanner("DBaaS Database", "")
 
-	if err := waitForDependencies(ctx, "Database", map[string]waitFunc{
+	if err := waitForDependencies(ctx, "DBaaS Database", map[string]waitFunc{
 		"DBaaS": dbaas.WaitUntilReady,
 	}); err != nil {
-		log.Printf("%v", err)
+		printDepWaitError("DBaaS Database", err)
 		return nil
 	}
 
@@ -28,10 +28,10 @@ func createDatabase(ctx context.Context, arubaClient aruba.Client, dbaas *aruba.
 
 	res, err := arubaClient.FromDatabase().Databases().Create(ctx, db)
 	if err != nil {
-		log.Fatalf("Error creating Database: %s", formatErr(err))
+		printCreateError("DBaaS Database", err)
 		return nil
 	}
-	fmt.Printf("✓ Created Database: %s\n", res.Name())
+	printCreated("DBaaS Database", res.Name(), res.ID())
 	return res
 }
 

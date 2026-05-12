@@ -24,11 +24,12 @@ func createKeyPair(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref
 
 	kp, err := arubaClient.FromCompute().KeyPairs().Create(ctx, kp)
 	if err != nil {
-		log.Fatalf("Error creating SSH key pair: %s", formatErr(err))
+		printCreateError("SSH Key Pair", err)
+		return nil
 	}
-	fmt.Printf("✓ Created SSH Key Pair: %s\n", kp.Name())
+	printCreated("SSH Key Pair", kp.Name(), kp.KeyPairID())
 	if err := kp.WaitUntilReady(ctx); err != nil {
-		log.Printf("SSH Key Pair %s did not become Ready: %v", kp.Name(), err)
+		printSelfWaitError("SSH Key Pair", kp.Name(), err)
 	}
 
 	return kp

@@ -194,7 +194,7 @@ func TestStorageBackup_ToRequestRoundTrip(t *testing.T) {
 	if req.Properties.RetentionDays == nil || *req.Properties.RetentionDays != 14 {
 		t.Errorf("RetentionDays = %v", req.Properties.RetentionDays)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
+	if req.Properties.BillingPeriod == nil || string(*req.Properties.BillingPeriod) != "Hourly" {
 		t.Errorf("BillingPeriod = %v", req.Properties.BillingPeriod)
 	}
 }
@@ -206,8 +206,8 @@ func TestStorageBackup_ToRequest_UnsetOptionals_AreNilOrEmpty(t *testing.T) {
 	if req.Properties.RetentionDays != nil {
 		t.Errorf("RetentionDays should be nil, got %v", req.Properties.RetentionDays)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
-		t.Errorf("BillingPeriod should default to Hour, got %v", req.Properties.BillingPeriod)
+	if req.Properties.BillingPeriod == nil || string(*req.Properties.BillingPeriod) != "Hourly" {
+		t.Errorf("BillingPeriod should default to Hourly on the wire, got %v", req.Properties.BillingPeriod)
 	}
 	if req.Properties.Origin.URI != "" {
 		t.Errorf("Origin.URI should be empty, got %q", req.Properties.Origin.URI)
@@ -926,6 +926,36 @@ func TestStorageBackup_FromResponse_SetsTerminalStates(t *testing.T) {
 	}
 	if b.terminalStates["Error"] {
 		t.Error("terminalStates[Error] should be false for StorageBackup")
+	}
+}
+
+func TestStorageBackup_BillingPeriod_WireTranslation(t *testing.T) {
+	cases := []struct {
+		sdk  BillingPeriod
+		wire string
+	}{
+		{BillingPeriodHour, "Hourly"},
+		{BillingPeriodMonth, "Monthly"},
+		{BillingPeriodYear, "Yearly"},
+	}
+
+	for _, c := range cases {
+		// outbound: SDK constant → wire value
+		req := NewStorageBackup().WithName("x").InRegion(RegionITBGBergamo).
+			WithBillingPeriod(c.sdk).RawRequest()
+		if got := string(*req.Properties.BillingPeriod); got != c.wire {
+			t.Errorf("toRequest(%q) wire = %q, want %q", c.sdk, got, c.wire)
+		}
+
+		// inbound: wire value → SDK constant
+		wireVal := BillingPeriod(c.wire)
+		b := &StorageBackup{}
+		b.fromResponse(&types.StorageBackupResponse{
+			Properties: types.StorageBackupPropertiesResult{BillingPeriod: &wireVal},
+		})
+		if b.BillingPeriod() != c.sdk {
+			t.Errorf("fromResponse(%q) = %q, want %q", c.wire, b.BillingPeriod(), c.sdk)
+		}
 	}
 }
 

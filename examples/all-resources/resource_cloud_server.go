@@ -21,7 +21,7 @@ func createCloudServer(ctx context.Context, arubaClient aruba.Client, resources 
 		"Block Storage":  resources.CloudServerBlockStorage.WaitUntilNotUsed,
 		"Key Pair":       resources.KeyPair.WaitUntilActive,
 	}); err != nil {
-		log.Printf("%v", err)
+		printDepWaitError("Cloud Server", err)
 		return nil
 	}
 
@@ -48,27 +48,23 @@ write_files:
 		InRegion(aruba.RegionITBGBergamo).
 		InZone(aruba.ZoneITBG1).
 		OfFlavor(aruba.CloudServerFlavorCSO4A8).
+		WithUserData(userData).
 		WithVPC(resources.VPC).
-		WithElasticIP(resources.CloudServerEIP).
 		WithBootVolume(resources.CloudServerBlockStorage).
-		WithKeyPair(resources.KeyPair).
 		AddSubnet(resources.SubnetBasic).
 		AddSecurityGroup(resources.SecurityGroup).
-		WithUserData(userData)
+		WithElasticIP(resources.CloudServerEIP).
+		WithKeyPair(resources.KeyPair)
 
 	cs, err := arubaClient.FromCompute().CloudServers().Create(ctx, cs)
 	if err != nil {
-		log.Fatalf("Error creating Cloud Server: %s", formatErr(err))
+		printCreateError("Cloud Server", err)
 		return nil
 	}
-
-	fmt.Printf("✓ Created Cloud Server: %s (Zone: %s, Flavor: %s)\n",
-		cs.Name(),
-		cs.Zone(),
-		cs.Flavor())
+	printCreated("Cloud Server", cs.Name(), cs.CloudServerID())
 
 	if err := cs.WaitUntilReady(ctx); err != nil {
-		log.Printf("Cloud Server %s did not become Ready: %v", cs.Name(), err)
+		printSelfWaitError("Cloud Server", cs.Name(), err)
 	}
 
 	waitPostDependencies(ctx, "Cloud Server", map[string]waitFunc{

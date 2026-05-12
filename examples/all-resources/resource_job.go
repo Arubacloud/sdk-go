@@ -11,7 +11,7 @@ import (
 
 // createRecurringJob schedules a recurring cron job targeting the given resource.
 func createRecurringJob(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, target aruba.Ref) *aruba.Job {
-	fmt.Println("--- Schedule: Recurring Job ---")
+	printBanner("Recurring Job", "")
 
 	j := aruba.NewJob().
 		IntoProject(proj).
@@ -30,16 +30,16 @@ func createRecurringJob(ctx context.Context, arubaClient aruba.Client, proj arub
 
 	res, err := arubaClient.FromSchedule().Jobs().Create(ctx, j)
 	if err != nil {
-		log.Fatalf("Error creating Recurring Job: %s", formatErr(err))
+		printCreateError("Recurring Job", err)
 		return nil
 	}
-	fmt.Printf("✓ Created Recurring Job: %s\n", res.Name())
+	printCreated("Recurring Job", res.Name(), res.JobID())
 	return res
 }
 
 // createOneShotJob schedules a one-shot job to fire 24 hours from now on the given resource.
 func createOneShotJob(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, target aruba.Ref) *aruba.Job {
-	fmt.Println("--- Schedule: OneShot Job ---")
+	printBanner("One-Shot Job", "")
 
 	j := aruba.NewJob().
 		IntoProject(proj).
@@ -57,10 +57,10 @@ func createOneShotJob(ctx context.Context, arubaClient aruba.Client, proj aruba.
 
 	res, err := arubaClient.FromSchedule().Jobs().Create(ctx, j)
 	if err != nil {
-		log.Fatalf("Error creating OneShot Job: %s", formatErr(err))
+		printCreateError("One-Shot Job", err)
 		return nil
 	}
-	fmt.Printf("✓ Created OneShot Job: %s\n", res.Name())
+	printCreated("One-Shot Job", res.Name(), res.JobID())
 	return res
 }
 

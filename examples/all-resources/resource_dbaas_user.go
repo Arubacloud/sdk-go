@@ -10,12 +10,12 @@ import (
 
 // createDBaaSUser creates a database user inside the given DBaaS instance.
 func createDBaaSUser(ctx context.Context, arubaClient aruba.Client, dbaas *aruba.DBaaS) *aruba.User {
-	fmt.Println("--- DBaaS (User) ---")
+	printBanner("DBaaS User", "")
 
 	if err := waitForDependencies(ctx, "DBaaS User", map[string]waitFunc{
 		"DBaaS": dbaas.WaitUntilReady,
 	}); err != nil {
-		log.Printf("%v", err)
+		printDepWaitError("DBaaS User", err)
 		return nil
 	}
 
@@ -26,10 +26,10 @@ func createDBaaSUser(ctx context.Context, arubaClient aruba.Client, dbaas *aruba
 
 	res, err := arubaClient.FromDatabase().Users().Create(ctx, u)
 	if err != nil {
-		log.Fatalf("Error creating DBaaS User: %s", formatErr(err))
+		printCreateError("DBaaS User", err)
 		return nil
 	}
-	fmt.Printf("✓ Created DBaaS User: %s\n", res.Username())
+	printCreated("DBaaS User", res.Username(), res.ID())
 	return res
 }
 
