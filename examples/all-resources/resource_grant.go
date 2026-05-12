@@ -10,7 +10,7 @@ import (
 
 // createGrant grants the given user a role on the specified database.
 func createGrant(ctx context.Context, arubaClient aruba.Client, db *aruba.Database, user *aruba.User) *aruba.Grant {
-	fmt.Println("--- DBaaS (Grant) ---")
+	printBanner("DBaaS Grant", "")
 
 	g := aruba.NewGrant().
 		IntoDatabase(db).
@@ -19,10 +19,10 @@ func createGrant(ctx context.Context, arubaClient aruba.Client, db *aruba.Databa
 
 	res, err := arubaClient.FromDatabase().Grants().Create(ctx, g)
 	if err != nil {
-		log.Fatalf("Error creating Grant: %s", formatErr(err))
+		printCreateError("DBaaS Grant", err)
 		return nil
 	}
-	fmt.Printf("✓ Created Grant: %s on %s (%s)\n", res.Username(), res.DatabaseName(), res.RoleName())
+	printCreated("DBaaS Grant", res.Username(), res.ID())
 	return res
 }
 

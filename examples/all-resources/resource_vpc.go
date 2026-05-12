@@ -20,13 +20,13 @@ func createVPC(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *a
 
 	created, err := arubaClient.FromNetwork().VPCs().Create(ctx, vpc)
 	if err != nil {
-		log.Fatalf("Error creating VPC: %s", formatErr(err))
+		printCreateError("VPC", err)
+		return nil
 	}
-
-	fmt.Printf("✓ Created VPC: %s (Default: %t)\n", created.Name(), created.IsDefault())
+	printCreated("VPC", created.Name(), created.ID())
 
 	if err := created.WaitUntilReady(ctx); err != nil {
-		log.Printf("VPC %s did not become Ready: %v", created.Name(), err)
+		printSelfWaitError("VPC", created.Name(), err)
 	}
 
 	return created

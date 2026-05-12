@@ -12,28 +12,29 @@ import (
 func createRestore(ctx context.Context, arubaClient aruba.Client, b *aruba.StorageBackup, target *aruba.BlockStorage) *aruba.StorageRestore {
 	fmt.Println("--- Storage Restore ---")
 
-	if err := waitForDependencies(ctx, "Restore", map[string]waitFunc{
+	if err := waitForDependencies(ctx, "Storage Restore", map[string]waitFunc{
 		"Backup":               b.WaitUntilReady,
 		"Target Block Storage": target.WaitUntilNotUsed,
 	}); err != nil {
-		log.Printf("%v", err)
+		printDepWaitError("Storage Restore", err)
 		return nil
 	}
 
 	r := aruba.NewStorageRestore().
 		IntoBackup(b).
-		InRegion(aruba.RegionITBGBergamo).
 		WithName(resourceName(NameStorageRestore)).
+		InRegion(aruba.RegionITBGBergamo).
 		ToVolume(target)
 
 	r, err := arubaClient.FromStorage().Restores().Create(ctx, r)
 	if err != nil {
-		log.Fatalf("Error creating restore: %s", formatErr(err))
+		printCreateError("Storage Restore", err)
+		return nil
 	}
-	fmt.Printf("✓ Created restore: %s\n", r.Name())
+	printCreated("Storage Restore", r.Name(), r.RestoreID())
 
 	if err := r.WaitUntilReady(ctx); err != nil {
-		log.Printf("Storage Restore %s did not become Ready: %v", r.Name(), err)
+		printSelfWaitError("Storage Restore", r.Name(), err)
 	}
 
 	return r
