@@ -39,23 +39,33 @@ type Kmip struct {
 func (km *Kmip) setRefresh(fn func(context.Context) error) { km.refresh = fn }
 
 var kmipTerminalStates = map[string]bool{
-	"Failed":  false,
-	"Deleted": false,
+	string(types.ServiceStatusCertificateAvailable): true,
+	string(types.ServiceStatusActive):               true,
+	string(types.ServiceStatusFailed):               false,
+	string(types.ServiceStatusDeleted):              false,
 }
 
-// WaitUntilReady blocks until the KMIP service is ready for use — i.e. reaches
-// "CertificateAvailable", at which point KmipsClient.Download will succeed.
-// Provided so all polling-aware resources expose a uniform "ready" gate;
-// equivalent to WaitUntilCertificateAvailable for the KMIP resource type.
+func kmipSuccessTargets() []string {
+	return []string{
+		string(types.ServiceStatusCertificateAvailable),
+		string(types.ServiceStatusActive),
+	}
+}
+
+// WaitUntilReady blocks until the KMIP service reaches "CertificateAvailable"
+// or "Active" — either of which means the certificate is downloadable and the
+// service is operational. Provided so all polling-aware resources expose a
+// uniform "ready" gate; equivalent to WaitUntilCertificateAvailable for the
+// KMIP resource type.
 func (km *Kmip) WaitUntilReady(ctx context.Context, opts ...WaitOption) error {
 	return km.WaitUntilCertificateAvailable(ctx, opts...)
 }
 
 // WaitUntilCertificateAvailable blocks until the KMIP service reaches
-// "CertificateAvailable", at which point KmipsClient.Download will succeed.
-// Returns immediately with an error if the service enters a terminal state
-// ("Failed", "Deleted"), or if the wrapper was not produced by an adapter
-// (Create/Get/List).
+// "CertificateAvailable" or "Active" — either of which means the certificate
+// is downloadable and the service is operational. Returns immediately with an
+// error if the service enters a terminal error state ("Failed", "Deleted"), or
+// if the wrapper was not produced by an adapter (Create/Get/List).
 func (km *Kmip) WaitUntilCertificateAvailable(ctx context.Context, opts ...WaitOption) error {
 	if km.refresh == nil {
 		return errors.New("WaitUntilCertificateAvailable: refresh callback not set; resource must be produced by an adapter (Create/Get/List) to support polling")
@@ -70,11 +80,11 @@ func (km *Kmip) WaitUntilCertificateAvailable(ctx context.Context, opts ...WaitO
 	var terminalErr error
 	check := func(_ *types.Response[any]) (bool, error) {
 		state := km.KmipStatus()
-		if state == string(types.ServiceStatusCertificateAvailable) {
-			return true, nil
-		}
-		if isSuccess, isTerminal := kmipTerminalStates[state]; isTerminal && !isSuccess {
-			terminalErr = fmt.Errorf("KMIP entered terminal state %q (target %q)", state, types.ServiceStatusCertificateAvailable)
+		if isSuccess, isTerminal := kmipTerminalStates[state]; isTerminal {
+			if isSuccess {
+				return true, nil
+			}
+			terminalErr = fmt.Errorf("KMIP entered terminal state %q (targets %q)", state, kmipSuccessTargets())
 			return true, terminalErr
 		}
 		return false, nil

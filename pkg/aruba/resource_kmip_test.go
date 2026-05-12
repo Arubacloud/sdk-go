@@ -865,6 +865,27 @@ func TestKmip_WaitUntilReady_HappyPath(t *testing.T) {
 	}
 }
 
+func TestKmip_WaitUntilReady_AcceptsActive(t *testing.T) {
+	km := &Kmip{}
+	calls := 0
+	status := ServiceStatusInCreation
+	km.setRefresh(func(_ context.Context) error {
+		calls++
+		if calls >= 2 {
+			status = ServiceStatusActive
+		}
+		s := status
+		km.response = &types.KmipResponse{Status: &s}
+		return nil
+	})
+	if err := km.WaitUntilReady(context.Background(), fastOpts()...); err != nil {
+		t.Fatalf("WaitUntilReady should accept Active as ready, got error: %v", err)
+	}
+	if km.KmipStatus() != string(ServiceStatusActive) {
+		t.Errorf("KmipStatus() = %q after wait, want %q", km.KmipStatus(), ServiceStatusActive)
+	}
+}
+
 // --------------------------------------------------------------------------
 // Reflective guard: KmipsClient must NOT expose Update (Family B, no-Update)
 // --------------------------------------------------------------------------
