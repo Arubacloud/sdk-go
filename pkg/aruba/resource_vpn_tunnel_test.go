@@ -485,7 +485,7 @@ func TestVPNTunnel_AbsorbsSubBuilderErrors(t *testing.T) {
 
 func vpnTunnelTestResponse(id, name, uri, projectID string) *types.VPNTunnelResponse {
 	state := "Active"
-	vpnType := VPNType(VPNTypeSiteToSite)
+	vpnType := VPNTypeSiteToSite
 	proto := VPNClientProtocolIKEv2
 	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	peerIP := "1.2.3.4"
