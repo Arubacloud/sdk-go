@@ -17,7 +17,7 @@ func runDeleteExample(clientID, clientSecret, projectID string, debug bool) {
 		log.Fatalf("Failed to create SDK client: %v", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Minute)
 	defer cancel()
 
 	fmt.Println("\n=== Delete Example ===")
@@ -28,6 +28,8 @@ func runDeleteExample(clientID, clientSecret, projectID string, debug bool) {
 	}
 
 	resources := fetchAllResources(ctx, arubaClient, proj)
+
+	printDeletionInventory(resources)
 
 	fmt.Printf("\n⚠️  WARNING: This will delete ALL resources in project: %s\n", projectID)
 	fmt.Print("Type 'yes' to confirm: ")
@@ -187,6 +189,15 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, proj *arub
 		}
 	}
 
+	snapshotList, err := arubaClient.FromStorage().Snapshots().List(ctx, proj)
+	if err == nil && snapshotList.Total() > 0 {
+		snapResp, err := arubaClient.FromStorage().Snapshots().Get(ctx, snapshotList.Items()[0])
+		if err == nil {
+			resources.Snapshot = snapResp
+			fmt.Printf("✓ Found Snapshot: %s\n", snapResp.Name())
+		}
+	}
+
 	containerRegistryList, err := arubaClient.FromContainer().ContainerRegistry().List(ctx, proj)
 	if err == nil && containerRegistryList.Total() > 0 {
 		first := containerRegistryList.Items()[0]
@@ -224,113 +235,197 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, proj *arub
 		}
 	}
 
+	// All BlockStorages in the project (boot volumes, attached, unattached — catches every stray).
+	bsList, err := arubaClient.FromStorage().Volumes().List(ctx, proj)
+	if err == nil {
+		for _, bs := range bsList.Items() {
+			resources.BlockStorages = append(resources.BlockStorages, bs)
+			fmt.Printf("✓ Found Block Storage: %s\n", bs.Name())
+		}
+	}
+
+	// All ElasticIPs in the project.
+	eipList, err := arubaClient.FromNetwork().ElasticIPs().List(ctx, proj)
+	if err == nil {
+		for _, eip := range eipList.Items() {
+			resources.ElasticIPs = append(resources.ElasticIPs, eip)
+			fmt.Printf("✓ Found Elastic IP: %s\n", eip.Name())
+		}
+	}
+
 	return resources
 }
 
-// deleteAllResources deletes all resources in reverse order of creation
-// to ensure dependencies are respected.
+// printDeletionInventory prints a concise summary of everything fetchAllResources found.
+func printDeletionInventory(r *ResourceCollection) {
+	fmt.Println("\n=== Inventory ===")
+
+	count := func(b bool) int {
+		if b {
+			return 1
+		}
+		return 0
+	}
+
+	fmt.Printf("  Project: %d\n", count(r.Project != nil))
+
+	fmt.Printf("  KMS: %d  KMS Key: %d  KMIP: %d\n",
+		count(r.KMS != nil), count(r.KMSKey != nil), count(r.Kmip != nil))
+
+	fmt.Printf("  Backup: %d  Restore: %d  Snapshot: %d\n",
+		count(r.Backup != nil), count(r.Restore != nil), count(r.Snapshot != nil))
+
+	fmt.Printf("  Container Registry: %d\n", count(r.ContainerRegistry != nil))
+
+	jobs := 0
+	if r.JobRecurring != nil {
+		jobs++
+	}
+	if r.JobOneShot != nil {
+		jobs++
+	}
+	fmt.Printf("  Cloud Server: %d  KaaS: %d  Jobs: %d\n",
+		count(r.CloudServer != nil), count(r.KaaS != nil), jobs)
+
+	grants := count(r.Grant != nil)
+	users := count(r.DBaaSUser != nil)
+	dbs := count(r.Database != nil)
+	fmt.Printf("  DBaaS: %d (Database: %d  User: %d  Grant: %d)\n",
+		count(r.DBaaS != nil), dbs, users, grants)
+
+	fmt.Printf("  VPC: %d  Subnets: %d  Security Group: %d  Rules: %d  Key Pair: %d\n",
+		count(r.VPC != nil),
+		count(r.SubnetAdvanced != nil)+count(r.SubnetBasic != nil),
+		count(r.SecurityGroup != nil),
+		len(r.SecurityRulesIngress)+count(r.SecurityRuleEgress != nil),
+		count(r.KeyPair != nil))
+
+	fmt.Printf("  Block Storages: %d  Elastic IPs: %d\n",
+		len(r.BlockStorages), len(r.ElasticIPs))
+}
+
+// deleteAllResources deletes all resources in strict inverse of the creation order
+// defined in orchestrator_create.go. Each resource waits until fully gone (HTTP 404)
+// before the next dependent delete proceeds — this prevents the API from rejecting
+// deletes of resources still referenced by a peer in "Deleting" state.
 func deleteAllResources(ctx context.Context, arubaClient aruba.Client, resources *ResourceCollection) {
 	fmt.Println("\n=== Deleting Resources ===")
 
+	// Phase 1/7: KMS stack (inverse of create Phase 7: KMS → KMSKey → KMIP).
+	printPhase(1, 7, "KMS stack")
+
+	if resources.Kmip != nil && resources.Kmip.KmipID() != "" {
+		withDeleteDeadline(ctx, func(c context.Context) { deleteKmip(c, arubaClient, resources.Kmip) })
+	}
+	if resources.KMSKey != nil && resources.KMSKey.KeyID() != "" {
+		withDeleteDeadline(ctx, func(c context.Context) { deleteKMSKey(c, arubaClient, resources.KMSKey) })
+	}
+	if resources.KMS != nil && resources.KMS.KMSID() != "" {
+		withDeleteDeadline(ctx, func(c context.Context) { deleteKMS(c, arubaClient, resources.KMS) })
+	}
+
+	// Phase 2/7: Backup & restore (inverse of create Phase 6: Restore → Backup).
+	// RestoreTargetStorage is a BlockStorage; it falls into Phase 6 with all other volumes.
+	printPhase(2, 7, "Backup & restore")
+
 	if resources.Restore != nil && resources.Restore.RestoreID() != "" {
-		deleteRestore(ctx, arubaClient, resources.Restore)
+		withDeleteDeadline(ctx, func(c context.Context) { deleteRestore(c, arubaClient, resources.Restore) })
 	}
-
 	if resources.Backup != nil && resources.Backup.ID() != "" {
-		deleteStorageBackup(ctx, arubaClient, resources.Backup)
+		withDeleteDeadline(ctx, func(c context.Context) { deleteStorageBackup(c, arubaClient, resources.Backup) })
 	}
 
-	if resources.Snapshot != nil && resources.Snapshot.ID() != "" {
-		deleteSnapshot(ctx, arubaClient, resources.Snapshot)
-	}
+	// Phase 3/7: Compute & container platforms (inverse of create Phase 5:
+	// ContainerRegistry → Jobs → CloudServer → KaaS).
+	printPhase(3, 7, "Compute & container platforms")
 
 	if resources.ContainerRegistry != nil && resources.ContainerRegistry.ContainerRegistryID() != "" {
-		deleteContainerRegistry(ctx, arubaClient, resources.ContainerRegistry)
-	}
-
-	if resources.KMS != nil && resources.KMS.KMSID() != "" {
-		if resources.Kmip != nil && resources.Kmip.KmipID() != "" {
-			deleteKmip(ctx, arubaClient, resources.Kmip)
-		}
-		if resources.KMSKey != nil && resources.KMSKey.KeyID() != "" {
-			deleteKMSKey(ctx, arubaClient, resources.KMSKey)
-		}
-		deleteKMS(ctx, arubaClient, resources.KMS)
-	}
-
-	if resources.JobRecurring != nil && resources.JobRecurring.JobID() != "" {
-		deleteJob(ctx, arubaClient, resources.JobRecurring, "Recurring")
+		withDeleteDeadline(ctx, func(c context.Context) {
+			deleteContainerRegistry(c, arubaClient, resources.ContainerRegistry)
+		})
 	}
 	if resources.JobOneShot != nil && resources.JobOneShot.JobID() != "" {
-		deleteJob(ctx, arubaClient, resources.JobOneShot, "OneShot")
+		withDeleteDeadline(ctx, func(c context.Context) { deleteJob(c, arubaClient, resources.JobOneShot, "One-Shot") })
 	}
-
+	if resources.JobRecurring != nil && resources.JobRecurring.JobID() != "" {
+		withDeleteDeadline(ctx, func(c context.Context) { deleteJob(c, arubaClient, resources.JobRecurring, "Recurring") })
+	}
 	if resources.CloudServer != nil && resources.CloudServer.CloudServerID() != "" {
-		deleteCloudServer(ctx, arubaClient, resources.CloudServer)
+		withDeleteDeadline(ctx, func(c context.Context) { deleteCloudServer(c, arubaClient, resources.CloudServer) })
+	}
+	if resources.KaaS != nil && resources.KaaS.KaaSID() != "" {
+		withDeleteDeadline(ctx, func(c context.Context) { deleteKaaS(c, arubaClient, resources.KaaS) })
 	}
 
-	if resources.KaaS != nil && resources.KaaS.KaaSID() != "" {
-		deleteKaaS(ctx, arubaClient, resources.KaaS)
-	}
+	// Phase 4/7: Database stack (inverse of create Phase 4:
+	// Grant → DBaaSUser → Database → DBaaS).
+	printPhase(4, 7, "Database stack")
 
 	if resources.Grant != nil && resources.Grant.ID() != "" {
-		deleteGrant(ctx, arubaClient, resources.Grant)
+		withDeleteDeadline(ctx, func(c context.Context) { deleteGrant(c, arubaClient, resources.Grant) })
 	}
 	if resources.DBaaSUser != nil && resources.DBaaSUser.ID() != "" {
-		deleteDBaaSUser(ctx, arubaClient, resources.DBaaSUser)
+		withDeleteDeadline(ctx, func(c context.Context) { deleteDBaaSUser(c, arubaClient, resources.DBaaSUser) })
 	}
 	if resources.Database != nil && resources.Database.ID() != "" {
-		deleteDatabase(ctx, arubaClient, resources.Database)
+		withDeleteDeadline(ctx, func(c context.Context) { deleteDatabase(c, arubaClient, resources.Database) })
+	}
+	if resources.DBaaS != nil && resources.DBaaS.DBaaSID() != "" {
+		withDeleteDeadline(ctx, func(c context.Context) { deleteDBaaS(c, arubaClient, resources.DBaaS) })
 	}
 
-	if resources.DBaaS != nil && resources.DBaaS.DBaaSID() != "" {
-		deleteDBaaS(ctx, arubaClient, resources.DBaaS)
-	}
+	// Phase 5/7: VPC-scoped network (inverse of create Phase 3:
+	// KeyPair → Rules (egress, ingress) → SecurityGroup → Subnets (Basic, Advanced)).
+	printPhase(5, 7, "VPC-scoped network")
 
 	if resources.KeyPair != nil && resources.KeyPair.KeyPairID() != "" {
-		deleteKeyPair(ctx, arubaClient, resources.KeyPair)
-	}
-
-	for _, r := range resources.SecurityRulesIngress {
-		if r != nil && r.ID() != "" {
-			deleteSecurityGroupRule(ctx, arubaClient, r)
-		}
+		withDeleteDeadline(ctx, func(c context.Context) { deleteKeyPair(c, arubaClient, resources.KeyPair) })
 	}
 	if resources.SecurityRuleEgress != nil && resources.SecurityRuleEgress.ID() != "" {
-		deleteSecurityGroupRule(ctx, arubaClient, resources.SecurityRuleEgress)
+		withDeleteDeadline(ctx, func(c context.Context) {
+			deleteSecurityGroupRule(c, arubaClient, resources.SecurityRuleEgress)
+		})
 	}
-
+	for _, r := range resources.SecurityRulesIngress {
+		if r != nil && r.ID() != "" {
+			r := r
+			withDeleteDeadline(ctx, func(c context.Context) { deleteSecurityGroupRule(c, arubaClient, r) })
+		}
+	}
 	if resources.SecurityGroup != nil && resources.SecurityGroup.ID() != "" {
-		deleteSecurityGroup(ctx, arubaClient, resources.SecurityGroup)
+		withDeleteDeadline(ctx, func(c context.Context) { deleteSecurityGroup(c, arubaClient, resources.SecurityGroup) })
 	}
-
 	if resources.SubnetBasic != nil {
-		deleteBasicSubnet(ctx, arubaClient, resources.SubnetBasic)
+		withDeleteDeadline(ctx, func(c context.Context) { deleteBasicSubnet(c, arubaClient, resources.SubnetBasic) })
 	}
 	if resources.SubnetAdvanced != nil {
-		deleteAdvancedSubnet(ctx, arubaClient, resources.SubnetAdvanced)
+		withDeleteDeadline(ctx, func(c context.Context) { deleteAdvancedSubnet(c, arubaClient, resources.SubnetAdvanced) })
 	}
+
+	// Phase 6/7: Independent network & storage primitives (inverse of create Phase 2:
+	// VPC → Snapshot → BlockStorages → ElasticIPs).
+	printPhase(6, 7, "Independent network & storage primitives")
 
 	if resources.VPC != nil {
-		deleteVPC(ctx, arubaClient, resources.VPC)
+		withDeleteDeadline(ctx, func(c context.Context) { deleteVPC(c, arubaClient, resources.VPC) })
+	}
+	if resources.Snapshot != nil && resources.Snapshot.ID() != "" {
+		withDeleteDeadline(ctx, func(c context.Context) { deleteSnapshot(c, arubaClient, resources.Snapshot) })
+	}
+	for _, bs := range resources.BlockStorages {
+		bs := bs
+		withDeleteDeadline(ctx, func(c context.Context) { deleteBlockStorage(c, arubaClient, bs) })
+	}
+	for _, eip := range resources.ElasticIPs {
+		eip := eip
+		withDeleteDeadline(ctx, func(c context.Context) { deleteElasticIP(c, arubaClient, eip) })
 	}
 
-	bsList, err := arubaClient.FromStorage().Volumes().List(ctx, resources.Project)
-	if err == nil {
-		for _, bs := range bsList.Items() {
-			deleteBlockStorage(ctx, arubaClient, bs)
-		}
-	}
-
-	eipList, err := arubaClient.FromNetwork().ElasticIPs().List(ctx, resources.Project)
-	if err == nil {
-		for _, eip := range eipList.Items() {
-			deleteElasticIP(ctx, arubaClient, eip)
-		}
-	}
+	// Phase 7/7: Account & isolation (inverse of create Phase 1).
+	printPhase(7, 7, "Account & isolation")
 
 	if resources.Project != nil {
-		deleteProject(ctx, arubaClient, resources.Project)
+		withDeleteDeadline(ctx, func(c context.Context) { deleteProject(c, arubaClient, resources.Project) })
 	}
 
 	fmt.Println("\n=== Delete Complete ===")

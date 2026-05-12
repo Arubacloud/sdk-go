@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
@@ -55,13 +54,18 @@ func createContainerRegistry(ctx context.Context, arubaClient aruba.Client, reso
 	return resp
 }
 
-// deleteContainerRegistry tears down the container registry.
+// deleteContainerRegistry tears down the container registry and waits until it is
+// fully gone. BS and EIP detachment races against an in-flight CR teardown without
+// this wait, causing the API to reject those deletes.
 func deleteContainerRegistry(ctx context.Context, arubaClient aruba.Client, r *aruba.ContainerRegistry) {
-	fmt.Println("--- Deleting Container Registry ---")
-	err := arubaClient.FromContainer().ContainerRegistry().Delete(ctx, r)
-	if err != nil {
-		log.Printf("Error deleting container registry: %s", formatErr(err))
+	printDeleteBanner("Container Registry")
+	if err := arubaClient.FromContainer().ContainerRegistry().Delete(ctx, r); err != nil {
+		printDeleteError("Container Registry", err)
 		return
 	}
-	fmt.Printf("✓ Deleted Container Registry: %s\n", r.ContainerRegistryID())
+	printDeleteSubmitted("Container Registry", r.Name())
+	waitUntilGone(ctx, "Container Registry "+r.Name(), func(ctx context.Context) error {
+		_, err := arubaClient.FromContainer().ContainerRegistry().Get(ctx, r)
+		return err
+	})
 }

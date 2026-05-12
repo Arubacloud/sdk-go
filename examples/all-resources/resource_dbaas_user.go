@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
@@ -33,12 +31,16 @@ func createDBaaSUser(ctx context.Context, arubaClient aruba.Client, dbaas *aruba
 	return res
 }
 
-// deleteDBaaSUser removes the database user from its DBaaS instance.
+// deleteDBaaSUser removes the database user and waits until it is fully gone.
 func deleteDBaaSUser(ctx context.Context, arubaClient aruba.Client, u *aruba.User) {
-	fmt.Println("--- Deleting DBaaS User ---")
+	printDeleteBanner("DBaaS User")
 	if err := arubaClient.FromDatabase().Users().Delete(ctx, u); err != nil {
-		log.Printf("Error deleting DBaaS User: %s", formatErr(err))
+		printDeleteError("DBaaS User", err)
 		return
 	}
-	fmt.Printf("✓ Deleted DBaaS User: %s\n", u.Username())
+	printDeleteSubmitted("DBaaS User", u.Username())
+	waitUntilGone(ctx, "DBaaS User "+u.Username(), func(ctx context.Context) error {
+		_, err := arubaClient.FromDatabase().Users().Get(ctx, u)
+		return err
+	})
 }

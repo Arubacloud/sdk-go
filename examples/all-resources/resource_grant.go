@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
@@ -26,12 +24,16 @@ func createGrant(ctx context.Context, arubaClient aruba.Client, db *aruba.Databa
 	return res
 }
 
-// deleteGrant revokes the grant.
+// deleteGrant revokes the grant and waits until it is fully gone.
 func deleteGrant(ctx context.Context, arubaClient aruba.Client, g *aruba.Grant) {
-	fmt.Println("--- Deleting Grant ---")
+	printDeleteBanner("Grant")
 	if err := arubaClient.FromDatabase().Grants().Delete(ctx, g); err != nil {
-		log.Printf("Error deleting Grant: %s", formatErr(err))
+		printDeleteError("Grant", err)
 		return
 	}
-	fmt.Printf("✓ Deleted Grant: %s\n", g.ID())
+	printDeleteSubmitted("Grant", g.ID())
+	waitUntilGone(ctx, "Grant "+g.ID(), func(ctx context.Context) error {
+		_, err := arubaClient.FromDatabase().Grants().Get(ctx, g)
+		return err
+	})
 }

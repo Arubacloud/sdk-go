@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
@@ -82,15 +80,13 @@ func createBasicSubnet(ctx context.Context, arubaClient aruba.Client, vpc *aruba
 
 // deleteAdvancedSubnet tears down the advanced subnet and waits until gone.
 func deleteAdvancedSubnet(ctx context.Context, arubaClient aruba.Client, subnet *aruba.Subnet) {
-	fmt.Println("--- Deleting Advanced Subnet ---")
-
-	err := arubaClient.FromNetwork().Subnets().Delete(ctx, subnet)
-	if err != nil {
-		log.Printf("Error deleting advanced subnet: %s", formatErr(err))
+	printDeleteBanner("Subnet (Advanced)")
+	if err := arubaClient.FromNetwork().Subnets().Delete(ctx, subnet); err != nil {
+		printDeleteError("Subnet (Advanced)", err)
 		return
 	}
-	fmt.Printf("✓ Deleted advanced subnet: %s\n", subnet.ID())
-	waitUntilGone(ctx, "advanced subnet "+subnet.Name(), func(ctx context.Context) error {
+	printDeleteSubmitted("Subnet (Advanced)", subnet.Name())
+	waitUntilGone(ctx, "Subnet (Advanced) "+subnet.Name(), func(ctx context.Context) error {
 		_, err := arubaClient.FromNetwork().Subnets().Get(ctx, subnet)
 		return err
 	})
@@ -98,15 +94,13 @@ func deleteAdvancedSubnet(ctx context.Context, arubaClient aruba.Client, subnet 
 
 // deleteBasicSubnet tears down the basic subnet and waits until gone.
 func deleteBasicSubnet(ctx context.Context, arubaClient aruba.Client, subnet *aruba.Subnet) {
-	fmt.Println("--- Deleting Basic Subnet ---")
-
-	err := arubaClient.FromNetwork().Subnets().Delete(ctx, subnet)
-	if err != nil {
-		log.Printf("Error deleting basic subnet: %s", formatErr(err))
+	printDeleteBanner("Subnet (Basic)")
+	if err := arubaClient.FromNetwork().Subnets().Delete(ctx, subnet); err != nil {
+		printDeleteError("Subnet (Basic)", err)
 		return
 	}
-	fmt.Printf("✓ Deleted basic subnet: %s\n", subnet.ID())
-	waitUntilGone(ctx, "basic subnet "+subnet.Name(), func(ctx context.Context) error {
+	printDeleteSubmitted("Subnet (Basic)", subnet.Name())
+	waitUntilGone(ctx, "Subnet (Basic) "+subnet.Name(), func(ctx context.Context) error {
 		_, err := arubaClient.FromNetwork().Subnets().Get(ctx, subnet)
 		return err
 	})

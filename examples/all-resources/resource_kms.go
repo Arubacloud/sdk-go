@@ -113,37 +113,44 @@ func downloadKmipCertificate(ctx context.Context, arubaClient aruba.Client, kmip
 	return cert
 }
 
-// deleteKMS tears down the KMS instance.
+// deleteKMS tears down the KMS instance and waits until it is fully gone.
 func deleteKMS(ctx context.Context, arubaClient aruba.Client, k *aruba.KMS) {
-	fmt.Println("--- Deleting KMS Instance ---")
-
+	printDeleteBanner("KMS Instance")
 	if err := arubaClient.FromSecurity().KMS().Delete(ctx, k); err != nil {
-		log.Printf("Error deleting KMS: %s", formatErr(err))
+		printDeleteError("KMS Instance", err)
 		return
 	}
-	fmt.Printf("✓ Deleted KMS instance: %s\n", k.KMSID())
+	printDeleteSubmitted("KMS Instance", k.Name())
+	waitUntilGone(ctx, "KMS Instance "+k.Name(), func(ctx context.Context) error {
+		_, err := arubaClient.FromSecurity().KMS().Get(ctx, k)
+		return err
+	})
 }
 
-// deleteKMSKey removes the cryptographic key from the KMS instance.
+// deleteKMSKey removes the cryptographic key from the KMS instance and waits until gone.
 func deleteKMSKey(ctx context.Context, arubaClient aruba.Client, key *aruba.Key) {
-	fmt.Println("--- Deleting KMS Key ---")
-
-	err := arubaClient.FromSecurity().Keys().Delete(ctx, key)
-	if err != nil {
-		log.Printf("Error deleting KMS key: %s", formatErr(err))
+	printDeleteBanner("KMS Key")
+	if err := arubaClient.FromSecurity().Keys().Delete(ctx, key); err != nil {
+		printDeleteError("KMS Key", err)
 		return
 	}
-	fmt.Printf("✓ Deleted KMS key: %s\n", key.KeyID())
+	printDeleteSubmitted("KMS Key", key.Name())
+	waitUntilGone(ctx, "KMS Key "+key.Name(), func(ctx context.Context) error {
+		_, err := arubaClient.FromSecurity().Keys().Get(ctx, key)
+		return err
+	})
 }
 
-// deleteKmip tears down the KMIP service.
+// deleteKmip tears down the KMIP service and waits until it is fully gone.
 func deleteKmip(ctx context.Context, arubaClient aruba.Client, km *aruba.Kmip) {
-	fmt.Println("--- Deleting KMIP Service ---")
-
-	err := arubaClient.FromSecurity().Kmips().Delete(ctx, km)
-	if err != nil {
-		log.Printf("Error deleting KMIP service: %s", formatErr(err))
+	printDeleteBanner("KMIP Service")
+	if err := arubaClient.FromSecurity().Kmips().Delete(ctx, km); err != nil {
+		printDeleteError("KMIP Service", err)
 		return
 	}
-	fmt.Printf("✓ Deleted KMIP service: %s\n", km.KmipID())
+	printDeleteSubmitted("KMIP Service", km.Name())
+	waitUntilGone(ctx, "KMIP Service "+km.Name(), func(ctx context.Context) error {
+		_, err := arubaClient.FromSecurity().Kmips().Get(ctx, km)
+		return err
+	})
 }

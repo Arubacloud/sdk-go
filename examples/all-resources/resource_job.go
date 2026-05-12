@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"time"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
@@ -64,12 +62,16 @@ func createOneShotJob(ctx context.Context, arubaClient aruba.Client, proj aruba.
 	return res
 }
 
-// deleteJob removes the scheduled job identified by label.
+// deleteJob removes the scheduled job. Jobs persist as historical records on
+// the platform after Delete (no "Deleted"/"Cancelled" state is enumerated in
+// the SDK's jobTerminalStates), so polling for HTTP 404 always exhausts the
+// wait budget without any signal. Submit the delete and move on.
 func deleteJob(ctx context.Context, arubaClient aruba.Client, j *aruba.Job, label string) {
-	fmt.Printf("--- Deleting %s Job ---\n", label)
+	pretty := label + " Job"
+	printDeleteBanner(pretty)
 	if err := arubaClient.FromSchedule().Jobs().Delete(ctx, j); err != nil {
-		log.Printf("Error deleting %s Job: %s", label, formatErr(err))
+		printDeleteError(pretty, err)
 		return
 	}
-	fmt.Printf("✓ Deleted %s Job: %s\n", label, j.Name())
+	printDeleteSubmitted(pretty, j.Name())
 }

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
@@ -115,27 +114,28 @@ func createSecurityGroupEgressRule(ctx context.Context, arubaClient aruba.Client
 // confirm removal. VPC deletion fails with 400 if a security group is still
 // in Deleting state, so we block here before the caller proceeds to deleteVPC.
 func deleteSecurityGroup(ctx context.Context, arubaClient aruba.Client, sg *aruba.SecurityGroup) {
-	fmt.Println("--- Deleting Security Group ---")
-
-	err := arubaClient.FromNetwork().SecurityGroups().Delete(ctx, sg)
-	if err != nil {
-		log.Printf("Error deleting security group: %s", formatErr(err))
+	printDeleteBanner("Security Group")
+	if err := arubaClient.FromNetwork().SecurityGroups().Delete(ctx, sg); err != nil {
+		printDeleteError("Security Group", err)
 		return
 	}
-	fmt.Printf("✓ Deleted security group: %s\n", sg.ID())
-	waitUntilGone(ctx, "security group "+sg.Name(), func(ctx context.Context) error {
+	printDeleteSubmitted("Security Group", sg.Name())
+	waitUntilGone(ctx, "Security Group "+sg.Name(), func(ctx context.Context) error {
 		_, err := arubaClient.FromNetwork().SecurityGroups().Get(ctx, sg)
 		return err
 	})
 }
 
-// deleteSecurityGroupRule removes the security group rule.
+// deleteSecurityGroupRule removes the security group rule and waits until it is fully gone.
 func deleteSecurityGroupRule(ctx context.Context, arubaClient aruba.Client, rule *aruba.SecurityRule) {
-	fmt.Println("--- Deleting Security Group Rule ---")
-
+	printDeleteBanner("Security Group Rule")
 	if err := arubaClient.FromNetwork().SecurityGroupRules().Delete(ctx, rule); err != nil {
-		log.Printf("Error deleting security rule: %s", formatErr(err))
+		printDeleteError("Security Group Rule", err)
 		return
 	}
-	fmt.Printf("✓ Deleted security rule: %s\n", rule.ID())
+	printDeleteSubmitted("Security Group Rule", rule.Name())
+	waitUntilGone(ctx, "Security Group Rule "+rule.Name(), func(ctx context.Context) error {
+		_, err := arubaClient.FromNetwork().SecurityGroupRules().Get(ctx, rule)
+		return err
+	})
 }

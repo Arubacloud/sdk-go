@@ -80,14 +80,16 @@ func updateDBaaS(ctx context.Context, arubaClient aruba.Client, d *aruba.DBaaS) 
 	fmt.Printf("✓ Updated DBaaS: %s (Storage: %d GB)\n", result.Name(), result.SizeGB())
 }
 
-// deleteDBaaS tears down the DBaaS instance.
+// deleteDBaaS tears down the DBaaS instance and waits until it is fully gone.
 func deleteDBaaS(ctx context.Context, arubaClient aruba.Client, d *aruba.DBaaS) {
-	fmt.Println("--- Deleting DBaaS ---")
-
-	err := arubaClient.FromDatabase().DBaaS().Delete(ctx, d)
-	if err != nil {
-		log.Printf("Error deleting DBaaS: %s", formatErr(err))
+	printDeleteBanner("DBaaS")
+	if err := arubaClient.FromDatabase().DBaaS().Delete(ctx, d); err != nil {
+		printDeleteError("DBaaS", err)
 		return
 	}
-	fmt.Printf("✓ Deleted DBaaS: %s\n", d.Name())
+	printDeleteSubmitted("DBaaS", d.Name())
+	waitUntilGone(ctx, "DBaaS "+d.Name(), func(ctx context.Context) error {
+		_, err := arubaClient.FromDatabase().DBaaS().Get(ctx, d)
+		return err
+	})
 }
