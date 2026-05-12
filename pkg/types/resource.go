@@ -104,7 +104,9 @@ type LinkedResource struct {
 type BillingPeriod string
 
 const (
-	BillingPeriodHour BillingPeriod = "Hour"
+	BillingPeriodHour  BillingPeriod = "Hour"
+	BillingPeriodMonth BillingPeriod = "Month"
+	BillingPeriodYear  BillingPeriod = "Year"
 )
 
 type ReferenceResource struct {
