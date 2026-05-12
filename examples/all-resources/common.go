@@ -166,6 +166,23 @@ var longWaitOpts = []aruba.WaitOption{
 	aruba.WithRetries(120),
 }
 
+// deleteOpTimeout caps each individual Delete + waitUntilGone in the delete
+// orchestrator. The SDK's pkg/async.DefaultWaitFor already enforces a 10-min
+// internal ceiling per wait; this cap is the orchestrator-level guard so a
+// single slow resource (or one that never returns 404) cannot consume budget
+// that subsequent deletes need.
+const deleteOpTimeout = 12 * time.Minute
+
+// withDeleteDeadline derives a child ctx with deleteOpTimeout from parent and
+// runs fn against it. Parent cancellation (Ctrl-C, parent timeout) still
+// propagates through the child, so this only bounds the upper limit — it
+// does not extend the parent budget.
+func withDeleteDeadline(parent context.Context, fn func(context.Context)) {
+	ctx, cancel := context.WithTimeout(parent, deleteOpTimeout)
+	defer cancel()
+	fn(ctx)
+}
+
 type waitFunc func(context.Context, ...aruba.WaitOption) error
 
 // waitForDependencies blocks until every entry in deps reaches its ready state.

@@ -62,7 +62,10 @@ func createOneShotJob(ctx context.Context, arubaClient aruba.Client, proj aruba.
 	return res
 }
 
-// deleteJob removes the scheduled job and waits until it is fully gone.
+// deleteJob removes the scheduled job. Jobs persist as historical records on
+// the platform after Delete (no "Deleted"/"Cancelled" state is enumerated in
+// the SDK's jobTerminalStates), so polling for HTTP 404 always exhausts the
+// wait budget without any signal. Submit the delete and move on.
 func deleteJob(ctx context.Context, arubaClient aruba.Client, j *aruba.Job, label string) {
 	pretty := label + " Job"
 	printDeleteBanner(pretty)
@@ -71,8 +74,4 @@ func deleteJob(ctx context.Context, arubaClient aruba.Client, j *aruba.Job, labe
 		return
 	}
 	printDeleteSubmitted(pretty, j.Name())
-	waitUntilGone(ctx, pretty+" "+j.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromSchedule().Jobs().Get(ctx, j)
-		return err
-	})
 }
