@@ -34,9 +34,7 @@ func createSnapshot(ctx context.Context, arubaClient aruba.Client, proj aruba.Re
 	}
 	printCreated("Snapshot", snap.Name(), snap.ID())
 
-	if err := snap.WaitUntilReady(ctx); err != nil {
-		printSelfWaitError("Snapshot", snap.Name(), err)
-	}
+	waitUntilSelfReady(ctx, "Snapshot", snap.Name(), snap.WaitUntilReady)
 
 	return snap
 }

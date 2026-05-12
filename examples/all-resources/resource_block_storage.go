@@ -31,9 +31,7 @@ func createBlockStorage(ctx context.Context, arubaClient aruba.Client, proj arub
 	}
 	printCreated("Block Storage", bs.Name(), bs.ID())
 
-	if err := bs.WaitUntilReady(ctx); err != nil {
-		printSelfWaitError("Block Storage", bs.Name(), err)
-	}
+	waitUntilSelfReady(ctx, "Block Storage", bs.Name(), bs.WaitUntilReady)
 
 	return bs
 }
