@@ -13,7 +13,7 @@ func createElasticIP(ctx context.Context, arubaClient aruba.Client, proj aruba.R
 
 	eip := aruba.NewElasticIP().
 		IntoProject(proj).
-		WithName(name).
+		Named(name).
 		AddTag("network").
 		AddTag("public").
 		InRegion(aruba.RegionITBGBergamo).

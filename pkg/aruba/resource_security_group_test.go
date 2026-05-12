@@ -29,7 +29,7 @@ func TestSecurityGroup_FluentSetters(t *testing.T) {
 
 	sg := NewSecurityGroup().
 		IntoVPC(parent).
-		WithName("my-sg").
+		Named("my-sg").
 		AddTag("security").
 		AddTag("network").
 		AddTag("security"). // dedupe
@@ -81,8 +81,8 @@ func TestSecurityGroup_IntoVPC_BadRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestSecurityGroup_ToRequestRoundTrip(t *testing.T) {
-	sg := NewSecurityGroup().
-		WithName("sg-1").
+	sg := NewSecurityGroup().Named(
+		"sg-1").
 		AddTag("t1").
 		AddTag("t2").
 		NotDefault()
@@ -100,7 +100,8 @@ func TestSecurityGroup_ToRequestRoundTrip(t *testing.T) {
 	}
 
 	// New construction default: bare NewSecurityGroup() sets Default to *false.
-	sg2 := NewSecurityGroup().WithName("bare")
+	sg2 := NewSecurityGroup().
+		Named("bare")
 	req2 := sg2.RawRequest()
 	if req2.Properties.Default == nil || *req2.Properties.Default {
 		t.Errorf("Default should default to *false, got %v", req2.Properties.Default)
@@ -343,7 +344,7 @@ func TestSecurityGroupsClientAdapter_Create_Success(t *testing.T) {
 
 	sg := NewSecurityGroup().
 		IntoVPC(vpc).
-		WithName("my-sg").
+		Named("my-sg").
 		NotDefault()
 
 	result, err := adapter.Create(context.Background(), sg)
@@ -374,7 +375,8 @@ func TestSecurityGroupsClientAdapter_Create_NoVPC(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewSecurityGroup().WithName("x"))
+	_, err := adapter.Create(context.Background(), NewSecurityGroup().
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when security group has no VPC")
 	}
@@ -394,7 +396,8 @@ func TestSecurityGroupsClientAdapter_Create_MetadataValidationError(t *testing.T
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "my-vpc", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
 
-	sg := NewSecurityGroup().IntoVPC(vpc).WithName("sg")
+	sg := NewSecurityGroup().IntoVPC(vpc).
+		Named("sg")
 	result, err := adapter.Create(context.Background(), sg)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -514,7 +517,7 @@ func TestSecurityGroupsClientAdapter_Update_Success(t *testing.T) {
 
 	sg := &SecurityGroup{}
 	sg.fromResponse(securityGroupTestResponse("sg-1", "orig", "/projects/p/network/vpcs/v/security-groups/sg-1", "p"))
-	sg.WithName("renamed").AsDefault()
+	sg.Named("renamed").AsDefault()
 
 	result, err := adapter.Update(context.Background(), sg)
 	if err != nil {
@@ -535,7 +538,8 @@ func TestSecurityGroupsClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	sg := NewSecurityGroup().IntoVPC(URI("/projects/p/network/vpcs/v")).WithName("x")
+	sg := NewSecurityGroup().IntoVPC(URI("/projects/p/network/vpcs/v")).
+		Named("x")
 	_, err := adapter.Update(context.Background(), sg)
 	if err == nil {
 		t.Fatal("expected error when security group has no ID")

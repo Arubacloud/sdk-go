@@ -28,7 +28,7 @@ func TestCloudServer_FluentSetters(t *testing.T) {
 
 	cs := NewCloudServer().
 		IntoProject(proj).
-		WithName("my-server").
+		Named("my-server").
 		AddTag("compute").
 		AddTag("prod").
 		InRegion(RegionITBGBergamo).
@@ -277,7 +277,7 @@ func TestCloudServer_InZone(t *testing.T) {
 func TestCloudServer_ToRequestRoundTrip(t *testing.T) {
 	cs := NewCloudServer().
 		IntoProject(URI("/projects/p")).
-		WithName("srv").
+		Named("srv").
 		AddTag("tag1").
 		InRegion(RegionITBGBergamo).
 		InZone(ZoneITBG1).
@@ -584,7 +584,7 @@ func TestCloudServersClientAdapter_Create_Success(t *testing.T) {
 
 	cs := NewCloudServer().
 		IntoProject(URI("/projects/p")).
-		WithName("my-server").
+		Named("my-server").
 		InZone(ZoneITBG1).
 		OfFlavor(CloudServerFlavorCSO2A4).
 		WithVPC(URI("/vpcs/v")).
@@ -633,7 +633,8 @@ func TestCloudServersClientAdapter_Create_NoProject(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewCloudServer().WithName("x").OfFlavor(CloudServerFlavorCSO2A4))
+	_, err := adapter.Create(context.Background(), NewCloudServer().
+		Named("x").OfFlavor(CloudServerFlavorCSO2A4))
 	if err == nil {
 		t.Fatal("expected error when CloudServer has no parent project")
 	}
@@ -650,7 +651,8 @@ func TestCloudServersClientAdapter_Create_MetadataValidationError(t *testing.T) 
 		fmt.Fprint(w, `{"metadata":{"name":"srv","uri":"/projects/p/providers/Aruba.Compute/cloudServers/x"},"properties":{}}`)
 	})
 
-	cs := NewCloudServer().IntoProject(URI("/projects/p")).WithName("srv").OfFlavor(CloudServerFlavorCSO2A4)
+	cs := NewCloudServer().IntoProject(URI("/projects/p")).
+		Named("srv").OfFlavor(CloudServerFlavorCSO2A4)
 	result, err := adapter.Create(context.Background(), cs)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -671,7 +673,8 @@ func TestCloudServersClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "zone is required", 422))
 	})
 
-	cs := NewCloudServer().IntoProject(URI("/projects/p")).WithName("srv")
+	cs := NewCloudServer().IntoProject(URI("/projects/p")).
+		Named("srv")
 	result, err := adapter.Create(context.Background(), cs)
 	if err == nil {
 		t.Fatal("expected error on 422")
@@ -726,7 +729,8 @@ func TestCloudServersClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	cs := NewCloudServer().IntoProject(URI("/projects/p")).WithName("x")
+	cs := NewCloudServer().IntoProject(URI("/projects/p")).
+		Named("x")
 	_, err := adapter.Update(context.Background(), cs)
 	if err == nil {
 		t.Fatal("expected error when CloudServer has no ID")

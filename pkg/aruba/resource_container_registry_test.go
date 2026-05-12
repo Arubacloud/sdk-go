@@ -38,7 +38,7 @@ func TestContainerRegistry_FluentSetters(t *testing.T) {
 
 	cr := NewContainerRegistry().
 		IntoProject(proj).
-		WithName("my-registry").
+		Named("my-registry").
 		AddTag("env:prod").
 		AddTag("registry").
 		AddTag("env:prod"). // dedupe
@@ -347,8 +347,8 @@ func TestContainerRegistry_ToRequest(t *testing.T) {
 	eipURI := "/projects/p/providers/Aruba.Network/elasticips/eip-1"
 	bsURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
 
-	cr := NewContainerRegistry().
-		WithName("reg-rt").
+	cr := NewContainerRegistry().Named(
+		"reg-rt").
 		AddTag("t1").AddTag("t2").
 		InRegion(RegionITBGBergamo).
 		WithVPC(URI(vpcURI)).
@@ -650,7 +650,7 @@ func TestContainerRegistriesClientAdapter_Create_Success(t *testing.T) {
 
 	cr := NewContainerRegistry().
 		IntoProject(URI("/projects/p")).
-		WithName("my-registry").
+		Named("my-registry").
 		InRegion(RegionITBGBergamo).
 		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1")).
 		WithSubnet(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1")).
@@ -693,7 +693,8 @@ func TestContainerRegistriesClientAdapter_Create_NoProject(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewContainerRegistry().WithName("x"))
+	_, err := adapter.Create(context.Background(), NewContainerRegistry().
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when ContainerRegistry has no project")
 	}
@@ -710,7 +711,8 @@ func TestContainerRegistriesClientAdapter_Create_MetadataValidationError(t *test
 		fmt.Fprint(w, `{"metadata":{"name":"reg","uri":"/projects/p/providers/Aruba.Container/registries/x"},"properties":{},"status":{}}`)
 	})
 
-	cr := NewContainerRegistry().IntoProject(URI("/projects/p")).WithName("reg")
+	cr := NewContainerRegistry().IntoProject(URI("/projects/p")).
+		Named("reg")
 	result, err := adapter.Create(context.Background(), cr)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -825,7 +827,7 @@ func TestContainerRegistriesClientAdapter_Update_Success(t *testing.T) {
 
 	cr := NewContainerRegistry().
 		IntoProject(URI("/projects/p")).
-		WithName("my-registry").
+		Named("my-registry").
 		InRegion(RegionITBGBergamo).
 		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1"))
 
@@ -851,7 +853,8 @@ func TestContainerRegistriesClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	cr := NewContainerRegistry().IntoProject(URI("/projects/p")).WithName("x")
+	cr := NewContainerRegistry().IntoProject(URI("/projects/p")).
+		Named("x")
 	_, err := adapter.Update(context.Background(), cr)
 	if err == nil {
 		t.Fatal("expected error when ContainerRegistry has no ID")

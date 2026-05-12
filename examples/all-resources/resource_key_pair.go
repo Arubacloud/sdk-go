@@ -15,7 +15,7 @@ func createKeyPair(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref
 
 	kp := aruba.NewKeyPair().
 		IntoProject(proj).
-		WithName(resourceName(NameKeyPair)).
+		Named(resourceName(NameKeyPair)).
 		AddTag("ssh-access").
 		AddTag("ingress").
 		InRegion(aruba.RegionITBGBergamo).

@@ -42,8 +42,8 @@ type DBaaSBackup struct {
 // IntoProject binds this DBaaSBackup to its parent project. Required before Create.
 func (b *DBaaSBackup) IntoProject(p Ref) *DBaaSBackup { b.intoProject(p); return b }
 
-// WithName sets the resource name. Required by the API.
-func (b *DBaaSBackup) WithName(n string) *DBaaSBackup { b.withName(n); return b }
+// Named sets the resource name. Required by the API.
+func (b *DBaaSBackup) Named(n string) *DBaaSBackup { b.named(n); return b }
 
 // AddTag appends a tag for filtering and accounting.
 func (b *DBaaSBackup) AddTag(t string) *DBaaSBackup { b.addTag(t); return b }
@@ -161,7 +161,7 @@ func (b *DBaaSBackup) fromResponse(resp *types.BackupResponse) {
 	}
 	b.response = resp
 	b.setMeta(&resp.Metadata)
-	b.withName(dbaasBackupDerefString(resp.Metadata.Name))
+	b.named(dbaasBackupDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		b.replaceTags(resp.Metadata.Tags...)
 	}

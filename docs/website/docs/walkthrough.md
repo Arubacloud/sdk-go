@@ -55,7 +55,7 @@ The Project is the top-level container. Every other resource belongs to a projec
 proj, err := arubaClient.FromProject().Create(
     ctx,
     aruba.NewProject().
-        WithName("my-project").
+        Named("my-project").
         WithDescription("Created via the Aruba Cloud Go SDK").
         AddTag("go-sdk").
         NotDefault())
@@ -72,7 +72,7 @@ vpc, err := arubaClient.FromNetwork().VPCs().Create(
     ctx,
     aruba.NewVPC().
         IntoProject(proj).
-        WithName("my-vpc").
+        Named("my-vpc").
         AddTag("network").
         InRegion(aruba.RegionITBGBergamo).
         NotDefault().
@@ -98,7 +98,7 @@ subnet, err := arubaClient.FromNetwork().Subnets().Create(
     ctx,
     aruba.NewSubnet().
         IntoVPC(vpc).
-        WithName("my-subnet").
+        Named("my-subnet").
         AddTag("network").
         InRegion(aruba.RegionITBGBergamo).
         OfType(aruba.SubnetTypeAdvanced).
@@ -140,7 +140,7 @@ if err != nil {
 }
 
 // Mutate
-vpc.WithName("my-vpc-updated").
+vpc.Named("my-vpc-updated").
     ReplaceTags("network", "updated")
 
 // Update

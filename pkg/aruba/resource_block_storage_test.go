@@ -28,7 +28,7 @@ func TestBlockStorage_FluentSetters(t *testing.T) {
 
 	bs := NewBlockStorage().
 		IntoProject(proj).
-		WithName("my-bs").
+		Named("my-bs").
 		AddTag("storage").
 		AddTag("data").
 		AddTag("storage"). // dedupe
@@ -157,8 +157,8 @@ func TestBlockStorage_FromSnapshot_EmptyURI(t *testing.T) {
 
 func TestBlockStorage_ToRequestRoundTrip(t *testing.T) {
 	snapURI := "/projects/p/providers/Aruba.Storage/snapshots/s1"
-	bs := NewBlockStorage().
-		WithName("bs-rt").
+	bs := NewBlockStorage().Named(
+		"bs-rt").
 		AddTag("t1").AddTag("t2").
 		InRegion(RegionITBGBergamo).
 		WithSizeGB(30).
@@ -204,7 +204,8 @@ func TestBlockStorage_ToRequestRoundTrip(t *testing.T) {
 }
 
 func TestBlockStorage_ToRequest_UnsetOptionals_AreNilOrZero(t *testing.T) {
-	bs := NewBlockStorage().WithName("bare").WithSizeGB(10).OfType(BlockStorageTypeStandard)
+	bs := NewBlockStorage().
+		Named("bare").WithSizeGB(10).OfType(BlockStorageTypeStandard)
 	req := bs.RawRequest()
 
 	if req.Properties.Bootable == nil || *req.Properties.Bootable != false {
@@ -490,7 +491,7 @@ func TestVolumesClientAdapter_Create_Success(t *testing.T) {
 
 	bs := NewBlockStorage().
 		IntoProject(URI("/projects/p")).
-		WithName("my-bs").
+		Named("my-bs").
 		InRegion(RegionITBGBergamo).
 		WithSizeGB(20).
 		OfType(BlockStorageTypeStandard).
@@ -524,7 +525,8 @@ func TestVolumesClientAdapter_Create_NoProject(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewBlockStorage().WithName("x"))
+	_, err := adapter.Create(context.Background(), NewBlockStorage().
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when BlockStorage has no project")
 	}
@@ -541,7 +543,8 @@ func TestVolumesClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"bs","uri":"/projects/p/providers/Aruba.Storage/blockstorages/x"},"properties":{},"status":{}}`)
 	})
 
-	bs := NewBlockStorage().IntoProject(URI("/projects/p")).WithName("bs")
+	bs := NewBlockStorage().IntoProject(URI("/projects/p")).
+		Named("bs")
 	result, err := adapter.Create(context.Background(), bs)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -655,7 +658,8 @@ func TestVolumesClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	bs := NewBlockStorage().IntoProject(URI("/projects/p")).WithName("x")
+	bs := NewBlockStorage().IntoProject(URI("/projects/p")).
+		Named("x")
 	_, err := adapter.Update(context.Background(), bs)
 	if err == nil {
 		t.Fatal("expected error when BlockStorage has no ID")

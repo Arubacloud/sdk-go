@@ -63,7 +63,7 @@ func TestGrant_FluentSetters(t *testing.T) {
 func TestGrant_IntoDatabase_TypedRef(t *testing.T) {
 	db := NewDatabase().
 		IntoDBaaS(URI("/projects/p-1/providers/Aruba.Database/dbaas/d-1")).
-		WithName("db-1")
+		Named("db-1")
 
 	g := NewGrant().IntoDatabase(db)
 	if g.DatabaseID() != "db-1" {

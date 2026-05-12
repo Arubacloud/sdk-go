@@ -24,7 +24,7 @@ func createDBaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, 
 
 	d := aruba.NewDBaaS().
 		IntoProject(proj).
-		WithName(resourceName(NameDBaaS)).
+		Named(resourceName(NameDBaaS)).
 		AddTag("database").
 		AddTag("mysql").
 		InRegion(aruba.RegionITBGBergamo).
@@ -65,7 +65,7 @@ func updateDBaaS(ctx context.Context, arubaClient aruba.Client, d *aruba.DBaaS) 
 
 	// Mutate what needs updating; networking URIs are already hydrated from the
 	// prior Get call so they round-trip automatically into the Update request.
-	d.WithName(updatedName(d.Name())).
+	d.Named(updatedName(d.Name())).
 		ReplaceTags("database", "mysql", "updated").
 		WithSizeGB(25) // Increased from 20 to 25 GB
 

@@ -174,7 +174,7 @@ vpc, err := arubaClient.FromNetwork().VPCs().Create(ctx, myVPC)
 vpc.WaitUntilReady(ctx)
 
 // Wrong — myVPC is a request builder, not an adapter response
-myVPC := aruba.NewVPC().WithName("x")
+myVPC := aruba.NewVPC().Named("x")
 myVPC.WaitUntilReady(ctx) // returns "refresh callback not set"
 ```
 
