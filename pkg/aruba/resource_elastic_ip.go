@@ -37,8 +37,8 @@ type ElasticIP struct {
 // IntoProject binds this ElasticIP to its parent project. Required before Create.
 func (e *ElasticIP) IntoProject(p Ref) *ElasticIP { e.intoProject(p); return e }
 
-// WithName sets the resource name. Required by the API.
-func (e *ElasticIP) WithName(n string) *ElasticIP { e.withName(n); return e }
+// Named sets the resource name. Required by the API.
+func (e *ElasticIP) Named(n string) *ElasticIP { e.named(n); return e }
 
 // AddTag appends a tag for filtering and accounting.
 func (e *ElasticIP) AddTag(t string) *ElasticIP { e.addTag(t); return e }
@@ -107,7 +107,7 @@ func (e *ElasticIP) fromResponse(resp *types.ElasticIPResponse) {
 	}
 	e.response = resp
 	e.setMeta(&resp.Metadata)
-	e.withName(elasticIPDerefString(resp.Metadata.Name))
+	e.named(elasticIPDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		e.replaceTags(resp.Metadata.Tags...)
 	}

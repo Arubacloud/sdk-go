@@ -37,8 +37,8 @@ type VPC struct {
 // IntoProject binds this VPC to its parent project. Required before Create.
 func (v *VPC) IntoProject(p Ref) *VPC { v.intoProject(p); return v }
 
-// WithName sets the resource name. Required by the API.
-func (v *VPC) WithName(n string) *VPC { v.withName(n); return v }
+// Named sets the resource name. Required by the API.
+func (v *VPC) Named(n string) *VPC { v.named(n); return v }
 
 // AddTag appends a tag for filtering and accounting.
 func (v *VPC) AddTag(t string) *VPC { v.addTag(t); return v }
@@ -115,7 +115,7 @@ func (v *VPC) fromResponse(resp *types.VPCResponse) {
 	}
 	v.response = resp
 	v.setMeta(&resp.Metadata)
-	v.withName(vpcDerefString(resp.Metadata.Name))
+	v.named(vpcDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		v.replaceTags(resp.Metadata.Tags...)
 	}

@@ -27,8 +27,8 @@ type Project struct {
 
 // Setters — chainable, general → specific
 
-// WithName sets the project name.
-func (p *Project) WithName(n string) *Project { p.withName(n); return p }
+// Named sets the project name.
+func (p *Project) Named(n string) *Project { p.named(n); return p }
 
 // AddTag adds a tag (deduped).
 func (p *Project) AddTag(t string) *Project { p.addTag(t); return p }
@@ -84,7 +84,7 @@ func (p *Project) fromResponse(resp *types.ProjectResponse) {
 		return
 	}
 	p.setMeta(&resp.Metadata)
-	p.withName(projectDerefString(resp.Metadata.Name))
+	p.named(projectDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		p.replaceTags(resp.Metadata.Tags...)
 	}

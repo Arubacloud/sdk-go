@@ -39,8 +39,8 @@ type SecurityRule struct {
 // IntoSecurityGroup binds this SecurityRule to its parent SecurityGroup. Required before Create.
 func (r *SecurityRule) IntoSecurityGroup(sg Ref) *SecurityRule { r.intoSecurityGroup(sg); return r }
 
-// WithName sets the resource name. Required by the API.
-func (r *SecurityRule) WithName(n string) *SecurityRule { r.withName(n); return r }
+// Named sets the resource name. Required by the API.
+func (r *SecurityRule) Named(n string) *SecurityRule { r.named(n); return r }
 
 // AddTag appends a tag for filtering and accounting.
 func (r *SecurityRule) AddTag(t string) *SecurityRule { r.addTag(t); return r }
@@ -186,7 +186,7 @@ func (r *SecurityRule) fromResponse(resp *types.SecurityRuleResponse) {
 	}
 	r.response = resp
 	r.setMeta(&resp.Metadata)
-	r.withName(securityRuleDerefString(resp.Metadata.Name))
+	r.named(securityRuleDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		r.replaceTags(resp.Metadata.Tags...)
 	}

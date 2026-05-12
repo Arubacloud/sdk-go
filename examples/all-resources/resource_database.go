@@ -22,7 +22,7 @@ func createDatabase(ctx context.Context, arubaClient aruba.Client, dbaas *aruba.
 	// its DBaaS instance, and each example run creates a fresh DBaaS.
 	db := aruba.NewDatabase().
 		IntoDBaaS(dbaas).
-		WithName(NameDatabase)
+		Named(NameDatabase)
 
 	res, err := arubaClient.FromDatabase().Databases().Create(ctx, db)
 	if err != nil {

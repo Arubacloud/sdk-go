@@ -51,8 +51,8 @@ type ContainerRegistry struct {
 // IntoProject binds this ContainerRegistry to its parent project. Required before Create.
 func (r *ContainerRegistry) IntoProject(p Ref) *ContainerRegistry { r.intoProject(p); return r }
 
-// WithName sets the resource name. Required by the API.
-func (r *ContainerRegistry) WithName(n string) *ContainerRegistry { r.withName(n); return r }
+// Named sets the resource name. Required by the API.
+func (r *ContainerRegistry) Named(n string) *ContainerRegistry { r.named(n); return r }
 
 // AddTag appends a tag for filtering and accounting.
 func (r *ContainerRegistry) AddTag(t string) *ContainerRegistry { r.addTag(t); return r }
@@ -260,7 +260,7 @@ func (r *ContainerRegistry) fromResponse(resp *types.ContainerRegistryResponse) 
 	}
 	r.response = resp
 	r.setMeta(&resp.Metadata)
-	r.withName(containerRegistryDeref(resp.Metadata.Name))
+	r.named(containerRegistryDeref(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		r.replaceTags(resp.Metadata.Tags...)
 	}

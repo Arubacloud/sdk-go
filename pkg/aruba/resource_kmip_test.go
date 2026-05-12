@@ -45,7 +45,7 @@ func TestKmip_FluentSetters(t *testing.T) {
 	parent := kmipMakeKMSParent("p-1", "kms-1")
 	km := NewKmip().
 		IntoKMS(parent).
-		WithName("my-kmip")
+		Named("my-kmip")
 
 	if km.Name() != "my-kmip" {
 		t.Errorf("Name() = %q", km.Name())
@@ -111,7 +111,8 @@ func TestKmip_IntoKMS_BadRef_NoProject(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestKmip_ToRequest_FullyPopulated(t *testing.T) {
-	km := NewKmip().WithName("my-kmip-service")
+	km := NewKmip().
+		Named("my-kmip-service")
 	req := km.RawRequest()
 	if req.Name != "my-kmip-service" {
 		t.Errorf("Name = %q", req.Name)
@@ -279,7 +280,8 @@ func TestKmip_Accessors_ZeroValue(t *testing.T) {
 }
 
 func TestKmip_Name_LocalFallback(t *testing.T) {
-	km := NewKmip().WithName("fallback-name")
+	km := NewKmip().
+		Named("fallback-name")
 	if km.Name() != "fallback-name" {
 		t.Errorf("Name() = %q, want fallback-name", km.Name())
 	}
@@ -362,7 +364,8 @@ func TestKmipsClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	parent := kmipMakeKMSParent("p-1", "kms-1")
-	km := NewKmip().IntoKMS(parent).WithName("my-kmip")
+	km := NewKmip().IntoKMS(parent).
+		Named("my-kmip")
 
 	result, err := adapter.Create(context.Background(), km)
 	if err != nil {
@@ -388,7 +391,8 @@ func TestKmipsClientAdapter_Create_NoProject(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusCreated)
 	})
-	km := NewKmip().WithName("x")
+	km := NewKmip().
+		Named("x")
 	_, err := adapter.Create(context.Background(), km)
 	if err == nil {
 		t.Fatal("expected error when Kmip has no project")
@@ -406,7 +410,7 @@ func TestKmipsClientAdapter_Create_NoKMS(t *testing.T) {
 	})
 	km := NewKmip()
 	km.projectID = "p-1"
-	km.WithName("x")
+	km.Named("x")
 	_, err := adapter.Create(context.Background(), km)
 	if err == nil {
 		t.Fatal("expected error when Kmip has no KMS ID")
@@ -434,7 +438,8 @@ func TestKmipsClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, `{"message":"bad request"}`)
 	})
 	parent := kmipMakeKMSParent("p-1", "kms-1")
-	_, err := adapter.Create(context.Background(), NewKmip().IntoKMS(parent).WithName("km"))
+	_, err := adapter.Create(context.Background(), NewKmip().IntoKMS(parent).
+		Named("km"))
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {
 		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
@@ -815,7 +820,8 @@ func TestKmipsClientAdapter_Create_InjectsRefresh(t *testing.T) {
 		fmt.Fprint(w, kmipSuccessBody)
 	})
 	parent := kmipMakeKMSParent("p-1", "kms-1")
-	km, err := adapter.Create(context.Background(), NewKmip().IntoKMS(parent).WithName("my-kmip"))
+	km, err := adapter.Create(context.Background(), NewKmip().IntoKMS(parent).
+		Named("my-kmip"))
 	if err != nil {
 		t.Fatalf("Create error: %v", err)
 	}

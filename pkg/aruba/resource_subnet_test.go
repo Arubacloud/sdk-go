@@ -28,7 +28,7 @@ func TestSubnet_FluentSetters(t *testing.T) {
 
 	s := NewSubnet().
 		IntoVPC(parent).
-		WithName("my-subnet").
+		Named("my-subnet").
 		AddTag("net").
 		AddTag("infra").
 		AddTag("net"). // dedupe
@@ -157,8 +157,8 @@ func TestSubnet_DHCPSubBuilder_NoRange(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestSubnet_ToRequestRoundTrip(t *testing.T) {
-	s := NewSubnet().
-		WithName("sn-1").
+	s := NewSubnet().Named(
+		"sn-1").
 		AddTag("t1").
 		AddTag("t2").
 		InRegion(RegionITBGBergamo).
@@ -449,7 +449,7 @@ func TestSubnetsClientAdapter_Create_Success(t *testing.T) {
 
 	s := NewSubnet().
 		IntoVPC(vpc).
-		WithName("my-subnet").
+		Named("my-subnet").
 		OfType(SubnetTypeAdvanced).
 		WithCIDR("10.0.0.0/24")
 
@@ -481,7 +481,8 @@ func TestSubnetsClientAdapter_Create_NoVPC(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewSubnet().WithName("x"))
+	_, err := adapter.Create(context.Background(), NewSubnet().
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when subnet has no VPC")
 	}
@@ -501,7 +502,8 @@ func TestSubnetsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "n", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
 
-	result, err := adapter.Create(context.Background(), NewSubnet().IntoVPC(vpc).WithName("sn"))
+	result, err := adapter.Create(context.Background(), NewSubnet().IntoVPC(vpc).
+		Named("sn"))
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
 	}
@@ -601,7 +603,7 @@ func TestSubnetsClientAdapter_Update_Success(t *testing.T) {
 	uri := "/projects/p/providers/Aruba.Network/vpcs/v/subnets/sid"
 	s := &Subnet{}
 	s.fromResponse(subnetTestResponse("sid", "orig", uri, "p"))
-	s.WithName("renamed")
+	s.Named("renamed")
 
 	result, err := adapter.Update(context.Background(), s)
 	if err != nil {
@@ -625,7 +627,8 @@ func TestSubnetsClientAdapter_Update_NoID(t *testing.T) {
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "n", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
 
-	s := NewSubnet().IntoVPC(vpc).WithName("x")
+	s := NewSubnet().IntoVPC(vpc).
+		Named("x")
 	_, err := adapter.Update(context.Background(), s)
 	if err == nil {
 		t.Fatal("expected error when subnet has no ID")

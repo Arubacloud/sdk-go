@@ -29,7 +29,7 @@ func TestVPC_FluentSetters(t *testing.T) {
 
 	v := NewVPC().
 		IntoProject(parent).
-		WithName("my-vpc").
+		Named("my-vpc").
 		AddTag("net").
 		AddTag("infra").
 		AddTag("net"). // dedupe
@@ -86,8 +86,8 @@ func TestVPC_IntoProject_BadRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestVPC_ToRequestRoundTrip(t *testing.T) {
-	v := NewVPC().
-		WithName("vpc-1").
+	v := NewVPC().Named(
+		"vpc-1").
 		AddTag("t1").
 		AddTag("t2").
 		InRegion(RegionITBGBergamo).
@@ -117,7 +117,8 @@ func TestVPC_ToRequestRoundTrip(t *testing.T) {
 
 	// New construction default: Default is explicitly set to false, so
 	// Properties.Properties is non-nil and Default points to false.
-	v2 := NewVPC().WithName("bare")
+	v2 := NewVPC().
+		Named("bare")
 	req2 := v2.RawRequest()
 	if req2.Properties.Properties == nil {
 		t.Fatal("Properties.Properties should be non-nil after construction (Default defaults to false)")
@@ -311,7 +312,7 @@ func TestVPCsClientAdapter_Create_Success(t *testing.T) {
 
 	vpc := NewVPC().
 		IntoProject(URI("/projects/p")).
-		WithName("my-vpc").
+		Named("my-vpc").
 		NotDefault()
 
 	result, err := adapter.Create(context.Background(), vpc)
@@ -339,7 +340,8 @@ func TestVPCsClientAdapter_Create_NoProject(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewVPC().WithName("x"))
+	_, err := adapter.Create(context.Background(), NewVPC().
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when VPC has no project")
 	}
@@ -356,7 +358,8 @@ func TestVPCsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"v","uri":"/projects/p/providers/Aruba.Network/vpcs/x"},"properties":{},"status":{}}`)
 	})
 
-	vpc := NewVPC().IntoProject(URI("/projects/p")).WithName("v")
+	vpc := NewVPC().IntoProject(URI("/projects/p")).
+		Named("v")
 	result, err := adapter.Create(context.Background(), vpc)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -449,7 +452,7 @@ func TestVPCsClientAdapter_Update_Success(t *testing.T) {
 
 	v := &VPC{}
 	v.fromResponse(vpcTestResponse("vid", "orig", "/projects/p/providers/Aruba.Network/vpcs/vid", "p"))
-	v.WithName("renamed")
+	v.Named("renamed")
 
 	result, err := adapter.Update(context.Background(), v)
 	if err != nil {
@@ -470,7 +473,8 @@ func TestVPCsClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	v := NewVPC().IntoProject(URI("/projects/p")).WithName("x")
+	v := NewVPC().IntoProject(URI("/projects/p")).
+		Named("x")
 	_, err := adapter.Update(context.Background(), v)
 	if err == nil {
 		t.Fatal("expected error when VPC has no ID")

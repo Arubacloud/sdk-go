@@ -28,7 +28,7 @@ func TestKeyPair_FluentSetters(t *testing.T) {
 
 	kp := NewKeyPair().
 		IntoProject(proj).
-		WithName("allow-ssh").
+		Named("allow-ssh").
 		AddTag("ssh-access").
 		AddTag("ingress").
 		AddTag("ssh-access"). // dedupe
@@ -118,8 +118,8 @@ func TestKeyPair_WithPublicKey(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestKeyPair_ToRequestRoundTrip(t *testing.T) {
-	kp := NewKeyPair().
-		WithName("my-keypair").
+	kp := NewKeyPair().Named(
+		"my-keypair").
 		AddTag("t1").AddTag("t2").
 		InRegion(RegionITBGBergamo).
 		WithPublicKey("ssh-rsa AAAA...")
@@ -141,7 +141,8 @@ func TestKeyPair_ToRequestRoundTrip(t *testing.T) {
 }
 
 func TestKeyPair_ToRequest_UnsetPublicKey(t *testing.T) {
-	kp := NewKeyPair().WithName("bare")
+	kp := NewKeyPair().
+		Named("bare")
 	req := kp.RawRequest()
 	if req.Properties.Value != "" {
 		t.Errorf("Properties.Value should be empty, got %q", req.Properties.Value)
@@ -337,7 +338,7 @@ func TestKeyPairsClientAdapter_Create_Success(t *testing.T) {
 
 	kp := NewKeyPair().
 		IntoProject(URI("/projects/p")).
-		WithName("allow-ssh").
+		Named("allow-ssh").
 		InRegion(RegionITBGBergamo).
 		WithPublicKey("ssh-rsa AAAA...")
 
@@ -369,7 +370,8 @@ func TestKeyPairsClientAdapter_Create_NoProject(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewKeyPair().WithName("x").WithPublicKey("ssh-rsa"))
+	_, err := adapter.Create(context.Background(), NewKeyPair().
+		Named("x").WithPublicKey("ssh-rsa"))
 	if err == nil {
 		t.Fatal("expected error when KeyPair has no parent project")
 	}
@@ -386,7 +388,8 @@ func TestKeyPairsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"kp","uri":"/projects/p/providers/Aruba.Compute/keypairs/x"},"properties":{}}`)
 	})
 
-	kp := NewKeyPair().IntoProject(URI("/projects/p")).WithName("kp").WithPublicKey("ssh-rsa AAAA...")
+	kp := NewKeyPair().IntoProject(URI("/projects/p")).
+		Named("kp").WithPublicKey("ssh-rsa AAAA...")
 	result, err := adapter.Create(context.Background(), kp)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
