@@ -64,46 +64,21 @@ const (
 // VolumeImage identifies a stock OS template (and any bundled software)
 // used to provision a bootable BlockStorage volume.
 //
-// The constants below are derived from Aruba's published catalog at
-// https://kb.arubacloud.com/en/computing/template-datasheets/template.aspx
-// (plus the OpenClaw and Proxmox VE 8 datasheets on separate pages).
-// Aruba may add or retire templates without bumping the API; treat this
-// set as a snapshot.
+// The constants below mirror the official catalog at
+// https://api.arubacloud.com/docs/metadata/ — values not in the catalog
+// will be rejected by the API.
 
 const (
-	VolumeImageWS22001   = types.VolumeImageWS22001   // Windows Server 2022 64-bit
-	VolumeImageWS19001   = types.VolumeImageWS19001   // Windows Server 2019 64-bit
-	VolumeImageWS16001   = types.VolumeImageWS16001   // Windows Server 2016 64-bit
-	VolumeImageLU24001   = types.VolumeImageLU24001   // Ubuntu Server 24.04
-	VolumeImageLU22001   = types.VolumeImageLU22001   // Ubuntu Server 22.04 LTS 64-bit
-	VolumeImageLU20001   = types.VolumeImageLU20001   // Ubuntu Server 20.04 LTS 64-bit
-	VolumeImageDE12001   = types.VolumeImageDE12001   // Debian 12
-	VolumeImageDE11001   = types.VolumeImageDE11001   // Debian 11 64-bit
-	VolumeImageRO09001   = types.VolumeImageRO09001   // Rocky Linux 9
-	VolumeImageLC09001   = types.VolumeImageLC09001   // CentOS 9
-	VolumeImageAL90001   = types.VolumeImageAL90001   // AlmaLinux 9.x 64-bit
-	VolumeImageAL85001   = types.VolumeImageAL85001   // AlmaLinux 8.x 64-bit
-	VolumeImageLO15001   = types.VolumeImageLO15001   // openSUSE 15.2 64-bit
-	VolumeImageBS13001   = types.VolumeImageBS13001   // FreeBSD 13 64-bit
-	VolumeImageAP85001   = types.VolumeImageAP85001   // AlmaLinux 8.x 64-bit + Plesk
-	VolumeImageSQLW22    = types.VolumeImageSQLW22    // Windows Server 2022 64-bit + SQL Server 2022 Web
-	VolumeImageSQLS22    = types.VolumeImageSQLS22    // Windows Server 2022 64-bit + SQL Server 2022 Standard
-	VolumeImageADW132    = types.VolumeImageADW132    // Windows Server 2022 64-bit + SQL Server 2019 Web
-	VolumeImageADW131    = types.VolumeImageADW131    // Windows Server 2022 64-bit + SQL Server 2019 Standard
-	VolumeImageADW122    = types.VolumeImageADW122    // Windows Server 2019 64-bit + SQL Server 2016 Standard
-	VolumeImageADW121    = types.VolumeImageADW121    // Windows Server 2019 64-bit + SQL Server 2016 Web
-	VolumeImageARW004    = types.VolumeImageARW004    // Windows Server 2022 64-bit + RDS (5/10/15/30 CAL)
-	VolumeImageARW003    = types.VolumeImageARW003    // Windows Server 2016 64-bit + RDS (5/10/15/30 CAL)
-	VolumeImageAFE001    = types.VolumeImageAFE001    // pfSense 2.4.5 64-bit firewall/load balancer appliance
-	VolumeImageAFL001    = types.VolumeImageAFL001    // Endian Firewall Community 3.3.2 firewall/load balancer appliance
-	VolumeImageLU20MAI01 = types.VolumeImageLU20MAI01 // Ubuntu Server 20.04 LTS 64-bit + Mail Server
-	VolumeImageLU24MN01  = types.VolumeImageLU24MN01  // Ubuntu Server 24.04 + MinIO
-	VolumeImageLU22MN01  = types.VolumeImageLU22MN01  // Ubuntu Server 22.04 LTS 64-bit + MinIO
-	VolumeImageLU24VD01  = types.VolumeImageLU24VD01  // Ubuntu Server 24.04 Virtual Desktop
-	VolumeImageLU22VD01  = types.VolumeImageLU22VD01  // Ubuntu Server 22.04 LTS Virtual Desktop
-	VolumeImageAVL005    = types.VolumeImageAVL005    // Ubuntu Server 20.04 LTS 64-bit Virtual Desktop
-	VolumeImageLU24OC01  = types.VolumeImageLU24OC01  // Ubuntu Server 24.04 + OpenClaw AI assistant (NGINX, Fail2ban, UFW, Certbot)
-	VolumeImagePX08001   = types.VolumeImagePX08001   // Debian 12 (Proxmox kernel) + Proxmox VE 8 + Fail2ban
+	VolumeImageWS22001 = types.VolumeImageWS22001 // Windows Server 2022 64-bit
+	VolumeImageWS19001 = types.VolumeImageWS19001 // Windows Server 2019 64-bit
+	VolumeImageLU24001 = types.VolumeImageLU24001 // Ubuntu Server 24.04
+	VolumeImageLU22001 = types.VolumeImageLU22001 // Ubuntu Server 22.04 LTS 64-bit
+	VolumeImageLU20001 = types.VolumeImageLU20001 // Ubuntu Server 20.04 LTS 64-bit
+	VolumeImageDE12001 = types.VolumeImageDE12001 // Debian 12
+	VolumeImageDE11001 = types.VolumeImageDE11001 // Debian 11 64-bit
+	VolumeImageAL90001 = types.VolumeImageAL90001 // AlmaLinux 9.x 64-bit
+	VolumeImageAL85001 = types.VolumeImageAL85001 // AlmaLinux 8.x 64-bit
+	VolumeImageLO15001 = types.VolumeImageLO15001 // openSUSE 15.2 64-bit
 )
 
 // ---------------------------------------------------------------------------
@@ -310,8 +285,10 @@ const (
 type DatabaseEngine = types.DatabaseEngine
 
 const (
-	DatabaseEngineMySQL80    = types.DatabaseEngineMySQL80    // MySQL 8.0
-	DatabaseEnginePostgres14 = types.DatabaseEnginePostgres14 // PostgreSQL 14
+	DatabaseEngineMySQL80             = types.DatabaseEngineMySQL80             // MySQL 8.0
+	DatabaseEngineMSSQL2022Web        = types.DatabaseEngineMSSQL2022Web        // SQL Server 2022 Web
+	DatabaseEngineMSSQL2022Standard   = types.DatabaseEngineMSSQL2022Standard   // SQL Server 2022 Standard
+	DatabaseEngineMSSQL2022Enterprise = types.DatabaseEngineMSSQL2022Enterprise // SQL Server 2022 Enterprise
 )
 
 // DBaaSFlavor identifies a DBaaS instance SKU.
@@ -350,16 +327,16 @@ const (
 
 // KubernetesVersion identifies the Kubernetes version for a KaaS cluster.
 //
-// The constants below cover versions referenced in SDK fixtures and the KaaS
-// upgrade-versions KB page. The authoritative live catalog is at:
+// The constants below mirror the official catalog at
+// https://api.arubacloud.com/docs/metadata/ — values not in the catalog
+// will be rejected by the API. The authoritative live catalog is at:
 //
 //	GET /providers/Aruba.Container/versions
 type KubernetesVersion = types.KubernetesVersion
 
 const (
-	KubernetesVersion1282 = types.KubernetesVersion1282 // Kubernetes 1.28.2
-	KubernetesVersion1292 = types.KubernetesVersion1292 // Kubernetes 1.29.2
-	KubernetesVersion1302 = types.KubernetesVersion1302 // Kubernetes 1.30.2
+	KubernetesVersion1313 = types.KubernetesVersion1313 // Kubernetes 1.31.3
+	KubernetesVersion1323 = types.KubernetesVersion1323 // Kubernetes 1.32.3
 	KubernetesVersion1332 = types.KubernetesVersion1332 // Kubernetes 1.33.2
 )
 

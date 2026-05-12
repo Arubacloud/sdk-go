@@ -2,16 +2,18 @@ package types
 
 // DatabaseEngine identifies a DBaaS engine.
 //
-// Verified values: SDK fixtures and KB (MySQL, Postgres). The KB mentions
-// MariaDB and SQL Server but does not enumerate v2 version-tag strings.
-// Use DatabaseEngine("mariadb-10.6") for unconfirmed values.
+// The constants below mirror the official catalog at
+// https://api.arubacloud.com/docs/metadata/ — values not in the catalog
+// will be rejected by the API. The authoritative live catalog is at:
 //
-// Authoritative list: GET /providers/Aruba.Database/engines
+//	GET /providers/Aruba.Database/engines
 type DatabaseEngine string
 
 const (
-	DatabaseEngineMySQL80    DatabaseEngine = "mysql-8.0"
-	DatabaseEnginePostgres14 DatabaseEngine = "postgres-14"
+	DatabaseEngineMySQL80             DatabaseEngine = "mysql-8.0"
+	DatabaseEngineMSSQL2022Web        DatabaseEngine = "mssql-2022-web"
+	DatabaseEngineMSSQL2022Standard   DatabaseEngine = "mssql-2022-standard"
+	DatabaseEngineMSSQL2022Enterprise DatabaseEngine = "mssql-2022-enterprise"
 )
 
 // DBaaSFlavor identifies a DBaaS flavor SKU.
