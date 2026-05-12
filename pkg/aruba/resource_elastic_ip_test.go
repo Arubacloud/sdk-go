@@ -99,15 +99,47 @@ func TestElasticIP_ToRequestRoundTrip(t *testing.T) {
 	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Location.Value = %q", req.Metadata.Location.Value)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
-		t.Errorf("BillingPeriod = %v", req.Properties.BillingPeriod)
+	if req.Properties.BillingPeriod == nil || string(*req.Properties.BillingPeriod) != "hourly" {
+		t.Errorf("BillingPeriod (wire) = %v", req.Properties.BillingPeriod)
 	}
 
-	// No billing period set → defaults to Hour.
+	// No billing period set → defaults to hourly on the wire.
 	e2 := NewElasticIP().WithName("bare")
 	req2 := e2.RawRequest()
-	if req2.Properties.BillingPeriod == nil || *req2.Properties.BillingPeriod != BillingPeriodHour {
-		t.Errorf("unset BillingPeriod should default to Hour, got %v", req2.Properties.BillingPeriod)
+	if req2.Properties.BillingPeriod == nil || string(*req2.Properties.BillingPeriod) != "hourly" {
+		t.Errorf("unset BillingPeriod should default to hourly on wire, got %v", req2.Properties.BillingPeriod)
+	}
+}
+
+// --------------------------------------------------------------------------
+// BillingPeriod wire translation round-trip
+// --------------------------------------------------------------------------
+
+func TestElasticIP_BillingPeriod_WireTranslation(t *testing.T) {
+	cases := []struct {
+		std  BillingPeriod
+		wire string
+	}{
+		{BillingPeriodHour, "hourly"},
+		{BillingPeriodMonth, "monthly"},
+		{BillingPeriodYear, "yearly"},
+	}
+	for _, tc := range cases {
+		t.Run(string(tc.std), func(t *testing.T) {
+			req := NewElasticIP().WithName("x").InRegion(RegionITBGBergamo).
+				WithBillingPeriod(tc.std).RawRequest()
+			if got := string(*req.Properties.BillingPeriod); got != tc.wire {
+				t.Errorf("toRequest wire = %q, want %q", got, tc.wire)
+			}
+			wireVal := BillingPeriod(tc.wire)
+			e := &ElasticIP{}
+			e.fromResponse(&types.ElasticIPResponse{
+				Properties: types.ElasticIPPropertiesResponse{BillingPeriod: &wireVal},
+			})
+			if e.BillingPeriod() != tc.std {
+				t.Errorf("fromResponse getter = %q, want %q", e.BillingPeriod(), tc.std)
+			}
+		})
 	}
 }
 
@@ -131,7 +163,7 @@ func elasticIPTestResponse(id, name, uri, projectID string) *types.ElasticIPResp
 			},
 		},
 		Properties: types.ElasticIPPropertiesResponse{
-			BillingPeriod: func() *BillingPeriod { v := BillingPeriodHour; return &v }(),
+			BillingPeriod: func() *BillingPeriod { v := BillingPeriod("hourly"); return &v }(),
 			Address:       &addr,
 			LinkedResources: []types.LinkedResource{
 				{URI: "/projects/p/providers/Aruba.Compute/cloudservers/cs1", StrictCorrelation: true},
@@ -279,7 +311,7 @@ func buildElasticIPTestAdapter(t *testing.T, handler http.HandlerFunc) *elasticI
 
 const elasticIPSuccessBody = `{` +
 	`"metadata":{"id":"eid","name":"my-eip","uri":"/projects/p/providers/Aruba.Network/elasticIps/eid","project":{"id":"p"}},` +
-	`"properties":{"billingPeriod":"Hour","address":"1.2.3.4"},` +
+	`"properties":{"billingPeriod":"hourly","address":"1.2.3.4"},` +
 	`"status":{"state":"Active"}}`
 
 func TestElasticIPsClientAdapter_Create_Success(t *testing.T) {
@@ -315,8 +347,8 @@ func TestElasticIPsClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "my-eip" {
 		t.Errorf("request Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Properties.BillingPeriod == nil || *gotBody.Properties.BillingPeriod != BillingPeriodHour {
-		t.Errorf("request BillingPeriod = %v", gotBody.Properties.BillingPeriod)
+	if gotBody.Properties.BillingPeriod == nil || string(*gotBody.Properties.BillingPeriod) != "hourly" {
+		t.Errorf("request BillingPeriod (wire) = %v", gotBody.Properties.BillingPeriod)
 	}
 }
 
@@ -433,7 +465,7 @@ func TestElasticIPsClientAdapter_Update_Success(t *testing.T) {
 		_ = json.NewDecoder(r.Body).Decode(&capturedBody)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, `{"metadata":{"id":"eid","name":"renamed","uri":"/projects/p/providers/Aruba.Network/elasticIps/eid","project":{"id":"p"}},"properties":{"billingPeriod":"Hour"},"status":{}}`)
+		fmt.Fprint(w, `{"metadata":{"id":"eid","name":"renamed","uri":"/projects/p/providers/Aruba.Network/elasticIps/eid","project":{"id":"p"}},"properties":{"billingPeriod":"hourly"},"status":{}}`)
 	})
 
 	e := &ElasticIP{}
@@ -531,8 +563,8 @@ func TestElasticIPsClientAdapter_List_TwoItems(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
-			`{"metadata":{"id":"e1","name":"n1","uri":"/projects/p/providers/Aruba.Network/elasticIps/e1","project":{"id":"p"}},"properties":{"billingPeriod":"Hour"},"status":{}},`+
-			`{"metadata":{"id":"e2","name":"n2","uri":"/projects/p/providers/Aruba.Network/elasticIps/e2","project":{"id":"p"}},"properties":{"billingPeriod":"Hour"},"status":{}}`+
+			`{"metadata":{"id":"e1","name":"n1","uri":"/projects/p/providers/Aruba.Network/elasticIps/e1","project":{"id":"p"}},"properties":{"billingPeriod":"hourly"},"status":{}},`+
+			`{"metadata":{"id":"e2","name":"n2","uri":"/projects/p/providers/Aruba.Network/elasticIps/e2","project":{"id":"p"}},"properties":{"billingPeriod":"hourly"},"status":{}}`+
 			`]}`)
 	})
 

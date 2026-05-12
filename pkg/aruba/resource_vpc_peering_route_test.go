@@ -240,7 +240,7 @@ func vpcPeeringRouteTestResponse(id, name, uri, projectID string) *types.VPCPeer
 		Properties: types.VPCPeeringRoutePropertiesResponse{
 			LocalNetworkAddress:  "10.0.0.0/24",
 			RemoteNetworkAddress: "192.168.0.0/24",
-			BillingPeriod:        func() *BillingPeriod { v := BillingPeriod(BillingPeriodHour); return &v }(),
+			BillingPeriod:        func() *BillingPeriod { v := BillingPeriodHour; return &v }(),
 		},
 		Status: types.ResourceStatus{
 			State: &state,

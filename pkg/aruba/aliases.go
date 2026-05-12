@@ -257,15 +257,15 @@ const (
 	ZoneITBG3 = types.ZoneITBG3 // Bergamo availability zone 3
 )
 
-// BillingPeriod identifies the billing cadence for a resource.
-//
-// The v2 API currently accepts only "Hour". "Month" exists in earlier
-// API versions but is not confirmed for v2; do not use it without
-// verification against the live API.
+// BillingPeriod identifies the billing cadence for a resource. Not every
+// wrapper accepts every period — consult the individual resource documentation
+// for the authoritative list of accepted values.
 type BillingPeriod = types.BillingPeriod
 
 const (
-	BillingPeriodHour = types.BillingPeriodHour // hourly billing — the only period accepted by the v2 API
+	BillingPeriodHour  = types.BillingPeriodHour  // hourly billing
+	BillingPeriodMonth = types.BillingPeriodMonth // monthly billing (resource-specific)
+	BillingPeriodYear  = types.BillingPeriodYear  // yearly billing (resource-specific)
 )
 
 // ---------------------------------------------------------------------------
