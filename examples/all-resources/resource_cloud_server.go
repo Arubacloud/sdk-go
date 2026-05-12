@@ -62,9 +62,7 @@ write_files:
 	}
 	printCreated("Cloud Server", cs.Name(), cs.CloudServerID())
 
-	if err := cs.WaitUntilReady(ctx); err != nil {
-		printSelfWaitError("Cloud Server", cs.Name(), err)
-	}
+	waitUntilSelfReady(ctx, "Cloud Server", cs.Name(), cs.WaitUntilReady)
 
 	waitPostDependencies(ctx, "Cloud Server", map[string]waitFunc{
 		"Elastic IP":    resources.CloudServerEIP.WaitUntilUsed,

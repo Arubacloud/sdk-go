@@ -49,9 +49,7 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, v
 	}
 	printCreated("KaaS Cluster", result.Name(), result.KaaSID())
 
-	if err := result.WaitUntilReady(ctx); err != nil {
-		printSelfWaitError("KaaS Cluster", result.Name(), err)
-	}
+	waitUntilSelfReady(ctx, "KaaS Cluster", result.Name(), result.WaitUntilReady)
 
 	return result
 }

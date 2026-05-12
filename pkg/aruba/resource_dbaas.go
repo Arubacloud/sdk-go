@@ -221,8 +221,8 @@ func (d *DBaaS) SizeGB() int {
 // from BillingPlan.BillingPeriod; before hydration it returns what was passed to
 // WithBillingPeriod.
 func (d *DBaaS) BillingPeriod() BillingPeriod {
-	if d.response != nil && d.response.Properties.BillingPeriod != nil {
-		return *d.response.Properties.BillingPeriod
+	if d.response != nil && d.response.Properties.BillingPlan != nil && d.response.Properties.BillingPlan.BillingPeriod != nil {
+		return *d.response.Properties.BillingPlan.BillingPeriod
 	}
 	if d.billingPeriod == nil {
 		return ""
@@ -346,7 +346,7 @@ func (d *DBaaS) toRequest() types.DBaaSRequest {
 		}
 		props.Autoscaling = a
 	}
-	props.BillingPeriod = defaultBillingPeriod(d.billingPeriod)
+	props.BillingPlan = &types.DBaaSBillingPlan{BillingPeriod: defaultBillingPeriod(d.billingPeriod)}
 	if d.vpcRef != nil || d.subnetRef != nil || d.securityGroupRef != nil || d.elasticIPRef != nil {
 		net := &types.DBaaSNetworking{}
 		if d.vpcRef != nil {
@@ -403,8 +403,8 @@ func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 		v := *resp.Properties.Storage.SizeGB
 		d.sizeGB = &v
 	}
-	if resp.Properties.BillingPeriod != nil {
-		d.billingPeriod = resp.Properties.BillingPeriod
+	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
+		d.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
 	}
 	if resp.Properties.Networking != nil {
 		if resp.Properties.Networking.VPC != nil && resp.Properties.Networking.VPC.URI != "" {

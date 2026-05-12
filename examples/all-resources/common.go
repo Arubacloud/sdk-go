@@ -46,7 +46,7 @@ const (
 	NameKaaS                      = "kaas"
 	NameKaaSSecurityGroup         = "kaas-sg"
 	NameKaaSNodeCIDR              = "kaas-node-cidr"
-	NameNodePool                  = "default-pool"
+	NameNodePool                  = "pool"
 	NameCloudServer               = "cs"
 	NameContainerRegistry         = "cr"
 	NameStorageBackup             = "backup"
@@ -192,18 +192,36 @@ func waitForDependencies(ctx context.Context, resourceLabel string, deps map[str
 		if err := wait(ctx); err != nil {
 			return fmt.Errorf("%s dep %s: %w", resourceLabel, label, err)
 		}
+		fmt.Printf("   ✓ %s ready\n", label)
 	}
+	fmt.Printf("✓ %s dependencies are READY\n", resourceLabel)
 	return nil
 }
 
 // waitPostDependencies waits for downstream effects after a resource is created
 // (e.g., an Elastic IP or Block Storage transitioning to Used state).
 func waitPostDependencies(ctx context.Context, resourceLabel string, deps map[string]waitFunc) {
+	fmt.Printf("⏳ Waiting for %s post-dependencies...\n", resourceLabel)
 	for label, wait := range deps {
 		if err := wait(ctx); err != nil {
 			log.Printf("%s post-dep %s: %v", resourceLabel, label, err)
+			continue
 		}
+		fmt.Printf("   ✓ %s ready\n", label)
 	}
+	fmt.Printf("✓ %s post-dependencies confirmed\n", resourceLabel)
+}
+
+// waitUntilSelfReady wraps a resource's WaitUntilReady call with entry and
+// success lifecycle messages. Logs entry, success, and error in one place so
+// every resource_*.go create func collapses its boilerplate to a single call.
+func waitUntilSelfReady(ctx context.Context, pretty, name string, wait waitFunc, opts ...aruba.WaitOption) {
+	fmt.Printf("⏳ Waiting for %s %s to become Ready...\n", pretty, name)
+	if err := wait(ctx, opts...); err != nil {
+		printSelfWaitError(pretty, name, err)
+		return
+	}
+	fmt.Printf("✓ %s %s is Ready\n", pretty, name)
 }
 
 // waitAllReady blocks until every polling-aware resource in the collection reaches

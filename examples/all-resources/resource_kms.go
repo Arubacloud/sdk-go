@@ -27,9 +27,7 @@ func createKMS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *a
 	}
 	printCreated("KMS Instance", result.Name(), result.KMSID())
 
-	if err := result.WaitUntilReady(ctx); err != nil {
-		printSelfWaitError("KMS Instance", result.Name(), err)
-	}
+	waitUntilSelfReady(ctx, "KMS Instance", result.Name(), result.WaitUntilReady)
 
 	return result
 }
@@ -80,9 +78,7 @@ func createKmip(ctx context.Context, arubaClient aruba.Client, kmsParent *aruba.
 	}
 	printCreated("KMIP Service", created.Name(), created.KmipID())
 
-	if err := created.WaitUntilReady(ctx); err != nil {
-		printSelfWaitError("KMIP Service", created.Name(), err)
-	}
+	waitUntilSelfReady(ctx, "KMIP Service", created.Name(), created.WaitUntilReady)
 
 	return created
 }

@@ -42,9 +42,7 @@ func createContainerRegistry(ctx context.Context, arubaClient aruba.Client, reso
 	}
 	printCreated("Container Registry", resp.Name(), resp.ContainerRegistryID())
 
-	if err := resp.WaitUntilReady(ctx, longWaitOpts...); err != nil {
-		printSelfWaitError("Container Registry", resp.Name(), err)
-	}
+	waitUntilSelfReady(ctx, "Container Registry", resp.Name(), resp.WaitUntilReady, longWaitOpts...)
 
 	waitPostDependencies(ctx, "Container Registry", map[string]waitFunc{
 		"Elastic IP":    resources.ContainerRegistryEIP.WaitUntilUsed,
