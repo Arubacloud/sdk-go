@@ -162,8 +162,8 @@ type ResourceCollection struct {
 // longWaitOpts is the wait-option set for resources whose Ready transition
 // routinely exceeds the SDK default (DBaaS, ContainerRegistry).
 var longWaitOpts = []aruba.WaitOption{
-	aruba.WithTimeout(20 * time.Minute),
-	aruba.WithRetries(120),
+	aruba.WithTimeout(40 * time.Minute),
+	aruba.WithRetries(240),
 }
 
 // deleteOpTimeout caps each individual Delete + waitUntilGone in the delete
@@ -404,9 +404,26 @@ func printDepWaitError(pretty string, err error) {
 	log.Printf("✗ %s dependency wait failed: %v", pretty, err)
 }
 
+// describeWaitFailure rewrites the wait-error string so the printed reason is
+// actionable. statusMixin.WaitUntilStates already returns rich messages of the
+// form `resource entered terminal error state "Failed" (targets [...])` —
+// passed through verbatim. A bare `context deadline exceeded` (returned when
+// the SDK's WaitFor hits its retry/timeout budget while the resource is still
+// transitioning) gets an extra note so the reader knows the resource was still
+// mid-flight, not failed.
+func describeWaitFailure(err error) string {
+	if err == nil {
+		return ""
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return err.Error() + " (timed out — wait budget exhausted before a terminal state was observed)"
+	}
+	return err.Error()
+}
+
 // printSelfWaitError logs a post-create self-readiness wait failure.
 func printSelfWaitError(pretty, name string, err error) {
-	log.Printf("✗ %s %s did not become Ready: %v", pretty, name, err)
+	log.Printf("✗ %s %s did not become Ready: %s", pretty, name, describeWaitFailure(err))
 }
 
 // printDeleteBanner emits a delete section header: `--- Deleting {pretty} ---`.
