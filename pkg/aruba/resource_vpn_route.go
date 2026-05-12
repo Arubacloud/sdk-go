@@ -38,8 +38,8 @@ type VPNRoute struct {
 // IntoVPNTunnel binds this VPNRoute to its parent VPNTunnel. Required before Create.
 func (r *VPNRoute) IntoVPNTunnel(t Ref) *VPNRoute { r.intoVPNTunnel(t); return r }
 
-// WithName sets the resource name. Required by the API.
-func (r *VPNRoute) WithName(n string) *VPNRoute { r.withName(n); return r }
+// Named sets the resource name. Required by the API.
+func (r *VPNRoute) Named(n string) *VPNRoute { r.named(n); return r }
 
 // AddTag appends a tag for filtering and accounting.
 func (r *VPNRoute) AddTag(tag string) *VPNRoute { r.addTag(tag); return r }
@@ -103,7 +103,7 @@ func (r *VPNRoute) fromResponse(resp *types.VPNRouteResponse) {
 	}
 	r.response = resp
 	r.setMeta(&resp.Metadata)
-	r.withName(vpnRouteDerefString(resp.Metadata.Name))
+	r.named(vpnRouteDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		r.replaceTags(resp.Metadata.Tags...)
 	}

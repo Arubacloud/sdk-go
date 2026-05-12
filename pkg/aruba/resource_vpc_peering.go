@@ -36,8 +36,8 @@ type VPCPeering struct {
 // IntoVPC binds this VPCPeering to its parent VPC. Required before Create.
 func (p *VPCPeering) IntoVPC(v Ref) *VPCPeering { p.intoVPC(v); return p }
 
-// WithName sets the resource name. Required by the API.
-func (p *VPCPeering) WithName(n string) *VPCPeering { p.withName(n); return p }
+// Named sets the resource name. Required by the API.
+func (p *VPCPeering) Named(n string) *VPCPeering { p.named(n); return p }
 
 // AddTag appends a tag for filtering and accounting.
 func (p *VPCPeering) AddTag(t string) *VPCPeering { p.addTag(t); return p }
@@ -110,7 +110,7 @@ func (p *VPCPeering) fromResponse(resp *types.VPCPeeringResponse) {
 	}
 	p.response = resp
 	p.setMeta(&resp.Metadata)
-	p.withName(vpcPeeringDerefString(resp.Metadata.Name))
+	p.named(vpcPeeringDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		p.replaceTags(resp.Metadata.Tags...)
 	}

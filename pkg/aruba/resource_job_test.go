@@ -34,7 +34,7 @@ func TestJob_FluentSetters(t *testing.T) {
 
 	j := NewJob().
 		IntoProject(proj).
-		WithName("my-job").
+		Named("my-job").
 		AddTag("env:prod").
 		AddTag("schedule").
 		AddTag("env:prod"). // dedupe
@@ -257,7 +257,7 @@ func TestJob_ToRequest_OneShot(t *testing.T) {
 	ts := time.Date(2026, 5, 1, 12, 0, 0, 0, time.UTC)
 	j := NewJob().
 		IntoProject(URI("/projects/p")).
-		WithName("one-shot-job").
+		Named("one-shot-job").
 		InRegion(RegionITBGBergamo).
 		WithEnabled(true).
 		OneShotAt(ts).
@@ -292,7 +292,7 @@ func TestJob_ToRequest_Recurring(t *testing.T) {
 	until := time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)
 	j := NewJob().
 		IntoProject(URI("/projects/p")).
-		WithName("cron-job").
+		Named("cron-job").
 		WithCron("0 8 * * 1-5").
 		RecurringUntil(until)
 
@@ -505,7 +505,7 @@ func TestJobsClientAdapter_Create_Success(t *testing.T) {
 	ts := time.Date(2026, 5, 1, 12, 0, 0, 0, time.UTC)
 	j := NewJob().
 		IntoProject(URI("/projects/p")).
-		WithName("my-job").
+		Named("my-job").
 		InRegion(RegionITBGBergamo).
 		WithEnabled(true).
 		OneShotAt(ts)
@@ -537,7 +537,8 @@ func TestJobsClientAdapter_Create_NoProject(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusCreated)
 	})
-	_, err := adapter.Create(context.Background(), NewJob().WithName("x"))
+	_, err := adapter.Create(context.Background(), NewJob().
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when Job has no project")
 	}
@@ -554,7 +555,8 @@ func TestJobsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"j","uri":"/projects/p/providers/Aruba.Schedule/jobs/x"},"properties":{},"status":{}}`)
 	})
 
-	j := NewJob().IntoProject(URI("/projects/p")).WithName("j")
+	j := NewJob().IntoProject(URI("/projects/p")).
+		Named("j")
 	result, err := adapter.Create(context.Background(), j)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -574,7 +576,8 @@ func TestJobsClientAdapter_Create_NonTwoXX(t *testing.T) {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, `{"message":"bad request"}`)
 	})
-	_, err := adapter.Create(context.Background(), NewJob().IntoProject(URI("/projects/p")).WithName("j"))
+	_, err := adapter.Create(context.Background(), NewJob().IntoProject(URI("/projects/p")).
+		Named("j"))
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {
 		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
@@ -598,7 +601,7 @@ func TestJobsClientAdapter_Update_Success(t *testing.T) {
 	// Load from response, then only update non-schedule fields to avoid mode conflict.
 	j := &Job{}
 	j.fromResponse(jobTestResponse("my-job"))
-	j.WithName("my-job-updated").WithEnabled(false)
+	j.Named("my-job-updated").WithEnabled(false)
 
 	result, err := adapter.Update(context.Background(), j)
 	if err != nil {
@@ -613,7 +616,8 @@ func TestJobsClientAdapter_Update_NoID(t *testing.T) {
 	adapter := buildJobsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	j := NewJob().IntoProject(URI("/projects/p")).WithName("x")
+	j := NewJob().IntoProject(URI("/projects/p")).
+		Named("x")
 	_, err := adapter.Update(context.Background(), j)
 	if err == nil {
 		t.Fatal("expected error when Job has no ID")

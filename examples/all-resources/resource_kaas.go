@@ -20,10 +20,12 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, v
 		return nil
 	}
 
-	kaasSG := aruba.NewSecurityGroup().WithName(resourceName(NameKaaSSecurityGroup))
+	kaasSG := aruba.NewSecurityGroup().
+		Named(resourceName(NameKaaSSecurityGroup))
+
 	k := aruba.NewKaaS().
 		IntoProject(proj).
-		WithName(resourceName(NameKaaS)).
+		Named(resourceName(NameKaaS)).
 		AddTag("kubernetes").
 		AddTag("container").
 		InRegion(aruba.RegionITBGBergamo).
@@ -60,7 +62,7 @@ func updateKaaS(ctx context.Context, arubaClient aruba.Client, k *aruba.KaaS) {
 
 	// Mutate only the fields exposed by KaaSUpdateRequest.
 	// Networking URIs and CIDRs are immutable after creation.
-	k.WithName(updatedName(k.Name())).
+	k.Named(updatedName(k.Name())).
 		ReplaceTags("kubernetes", "container", "updated").
 		WithMaxStorageQuotaGB(100).
 		WithBillingPeriod(aruba.BillingPeriodHour).

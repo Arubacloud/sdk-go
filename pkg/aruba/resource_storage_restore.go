@@ -34,8 +34,8 @@ type StorageRestore struct {
 // IntoBackup binds this StorageRestore to its parent StorageBackup. Required before Create.
 func (r *StorageRestore) IntoBackup(b Ref) *StorageRestore { r.intoBackup(b); return r }
 
-// WithName sets the resource name. Required by the API.
-func (r *StorageRestore) WithName(n string) *StorageRestore { r.withName(n); return r }
+// Named sets the resource name. Required by the API.
+func (r *StorageRestore) Named(n string) *StorageRestore { r.named(n); return r }
 
 // AddTag appends a tag for filtering and accounting.
 func (r *StorageRestore) AddTag(t string) *StorageRestore { r.addTag(t); return r }
@@ -104,7 +104,7 @@ func (r *StorageRestore) fromResponse(resp *types.StorageRestoreResponse) {
 	}
 	r.response = resp
 	r.setMeta(&resp.Metadata)
-	r.withName(storageRestoreDerefString(resp.Metadata.Name))
+	r.named(storageRestoreDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		r.replaceTags(resp.Metadata.Tags...)
 	}

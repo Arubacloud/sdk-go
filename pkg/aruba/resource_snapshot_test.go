@@ -28,7 +28,7 @@ func TestSnapshot_FluentSetters(t *testing.T) {
 
 	snap := NewSnapshot().
 		IntoProject(proj).
-		WithName("my-snap").
+		Named("my-snap").
 		AddTag("backup").
 		AddTag("storage").
 		AddTag("backup"). // dedupe
@@ -143,8 +143,8 @@ func TestSnapshot_FromVolume_EmptyURI(t *testing.T) {
 
 func TestSnapshot_ToRequestRoundTrip(t *testing.T) {
 	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
-	snap := NewSnapshot().
-		WithName("snap-rt").
+	snap := NewSnapshot().Named(
+		"snap-rt").
 		AddTag("t1").AddTag("t2").
 		InRegion(RegionITBGBergamo).
 		WithBillingPeriod(BillingPeriodHour).
@@ -170,7 +170,8 @@ func TestSnapshot_ToRequestRoundTrip(t *testing.T) {
 }
 
 func TestSnapshot_ToRequest_UnsetOptionals_AreNilOrEmpty(t *testing.T) {
-	snap := NewSnapshot().WithName("bare")
+	snap := NewSnapshot().
+		Named("bare")
 	req := snap.RawRequest()
 
 	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
@@ -472,7 +473,7 @@ func TestSnapshotsClientAdapter_Create_Success(t *testing.T) {
 	// No OfVolume → Volume.URI == "" → no BlockStorage dependency.
 	snap := NewSnapshot().
 		IntoProject(URI("/projects/p")).
-		WithName("my-snap").
+		Named("my-snap").
 		InRegion(RegionITBGBergamo).
 		WithBillingPeriod(BillingPeriodHour)
 
@@ -504,7 +505,8 @@ func TestSnapshotsClientAdapter_Create_NoProject(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewSnapshot().WithName("x"))
+	_, err := adapter.Create(context.Background(), NewSnapshot().
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when Snapshot has no project")
 	}
@@ -521,7 +523,8 @@ func TestSnapshotsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"snap","uri":"/projects/p/providers/Aruba.Storage/snapshots/x"},"properties":{},"status":{}}`)
 	})
 
-	snap := NewSnapshot().IntoProject(URI("/projects/p")).WithName("snap")
+	snap := NewSnapshot().IntoProject(URI("/projects/p")).
+		Named("snap")
 	result, err := adapter.Create(context.Background(), snap)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -581,7 +584,7 @@ func TestSnapshotsClientAdapter_Create_WithVolume(t *testing.T) {
 
 	snap := NewSnapshot().
 		IntoProject(URI("/projects/p")).
-		WithName("my-snap").
+		Named("my-snap").
 		FromVolume(URI(volURI))
 
 	result, err := adapter.Create(context.Background(), snap)
@@ -672,7 +675,8 @@ func TestSnapshotsClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	snap := NewSnapshot().IntoProject(URI("/projects/p")).WithName("x")
+	snap := NewSnapshot().IntoProject(URI("/projects/p")).
+		Named("x")
 	_, err := adapter.Update(context.Background(), snap)
 	if err == nil {
 		t.Fatal("expected error when Snapshot has no ID")

@@ -53,8 +53,8 @@ type Job struct {
 // IntoProject binds this Job to its parent project. Required before Create.
 func (j *Job) IntoProject(p Ref) *Job { j.intoProject(p); return j }
 
-// WithName sets the resource name. Required by the API.
-func (j *Job) WithName(n string) *Job { j.withName(n); return j }
+// Named sets the resource name. Required by the API.
+func (j *Job) Named(n string) *Job { j.named(n); return j }
 
 // AddTag appends a tag for filtering and accounting.
 func (j *Job) AddTag(t string) *Job { j.addTag(t); return j }
@@ -211,7 +211,7 @@ func (j *Job) fromResponse(resp *types.JobResponse) {
 	}
 	j.response = resp
 	j.setMeta(&resp.Metadata)
-	j.withName(jobDeref(resp.Metadata.Name))
+	j.named(jobDeref(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		j.replaceTags(resp.Metadata.Tags...)
 	}

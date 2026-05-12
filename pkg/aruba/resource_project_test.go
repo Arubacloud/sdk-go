@@ -23,8 +23,8 @@ var _ Ref = (*Project)(nil)
 // --------------------------------------------------------------------------
 
 func TestProject_FluentSetters(t *testing.T) {
-	p := NewProject().
-		WithName("my-project").
+	p := NewProject().Named(
+		"my-project").
 		AddTag("a").
 		AddTag("b").
 		AddTag("a"). // dedupe
@@ -67,8 +67,8 @@ func TestProject_Description_Unset(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestProject_ToRequestRoundTrip(t *testing.T) {
-	p := NewProject().
-		WithName("proj").
+	p := NewProject().Named(
+		"proj").
 		AddTag("t1").
 		AddTag("t2").
 		WithDescription("d").
@@ -223,7 +223,8 @@ func TestProjectClientAdapter_Create_Success(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"id":"pid","name":"my-proj","uri":"/projects/pid"},"properties":{"default":false}}`)
 	})
 
-	p := NewProject().WithName("my-proj")
+	p := NewProject().
+		Named("my-proj")
 	result, err := adapter.Create(context.Background(), p)
 	if err != nil {
 		t.Fatalf("Create error: %v", err)
@@ -257,7 +258,8 @@ func TestProjectClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"p","uri":"/projects/x"},"properties":{}}`)
 	})
 
-	result, err := adapter.Create(context.Background(), NewProject().WithName("p"))
+	result, err := adapter.Create(context.Background(), NewProject().
+		Named("p"))
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
 	}
@@ -374,7 +376,7 @@ func TestProjectClientAdapter_Update_Success(t *testing.T) {
 
 	p := &Project{}
 	p.fromResponse(projectTestResponse("pid", "orig", "/projects/pid"))
-	p.WithName("renamed")
+	p.Named("renamed")
 
 	result, err := adapter.Update(context.Background(), p)
 	if err != nil {
@@ -395,7 +397,8 @@ func TestProjectClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	_, err := adapter.Update(context.Background(), NewProject().WithName("x"))
+	_, err := adapter.Update(context.Background(), NewProject().
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when project has no ID")
 	}

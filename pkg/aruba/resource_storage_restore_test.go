@@ -28,7 +28,7 @@ func TestStorageRestore_FluentSetters(t *testing.T) {
 
 	r := NewStorageRestore().
 		IntoBackup(bkp).
-		WithName("my-restore").
+		Named("my-restore").
 		AddTag("restore").
 		AddTag("storage").
 		AddTag("restore"). // dedupe
@@ -152,8 +152,8 @@ func TestStorageRestore_ToVolume_EmptyURI(t *testing.T) {
 
 func TestStorageRestore_ToRequestRoundTrip(t *testing.T) {
 	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
-	r := NewStorageRestore().
-		WithName("rt-restore").
+	r := NewStorageRestore().Named(
+		"rt-restore").
 		AddTag("t1").AddTag("t2").
 		InRegion(RegionITBGBergamo).
 		ToVolume(URI(volURI))
@@ -175,7 +175,8 @@ func TestStorageRestore_ToRequestRoundTrip(t *testing.T) {
 }
 
 func TestStorageRestore_ToRequest_UnsetTarget(t *testing.T) {
-	r := NewStorageRestore().WithName("bare")
+	r := NewStorageRestore().
+		Named("bare")
 	req := r.RawRequest()
 
 	if req.Properties.Target.URI != "" {
@@ -433,7 +434,7 @@ func TestStorageRestoresClientAdapter_Create_Success(t *testing.T) {
 
 	r := NewStorageRestore().
 		IntoBackup(bkp).
-		WithName("my-restore").
+		Named("my-restore").
 		InRegion(RegionITBGBergamo).
 		ToVolume(URI("/projects/p/providers/Aruba.Storage/blockstorages/bs-1"))
 
@@ -465,7 +466,8 @@ func TestStorageRestoresClientAdapter_Create_NoBackup(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewStorageRestore().WithName("x").ToVolume(URI("/v")))
+	_, err := adapter.Create(context.Background(), NewStorageRestore().
+		Named("x").ToVolume(URI("/v")))
 	if err == nil {
 		t.Fatal("expected error when StorageRestore has no parent backup")
 	}
@@ -484,7 +486,8 @@ func TestStorageRestoresClientAdapter_Create_NoTarget(t *testing.T) {
 	bkp := &StorageBackup{}
 	bkp.fromResponse(storageBackupTestResponse("bkp-1", "n", "/projects/p/providers/Aruba.Storage/backups/bkp-1", "p"))
 
-	_, err := adapter.Create(context.Background(), NewStorageRestore().IntoBackup(bkp).WithName("x"))
+	_, err := adapter.Create(context.Background(), NewStorageRestore().IntoBackup(bkp).
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when StorageRestore has no target")
 	}
@@ -504,7 +507,8 @@ func TestStorageRestoresClientAdapter_Create_MetadataValidationError(t *testing.
 	bkp := &StorageBackup{}
 	bkp.fromResponse(storageBackupTestResponse("bkp-1", "n", "/projects/p/providers/Aruba.Storage/backups/bkp-1", "p"))
 
-	r := NewStorageRestore().IntoBackup(bkp).WithName("r").ToVolume(URI("/v"))
+	r := NewStorageRestore().IntoBackup(bkp).
+		Named("r").ToVolume(URI("/v"))
 	result, err := adapter.Create(context.Background(), r)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -641,7 +645,8 @@ func TestStorageRestoresClientAdapter_Update_NoID(t *testing.T) {
 	bkp := &StorageBackup{}
 	bkp.fromResponse(storageBackupTestResponse("bkp-1", "n", "/projects/p/providers/Aruba.Storage/backups/bkp-1", "p"))
 
-	r := NewStorageRestore().IntoBackup(bkp).WithName("x")
+	r := NewStorageRestore().IntoBackup(bkp).
+		Named("x")
 	_, err := adapter.Update(context.Background(), r)
 	if err == nil {
 		t.Fatal("expected error when StorageRestore has no ID")

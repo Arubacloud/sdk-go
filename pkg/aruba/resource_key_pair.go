@@ -34,8 +34,8 @@ type KeyPair struct {
 // IntoProject binds this KeyPair to its parent project. Required before Create.
 func (k *KeyPair) IntoProject(p Ref) *KeyPair { k.intoProject(p); return k }
 
-// WithName sets the resource name. Required by the API.
-func (k *KeyPair) WithName(n string) *KeyPair { k.withName(n); return k }
+// Named sets the resource name. Required by the API.
+func (k *KeyPair) Named(n string) *KeyPair { k.named(n); return k }
 
 // AddTag appends a tag for filtering and accounting.
 func (k *KeyPair) AddTag(t string) *KeyPair { k.addTag(t); return k }
@@ -97,7 +97,7 @@ func (k *KeyPair) fromResponse(resp *types.KeyPairResponse) {
 	}
 	k.response = resp
 	k.setMeta(&resp.Metadata)
-	k.withName(keyPairDerefString(resp.Metadata.Name))
+	k.named(keyPairDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		k.replaceTags(resp.Metadata.Tags...)
 	}

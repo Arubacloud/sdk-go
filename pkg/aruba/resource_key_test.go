@@ -45,7 +45,7 @@ func TestKey_FluentSetters(t *testing.T) {
 	parent := keyMakeKMSParent("p-1", "kms-1")
 	k := NewKey().
 		IntoKMS(parent).
-		WithName("my-key").
+		Named("my-key").
 		OfAlgorithm(KeyAlgorithmAes)
 
 	if k.Name() != "my-key" {
@@ -115,7 +115,8 @@ func TestKey_IntoKMS_BadRef_NoProject(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestKey_ToRequest_FullyPopulated(t *testing.T) {
-	k := NewKey().WithName("enc-key").OfAlgorithm(KeyAlgorithmRsa)
+	k := NewKey().
+		Named("enc-key").OfAlgorithm(KeyAlgorithmRsa)
 	req := k.RawRequest()
 	if req.Name != "enc-key" {
 		t.Errorf("Name = %q", req.Name)
@@ -305,7 +306,8 @@ func TestKey_Algorithm_LocalFallback(t *testing.T) {
 
 // Name falls back to local field (no response)
 func TestKey_Name_LocalFallback(t *testing.T) {
-	k := NewKey().WithName("fallback-name")
+	k := NewKey().
+		Named("fallback-name")
 	if k.Name() != "fallback-name" {
 		t.Errorf("Name() = %q, want fallback-name", k.Name())
 	}
@@ -388,7 +390,8 @@ func TestKeysClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	parent := keyMakeKMSParent("p-1", "kms-1")
-	k := NewKey().IntoKMS(parent).WithName("my-key").OfAlgorithm(KeyAlgorithmAes)
+	k := NewKey().IntoKMS(parent).
+		Named("my-key").OfAlgorithm(KeyAlgorithmAes)
 
 	result, err := adapter.Create(context.Background(), k)
 	if err != nil {
@@ -417,7 +420,8 @@ func TestKeysClientAdapter_Create_NoProject(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusCreated)
 	})
-	k := NewKey().WithName("x").OfAlgorithm(KeyAlgorithmAes)
+	k := NewKey().
+		Named("x").OfAlgorithm(KeyAlgorithmAes)
 	_, err := adapter.Create(context.Background(), k)
 	if err == nil {
 		t.Fatal("expected error when Key has no project")
@@ -435,7 +439,7 @@ func TestKeysClientAdapter_Create_NoKMS(t *testing.T) {
 	})
 	k := NewKey()
 	k.projectID = "p-1" // project set but not KMS
-	k.WithName("x").OfAlgorithm(KeyAlgorithmAes)
+	k.Named("x").OfAlgorithm(KeyAlgorithmAes)
 	_, err := adapter.Create(context.Background(), k)
 	if err == nil {
 		t.Fatal("expected error when Key has no KMS ID")
@@ -463,7 +467,8 @@ func TestKeysClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, `{"message":"bad request"}`)
 	})
 	parent := keyMakeKMSParent("p-1", "kms-1")
-	_, err := adapter.Create(context.Background(), NewKey().IntoKMS(parent).WithName("k").OfAlgorithm(KeyAlgorithmAes))
+	_, err := adapter.Create(context.Background(), NewKey().IntoKMS(parent).
+		Named("k").OfAlgorithm(KeyAlgorithmAes))
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {
 		t.Fatalf("expected *HTTPError, got %T: %v", err, err)

@@ -13,7 +13,7 @@ func createRecurringJob(ctx context.Context, arubaClient aruba.Client, proj arub
 
 	j := aruba.NewJob().
 		IntoProject(proj).
-		WithName(resourceName(NameJobRecurring)).
+		Named(resourceName(NameJobRecurring)).
 		AddTag("schedule").
 		AddTag("recurring").
 		InRegion(aruba.RegionITBGBergamo).
@@ -41,7 +41,7 @@ func createOneShotJob(ctx context.Context, arubaClient aruba.Client, proj aruba.
 
 	j := aruba.NewJob().
 		IntoProject(proj).
-		WithName(resourceName(NameJobOneShot)).
+		Named(resourceName(NameJobOneShot)).
 		AddTag("schedule").
 		AddTag("oneshot").
 		InRegion(aruba.RegionITBGBergamo).

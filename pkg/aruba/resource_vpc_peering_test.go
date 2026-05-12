@@ -29,7 +29,7 @@ func TestVPCPeering_FluentSetters(t *testing.T) {
 
 	p := NewVPCPeering().
 		IntoVPC(parent).
-		WithName("my-peering").
+		Named("my-peering").
 		AddTag("peering").
 		AddTag("cross-vpc").
 		AddTag("peering"). // dedupe
@@ -167,8 +167,8 @@ func TestVPCPeering_WithRemoteVPC_EmptyURI(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestVPCPeering_ToRequestRoundTrip(t *testing.T) {
-	p := NewVPCPeering().
-		WithName("my-peering").
+	p := NewVPCPeering().Named(
+		"my-peering").
 		AddTag("t1").
 		AddTag("t2").
 		InRegion(RegionITBGBergamo).
@@ -190,7 +190,8 @@ func TestVPCPeering_ToRequestRoundTrip(t *testing.T) {
 	}
 
 	// Unset RemoteVPC must produce nil pointer (omitempty).
-	p2 := NewVPCPeering().WithName("bare")
+	p2 := NewVPCPeering().
+		Named("bare")
 	req2 := p2.RawRequest()
 	if req2.Properties.RemoteVPC != nil {
 		t.Errorf("Properties.RemoteVPC should be nil when not set, got %v", req2.Properties.RemoteVPC)
@@ -435,7 +436,7 @@ func TestVPCPeeringsClientAdapter_Create_Success(t *testing.T) {
 
 	p := NewVPCPeering().
 		IntoVPC(vpc).
-		WithName("my-peering").
+		Named("my-peering").
 		InRegion(RegionITBGBergamo).
 		WithRemoteVPC(URI("/projects/p2/network/vpcs/v2"))
 
@@ -470,7 +471,8 @@ func TestVPCPeeringsClientAdapter_Create_NoVPC(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewVPCPeering().WithName("x"))
+	_, err := adapter.Create(context.Background(), NewVPCPeering().
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when peering has no VPC")
 	}
@@ -490,7 +492,8 @@ func TestVPCPeeringsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "my-vpc", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
 
-	p := NewVPCPeering().IntoVPC(vpc).WithName("peering")
+	p := NewVPCPeering().IntoVPC(vpc).
+		Named("peering")
 	result, err := adapter.Create(context.Background(), p)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -594,7 +597,7 @@ func TestVPCPeeringsClientAdapter_Update_Success(t *testing.T) {
 	p := &VPCPeering{}
 	p.fromResponse(vpcPeeringTestResponse("peer-1", "orig",
 		"/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1", "p"))
-	p.WithName("renamed")
+	p.Named("renamed")
 
 	result, err := adapter.Update(context.Background(), p)
 	if err != nil {
@@ -615,7 +618,8 @@ func TestVPCPeeringsClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	p := NewVPCPeering().IntoVPC(URI("/projects/p/network/vpcs/v")).WithName("x")
+	p := NewVPCPeering().IntoVPC(URI("/projects/p/network/vpcs/v")).
+		Named("x")
 	_, err := adapter.Update(context.Background(), p)
 	if err == nil {
 		t.Fatal("expected error when peering has no ID")
