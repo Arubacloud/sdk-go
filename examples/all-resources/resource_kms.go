@@ -22,27 +22,26 @@ func createKMS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *a
 
 	result, err := arubaClient.FromSecurity().KMS().Create(ctx, k)
 	if err != nil {
-		log.Fatalf("Error creating KMS: %s", formatErr(err))
+		printCreateError("KMS Instance", err)
 		return nil
 	}
-
-	fmt.Printf("✓ Created KMS instance: %s (ID: %s)\n", result.Name(), result.KMSID())
+	printCreated("KMS Instance", result.Name(), result.KMSID())
 
 	if err := result.WaitUntilReady(ctx); err != nil {
-		log.Printf("KMS %s did not become Ready: %v", result.Name(), err)
+		printSelfWaitError("KMS Instance", result.Name(), err)
 	}
 
 	return result
 }
 
-// createKMS provisions a Key Management Service instance and waits until Ready.
+// createKMSKey provisions a cryptographic key inside the KMS instance.
 func createKMSKey(ctx context.Context, arubaClient aruba.Client, kmsParent *aruba.KMS) *aruba.Key {
-	fmt.Println("--- KMS Cryptographic Key ---")
+	printBanner("KMS Key", "")
 
 	if err := waitForDependencies(ctx, "KMS Key", map[string]waitFunc{
 		"KMS": kmsParent.WaitUntilActive,
 	}); err != nil {
-		log.Printf("%v", err)
+		printDepWaitError("KMS Key", err)
 		return nil
 	}
 
@@ -53,20 +52,10 @@ func createKMSKey(ctx context.Context, arubaClient aruba.Client, kmsParent *arub
 
 	result, err := arubaClient.FromSecurity().Keys().Create(ctx, key)
 	if err != nil {
-		log.Fatalf("Error creating Key: %s", formatErr(err))
+		printCreateError("KMS Key", err)
 		return nil
 	}
-
-	fmt.Printf("✓ Created Key: %s (Algorithm: %s, Type: %s)\n",
-		result.Name(),
-		result.Algorithm(),
-		result.Type())
-
-	// Creating a Key transitions the parent KMS out of Active. Wait for it to settle
-	// before returning so that createKmip can safely fire next.
-	waitPostDependencies(ctx, "KMS Key", map[string]waitFunc{
-		"KMS": kmsParent.WaitUntilActive,
-	})
+	printCreated("KMS Key", result.Name(), result.KeyID())
 
 	return result
 }
@@ -75,10 +64,10 @@ func createKMSKey(ctx context.Context, arubaClient aruba.Client, kmsParent *arub
 func createKmip(ctx context.Context, arubaClient aruba.Client, kmsParent *aruba.KMS) *aruba.Kmip {
 	fmt.Println("--- KMIP Service ---")
 
-	if err := waitForDependencies(ctx, "KMIP", map[string]waitFunc{
+	if err := waitForDependencies(ctx, "KMIP Service", map[string]waitFunc{
 		"KMS": kmsParent.WaitUntilActive,
 	}); err != nil {
-		log.Printf("%v", err)
+		printDepWaitError("KMIP Service", err)
 		return nil
 	}
 
@@ -86,17 +75,13 @@ func createKmip(ctx context.Context, arubaClient aruba.Client, kmsParent *aruba.
 
 	created, err := arubaClient.FromSecurity().Kmips().Create(ctx, km)
 	if err != nil {
-		log.Fatalf("Error creating KMIP service: %s", formatErr(err))
+		printCreateError("KMIP Service", err)
 		return nil
 	}
-
-	fmt.Printf("✓ Created KMIP service: %s (ID: %s, Status: %s)\n",
-		created.Name(),
-		created.KmipID(),
-		created.KmipStatus())
+	printCreated("KMIP Service", created.Name(), created.KmipID())
 
 	if err := created.WaitUntilReady(ctx); err != nil {
-		log.Printf("KMIP %s did not become Ready: %v", created.Name(), err)
+		printSelfWaitError("KMIP Service", created.Name(), err)
 	}
 
 	return created
@@ -104,7 +89,7 @@ func createKmip(ctx context.Context, arubaClient aruba.Client, kmsParent *aruba.
 
 // downloadKmipCertificate waits for the KMIP certificate to become available and downloads it.
 func downloadKmipCertificate(ctx context.Context, arubaClient aruba.Client, kmip *aruba.Kmip) *aruba.KmipCertificate {
-	fmt.Println("--- KMIP Certificate Download ---")
+	printBanner("KMIP Certificate", "")
 
 	fmt.Println("⏳ Waiting for KMIP certificate to become available...")
 	if err := kmip.WaitUntilCertificateAvailable(ctx); err != nil {
@@ -139,7 +124,7 @@ func deleteKMS(ctx context.Context, arubaClient aruba.Client, k *aruba.KMS) {
 	fmt.Printf("✓ Deleted KMS instance: %s\n", k.KMSID())
 }
 
-// deleteKMS tears down the KMS instance.
+// deleteKMSKey removes the cryptographic key from the KMS instance.
 func deleteKMSKey(ctx context.Context, arubaClient aruba.Client, key *aruba.Key) {
 	fmt.Println("--- Deleting KMS Key ---")
 

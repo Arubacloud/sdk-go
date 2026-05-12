@@ -19,32 +19,32 @@ func createContainerRegistry(ctx context.Context, arubaClient aruba.Client, reso
 		"Block Storage":  resources.ContainerRegistryStorage.WaitUntilNotUsed,
 		"Elastic IP":     resources.ContainerRegistryEIP.WaitUntilNotUsed,
 	}); err != nil {
-		log.Printf("%v", err)
+		printDepWaitError("Container Registry", err)
 		return nil
 	}
 
 	r := aruba.NewContainerRegistry().
 		IntoProject(resources.Project).
-		InRegion(aruba.RegionITBGBergamo).
 		WithName(resourceName(NameContainerRegistry)).
+		InRegion(aruba.RegionITBGBergamo).
+		OfSize(aruba.ContainerRegistrySizeFlavorSmall).
+		WithAdminUsername("adminuser").
+		WithBillingPeriod(aruba.BillingPeriodHour).
 		WithVPC(resources.VPC).
 		WithSubnet(resources.SubnetBasic).
 		WithSecurityGroup(resources.SecurityGroup).
 		WithElasticIP(resources.ContainerRegistryEIP).
-		WithBlockStorage(resources.ContainerRegistryStorage).
-		WithBillingPeriod(aruba.BillingPeriodHour).
-		WithAdminUsername("adminuser").
-		OfSize(aruba.ContainerRegistrySizeFlavorSmall)
+		WithBlockStorage(resources.ContainerRegistryStorage)
 
 	resp, err := arubaClient.FromContainer().ContainerRegistry().Create(ctx, r)
 	if err != nil {
-		log.Fatalf("Error creating container registry: %s", formatErr(err))
+		printCreateError("Container Registry", err)
 		return nil
 	}
-	fmt.Printf("✓ Created container registry: %s\n", resp.Name())
+	printCreated("Container Registry", resp.Name(), resp.ContainerRegistryID())
 
 	if err := resp.WaitUntilReady(ctx, longWaitOpts...); err != nil {
-		log.Printf("Container Registry %s did not become Ready: %v", resp.Name(), err)
+		printSelfWaitError("Container Registry", resp.Name(), err)
 	}
 
 	waitPostDependencies(ctx, "Container Registry", map[string]waitFunc{

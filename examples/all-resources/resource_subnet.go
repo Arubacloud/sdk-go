@@ -10,12 +10,12 @@ import (
 
 // createAdvancedSubnet provisions an advanced subnet with DHCP in the VPC and waits until Ready.
 func createAdvancedSubnet(ctx context.Context, arubaClient aruba.Client, vpc *aruba.VPC) *aruba.Subnet {
-	fmt.Println("--- Network: Subnet (Advanced) ---")
+	printBanner("Subnet", "Advanced")
 
-	if err := waitForDependencies(ctx, "Advanced Subnet", map[string]waitFunc{
+	if err := waitForDependencies(ctx, "Subnet (Advanced)", map[string]waitFunc{
 		"VPC": vpc.WaitUntilActive,
 	}); err != nil {
-		log.Printf("%v", err)
+		printDepWaitError("Subnet (Advanced)", err)
 		return nil
 	}
 
@@ -35,14 +35,13 @@ func createAdvancedSubnet(ctx context.Context, arubaClient aruba.Client, vpc *ar
 
 	result, err := arubaClient.FromNetwork().Subnets().Create(ctx, subnet)
 	if err != nil {
-		log.Fatalf("Error creating advanced subnet: %s", formatErr(err))
+		printCreateError("Subnet (Advanced)", err)
 		return nil
 	}
-	fmt.Printf("✓ Created Advanced Subnet: %s (Type: %s, Network: %s)\n",
-		result.Name(), result.Type(), result.CIDR())
+	printCreated("Subnet (Advanced)", result.Name(), result.ID())
 
 	if err := result.WaitUntilReady(ctx); err != nil {
-		log.Printf("Advanced Subnet %s did not become Ready: %v", result.Name(), err)
+		printSelfWaitError("Subnet (Advanced)", result.Name(), err)
 	}
 
 	return result
@@ -50,12 +49,12 @@ func createAdvancedSubnet(ctx context.Context, arubaClient aruba.Client, vpc *ar
 
 // createBasicSubnet provisions a basic subnet in the VPC and waits until Ready.
 func createBasicSubnet(ctx context.Context, arubaClient aruba.Client, vpc *aruba.VPC) *aruba.Subnet {
-	fmt.Println("--- Network: Subnet (Basic) ---")
+	printBanner("Subnet", "Basic")
 
-	if err := waitForDependencies(ctx, "Basic Subnet", map[string]waitFunc{
+	if err := waitForDependencies(ctx, "Subnet (Basic)", map[string]waitFunc{
 		"VPC": vpc.WaitUntilActive,
 	}); err != nil {
-		log.Printf("%v", err)
+		printDepWaitError("Subnet (Basic)", err)
 		return nil
 	}
 
@@ -69,14 +68,13 @@ func createBasicSubnet(ctx context.Context, arubaClient aruba.Client, vpc *aruba
 
 	result, err := arubaClient.FromNetwork().Subnets().Create(ctx, subnet)
 	if err != nil {
-		log.Fatalf("Error creating basic subnet: %s", formatErr(err))
+		printCreateError("Subnet (Basic)", err)
 		return nil
 	}
-	fmt.Printf("✓ Created Basic Subnet: %s (Type: %s, Network: %s)\n",
-		result.Name(), result.Type(), result.CIDR())
+	printCreated("Subnet (Basic)", result.Name(), result.ID())
 
 	if err := result.WaitUntilReady(ctx); err != nil {
-		log.Printf("Basic Subnet %s did not become Ready: %v", result.Name(), err)
+		printSelfWaitError("Subnet (Basic)", result.Name(), err)
 	}
 
 	return result

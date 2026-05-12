@@ -21,12 +21,13 @@ func createElasticIP(ctx context.Context, arubaClient aruba.Client, proj aruba.R
 
 	created, err := arubaClient.FromNetwork().ElasticIPs().Create(ctx, eip)
 	if err != nil {
-		log.Fatalf("Error creating Elastic IP: %s", formatErr(err))
+		printCreateError("Elastic IP", err)
+		return nil
 	}
-	fmt.Printf("✓ Created Elastic IP: %s (ObjectID: %s)\n", created.Name(), created.ID())
+	printCreated("Elastic IP", created.Name(), created.ID())
 
 	if err := created.WaitUntilReady(ctx); err != nil {
-		log.Printf("Elastic IP %s did not become Ready: %v", created.Name(), err)
+		printSelfWaitError("Elastic IP", created.Name(), err)
 	}
 
 	return created

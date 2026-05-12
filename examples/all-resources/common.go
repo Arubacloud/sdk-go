@@ -328,6 +328,46 @@ func formatErr(err error) string {
 // Output helpers
 // ---------------------------------------------------------------------------
 
+// printBanner emits a resource creation banner: `--- {pretty} ---` or
+// `--- {pretty} ({qualifier}) ---` when qualifier is non-empty.
+func printBanner(pretty, qualifier string) {
+	if qualifier == "" {
+		fmt.Printf("--- %s ---\n", pretty)
+	} else {
+		fmt.Printf("--- %s (%s) ---\n", pretty, qualifier)
+	}
+}
+
+// printPhase emits a numbered phase header for the create orchestrator.
+func printPhase(n, total int, title string) {
+	fmt.Printf("\n--- Phase %d/%d: %s ---\n", n, total, title)
+}
+
+// printCreated emits a creation success line. Extras are appended as
+// comma-separated key=value pairs after the ID.
+func printCreated(pretty, name, id string, extras ...string) {
+	if len(extras) == 0 {
+		fmt.Printf("✓ Created %s: %s (ID: %s)\n", pretty, name, id)
+	} else {
+		fmt.Printf("✓ Created %s: %s (ID: %s, %s)\n", pretty, name, id, strings.Join(extras, ", "))
+	}
+}
+
+// printCreateError logs a create failure via log.Printf.
+func printCreateError(pretty string, err error) {
+	log.Printf("✗ Failed to create %s: %s", pretty, formatErr(err))
+}
+
+// printDepWaitError logs a pre-create dependency wait failure.
+func printDepWaitError(pretty string, err error) {
+	log.Printf("✗ %s dependency wait failed: %v", pretty, err)
+}
+
+// printSelfWaitError logs a post-create self-readiness wait failure.
+func printSelfWaitError(pretty, name string, err error) {
+	log.Printf("✗ %s %s did not become Ready: %v", pretty, name, err)
+}
+
 // printResourceSummary prints a summary of all created resources.
 func printResourceSummary(resources *ResourceCollection) {
 	fmt.Println("\n=== SDK Example Complete ===")

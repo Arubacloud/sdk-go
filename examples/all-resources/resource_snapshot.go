@@ -15,7 +15,7 @@ func createSnapshot(ctx context.Context, arubaClient aruba.Client, proj aruba.Re
 	if err := waitForDependencies(ctx, "Snapshot", map[string]waitFunc{
 		"Block Storage": bs.WaitUntilReady,
 	}); err != nil {
-		log.Printf("%v", err)
+		printDepWaitError("Snapshot", err)
 		return nil
 	}
 
@@ -30,12 +30,13 @@ func createSnapshot(ctx context.Context, arubaClient aruba.Client, proj aruba.Re
 
 	snap, err := arubaClient.FromStorage().Snapshots().Create(ctx, snap)
 	if err != nil {
-		log.Fatalf("Error creating snapshot: %s", formatErr(err))
+		printCreateError("Snapshot", err)
+		return nil
 	}
-	fmt.Printf("✓ Created snapshot: %s from volume %s\n", snap.Name(), bs.Name())
+	printCreated("Snapshot", snap.Name(), snap.ID())
 
 	if err := snap.WaitUntilReady(ctx); err != nil {
-		log.Printf("Snapshot %s did not become Ready: %v", snap.Name(), err)
+		printSelfWaitError("Snapshot", snap.Name(), err)
 	}
 
 	return snap

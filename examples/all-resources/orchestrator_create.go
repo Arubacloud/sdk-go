@@ -19,7 +19,7 @@ func runCreateExample(clientID, clientSecret string, debug bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Minute)
 	defer cancel()
 
-	fmt.Println("\n=== SDK Create Example ===")
+	fmt.Println("=== SDK Create Example ===")
 
 	resources := createAllResources(ctx, arubaClient)
 
@@ -30,8 +30,12 @@ func runCreateExample(clientID, clientSecret string, debug bool) {
 func createAllResources(ctx context.Context, arubaClient aruba.Client) *ResourceCollection {
 	resources := &ResourceCollection{}
 
+	printPhase(1, 7, "Account & isolation")
+
 	// 1. Create Project.
 	resources.Project = createProject(ctx, arubaClient)
+
+	printPhase(2, 7, "Independent network & storage primitives")
 
 	// 2. Create Elastic IPs — one per consumer to avoid attach-state conflicts.
 	resources.CloudServerEIP = createElasticIP(ctx, arubaClient, resources.Project, resourceName(NameElasticIPCS))
@@ -47,6 +51,8 @@ func createAllResources(ctx context.Context, arubaClient aruba.Client) *Resource
 
 	// 5. Create VPC (self-wait included).
 	resources.VPC = createVPC(ctx, arubaClient, resources.Project)
+
+	printPhase(3, 7, "VPC-scoped network")
 
 	// 6. Create Subnets in VPC (pre-dep VPC Active + self-wait included).
 	resources.SubnetAdvanced = createAdvancedSubnet(ctx, arubaClient, resources.VPC)
@@ -75,6 +81,8 @@ func createAllResources(ctx context.Context, arubaClient aruba.Client) *Resource
 	// 9. Create SSH Key Pair (self-wait included).
 	resources.KeyPair = createKeyPair(ctx, arubaClient, resources.Project)
 
+	printPhase(4, 7, "Database stack")
+
 	// 10. Create DBaaS (pre-dep waits + self-wait + EIP post-dep all included).
 	resources.DBaaS = createDBaaS(ctx, arubaClient, resources.Project, resources.VPC, resources.SubnetBasic, resources.SecurityGroup, resources.DBaaSEIP)
 
@@ -86,6 +94,8 @@ func createAllResources(ctx context.Context, arubaClient aruba.Client) *Resource
 			resources.Grant = createGrant(ctx, arubaClient, resources.Database, resources.DBaaSUser)
 		}
 	}
+
+	printPhase(5, 7, "Compute & container platforms")
 
 	// 12. Create KaaS (pre-dep waits + self-wait included).
 	resources.KaaS = createKaaS(ctx, arubaClient, resources.Project, resources.VPC, resources.SubnetBasic)
@@ -104,6 +114,8 @@ func createAllResources(ctx context.Context, arubaClient aruba.Client) *Resource
 	// 15. Create Container Registry (pre-dep waits + self-wait + EIP/BS post-deps all included).
 	resources.ContainerRegistry = createContainerRegistry(ctx, arubaClient, resources)
 
+	printPhase(6, 7, "Backup & restore")
+
 	// 16. Create Storage Backup (pre-dep + self-wait included).
 	resources.Backup = createStorageBackup(ctx, arubaClient, resources.Project, resources.CloudServerBlockStorage)
 
@@ -115,6 +127,8 @@ func createAllResources(ctx context.Context, arubaClient aruba.Client) *Resource
 
 	// 18. Create Restore from Backup (pre-dep waits + self-wait included).
 	resources.Restore = createRestore(ctx, arubaClient, resources.Backup, resources.RestoreTargetStorage)
+
+	printPhase(7, 7, "KMS stack")
 
 	// 19. Create KMS Instance (self-wait included).
 	resources.KMS = createKMS(ctx, arubaClient, resources.Project)

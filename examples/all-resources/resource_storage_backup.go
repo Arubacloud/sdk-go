@@ -15,27 +15,28 @@ func createStorageBackup(ctx context.Context, arubaClient aruba.Client, proj aru
 	if err := waitForDependencies(ctx, "Storage Backup", map[string]waitFunc{
 		"Block Storage": bs.WaitUntilReady,
 	}); err != nil {
-		log.Printf("%v", err)
+		printDepWaitError("Storage Backup", err)
 		return nil
 	}
 
 	b := aruba.NewStorageBackup().
 		IntoProject(proj).
-		InRegion(aruba.RegionITBGBergamo).
 		WithName(resourceName(NameStorageBackup)).
+		InRegion(aruba.RegionITBGBergamo).
 		OfType(aruba.StorageBackupTypeFull).
-		FromVolume(bs).
 		WithRetentionDays(10).
-		WithBillingPeriod("Monthly") // no BillingPeriodMonthly constant — see pkg/aruba/aliases.go
+		WithBillingPeriod(aruba.BillingPeriodMonth).
+		FromVolume(bs)
 
 	result, err := arubaClient.FromStorage().Backups().Create(ctx, b)
 	if err != nil {
-		log.Fatalf("Error creating storage backup: %s", formatErr(err))
+		printCreateError("Storage Backup", err)
+		return nil
 	}
-	fmt.Printf("✓ Created storage backup: %s\n", result.Name())
+	printCreated("Storage Backup", result.Name(), result.BackupID())
 
 	if err := result.WaitUntilReady(ctx); err != nil {
-		log.Printf("Storage Backup %s did not become Ready: %v", result.Name(), err)
+		printSelfWaitError("Storage Backup", result.Name(), err)
 	}
 
 	return result
