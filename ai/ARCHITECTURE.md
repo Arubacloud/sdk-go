@@ -168,3 +168,145 @@ Every resource method in `internal/clients/<service>/` follows this sequence:
 5. Expose the resource from the service group file `internal/clients/<service>/<group>.go`.
 6. If the resource depends on another resource's state, accept the dependency as a constructor parameter (concrete impl type).
 7. Wire to `pkg/aruba/Client` if this is a new service group.
+
+## Wrapper layer (`pkg/aruba/`)
+
+The `pkg/aruba/` package is a chainable, error-accumulating, fluent builder façade layered over `internal/clients/*`. Users never call the low-level clients directly; they construct typed wrappers, set properties via chained setters, then pass the wrapper to an adapter method (`Create`, `Get`, `Update`, `Delete`, `List`).
+
+### Triplet pattern
+
+Every `resource_<name>.go` is divided into three banner-separated sections:
+
+```
+// ---- Wrapper ----             chainable builder struct + mixin embeds
+// ---- Low-level client interface ----   contract the adapter depends on
+// ---- Adapter ----             bridges wrapper ↔ internal/clients/<x>
+```
+
+- **Wrapper** embeds the relevant mixins (see below), holds a typed `*types.<X>Response`, and exposes chainable setters + read accessors.
+- **Low-level interface** is declared inline so only the adapter depends on the concrete `internal/clients/*` impl — allows the adapter to be unit-tested with a mock.
+- **Adapter** (`<x>ClientAdapter`) translates wrapper ↔ wire types. Constructor `new<X>ClientAdapter(rest *restclient.Client)` wires to the concrete impl (e.g. `database.NewDatabasesClientImpl(rest)` at `resource_database.go:147`). Adapters are instantiated in `pkg/aruba/builder.go`.
+
+Canonical examples: `resource_database.go` (Family B, minimal), `resource_cloud_server.go` (Family A with action dispatch and `setRefresh` wiring).
+
+### Mixins (`pkg/aruba/mixins.go`)
+
+| Mixin | Responsibility |
+|---|---|
+| `errMixin` | Setter-time error accumulator; `Err()` returns joined errors; setters always return the receiver so the chain never short-circuits. |
+| `metadataMixin` | Request-side name + tag set; `toMetadata()` emits `types.ResourceMetadataRequest`. |
+| `regionalMixin` | Holds `Region`; `toLocation()` emits `types.LocationRequest`. Embedded by `zonalMixin`. |
+| `zonalMixin` | Extends `regionalMixin` with an availability-zone pointer (wire field `dataCenter`). |
+| `projectScopedMixin` | Direct child of a Project; `intoProject(Ref)` extracts `projectID` via `extractID`. |
+| `vpcScopedMixin` | Direct child of a VPC; inherits `projectID` from parent. |
+| `securityGroupScopedMixin` | Direct child of a SecurityGroup; inherits `vpcID` + `projectID`. |
+| `dbaasScopedMixin` | Direct child of a DBaaS; inherits `projectID`. |
+| `databaseScopedMixin` | Direct child of a Database (grandchild of DBaaS). |
+| `backupScopedMixin` | Direct child of a StorageBackup. |
+| `kmsScopedMixin` | Direct child of a KMS instance. |
+| `vpnTunnelScopedMixin` | Direct child of a VPN tunnel; tolerates both `vpn-tunnels` and `vpnTunnels` URI forms. |
+| `vpcPeeringScopedMixin` | Direct child of a VPC peering; inherits `vpcID` + `projectID`. |
+| `responseMetadataMixin` | Holds the post-server `*types.ResourceMetadataResponse`; exposes `ID()`, `RespURI()`, `CreatedAt()`, `Version()`, etc. |
+| `statusMixin` | Holds `*types.ResourceStatus` + a `refresh` callback + `terminalStates` map; powers `WaitUntilActive`, `WaitUntilReady`, `WaitUntilStates`. |
+| `linkedMixin` | Stores `[]types.LinkedResource` returned by the API. |
+| `httpEnvelopeMixin` | Captures StatusCode / Headers / RawBody / `*http.Response` / parsed ErrorResponse after every adapter call. |
+
+`populateHTTPEnvelope[T]` is a package-level generic function (Go does not allow generic methods on structs; `mixins.go:816`).
+
+### Family A vs. Family B
+
+**Family A** — the standard shape: `Metadata{Properties{...}}` envelope on the wire, embeds `metadataMixin` + a regional mixin + `statusMixin` + `responseMetadataMixin`. Most resources (CloudServer, KaaS, DBaaS, VPC, BlockStorage, Job, KMS, …). Canonical reference: `resource_kaas.go:18`:
+
+> `// Family A: regional, Metadata/Properties envelope, location-aware.`
+
+**Family B** — flat request body, no Metadata/Properties boxing, no tags, no location, no `metadataMixin`, no `statusMixin`. Resources: Database, Key, Kmip, User, Grant. Canonical reference: `resource_database.go:18`:
+
+> `// Family B: flat request (no Metadata/Properties boxing, no metadataMixin, no tags, no location).`
+
+Family B sub-variant — **no-Update**: Key and Kmip additionally omit the `Update` operation; the service-group interfaces (`security.go:33-49`) deliberately exclude it. Reflective guards in `resource_key_test.go:664` and `resource_kmip_test.go:896` enforce this at test time.
+
+**Identity quirk in Family B:** `DatabaseResponse` carries no server-side `id` — the name IS the path identifier (`resource_database.go:23`). `Key` returns `KeyResponse.KeyID`; `Kmip` returns `KmipResponse.ID`. All three construct `URI()` client-side from ancestor IDs + the resource ID (e.g. `resource_database.go:55-61`).
+
+### `Ref` interface (`pkg/aruba/ref.go`)
+
+```go
+type Ref interface { URI() string; ID() string }
+```
+
+- Every typed wrapper satisfies `Ref`. `aruba.URI(s)` returns an opaque `uriRef` for raw-URI callers (`factories.go:8`).
+- `extractID(ref, typedExtractor, segment)` — tries the typed `withXxxID` interface first, then falls back to `parseURIIDs` which splits a URI by path segment (`ref.go:63`).
+- 25 unexported `withXxxID` interfaces (`withProjectID`, `withDBaaSID`, `withKMSID`, etc.) allow adapters to extract a parent's typed ID without coupling to a concrete wrapper type (`ref.go:75-99`).
+- Per-resource `<resource>IDsFromRef(ref)` helpers unwrap deep parent chains — e.g. `databaseIDsFromRef` returns `(projectID, dbaasID, databaseID)` at `resource_database.go:298`.
+
+### `List[T Wrapper]` (`pkg/aruba/list.go`)
+
+Generic paginated container, constrained to `Wrapper { URI(); ID() }`. Carries `items`, `total`, pagination link URLs (`self/prev/next/first/last`), `callerOpts`, `raw` HTTP envelope, and a `refetch` callback. Navigation methods: `Items()`, `Total()`, `HasNext()`, `Next(ctx)`, `All(ctx, yield)`. The `refetch` callback is structurally wired in every adapter but currently returns a "not yet wired" error — pagination requires re-calling `List` with updated `CallOption` paging parameters.
+
+### Wait helpers and async
+
+`statusMixin` provides three wait methods (`mixins.go:739-787`), all backed by `pkg/async.WaitFor[any]`:
+
+- `WaitUntilActive` — targets state `"Active"`.
+- `WaitUntilReady` — accepts `"Active"`, `"NotUsed"`, `"InUse"`, or `"Used"` (covers attach/detach resources in either steady state).
+- `WaitUntilStates(ctx, targets, opts...)` — the work-horse; requires a `refresh` callback installed by the adapter.
+
+Adapters install the `refresh` closure post-`Create`/`Get`/`List` (e.g. `resource_cloud_server.go:476-485`). The closure re-`Get`s the resource and hydrates the same wrapper in place so each polling tick sees the updated state.
+
+Defaults: 60 retries × 10s base delay × 600s timeout (`mixins.go:658-664`).
+
+**Per-resource specialised waiters:**
+- `*Kmip.WaitUntilCertificateAvailable` (`resource_kmip.go:69`) — Family B has no `statusMixin`; drives `async.WaitFor` directly against `KmipResponse.Status` with explicit terminal map `kmipTerminalStates` (`resource_kmip.go:41`).
+- `*BlockStorage.WaitUntilUsed` / `WaitUntilNotUsed` (`resource_block_storage.go:266-275`) and `*ElasticIP` equivalents — attach/detach lifecycle, three positive terminals (`InUse`, `Used`, `NotUsed`).
+
+### HTTP envelope and typed `*HTTPError`
+
+After every adapter call, `populateHTTPEnvelope[T]` snapshots StatusCode / Headers / RawBody / `*http.Response` / parsed `*types.ErrorResponse` onto the wrapper's `httpEnvelopeMixin`. On non-2xx the adapter returns:
+
+```go
+&HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+```
+
+(`pkg/aruba/errors.go:11-15`). The wrapper retains the envelope for diagnostics (`cs.StatusCode()`, `cs.Headers()`, `cs.RawError()`) even after an error.
+
+### Error accumulation
+
+`errMixin.addErr` collects setter-time errors without breaking the chain. Every adapter `Create` and `Update` opens with:
+
+```go
+if err := X.Err(); err != nil { return X, err }
+```
+
+Followed by per-adapter friendly validation. Family B resources with deep parent chains do the most validation (Database, Key, Kmip, User, Grant check ProjectID, parent-scope ID, and name individually). Family A adapters mostly only check `ProjectID() != ""`.
+
+Sub-builder errors are drained into the parent's `errMixin` at attachment time (e.g. `WithIKESettings(*VPNIKE)` at `resource_vpn_tunnel.go:84-89`), so `job.AddStep(step)` propagates any accumulated step errors into the job.
+
+### Client integration
+
+The central `Client` interface in `pkg/aruba/client.go` exposes ten `From<Domain>()` accessors. Each returns a per-domain interface (defined in `audit.go`, `compute.go`, `container.go`, `database.go`, `metric.go`, `network.go`, `project.go`, `schedule.go`, `security.go`, `storage.go`) whose methods return per-resource service-group interfaces.
+
+Call chain: `arubaClient.FromCompute().CloudServers().Create(ctx, cs)` → `cloudServersClientAdapter.Create` → `compute.NewCloudServersClientImpl(rest).Create`. Adapters are constructed in `pkg/aruba/builder.go` via `build<Domain>Client` → `new<Resource>ClientAdapter(rest)`.
+
+### Non-standard cases and translation mechanisms
+
+**Resources without a public `Named` setter:**
+- `LoadBalancer` — name comes only from the response; `named()` is called inside `fromResponse` (`resource_load_balancer.go:65`).
+- `Alert` and `AuditEvent` — read-only / list-only; `URI()` returns `""`.
+- `User` — uses `WithUsername` instead; the username IS the path identifier (`resource_user.go:46`).
+- `Grant` — no name setter at all; the opaque server-supplied grant ID is recoverable from a URI Ref only (`resource_grant.go:22-30`).
+
+**Deep parent chains (4-level):**
+- Grant → Database → DBaaS → Project.
+- SecurityRule → SecurityGroup → VPC → Project.
+- VPCPeeringRoute → VPCPeering → VPC → Project.
+
+**Body-side parent refs (vs. path-side):** Snapshot, StorageBackup, StorageRestore, DBaaSBackup are `IntoProject(...)` but reference their source resource in the wire body via `FromVolume(Ref)` / `FromDBaaS(Ref)` / `FromDatabase(Ref)`. An empty URI from the `Ref` goes onto the error sink, not the wire.
+
+**Job lifecycle quirk:** Jobs persist as historical records after Delete. `jobTerminalStates` (`resource_job.go:318-322`) enumerates only `Active`, `Error`, `Failed` — no `Deleted` or `Cancelled`. Polling for 404 after Delete always exhausts the wait budget. The canonical reference explaining this is `examples/all-resources/resource_job.go:65-77`.
+
+**Shape-collapsing setters** — one wrapper method sets multiple wire fields:
+- `*Job.OneShotAt(t)` sets `JobType=OneShot` + `ScheduleAt`; `*Job.WithCron(expr)` + `RecurringUntil(t)` set `JobType=Recurring` + `Cron` + `ExecuteUntil`. All three are mode-locked via `requireMode` (`resource_job.go:108`).
+- `*VPNTunnel.WithIKESettings/ESPSettings/PSKSettings/IPConfig` each attach a sub-builder and drain its `errMixin` into the tunnel (`resource_vpn_tunnel.go:82-123`).
+- `*SecurityRule.WithTargetCIDR` / `WithTargetSecurityGroup` set the same wire `target` field but stamp different `Kind` values; calling both records an error (`resource_security_rule.go:77-100`).
+- `*NodePool.WithAutoscaling(min, max)` sets `autoscaling=true` + `minCount` + `maxCount` in one call (`resource_kaas_nodepool.go:41`).
+
+**Sub-builders without an adapter** — used only inside a parent, no CRUD: `JobStep` (inside `Job.AddStep`), `NodePool` (inside `KaaS.AddNodePool`), `VPNIKE` / `VPNESP` / `VPNPSK` / `VPNIPConfig` (inside `VPNTunnel`), `SubnetDHCP` (inside `Subnet`). Each has its own `errMixin` drained into the parent at attachment time.
