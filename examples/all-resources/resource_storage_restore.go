@@ -32,9 +32,7 @@ func createRestore(ctx context.Context, arubaClient aruba.Client, b *aruba.Stora
 	}
 	printCreated("Storage Restore", r.Name(), r.RestoreID())
 
-	if err := r.WaitUntilReady(ctx); err != nil {
-		printSelfWaitError("Storage Restore", r.Name(), err)
-	}
+	waitUntilSelfReady(ctx, "Storage Restore", r.Name(), r.WaitUntilReady)
 
 	return r
 }
