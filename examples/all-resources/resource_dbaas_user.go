@@ -20,7 +20,7 @@ func createDBaaSUser(ctx context.Context, arubaClient aruba.Client, dbaas *aruba
 	u := aruba.NewUser().
 		IntoDBaaS(dbaas).
 		WithUsername(NameDBaaSUser).
-		WithPassword("Prova123456789AC@")
+		WithPassword("Str0ngP@ssword!")
 
 	res, err := arubaClient.FromDatabase().Users().Create(ctx, u)
 	if err != nil {
