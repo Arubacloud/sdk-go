@@ -10,15 +10,16 @@ The SDK exposes three layers for dealing with this:
 
 | Layer | When to use |
 |-------|-------------|
-| `WaitUntilActive(ctx)` | 95% of cases — block until the resource is ready |
-| `WaitUntilState(ctx, target)` | Wait for any named state (e.g. `"Stopped"`) |
+| `WaitUntilReady(ctx)` | 95% of cases — block until the resource is ready (accepts `Active`, `NotUsed`, `InUse`, `Used`) |
+| `WaitUntilActive(ctx)` | When you specifically need the `Active` state only |
+| `WaitUntilStates(ctx, []string{...}, opts...)` | Wait for any named states (e.g. `[]string{"Stopped"}`) |
 | `pkg/async.WaitFor` + `AsyncClient.Await` | Advanced — start polling in a background goroutine, do other work, collect the result later |
 
 ---
 
-## `WaitUntilActive`
+## `WaitUntilReady`
 
-After any `Create`, `Update`, or `Get`, call `WaitUntilActive` on the returned wrapper to block until the resource reaches the `"Active"` state:
+After any `Create`, `Update`, or `Get`, call `WaitUntilReady` on the returned wrapper to block until the resource reaches any of the positive terminal states: `"Active"`, `"NotUsed"`, `"InUse"`, or `"Used"`.
 
 ```go
 vpc, err := arubaClient.FromNetwork().VPCs().Create(ctx, vpc)
@@ -26,12 +27,14 @@ if err != nil {
     log.Fatalf("Create VPC: %v", err)
 }
 
-if err := vpc.WaitUntilActive(ctx); err != nil {
-    log.Fatalf("VPC did not become Active: %v", err)
+if err := vpc.WaitUntilReady(ctx); err != nil {
+    log.Fatalf("VPC did not become Ready: %v", err)
 }
 ```
 
-`WaitUntilActive` polls the API repeatedly with a fixed delay. When the resource enters a known **error terminal state** (e.g. `"Error"`, `"Failed"`), it returns immediately with a descriptive error rather than exhausting all retries.
+`WaitUntilReady` polls the API repeatedly with a fixed delay. When the resource enters a known **error terminal state** (e.g. `"Error"`, `"Failed"`), it returns immediately with a descriptive error rather than exhausting all retries.
+
+`WaitUntilActive` is also available when you need to wait exclusively for the `"Active"` state — for example, after a power-on operation.
 
 See the [API Walkthrough](./walkthrough) for full Create + poll + Update + Delete examples.
 
@@ -40,33 +43,45 @@ See the [API Walkthrough](./walkthrough) for full Create + poll + Update + Delet
 Three call options let you override the defaults:
 
 ```go
-if err := vpc.WaitUntilActive(ctx,
+if err := vpc.WaitUntilReady(ctx,
     aruba.WithRetries(30),              // max polling iterations (default: 60)
     aruba.WithBaseDelay(5*time.Second), // fixed delay between polls (default: 10s)
     aruba.WithTimeout(3*time.Minute),   // hard deadline (default: 600s)
 ); err != nil {
-    log.Fatalf("VPC did not become Active: %v", err)
+    log.Fatalf("VPC did not become Ready: %v", err)
 }
 ```
 
 The effective ceiling is `min(retries × baseDelay, timeout)`. At the defaults that is `min(60×10s, 600s) = 600s`.
 
+For long-running resources (Container Registry, DBaaS, KaaS) that can take 20–40 minutes to converge, use a larger budget:
+
+```go
+longWait := []aruba.WaitOption{
+    aruba.WithTimeout(40 * time.Minute),
+    aruba.WithRetries(240),
+}
+if err := reg.WaitUntilReady(ctx, longWait...); err != nil {
+    log.Fatalf("ContainerRegistry did not become Ready: %v", err)
+}
+```
+
 ---
 
-## `WaitUntilState`
+## `WaitUntilStates`
 
-Use `WaitUntilState` when you need to wait for a state other than `"Active"`:
+Use `WaitUntilStates` when you need to wait for one or more specific states — for example, waiting for a stopped state after a power-off:
 
 ```go
 // Wait for a Cloud Server to fully stop after PowerOff
-if err := cs.WaitUntilState(ctx, "Stopped"); err != nil {
+if err := cs.WaitUntilStates(ctx, []string{"Stopped"}); err != nil {
     log.Fatalf("Cloud Server did not stop: %v", err)
 }
 ```
 
 ```go
 // Wait until a DBaaS instance finishes an in-progress update
-if err := db.WaitUntilState(ctx, "Active",
+if err := db.WaitUntilStates(ctx, []string{"Active"},
     aruba.WithRetries(120),
     aruba.WithBaseDelay(15*time.Second),
 ); err != nil {
@@ -74,7 +89,11 @@ if err := db.WaitUntilState(ctx, "Active",
 }
 ```
 
-The same error-terminal-state early exit applies: if the resource reaches `"Error"` or `"Failed"` while you are waiting for `"Stopped"`, the call returns immediately with an error that names both the actual state and the target state.
+The same error-terminal-state early exit applies: if the resource reaches `"Error"` or `"Failed"` while you are waiting for `"Stopped"`, the call returns immediately with an error that names both the actual state and the target states.
+
+`WaitUntilActive` and `WaitUntilReady` are convenience wrappers around `WaitUntilStates`:
+- `WaitUntilActive(ctx, opts...)` — equivalent to `WaitUntilStates(ctx, []string{"Active"}, opts...)`
+- `WaitUntilReady(ctx, opts...)` — equivalent to `WaitUntilStates(ctx, []string{"Active", "NotUsed", "InUse", "Used"}, opts...)`
 
 ---
 
@@ -90,10 +109,10 @@ Every wrapper that supports polling also exposes fine-grained status accessors. 
 | `IsDisabled()` | `bool` | Gate operations when server disables a resource |
 | `DisableReasons()` | `[]string` | Explain why a resource is disabled |
 
-A common pattern — call `WaitUntilActive`, and if it fails, attach the server's failure reason to the error:
+A common pattern — call `WaitUntilReady`, and if it fails, attach the server's failure reason to the error:
 
 ```go
-if err := vpc.WaitUntilActive(ctx); err != nil {
+if err := vpc.WaitUntilReady(ctx); err != nil {
     reason := vpc.FailureReason()
     if reason != "" {
         log.Fatalf("VPC failed: %v (reason: %s)", err, reason)
@@ -106,14 +125,32 @@ if err := vpc.WaitUntilActive(ctx); err != nil {
 
 ## Resources That Support Polling
 
-The following resource wrappers embed the polling mixin and support `WaitUntilActive`, `WaitUntilState`, and the status accessors:
+The following resource wrappers support `WaitUntilReady`, `WaitUntilActive`, `WaitUntilStates`, and the status accessors. Resources marked with a special wait method expose an additional named form.
 
-- **Compute**: `CloudServer`
-- **Container**: `KaaS`, `ContainerRegistry`
-- **Database**: `DBaaS`
-- **Network**: `VPC`, `Subnet`, `SecurityGroup`, `SecurityRule`, `ElasticIP`
-- **Security**: `KMS`, `Kmip`
-- **Storage**: `BlockStorage`, `Snapshot`
+| Resource | Special wait | Notes |
+|---|---|---|
+| `CloudServer` | — | `WaitUntilReady` → `Active` |
+| `KaaS` | — | `WaitUntilReady` → `Active`; can take 10–20 min |
+| `ContainerRegistry` | — | `WaitUntilReady` → `Active`; can take 20–40 min |
+| `DBaaS` | — | `WaitUntilReady` → `Active`; can take 5–15 min |
+| `Database` | — | |
+| `User` | — | |
+| `Grant` | — | |
+| `VPC` | — | |
+| `Subnet` | — | |
+| `SecurityGroup` | — | |
+| `SecurityRule` | — | |
+| `ElasticIP` | `WaitUntilNotUsed`, `WaitUntilUsed` | Delegate to `WaitUntilStates` |
+| `BlockStorage` | `WaitUntilNotUsed`, `WaitUntilUsed` | Delegate to `WaitUntilStates` |
+| `Snapshot` | — | |
+| `StorageBackup` | — | |
+| `StorageRestore` | — | |
+| `VPCPeering` | — | |
+| `VPCPeeringRoute` | — | |
+| `VPNTunnel` | — | |
+| `VPNRoute` | — | |
+| `KMS` | — | |
+| `Kmip` | `WaitUntilCertificateAvailable` (alias of `WaitUntilReady`) | Succeeds on `CertificateAvailable` **or** `Active` |
 
 > **Project does not support polling.** It is synchronously ready immediately after `Create` returns — no `WaitUntilActive` call is needed or available.
 
@@ -123,10 +160,10 @@ The following resource wrappers embed the polling mixin and support `WaitUntilAc
 
 ### Hydrated wrapper required
 
-`WaitUntilActive` and `WaitUntilState` only work on wrappers that were **returned by an adapter call** (`Create`, `Get`, `Update`, or `List`). Calling either method on a freshly-built request builder returns:
+`WaitUntilReady`, `WaitUntilActive`, and `WaitUntilStates` only work on wrappers that were **returned by an adapter call** (`Create`, `Get`, `Update`, or `List`). Calling either method on a freshly-built request builder returns:
 
 ```
-WaitUntilState: refresh callback not set; resource must be produced by an adapter (Create/Get/Update/List) to support polling
+WaitUntilStates: refresh callback not set; resource must be produced by an adapter (Create/Get/Update/List) to support polling
 ```
 
 Always use the wrapper returned by the API call:
@@ -134,11 +171,11 @@ Always use the wrapper returned by the API call:
 ```go
 // Correct — vpc was returned by Create
 vpc, err := arubaClient.FromNetwork().VPCs().Create(ctx, myVPC)
-vpc.WaitUntilActive(ctx)
+vpc.WaitUntilReady(ctx)
 
 // Wrong — myVPC is a request builder, not an adapter response
 myVPC := aruba.NewVPC().WithName("x")
-myVPC.WaitUntilActive(ctx) // returns "refresh callback not set"
+myVPC.WaitUntilReady(ctx) // returns "refresh callback not set"
 ```
 
 ### Constant poll cadence
@@ -153,7 +190,7 @@ All polling respects the `ctx` deadline and cancellation. If the context expires
 
 ## Advanced: Background Polling with `pkg/async`
 
-`WaitUntilActive` and `WaitUntilState` block the calling goroutine. If you need to **start multiple waits concurrently**, or **poll an arbitrary condition** (not just a resource state), use the lower-level `pkg/async` package directly.
+`WaitUntilReady`, `WaitUntilActive`, and `WaitUntilStates` block the calling goroutine. If you need to **start multiple waits concurrently**, or **poll an arbitrary condition** (not just a resource state), use the lower-level `pkg/async` package directly.
 
 `pkg/async` is a public package — import it alongside `pkg/aruba`:
 
@@ -228,5 +265,5 @@ Blocks until the background goroutine sends its result or `ctx` is cancelled. Su
 
 ## See Also
 
-- [API Walkthrough](./walkthrough) — full Create + `WaitUntilActive` + Update + Delete lifecycle example
-- [Response Handling](./response-handling) — how `*aruba.HTTPError` propagates through `WaitUntilActive` when the API returns 4xx/5xx
+- [API Walkthrough](./walkthrough) — full Create + `WaitUntilReady` + Update + Delete lifecycle example
+- [Response Handling](./response-handling) — how `*aruba.HTTPError` propagates through `WaitUntilReady` when the API returns 4xx/5xx
