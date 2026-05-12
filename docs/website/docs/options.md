@@ -71,6 +71,13 @@ production-ready setup for the most common use case (Client Credentials authenti
   </thead>
   <tbody>
     <tr>
+      <td><code>WithDefaultTokenManagerSchema(clientID, clientSecret)</code></td>
+      <td>Configures standard Client Credentials auth with the default token issuer URL and no persistent
+      caching. Called internally by <code>DefaultOptions()</code>.</td>
+      <td>Use this when you want to reset the token manager to its factory defaults before applying
+      selective overrides.</td>
+    </tr>
+    <tr>
       <td><code>WithClientCredentials(clientID, clientSecret)</code></td>
       <td><b>(Recommended)</b> Configures the SDK to use the OAuth2 Client Credentials flow. The SDK will
       automatically manage fetching and renewing the access token.</td>
@@ -96,7 +103,7 @@ production-ready setup for the most common use case (Client Credentials authenti
     <tr>
       <td><code>WithTokenIssuerURL(url)</code></td>
       <td>Overrides the default URL for the OAuth2 token endpoint.</td>
-      <td>The default is <code>https://login.aruba.it/...</code>. You should only change this if you need to
+      <td>The default is <code>https://mylogin.aruba.it/auth/realms/cmp-new-apikey/protocol/openid-connect/token</code>. You should only change this if you need to
       target a different authentication endpoint.</td>
     </tr>
     <tr>
@@ -128,9 +135,15 @@ recommended for production applications to avoid fetching a new token on every s
   <tbody>
     <tr>
       <td><code>WithRedisTokenRepositoryFromURI(redisURI)</code></td>
-      <td>Configures a Redis instance as a persistent cache for the access token.</td>
+      <td>Configures a Redis instance as a persistent cache for the access token using a full URI.</td>
       <td><b>Mutual Exclusion</b>: Cannot be used with <code>WithFileTokenRepository...</code> options.<br/>
       The URI format is <code>redis://&lt;user&gt;:&lt;pass&gt;@&lt;host&gt;:&lt;port&gt;/&lt;db&gt;</code>.</td>
+    </tr>
+    <tr>
+      <td><code>WithRedisTokenRepositoryFromStandardURI()</code></td>
+      <td>Configures Redis caching using the standard local URI (<code>redis://admin:admin@localhost:6379/0</code>).</td>
+      <td>Shortcut for local development. Does not set the expiration drift; pair with
+      <code>WithStandardTokenExpirationDriftSeconds()</code> or use <code>WithStandardRedisTokenRepository()</code>.</td>
     </tr>
     <tr>
       <td><code>WithFileTokenRepositoryFromBaseDir(baseDir)</code></td>
@@ -139,11 +152,22 @@ recommended for production applications to avoid fetching a new token on every s
       must have read/write permissions to the specified directory.</td>
     </tr>
     <tr>
+      <td><code>WithFileTokenRepositoryFromStandardBaseDir()</code></td>
+      <td>Configures file caching in <code>/tmp/sdk-go</code>.</td>
+      <td>Shortcut for local development. Does not set the expiration drift; pair with
+      <code>WithStandardTokenExpirationDriftSeconds()</code> or use <code>WithStandardFileTokenRepository()</code>.</td>
+    </tr>
+    <tr>
       <td><code>WithTokenExpirationDriftSeconds(seconds)</code></td>
       <td>Sets a safety buffer (in seconds) to treat a token as expired before it actually does.</td>
       <td>This prevents race conditions where the SDK uses a token that expires just before the API request
       completes. The default is 300 seconds (5 minutes). This option has no effect if a caching
       mechanism (Redis or File) is not configured.</td>
+    </tr>
+    <tr>
+      <td><code>WithStandardTokenExpirationDriftSeconds()</code></td>
+      <td>Sets the expiration drift to 300 seconds (5 minutes).</td>
+      <td>Equivalent to <code>WithTokenExpirationDriftSeconds(300)</code>.</td>
     </tr>
     <tr>
       <td><code>WithStandardRedisTokenRepository()</code></td>
@@ -173,6 +197,11 @@ recommended for production applications to avoid fetching a new token on every s
     </tr>
   </thead>
   <tbody>
+    <tr>
+      <td><code>WithDefaultLogger()</code></td>
+      <td>Resets the logger to the SDK default (no logs). Called by <code>DefaultOptions()</code>.</td>
+      <td>Use this when you want to explicitly reset logging after having configured a custom logger.</td>
+    </tr>
     <tr>
       <td><code>WithNoLogs()</code></td>
       <td>Disables all SDK logging.</td>
