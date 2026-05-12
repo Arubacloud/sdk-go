@@ -95,7 +95,7 @@ func (e *ElasticIP) toRequest() types.ElasticIPRequest {
 			Location:                e.toLocation(),
 		},
 		Properties: types.ElasticIPPropertiesRequest{
-			BillingPeriod: defaultBillingPeriod(e.billingPeriod),
+			BillingPeriod: elasticIPBillingPeriodOut(defaultBillingPeriod(e.billingPeriod)),
 		},
 	}
 }
@@ -119,7 +119,7 @@ func (e *ElasticIP) fromResponse(resp *types.ElasticIPResponse) {
 	e.setLinked(resp.Properties.LinkedResources)
 
 	if resp.Properties.BillingPeriod != nil {
-		e.billingPeriod = resp.Properties.BillingPeriod
+		e.billingPeriod = elasticIPBillingPeriodIn(resp.Properties.BillingPeriod)
 	}
 	if resp.Properties.Address != nil && *resp.Properties.Address != "" {
 		addr := *resp.Properties.Address
@@ -141,6 +141,44 @@ func elasticIPDerefString(p *string) string {
 		return ""
 	}
 	return *p
+}
+
+// ElasticIP's API uses lowercase billing-period values that diverge from the
+// rest of the v2 catalog. The wrapper translates at the wire boundary so
+// callers always set/read the standard BillingPeriod constants.
+var (
+	elasticIPBillingPeriodToWire = map[BillingPeriod]string{
+		BillingPeriodHour:  "hourly",
+		BillingPeriodMonth: "monthly",
+		BillingPeriodYear:  "yearly",
+	}
+	elasticIPBillingPeriodFromWire = map[string]BillingPeriod{
+		"hourly":  BillingPeriodHour,
+		"monthly": BillingPeriodMonth,
+		"yearly":  BillingPeriodYear,
+	}
+)
+
+func elasticIPBillingPeriodOut(p *BillingPeriod) *BillingPeriod {
+	if p == nil {
+		return nil
+	}
+	if w, ok := elasticIPBillingPeriodToWire[*p]; ok {
+		v := BillingPeriod(w)
+		return &v
+	}
+	return p
+}
+
+func elasticIPBillingPeriodIn(p *BillingPeriod) *BillingPeriod {
+	if p == nil {
+		return nil
+	}
+	if std, ok := elasticIPBillingPeriodFromWire[string(*p)]; ok {
+		v := std
+		return &v
+	}
+	return p
 }
 
 var elasticIPTerminalStates = map[string]bool{
