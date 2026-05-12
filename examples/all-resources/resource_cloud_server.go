@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"log"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
@@ -81,14 +80,13 @@ write_files:
 // Elastic IP) until the platform completes teardown. Calling waitUntilGone here
 // prevents the subsequent deletes from racing against that async termination.
 func deleteCloudServer(ctx context.Context, arubaClient aruba.Client, cs *aruba.CloudServer) {
-	fmt.Println("--- Deleting Cloud Server ---")
-
+	printDeleteBanner("Cloud Server")
 	if err := arubaClient.FromCompute().CloudServers().Delete(ctx, cs); err != nil {
-		log.Printf("Error deleting cloud server: %s", formatErr(err))
+		printDeleteError("Cloud Server", err)
 		return
 	}
-	fmt.Printf("✓ Deleted cloud server: %s\n", cs.Name())
-	waitUntilGone(ctx, "cloud server "+cs.Name(), func(ctx context.Context) error {
+	printDeleteSubmitted("Cloud Server", cs.Name())
+	waitUntilGone(ctx, "Cloud Server "+cs.Name(), func(ctx context.Context) error {
 		_, err := arubaClient.FromCompute().CloudServers().Get(ctx, cs)
 		return err
 	})

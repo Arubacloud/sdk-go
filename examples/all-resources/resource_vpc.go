@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
@@ -34,14 +34,12 @@ func createVPC(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *a
 
 // deleteVPC tears down the VPC and waits until gone.
 func deleteVPC(ctx context.Context, arubaClient aruba.Client, vpc *aruba.VPC) {
-	fmt.Println("--- Deleting VPC ---")
-
-	err := arubaClient.FromNetwork().VPCs().Delete(ctx, vpc)
-	if err != nil {
-		log.Printf("Error deleting VPC: %v", err)
+	printDeleteBanner("VPC")
+	if err := arubaClient.FromNetwork().VPCs().Delete(ctx, vpc); err != nil {
+		printDeleteError("VPC", err)
 		return
 	}
-	fmt.Printf("✓ Deleted VPC: %s\n", vpc.ID())
+	printDeleteSubmitted("VPC", vpc.Name())
 	waitUntilGone(ctx, "VPC "+vpc.Name(), func(ctx context.Context) error {
 		_, err := arubaClient.FromNetwork().VPCs().Get(ctx, vpc)
 		return err
