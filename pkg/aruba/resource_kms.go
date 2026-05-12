@@ -41,8 +41,8 @@ type KMS struct {
 // IntoProject binds this KMS to its parent project. Required before Create.
 func (k *KMS) IntoProject(p Ref) *KMS { k.intoProject(p); return k }
 
-// WithName sets the resource name. Required by the API.
-func (k *KMS) WithName(n string) *KMS { k.withName(n); return k }
+// Named sets the resource name. Required by the API.
+func (k *KMS) Named(n string) *KMS { k.named(n); return k }
 
 // AddTag appends a tag for filtering and accounting.
 func (k *KMS) AddTag(t string) *KMS { k.addTag(t); return k }
@@ -107,7 +107,7 @@ func (k *KMS) fromResponse(resp *types.KmsResponse) {
 	}
 	k.response = resp
 	k.setMeta(&resp.Metadata)
-	k.withName(kmsDeref(resp.Metadata.Name))
+	k.named(kmsDeref(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		k.replaceTags(resp.Metadata.Tags...)
 	}

@@ -101,8 +101,8 @@ func (km *Kmip) WaitUntilCertificateAvailable(ctx context.Context, opts ...WaitO
 // IntoKMS binds this Kmip to its parent KMS instance. Required before Create.
 func (km *Kmip) IntoKMS(parent Ref) *Kmip { km.intoKMS(parent); return km }
 
-// WithName sets the resource name. Required by the API.
-func (km *Kmip) WithName(n string) *Kmip { km.name = &n; return km }
+// Named sets the resource name. Required by the API.
+func (km *Kmip) Named(n string) *Kmip { km.name = &n; return km }
 
 // Getters — general → specific
 

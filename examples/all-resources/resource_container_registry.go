@@ -24,7 +24,7 @@ func createContainerRegistry(ctx context.Context, arubaClient aruba.Client, reso
 
 	r := aruba.NewContainerRegistry().
 		IntoProject(resources.Project).
-		WithName(resourceName(NameContainerRegistry)).
+		Named(resourceName(NameContainerRegistry)).
 		InRegion(aruba.RegionITBGBergamo).
 		OfSize(aruba.ContainerRegistrySizeFlavorSmall).
 		WithAdminUsername("adminuser").

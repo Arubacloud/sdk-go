@@ -20,7 +20,7 @@ func createStorageBackup(ctx context.Context, arubaClient aruba.Client, proj aru
 
 	b := aruba.NewStorageBackup().
 		IntoProject(proj).
-		WithName(resourceName(NameStorageBackup)).
+		Named(resourceName(NameStorageBackup)).
 		InRegion(aruba.RegionITBGBergamo).
 		OfType(aruba.StorageBackupTypeFull).
 		WithRetentionDays(10).

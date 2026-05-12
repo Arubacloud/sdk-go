@@ -39,8 +39,8 @@ type Subnet struct {
 // IntoVPC binds this Subnet to its parent VPC. Required before Create.
 func (s *Subnet) IntoVPC(v Ref) *Subnet { s.intoVPC(v); return s }
 
-// WithName sets the resource name. Required by the API.
-func (s *Subnet) WithName(n string) *Subnet { s.withName(n); return s }
+// Named sets the resource name. Required by the API.
+func (s *Subnet) Named(n string) *Subnet { s.named(n); return s }
 
 // AddTag appends a tag for filtering and accounting.
 func (s *Subnet) AddTag(t string) *Subnet { s.addTag(t); return s }
@@ -143,7 +143,7 @@ func (s *Subnet) fromResponse(resp *types.SubnetResponse) {
 	}
 	s.response = resp
 	s.setMeta(&resp.Metadata)
-	s.withName(subnetDerefString(resp.Metadata.Name))
+	s.named(subnetDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		s.replaceTags(resp.Metadata.Tags...)
 	}

@@ -37,7 +37,7 @@ func TestDBaaSBackup_FluentSetters(t *testing.T) {
 
 	bkp := NewDBaaSBackup().
 		IntoProject(proj).
-		WithName("my-dbaas-backup").
+		Named("my-dbaas-backup").
 		AddTag("backup").
 		AddTag("dbaas").
 		AddTag("backup"). // dedupe
@@ -199,8 +199,8 @@ func TestDBaaSBackup_ToRequest(t *testing.T) {
 	dbaasURI := "/projects/p/providers/Aruba.Database/dbaas/d-1"
 	dbURI := "/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb"
 
-	bkp := NewDBaaSBackup().
-		WithName("bkp-rt").
+	bkp := NewDBaaSBackup().Named(
+		"bkp-rt").
 		AddTag("t1").AddTag("t2").
 		InRegion(RegionITBGBergamo).
 		FromDBaaS(URI(dbaasURI)).
@@ -469,7 +469,7 @@ func TestDBaaSBackupsClientAdapter_Create_Success(t *testing.T) {
 
 	bkp := NewDBaaSBackup().
 		IntoProject(URI("/projects/p")).
-		WithName("my-backup").
+		Named("my-backup").
 		InRegion(RegionITBGBergamo).
 		FromDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		FromDatabase(URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb")).
@@ -516,7 +516,8 @@ func TestDBaaSBackupsClientAdapter_Create_NoProject(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewDBaaSBackup().WithName("x"))
+	_, err := adapter.Create(context.Background(), NewDBaaSBackup().
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when DBaaSBackup has no project")
 	}
@@ -533,7 +534,8 @@ func TestDBaaSBackupsClientAdapter_Create_MetadataValidationError(t *testing.T) 
 		fmt.Fprint(w, `{"metadata":{"name":"bkp","uri":"/projects/p/providers/Aruba.Database/backups/x"},"properties":{},"status":{}}`)
 	})
 
-	bkp := NewDBaaSBackup().IntoProject(URI("/projects/p")).WithName("bkp")
+	bkp := NewDBaaSBackup().IntoProject(URI("/projects/p")).
+		Named("bkp")
 	result, err := adapter.Create(context.Background(), bkp)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")

@@ -36,8 +36,8 @@ type Database struct {
 // IntoDBaaS binds this Database to its parent DBaaS instance. Required before Create.
 func (d *Database) IntoDBaaS(parent Ref) *Database { d.intoDBaaS(parent); return d }
 
-// WithName sets the resource name. Required by the API.
-func (d *Database) WithName(name string) *Database { d.name = &name; return d }
+// Named sets the resource name. Required by the API.
+func (d *Database) Named(name string) *Database { d.name = &name; return d }
 
 // Getters — general → specific
 
@@ -159,7 +159,7 @@ func (a *databasesClientAdapter) Create(ctx context.Context, db *Database, opts 
 		return db, fmt.Errorf("Create: Database has no parent DBaaS — call IntoDBaaS first")
 	}
 	if db.Name() == "" {
-		return db, fmt.Errorf("Create: Database has no name — call WithName first")
+		return db, fmt.Errorf("Create: Database has no name — call Named first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -183,7 +183,7 @@ func (a *databasesClientAdapter) Update(ctx context.Context, db *Database, opts 
 		return db, err
 	}
 	if db.DatabaseID() == "" {
-		return db, fmt.Errorf("Update: Database has no ID — call WithName first")
+		return db, fmt.Errorf("Update: Database has no ID — call Named first")
 	}
 	if db.DBaaSID() == "" {
 		return db, fmt.Errorf("Update: Database has no parent DBaaS — call IntoDBaaS first")

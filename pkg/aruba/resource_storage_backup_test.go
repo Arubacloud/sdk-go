@@ -28,7 +28,7 @@ func TestStorageBackup_FluentSetters(t *testing.T) {
 
 	bkp := NewStorageBackup().
 		IntoProject(proj).
-		WithName("my-backup").
+		Named("my-backup").
 		AddTag("backup").
 		AddTag("storage").
 		AddTag("backup"). // dedupe
@@ -165,8 +165,8 @@ func TestStorageBackup_OfType_Enum(t *testing.T) {
 
 func TestStorageBackup_ToRequestRoundTrip(t *testing.T) {
 	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
-	bkp := NewStorageBackup().
-		WithName("bkp-rt").
+	bkp := NewStorageBackup().Named(
+		"bkp-rt").
 		AddTag("t1").AddTag("t2").
 		InRegion(RegionITBGBergamo).
 		OfType(StorageBackupTypeFull).
@@ -200,7 +200,8 @@ func TestStorageBackup_ToRequestRoundTrip(t *testing.T) {
 }
 
 func TestStorageBackup_ToRequest_UnsetOptionals_AreNilOrEmpty(t *testing.T) {
-	bkp := NewStorageBackup().WithName("bare")
+	bkp := NewStorageBackup().
+		Named("bare")
 	req := bkp.RawRequest()
 
 	if req.Properties.RetentionDays != nil {
@@ -471,7 +472,7 @@ func TestStorageBackupsClientAdapter_Create_Success(t *testing.T) {
 
 	bkp := NewStorageBackup().
 		IntoProject(URI("/projects/p")).
-		WithName("my-backup").
+		Named("my-backup").
 		InRegion(RegionITBGBergamo).
 		OfType(StorageBackupTypeFull).
 		WithRetentionDays(30).
@@ -518,7 +519,7 @@ func TestStorageBackupsClientAdapter_Create_FromVolume(t *testing.T) {
 
 	bkp := NewStorageBackup().
 		IntoProject(URI("/projects/p")).
-		WithName("my-backup").
+		Named("my-backup").
 		FromVolume(URI(volURI))
 
 	result, err := adapter.Create(context.Background(), bkp)
@@ -540,7 +541,8 @@ func TestStorageBackupsClientAdapter_Create_NoProject(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewStorageBackup().WithName("x"))
+	_, err := adapter.Create(context.Background(), NewStorageBackup().
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when StorageBackup has no project")
 	}
@@ -557,7 +559,8 @@ func TestStorageBackupsClientAdapter_Create_MetadataValidationError(t *testing.T
 		fmt.Fprint(w, `{"metadata":{"name":"bkp","uri":"/projects/p/providers/Aruba.Storage/backups/x"},"properties":{},"status":{}}`)
 	})
 
-	bkp := NewStorageBackup().IntoProject(URI("/projects/p")).WithName("bkp")
+	bkp := NewStorageBackup().IntoProject(URI("/projects/p")).
+		Named("bkp")
 	result, err := adapter.Create(context.Background(), bkp)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -671,7 +674,8 @@ func TestStorageBackupsClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	bkp := NewStorageBackup().IntoProject(URI("/projects/p")).WithName("x")
+	bkp := NewStorageBackup().IntoProject(URI("/projects/p")).
+		Named("x")
 	_, err := adapter.Update(context.Background(), bkp)
 	if err == nil {
 		t.Fatal("expected error when StorageBackup has no ID")
@@ -941,7 +945,8 @@ func TestStorageBackup_BillingPeriod_WireTranslation(t *testing.T) {
 
 	for _, c := range cases {
 		// outbound: SDK constant → wire value
-		req := NewStorageBackup().WithName("x").InRegion(RegionITBGBergamo).
+		req := NewStorageBackup().
+			Named("x").InRegion(RegionITBGBergamo).
 			WithBillingPeriod(c.sdk).RawRequest()
 		if got := string(*req.Properties.BillingPeriod); got != c.wire {
 			t.Errorf("toRequest(%q) wire = %q, want %q", c.sdk, got, c.wire)

@@ -70,8 +70,8 @@ type DBaaS struct {
 // IntoProject binds this DBaaS to its parent project. Required before Create.
 func (d *DBaaS) IntoProject(p Ref) *DBaaS { d.intoProject(p); return d }
 
-// WithName sets the resource name. Required by the API.
-func (d *DBaaS) WithName(n string) *DBaaS { d.withName(n); return d }
+// Named sets the resource name. Required by the API.
+func (d *DBaaS) Named(n string) *DBaaS { d.named(n); return d }
 
 // AddTag appends a tag for filtering and accounting.
 func (d *DBaaS) AddTag(t string) *DBaaS { d.addTag(t); return d }
@@ -379,7 +379,7 @@ func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 	}
 	d.response = resp
 	d.setMeta(&resp.Metadata)
-	d.withName(dbaasDerefString(resp.Metadata.Name))
+	d.named(dbaasDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		d.replaceTags(resp.Metadata.Tags...)
 	}

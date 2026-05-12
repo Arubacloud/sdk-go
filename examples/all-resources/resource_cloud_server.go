@@ -41,7 +41,7 @@ write_files:
 
 	cs := aruba.NewCloudServer().
 		IntoProject(resources.Project).
-		WithName(resourceName(NameCloudServer)).
+		Named(resourceName(NameCloudServer)).
 		AddTag("virtualmachine").
 		AddTag("container").
 		InRegion(aruba.RegionITBGBergamo).

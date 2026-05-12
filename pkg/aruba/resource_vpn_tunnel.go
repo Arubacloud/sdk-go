@@ -45,8 +45,8 @@ type VPNTunnel struct {
 // IntoProject binds this VPNTunnel to its parent project. Required before Create.
 func (t *VPNTunnel) IntoProject(p Ref) *VPNTunnel { t.intoProject(p); return t }
 
-// WithName sets the resource name. Required by the API.
-func (t *VPNTunnel) WithName(n string) *VPNTunnel { t.withName(n); return t }
+// Named sets the resource name. Required by the API.
+func (t *VPNTunnel) Named(n string) *VPNTunnel { t.named(n); return t }
 
 // AddTag appends a tag for filtering and accounting.
 func (t *VPNTunnel) AddTag(tag string) *VPNTunnel { t.addTag(tag); return t }
@@ -218,7 +218,7 @@ func (t *VPNTunnel) fromResponse(resp *types.VPNTunnelResponse) {
 	}
 	t.response = resp
 	t.setMeta(&resp.Metadata)
-	t.withName(vpnTunnelDerefString(resp.Metadata.Name))
+	t.named(vpnTunnelDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
 		t.replaceTags(resp.Metadata.Tags...)
 	}

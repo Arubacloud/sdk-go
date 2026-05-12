@@ -29,7 +29,7 @@ func TestDBaaS_FluentSetters(t *testing.T) {
 
 	d := NewDBaaS().
 		IntoProject(proj).
-		WithName("my-dbaas").
+		Named("my-dbaas").
 		AddTag("db").
 		AddTag("prod").
 		InRegion(RegionITBGBergamo).
@@ -272,7 +272,7 @@ func TestDBaaS_WithBillingPeriod(t *testing.T) {
 func TestDBaaS_ToRequestRoundTrip(t *testing.T) {
 	d := NewDBaaS().
 		IntoProject(URI("/projects/p")).
-		WithName("my-dbaas").
+		Named("my-dbaas").
 		AddTag("tag1").
 		InRegion(RegionITBGBergamo).
 		InZone(ZoneITBG1).
@@ -663,7 +663,7 @@ func TestDBaaSClientAdapter_Create_Success(t *testing.T) {
 
 	d := NewDBaaS().
 		IntoProject(URI("/projects/p")).
-		WithName("my-dbaas").
+		Named("my-dbaas").
 		InZone(ZoneITBG1).
 		OfEngine(DatabaseEngineMySQL80).
 		OfFlavor(DBaaSFlavorDBO2A4).
@@ -710,7 +710,8 @@ func TestDBaaSClientAdapter_Create_NoProject(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewDBaaS().WithName("x").OfEngine(DatabaseEngineMySQL80))
+	_, err := adapter.Create(context.Background(), NewDBaaS().
+		Named("x").OfEngine(DatabaseEngineMySQL80))
 	if err == nil {
 		t.Fatal("expected error when DBaaS has no parent project")
 	}
@@ -727,7 +728,8 @@ func TestDBaaSClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"db","uri":"/projects/p/providers/Aruba.Database/dbaas/x"},"properties":{}}`)
 	})
 
-	d := NewDBaaS().IntoProject(URI("/projects/p")).WithName("db").OfEngine(DatabaseEngineMySQL80)
+	d := NewDBaaS().IntoProject(URI("/projects/p")).
+		Named("db").OfEngine(DatabaseEngineMySQL80)
 	result, err := adapter.Create(context.Background(), d)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -748,7 +750,8 @@ func TestDBaaSClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "engine is required", 422))
 	})
 
-	d := NewDBaaS().IntoProject(URI("/projects/p")).WithName("db")
+	d := NewDBaaS().IntoProject(URI("/projects/p")).
+		Named("db")
 	result, err := adapter.Create(context.Background(), d)
 	if err == nil {
 		t.Fatal("expected error on 422")
@@ -800,7 +803,8 @@ func TestDBaaSClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	d := NewDBaaS().IntoProject(URI("/projects/p")).WithName("x")
+	d := NewDBaaS().IntoProject(URI("/projects/p")).
+		Named("x")
 	_, err := adapter.Update(context.Background(), d)
 	if err == nil {
 		t.Fatal("expected error when DBaaS has no ID")

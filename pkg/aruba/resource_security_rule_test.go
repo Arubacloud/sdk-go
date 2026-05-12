@@ -29,7 +29,7 @@ func TestSecurityRule_FluentSetters(t *testing.T) {
 
 	rule := NewSecurityRule().
 		IntoSecurityGroup(sg).
-		WithName("allow-ssh").
+		Named("allow-ssh").
 		AddTag("t1").
 		AddTag("t2").
 		AddTag("t1"). // dedupe
@@ -198,8 +198,8 @@ func TestSecurityRule_TargetSecurityGroup_EmptyURI(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestSecurityRule_ToRequestRoundTrip(t *testing.T) {
-	rule := NewSecurityRule().
-		WithName("allow-ssh").
+	rule := NewSecurityRule().Named(
+		"allow-ssh").
 		AddTag("t1").
 		AddTag("t2").
 		InRegion(RegionITBGBergamo).
@@ -233,7 +233,8 @@ func TestSecurityRule_ToRequestRoundTrip(t *testing.T) {
 	}
 
 	// Unset target → Properties.Target must be nil.
-	rule2 := NewSecurityRule().WithName("no-target").WithDirection(RuleDirectionIngress)
+	rule2 := NewSecurityRule().
+		Named("no-target").WithDirection(RuleDirectionIngress)
 	req2 := rule2.RawRequest()
 	if req2.Properties.Target != nil {
 		t.Errorf("Properties.Target should be nil when not set, got %v", req2.Properties.Target)
@@ -509,7 +510,7 @@ func TestSecurityGroupRulesClientAdapter_Create_Success(t *testing.T) {
 
 	rule := NewSecurityRule().
 		IntoSecurityGroup(sg).
-		WithName("allow-ssh").
+		Named("allow-ssh").
 		InRegion(RegionITBGBergamo).
 		WithDirection(RuleDirectionIngress).
 		WithProtocol(RuleProtocolTCP).
@@ -544,7 +545,8 @@ func TestSecurityGroupRulesClientAdapter_Create_NoSG(t *testing.T) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
-	_, err := adapter.Create(context.Background(), NewSecurityRule().WithName("x"))
+	_, err := adapter.Create(context.Background(), NewSecurityRule().
+		Named("x"))
 	if err == nil {
 		t.Fatal("expected error when security rule has no SecurityGroup")
 	}
@@ -564,7 +566,8 @@ func TestSecurityGroupRulesClientAdapter_Create_MetadataValidationError(t *testi
 	sg := &SecurityGroup{}
 	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securitygroups/sg", "p"))
 
-	rule := NewSecurityRule().IntoSecurityGroup(sg).WithName("rule")
+	rule := NewSecurityRule().IntoSecurityGroup(sg).
+		Named("rule")
 	result, err := adapter.Create(context.Background(), rule)
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -679,7 +682,7 @@ func TestSecurityGroupRulesClientAdapter_Update_Success(t *testing.T) {
 		"/projects/p/network/vpcs/v/security-groups/sg/security-rules/r-1",
 		"p",
 	))
-	rule.WithName("allow-https").WithPort("443")
+	rule.Named("allow-https").WithPort("443")
 
 	result, err := adapter.Update(context.Background(), rule)
 	if err != nil {
@@ -706,7 +709,8 @@ func TestSecurityGroupRulesClientAdapter_Update_NoID(t *testing.T) {
 	sg := &SecurityGroup{}
 	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/network/vpcs/v/securitygroups/sg", "p"))
 
-	rule := NewSecurityRule().IntoSecurityGroup(sg).WithName("x")
+	rule := NewSecurityRule().IntoSecurityGroup(sg).
+		Named("x")
 	_, err := adapter.Update(context.Background(), rule)
 	if err == nil {
 		t.Fatal("expected error when security rule has no ID")
