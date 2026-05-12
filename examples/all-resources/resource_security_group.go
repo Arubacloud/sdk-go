@@ -31,9 +31,7 @@ func createSecurityGroup(ctx context.Context, arubaClient aruba.Client, vpc *aru
 	}
 	printCreated("Security Group", created.Name(), created.ID())
 
-	if err := created.WaitUntilReady(ctx); err != nil {
-		printSelfWaitError("Security Group", created.Name(), err)
-	}
+	waitUntilSelfReady(ctx, "Security Group", created.Name(), created.WaitUntilReady)
 
 	return created
 }
@@ -67,9 +65,7 @@ func createSecurityGroupIngressRule(ctx context.Context, arubaClient aruba.Clien
 	}
 	printCreated("Security Rule (Ingress)", created.Name(), created.ID())
 
-	if err := created.WaitUntilReady(ctx); err != nil {
-		printSelfWaitError("Security Rule (Ingress)", created.Name(), err)
-	}
+	waitUntilSelfReady(ctx, "Security Rule (Ingress)", created.Name(), created.WaitUntilReady)
 
 	return created
 }
@@ -103,9 +99,7 @@ func createSecurityGroupEgressRule(ctx context.Context, arubaClient aruba.Client
 	}
 	printCreated("Security Rule (Egress)", created.Name(), created.ID())
 
-	if err := created.WaitUntilReady(ctx); err != nil {
-		printSelfWaitError("Security Rule (Egress)", created.Name(), err)
-	}
+	waitUntilSelfReady(ctx, "Security Rule (Egress)", created.Name(), created.WaitUntilReady)
 
 	return created
 }
