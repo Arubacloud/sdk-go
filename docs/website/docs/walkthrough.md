@@ -58,7 +58,7 @@ proj, err := arubaClient.FromProject().Create(
         WithName("my-project").
         WithDescription("Created via the Aruba Cloud Go SDK").
         AddTag("go-sdk").
-        WithDefault(false))
+        NotDefault())
 if err != nil {
     log.Fatalf("Create project: %v", err)
 }
@@ -74,8 +74,8 @@ vpc, err := arubaClient.FromNetwork().VPCs().Create(
         IntoProject(proj).
         WithName("my-vpc").
         AddTag("network").
-        InRegion("ITBG-Bergamo").
-        WithDefault(false).
+        InRegion(aruba.RegionITBGBergamo).
+        NotDefault().
         WithPreset(false))
 if err != nil {
     log.Fatalf("Create VPC: %v", err)
@@ -84,7 +84,7 @@ fmt.Printf("✓ VPC created: %s\n", vpc.Name())
 
 // Most resources are asynchronous — wait until they reach Active state.
 // See "7. Wait for Readiness" below for options and details.
-if err := vpc.WaitUntilActive(ctx); err != nil {
+if err := vpc.WaitUntilReady(ctx); err != nil {
     log.Fatalf("VPC did not become Active: %v", err)
 }
 ```
@@ -100,9 +100,9 @@ subnet, err := arubaClient.FromNetwork().Subnets().Create(
         IntoVPC(vpc).
         WithName("my-subnet").
         AddTag("network").
-        InRegion("ITBG-Bergamo").
-        WithType(string(aruba.SubnetTypeAdvanced)).
-        WithDefault(false).
+        InRegion(aruba.RegionITBGBergamo).
+        OfType(aruba.SubnetTypeAdvanced).
+        NotDefault().
         WithCIDR("192.168.1.0/25").
         WithDHCP(aruba.NewSubnetDHCP().
             Enabled().
@@ -115,16 +115,16 @@ if err != nil {
 }
 fmt.Printf("✓ Subnet created: %s (CIDR: %s)\n", subnet.Name(), subnet.CIDR())
 
-if err := subnet.WaitUntilActive(ctx); err != nil {
+if err := subnet.WaitUntilReady(ctx); err != nil {
     log.Fatalf("Subnet did not become Active: %v", err)
 }
 ```
 
 `aruba.NewSubnetDHCP()` is a sub-builder for DHCP configuration. Attach it to the subnet with `WithDHCP(...)`.
 
-`WithType` accepts `string(aruba.SubnetTypeBasic)` or `string(aruba.SubnetTypeAdvanced)`.
+`OfType` accepts `aruba.SubnetTypeBasic` or `aruba.SubnetTypeAdvanced` (typed constants — no string cast needed).
 
-> Every other resource — Security Groups, Elastic IPs, Block Storage, Cloud Servers, KaaS clusters, DBaaS instances, and more — follows the exact same `NewX()` → `IntoParent(ref)` → `Create(ctx, ...)` → `WaitUntilActive(ctx)` shape. See [Resources](./resources) for the full list with copy-paste-ready snippets.
+> Every other resource — Security Groups, Elastic IPs, Block Storage, Cloud Servers, KaaS clusters, DBaaS instances, and more — follows the exact same `NewX()` → `IntoParent(ref)` → `Create(ctx, ...)` → `WaitUntilReady(ctx)` shape. See [Resources](./resources) for the full list with copy-paste-ready snippets.
 
 ---
 
@@ -292,10 +292,10 @@ For a full stack teardown sequence (Security Rules → Security Groups → Subne
 
 Most cloud operations — Create, Update, scale operations — are **asynchronous**: the HTTP call returns quickly, but the resource keeps transitioning through states (`Creating` → `Active`, `Updating` → `Active`) for seconds to minutes in the background.
 
-The `WaitUntilActive` method on any resource wrapper that embeds `statusMixin` blocks until the resource reaches the `"Active"` state (or returns an error on terminal failure):
+The `WaitUntilReady` method on any resource wrapper that embeds `statusMixin` blocks until the resource reaches the `"Active"` state (or returns an error on terminal failure):
 
 ```go
-if err := vpc.WaitUntilActive(ctx); err != nil {
+if err := vpc.WaitUntilReady(ctx); err != nil {
     log.Fatalf("VPC did not become Active: %v", err)
 }
 ```
@@ -303,7 +303,7 @@ if err := vpc.WaitUntilActive(ctx); err != nil {
 Three `WaitOption`s let you override the defaults (60 retries × 10 s base delay × 600 s hard ceiling):
 
 ```go
-if err := vpc.WaitUntilActive(ctx,
+if err := vpc.WaitUntilReady(ctx,
     aruba.WithRetries(30),              // max polling iterations (default: 60)
     aruba.WithBaseDelay(5*time.Second), // fixed delay between polls (default: 10s)
     aruba.WithTimeout(3*time.Minute),   // hard deadline (default: 600s)
@@ -312,7 +312,7 @@ if err := vpc.WaitUntilActive(ctx,
 }
 ```
 
-For `WaitUntilStates` (any target states, not just `"Active"`), status accessors (`State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`), and the low-level `pkg/async.WaitFor` future for concurrent polling, see the [Async / Await](./async) guide.
+For `WaitUntilStates(ctx, []string{...}, opts...)` (any target states, not just `"Active"`), status accessors (`State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`), and the low-level `pkg/async.WaitFor` future for concurrent polling, see the [Async / Await](./async) guide.
 
 ---
 
@@ -335,12 +335,12 @@ if err := rule.Err(); err != nil {
 
 > **Caveat**: `WithTargetCIDR` and `WithTargetSecurityGroup` are mutually exclusive. Setting both records a setter-time error that surfaces on `Create`.
 
-### `WaitUntilActive` requires a hydrated wrapper
+### `WaitUntilReady` requires a hydrated wrapper
 
-Calling `WaitUntilActive` on a wrapper you constructed manually (without `Create`/`Get`/`Update`/`List`) returns:
+Calling `WaitUntilReady` on a wrapper you constructed manually (without `Create`/`Get`/`Update`/`List`) returns:
 
 ```
-WaitUntilStates: refresh callback not set; call Create/Get/Update/List first
+WaitUntilStates: refresh callback not set; resource must be produced by an adapter (Create/Get/Update/List) to support polling
 ```
 
 Always use the wrapper returned by the API call, not the request builder.

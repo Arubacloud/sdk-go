@@ -6,6 +6,8 @@ This guide explains how to use filters with the Aruba Cloud Go SDK to query and 
 
 The SDK provides a flexible filtering system via `CallOption` helpers. Pass them directly to `List` (and other read operations) without constructing intermediate parameter structs.
 
+> **`WithFilter` is a pass-through.** The SDK forwards the literal string value to the platform's `filter` query parameter unchanged. The syntax the platform accepts — colon-pair shorthand (`field:op:value`) or OData `$filter` — is endpoint-dependent. Use whatever syntax the target endpoint documents. The examples on this page use the colon-pair format; some endpoints may require OData syntax instead.
+
 ```go
 servers, err := arubaClient.FromCompute().CloudServers().List(ctx, proj,
     aruba.WithFilter("status:eq:Active,cpu:gt:2"),
