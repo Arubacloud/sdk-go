@@ -10,12 +10,12 @@ import (
 
 // createSecurityGroup provisions a security group inside the VPC and waits until Ready.
 func createSecurityGroup(ctx context.Context, arubaClient aruba.Client, vpc *aruba.VPC) *aruba.SecurityGroup {
-	fmt.Println("--- Network: Security Group ---")
+	printBanner("Security Group", "")
 
 	if err := waitForDependencies(ctx, "Security Group", map[string]waitFunc{
 		"VPC": vpc.WaitUntilActive,
 	}); err != nil {
-		log.Printf("%v", err)
+		printDepWaitError("Security Group", err)
 		return nil
 	}
 
@@ -27,26 +27,26 @@ func createSecurityGroup(ctx context.Context, arubaClient aruba.Client, vpc *aru
 
 	created, err := arubaClient.FromNetwork().SecurityGroups().Create(ctx, sg)
 	if err != nil {
-		log.Fatalf("Error creating security group: %s", formatErr(err))
+		printCreateError("Security Group", err)
 		return nil
 	}
-	fmt.Printf("✓ Created Security Group: %s (ObjectID: %s)\n", created.Name(), created.ID())
+	printCreated("Security Group", created.Name(), created.ID())
 
 	if err := created.WaitUntilReady(ctx); err != nil {
-		log.Printf("Security Group %s did not become Ready: %v", created.Name(), err)
+		printSelfWaitError("Security Group", created.Name(), err)
 	}
 
 	return created
 }
 
-// createSecurityGroup provisions a security group inside the VPC and waits until Ready.
+// createSecurityGroupIngressRule provisions an ingress rule on the security group.
 func createSecurityGroupIngressRule(ctx context.Context, arubaClient aruba.Client, sg *aruba.SecurityGroup, name, tag string, protocol aruba.RuleProtocol, port string) *aruba.SecurityRule {
-	fmt.Printf("--- Network: Security Group Rule (Ingress/%s) ---\n", name)
+	fmt.Printf("--- Security Rule (Ingress/%s) ---\n", name)
 
-	if err := waitForDependencies(ctx, "Ingress Rule", map[string]waitFunc{
+	if err := waitForDependencies(ctx, "Security Rule (Ingress)", map[string]waitFunc{
 		"Security Group": sg.WaitUntilActive,
 	}); err != nil {
-		log.Printf("%v", err)
+		printDepWaitError("Security Rule (Ingress)", err)
 		return nil
 	}
 
@@ -63,13 +63,13 @@ func createSecurityGroupIngressRule(ctx context.Context, arubaClient aruba.Clien
 
 	created, err := arubaClient.FromNetwork().SecurityGroupRules().Create(ctx, rule)
 	if err != nil {
-		log.Fatalf("Error creating ingress rule %s: %s", name, formatErr(err))
+		printCreateError("Security Rule (Ingress)", err)
 		return nil
 	}
-	fmt.Printf("✓ Created Ingress Rule: %s (ID: %s)\n", created.Name(), created.ID())
+	printCreated("Security Rule (Ingress)", created.Name(), created.ID())
 
 	if err := created.WaitUntilReady(ctx); err != nil {
-		log.Printf("Ingress Rule %s did not become Ready: %v", created.Name(), err)
+		printSelfWaitError("Security Rule (Ingress)", created.Name(), err)
 	}
 
 	return created
@@ -77,14 +77,13 @@ func createSecurityGroupIngressRule(ctx context.Context, arubaClient aruba.Clien
 
 // createSecurityGroupEgressRule allows all outbound traffic from the security group.
 // Without this, DBaaS and other resources cannot initiate outbound connections.
-// createSecurityGroup provisions a security group inside the VPC and waits until Ready.
 func createSecurityGroupEgressRule(ctx context.Context, arubaClient aruba.Client, sg *aruba.SecurityGroup) *aruba.SecurityRule {
-	fmt.Println("--- Network: Security Group Rule (Egress) ---")
+	printBanner("Security Rule", "Egress")
 
-	if err := waitForDependencies(ctx, "Egress Rule", map[string]waitFunc{
+	if err := waitForDependencies(ctx, "Security Rule (Egress)", map[string]waitFunc{
 		"Security Group": sg.WaitUntilActive,
 	}); err != nil {
-		log.Printf("%v", err)
+		printDepWaitError("Security Rule (Egress)", err)
 		return nil
 	}
 
@@ -100,13 +99,13 @@ func createSecurityGroupEgressRule(ctx context.Context, arubaClient aruba.Client
 
 	created, err := arubaClient.FromNetwork().SecurityGroupRules().Create(ctx, rule)
 	if err != nil {
-		log.Fatalf("Error creating egress rule: %s", formatErr(err))
+		printCreateError("Security Rule (Egress)", err)
 		return nil
 	}
-	fmt.Printf("✓ Created Egress Rule: %s (ID: %s)\n", created.Name(), created.ID())
+	printCreated("Security Rule (Egress)", created.Name(), created.ID())
 
 	if err := created.WaitUntilReady(ctx); err != nil {
-		log.Printf("Egress Rule %s did not become Ready: %v", created.Name(), err)
+		printSelfWaitError("Security Rule (Egress)", created.Name(), err)
 	}
 
 	return created

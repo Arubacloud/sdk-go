@@ -10,13 +10,13 @@ import (
 
 // createKaaS provisions a Kubernetes-as-a-Service cluster with all dependencies and waits until Ready.
 func createKaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, vpc *aruba.VPC, subnet *aruba.Subnet) *aruba.KaaS {
-	fmt.Println("--- KaaS (Kubernetes) ---")
+	printBanner("KaaS Cluster", "")
 
-	if err := waitForDependencies(ctx, "KaaS", map[string]waitFunc{
+	if err := waitForDependencies(ctx, "KaaS Cluster", map[string]waitFunc{
 		"VPC":    vpc.WaitUntilActive,
 		"Subnet": subnet.WaitUntilActive,
 	}); err != nil {
-		log.Printf("%v", err)
+		printDepWaitError("KaaS Cluster", err)
 		return nil
 	}
 
@@ -27,14 +27,14 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, v
 		AddTag("kubernetes").
 		AddTag("container").
 		InRegion(aruba.RegionITBGBergamo).
+		WithKubernetesVersion(aruba.KubernetesVersion1332).
+		WithPodCIDR("10.0.3.0/24").
+		WithNodeCIDR("172.16.0.0/16", resourceName(NameKaaSNodeCIDR)).
+		WithHA(true).
+		WithBillingPeriod(aruba.BillingPeriodHour).
 		WithVPC(vpc).
 		WithSubnet(subnet).
 		WithSecurityGroup(kaasSG).
-		WithNodeCIDR("172.16.0.0/16", resourceName(NameKaaSNodeCIDR)).
-		WithKubernetesVersion(aruba.KubernetesVersion1332).
-		WithPodCIDR("10.0.3.0/24").
-		WithHA(true).
-		WithBillingPeriod(aruba.BillingPeriodHour).
 		AddNodePool(aruba.NewNodePool().
 			Named(resourceName(NameNodePool)).
 			WithCount(2).
@@ -44,16 +44,13 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, v
 
 	result, err := arubaClient.FromContainer().KaaS().Create(ctx, k)
 	if err != nil {
-		log.Fatalf("Error creating KaaS cluster: %s", formatErr(err))
+		printCreateError("KaaS Cluster", err)
 		return nil
 	}
-
-	fmt.Printf("✓ Created KaaS cluster: %s (K8s: %s)\n",
-		result.Name(),
-		result.KubernetesVersion())
+	printCreated("KaaS Cluster", result.Name(), result.KaaSID())
 
 	if err := result.WaitUntilReady(ctx); err != nil {
-		log.Printf("KaaS %s did not become Ready: %v", result.Name(), err)
+		printSelfWaitError("KaaS Cluster", result.Name(), err)
 	}
 
 	return result
