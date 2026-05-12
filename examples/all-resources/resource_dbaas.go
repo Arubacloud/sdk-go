@@ -18,7 +18,7 @@ func createDBaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, 
 		"Security Group": sg.WaitUntilActive,
 		"Elastic IP":     eip.WaitUntilNotUsed,
 	}); err != nil {
-		log.Printf("%v", err)
+		printDepWaitError("DBaaS", err)
 		return nil
 	}
 
@@ -39,21 +39,19 @@ func createDBaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, 
 		WithSecurityGroup(sg).
 		WithElasticIP(eip)
 	if err := d.Err(); err != nil {
-		log.Fatalf("Error building DBaaS request: %v", err)
+		log.Printf("✗ Invalid DBaaS request: %v", err)
 		return nil
 	}
 
 	result, err := arubaClient.FromDatabase().DBaaS().Create(ctx, d)
 	if err != nil {
-		log.Fatalf("Error creating DBaaS: %s", formatErr(err))
+		printCreateError("DBaaS", err)
 		return nil
 	}
-
-	fmt.Printf("✓ Created DBaaS: %s (Engine: %s, Flavor: %s, Storage: %d GB)\n",
-		result.Name(), result.Engine(), result.Flavor(), result.SizeGB())
+	printCreated("DBaaS", result.Name(), result.DBaaSID())
 
 	if err := result.WaitUntilReady(ctx, longWaitOpts...); err != nil {
-		log.Printf("DBaaS %s did not become Ready: %v", result.Name(), err)
+		printSelfWaitError("DBaaS", result.Name(), err)
 	}
 
 	waitPostDependencies(ctx, "DBaaS", map[string]waitFunc{

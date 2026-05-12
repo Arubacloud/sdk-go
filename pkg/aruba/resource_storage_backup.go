@@ -133,7 +133,7 @@ func (b *StorageBackup) RetentionDays() int {
 func (b *StorageBackup) toRequest() types.StorageBackupRequest {
 	props := types.StorageBackupPropertiesRequest{
 		RetentionDays: b.retentionDays,
-		BillingPeriod: defaultBillingPeriod(b.billingPeriod),
+		BillingPeriod: storageBackupBillingPeriodWire().Out(defaultBillingPeriod(b.billingPeriod)),
 	}
 	if b.backupType != nil {
 		props.StorageBackupType = *b.backupType
@@ -180,8 +180,7 @@ func (b *StorageBackup) fromResponse(resp *types.StorageBackupResponse) {
 		b.retentionDays = &v
 	}
 	if resp.Properties.BillingPeriod != nil && *resp.Properties.BillingPeriod != "" {
-		v := *resp.Properties.BillingPeriod
-		b.billingPeriod = &v
+		b.billingPeriod = storageBackupBillingPeriodWire().In(resp.Properties.BillingPeriod)
 	}
 
 	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
@@ -199,6 +198,16 @@ func storageBackupDerefString(p *string) string {
 		return ""
 	}
 	return *p
+}
+
+// storageBackupBillingPeriodWire returns a translator for StorageBackup's
+// TitleCase wire billing-period values (e.g. "Monthly") vs. the standard SDK constants.
+func storageBackupBillingPeriodWire() *billingPeriodTranslator {
+	return newBillingPeriodTranslator(map[BillingPeriod]string{
+		BillingPeriodHour:  "Hourly",
+		BillingPeriodMonth: "Monthly",
+		BillingPeriodYear:  "Yearly",
+	})
 }
 
 var storageBackupTerminalStates = map[string]bool{
