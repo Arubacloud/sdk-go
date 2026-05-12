@@ -147,6 +147,12 @@ type ResourceCollection struct {
 	Grant                    *aruba.Grant
 	JobRecurring             *aruba.Job
 	JobOneShot               *aruba.Job
+
+	// Populated by fetchAllResources for the delete flow. Contains every
+	// BlockStorage and ElasticIP in the project so the pre-delete inventory
+	// is complete before the user confirms deletion.
+	BlockStorages []*aruba.BlockStorage
+	ElasticIPs    []*aruba.ElasticIP
 }
 
 // ---------------------------------------------------------------------------
@@ -158,6 +164,23 @@ type ResourceCollection struct {
 var longWaitOpts = []aruba.WaitOption{
 	aruba.WithTimeout(20 * time.Minute),
 	aruba.WithRetries(120),
+}
+
+// deleteOpTimeout caps each individual Delete + waitUntilGone in the delete
+// orchestrator. The SDK's pkg/async.DefaultWaitFor already enforces a 10-min
+// internal ceiling per wait; this cap is the orchestrator-level guard so a
+// single slow resource (or one that never returns 404) cannot consume budget
+// that subsequent deletes need.
+const deleteOpTimeout = 12 * time.Minute
+
+// withDeleteDeadline derives a child ctx with deleteOpTimeout from parent and
+// runs fn against it. Parent cancellation (Ctrl-C, parent timeout) still
+// propagates through the child, so this only bounds the upper limit — it
+// does not extend the parent budget.
+func withDeleteDeadline(parent context.Context, fn func(context.Context)) {
+	ctx, cancel := context.WithTimeout(parent, deleteOpTimeout)
+	defer cancel()
+	fn(ctx)
 }
 
 type waitFunc func(context.Context, ...aruba.WaitOption) error
@@ -366,6 +389,22 @@ func printDepWaitError(pretty string, err error) {
 // printSelfWaitError logs a post-create self-readiness wait failure.
 func printSelfWaitError(pretty, name string, err error) {
 	log.Printf("✗ %s %s did not become Ready: %v", pretty, name, err)
+}
+
+// printDeleteBanner emits a delete section header: `--- Deleting {pretty} ---`.
+func printDeleteBanner(pretty string) {
+	fmt.Printf("--- Deleting %s ---\n", pretty)
+}
+
+// printDeleteSubmitted emits the "delete accepted" line. The actual
+// "fully gone" confirmation is emitted later by waitUntilGone.
+func printDeleteSubmitted(pretty, idOrName string) {
+	fmt.Printf("→ Submitted delete for %s: %s\n", pretty, idOrName)
+}
+
+// printDeleteError logs a delete-call failure via log.Printf.
+func printDeleteError(pretty string, err error) {
+	log.Printf("✗ Failed to delete %s: %s", pretty, formatErr(err))
 }
 
 // printResourceSummary prints a summary of all created resources.

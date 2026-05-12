@@ -83,13 +83,16 @@ func updateKaaS(ctx context.Context, arubaClient aruba.Client, k *aruba.KaaS) {
 	fmt.Printf("✓ Updated KaaS cluster: %s (K8s: %s)\n", result.Name(), result.KubernetesVersion())
 }
 
-// deleteKaaS tears down the KaaS cluster.
+// deleteKaaS tears down the KaaS cluster and waits until it is fully gone.
 func deleteKaaS(ctx context.Context, arubaClient aruba.Client, k *aruba.KaaS) {
-	fmt.Println("--- Deleting KaaS Cluster ---")
-
+	printDeleteBanner("KaaS Cluster")
 	if err := arubaClient.FromContainer().KaaS().Delete(ctx, k); err != nil {
-		log.Printf("Error deleting KaaS cluster: %s", formatErr(err))
+		printDeleteError("KaaS Cluster", err)
 		return
 	}
-	fmt.Printf("✓ Deleted KaaS cluster: %s\n", k.KaaSID())
+	printDeleteSubmitted("KaaS Cluster", k.Name())
+	waitUntilGone(ctx, "KaaS Cluster "+k.Name(), func(ctx context.Context) error {
+		_, err := arubaClient.FromContainer().KaaS().Get(ctx, k)
+		return err
+	})
 }

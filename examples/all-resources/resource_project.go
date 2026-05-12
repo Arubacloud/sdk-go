@@ -45,13 +45,16 @@ func updateProject(ctx context.Context, arubaClient aruba.Client, proj *aruba.Pr
 	fmt.Printf("✓ Updated project: %s\n", updated.Name())
 }
 
-// deleteProject removes the project.
+// deleteProject removes the project and waits until it is fully gone.
 func deleteProject(ctx context.Context, arubaClient aruba.Client, proj *aruba.Project) {
-	fmt.Println("--- Deleting Project ---")
-
+	printDeleteBanner("Project")
 	if err := arubaClient.FromProject().Delete(ctx, proj); err != nil {
-		log.Printf("Error deleting project: %s", formatErr(err))
+		printDeleteError("Project", err)
 		return
 	}
-	fmt.Printf("✓ Deleted project: %s\n", proj.ID())
+	printDeleteSubmitted("Project", proj.Name())
+	waitUntilGone(ctx, "Project "+proj.Name(), func(ctx context.Context) error {
+		_, err := arubaClient.FromProject().Get(ctx, proj)
+		return err
+	})
 }

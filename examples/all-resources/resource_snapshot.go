@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
@@ -42,14 +41,16 @@ func createSnapshot(ctx context.Context, arubaClient aruba.Client, proj aruba.Re
 	return snap
 }
 
-// deleteSnapshot tears down the snapshot.
+// deleteSnapshot tears down the snapshot and waits until it is fully gone.
 func deleteSnapshot(ctx context.Context, arubaClient aruba.Client, snap *aruba.Snapshot) {
-	fmt.Println("--- Deleting Snapshot ---")
-
-	err := arubaClient.FromStorage().Snapshots().Delete(ctx, snap)
-	if err != nil {
-		log.Printf("Error deleting snapshot: %s", formatErr(err))
+	printDeleteBanner("Snapshot")
+	if err := arubaClient.FromStorage().Snapshots().Delete(ctx, snap); err != nil {
+		printDeleteError("Snapshot", err)
 		return
 	}
-	fmt.Printf("✓ Deleted snapshot: %s\n", snap.ID())
+	printDeleteSubmitted("Snapshot", snap.Name())
+	waitUntilGone(ctx, "Snapshot "+snap.Name(), func(ctx context.Context) error {
+		_, err := arubaClient.FromStorage().Snapshots().Get(ctx, snap)
+		return err
+	})
 }
