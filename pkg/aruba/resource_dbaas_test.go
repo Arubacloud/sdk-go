@@ -306,8 +306,8 @@ func TestDBaaS_ToRequestRoundTrip(t *testing.T) {
 	if req.Properties.Storage == nil || req.Properties.Storage.SizeGB == nil || *req.Properties.Storage.SizeGB != 20 {
 		t.Errorf("Storage.SizeGB = %v", req.Properties.Storage)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
-		t.Errorf("BillingPeriod = %v", req.Properties.BillingPeriod)
+	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPlan.BillingPeriod = %v", req.Properties.BillingPlan)
 	}
 	if req.Properties.Autoscaling == nil || req.Properties.Autoscaling.Enabled == nil || !*req.Properties.Autoscaling.Enabled {
 		t.Errorf("Autoscaling.Enabled = %v", req.Properties.Autoscaling)
@@ -376,10 +376,10 @@ func dbaasTestResponse(id, name, uri string) *types.DBaaSResponse {
 			LocationResponse: loc,
 		},
 		Properties: types.DBaaSPropertiesResponse{
-			Engine:        &types.DBaaSEngineResponse{Type: &engineType},
-			Flavor:        &types.DBaaSFlavorResponse{Name: &flavorName},
-			Storage:       &types.DBaaSStorageResponse{SizeGB: &sizeGB},
-			BillingPeriod: &billingPeriod,
+			Engine:      &types.DBaaSEngineResponse{Type: &engineType},
+			Flavor:      &types.DBaaSFlavorResponse{Name: &flavorName},
+			Storage:     &types.DBaaSStorageResponse{SizeGB: &sizeGB},
+			BillingPlan: &types.DBaaSBillingPlan{BillingPeriod: &billingPeriod},
 			Networking: &types.DBaaSNetworkingResponse{
 				VPC:           &types.ReferenceResource{URI: vpcURI},
 				Subnet:        &types.ReferenceResource{URI: subnetURI},
@@ -642,7 +642,7 @@ const dbaasSuccessBody = `{` +
 	`"engine":{"type":"mysql-8.0"},` +
 	`"flavor":{"name":"DBO2A4"},` +
 	`"storage":{"sizeGb":20},` +
-	`"billingPeriod":"Hour",` +
+	`"billingPlan":{"billingPeriod":"Hour"},` +
 	`"networking":{"vpc":{"uri":"/vpcs/v"},"subnet":{"uri":"/subnets/s"},"securityGroup":{"uri":"/sgs/sg"},"elasticIp":{"uri":"/eips/e"}}` +
 	`},` +
 	`"status":{"state":"Active"}}`
