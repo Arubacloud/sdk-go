@@ -30,7 +30,7 @@ func createDBaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, 
 		InRegion(aruba.RegionITBGBergamo).
 		InZone(aruba.ZoneITBG1).
 		OfEngine(aruba.DatabaseEngineMySQL80).
-		OfFlavor(aruba.DBaaSFlavorDBO2A8).
+		OfFlavor(aruba.DBaaSFlavorDBO2A4).
 		WithSizeGB(10).
 		WithAutoscaling(2, 5).
 		WithBillingPeriod(aruba.BillingPeriodHour).
@@ -50,9 +50,7 @@ func createDBaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, 
 	}
 	printCreated("DBaaS", result.Name(), result.DBaaSID())
 
-	if err := result.WaitUntilReady(ctx, longWaitOpts...); err != nil {
-		printSelfWaitError("DBaaS", result.Name(), err)
-	}
+	waitUntilSelfReady(ctx, "DBaaS", result.Name(), result.WaitUntilReady, longWaitOpts...)
 
 	waitPostDependencies(ctx, "DBaaS", map[string]waitFunc{
 		"Elastic IP": eip.WaitUntilUsed,

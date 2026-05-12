@@ -34,9 +34,7 @@ func createStorageBackup(ctx context.Context, arubaClient aruba.Client, proj aru
 	}
 	printCreated("Storage Backup", result.Name(), result.BackupID())
 
-	if err := result.WaitUntilReady(ctx); err != nil {
-		printSelfWaitError("Storage Backup", result.Name(), err)
-	}
+	waitUntilSelfReady(ctx, "Storage Backup", result.Name(), result.WaitUntilReady)
 
 	return result
 }

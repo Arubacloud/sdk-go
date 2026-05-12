@@ -38,9 +38,7 @@ func createAdvancedSubnet(ctx context.Context, arubaClient aruba.Client, vpc *ar
 	}
 	printCreated("Subnet (Advanced)", result.Name(), result.ID())
 
-	if err := result.WaitUntilReady(ctx); err != nil {
-		printSelfWaitError("Subnet (Advanced)", result.Name(), err)
-	}
+	waitUntilSelfReady(ctx, "Subnet (Advanced)", result.Name(), result.WaitUntilReady)
 
 	return result
 }
@@ -71,9 +69,7 @@ func createBasicSubnet(ctx context.Context, arubaClient aruba.Client, vpc *aruba
 	}
 	printCreated("Subnet (Basic)", result.Name(), result.ID())
 
-	if err := result.WaitUntilReady(ctx); err != nil {
-		printSelfWaitError("Subnet (Basic)", result.Name(), err)
-	}
+	waitUntilSelfReady(ctx, "Subnet (Basic)", result.Name(), result.WaitUntilReady)
 
 	return result
 }
