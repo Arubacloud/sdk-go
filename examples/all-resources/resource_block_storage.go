@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
@@ -42,14 +42,13 @@ func createBlockStorage(ctx context.Context, arubaClient aruba.Client, proj arub
 // to confirm removal. Project deletion fails with 400 if a volume is still in
 // Deleting state.
 func deleteBlockStorage(ctx context.Context, arubaClient aruba.Client, bs *aruba.BlockStorage) {
-	fmt.Println("--- Deleting Block Storage ---")
-
+	printDeleteBanner("Block Storage")
 	if err := arubaClient.FromStorage().Volumes().Delete(ctx, bs); err != nil {
-		log.Printf("Error deleting block storage: %s", formatErr(err))
+		printDeleteError("Block Storage", err)
 		return
 	}
-	fmt.Printf("✓ Deleted block storage: %s\n", bs.ID())
-	waitUntilGone(ctx, "block storage "+bs.Name(), func(ctx context.Context) error {
+	printDeleteSubmitted("Block Storage", bs.Name())
+	waitUntilGone(ctx, "Block Storage "+bs.Name(), func(ctx context.Context) error {
 		_, err := arubaClient.FromStorage().Volumes().Get(ctx, bs)
 		return err
 	})
