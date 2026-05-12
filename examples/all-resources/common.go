@@ -147,6 +147,12 @@ type ResourceCollection struct {
 	Grant                    *aruba.Grant
 	JobRecurring             *aruba.Job
 	JobOneShot               *aruba.Job
+
+	// Populated by fetchAllResources for the delete flow. Contains every
+	// BlockStorage and ElasticIP in the project so the pre-delete inventory
+	// is complete before the user confirms deletion.
+	BlockStorages []*aruba.BlockStorage
+	ElasticIPs    []*aruba.ElasticIP
 }
 
 // ---------------------------------------------------------------------------
@@ -366,6 +372,22 @@ func printDepWaitError(pretty string, err error) {
 // printSelfWaitError logs a post-create self-readiness wait failure.
 func printSelfWaitError(pretty, name string, err error) {
 	log.Printf("✗ %s %s did not become Ready: %v", pretty, name, err)
+}
+
+// printDeleteBanner emits a delete section header: `--- Deleting {pretty} ---`.
+func printDeleteBanner(pretty string) {
+	fmt.Printf("--- Deleting %s ---\n", pretty)
+}
+
+// printDeleteSubmitted emits the "delete accepted" line. The actual
+// "fully gone" confirmation is emitted later by waitUntilGone.
+func printDeleteSubmitted(pretty, idOrName string) {
+	fmt.Printf("→ Submitted delete for %s: %s\n", pretty, idOrName)
+}
+
+// printDeleteError logs a delete-call failure via log.Printf.
+func printDeleteError(pretty string, err error) {
+	log.Printf("✗ Failed to delete %s: %s", pretty, formatErr(err))
 }
 
 // printResourceSummary prints a summary of all created resources.

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
 
@@ -37,13 +37,12 @@ func createElasticIP(ctx context.Context, arubaClient aruba.Client, proj aruba.R
 // removal. Project deletion fails with 400 if an Elastic IP is still in
 // Deleting state.
 func deleteElasticIP(ctx context.Context, arubaClient aruba.Client, eip *aruba.ElasticIP) {
-	fmt.Println("--- Deleting Elastic IP ---")
-
+	printDeleteBanner("Elastic IP")
 	if err := arubaClient.FromNetwork().ElasticIPs().Delete(ctx, eip); err != nil {
-		log.Printf("Error deleting Elastic IP: %v", err)
+		printDeleteError("Elastic IP", err)
 		return
 	}
-	fmt.Printf("✓ Deleted Elastic IP: %s\n", eip.ID())
+	printDeleteSubmitted("Elastic IP", eip.Name())
 	waitUntilGone(ctx, "Elastic IP "+eip.Name(), func(ctx context.Context) error {
 		_, err := arubaClient.FromNetwork().ElasticIPs().Get(ctx, eip)
 		return err
