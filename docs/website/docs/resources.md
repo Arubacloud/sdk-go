@@ -31,7 +31,7 @@ result, err := client.Create(ctx,
         WithFoo(...))
 
 // 3. Wait for async resources to become ready
-if err := result.WaitUntilActive(ctx); err != nil { … }
+if err := result.WaitUntilReady(ctx); err != nil { … }
 
 // 4. Read response accessors
 fmt.Println(result.ID(), result.Name(), result.State())
@@ -40,7 +40,7 @@ fmt.Println(result.ID(), result.Name(), result.State())
 - `aruba.NewX()` — factory constructor for every resource builder
 - `IntoFoo(ref)` — binds the parent scope; accepts any `aruba.Ref` (hydrated wrapper or `aruba.URI("…")`)
 - `WithFoo(...)` — fluent setters; errors are deferred until `Create`/`Update`
-- `WaitUntilActive(ctx, opts...)` — available on resources marked **async** below; see [Async / Await](./async) for full options
+- `WaitUntilReady(ctx, opts...)` — available on resources marked **async** below; see [Async / Await](./async) for full options
 - `aruba.URI(s)` — wraps a raw string path into a `Ref` (see [API Walkthrough](./walkthrough#5-get-a-specific-resource))
 
 ---
@@ -53,7 +53,7 @@ arubaClient.FromProject()
 
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
 
-> Project is **not** async — it is synchronously ready after `Create` returns. No `WaitUntilActive` call is needed.
+> Project is **not** async — it is synchronously ready after `Create` returns. No `WaitUntilReady` call is needed.
 
 ```go
 proj, err := arubaClient.FromProject().Create(
@@ -62,7 +62,7 @@ proj, err := arubaClient.FromProject().Create(
         WithName("my-project").
         WithDescription("Production project").
         AddTag("env:prod").
-        WithDefault(false))
+        NotDefault())
 if err != nil {
     log.Fatalf("Create project: %v", err)
 }
@@ -122,7 +122,7 @@ arubaClient.FromCompute().CloudServers()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`, `PowerOn`, `PowerOff`, `SetPassword`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 A Cloud Server depends on network resources (VPC, Subnet, Security Group), an Elastic IP, a Boot Volume (Block Storage), and a Key Pair. Create those first and pass the hydrated wrappers as `Ref` parameters.
 
@@ -133,9 +133,9 @@ cs, err := arubaClient.FromCompute().CloudServers().Create(
         IntoProject(proj).
         WithName("my-server").
         AddTag("env:prod").
-        InRegion("ITBG-Bergamo").
-        InZone("ITBG-1").
-        WithFlavor("CSO2A4").
+        InRegion(aruba.RegionITBGBergamo).
+        InZone(aruba.ZoneITBG1).
+        OfFlavor(aruba.CloudServerFlavorCSO2A4).
         WithVPC(vpc).
         AddSubnet(subnet).
         AddSecurityGroup(sg).
@@ -146,8 +146,8 @@ if err != nil {
     log.Fatalf("Create Cloud Server: %v", err)
 }
 
-if err := cs.WaitUntilActive(ctx); err != nil {
-    log.Fatalf("Cloud Server did not become Active: %v", err)
+if err := cs.WaitUntilReady(ctx); err != nil {
+    log.Fatalf("Cloud Server did not become Ready: %v", err)
 }
 fmt.Printf("✓ Cloud Server: %s (zone: %s, flavor: %s)\n", cs.Name(), cs.Zone(), cs.Flavor())
 ```
@@ -172,7 +172,7 @@ if err := cs.SetPassword(ctx, "NewStr0ngP@ss!"); err != nil { log.Fatalf("SetPas
 - `NetworkInterfaces()` — slice of network interface descriptors
 - `Template()` — image/template used at boot
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()` — from `statusMixin`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -192,7 +192,7 @@ kp, err := arubaClient.FromCompute().KeyPairs().Create(
     aruba.NewKeyPair().
         IntoProject(proj).
         WithName("my-keypair").
-        InRegion("ITBG-Bergamo").
+        InRegion(aruba.RegionITBGBergamo).
         WithPublicKey("ssh-rsa AAAAB3NzaC1yc2E..."))
 if err != nil {
     log.Fatalf("Create KeyPair: %v", err)
@@ -218,7 +218,7 @@ arubaClient.FromContainer().KaaS()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`, `DownloadKubeconfig`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 ```go
 k, err := arubaClient.FromContainer().KaaS().Create(
@@ -227,26 +227,26 @@ k, err := arubaClient.FromContainer().KaaS().Create(
         IntoProject(proj).
         WithName("my-cluster").
         AddTag("env:prod").
-        WithLocation("ITBG-Bergamo").
+        InRegion(aruba.RegionITBGBergamo).
         WithVPC(vpc).
         WithSubnet(subnet).
-        WithSecurityGroupName("my-security-group").
+        WithSecurityGroup(sg).
         WithNodeCIDR("10.100.0.0/16", "node-cidr").
         WithPodCIDR("10.200.0.0/16").
-        WithKubernetesVersion("1.32.3").
+        WithKubernetesVersion(aruba.KubernetesVersion1323).
         WithHA(true).
-        WithBillingPeriod("Hour").
+        WithBillingPeriod(aruba.BillingPeriodHour).
         AddNodePool(aruba.NewNodePool().
             Named("default-pool").
             WithCount(3).
-            OfInstance("K4A8").
-            InZone("ITBG-1")))
+            OfInstance(aruba.NodePoolInstanceK4A8).
+            InZone(aruba.ZoneITBG1)))
 if err != nil {
     log.Fatalf("Create KaaS: %v", err)
 }
 
-if err := k.WaitUntilActive(ctx); err != nil {
-    log.Fatalf("KaaS did not become Active: %v", err)
+if err := k.WaitUntilReady(ctx); err != nil {
+    log.Fatalf("KaaS did not become Ready: %v", err)
 }
 fmt.Printf("✓ KaaS cluster: %s (k8s: %s)\n", k.Name(), k.KubernetesVersion())
 ```
@@ -276,7 +276,7 @@ if err != nil {
 - `KubernetesVersion()` — Kubernetes version string
 - `BillingPeriod()` — billing cadence
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -288,7 +288,7 @@ arubaClient.FromContainer().ContainerRegistry()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`. This resource can take 20–40 minutes to converge — use a generous wait budget.
 
 ```go
 reg, err := arubaClient.FromContainer().ContainerRegistry().Create(
@@ -300,17 +300,17 @@ reg, err := arubaClient.FromContainer().ContainerRegistry().Create(
         WithVPC(vpc).
         WithSubnet(subnet).
         WithSecurityGroup(sg).
-        WithPublicIP(eip).
+        WithElasticIP(eip).
         WithBlockStorage(blockStorage).
         WithAdminUsername("admin").
-        WithSize(100).
-        WithBillingPeriod("Hour"))
+        OfSize(aruba.ContainerRegistrySizeFlavorSmall).
+        WithBillingPeriod(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create ContainerRegistry: %v", err)
 }
 
-if err := reg.WaitUntilActive(ctx); err != nil {
-    log.Fatalf("ContainerRegistry did not become Active: %v", err)
+if err := reg.WaitUntilReady(ctx); err != nil {
+    log.Fatalf("ContainerRegistry did not become Ready: %v", err)
 }
 fmt.Printf("✓ Registry: %s (public IP: %s)\n", reg.Name(), reg.PublicIP())
 ```
@@ -318,13 +318,12 @@ fmt.Printf("✓ Registry: %s (public IP: %s)\n", reg.Name(), reg.PublicIP())
 **Response accessors**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `ContainerRegistryID()` — provider-assigned registry ID
-- `PublicIP()` — public endpoint IP
+- `ElasticIP()` — public endpoint URI
 - `VPC()`, `Subnet()`, `SecurityGroup()`, `BlockStorage()` — `aruba.Ref` to attached resources
 - `AdminUsername()` — registry admin user
-- `ConcurrentUsers()` — configured concurrent user limit
 - `BillingPeriod()` — billing cadence
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -338,7 +337,7 @@ arubaClient.FromDatabase().DBaaS()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 ```go
 db, err := arubaClient.FromDatabase().DBaaS().Create(
@@ -347,20 +346,22 @@ db, err := arubaClient.FromDatabase().DBaaS().Create(
         IntoProject(proj).
         WithName("my-database").
         AddTag("env:prod").
-        InRegion("ITBG-Bergamo").
-        InZone("ITBG-1").
-        WithEngine("mysql-8.0").
-        WithFlavor("DBO2A4").
-        WithStorage(20).
-        WithBillingPeriod("Hour").
-        WithAutoscaling(true).
-        WithNetworking(vpc, subnet, sg, eip))
+        InRegion(aruba.RegionITBGBergamo).
+        InZone(aruba.ZoneITBG1).
+        OfEngine(aruba.DatabaseEngineMySQL80).
+        OfFlavor(aruba.DBaaSFlavorDBO2A4).
+        WithSizeGB(20).
+        WithBillingPeriod(aruba.BillingPeriodHour).
+        WithVPC(vpc).
+        WithSubnet(subnet).
+        WithSecurityGroup(sg).
+        WithElasticIP(eip))
 if err != nil {
     log.Fatalf("Create DBaaS: %v", err)
 }
 
-if err := db.WaitUntilActive(ctx); err != nil {
-    log.Fatalf("DBaaS did not become Active: %v", err)
+if err := db.WaitUntilReady(ctx); err != nil {
+    log.Fatalf("DBaaS did not become Ready: %v", err)
 }
 fmt.Printf("✓ DBaaS: %s (engine: %s)\n", db.Name(), db.Engine())
 ```
@@ -368,16 +369,16 @@ fmt.Printf("✓ DBaaS: %s (engine: %s)\n", db.Name(), db.Engine())
 **Response accessors**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `DBaaSID()` — provider-assigned instance ID
-- `Engine()` — engine slug (e.g. `"mysql-8.0"`)
+- `Engine()` — engine identifier (`DatabaseEngine` constant)
 - `EngineRaw()` — full engine struct
-- `Flavor()` — flavor slug
+- `Flavor()` — flavor identifier (`DBaaSFlavor` constant)
 - `FlavorRaw()` — full flavor struct
-- `Storage()` — storage size in GB
-- `Autoscaling()` — bool
+- `SizeGB()` — storage size in GB
+- `AutoscalingEnabled()` — bool
 - `VPC()`, `Subnet()`, `SecurityGroup()`, `ElasticIP()` — `aruba.Ref` to networking resources
 - `BillingPeriod()` — billing cadence
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -389,7 +390,7 @@ arubaClient.FromDatabase().Databases()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 ```go
 database, err := arubaClient.FromDatabase().Databases().Create(
@@ -402,8 +403,8 @@ if err != nil {
     log.Fatalf("Create Database: %v", err)
 }
 
-if err := database.WaitUntilActive(ctx); err != nil {
-    log.Fatalf("Database did not become Active: %v", err)
+if err := database.WaitUntilReady(ctx); err != nil {
+    log.Fatalf("Database did not become Ready: %v", err)
 }
 fmt.Printf("✓ Database: %s\n", database.Name())
 ```
@@ -413,7 +414,7 @@ fmt.Printf("✓ Database: %s\n", database.Name())
 - `DatabaseID()` — provider-assigned database ID
 - `DBaaSID()` — parent DBaaS ID
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -425,22 +426,22 @@ arubaClient.FromDatabase().Users()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 ```go
 user, err := arubaClient.FromDatabase().Users().Create(
     ctx,
     aruba.NewUser().
         IntoDBaaS(db).
-        WithName("app_user").
+        WithUsername("app_user").
         WithPassword("Str0ngP@ssword!").
         AddTag("app:backend"))
 if err != nil {
     log.Fatalf("Create User: %v", err)
 }
 
-if err := user.WaitUntilActive(ctx); err != nil {
-    log.Fatalf("User did not become Active: %v", err)
+if err := user.WaitUntilReady(ctx); err != nil {
+    log.Fatalf("User did not become Ready: %v", err)
 }
 fmt.Printf("✓ User: %s\n", user.Name())
 ```
@@ -448,9 +449,10 @@ fmt.Printf("✓ User: %s\n", user.Name())
 **Response accessors**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `UserID()` — provider-assigned user ID
+- `Username()` — database username
 - `DBaaSID()` — parent DBaaS ID
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -462,7 +464,7 @@ arubaClient.FromDatabase().Grants()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 ```go
 grant, err := arubaClient.FromDatabase().Grants().Create(
@@ -475,8 +477,8 @@ if err != nil {
     log.Fatalf("Create Grant: %v", err)
 }
 
-if err := grant.WaitUntilActive(ctx); err != nil {
-    log.Fatalf("Grant did not become Active: %v", err)
+if err := grant.WaitUntilReady(ctx); err != nil {
+    log.Fatalf("Grant did not become Ready: %v", err)
 }
 fmt.Printf("✓ Grant: %s (privileges: %s)\n", grant.Name(), grant.Privileges())
 ```
@@ -487,7 +489,7 @@ fmt.Printf("✓ Grant: %s (privileges: %s)\n", grant.Name(), grant.Privileges())
 - `DatabaseID()` — parent Database ID
 - `Privileges()` — privilege string
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -499,7 +501,7 @@ arubaClient.FromDatabase().DBaaSBackups()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 ```go
 backup, err := arubaClient.FromDatabase().DBaaSBackups().Create(
@@ -507,28 +509,29 @@ backup, err := arubaClient.FromDatabase().DBaaSBackups().Create(
     aruba.NewDBaaSBackup().
         IntoProject(proj).
         WithName("my-db-backup").
-        WithDBaaS(db).
-        WithType("Full").
-        WithRetentionDays(30).
+        FromDBaaS(db).
+        WithBillingPeriod(aruba.BillingPeriodHour).
         AddTag("backup"))
 if err != nil {
     log.Fatalf("Create DBaaSBackup: %v", err)
 }
 
-if err := backup.WaitUntilActive(ctx); err != nil {
-    log.Fatalf("DBaaS Backup did not become Active: %v", err)
+if err := backup.WaitUntilReady(ctx); err != nil {
+    log.Fatalf("DBaaS Backup did not become Ready: %v", err)
 }
 fmt.Printf("✓ DBaaS Backup: %s\n", backup.Name())
 ```
 
 **Response accessors**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `BackupID()` — provider-assigned backup ID
-- `DBaaSID()` — source DBaaS ID
-- `Type()` — backup type string
-- `RetentionDays()` — retention period
+- `DBaaSBackupID()` — provider-assigned backup ID
+- `DBaaSURI()` — source DBaaS URI
+- `DatabaseURI()` — source Database URI (if applicable)
+- `SizeGB()` — backup size in GB
+- `Zone()` — availability zone
+- `BillingPeriod()` — billing cadence
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -600,7 +603,7 @@ arubaClient.FromNetwork().VPCs()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 ```go
 vpc, err := arubaClient.FromNetwork().VPCs().Create(
@@ -609,15 +612,15 @@ vpc, err := arubaClient.FromNetwork().VPCs().Create(
         IntoProject(proj).
         WithName("my-vpc").
         AddTag("network").
-        InRegion("ITBG-Bergamo").
-        WithDefault(false).
+        InRegion(aruba.RegionITBGBergamo).
+        NotDefault().
         WithPreset(false))
 if err != nil {
     log.Fatalf("Create VPC: %v", err)
 }
 
-if err := vpc.WaitUntilActive(ctx); err != nil {
-    log.Fatalf("VPC did not become Active: %v", err)
+if err := vpc.WaitUntilReady(ctx); err != nil {
+    log.Fatalf("VPC did not become Ready: %v", err)
 }
 fmt.Printf("✓ VPC: %s\n", vpc.Name())
 ```
@@ -628,7 +631,7 @@ fmt.Printf("✓ VPC: %s\n", vpc.Name())
 - `Region()` — region slug
 - `IsDefault()`, `IsPreset()` — flags
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -640,9 +643,9 @@ arubaClient.FromNetwork().Subnets()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
-`WithType` accepts `string(aruba.SubnetTypeBasic)` or `string(aruba.SubnetTypeAdvanced)`.
+`OfType` accepts `aruba.SubnetTypeBasic` or `aruba.SubnetTypeAdvanced` (typed constants — no string cast needed).
 
 `aruba.NewSubnetDHCP()` is a sub-builder for DHCP configuration. Attach it with `WithDHCP(...)`.
 
@@ -653,9 +656,9 @@ subnet, err := arubaClient.FromNetwork().Subnets().Create(
         IntoVPC(vpc).
         WithName("my-subnet").
         AddTag("network").
-        InRegion("ITBG-Bergamo").
-        WithType(string(aruba.SubnetTypeAdvanced)).
-        WithDefault(false).
+        InRegion(aruba.RegionITBGBergamo).
+        OfType(aruba.SubnetTypeAdvanced).
+        NotDefault().
         WithCIDR("192.168.1.0/25").
         WithDHCP(aruba.NewSubnetDHCP().
             Enabled().
@@ -667,8 +670,8 @@ if err != nil {
     log.Fatalf("Create Subnet: %v", err)
 }
 
-if err := subnet.WaitUntilActive(ctx); err != nil {
-    log.Fatalf("Subnet did not become Active: %v", err)
+if err := subnet.WaitUntilReady(ctx); err != nil {
+    log.Fatalf("Subnet did not become Ready: %v", err)
 }
 fmt.Printf("✓ Subnet: %s (CIDR: %s)\n", subnet.Name(), subnet.CIDR())
 ```
@@ -676,13 +679,13 @@ fmt.Printf("✓ Subnet: %s (CIDR: %s)\n", subnet.Name(), subnet.CIDR())
 **Response accessors**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `SubnetID()` — provider-assigned subnet ID
-- `Type()` — subnet type string
+- `Type()` — subnet type (`SubnetType` constant)
 - `CIDR()` — CIDR block
 - `DHCP()` — DHCP configuration
 - `IsDefault()` — bool
 - `Region()` — region slug
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -694,7 +697,7 @@ arubaClient.FromNetwork().ElasticIPs()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 ```go
 eip, err := arubaClient.FromNetwork().ElasticIPs().Create(
@@ -703,14 +706,14 @@ eip, err := arubaClient.FromNetwork().ElasticIPs().Create(
         IntoProject(proj).
         WithName("my-eip").
         AddTag("network").
-        InRegion("ITBG-Bergamo").
-        WithBillingPeriod("Hour"))
+        InRegion(aruba.RegionITBGBergamo).
+        WithBillingPeriod(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create ElasticIP: %v", err)
 }
 
-if err := eip.WaitUntilActive(ctx); err != nil {
-    log.Fatalf("ElasticIP did not become Active: %v", err)
+if err := eip.WaitUntilReady(ctx); err != nil {
+    log.Fatalf("ElasticIP did not become Ready: %v", err)
 }
 fmt.Printf("✓ Elastic IP: %s (%s)\n", eip.Name(), eip.Address())
 ```
@@ -722,7 +725,7 @@ fmt.Printf("✓ Elastic IP: %s (%s)\n", eip.Name(), eip.Address())
 - `BillingPeriod()` — billing cadence
 - `Region()` — region slug
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilNotUsed(ctx, opts...)`, `WaitUntilUsed(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -734,7 +737,7 @@ arubaClient.FromNetwork().SecurityGroups()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 ```go
 sg, err := arubaClient.FromNetwork().SecurityGroups().Create(
@@ -743,12 +746,12 @@ sg, err := arubaClient.FromNetwork().SecurityGroups().Create(
         IntoVPC(vpc).
         WithName("my-security-group").
         AddTag("security").
-        WithDefault(false))
+        NotDefault())
 if err != nil {
     log.Fatalf("Create SecurityGroup: %v", err)
 }
 
-if err := sg.WaitUntilActive(ctx); err != nil {
+if err := sg.WaitUntilReady(ctx); err != nil {
     log.Fatalf("SecurityGroup did not become Active: %v", err)
 }
 fmt.Printf("✓ Security Group: %s (ID: %s)\n", sg.Name(), sg.ID())
@@ -757,9 +760,9 @@ fmt.Printf("✓ Security Group: %s (ID: %s)\n", sg.Name(), sg.ID())
 **Response accessors**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `SecurityGroupID()` — provider-assigned group ID
-- `Default()` — bool
+- `IsDefault()` — bool
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -773,7 +776,7 @@ arubaClient.FromNetwork().SecurityGroupRules()
 **Supported operations**: `Create`, `List`, `Get`, `Delete`
 **Async**: yes — `State()` and `FailureReason()` are available.
 
-`WithDirection` accepts `string(aruba.RuleDirectionIngress)` or `string(aruba.RuleDirectionEgress)`.
+`WithDirection` accepts `aruba.RuleDirectionIngress` or `aruba.RuleDirectionEgress`. `WithProtocol` accepts `aruba.RuleProtocolTCP`, `aruba.RuleProtocolUDP`, `aruba.RuleProtocolICMP`, or `aruba.RuleProtocolANY`.
 
 > **Caveat**: `WithTargetCIDR` and `WithTargetSecurityGroup` are mutually exclusive. Setting both records a setter-time error that surfaces on `Create`.
 
@@ -784,9 +787,9 @@ rule, err := arubaClient.FromNetwork().SecurityGroupRules().Create(
         IntoSecurityGroup(sg).
         WithName("allow-ssh").
         AddTag("ssh").
-        InRegion("ITBG-Bergamo").
-        WithDirection(string(aruba.RuleDirectionIngress)).
-        WithProtocol("TCP").
+        InRegion(aruba.RegionITBGBergamo).
+        WithDirection(aruba.RuleDirectionIngress).
+        WithProtocol(aruba.RuleProtocolTCP).
         WithPort("22").
         WithTargetCIDR("0.0.0.0/0"))
 if err != nil {
@@ -847,7 +850,7 @@ arubaClient.FromNetwork().VPCPeerings()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 ```go
 peering, err := arubaClient.FromNetwork().VPCPeerings().Create(
@@ -856,13 +859,13 @@ peering, err := arubaClient.FromNetwork().VPCPeerings().Create(
         IntoVPC(vpc).
         WithName("my-peering").
         AddTag("network").
-        InRegion("ITBG-Bergamo").
+        InRegion(aruba.RegionITBGBergamo).
         WithPeerVPC(aruba.URI("/projects/"+peerProjectID+"/vpcs/"+peerVPCID)))
 if err != nil {
     log.Fatalf("Create VPCPeering: %v", err)
 }
 
-if err := peering.WaitUntilActive(ctx); err != nil {
+if err := peering.WaitUntilReady(ctx); err != nil {
     log.Fatalf("VPCPeering did not become Active: %v", err)
 }
 fmt.Printf("✓ VPC Peering: %s\n", peering.Name())
@@ -874,7 +877,7 @@ fmt.Printf("✓ VPC Peering: %s\n", peering.Name())
 - `VPCID()` — source VPC ID
 - `PeerVPC()` — `aruba.Ref` to the peer VPC
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -886,7 +889,7 @@ arubaClient.FromNetwork().VPCPeeringRoutes()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 ```go
 route, err := arubaClient.FromNetwork().VPCPeeringRoutes().Create(
@@ -895,14 +898,14 @@ route, err := arubaClient.FromNetwork().VPCPeeringRoutes().Create(
         IntoVPCPeering(peering).
         WithName("my-peering-route").
         AddTag("network").
-        InRegion("ITBG-Bergamo").
+        InRegion(aruba.RegionITBGBergamo).
         WithCIDR("10.0.0.0/8").
         WithTarget(aruba.URI("/projects/"+projectID+"/vpcs/"+vpcID)))
 if err != nil {
     log.Fatalf("Create VPCPeeringRoute: %v", err)
 }
 
-if err := route.WaitUntilActive(ctx); err != nil {
+if err := route.WaitUntilReady(ctx); err != nil {
     log.Fatalf("VPCPeeringRoute did not become Active: %v", err)
 }
 fmt.Printf("✓ Peering Route: %s (CIDR: %s)\n", route.Name(), route.CIDR())
@@ -914,7 +917,7 @@ fmt.Printf("✓ Peering Route: %s (CIDR: %s)\n", route.Name(), route.CIDR())
 - `Target()` — `aruba.Ref` to the route target
 - `VPCPeeringID()` — parent peering ID
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -926,12 +929,12 @@ arubaClient.FromNetwork().VPNTunnels()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 VPN Tunnel sub-builders:
-- `aruba.NewVPNIKE()` — IKE phase 1 parameters
-- `aruba.NewVPNESP()` — ESP phase 2 parameters
-- `aruba.NewVPNPSK()` — pre-shared key configuration
+- `aruba.NewVPNIKE()` — IKE phase 1 parameters (`WithEncryption(IKEEncryption)`, `WithHash(IKEHash)`, `WithDHGroup(IKEDHGroup)`, `WithDPDAction(IKEDPDAction)`)
+- `aruba.NewVPNESP()` — ESP phase 2 parameters (`WithEncryption(ESPEncryption)`, `WithHash(ESPHash)`, `WithPFS(ESPPFSGroup)`)
+- `aruba.NewVPNPSK()` — pre-shared key configuration (`WithKey(string)`, `WithCloudSite(string)`, `WithOnPremSite(string)`)
 
 ```go
 tunnel, err := arubaClient.FromNetwork().VPNTunnels().Create(
@@ -940,34 +943,36 @@ tunnel, err := arubaClient.FromNetwork().VPNTunnels().Create(
         IntoProject(proj).
         WithName("my-vpn-tunnel").
         AddTag("vpn").
-        InRegion("ITBG-Bergamo").
-        WithRemoteGateway("203.0.113.1").
-        WithIKE(aruba.NewVPNIKE().
-            WithEncryption(string(aruba.VPNEncryptionAES256)).
-            WithHash(string(aruba.VPNHashSHA256)).
-            WithDHGroup(string(aruba.VPNDHGroup14))).
-        WithESP(aruba.NewVPNESP().
-            WithEncryption(string(aruba.VPNEncryptionAES256)).
-            WithHash(string(aruba.VPNHashSHA256))).
-        WithPSK(aruba.NewVPNPSK().
-            WithKey("my-pre-shared-key").
-            WithID("tunnel-id")))
+        InRegion(aruba.RegionITBGBergamo).
+        WithPeerClientPublicIP("203.0.113.1").
+        WithIKESettings(aruba.NewVPNIKE().
+            WithEncryption(aruba.IKEEncryptionAES256).
+            WithHash(aruba.IKEHashSHA256).
+            WithDHGroup(aruba.IKEDHGroup14)).
+        WithESPSettings(aruba.NewVPNESP().
+            WithEncryption(aruba.ESPEncryptionAES256).
+            WithHash(aruba.ESPHashSHA256)).
+        WithPSKSettings(aruba.NewVPNPSK().
+            WithKey("my-pre-shared-key")))
 if err != nil {
     log.Fatalf("Create VPNTunnel: %v", err)
 }
 
-if err := tunnel.WaitUntilActive(ctx); err != nil {
+if err := tunnel.WaitUntilReady(ctx); err != nil {
     log.Fatalf("VPNTunnel did not become Active: %v", err)
 }
-fmt.Printf("✓ VPN Tunnel: %s (gateway: %s)\n", tunnel.Name(), tunnel.RemoteGateway())
+fmt.Printf("✓ VPN Tunnel: %s (gateway: %s)\n", tunnel.Name(), tunnel.PeerClientPublicIP())
 ```
 
 **Response accessors**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `VPNTunnelID()` — provider-assigned tunnel ID
-- `RemoteGateway()` — remote gateway IP
+- `PeerClientPublicIP()` — remote peer gateway IP
+- `IKE()` — `*aruba.VPNIKE` IKE settings
+- `ESP()` — `*aruba.VPNESP` ESP settings
+- `PSK()` — `*aruba.VPNPSK` PSK settings
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -979,7 +984,7 @@ arubaClient.FromNetwork().VPNRoutes()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 ```go
 vpnRoute, err := arubaClient.FromNetwork().VPNRoutes().Create(
@@ -988,14 +993,14 @@ vpnRoute, err := arubaClient.FromNetwork().VPNRoutes().Create(
         IntoVPNTunnel(tunnel).
         WithName("my-vpn-route").
         AddTag("vpn").
-        InRegion("ITBG-Bergamo").
+        InRegion(aruba.RegionITBGBergamo).
         WithCIDR("10.0.0.0/8").
         WithTarget(aruba.URI("/projects/"+projectID+"/vpcs/"+vpcID)))
 if err != nil {
     log.Fatalf("Create VPNRoute: %v", err)
 }
 
-if err := vpnRoute.WaitUntilActive(ctx); err != nil {
+if err := vpnRoute.WaitUntilReady(ctx); err != nil {
     log.Fatalf("VPNRoute did not become Active: %v", err)
 }
 fmt.Printf("✓ VPN Route: %s (CIDR: %s)\n", vpnRoute.Name(), vpnRoute.CIDR())
@@ -1007,7 +1012,7 @@ fmt.Printf("✓ VPN Route: %s (CIDR: %s)\n", vpnRoute.Name(), vpnRoute.CIDR())
 - `Target()` — `aruba.Ref` to the route target
 - `VPNTunnelID()` — parent VPN Tunnel ID
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -1023,31 +1028,42 @@ arubaClient.FromSchedule().Jobs()
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
 **Async**: yes — `State()` and `FailureReason()` are available.
 
-`WithType` accepts `string(aruba.JobTypeOneShot)` or `string(aruba.JobTypeRecurring)`.
-
-For recurring jobs, `WithRecurrence` accepts `aruba.RecurrenceTypeHourly`, `aruba.RecurrenceTypeDaily`, `aruba.RecurrenceTypeWeekly`, `aruba.RecurrenceTypeMonthly`, or `aruba.RecurrenceTypeCustom`.
+Use `OneShotAt(t time.Time)` to schedule a one-shot job, or `WithCron(expr string)` for a recurring job on a cron schedule. Use `RecurringUntil(t time.Time)` to set an end date for a recurring job.
 
 ```go
+// One-shot job — fires once at a specific time
 job, err := arubaClient.FromSchedule().Jobs().Create(
     ctx,
     aruba.NewJob().
         IntoProject(proj).
-        WithName("my-job").
+        WithName("my-one-shot-job").
         AddTag("automation").
-        WithType(string(aruba.JobTypeRecurring)).
-        WithRecurrence(string(aruba.RecurrenceTypeDaily)))
+        OneShotAt(time.Now().Add(10*time.Minute)))
 if err != nil {
     log.Fatalf("Create Job: %v", err)
 }
-fmt.Printf("✓ Job: %s (type: %s)\n", job.Name(), job.Type())
+fmt.Printf("✓ Job: %s (type: %s)\n", job.Name(), job.JobType())
+
+// Recurring job — fires on a cron schedule
+cronJob, err := arubaClient.FromSchedule().Jobs().Create(
+    ctx,
+    aruba.NewJob().
+        IntoProject(proj).
+        WithName("my-recurring-job").
+        AddTag("automation").
+        WithCron("0 * * * *"))
+if err != nil {
+    log.Fatalf("Create recurring Job: %v", err)
+}
+fmt.Printf("✓ Recurring Job: %s (cron: %s)\n", cronJob.Name(), cronJob.Cron())
 ```
 
 **Response accessors**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `JobID()` — provider-assigned job ID
-- `Type()` — job type string
-- `Recurrence()` — recurrence type string
-- `Steps()` — configured job steps
+- `JobType()` — job type (`types.JobTypeOneShot` or `types.JobTypeRecurring`)
+- `Cron()` — cron expression (recurring jobs)
+- `Enabled()` — bool
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `Raw()` — underlying wire struct
 
@@ -1062,7 +1078,7 @@ arubaClient.FromSecurity().KMS()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 ```go
 kms, err := arubaClient.FromSecurity().KMS().Create(
@@ -1071,13 +1087,13 @@ kms, err := arubaClient.FromSecurity().KMS().Create(
         IntoProject(proj).
         WithName("my-kms").
         AddTag("security").
-        InRegion("ITBG-Bergamo").
-        WithBillingPeriod("Hour"))
+        InRegion(aruba.RegionITBGBergamo).
+        WithBillingPeriod(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create KMS: %v", err)
 }
 
-if err := kms.WaitUntilActive(ctx); err != nil {
+if err := kms.WaitUntilReady(ctx); err != nil {
     log.Fatalf("KMS did not become Active: %v", err)
 }
 fmt.Printf("✓ KMS: %s (ID: %s)\n", kms.Name(), kms.ID())
@@ -1087,9 +1103,8 @@ fmt.Printf("✓ KMS: %s (ID: %s)\n", kms.Name(), kms.ID())
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `KMSID()` — provider-assigned KMS instance ID
 - `BillingPeriod()` — billing cadence
-- `Region()` — region slug
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -1103,7 +1118,7 @@ arubaClient.FromSecurity().Keys()
 **Supported operations**: `Create`, `List`, `Get`, `Delete`
 **Async**: yes — `State()` and `FailureReason()` are available.
 
-`WithAlgorithm` accepts `string(aruba.KeyAlgorithmAes)` or `string(aruba.KeyAlgorithmRsa)`.
+`WithAlgorithm` accepts `aruba.KeyAlgorithmAes` or `aruba.KeyAlgorithmRsa` (typed constants — no string cast needed).
 
 ```go
 key, err := arubaClient.FromSecurity().Keys().Create(
@@ -1112,7 +1127,7 @@ key, err := arubaClient.FromSecurity().Keys().Create(
         IntoKMS(kms).
         WithName("my-encryption-key").
         AddTag("security").
-        WithAlgorithm(string(aruba.KeyAlgorithmAes)))
+        WithAlgorithm(aruba.KeyAlgorithmAes))
 if err != nil {
     log.Fatalf("Create Key: %v", err)
 }
@@ -1138,7 +1153,7 @@ arubaClient.FromSecurity().Kmips()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` (or wait for `"CertificateAvailable"`) after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`. KMIP's `WaitUntilReady` succeeds on either `"CertificateAvailable"` or `"Active"`. `WaitUntilCertificateAvailable` is an alias for `WaitUntilReady`.
 
 ```go
 km, err := arubaClient.FromSecurity().Kmips().Create(
@@ -1151,9 +1166,8 @@ if err != nil {
     log.Fatalf("Create Kmip: %v", err)
 }
 
-// Wait for certificate to be available
-if err := km.WaitUntilState(ctx, string(aruba.ServiceStatusCertificateAvailable)); err != nil {
-    log.Fatalf("Kmip certificate not available: %v", err)
+if err := km.WaitUntilReady(ctx); err != nil {
+    log.Fatalf("Kmip did not become ready: %v", err)
 }
 fmt.Printf("✓ Kmip: %s\n", km.Name())
 ```
@@ -1174,7 +1188,7 @@ fmt.Println("Key:",  cert.Key())
 - `KmipID()` — provider-assigned KMIP ID
 - `KmipStatus()` — KMIP-specific status
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilCertificateAvailable(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -1188,9 +1202,9 @@ arubaClient.FromStorage().Volumes()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
-`WithType` accepts `aruba.BlockStorageTypeStandard` or `aruba.BlockStorageTypePerformance`.
+`OfType` accepts `aruba.BlockStorageTypeStandard` or `aruba.BlockStorageTypePerformance`. Use `SetBootable()` to mark a volume as bootable; `UnsetBootable()` to unset. Use `FromImage(imageID)` to specify a base image.
 
 ```go
 bs, err := arubaClient.FromStorage().Volumes().Create(
@@ -1199,24 +1213,24 @@ bs, err := arubaClient.FromStorage().Volumes().Create(
         IntoProject(proj).
         WithName("my-volume").
         AddTag("storage").
-        InRegion("ITBG-Bergamo").
-        InZone("ITBG-1").
-        WithSize(20).
-        WithType(aruba.BlockStorageTypeStandard).
-        WithBillingPeriod("Hour").
-        WithBootable(true).
-        WithImage("LU22-001"))
+        InRegion(aruba.RegionITBGBergamo).
+        InZone(aruba.ZoneITBG1).
+        WithSizeGB(20).
+        OfType(aruba.BlockStorageTypeStandard).
+        WithBillingPeriod(aruba.BillingPeriodHour).
+        SetBootable().
+        FromImage("LU22-001"))
 if err != nil {
     log.Fatalf("Create BlockStorage: %v", err)
 }
 
-if err := bs.WaitUntilActive(ctx); err != nil {
+if err := bs.WaitUntilReady(ctx); err != nil {
     log.Fatalf("BlockStorage did not become Active: %v", err)
 }
-fmt.Printf("✓ Volume: %s (%d GB)\n", bs.Name(), bs.Size())
+fmt.Printf("✓ Volume: %s (%d GB)\n", bs.Name(), bs.SizeGB())
 ```
 
-To create a volume **from a snapshot**, use `FromSnapshot(snapshot)` instead of `WithImage`:
+To create a volume **from a snapshot**, use `FromSnapshot(snapshot)` instead of `FromImage`:
 
 ```go
 bs, err := arubaClient.FromStorage().Volumes().Create(
@@ -1224,27 +1238,27 @@ bs, err := arubaClient.FromStorage().Volumes().Create(
     aruba.NewBlockStorage().
         IntoProject(proj).
         WithName("restored-volume").
-        InRegion("ITBG-Bergamo").
-        InZone("ITBG-1").
-        WithSize(20).
-        WithType(aruba.BlockStorageTypeStandard).
-        WithBillingPeriod("Hour").
-        WithBootable(true).
+        InRegion(aruba.RegionITBGBergamo).
+        InZone(aruba.ZoneITBG1).
+        WithSizeGB(20).
+        OfType(aruba.BlockStorageTypeStandard).
+        WithBillingPeriod(aruba.BillingPeriodHour).
+        SetBootable().
         FromSnapshot(snapshot))
 ```
 
 **Response accessors**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `BlockStorageID()` — provider-assigned volume ID
-- `Size()` — size in GB
-- `Type()` — storage type string
+- `SizeGB()` — size in GB
+- `Type()` — storage type
 - `Zone()` — availability zone
 - `BillingPeriod()` — billing cadence
 - `Bootable()` — bool
 - `Image()` — image reference
 - `SnapshotURI()` — source snapshot URI (if created from snapshot)
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilNotUsed(ctx, opts...)`, `WaitUntilUsed(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -1256,7 +1270,7 @@ arubaClient.FromStorage().Snapshots()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 ```go
 snap, err := arubaClient.FromStorage().Snapshots().Create(
@@ -1265,14 +1279,14 @@ snap, err := arubaClient.FromStorage().Snapshots().Create(
         IntoProject(proj).
         WithName("my-snapshot").
         AddTag("backup").
-        InRegion("ITBG-Bergamo").
-        WithBillingPeriod("Hour").
-        OfVolume(bs))
+        InRegion(aruba.RegionITBGBergamo).
+        WithBillingPeriod(aruba.BillingPeriodHour).
+        FromVolume(bs))
 if err != nil {
     log.Fatalf("Create Snapshot: %v", err)
 }
 
-if err := snap.WaitUntilActive(ctx); err != nil {
+if err := snap.WaitUntilReady(ctx); err != nil {
     log.Fatalf("Snapshot did not become Active: %v", err)
 }
 fmt.Printf("✓ Snapshot: %s\n", snap.Name())
@@ -1281,14 +1295,14 @@ fmt.Printf("✓ Snapshot: %s\n", snap.Name())
 **Response accessors**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `SnapshotID()` — provider-assigned snapshot ID
-- `Size()` — snapshot size in GB
+- `SizeGB()` — snapshot size in GB
 - `Type()` — storage type
 - `Zone()` — availability zone
 - `BillingPeriod()` — billing cadence
 - `Bootable()` — bool
 - `VolumeURI()` — source volume URI
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -1300,9 +1314,9 @@ arubaClient.FromStorage().Backups()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
-`WithType` accepts `aruba.StorageBackupTypeFull` or `aruba.StorageBackupTypeIncremental`.
+`OfType` accepts `aruba.StorageBackupTypeFull` or `aruba.StorageBackupTypeIncremental`. Use `FromVolume(vol)` to specify the source volume.
 
 ```go
 backup, err := arubaClient.FromStorage().Backups().Create(
@@ -1311,15 +1325,15 @@ backup, err := arubaClient.FromStorage().Backups().Create(
         IntoProject(proj).
         WithName("my-backup").
         AddTag("backup").
-        WithOrigin(bs).
-        WithType(aruba.StorageBackupTypeFull).
+        FromVolume(bs).
+        OfType(aruba.StorageBackupTypeFull).
         WithRetentionDays(30).
-        WithBillingPeriod("Hour"))
+        WithBillingPeriod(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create StorageBackup: %v", err)
 }
 
-if err := backup.WaitUntilActive(ctx); err != nil {
+if err := backup.WaitUntilReady(ctx); err != nil {
     log.Fatalf("StorageBackup did not become Active: %v", err)
 }
 fmt.Printf("✓ Storage Backup: %s\n", backup.Name())
@@ -1328,11 +1342,12 @@ fmt.Printf("✓ Storage Backup: %s\n", backup.Name())
 **Response accessors**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `BackupID()` — provider-assigned backup ID
-- `Type()` — backup type string
-- `RetentionDays()` — retention period
+- `Type()` — backup type
+- `RetentionDays()` — retention period in days
 - `OriginURI()` — source volume URI
+- `BillingPeriod()` — billing cadence
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -1344,7 +1359,7 @@ arubaClient.FromStorage().Restores()
 ```
 
 **Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: yes — call `WaitUntilActive(ctx)` after `Create`.
+**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
 ```go
 restore, err := arubaClient.FromStorage().Restores().Create(
@@ -1358,7 +1373,7 @@ if err != nil {
     log.Fatalf("Create StorageRestore: %v", err)
 }
 
-if err := restore.WaitUntilActive(ctx); err != nil {
+if err := restore.WaitUntilReady(ctx); err != nil {
     log.Fatalf("StorageRestore did not become Active: %v", err)
 }
 fmt.Printf("✓ Storage Restore: %s\n", restore.Name())
@@ -1369,7 +1384,7 @@ fmt.Printf("✓ Storage Restore: %s\n", restore.Name())
 - `RestoreID()` — provider-assigned restore ID
 - `TargetURI()` — target volume URI
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
 - `Raw()` — underlying wire struct
 
 ---
@@ -1393,7 +1408,23 @@ See [Filters](./filters) for filter and sort syntax.
 
 ## Enum Constants
 
-All enum types are re-exported from `pkg/aruba` — no extra import needed.
+All enum types are re-exported from `pkg/aruba` — no extra import needed. The canonical list is in `pkg/aruba/aliases.go`.
+
+### Region and Zone
+
+| Constant | Description |
+|----------|-------------|
+| `aruba.RegionITBGBergamo` | Bergamo (Italy) datacenter |
+| `aruba.ZoneITBG1` | Bergamo availability zone 1 |
+| `aruba.ZoneITBG2` | Bergamo availability zone 2 |
+| `aruba.ZoneITBG3` | Bergamo availability zone 3 |
+
+### Billing
+
+| Constant | Description |
+|----------|-------------|
+| `aruba.BillingPeriodHour` | Hourly billing |
+| `aruba.BillingPeriodMonth` | Monthly billing |
 
 ### Network
 
@@ -1401,10 +1432,49 @@ All enum types are re-exported from `pkg/aruba` — no extra import needed.
 |----------|-------|
 | `aruba.RuleDirectionIngress` | `"Ingress"` |
 | `aruba.RuleDirectionEgress` | `"Egress"` |
-| `aruba.EndpointTypeIP` | `"Ip"` |
-| `aruba.EndpointTypeSecurityGroup` | `"SecurityGroup"` |
+| `aruba.RuleProtocolTCP` | `"TCP"` |
+| `aruba.RuleProtocolUDP` | `"UDP"` |
+| `aruba.RuleProtocolICMP` | `"ICMP"` |
+| `aruba.RuleProtocolANY` | (wildcard — any protocol) |
 | `aruba.SubnetTypeBasic` | `"Basic"` |
 | `aruba.SubnetTypeAdvanced` | `"Advanced"` |
+
+### Compute
+
+| Constant | Description |
+|----------|-------------|
+| `aruba.CloudServerFlavorCSO1A2` | 1 vCPU, 2 GB RAM |
+| `aruba.CloudServerFlavorCSO2A4` | 2 vCPU, 4 GB RAM |
+| `aruba.CloudServerFlavorCSO4A8` | 4 vCPU, 8 GB RAM |
+| `aruba.CloudServerFlavorCSO8A16` | 8 vCPU, 16 GB RAM |
+| … (see `aliases.go` for full list) | |
+
+### Container
+
+| Constant | Description |
+|----------|-------------|
+| `aruba.KubernetesVersion1323` | Kubernetes 1.32.3 |
+| `aruba.KubernetesVersion1332` | Kubernetes 1.33.2 |
+| `aruba.NodePoolInstanceK2A4` | 2 vCPU, 4 GB RAM |
+| `aruba.NodePoolInstanceK4A8` | 4 vCPU, 8 GB RAM |
+| `aruba.NodePoolInstanceK8A16` | 8 vCPU, 16 GB RAM |
+| … (see `aliases.go` for full list) | |
+| `aruba.ContainerRegistrySizeFlavorSmall` | Small concurrent-users tier |
+| `aruba.ContainerRegistrySizeFlavorMedium` | Medium concurrent-users tier |
+| `aruba.ContainerRegistrySizeFlavorHighPerf` | High-performance tier |
+
+### Database
+
+| Constant | Description |
+|----------|-------------|
+| `aruba.DatabaseEngineMySQL80` | MySQL 8.0 |
+| `aruba.DatabaseEngineMSSQL2022Web` | SQL Server 2022 Web |
+| `aruba.DatabaseEngineMSSQL2022Standard` | SQL Server 2022 Standard |
+| `aruba.DatabaseEngineMSSQL2022Enterprise` | SQL Server 2022 Enterprise |
+| `aruba.DBaaSFlavorDBO1A2` | 1 vCPU, 2 GB RAM |
+| `aruba.DBaaSFlavorDBO2A4` | 2 vCPU, 4 GB RAM |
+| `aruba.DBaaSFlavorDBO4A8` | 4 vCPU, 8 GB RAM |
+| … (see `aliases.go` for full list) | |
 
 ### Storage
 
@@ -1423,10 +1493,20 @@ All enum types are re-exported from `pkg/aruba` — no extra import needed.
 | `aruba.KeyAlgorithmRsa` | `"Rsa"` |
 | `aruba.KeyTypeSymmetric` | `"Symmetric"` |
 | `aruba.KeyTypeAsymmetric` | `"Asymmetric"` |
-| `aruba.KeyStatusActive` | `"Active"` |
-| `aruba.KeyStatusInCreation` | `"InCreation"` |
-| `aruba.ServiceStatusActive` | `"Active"` |
 | `aruba.ServiceStatusCertificateAvailable` | `"CertificateAvailable"` |
+
+### VPN Crypto
+
+| Constant | Description |
+|----------|-------------|
+| `aruba.IKEEncryptionAES256` | AES-256 CBC (IKE phase 1) |
+| `aruba.IKEHashSHA256` | HMAC-SHA-256 (IKE phase 1) |
+| `aruba.IKEDHGroup14` | MODP-2048 Diffie-Hellman group |
+| `aruba.ESPEncryptionAES256` | AES-256 CBC (ESP phase 2) |
+| `aruba.ESPHashSHA256` | HMAC-SHA-256 (ESP phase 2) |
+| `aruba.ESPPFSGroupEnable` | PFS enabled (DH group negotiated) |
+| `aruba.ESPPFSGroupDisable` | PFS disabled |
+| … (see `aliases.go` for full lists) | |
 
 ### Schedule
 
@@ -1434,10 +1514,6 @@ All enum types are re-exported from `pkg/aruba` — no extra import needed.
 |----------|-------|
 | `aruba.JobTypeOneShot` | `"OneShot"` |
 | `aruba.JobTypeRecurring` | `"Recurring"` |
-| `aruba.RecurrenceTypeHourly` | `"Hourly"` |
-| `aruba.RecurrenceTypeDaily` | `"Daily"` |
-| `aruba.RecurrenceTypeWeekly` | `"Weekly"` |
-| `aruba.RecurrenceTypeMonthly` | `"Monthly"` |
 
 ---
 

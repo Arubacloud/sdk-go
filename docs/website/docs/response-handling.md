@@ -77,7 +77,9 @@ proj, err := arubaClient.FromProject().Create(ctx, p)
 
 fmt.Println("Status:", proj.StatusCode())
 fmt.Println("Headers:", proj.Headers())
-fmt.Println("Raw body:", string(proj.RawHTTP()))
+rawResp, rawBody := proj.RawHTTP()
+fmt.Println("Raw body:", string(rawBody))
+fmt.Println("HTTP status:", rawResp.StatusCode)
 fmt.Println("Error body (if any):", proj.RawError())
 ```
 
