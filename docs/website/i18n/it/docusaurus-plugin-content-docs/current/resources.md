@@ -27,7 +27,7 @@ result, err := client.Create(ctx,
     aruba.NewX().
         IntoParent(parentRef).   // scope al progetto / VPC / ecc.
         WithName("my-resource").
-        AddTag("env:prod").
+        AddTag("env-prod").
         WithFoo(...))
 
 // 3. Attendi che le risorse asincrone diventino pronte
@@ -42,6 +42,10 @@ fmt.Println(result.ID(), result.Name(), result.State())
 - `WithFoo(...)` — setter fluenti; gli errori sono differiti fino a `Create`/`Update`
 - `WaitUntilActive(ctx, opts...)` — disponibile sulle risorse marcate **async** qui sotto; vedi [Async / Await](./async) per le opzioni complete
 - `aruba.URI(s)` — avvolge un percorso stringa grezzo in un `Ref` (vedi [Guida al Walkthrough API](./walkthrough#5-ottenere-una-risorsa-specifica))
+
+:::info Formato dei tag
+L'API di Aruba valida i valori dei tag contro `^[A-Za-z0-9-]{4,30}$`: **solo caratteri alfanumerici e trattini, lunghezza da 4 a 30**. Due punti, punti, underscore, spazi e altra punteggiatura vengono rifiutati con `400 — One or more validation error occurred`. L'SDK non valida i tag lato client, quindi un tag non valido fallisce solo quando la richiesta raggiunge il server.
+:::
 
 ---
 
@@ -61,7 +65,7 @@ proj, err := arubaClient.FromProject().Create(
     aruba.NewProject().
         WithName("my-project").
         WithDescription("Progetto di produzione").
-        AddTag("env:prod").
+        AddTag("env-prod").
         WithDefault(false))
 if err != nil {
     log.Fatalf("Create project: %v", err)
@@ -77,6 +81,10 @@ fmt.Printf("✓ Progetto: %s (ID: %s)\n", proj.Name(), proj.ID())
 - `IsDefault()` — se questo è il progetto predefinito
 - `Tags()` — lista di tag `[]string`
 - `CreatedAt()`, `UpdatedAt()` — timestamp
+
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_project.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_project.go)
+:::
 
 ---
 
@@ -111,6 +119,10 @@ for _, e := range list.Items() {
 - `User()` — identificatore utente che ha scatenato l'evento
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::
+
 ---
 
 ## Compute
@@ -132,7 +144,7 @@ cs, err := arubaClient.FromCompute().CloudServers().Create(
     aruba.NewCloudServer().
         IntoProject(proj).
         WithName("my-server").
-        AddTag("env:prod").
+        AddTag("env-prod").
         InRegion("ITBG-Bergamo").
         InZone("ITBG-1").
         WithFlavor("CSO2A4").
@@ -175,6 +187,10 @@ if err := cs.SetPassword(ctx, "NewStr0ngP@ss!"); err != nil { log.Fatalf("SetPas
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_cloud_server.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_cloud_server.go)
+:::
+
 ---
 
 ### Key Pair
@@ -207,6 +223,10 @@ fmt.Printf("✓ KeyPair: %s (ID: %s)\n", kp.Name(), kp.ID())
 - `Region()` — slug della regione
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_key_pair.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_key_pair.go)
+:::
+
 ---
 
 ## Container
@@ -226,7 +246,7 @@ k, err := arubaClient.FromContainer().KaaS().Create(
     aruba.NewKaaS().
         IntoProject(proj).
         WithName("my-cluster").
-        AddTag("env:prod").
+        AddTag("env-prod").
         WithLocation("ITBG-Bergamo").
         WithVPC(vpc).
         WithSubnet(subnet).
@@ -279,6 +299,10 @@ if err != nil {
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_kaas.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kaas.go)
+:::
+
 ---
 
 ### Container Registry
@@ -296,7 +320,7 @@ reg, err := arubaClient.FromContainer().ContainerRegistry().Create(
     aruba.NewContainerRegistry().
         IntoProject(proj).
         WithName("my-registry").
-        AddTag("env:prod").
+        AddTag("env-prod").
         WithVPC(vpc).
         WithSubnet(subnet).
         WithSecurityGroup(sg).
@@ -327,6 +351,10 @@ fmt.Printf("✓ Registry: %s (IP pubblico: %s)\n", reg.Name(), reg.PublicIP())
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_container_registry.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_container_registry.go)
+:::
+
 ---
 
 ## Database
@@ -346,7 +374,7 @@ db, err := arubaClient.FromDatabase().DBaaS().Create(
     aruba.NewDBaaS().
         IntoProject(proj).
         WithName("my-database").
-        AddTag("env:prod").
+        AddTag("env-prod").
         InRegion("ITBG-Bergamo").
         InZone("ITBG-1").
         WithEngine("mysql-8.0").
@@ -380,6 +408,10 @@ fmt.Printf("✓ DBaaS: %s (engine: %s)\n", db.Name(), db.Engine())
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_dbaas.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_dbaas.go)
+:::
+
 ---
 
 ### Database
@@ -397,7 +429,7 @@ database, err := arubaClient.FromDatabase().Databases().Create(
     aruba.NewDatabase().
         IntoDBaaS(db).
         WithName("my-app-db").
-        AddTag("app:backend"))
+        AddTag("app-backend"))
 if err != nil {
     log.Fatalf("Create Database: %v", err)
 }
@@ -415,6 +447,10 @@ fmt.Printf("✓ Database: %s\n", database.Name())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
+
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_database.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_database.go)
+:::
 
 ---
 
@@ -434,7 +470,7 @@ user, err := arubaClient.FromDatabase().Users().Create(
         IntoDBaaS(db).
         WithName("app_user").
         WithPassword("Str0ngP@ssword!").
-        AddTag("app:backend"))
+        AddTag("app-backend"))
 if err != nil {
     log.Fatalf("Create User: %v", err)
 }
@@ -452,6 +488,10 @@ fmt.Printf("✓ Utente: %s\n", user.Name())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
+
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_dbaas_user.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_dbaas_user.go)
+:::
 
 ---
 
@@ -489,6 +529,10 @@ fmt.Printf("✓ Grant: %s (privilegi: %s)\n", grant.Name(), grant.Privileges())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
+
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_grant.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_grant.go)
+:::
 
 ---
 
@@ -531,6 +575,10 @@ fmt.Printf("✓ DBaaS Backup: %s\n", backup.Name())
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Le operazioni DBaaS Backup sono coperte nell'esempio DBaaS: [`examples/all-resources/resource_dbaas.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_dbaas.go)
+:::
+
 ---
 
 ## Metric
@@ -562,6 +610,10 @@ for _, a := range list.Items() {
 - `IsActive()` — bool
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::
+
 ---
 
 ### Metric
@@ -588,6 +640,10 @@ for _, m := range list.Items() {
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`
 - `Raw()` — struct wire sottostante
+
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::
 
 ---
 
@@ -630,6 +686,10 @@ fmt.Printf("✓ VPC: %s\n", vpc.Name())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
+
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_vpc.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_vpc.go)
+:::
 
 ---
 
@@ -685,6 +745,10 @@ fmt.Printf("✓ Subnet: %s (CIDR: %s)\n", subnet.Name(), subnet.CIDR())
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_subnet.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_subnet.go)
+:::
+
 ---
 
 ### Elastic IP
@@ -725,6 +789,10 @@ fmt.Printf("✓ Elastic IP: %s (%s)\n", eip.Name(), eip.Address())
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_elastic_ip.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_elastic_ip.go)
+:::
+
 ---
 
 ### Security Group
@@ -762,6 +830,10 @@ fmt.Printf("✓ Security Group: %s (ID: %s)\n", sg.Name(), sg.ID())
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_security_group.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_security_group.go)
+:::
+
 ---
 
 ### Security Rule
@@ -783,7 +855,7 @@ rule, err := arubaClient.FromNetwork().SecurityGroupRules().Create(
     aruba.NewSecurityRule().
         IntoSecurityGroup(sg).
         WithName("allow-ssh").
-        AddTag("ssh").
+        AddTag("ssh-key").
         InRegion("ITBG-Bergamo").
         WithDirection(string(aruba.RuleDirectionIngress)).
         WithProtocol("TCP").
@@ -806,6 +878,10 @@ fmt.Printf("✓ Security Rule: %s\n", rule.Name())
 - `Region()` — slug della regione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `Raw()` — struct wire sottostante
+
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::
 
 ---
 
@@ -837,6 +913,10 @@ for _, lb := range list.Items() {
 - `Region()` — slug della regione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `Raw()` — struct wire sottostante
+
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::
 
 ---
 
@@ -876,6 +956,10 @@ fmt.Printf("✓ VPC Peering: %s\n", peering.Name())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
+
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::
 
 ---
 
@@ -917,6 +1001,10 @@ fmt.Printf("✓ Peering Route: %s (CIDR: %s)\n", route.Name(), route.CIDR())
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::
+
 ---
 
 ### VPN Tunnel
@@ -939,7 +1027,7 @@ tunnel, err := arubaClient.FromNetwork().VPNTunnels().Create(
     aruba.NewVPNTunnel().
         IntoProject(proj).
         WithName("my-vpn-tunnel").
-        AddTag("vpn").
+        AddTag("vpn-net").
         InRegion("ITBG-Bergamo").
         WithRemoteGateway("203.0.113.1").
         WithIKE(aruba.NewVPNIKE().
@@ -970,6 +1058,10 @@ fmt.Printf("✓ VPN Tunnel: %s (gateway: %s)\n", tunnel.Name(), tunnel.RemoteGat
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::
+
 ---
 
 ### VPN Route
@@ -987,7 +1079,7 @@ vpnRoute, err := arubaClient.FromNetwork().VPNRoutes().Create(
     aruba.NewVPNRoute().
         IntoVPNTunnel(tunnel).
         WithName("my-vpn-route").
-        AddTag("vpn").
+        AddTag("vpn-net").
         InRegion("ITBG-Bergamo").
         WithCIDR("10.0.0.0/8").
         WithTarget(aruba.URI("/projects/"+projectID+"/vpcs/"+vpcID)))
@@ -1009,6 +1101,10 @@ fmt.Printf("✓ VPN Route: %s (CIDR: %s)\n", vpnRoute.Name(), vpnRoute.CIDR())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
+
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::
 
 ---
 
@@ -1051,6 +1147,10 @@ fmt.Printf("✓ Job: %s (tipo: %s)\n", job.Name(), job.Type())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_job.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_job.go)
+:::
+
 ---
 
 ## Security
@@ -1092,6 +1192,10 @@ fmt.Printf("✓ KMS: %s (ID: %s)\n", kms.Name(), kms.ID())
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_kms.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kms.go)
+:::
+
 ---
 
 ### Key (Chiave)
@@ -1128,6 +1232,10 @@ fmt.Printf("✓ Chiave: %s (algoritmo: %s)\n", key.Name(), key.Algorithm())
 - `CreationSource()` — come è stata creata la chiave
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `Raw()` — struct wire sottostante
+
+:::tip Esempio eseguibile
+Le operazioni Key sono coperte nell'esempio KMS: [`examples/all-resources/resource_kms.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kms.go)
+:::
 
 ---
 
@@ -1176,6 +1284,10 @@ fmt.Println("Key:",  cert.Key())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
+
+:::tip Esempio eseguibile
+Le operazioni KMIP sono coperte nell'esempio KMS: [`examples/all-resources/resource_kms.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kms.go)
+:::
 
 ---
 
@@ -1247,6 +1359,10 @@ bs, err := arubaClient.FromStorage().Volumes().Create(
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_block_storage.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_block_storage.go)
+:::
+
 ---
 
 ### Snapshot
@@ -1290,6 +1406,10 @@ fmt.Printf("✓ Snapshot: %s\n", snap.Name())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
+
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_snapshot.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_snapshot.go)
+:::
 
 ---
 
@@ -1335,6 +1455,10 @@ fmt.Printf("✓ Storage Backup: %s\n", backup.Name())
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
 
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_storage_backup.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_storage_backup.go)
+:::
+
 ---
 
 ### Storage Restore
@@ -1371,6 +1495,10 @@ fmt.Printf("✓ Storage Restore: %s\n", restore.Name())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilActive(ctx, opts...)`, `WaitUntilState(ctx, target, opts...)`
 - `Raw()` — struct wire sottostante
+
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_storage_restore.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_storage_restore.go)
+:::
 
 ---
 
