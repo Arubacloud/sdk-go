@@ -10,9 +10,9 @@ package types
 type KubernetesVersion string
 
 const (
-	KubernetesVersion1313 KubernetesVersion = "1.31.3"
 	KubernetesVersion1323 KubernetesVersion = "1.32.3"
 	KubernetesVersion1332 KubernetesVersion = "1.33.2"
+	KubernetesVersion1341 KubernetesVersion = "1.34.1"
 )
 
 // NodePoolInstance identifies a KaaS node pool instance type.

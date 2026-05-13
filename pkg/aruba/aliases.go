@@ -335,9 +335,9 @@ const (
 type KubernetesVersion = types.KubernetesVersion
 
 const (
-	KubernetesVersion1313 = types.KubernetesVersion1313 // Kubernetes 1.31.3
 	KubernetesVersion1323 = types.KubernetesVersion1323 // Kubernetes 1.32.3
 	KubernetesVersion1332 = types.KubernetesVersion1332 // Kubernetes 1.33.2
+	KubernetesVersion1341 = types.KubernetesVersion1341 // Kubernetes 1.34.1
 )
 
 // NodePoolInstance identifies a KaaS node pool instance type.

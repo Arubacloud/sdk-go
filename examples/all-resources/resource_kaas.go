@@ -29,7 +29,7 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, v
 		AddTag("kubernetes").
 		AddTag("container").
 		InRegion(aruba.RegionITBGBergamo).
-		WithKubernetesVersion(aruba.KubernetesVersion1332).
+		WithKubernetesVersion(aruba.KubernetesVersion1341).
 		WithPodCIDR("10.0.3.0/24").
 		WithNodeCIDR("172.16.0.0/16", resourceName(NameKaaSNodeCIDR)).
 		WithHA(true).

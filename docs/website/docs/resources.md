@@ -1583,6 +1583,7 @@ All enum types are re-exported from `pkg/aruba` — no extra import needed. The 
 |----------|-------------|
 | `aruba.KubernetesVersion1323` | Kubernetes 1.32.3 |
 | `aruba.KubernetesVersion1332` | Kubernetes 1.33.2 |
+| `aruba.KubernetesVersion1341` | Kubernetes 1.34.1 |
 | `aruba.NodePoolInstanceK2A4` | 2 vCPU, 4 GB RAM |
 | `aruba.NodePoolInstanceK4A8` | 4 vCPU, 8 GB RAM |
 | `aruba.NodePoolInstanceK8A16` | 8 vCPU, 16 GB RAM |
