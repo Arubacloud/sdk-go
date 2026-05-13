@@ -14,21 +14,22 @@ Official Go SDK for the Aruba Cloud API. Manage cloud resources — compute inst
 
 ## Highlights
 
-- Strongly-typed request/response structs for all resources
-- Automatic OAuth2 token management with configurable refresh strategies
-- Generic `Response[T]` wrapper with consistent error handling across all calls
-- Built-in async polling helpers for long-running operations
-- Multi-tenant client management out of the box
+- **Fluent builder API** — construct any resource with chained, type-safe setters: `aruba.NewVPC().IntoProject(p).Named("prod")...`
+- **Single import** — `pkg/aruba` re-exports every typed enum and factory; `pkg/types` is reserved for advanced escape hatches.
+- **Built-in async polling** — `wrapper.WaitUntilReady(ctx)` covers 95% of long-running operations; specialized waits cover the rest.
+- **Configurable authentication** — OAuth2 client credentials by default, plus static tokens and Vault-backed credential storage.
+- **Multi-tenant client management** out of the box via `pkg/multitenant`.
 
 ## Table of Contents
 
 - [1. Quick Start](#1-quick-start)
 - [2. Usage Details](#2-usage-details)
-  - [2.1. Config Options](#21-config-options)
-  - [2.2. Performing Calls, Setting Filters, and Handling Responses](#22-performing-calls-setting-filters-and-handling-responses)
+  - [2.1. Configuring the Client](#21-configuring-the-client)
+  - [2.2. Making Calls, Filtering, and Handling Responses](#22-making-calls-filtering-and-handling-responses)
   - [2.3. SDK Client API Reference](#23-sdk-client-api-reference)
-  - [2.4. Handling Asynchronous Operations](#24-handling-asynchronous-operations)
-  - [2.5. Data Types](#25-data-types)
+  - [2.4. Async Operations](#24-async-operations)
+  - [2.5. Multi-Tenancy](#25-multi-tenancy)
+  - [2.6. Typed Enums & Escape Hatches](#26-typed-enums--escape-hatches)
 
 ## 1. Quick Start
 
@@ -44,149 +45,197 @@ import (
 	"time"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
-	aruba_types "github.com/Arubacloud/sdk-go/pkg/types"
 )
 
 func main() {
-	arubaClient, err := aruba.NewClient(aruba.DefaultOptions("your-client-id", "your-client-secret"))
+	arubaClient, err := aruba.NewClient(
+		aruba.DefaultOptions("your-client-id", "your-client-secret"),
+	)
 	if err != nil {
-		log.Fatalf("Failed to create SDK client: %v", err)
+		log.Fatalf("create client: %v", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	createResp, err := arubaClient.FromProject().Create(ctx, aruba_types.ProjectRequest{
-		Metadata: aruba_types.ResourceMetadataRequest{
-			Name: "my-first-project",
-			Tags: []string{"go-sdk", "quick-start"},
-		},
-	}, nil)
-	if err != nil {
-		log.Fatalf("Error creating project: %v", err)
-	}
-	if !createResp.IsSuccess() {
-		log.Fatalf("API error %d: %s", createResp.StatusCode, *createResp.Error.Title)
+	proj := aruba.NewProject().
+		Named("my-first-project").
+		WithDescription("Created from the Go SDK Quick Start").
+		AddTag("go-sdk")
+
+	if _, err := arubaClient.FromProject().Create(ctx, proj); err != nil {
+		log.Fatalf("create project: %v", err)
 	}
 
-	fmt.Printf("Created project: %s\n", *createResp.Data.Metadata.ID)
+	fmt.Printf("Created project %s (id=%s)\n", proj.Name(), proj.ID())
 }
 ```
+
+Project create is synchronous — no `WaitUntilReady` needed. For an end-to-end Project → VPC → Subnet → CloudServer flow with async waits and cleanup, see [`docs/website/docs/walkthrough.md`](docs/website/docs/walkthrough.md) or the runnable [`examples/all-resources/`](examples/all-resources/).
 
 ## 2. Usage Details
 
-### 2.1. Config Options
+### 2.1. Configuring the Client
 
-Configure the client via the `Options` fluent builder. `aruba.DefaultOptions` covers the most common case.
+`aruba.DefaultOptions(clientID, clientSecret)` is the recommended starting point. For full manual control, build from `aruba.NewOptions()`.
 
 ```go
-options := aruba.DefaultOptions("your-client-id", "your-client-secret")
-options.WithNativeLogger()          // enable built-in logging
-options.WithCustomHTTPClient(hc)    // supply a custom *http.Client
+opts := aruba.DefaultOptions("your-client-id", "your-client-secret").
+    WithNativeLogger().                 // enable built-in logging
+    WithCustomHTTPClient(myHTTPClient)  // custom *http.Client / transport
 ```
 
-Key areas:
+Authentication (mutually exclusive):
 
-- **Authentication** — OAuth2 client credentials by default. Use `WithToken()` for a static token, or configure Vault-backed credentials for secrets management.
-- **Logging** — disabled by default. Enable with `WithNativeLogger()` or inject your own `logger.Logger`.
-- **HTTP client** — defaults to `http.DefaultClient`. Override with `WithCustomHTTPClient()` to set timeouts or a custom transport.
+- `WithClientCredentials(id, secret)` — OAuth2 client credentials (default via `DefaultOptions`).
+- `WithToken(staticToken)` — supply a pre-issued bearer token.
+- `WithVaultCredentialsRepository(...)` — fetch credentials from HashiCorp Vault per request.
+
+Logging: `WithNoLogs()` (default), `WithNativeLogger()`, or `WithCustomLogger(myLogger)`.
+
+Token caching (optional): `WithRedisTokenRepositoryFromURI(...)` or `WithFileTokenRepositoryFromBaseDir(...)`.
 
 For the full options reference see [`docs/website/docs/options.md`](docs/website/docs/options.md).
 
-### 2.2. Performing Calls, Setting Filters, and Handling Responses
+### 2.2. Making Calls, Filtering, and Handling Responses
 
-#### API calls
+#### Calls
 
-```go
-servers, err := arubaClient.FromCompute().CloudServers().List(ctx, projectID, nil)
-vpc, err    := arubaClient.FromNetwork().VPCs().Get(ctx, projectID, vpcID, nil)
-_, err       = arubaClient.FromStorage().Volumes().Delete(ctx, projectID, volumeID, nil)
-```
-
-#### Filters
+Resource clients expose a uniform `Create / List / Get / Update / Delete` shape:
 
 ```go
-// Filters follow the format "field:operator:value"; combine with "," (AND) or ";" (OR).
-filter := "status:eq:running,cpu:gt:2"
+proj := aruba.NewProject().Named("staging")
+_, err := arubaClient.FromProject().Create(ctx, proj)
 
-resp, err := arubaClient.FromCompute().CloudServers().List(ctx, projectID,
-    &types.RequestParameters{Filter: &filter})
+list, err := arubaClient.FromCompute().CloudServers().List(ctx, proj)
+vpc, err  := arubaClient.FromNetwork().VPCs().Get(ctx, vpcRef)
+_, err     = arubaClient.FromStorage().Volumes().Delete(ctx, volRef)
 ```
 
-Supported operators: `eq`, `ne`, `gt`, `lt`, `in`, `contains`, `startswith`, `endswith`.
+Any `Ref` works as input — a wrapper, a sub-client list item, or `aruba.URI("/projects/<id>")` to bootstrap from a string.
 
-For the full filtering guide see [`docs/website/docs/filters.md`](docs/website/docs/filters.md).
+#### Filters & paging
+
+Filters, sort, and paging are passed as variadic `CallOption`s:
+
+```go
+servers, err := arubaClient.FromCompute().CloudServers().List(ctx, proj,
+    aruba.WithFilter("status:eq:Active,cpu:gt:2"),
+    aruba.WithSort("name:asc"),
+    aruba.WithLimit(50),
+)
+```
+
+Filter syntax: `field:operator:value` joined by `,` (AND) or `;` (OR).
+Operators: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `nin`, `like`, `sw`, `ew`.
+See [`docs/website/docs/filters.md`](docs/website/docs/filters.md) for the full reference.
 
 #### Responses
 
-Every call returns `*types.Response[T]` and `error`. Check `error` first (network/client issues), then `IsSuccess()` / `IsError()` for the API result.
+Wrapper methods return `(wrapper, error)`. API errors come back as `*aruba.HTTPError`:
 
 ```go
-resp, err := arubaClient.FromNetwork().VPCs().Get(ctx, projectID, vpcID, nil)
+vpc, err := arubaClient.FromNetwork().VPCs().Get(ctx, vpcRef)
 if err != nil {
-    log.Fatalf("request failed: %v", err)
+    var httpErr *aruba.HTTPError
+    if errors.As(err, &httpErr) {
+        log.Fatalf("API error %d: %s", httpErr.StatusCode, httpErr.Message)
+    }
+    log.Fatalf("transport error: %v", err)
 }
-if resp.IsSuccess() {
-    fmt.Println(*resp.Data.Metadata.Name)
-} else {
-    log.Printf("API error %d: %s", resp.StatusCode, *resp.Error.Title)
-}
+fmt.Println(vpc.Name())
 ```
 
-For detailed error handling patterns see [`docs/website/docs/response-handling.md`](docs/website/docs/response-handling.md).
+Setter-time errors are deferred — surface them with `wrapper.Err()` or by calling `Create`/`Update`. See [`docs/website/docs/response-handling.md`](docs/website/docs/response-handling.md).
 
 ### 2.3. SDK Client API Reference
 
-#### Service groups
-
-| Accessor | Resources |
+| Domain | Sub-clients |
 |---|---|
-| `FromAudit()` | Audit events |
-| `FromCompute()` | Cloud servers, key pairs |
-| `FromContainer()` | Kubernetes (KaaS), container registries |
-| `FromDatabase()` | Database-as-a-Service instances |
-| `FromMetric()` | Metrics and alerts |
-| `FromNetwork()` | VPCs, subnets, security groups, elastic IPs, load balancers, VPN tunnels, VPC peerings |
-| `FromProject()` | Projects |
-| `FromSchedule()` | Scheduled jobs |
-| `FromSecurity()` | KMS keys |
-| `FromStorage()` | Volumes, snapshots, backups, restores |
+| `FromAudit()` | `Events()` |
+| `FromCompute()` | `CloudServers()`, `KeyPairs()` |
+| `FromContainer()` | `KaaS()`, `ContainerRegistry()` |
+| `FromDatabase()` | `DBaaS()`, `Databases()`, `Backups()`, `Users()`, `Grants()` |
+| `FromMetric()` | `Alerts()`, `Metrics()` |
+| `FromNetwork()` | `ElasticIPs()`, `LoadBalancers()`, `SecurityGroups()`, `SecurityGroupRules()`, `Subnets()`, `VPCs()`, `VPCPeerings()`, `VPCPeeringRoutes()`, `VPNTunnels()`, `VPNRoutes()` |
+| `FromProject()` | (single client; `Create`, `List`, `Get`, `Update`, `Delete` directly) |
+| `FromSchedule()` | `Jobs()` |
+| `FromSecurity()` | `KMS()`, `Keys()`, `Kmips()` |
+| `FromStorage()` | `Volumes()`, `Snapshots()`, `Backups()`, `Restores()` |
 
-Each resource client provides `Create`, `List`, `Get`, `Update`, `Delete` where applicable.
+Every leaf client provides `Create`, `List`, `Get`, `Update`, `Delete` (where applicable).
 
-For the full resource listing see [`docs/website/docs/resources.md`](docs/website/docs/resources.md).
+For per-resource builders (`aruba.NewVPC()`, `aruba.NewKaaS()`, …) and the full type catalog see [`docs/website/docs/resources.md`](docs/website/docs/resources.md).
 
-### 2.4. Handling Asynchronous Operations
+### 2.4. Async Operations
 
-Many cloud operations are asynchronous. Use `async.DefaultWaitFor` to poll until the resource reaches the desired state.
+Most cloud resources reach their terminal state asynchronously. Every wrapper that has a status mixin exposes:
+
+- `WaitUntilReady(ctx, opts...)` — accepts `Active`, `NotUsed`, `InUse`, `Used`. The 95% answer.
+- `WaitUntilActive(ctx, opts...)` — strictly `Active`.
+- `WaitUntilStates(ctx, []string{"Foo", "Bar"}, opts...)` — arbitrary target list.
+- Specialized: `BlockStorage`/`ElasticIP` add `WaitUntilNotUsed`/`WaitUntilUsed`; `Kmip` adds `WaitUntilCertificateAvailable`.
 
 ```go
-future := async.DefaultWaitFor(
-    ctx,
-    func(ctx context.Context) (*types.Response[types.CloudServerResponse], error) {
-        return arubaClient.FromCompute().CloudServers().Get(ctx, projectID, serverID, nil)
-    },
-    func(resp *types.Response[types.CloudServerResponse]) (bool, error) {
-        return resp.IsSuccess() && resp.Data.Properties.Status == "running", nil
-    },
-)
+vpc, err := arubaClient.FromNetwork().VPCs().Create(ctx,
+    aruba.NewVPC().IntoProject(proj).Named("prod-vpc"))
+if err != nil { log.Fatal(err) }
 
-result, err := future.Await(ctx)
-if err != nil {
-    log.Fatalf("wait failed: %v", err)
+if err := vpc.WaitUntilReady(ctx); err != nil {
+    log.Fatalf("vpc never reached Active: %v", err)
 }
-fmt.Printf("server status: %s\n", result.Data.Properties.Status)
 ```
 
-`async.DefaultWaitFor` retries 10 times with a 10 s delay and a 60 s total timeout. Use `async.WaitFor` for custom retry counts, delay, and timeout.
+Tunable via `aruba.WithRetries(n)`, `aruba.WithBaseDelay(d)`, `aruba.WithTimeout(d)`.
+Defaults: 60 retries × 10 s × 600 s ceiling.
 
-### 2.5. Data Types
+For concurrent waits or polling on arbitrary conditions (e.g. polling for an HTTP 404 after `Delete`), use `pkg/async.DefaultWaitFor` directly — see [`docs/website/docs/async.md`](docs/website/docs/async.md) and the `waitUntilGone` helper in [`examples/all-resources/common.go`](examples/all-resources/common.go).
 
-All models live in `pkg/types`:
+### 2.5. Multi-Tenancy
 
-- **Requests** end in `Request` — e.g. `types.VPCRequest`, `types.CloudServerRequest`
-- **Single responses** end in `Response` — e.g. `types.VPCResponse`
-- **Collection responses** end in `List` — e.g. `types.VPCList`
-- **Shared structures** — `ResourceMetadataRequest`, `ResourceMetadataResponse`, `ResourceStatus`
+`pkg/multitenant` keeps an in-memory `tenant → aruba.Client` registry. Use it when one process serves many Aruba accounts (e.g. a reconciler).
 
-For the full type reference see [`docs/website/docs/types.md`](docs/website/docs/types.md).
+```go
+mt := multitenant.New()
+
+// Static credentials per tenant
+mt.NewFromOptions("tenant-1",
+    aruba.DefaultOptions(tenant1ID, tenant1Secret))
+
+// Vault-backed credentials sharing a base options template
+base := aruba.NewOptions().WithDefaultBaseURL().WithDefaultTokenIssuerURL()
+mt.NewFromOptions("tenant-2",
+    base.DeepCopy().WithVaultCredentialsRepository(vaultURI, kvMount, "tenant-2", ns, rolePath, roleID, secretID))
+
+client, ok := mt.Get("tenant-1")
+```
+
+Optional periodic eviction of idle tenants:
+
+```go
+multitenant.StartCleanupRoutine(ctx, mt, 5*time.Minute, 1*time.Hour)
+```
+
+For the full reconciler-style cache-or-create pattern see [`docs/website/docs/multitenancy.md`](docs/website/docs/multitenancy.md) and [`examples/all-resources/orchestrator_multitenancy.go`](examples/all-resources/orchestrator_multitenancy.go).
+
+### 2.6. Typed Enums & Escape Hatches
+
+Typed constants for regions, zones, flavors, billing periods, Kubernetes versions, VPN crypto, and more are re-exported from `pkg/aruba` — you almost never need a second import:
+
+```go
+cs := aruba.NewCloudServer().
+    IntoProject(proj).
+    InRegion(aruba.RegionITBGBergamo).
+    InZone(aruba.ZoneITBG1).
+    OfFlavor(aruba.CloudServerFlavorCSO4A8).
+    WithBillingPeriod(aruba.BillingPeriodHour)
+```
+
+When the wrapper doesn't yet expose a wire field, fall back via `wrapper.Raw()`:
+
+```go
+raw := vpc.Raw()                    // *types.VPCResponse
+fmt.Println(raw.Properties.Whatever)
+```
+
+The full enum catalog and resource→type cross-reference lives in [`docs/website/docs/resources.md`](docs/website/docs/resources.md).
