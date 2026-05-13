@@ -6,6 +6,8 @@
 [![Codecov](https://codecov.io/gh/Arubacloud/sdk-go/branch/main/graph/badge.svg)](https://codecov.io/gh/Arubacloud/sdk-go)
 [![License](https://img.shields.io/github/license/Arubacloud/sdk-go)](LICENSE)
 
+See [`CHANGELOG.md`](CHANGELOG.md) for the full release history and the v0.1.x → v0.2.x branch policy.
+
 > **Note**: This SDK is currently in its **Alpha** stage. The API is not yet stable, and breaking changes may be introduced in future releases without prior notice.
 
 Official Go SDK for the Aruba Cloud API. Manage cloud resources — compute instances, VPCs, storage, databases, and more — from Go code.
