@@ -168,7 +168,7 @@ const config = {
               },
               {
                 label: 'Changelog',
-                href: 'https://github.com/Arubacloud/sdk-go/releases',
+                href: 'https://github.com/Arubacloud/sdk-go/blob/main/CHANGELOG.md',
               },
             ],
           },
