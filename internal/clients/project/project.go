@@ -238,5 +238,12 @@ func (c *projectsClientImpl) Delete(ctx context.Context, projectID string, param
 		RawBody:      bodyBytes,
 	}
 
+	if response.IsError() && len(bodyBytes) > 0 {
+		var errorResp types.ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &errorResp); err == nil {
+			response.Error = &errorResp
+		}
+	}
+
 	return response, nil
 }
