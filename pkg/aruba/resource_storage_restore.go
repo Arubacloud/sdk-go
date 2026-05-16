@@ -262,6 +262,8 @@ func (a *storageRestoresClientAdapter) Get(ctx context.Context, ref Ref, opts ..
 }
 
 // Update sends a PUT for the current wrapper state. Requires ID and parent.
+// NOTE: platform support for PUT on restore resources is not currently documented;
+// callers may receive a 4xx response. Prefer Create+Delete workflows where possible.
 func (a *storageRestoresClientAdapter) Update(ctx context.Context, r *StorageRestore, opts ...CallOption) (*StorageRestore, error) {
 	if err := r.Err(); err != nil {
 		return r, err

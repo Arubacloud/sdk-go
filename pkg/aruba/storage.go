@@ -62,6 +62,10 @@ type StorageRestoreClient interface {
 	List(ctx context.Context, backup Ref, opts ...CallOption) (*List[*StorageRestore], error)
 	Get(ctx context.Context, ref Ref, opts ...CallOption) (*StorageRestore, error)
 	Create(ctx context.Context, r *StorageRestore, opts ...CallOption) (*StorageRestore, error)
+	// Update modifies a StorageRestore resource. NOTE: Aruba Cloud platform
+	// support for PUT on restore resources is not currently documented; this
+	// method may return a 4xx error in practice. Prefer Create+Delete workflows.
+	// See https://github.com/Arubacloud/sdk-go/issues/273
 	Update(ctx context.Context, r *StorageRestore, opts ...CallOption) (*StorageRestore, error)
 	Delete(ctx context.Context, ref Ref, opts ...CallOption) error
 }
