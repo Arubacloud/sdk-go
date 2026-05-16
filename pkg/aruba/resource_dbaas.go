@@ -372,6 +372,14 @@ func (d *DBaaS) toRequest() types.DBaaSRequest {
 	}
 }
 
+// Autoscaling status wire values from the DBaaS Autoscaling response.
+// The API reports either "Enabled" or "Active" for an enabled autoscaling
+// configuration; both are treated as enabled by the wrapper.
+const (
+	autoscalingStatusEnabled = "Enabled"
+	autoscalingStatusActive  = "Active"
+)
+
 // fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 	if resp == nil {
@@ -439,7 +447,7 @@ func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 			d.autoscalingStepSize = &v
 		}
 		if as.Status != nil {
-			enabled := *as.Status == "Enabled" || *as.Status == "Active"
+			enabled := *as.Status == autoscalingStatusEnabled || *as.Status == autoscalingStatusActive
 			d.autoscalingEnabled = &enabled
 		}
 	}
