@@ -104,7 +104,10 @@ func (k *KaaS) WithBillingPeriod(period BillingPeriod) *KaaS {
 // WithSecurityGroup attaches a SecurityGroup to the cluster. The KaaS API
 // stores only the SG's name (not its URI), so the supplied Ref must be a
 // *SecurityGroup whose Name() is non-empty. Bare URI refs are rejected
-// because the name cannot be recovered from a URI.
+// because the name cannot be recovered from a URI alone.
+//
+// If you only have the SG name (e.g. from a CLI flag), use
+// WithSecurityGroupName instead.
 func (k *KaaS) WithSecurityGroup(sg Ref) *KaaS {
 	if sg == nil {
 		k.addErr(fmt.Errorf("WithSecurityGroup: nil Ref"))
@@ -112,12 +115,24 @@ func (k *KaaS) WithSecurityGroup(sg Ref) *KaaS {
 	}
 	typed, ok := sg.(*SecurityGroup)
 	if !ok {
-		k.addErr(fmt.Errorf("WithSecurityGroup: requires *SecurityGroup, got %T", sg))
+		k.addErr(fmt.Errorf("WithSecurityGroup: requires *SecurityGroup, got %T; for name-only callers use WithSecurityGroupName", sg))
 		return k
 	}
 	name := typed.Name()
 	if name == "" {
 		k.addErr(fmt.Errorf("WithSecurityGroup: SecurityGroup has empty Name"))
+		return k
+	}
+	k.securityGroupName = &name
+	return k
+}
+
+// WithSecurityGroupName attaches a Security Group to the cluster by name. Use
+// this when only the SG name is known (e.g. from a CLI flag) and a typed
+// *SecurityGroup is not available. The wire API stores only the name.
+func (k *KaaS) WithSecurityGroupName(name string) *KaaS {
+	if name == "" {
+		k.addErr(fmt.Errorf("WithSecurityGroupName: name cannot be empty"))
 		return k
 	}
 	k.securityGroupName = &name

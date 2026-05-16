@@ -192,6 +192,23 @@ func TestKaaS_WithSecurityGroup_RejectsEmptyName(t *testing.T) {
 	}
 }
 
+func TestKaaS_WithSecurityGroupName_SetsName(t *testing.T) {
+	k := NewKaaS().WithSecurityGroupName("my-sg")
+	if k.SecurityGroupName() != "my-sg" {
+		t.Errorf("SecurityGroupName() = %q", k.SecurityGroupName())
+	}
+	if k.Err() != nil {
+		t.Errorf("unexpected error: %v", k.Err())
+	}
+}
+
+func TestKaaS_WithSecurityGroupName_RejectsEmpty(t *testing.T) {
+	k := NewKaaS().WithSecurityGroupName("")
+	if k.Err() == nil {
+		t.Error("expected Err() != nil when name is empty")
+	}
+}
+
 func TestKaaS_WithNodeCIDR(t *testing.T) {
 	k := NewKaaS().WithNodeCIDR("10.100.0.0/16", "node-cidr")
 	req := k.RawRequest()
