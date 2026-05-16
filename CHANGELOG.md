@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 > directly (`Enabled: true`) must be updated to `Enabled: types.BoolPtr(true)`.
 > Callers using the `pkg/aruba` wrapper layer (`job.WithEnabled(bool)`) are
 > unaffected.
+> 20 Pre-Live milestone issues resolved. No breaking changes.
 
 ### Added
 
