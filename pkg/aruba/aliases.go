@@ -338,6 +338,11 @@ const (
 	KubernetesVersion1323 = types.KubernetesVersion1323 // Kubernetes 1.32.3
 	KubernetesVersion1332 = types.KubernetesVersion1332 // Kubernetes 1.33.2
 	KubernetesVersion1341 = types.KubernetesVersion1341 // Kubernetes 1.34.1
+
+	// Deprecated: Kubernetes 1.31.3 is no longer offered by the platform.
+	// Use KubernetesVersion1323 or a newer constant instead.
+	// This alias will be removed in v0.3.0.
+	KubernetesVersion1313 = KubernetesVersion1323
 )
 
 // NodePoolInstance identifies a KaaS node pool instance type.
