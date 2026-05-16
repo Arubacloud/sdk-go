@@ -68,9 +68,7 @@ func (j *Job) ReplaceTags(ts ...string) *Job { j.replaceTags(ts...); return j }
 // InRegion sets the region for this resource.
 func (j *Job) InRegion(region Region) *Job { j.inRegion(region); return j }
 
-// WithEnabled sets whether the job is active.
-// Note: the underlying wire type uses bool with omitempty, so false is dropped
-// by the JSON marshaler. WithEnabled(false) will not disable an already-enabled job.
+// WithEnabled sets whether the job is active. Pass false to disable the job via Update.
 func (j *Job) WithEnabled(enabled bool) *Job { j.enabled = &enabled; return j }
 
 // OneShotAt schedules a one-time execution at t (UTC, RFC3339).
@@ -182,9 +180,7 @@ func (j *Job) toRequest() types.JobRequest {
 		ScheduleAt:   j.scheduleAt,
 		ExecuteUntil: j.executeUntil,
 		Cron:         j.cron,
-	}
-	if j.enabled != nil {
-		props.Enabled = *j.enabled
+		Enabled:      j.enabled,
 	}
 	if j.jobType != nil {
 		props.JobType = *j.jobType

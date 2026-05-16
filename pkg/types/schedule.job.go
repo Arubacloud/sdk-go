@@ -93,8 +93,10 @@ type JobStepResponse struct {
 
 // JobPropertiesRequest contains properties required to configure and schedule a job
 type JobPropertiesRequest struct {
-	// Enabled Defines whether the job is enabled. Default is true.
-	Enabled bool `json:"enabled,omitempty"`
+	// Enabled Defines whether the job is enabled. Default is true. Uses *bool so
+	// that false is serialised (not dropped by omitempty when the caller explicitly
+	// disables the job via WithEnabled(false)).
+	Enabled *bool `json:"enabled,omitempty"`
 
 	// JobType Type of job
 	// For more information, check the documentation.
