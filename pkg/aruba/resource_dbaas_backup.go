@@ -260,7 +260,10 @@ type dbaasBackupsLowLevelClient interface {
 // wire-shape-hidden) to the low-level client (parameter-explicit, returning
 // typed wire structs). Translates DBaaSBackup ↔ types.BackupRequest/Response and
 // surfaces HTTP errors as *aruba.HTTPError.
-type dbaasBackupsClientAdapter struct{ low dbaasBackupsLowLevelClient }
+type dbaasBackupsClientAdapter struct {
+	low  dbaasBackupsLowLevelClient
+	rest *restclient.Client
+}
 
 var _ BackupsClient = (*dbaasBackupsClientAdapter)(nil)
 
@@ -268,7 +271,7 @@ func newDBaaSBackupsClientAdapter(rest *restclient.Client) *dbaasBackupsClientAd
 	if rest == nil {
 		return &dbaasBackupsClientAdapter{}
 	}
-	return &dbaasBackupsClientAdapter{low: database.NewBackupsClientImpl(rest)}
+	return &dbaasBackupsClientAdapter{low: database.NewBackupsClientImpl(rest), rest: rest}
 }
 
 // Create posts a new DBaaSBackup to the API and hydrates the wrapper from the response.
@@ -398,8 +401,50 @@ func (a *dbaasBackupsClientAdapter) List(ctx context.Context, parent Ref, opts .
 			items = append(items, b)
 		}
 	}
-	refetch := func(_ context.Context, _ string) (*List[*DBaaSBackup], error) {
-		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	var refetch func(ctx context.Context, pageURL string) (*List[*DBaaSBackup], error)
+	refetch = func(ctx context.Context, pageURL string) (*List[*DBaaSBackup], error) {
+		fetch := listPageFetch[types.BackupList](a.rest, opts)
+		pageResp, fetchErr := fetch(ctx, pageURL)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if pageResp != nil && !pageResp.IsSuccess() {
+			return nil, &HTTPError{StatusCode: pageResp.StatusCode, Body: pageResp.RawBody, ErrResp: pageResp.Error}
+		}
+		var pageItems []*DBaaSBackup
+		if pageResp != nil && pageResp.Data != nil {
+			pageItems = make([]*DBaaSBackup, 0, len(pageResp.Data.Values))
+			for i := range pageResp.Data.Values {
+				b := &DBaaSBackup{}
+				b.projectID = projectID
+				b.fromResponse(&pageResp.Data.Values[i])
+				b.setRefresh(func(ctx context.Context) error {
+					fresh, err := a.Get(ctx, b)
+					if err != nil {
+						return err
+					}
+					if fresh != nil && fresh.Raw() != nil {
+						b.fromResponse(fresh.Raw())
+					}
+					return nil
+				})
+				if b.projectID == "" {
+					b.projectID = projectID
+				}
+				pageItems = append(pageItems, b)
+			}
+		}
+		var total2 int64
+		var self2, prev2, next2, first2, last2 string
+		if pageResp != nil && pageResp.Data != nil {
+			total2 = pageResp.Data.Total
+			self2 = pageResp.Data.Self
+			prev2 = pageResp.Data.Prev
+			next2 = pageResp.Data.Next
+			first2 = pageResp.Data.First
+			last2 = pageResp.Data.Last
+		}
+		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
 	}
 	var total int64
 	var self, prev, next, first, last string

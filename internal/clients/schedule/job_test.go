@@ -262,7 +262,7 @@ func TestCreateScheduleJob(t *testing.T) {
 				Location:                types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.JobPropertiesRequest{
-				Enabled:      true,
+				Enabled:      types.BoolPtr(true),
 				JobType:      types.JobTypeRecurring,
 				Cron:         types.StringPtr("0 3 * * 0"),
 				ExecuteUntil: types.StringPtr("2026-01-01T00:00:00Z"),
@@ -308,7 +308,7 @@ func TestCreateScheduleJob(t *testing.T) {
 				Location:                types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.JobPropertiesRequest{
-				Enabled:    true,
+				Enabled:    types.BoolPtr(true),
 				JobType:    types.JobTypeOneShot,
 				ScheduleAt: types.StringPtr("2025-11-20T22:00:00Z"),
 				Steps: []types.JobStep{
@@ -488,7 +488,7 @@ func TestUpdateScheduleJob(t *testing.T) {
 				Location:                types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.JobPropertiesRequest{
-				Enabled:      false,
+				Enabled:      types.BoolPtr(false),
 				JobType:      types.JobTypeRecurring,
 				Cron:         types.StringPtr("0 4 * * *"),
 				ExecuteUntil: types.StringPtr("2025-12-31T23:59:59Z"),

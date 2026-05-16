@@ -215,7 +215,10 @@ type subnetLowLevelClient interface {
 // wire-shape-hidden) to the low-level client (parameter-explicit, returning
 // typed wire structs). Translates Subnet ↔ types.SubnetRequest/Response and
 // surfaces HTTP errors as *aruba.HTTPError.
-type subnetsClientAdapter struct{ low subnetLowLevelClient }
+type subnetsClientAdapter struct {
+	low  subnetLowLevelClient
+	rest *restclient.Client
+}
 
 var _ SubnetsClient = (*subnetsClientAdapter)(nil)
 
@@ -224,7 +227,8 @@ func newSubnetsClientAdapter(rest *restclient.Client) *subnetsClientAdapter {
 		return &subnetsClientAdapter{}
 	}
 	return &subnetsClientAdapter{
-		low: network.NewSubnetsClientImpl(rest, network.NewVPCsClientImpl(rest)),
+		low:  network.NewSubnetsClientImpl(rest, network.NewVPCsClientImpl(rest)),
+		rest: rest,
 	}
 }
 
@@ -390,8 +394,50 @@ func (a *subnetsClientAdapter) List(ctx context.Context, vpc Ref, opts ...CallOp
 			items = append(items, s)
 		}
 	}
-	refetch := func(_ context.Context, _ string) (*List[*Subnet], error) {
-		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	var refetch func(ctx context.Context, pageURL string) (*List[*Subnet], error)
+	refetch = func(ctx context.Context, pageURL string) (*List[*Subnet], error) {
+		fetch := listPageFetch[types.SubnetList](a.rest, opts)
+		pageResp, fetchErr := fetch(ctx, pageURL)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if pageResp != nil && !pageResp.IsSuccess() {
+			return nil, &HTTPError{StatusCode: pageResp.StatusCode, Body: pageResp.RawBody, ErrResp: pageResp.Error}
+		}
+		var pageItems []*Subnet
+		if pageResp != nil && pageResp.Data != nil {
+			pageItems = make([]*Subnet, 0, len(pageResp.Data.Values))
+			for i := range pageResp.Data.Values {
+				item := &Subnet{}
+				item.fromResponse(&pageResp.Data.Values[i])
+				item.setRefresh(func(ctx context.Context) error {
+					fresh, err := a.Get(ctx, item)
+					if err != nil {
+						return err
+					}
+					if fresh != nil && fresh.Raw() != nil {
+						item.fromResponse(fresh.Raw())
+					}
+					return nil
+				})
+				item.vpcID = vpcID
+				if item.projectID == "" {
+					item.projectID = projectID
+				}
+				pageItems = append(pageItems, item)
+			}
+		}
+		var total2 int64
+		var self2, prev2, next2, first2, last2 string
+		if pageResp != nil && pageResp.Data != nil {
+			total2 = pageResp.Data.Total
+			self2 = pageResp.Data.Self
+			prev2 = pageResp.Data.Prev
+			next2 = pageResp.Data.Next
+			first2 = pageResp.Data.First
+			last2 = pageResp.Data.Last
+		}
+		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
 	}
 	var total int64
 	var self, prev, next, first, last string
