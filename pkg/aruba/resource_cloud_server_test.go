@@ -1350,3 +1350,30 @@ func TestCloudServersClientAdapter_Get_InjectsRefresh(t *testing.T) {
 		t.Error("Get should inject a refresh callback into the returned CloudServer")
 	}
 }
+
+// --------------------------------------------------------------------------
+// WithBillingPeriod (#267)
+// --------------------------------------------------------------------------
+
+func TestCloudServer_WithBillingPeriod_SetsField(t *testing.T) {
+	cs := NewCloudServer().WithBillingPeriod(BillingPeriodHour)
+	if cs.BillingPeriod() != BillingPeriodHour {
+		t.Errorf("BillingPeriod() = %q, want %q", cs.BillingPeriod(), BillingPeriodHour)
+	}
+}
+
+func TestCloudServer_WithBillingPeriod_InRequest(t *testing.T) {
+	cs := NewCloudServer().WithBillingPeriod(BillingPeriodMonth)
+	req := cs.RawRequest()
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodMonth {
+		t.Errorf("request BillingPeriod = %v, want %q", req.Properties.BillingPeriod, BillingPeriodMonth)
+	}
+}
+
+func TestCloudServer_BillingPeriod_DefaultHour(t *testing.T) {
+	cs := NewCloudServer()
+	req := cs.RawRequest()
+	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
+		t.Errorf("default BillingPeriod = %v, want %q", req.Properties.BillingPeriod, BillingPeriodHour)
+	}
+}

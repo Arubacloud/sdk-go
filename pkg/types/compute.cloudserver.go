@@ -44,6 +44,8 @@ type CloudServerPropertiesRequest struct {
 	SecurityGroups []ReferenceResource `json:"securityGroups,omitempty"`
 
 	UserData *string `json:"userData,omitempty"`
+
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 }
 
 type CloudServerFlavorResponse struct {
@@ -84,6 +86,8 @@ type CloudServerPropertiesResult struct {
 	KeyPair ReferenceResource `json:"keyPair"`
 
 	NetworkInterfaces []CloudServerNetworkInterfaceDetails `json:"networkInterfaces,omitempty"`
+
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 }
 
 type CloudServerRequest struct {

@@ -33,9 +33,10 @@ type CloudServer struct {
 	httpEnvelopeMixin
 
 	// Request-side scalars.
-	flavor    *CloudServerFlavor
-	userData  *string
-	vpcPreset *bool
+	flavor        *CloudServerFlavor
+	userData      *string
+	vpcPreset     *bool
+	billingPeriod *BillingPeriod
 
 	// Body-refs (single).
 	vpcRef        *string
@@ -89,6 +90,12 @@ func (cs *CloudServer) WithUserData(b64 string) *CloudServer { cs.userData = &b6
 
 // WithVPCPreset marks the server to use VPC preset networking.
 func (cs *CloudServer) WithVPCPreset(b bool) *CloudServer { cs.vpcPreset = &b; return cs }
+
+// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
+func (cs *CloudServer) WithBillingPeriod(period BillingPeriod) *CloudServer {
+	cs.billingPeriod = &period
+	return cs
+}
 
 // Single body-ref setters.
 
@@ -231,6 +238,14 @@ func (cs *CloudServer) IsVPCPreset() bool {
 	return *cs.vpcPreset
 }
 
+// BillingPeriod returns the billing period, or "" if unset.
+func (cs *CloudServer) BillingPeriod() BillingPeriod {
+	if cs.billingPeriod == nil {
+		return ""
+	}
+	return *cs.billingPeriod
+}
+
 // Action methods (require hydration via a client Get/Create/Update/List call).
 
 // PowerOn powers on the cloud server. Requires the wrapper to be obtained via a client call.
@@ -346,6 +361,7 @@ func (cs *CloudServer) toRequest() types.CloudServerRequest {
 			props.SecurityGroups = append(props.SecurityGroups, types.ReferenceResource{URI: u})
 		}
 	}
+	props.BillingPeriod = defaultBillingPeriod(cs.billingPeriod)
 	return types.CloudServerRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: cs.toMetadata(),
@@ -392,6 +408,9 @@ func (cs *CloudServer) fromResponse(resp *types.CloudServerResponse) {
 	if resp.Properties.KeyPair.URI != "" {
 		v := resp.Properties.KeyPair.URI
 		cs.keyPairRef = &v
+	}
+	if resp.Properties.BillingPeriod != nil {
+		cs.billingPeriod = resp.Properties.BillingPeriod
 	}
 
 	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
