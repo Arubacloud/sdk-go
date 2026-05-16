@@ -201,9 +201,9 @@ func dbaasBackupDerefString(p *string) string {
 }
 
 var dbaasBackupTerminalStates = map[string]bool{
-	"Available": true,
-	"Error":     false,
-	"Failed":    false,
+	"Active": true,
+	"Error":  false,
+	"Failed": false,
 }
 
 // ---- Low-level client interface ----
