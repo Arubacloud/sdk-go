@@ -105,8 +105,8 @@ func (b *BlockStorage) BlockStorageID() string { return b.ID() }
 // Raw shadows responseMetadataMixin.Raw() with the typed BlockStorage response.
 func (b *BlockStorage) Raw() *types.BlockStorageResponse { return b.response }
 
-// RawRequest returns what toRequest() would emit right now.
-func (b *BlockStorage) RawRequest() types.BlockStorageRequest { return b.toRequest() }
+// RawRequest returns what toCreateRequest() would emit right now.
+func (b *BlockStorage) RawRequest() types.BlockStorageRequest { return b.toCreateRequest() }
 
 // SizeGB returns the volume size in GiB, or 0 if unset.
 func (b *BlockStorage) SizeGB() int {
@@ -148,8 +148,8 @@ func (b *BlockStorage) SnapshotURI() string { return blockStorageDerefString(b.s
 
 // Wire converters
 
-// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
-func (b *BlockStorage) toRequest() types.BlockStorageRequest {
+// toCreateRequest assembles the Create body. bootable defaults to false when unset (API wire contract).
+func (b *BlockStorage) toCreateRequest() types.BlockStorageRequest {
 	var t types.BlockStorageType
 	if b.storageType != nil {
 		t = *b.storageType
@@ -164,6 +164,37 @@ func (b *BlockStorage) toRequest() types.BlockStorageRequest {
 		Zone:          b.zonePtr(),
 		Type:          t,
 		Bootable:      blockStorageBootable(b.bootable),
+		Image:         b.image,
+	}
+	if b.snapshotRef != nil {
+		props.Snapshot = &types.ReferenceResource{URI: *b.snapshotRef}
+	}
+	return types.BlockStorageRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: b.toMetadata(),
+			Location:                b.toLocation(),
+		},
+		Properties: props,
+	}
+}
+
+// toUpdateRequest assembles the Update (PUT) body. bootable is omitted when the caller
+// never called SetBootable/UnsetBootable, preventing silent clobbering of server-side state.
+func (b *BlockStorage) toUpdateRequest() types.BlockStorageRequest {
+	var t types.BlockStorageType
+	if b.storageType != nil {
+		t = *b.storageType
+	}
+	var sizeGB int
+	if b.sizeGB != nil {
+		sizeGB = int(*b.sizeGB)
+	}
+	props := types.BlockStoragePropertiesRequest{
+		SizeGB:        sizeGB,
+		BillingPeriod: defaultBillingPeriod(b.billingPeriod),
+		Zone:          b.zonePtr(),
+		Type:          t,
+		Bootable:      b.bootable, // nil → omitted by omitempty; only sent when explicitly set
 		Image:         b.image,
 	}
 	if b.snapshotRef != nil {
@@ -314,7 +345,7 @@ func (a *volumesClientAdapter) Create(ctx context.Context, vol *BlockStorage, op
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
-	resp, err := a.low.Create(ctx, vol.ProjectID(), vol.toRequest(), rp)
+	resp, err := a.low.Create(ctx, vol.ProjectID(), vol.toCreateRequest(), rp)
 	populateHTTPEnvelope(&vol.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		vol.fromResponse(resp.Data)
@@ -387,7 +418,7 @@ func (a *volumesClientAdapter) Update(ctx context.Context, vol *BlockStorage, op
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
-	resp, err := a.low.Update(ctx, vol.ProjectID(), vol.ID(), vol.toRequest(), rp)
+	resp, err := a.low.Update(ctx, vol.ProjectID(), vol.ID(), vol.toUpdateRequest(), rp)
 	populateHTTPEnvelope(&vol.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		vol.fromResponse(resp.Data)
