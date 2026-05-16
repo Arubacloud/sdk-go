@@ -33,9 +33,9 @@ import (
 //     AutoscalingStatus() / AutoscalingRuleID() read only the response;
 //     AutoscalingAvailableSpace() / AutoscalingStepSize() prefer the
 //     response and fall back to the locally-set value.
-//     fromResponse does NOT back-populate request-side fields, so an
-//     Update after Get omits the autoscaling block unless the caller
-//     re-asserts intent via WithAutoscaling/WithoutAutoscaling.
+//     fromResponse back-populates autoscaling fields (AvailableSpace, StepSize,
+//     and Enabled inferred from Status) so that a Get→Update round-trip preserves
+//     the configured autoscaling block without the caller re-asserting it.
 type DBaaS struct {
 	errMixin
 	metadataMixin
@@ -422,6 +422,25 @@ func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 		if resp.Properties.Networking.ElasticIP != nil && resp.Properties.Networking.ElasticIP.URI != "" {
 			v := resp.Properties.Networking.ElasticIP.URI
 			d.elasticIPRef = &v
+		}
+	}
+
+	// Back-populate autoscaling from response so Get→Update round-trips preserve
+	// the configuration even when the caller does not call WithAutoscaling again.
+	// The response type carries Status (not Enabled), so we infer the bool from it.
+	if resp.Properties.Autoscaling != nil {
+		as := resp.Properties.Autoscaling
+		if as.AvailableSpace != nil {
+			v := *as.AvailableSpace
+			d.autoscalingAvailableSpace = &v
+		}
+		if as.StepSize != nil {
+			v := *as.StepSize
+			d.autoscalingStepSize = &v
+		}
+		if as.Status != nil {
+			enabled := *as.Status == "Enabled" || *as.Status == "Active"
+			d.autoscalingEnabled = &enabled
 		}
 	}
 
