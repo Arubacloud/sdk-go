@@ -112,6 +112,51 @@ func TestListPaginationRefetch_ServerError(t *testing.T) {
 	}
 }
 
+// TestListPaginationRefetch_RelativeURL verifies that Next resolves a relative
+// pagination link against the client base URL instead of failing with an
+// "unsupported protocol scheme" error.
+func TestListPaginationRefetch_RelativeURL(t *testing.T) {
+	calls := 0
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if calls == 1 {
+			// Return a relative next URL — the client must resolve it.
+			fmt.Fprint(w,
+				`{"total":2,"next":"/v1/alerts?page=2","values":[{"id":"alert-1","eventName":"cpu.high","theshold":70,"thesholdExceedence":"yes"}]}`)
+		} else {
+			fmt.Fprint(w,
+				`{"total":2,"values":[{"id":"alert-2","eventName":"mem.high","theshold":90,"thesholdExceedence":"yes"}]}`)
+		}
+	})
+
+	rest := testutil.NewClient(t, server.URL)
+	adapter := &alertsClientAdapter{
+		low:  metric.NewAlertsClientImpl(rest),
+		rest: rest,
+	}
+
+	list, err := adapter.List(context.Background(), URI("/projects/p-1"))
+	if err != nil {
+		t.Fatalf("List() error: %v", err)
+	}
+	if !list.HasNext() {
+		t.Fatal("page 1 should have a next link")
+	}
+
+	page2, err := list.Next(context.Background())
+	if err != nil {
+		t.Fatalf("Next() with relative URL error: %v", err)
+	}
+	if len(page2.Items()) != 1 {
+		t.Errorf("page 2: got %d items, want 1", len(page2.Items()))
+	}
+	if page2.Items()[0].ID() != "alert-2" {
+		t.Errorf("page 2 item ID = %q, want %q", page2.Items()[0].ID(), "alert-2")
+	}
+}
+
 // TestListPaginationRefetch_NilRest verifies that Next returns an error when
 // the adapter's rest client is nil (e.g. constructed in tests without a server).
 func TestListPaginationRefetch_NilRest(t *testing.T) {

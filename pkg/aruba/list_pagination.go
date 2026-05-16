@@ -18,7 +18,12 @@ func listPageFetch[L any](rest *restclient.Client, opts []CallOption) func(ctx c
 		}
 		co := applyCallOptions(opts)
 		rp := co.toRequestParameters()
-		httpResp, err := rest.DoRequestAbs(ctx, http.MethodGet, absURL, nil, rp.ToQueryParams(), rp.ToHeaders())
+		// The server-supplied pagination URL is authoritative; do not re-append
+		// the original query params (limit, offset, filter, api-version, …) as
+		// they are already baked into the link and duplicating them can produce
+		// conflicting or repeated query keys. Only forward request-level headers
+		// (e.g. Accept) that are not part of the URL.
+		httpResp, err := rest.DoRequestAbs(ctx, http.MethodGet, absURL, nil, nil, rp.ToHeaders())
 		if err != nil {
 			return nil, err
 		}

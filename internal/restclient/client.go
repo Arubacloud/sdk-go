@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/Arubacloud/sdk-go/internal/ports/interceptor"
 	"github.com/Arubacloud/sdk-go/internal/ports/logger"
@@ -49,6 +50,13 @@ func (c *Client) DoRequestAbs(ctx context.Context, method, absURL string, body i
 		}
 		c.logger.Debugf("Request body: %s", string(bodyBytes))
 		body = bytes.NewReader(bodyBytes)
+	}
+
+	// Resolve relative pagination links against the client base URL.
+	if parsed, parseErr := url.Parse(absURL); parseErr == nil && !parsed.IsAbs() {
+		if base, baseErr := url.Parse(c.baseURL); baseErr == nil {
+			absURL = base.ResolveReference(parsed).String()
+		}
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, absURL, body)

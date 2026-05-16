@@ -28,7 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 > **Patch release.** Stabilises the v0.2.0 wrapper layer based on
 > migration feedback from [acloud-cli PR #111](https://github.com/Arubacloud/acloud-cli/pull/111).
-> 20 Pre-Live milestone issues resolved. No breaking changes.
+> 20 Pre-Live milestone issues resolved.
+>
+> **Narrow source-incompatible change:** `types.JobPropertiesRequest.Enabled`
+> changed from `bool` to `*bool` (required to fix #282 — `omitempty` silently
+> dropped `false`). Code that constructs `types.JobPropertiesRequest` literals
+> directly (`Enabled: true`) must be updated to `Enabled: types.BoolPtr(true)`.
+> Callers using the `pkg/aruba` wrapper layer (`job.WithEnabled(bool)`) are
+> unaffected.
 
 ### Added
 
