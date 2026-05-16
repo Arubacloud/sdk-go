@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
+	"github.com/Arubacloud/sdk-go/internal/clients/network"
+	"github.com/Arubacloud/sdk-go/internal/clients/project"
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 )
 
@@ -183,5 +185,107 @@ func TestListPaginationRefetch_NilRest(t *testing.T) {
 	_, err = list.Next(context.Background())
 	if err == nil {
 		t.Fatal("Next() with nil rest should return an error")
+	}
+}
+
+// TestListPaginationRefetch_VPC verifies that the VPC adapter's refetch closure
+// follows the server-supplied next link and backfills projectID on page-2 items.
+func TestListPaginationRefetch_VPC(t *testing.T) {
+	var serverURL string
+	calls := 0
+
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if calls == 1 {
+			nextURL := serverURL + "/v1/network/vpcs?page=2"
+			fmt.Fprintf(w,
+				`{"total":2,"next":%q,"values":[{"metadata":{"id":"vpc-1","name":"test-vpc"},"properties":{}}]}`,
+				nextURL)
+		} else {
+			fmt.Fprint(w,
+				`{"total":2,"values":[{"metadata":{"id":"vpc-2","name":"test-vpc-2"},"properties":{}}]}`)
+		}
+	})
+	serverURL = server.URL
+
+	rest := testutil.NewClient(t, server.URL)
+	adapter := &vpcsClientAdapter{
+		low:  network.NewVPCsClientImpl(rest),
+		rest: rest,
+	}
+
+	list, err := adapter.List(context.Background(), URI("/projects/p-1"))
+	if err != nil {
+		t.Fatalf("List() error: %v", err)
+	}
+	if !list.HasNext() {
+		t.Fatal("page 1 should have a next link")
+	}
+
+	page2, err := list.Next(context.Background())
+	if err != nil {
+		t.Fatalf("Next() error: %v", err)
+	}
+	if len(page2.Items()) != 1 {
+		t.Errorf("page 2: got %d items, want 1", len(page2.Items()))
+	}
+	if page2.Items()[0].ID() != "vpc-2" {
+		t.Errorf("page 2 item ID = %q, want %q", page2.Items()[0].ID(), "vpc-2")
+	}
+	if page2.HasNext() {
+		t.Error("page 2 should not have a next link")
+	}
+}
+
+// TestListPaginationRefetch_Project verifies that the top-level Project adapter's
+// refetch closure follows the server-supplied next link (no parent-ID backfill).
+func TestListPaginationRefetch_Project(t *testing.T) {
+	var serverURL string
+	calls := 0
+
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if calls == 1 {
+			nextURL := serverURL + "/v1/projects?page=2"
+			fmt.Fprintf(w,
+				`{"total":2,"next":%q,"values":[{"metadata":{"id":"proj-1","name":"test-project"},"properties":{}}]}`,
+				nextURL)
+		} else {
+			fmt.Fprint(w,
+				`{"total":2,"values":[{"metadata":{"id":"proj-2","name":"test-project-2"},"properties":{}}]}`)
+		}
+	})
+	serverURL = server.URL
+
+	rest := testutil.NewClient(t, server.URL)
+	adapter := &projectClientAdapter{
+		low:  project.NewProjectsClientImpl(rest),
+		rest: rest,
+	}
+
+	list, err := adapter.List(context.Background())
+	if err != nil {
+		t.Fatalf("List() error: %v", err)
+	}
+	if !list.HasNext() {
+		t.Fatal("page 1 should have a next link")
+	}
+
+	page2, err := list.Next(context.Background())
+	if err != nil {
+		t.Fatalf("Next() error: %v", err)
+	}
+	if len(page2.Items()) != 1 {
+		t.Errorf("page 2: got %d items, want 1", len(page2.Items()))
+	}
+	if page2.Items()[0].ID() != "proj-2" {
+		t.Errorf("page 2 item ID = %q, want %q", page2.Items()[0].ID(), "proj-2")
+	}
+	if page2.HasNext() {
+		t.Error("page 2 should not have a next link")
 	}
 }
