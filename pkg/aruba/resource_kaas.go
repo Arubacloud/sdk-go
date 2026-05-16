@@ -181,6 +181,27 @@ func (k *KaaS) AddNodePool(np *NodePool) *KaaS {
 	return k
 }
 
+// ClearNodePools removes all previously-added node pools from the cluster.
+func (k *KaaS) ClearNodePools() *KaaS {
+	k.nodePools = nil
+	return k
+}
+
+// ReplaceNodePools replaces the entire node pool list with the given pools.
+// Equivalent to ClearNodePools followed by AddNodePool for each entry.
+func (k *KaaS) ReplaceNodePools(pools ...*NodePool) *KaaS {
+	k.nodePools = nil
+	for _, np := range pools {
+		k.AddNodePool(np)
+	}
+	return k
+}
+
+// SetNodePools is an alias for ReplaceNodePools for naming-convention parity.
+func (k *KaaS) SetNodePools(pools ...*NodePool) *KaaS {
+	return k.ReplaceNodePools(pools...)
+}
+
 // DownloadKubeconfig downloads the kubeconfig for this cluster and returns it
 // as raw bytes (the YAML content). Requires the wrapper to have been obtained
 // via a client call (Get/Create/Update/List); locally-built wrappers return a

@@ -1660,3 +1660,60 @@ func TestKaaSClientAdapter_Get_InjectsRefresh(t *testing.T) {
 		t.Error("Get should inject a refresh callback into the returned KaaS")
 	}
 }
+
+// --------------------------------------------------------------------------
+// ClearNodePools / ReplaceNodePools / SetNodePools (#279)
+// --------------------------------------------------------------------------
+
+func TestKaaS_ReplaceNodePools_ReplacesExisting(t *testing.T) {
+	np1 := NewNodePool().Named("pool-1").OfInstance("inst-1").WithAutoscaling(1, 1)
+	np2 := NewNodePool().Named("pool-2").OfInstance("inst-2").WithAutoscaling(2, 2)
+	np3 := NewNodePool().Named("pool-3").OfInstance("inst-3").WithAutoscaling(3, 3)
+
+	k := NewKaaS().Named("c").InRegion(RegionITBGBergamo).
+		WithVPC(URI("/v")).WithSubnet(URI("/s")).
+		AddNodePool(np1).AddNodePool(np2)
+
+	k.ReplaceNodePools(np3)
+
+	req := k.toRequest()
+	if len(req.Properties.NodePools) != 1 {
+		t.Fatalf("expected 1 node pool after ReplaceNodePools, got %d", len(req.Properties.NodePools))
+	}
+	if req.Properties.NodePools[0].Name != "pool-3" {
+		t.Errorf("expected pool-3, got %q", req.Properties.NodePools[0].Name)
+	}
+}
+
+func TestKaaS_ClearNodePools_RemovesAll(t *testing.T) {
+	np := NewNodePool().Named("pool-1").OfInstance("inst-1").WithAutoscaling(1, 2)
+	k := NewKaaS().Named("c").InRegion(RegionITBGBergamo).
+		WithVPC(URI("/v")).WithSubnet(URI("/s")).
+		AddNodePool(np)
+
+	k.ClearNodePools()
+
+	req := k.toRequest()
+	if len(req.Properties.NodePools) != 0 {
+		t.Errorf("expected 0 node pools after ClearNodePools, got %d", len(req.Properties.NodePools))
+	}
+}
+
+func TestKaaS_SetNodePools_AliasForReplace(t *testing.T) {
+	np1 := NewNodePool().Named("pool-1").OfInstance("inst-1").WithAutoscaling(1, 1)
+	np2 := NewNodePool().Named("pool-2").OfInstance("inst-2").WithAutoscaling(1, 1)
+
+	k := NewKaaS().Named("c").InRegion(RegionITBGBergamo).
+		WithVPC(URI("/v")).WithSubnet(URI("/s")).
+		AddNodePool(np1)
+
+	k.SetNodePools(np2)
+
+	req := k.toRequest()
+	if len(req.Properties.NodePools) != 1 {
+		t.Fatalf("expected 1 node pool after SetNodePools, got %d", len(req.Properties.NodePools))
+	}
+	if req.Properties.NodePools[0].Name != "pool-2" {
+		t.Errorf("expected pool-2, got %q", req.Properties.NodePools[0].Name)
+	}
+}
