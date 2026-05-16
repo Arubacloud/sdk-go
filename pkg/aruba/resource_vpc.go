@@ -219,6 +219,7 @@ func (a *vpcsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption
 	rp := co.toRequestParameters()
 	resp, err := a.low.Get(ctx, projectID, vpcID, rp)
 	out := &VPC{}
+	out.projectID = projectID
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
@@ -317,6 +318,7 @@ func (a *vpcsClientAdapter) List(ctx context.Context, project Ref, opts ...CallO
 		items = make([]*VPC, 0, len(resp.Data.Values))
 		for i := range resp.Data.Values {
 			v := &VPC{}
+			v.projectID = projectID
 			v.fromResponse(&resp.Data.Values[i])
 			v.setRefresh(func(ctx context.Context) error {
 				fresh, err := a.Get(ctx, v)

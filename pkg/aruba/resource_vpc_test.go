@@ -833,3 +833,40 @@ func TestVPCsClientAdapter_Get_InjectsRefresh(t *testing.T) {
 		t.Error("Get should inject a refresh callback into the returned VPC")
 	}
 }
+
+func TestVPCsClientAdapter_Get_BackfillsProjectID(t *testing.T) {
+	// API response does not include project metadata; projectID must be
+	// backfilled from the Ref so that a subsequent Update does not fail.
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"metadata":{"id":"v-1","name":"my-vpc","uri":"/projects/p-1/providers/Aruba.Network/vpcs/v-1"},"properties":{"default":false},"status":{}}`)
+	})
+	adapter := newVPCsClientAdapter(testutil.NewClient(t, server.URL))
+	vpc, err := adapter.Get(context.Background(), URI("/projects/p-1/providers/Aruba.Network/vpcs/v-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if vpc.ProjectID() != "p-1" {
+		t.Errorf("ProjectID() = %q after Get without project metadata, want %q", vpc.ProjectID(), "p-1")
+	}
+}
+
+func TestVPCsClientAdapter_List_BackfillsProjectID(t *testing.T) {
+	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"values":[{"metadata":{"id":"v-1","name":"vpc1","uri":"/projects/p-1/providers/Aruba.Network/vpcs/v-1"},"properties":{"default":false},"status":{}}],"total":1}`)
+	})
+	adapter := newVPCsClientAdapter(testutil.NewClient(t, server.URL))
+	list, err := adapter.List(context.Background(), URI("/projects/p-1"))
+	if err != nil {
+		t.Fatalf("List error: %v", err)
+	}
+	if len(list.Items()) == 0 {
+		t.Fatal("expected at least one item")
+	}
+	if list.Items()[0].ProjectID() != "p-1" {
+		t.Errorf("Items()[0].ProjectID() = %q, want %q", list.Items()[0].ProjectID(), "p-1")
+	}
+}
