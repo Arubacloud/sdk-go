@@ -31,6 +31,7 @@ type DBaaSBackup struct {
 	httpEnvelopeMixin
 
 	billingPeriod *BillingPeriod
+	zone          *Zone   // explicit zone; when nil, Zone is derived from Region
 	dbaasRef      *string // body URI
 	databaseRef   *string // body URI
 
@@ -56,6 +57,10 @@ func (b *DBaaSBackup) ReplaceTags(ts ...string) *DBaaSBackup { b.replaceTags(ts.
 
 // InRegion sets the region for this resource.
 func (b *DBaaSBackup) InRegion(region Region) *DBaaSBackup { b.inRegion(region); return b }
+
+// InZone sets an explicit availability zone. When set it overrides the default
+// behaviour of deriving the zone value from InRegion.
+func (b *DBaaSBackup) InZone(z Zone) *DBaaSBackup { b.zone = &z; return b }
 
 // FromDBaaS binds the source DBaaS via its URI. Empty URIs are recorded on the
 // error sink and the field remains unset.
@@ -135,8 +140,12 @@ func (b *DBaaSBackup) Zone() Zone {
 
 // toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (b *DBaaSBackup) toRequest() types.BackupRequest {
+	zone := Zone(b.Region()) // default: derive zone from region
+	if b.zone != nil {
+		zone = *b.zone // explicit InZone overrides the derived value
+	}
 	props := types.BackupPropertiesRequest{
-		Zone: Zone(b.Region()), // auto-derive from regionalMixin (no separate setter)
+		Zone: zone,
 	}
 	if b.dbaasRef != nil {
 		props.DBaaS = types.ReferenceResource{URI: *b.dbaasRef}

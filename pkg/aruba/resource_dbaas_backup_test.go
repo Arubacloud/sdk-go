@@ -893,6 +893,24 @@ func TestDBaaSBackup_FromResponse_SetsTerminalStates(t *testing.T) {
 	}
 }
 
+func TestDBaaSBackup_InZone_OverridesRegionDerivedZone(t *testing.T) {
+	b := NewDBaaSBackup().
+		InRegion(RegionITBGBergamo).
+		InZone(ZoneITBG1)
+	req := b.RawRequest()
+	if req.Properties.Zone != ZoneITBG1 {
+		t.Errorf("Zone = %q, want %q", req.Properties.Zone, ZoneITBG1)
+	}
+}
+
+func TestDBaaSBackup_NoInZone_DerivesZoneFromRegion(t *testing.T) {
+	b := NewDBaaSBackup().InRegion(RegionITBGBergamo)
+	req := b.RawRequest()
+	if req.Properties.Zone != Zone(RegionITBGBergamo) {
+		t.Errorf("Zone = %q, want region-derived %q", req.Properties.Zone, Zone(RegionITBGBergamo))
+	}
+}
+
 func TestDBaaSBackupsClientAdapter_Get_InjectsRefresh(t *testing.T) {
 	server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
