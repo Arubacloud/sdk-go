@@ -1,0 +1,85 @@
+name: Acceptance Tests (E2E)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  e2e-create:
+    name: E2E Create
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    outputs:
+      project_id: ${{ steps.extract.outputs.project_id }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run e2e create
+        env:
+          CLIENT_ID: ${{ secrets.E2E_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.E2E_CLIENT_SECRET }}
+        run: |
+          go run ./examples/all-resources \
+            -clientID="$CLIENT_ID" \
+            -clientSecret="$CLIENT_SECRET" \
+            -mode=create \
+            -debug 2>&1 | tee create.log
+
+      - name: Extract Project ID
+        id: extract
+        if: always()
+        run: |
+          project_id=$(grep "- Project ID:" create.log | awk '{print $NF}')
+          echo "project_id=$project_id" >> "$GITHUB_OUTPUT"
+          echo "Extracted PROJECT_ID: $project_id"
+
+      - name: Upload create log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-create-log
+          path: create.log
+          retention-days: 7
+
+  e2e-delete:
+    name: E2E Delete
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    needs: e2e-create
+    if: always() && needs.e2e-create.outputs.project_id != ''
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run e2e delete
+        env:
+          CLIENT_ID: ${{ secrets.E2E_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.E2E_CLIENT_SECRET }}
+          PROJECT_ID: ${{ needs.e2e-create.outputs.project_id }}
+        run: |
+          go run ./examples/all-resources \
+            -clientID="$CLIENT_ID" \
+            -clientSecret="$CLIENT_SECRET" \
+            -projectID="$PROJECT_ID" \
+            -mode=delete \
+            -debug 2>&1 | tee delete.log
+
+      - name: Upload delete log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-delete-log
+          path: delete.log
+          retention-days: 7
