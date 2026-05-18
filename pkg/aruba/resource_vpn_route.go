@@ -120,8 +120,8 @@ func (r *VPNRoute) fromResponse(resp *types.VPNRouteResponse) {
 	if len(resp.Properties.LinkedResources) > 0 {
 		r.setLinked(resp.Properties.LinkedResources)
 	}
-	if resp.Properties.CloudSubnet != "" {
-		v := resp.Properties.CloudSubnet
+	if resp.Properties.CloudSubnet.CIDR != "" {
+		v := resp.Properties.CloudSubnet.CIDR
 		r.cloudSubnet = &v
 	}
 	if resp.Properties.OnPremSubnet != "" {

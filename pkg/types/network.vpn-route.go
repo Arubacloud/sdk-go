@@ -1,5 +1,7 @@
 package types
 
+import "encoding/json"
+
 type VPNRoutePropertiesRequest struct {
 
 	// CloudSubnet CIDR of the cloud subnet
@@ -9,11 +11,43 @@ type VPNRoutePropertiesRequest struct {
 	OnPremSubnet string `json:"onPremSubnet"`
 }
 
+// SubnetCIDROrRef decodes cloudSubnet from either a plain CIDR string
+// (Get/List responses) or a full subnet resource object (Create response),
+// normalising both forms to a plain CIDR string in the CIDR field.
+type SubnetCIDROrRef struct {
+	CIDR string
+}
+
+func (s *SubnetCIDROrRef) UnmarshalJSON(data []byte) error {
+	var str string
+	if err := json.Unmarshal(data, &str); err == nil {
+		s.CIDR = str
+		return nil
+	}
+	// Full subnet object — extract properties.network.address
+	var obj struct {
+		Properties struct {
+			Network struct {
+				Address string `json:"address"`
+			} `json:"network"`
+		} `json:"properties"`
+	}
+	if err := json.Unmarshal(data, &obj); err != nil {
+		return err
+	}
+	s.CIDR = obj.Properties.Network.Address
+	return nil
+}
+
+func (s SubnetCIDROrRef) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.CIDR)
+}
+
 type VPNRoutePropertiesResponse struct {
 	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
 
-	// CloudSubnet CIDR of the cloud subnet
-	CloudSubnet string `json:"cloudSubnet"`
+	// CloudSubnet CIDR of the cloud subnet (plain string or full subnet object on Create)
+	CloudSubnet SubnetCIDROrRef `json:"cloudSubnet"`
 
 	// OnPremSubnet CIDR of the onPrem subnet
 	OnPremSubnet string `json:"onPremSubnet"`
