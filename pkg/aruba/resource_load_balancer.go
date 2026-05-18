@@ -9,6 +9,11 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// LoadBalancerRef returns a Ref that points to the LoadBalancer with the given IDs.
+func LoadBalancerRef(projectID, lbID string) Ref {
+	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/loadbalancers/%s", projectID, lbID))
+}
+
 // ---- Wrapper ----
 
 // LoadBalancer is the wrapper for an Aruba Cloud Load Balancer (a direct child of a Project).

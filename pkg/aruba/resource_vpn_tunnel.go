@@ -9,6 +9,11 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// VPNTunnelRef returns a Ref that points to the VPNTunnel with the given IDs.
+func VPNTunnelRef(projectID, tunnelID string) Ref {
+	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/vpnTunnels/%s", projectID, tunnelID))
+}
+
 // ---- Wrapper ----
 
 // VPNTunnel is the wrapper for an Aruba Cloud VPN Tunnel (a child of a Project).

@@ -870,3 +870,15 @@ func TestVPCsClientAdapter_List_BackfillsProjectID(t *testing.T) {
 		t.Errorf("Items()[0].ProjectID() = %q, want %q", list.Items()[0].ProjectID(), "p-1")
 	}
 }
+
+func TestVPCRef(t *testing.T) {
+	ref := VPCRef("p-1", "vpc-1")
+	want := "/projects/p-1/providers/Aruba.Network/vpcs/vpc-1"
+	if ref.URI() != want {
+		t.Errorf("VPCRef URI = %q, want %q", ref.URI(), want)
+	}
+	ids := parseURIIDs(ref.URI())
+	if ids["projects"] != "p-1" || ids["vpcs"] != "vpc-1" {
+		t.Errorf("parseURIIDs = %v", ids)
+	}
+}

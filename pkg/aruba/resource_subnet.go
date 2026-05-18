@@ -9,6 +9,11 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// SubnetRef returns a Ref that points to the Subnet nested under a VPC.
+func SubnetRef(projectID, vpcID, subnetID string) Ref {
+	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/vpcs/%s/subnets/%s", projectID, vpcID, subnetID))
+}
+
 // ---- Wrapper ----
 
 // Subnet is the wrapper for an Aruba Cloud subnet (a child of a VPC).

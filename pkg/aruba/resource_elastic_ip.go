@@ -9,6 +9,11 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ElasticIPRef returns a Ref that points to the ElasticIP with the given IDs.
+func ElasticIPRef(projectID, eipID string) Ref {
+	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/elasticIps/%s", projectID, eipID))
+}
+
 // ---- Wrapper ----
 
 // ElasticIP is the wrapper for an Aruba Cloud Elastic IP (a child of a Project).

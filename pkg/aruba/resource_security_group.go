@@ -9,6 +9,11 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// SecurityGroupRef returns a Ref that points to the SecurityGroup nested under a VPC.
+func SecurityGroupRef(projectID, vpcID, sgID string) Ref {
+	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/vpcs/%s/securitygroups/%s", projectID, vpcID, sgID))
+}
+
 // ---- Wrapper ----
 
 // SecurityGroup is the wrapper for an Aruba Cloud Security Group (a child of a VPC).

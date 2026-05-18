@@ -9,6 +9,11 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// VPCPeeringRouteRef returns a Ref that points to the VPCPeeringRoute nested under a VPCPeering.
+func VPCPeeringRouteRef(projectID, vpcID, peeringID, routeID string) Ref {
+	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/vpcs/%s/vpcPeerings/%s/vpcPeeringRoutes/%s", projectID, vpcID, peeringID, routeID))
+}
+
 // ---- Wrapper ----
 
 // VPCPeeringRoute is the wrapper for an Aruba Cloud VPC Peering Route (a child of a VPCPeering).

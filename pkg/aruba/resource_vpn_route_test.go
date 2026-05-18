@@ -1046,3 +1046,15 @@ func TestVPNRoutesClientAdapter_Get_InjectsRefresh(t *testing.T) {
 		t.Error("Get should inject a refresh callback into the returned VPNRoute")
 	}
 }
+
+func TestVPNRouteRef(t *testing.T) {
+	ref := VPNRouteRef("p-1", "tun-1", "rt-1")
+	want := "/projects/p-1/providers/Aruba.Network/vpnTunnels/tun-1/vpnRoutes/rt-1"
+	if ref.URI() != want {
+		t.Errorf("VPNRouteRef URI = %q, want %q", ref.URI(), want)
+	}
+	ids := parseURIIDs(ref.URI())
+	if ids["projects"] != "p-1" || ids["vpnTunnels"] != "tun-1" || ids["vpnRoutes"] != "rt-1" {
+		t.Errorf("parseURIIDs = %v", ids)
+	}
+}

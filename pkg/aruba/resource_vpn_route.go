@@ -9,6 +9,11 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// VPNRouteRef returns a Ref that points to the VPNRoute nested under a VPNTunnel.
+func VPNRouteRef(projectID, tunnelID, routeID string) Ref {
+	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/vpnTunnels/%s/vpnRoutes/%s", projectID, tunnelID, routeID))
+}
+
 // ---- Wrapper ----
 
 // VPNRoute is the wrapper for an Aruba Cloud VPN Route (a child of a VPNTunnel).

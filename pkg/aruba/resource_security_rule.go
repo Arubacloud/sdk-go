@@ -9,6 +9,11 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// SecurityRuleRef returns a Ref that points to the SecurityRule nested under a SecurityGroup.
+func SecurityRuleRef(projectID, vpcID, sgID, ruleID string) Ref {
+	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/vpcs/%s/securitygroups/%s/securityrules/%s", projectID, vpcID, sgID, ruleID))
+}
+
 // ---- Wrapper ----
 
 // SecurityRule is the wrapper for an Aruba Cloud Security Rule (a child of a SecurityGroup).

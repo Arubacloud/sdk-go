@@ -9,6 +9,11 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// VPCRef returns a Ref that points to the VPC with the given IDs.
+func VPCRef(projectID, vpcID string) Ref {
+	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/vpcs/%s", projectID, vpcID))
+}
+
 // ---- Wrapper ----
 
 // VPC is the wrapper for an Aruba Cloud VPC (a child of a Project).
