@@ -153,7 +153,7 @@ func (b *DBaaSBackup) toRequest() types.BackupRequest {
 	if b.databaseRef != nil {
 		props.Database = types.ReferenceResource{URI: *b.databaseRef}
 	}
-	props.BillingPeriod = defaultBillingPeriod(b.billingPeriod)
+	props.BillingPlan = &types.BillingPlan{BillingPeriod: defaultBillingPeriod(b.billingPeriod)}
 	return types.BackupRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: b.toMetadata(),
@@ -188,8 +188,8 @@ func (b *DBaaSBackup) fromResponse(resp *types.BackupResponse) {
 		v := resp.Properties.Database.URI
 		b.databaseRef = &v
 	}
-	if resp.Properties.BillingPeriod != nil {
-		b.billingPeriod = resp.Properties.BillingPeriod
+	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
+		b.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
 	}
 
 	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
