@@ -305,8 +305,8 @@ func (k *KaaS) KubernetesVersion() KubernetesVersion {
 
 // BillingPeriod returns the billing period for this cluster, or "" if unset.
 func (k *KaaS) BillingPeriod() BillingPeriod {
-	if k.response != nil && k.response.Properties.BillingPeriod != nil {
-		return *k.response.Properties.BillingPeriod
+	if k.response != nil && k.response.Properties.BillingPlan != nil && k.response.Properties.BillingPlan.BillingPeriod != nil {
+		return *k.response.Properties.BillingPlan.BillingPeriod
 	}
 	if k.billingPeriod == nil {
 		return ""
@@ -347,8 +347,8 @@ func (k *KaaS) toRequest() types.KaaSRequest {
 			}
 			return ""
 		}()},
-		HA:            k.ha,
-		BillingPeriod: defaultBillingPeriod(k.billingPeriod),
+		HA:          k.ha,
+		BillingPlan: &types.BillingPlan{BillingPeriod: defaultBillingPeriod(k.billingPeriod)},
 	}
 	if k.storageMaxCumulative != nil {
 		props.Storage = types.StorageKubernetes{MaxCumulativeVolumeSize: k.storageMaxCumulative}
@@ -402,7 +402,7 @@ func (k *KaaS) toUpdateRequest() types.KaaSUpdateRequest {
 		props.Storage = &types.StorageKubernetes{MaxCumulativeVolumeSize: k.storageMaxCumulative}
 	}
 	if k.billingPeriod != nil {
-		props.BillingPeriod = k.billingPeriod
+		props.BillingPlan = &types.BillingPlan{BillingPeriod: k.billingPeriod}
 	}
 	return types.KaaSUpdateRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
@@ -476,8 +476,8 @@ func (k *KaaS) kaasHydrateCacheFromProps(props types.KaaSPropertiesResponse) {
 		v := *props.Storage.MaxCumulativeVolumeSize
 		k.storageMaxCumulative = &v
 	}
-	if props.BillingPeriod != nil {
-		k.billingPeriod = props.BillingPeriod
+	if props.BillingPlan != nil && props.BillingPlan.BillingPeriod != nil {
+		k.billingPeriod = props.BillingPlan.BillingPeriod
 	}
 	if props.Identity != nil && props.Identity.ClientID != nil {
 		v := *props.Identity.ClientID
