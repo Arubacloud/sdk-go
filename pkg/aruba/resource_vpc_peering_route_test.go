@@ -191,8 +191,8 @@ func TestVPCPeeringRoute_ToRequestRoundTrip(t *testing.T) {
 	if req.Properties.RemoteNetworkAddress != "192.168.0.0/24" {
 		t.Errorf("Properties.RemoteNetworkAddress = %q", req.Properties.RemoteNetworkAddress)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
-		t.Errorf("Properties.BillingPeriod = %v", req.Properties.BillingPeriod)
+	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
+		t.Errorf("Properties.BillingPlan.BillingPeriod = %v", req.Properties.BillingPlan)
 	}
 
 	// Unset CIDRs must produce empty strings.
@@ -215,9 +215,9 @@ func TestVPCPeeringRoute_ToRequest_BillingPeriodAlwaysEmitted(t *testing.T) {
 	r := NewVPCPeeringRoute().
 		Named("bare")
 	req := r.RawRequest()
-	// BillingPeriod is always emitted — defaults to Hour when not explicitly set.
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
-		t.Errorf("BillingPeriod should default to Hour when not set, got %v", req.Properties.BillingPeriod)
+	// BillingPlan is always emitted — defaults to Hour when not explicitly set.
+	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPlan.BillingPeriod should default to Hour when not set, got %v", req.Properties.BillingPlan)
 	}
 }
 
@@ -242,7 +242,10 @@ func vpcPeeringRouteTestResponse(id, name, uri, projectID string) *types.VPCPeer
 		Properties: types.VPCPeeringRoutePropertiesResponse{
 			LocalNetworkAddress:  "10.0.0.0/24",
 			RemoteNetworkAddress: "192.168.0.0/24",
-			BillingPeriod:        func() *BillingPeriod { v := BillingPeriodHour; return &v }(),
+			BillingPlan: func() *types.BillingPlan {
+				v := BillingPeriodHour
+				return &types.BillingPlan{BillingPeriod: &v}
+			}(),
 		},
 		Status: types.ResourceStatus{
 			State: &state,
@@ -521,8 +524,8 @@ func TestVPCPeeringRoutesClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Properties.LocalNetworkAddress != "10.0.0.0/24" {
 		t.Errorf("request LocalNetworkAddress = %q", gotBody.Properties.LocalNetworkAddress)
 	}
-	if gotBody.Properties.BillingPeriod == nil || *gotBody.Properties.BillingPeriod != BillingPeriodHour {
-		t.Errorf("request BillingPeriod = %v", gotBody.Properties.BillingPeriod)
+	if gotBody.Properties.BillingPlan == nil || gotBody.Properties.BillingPlan.BillingPeriod == nil || *gotBody.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
+		t.Errorf("request BillingPlan.BillingPeriod = %v", gotBody.Properties.BillingPlan)
 	}
 }
 
