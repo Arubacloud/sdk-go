@@ -1,14 +1,14 @@
 package types
 
 type ElasticIPPropertiesRequest struct {
-	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
+	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
 }
 
 type ElasticIPPropertiesResponse struct {
 	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
 
-	Address       *string        `json:"address,omitempty"`
-	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
+	Address     *string      `json:"address,omitempty"`
+	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
 }
 
 type ElasticIPRequest struct {
