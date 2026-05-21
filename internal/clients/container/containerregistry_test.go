@@ -395,11 +395,11 @@ func TestCreateContainerRegistry(t *testing.T) {
 				},
 			},
 			Properties: types.ContainerRegistryPropertiesRequest{
-				PublicIp:        types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"},
-				VPC:             types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"},
-				Subnet:          types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"},
-				SecurityGroup:   types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"},
-				BlockStorage:    types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"},
+				PublicIp:      types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"},
+				VPC:           types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"},
+				Subnet:        types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"},
+				SecurityGroup: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"},
+				BlockStorage:  types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"},
 				BillingPlan: func() *types.BillingPlan {
 					v := types.BillingPeriod("Hour")
 					return &types.BillingPlan{BillingPeriod: &v}
@@ -636,11 +636,11 @@ func TestUpdateContainerRegistry(t *testing.T) {
 				},
 			},
 			Properties: types.ContainerRegistryPropertiesRequest{
-				PublicIp:        types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"},
-				VPC:             types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"},
-				Subnet:          types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"},
-				SecurityGroup:   types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"},
-				BlockStorage:    types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"},
+				PublicIp:      types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"},
+				VPC:           types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"},
+				Subnet:        types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"},
+				SecurityGroup: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"},
+				BlockStorage:  types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"},
 				BillingPlan: func() *types.BillingPlan {
 					v := types.BillingPeriod("Hour")
 					return &types.BillingPlan{BillingPeriod: &v}
