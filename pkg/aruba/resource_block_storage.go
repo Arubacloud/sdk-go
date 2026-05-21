@@ -105,8 +105,8 @@ func (b *BlockStorage) BlockStorageID() string { return b.ID() }
 // Raw shadows responseMetadataMixin.Raw() with the typed BlockStorage response.
 func (b *BlockStorage) Raw() *types.BlockStorageResponse { return b.response }
 
-// RawRequest returns what toRequest() would emit right now.
-func (b *BlockStorage) RawRequest() types.BlockStorageRequest { return b.toRequest() }
+// RawRequest returns what toCreateRequest() would emit right now.
+func (b *BlockStorage) RawRequest() types.BlockStorageRequest { return b.toCreateRequest() }
 
 // SizeGB returns the volume size in GiB, or 0 if unset.
 func (b *BlockStorage) SizeGB() int {
@@ -148,8 +148,8 @@ func (b *BlockStorage) SnapshotURI() string { return blockStorageDerefString(b.s
 
 // Wire converters
 
-// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
-func (b *BlockStorage) toRequest() types.BlockStorageRequest {
+// toCreateRequest assembles the Create body. bootable defaults to false when unset (API wire contract).
+func (b *BlockStorage) toCreateRequest() types.BlockStorageRequest {
 	var t types.BlockStorageType
 	if b.storageType != nil {
 		t = *b.storageType
@@ -164,6 +164,37 @@ func (b *BlockStorage) toRequest() types.BlockStorageRequest {
 		Zone:          b.zonePtr(),
 		Type:          t,
 		Bootable:      blockStorageBootable(b.bootable),
+		Image:         b.image,
+	}
+	if b.snapshotRef != nil {
+		props.Snapshot = &types.ReferenceResource{URI: *b.snapshotRef}
+	}
+	return types.BlockStorageRequest{
+		Metadata: types.RegionalResourceMetadataRequest{
+			ResourceMetadataRequest: b.toMetadata(),
+			Location:                b.toLocation(),
+		},
+		Properties: props,
+	}
+}
+
+// toUpdateRequest assembles the Update (PUT) body. bootable is omitted when the caller
+// never called SetBootable/UnsetBootable, preventing silent clobbering of server-side state.
+func (b *BlockStorage) toUpdateRequest() types.BlockStorageRequest {
+	var t types.BlockStorageType
+	if b.storageType != nil {
+		t = *b.storageType
+	}
+	var sizeGB int
+	if b.sizeGB != nil {
+		sizeGB = int(*b.sizeGB)
+	}
+	props := types.BlockStoragePropertiesRequest{
+		SizeGB:        sizeGB,
+		BillingPeriod: defaultBillingPeriod(b.billingPeriod),
+		Zone:          b.zonePtr(),
+		Type:          t,
+		Bootable:      b.bootable, // nil → omitted by omitempty; only sent when explicitly set
 		Image:         b.image,
 	}
 	if b.snapshotRef != nil {
@@ -293,7 +324,10 @@ type volumeLowLevelClient interface {
 // wire-shape-hidden) to the low-level client (parameter-explicit, returning
 // typed wire structs). Translates BlockStorage ↔ types.BlockStorageRequest/Response and
 // surfaces HTTP errors as *aruba.HTTPError.
-type volumesClientAdapter struct{ low volumeLowLevelClient }
+type volumesClientAdapter struct {
+	low  volumeLowLevelClient
+	rest *restclient.Client
+}
 
 var _ VolumesClient = (*volumesClientAdapter)(nil)
 
@@ -301,7 +335,7 @@ func newVolumesClientAdapter(rest *restclient.Client) *volumesClientAdapter {
 	if rest == nil {
 		return &volumesClientAdapter{}
 	}
-	return &volumesClientAdapter{low: storage.NewVolumesClientImpl(rest)}
+	return &volumesClientAdapter{low: storage.NewVolumesClientImpl(rest), rest: rest}
 }
 
 // Create posts a new BlockStorage to the API and hydrates the wrapper from the response.
@@ -314,7 +348,7 @@ func (a *volumesClientAdapter) Create(ctx context.Context, vol *BlockStorage, op
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
-	resp, err := a.low.Create(ctx, vol.ProjectID(), vol.toRequest(), rp)
+	resp, err := a.low.Create(ctx, vol.ProjectID(), vol.toCreateRequest(), rp)
 	populateHTTPEnvelope(&vol.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		vol.fromResponse(resp.Data)
@@ -387,7 +421,7 @@ func (a *volumesClientAdapter) Update(ctx context.Context, vol *BlockStorage, op
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
-	resp, err := a.low.Update(ctx, vol.ProjectID(), vol.ID(), vol.toRequest(), rp)
+	resp, err := a.low.Update(ctx, vol.ProjectID(), vol.ID(), vol.toUpdateRequest(), rp)
 	populateHTTPEnvelope(&vol.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		vol.fromResponse(resp.Data)
@@ -466,8 +500,49 @@ func (a *volumesClientAdapter) List(ctx context.Context, project Ref, opts ...Ca
 			items = append(items, bs)
 		}
 	}
-	refetch := func(_ context.Context, _ string) (*List[*BlockStorage], error) {
-		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	var refetch func(ctx context.Context, pageURL string) (*List[*BlockStorage], error)
+	refetch = func(ctx context.Context, pageURL string) (*List[*BlockStorage], error) {
+		fetch := listPageFetch[types.BlockStorageList](a.rest, opts)
+		pageResp, fetchErr := fetch(ctx, pageURL)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if pageResp != nil && !pageResp.IsSuccess() {
+			return nil, &HTTPError{StatusCode: pageResp.StatusCode, Body: pageResp.RawBody, ErrResp: pageResp.Error}
+		}
+		var pageItems []*BlockStorage
+		if pageResp != nil && pageResp.Data != nil {
+			pageItems = make([]*BlockStorage, 0, len(pageResp.Data.Values))
+			for i := range pageResp.Data.Values {
+				bs := &BlockStorage{}
+				bs.fromResponse(&pageResp.Data.Values[i])
+				bs.setRefresh(func(ctx context.Context) error {
+					fresh, err := a.Get(ctx, bs)
+					if err != nil {
+						return err
+					}
+					if fresh != nil && fresh.Raw() != nil {
+						bs.fromResponse(fresh.Raw())
+					}
+					return nil
+				})
+				if bs.projectID == "" {
+					bs.projectID = projectID
+				}
+				pageItems = append(pageItems, bs)
+			}
+		}
+		var total2 int64
+		var self2, prev2, next2, first2, last2 string
+		if pageResp != nil && pageResp.Data != nil {
+			total2 = pageResp.Data.Total
+			self2 = pageResp.Data.Self
+			prev2 = pageResp.Data.Prev
+			next2 = pageResp.Data.Next
+			first2 = pageResp.Data.First
+			last2 = pageResp.Data.Last
+		}
+		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
 	}
 	var total int64
 	var self, prev, next, first, last string

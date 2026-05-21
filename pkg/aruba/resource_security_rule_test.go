@@ -1150,3 +1150,15 @@ func TestSecurityGroupRulesClientAdapter_Get_InjectsRefresh(t *testing.T) {
 		t.Error("Get should inject a refresh callback into the returned SecurityRule")
 	}
 }
+
+func TestSecurityRuleRef(t *testing.T) {
+	ref := SecurityRuleRef("p-1", "vpc-1", "sg-1", "rule-1")
+	want := "/projects/p-1/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1/securityrules/rule-1"
+	if ref.URI() != want {
+		t.Errorf("SecurityRuleRef URI = %q, want %q", ref.URI(), want)
+	}
+	ids := parseURIIDs(ref.URI())
+	if ids["projects"] != "p-1" || ids["securitygroups"] != "sg-1" || ids["securityrules"] != "rule-1" {
+		t.Errorf("parseURIIDs = %v", ids)
+	}
+}

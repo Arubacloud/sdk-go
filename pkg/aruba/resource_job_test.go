@@ -98,7 +98,7 @@ func TestJob_IntoProject_BadRef(t *testing.T) {
 func TestJob_WithEnabled_True(t *testing.T) {
 	j := NewJob().WithEnabled(true)
 	req := j.RawRequest()
-	if !req.Properties.Enabled {
+	if req.Properties.Enabled == nil || !*req.Properties.Enabled {
 		t.Error("Enabled should be true")
 	}
 }
@@ -277,7 +277,7 @@ func TestJob_ToRequest_OneShot(t *testing.T) {
 	if req.Properties.ScheduleAt == nil || *req.Properties.ScheduleAt != "2026-05-01T12:00:00Z" {
 		t.Errorf("ScheduleAt = %v", req.Properties.ScheduleAt)
 	}
-	if !req.Properties.Enabled {
+	if req.Properties.Enabled == nil || !*req.Properties.Enabled {
 		t.Error("Enabled should be true")
 	}
 	if len(req.Properties.Steps) != 1 {

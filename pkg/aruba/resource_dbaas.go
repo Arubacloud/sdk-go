@@ -33,9 +33,9 @@ import (
 //     AutoscalingStatus() / AutoscalingRuleID() read only the response;
 //     AutoscalingAvailableSpace() / AutoscalingStepSize() prefer the
 //     response and fall back to the locally-set value.
-//     fromResponse does NOT back-populate request-side fields, so an
-//     Update after Get omits the autoscaling block unless the caller
-//     re-asserts intent via WithAutoscaling/WithoutAutoscaling.
+//     fromResponse back-populates autoscaling fields (AvailableSpace, StepSize,
+//     and Enabled inferred from Status) so that a Get→Update round-trip preserves
+//     the configured autoscaling block without the caller re-asserting it.
 type DBaaS struct {
 	errMixin
 	metadataMixin
@@ -372,6 +372,14 @@ func (d *DBaaS) toRequest() types.DBaaSRequest {
 	}
 }
 
+// Autoscaling status wire values from the DBaaS Autoscaling response.
+// The API reports either "Enabled" or "Active" for an enabled autoscaling
+// configuration; both are treated as enabled by the wrapper.
+const (
+	autoscalingStatusEnabled = "Enabled"
+	autoscalingStatusActive  = "Active"
+)
+
 // fromResponse hydrates the wrapper from a server reply. Nil-safe.
 func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 	if resp == nil {
@@ -425,6 +433,25 @@ func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 		}
 	}
 
+	// Back-populate autoscaling from response so Get→Update round-trips preserve
+	// the configuration even when the caller does not call WithAutoscaling again.
+	// The response type carries Status (not Enabled), so we infer the bool from it.
+	if resp.Properties.Autoscaling != nil {
+		as := resp.Properties.Autoscaling
+		if as.AvailableSpace != nil {
+			v := *as.AvailableSpace
+			d.autoscalingAvailableSpace = &v
+		}
+		if as.StepSize != nil {
+			v := *as.StepSize
+			d.autoscalingStepSize = &v
+		}
+		if as.Status != nil {
+			enabled := *as.Status == autoscalingStatusEnabled || *as.Status == autoscalingStatusActive
+			d.autoscalingEnabled = &enabled
+		}
+	}
+
 	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
 		d.projectID = resp.Metadata.ProjectResponseMetadata.ID
 	}
@@ -475,7 +502,10 @@ type dbaasLowLevelClient interface {
 // wire-shape-hidden) to the low-level client (parameter-explicit, returning
 // typed wire structs). Translates DBaaS ↔ types.DBaaSRequest/Response and
 // surfaces HTTP errors as *aruba.HTTPError.
-type dbaasClientAdapter struct{ low dbaasLowLevelClient }
+type dbaasClientAdapter struct {
+	low  dbaasLowLevelClient
+	rest *restclient.Client
+}
 
 var _ DBaaSClient = (*dbaasClientAdapter)(nil)
 
@@ -483,7 +513,7 @@ func newDBaaSClientAdapter(rest *restclient.Client) *dbaasClientAdapter {
 	if rest == nil {
 		return &dbaasClientAdapter{}
 	}
-	return &dbaasClientAdapter{low: database.NewDBaaSClientImpl(rest)}
+	return &dbaasClientAdapter{low: database.NewDBaaSClientImpl(rest), rest: rest}
 }
 
 // Create posts a new DBaaS to the API and hydrates the wrapper from the response.
@@ -648,8 +678,49 @@ func (a *dbaasClientAdapter) List(ctx context.Context, project Ref, opts ...Call
 			items = append(items, d)
 		}
 	}
-	refetch := func(_ context.Context, _ string) (*List[*DBaaS], error) {
-		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	var refetch func(ctx context.Context, pageURL string) (*List[*DBaaS], error)
+	refetch = func(ctx context.Context, pageURL string) (*List[*DBaaS], error) {
+		fetch := listPageFetch[types.DBaaSList](a.rest, opts)
+		pageResp, fetchErr := fetch(ctx, pageURL)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if pageResp != nil && !pageResp.IsSuccess() {
+			return nil, &HTTPError{StatusCode: pageResp.StatusCode, Body: pageResp.RawBody, ErrResp: pageResp.Error}
+		}
+		var pageItems []*DBaaS
+		if pageResp != nil && pageResp.Data != nil {
+			pageItems = make([]*DBaaS, 0, len(pageResp.Data.Values))
+			for i := range pageResp.Data.Values {
+				d := &DBaaS{}
+				d.fromResponse(&pageResp.Data.Values[i])
+				d.setRefresh(func(ctx context.Context) error {
+					fresh, err := a.Get(ctx, d)
+					if err != nil {
+						return err
+					}
+					if fresh != nil && fresh.Raw() != nil {
+						d.fromResponse(fresh.Raw())
+					}
+					return nil
+				})
+				if d.projectID == "" {
+					d.projectID = projectID
+				}
+				pageItems = append(pageItems, d)
+			}
+		}
+		var total2 int64
+		var self2, prev2, next2, first2, last2 string
+		if pageResp != nil && pageResp.Data != nil {
+			total2 = pageResp.Data.Total
+			self2 = pageResp.Data.Self
+			prev2 = pageResp.Data.Prev
+			next2 = pageResp.Data.Next
+			first2 = pageResp.Data.First
+			last2 = pageResp.Data.Last
+		}
+		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
 	}
 	var total int64
 	var self, prev, next, first, last string

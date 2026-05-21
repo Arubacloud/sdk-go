@@ -209,7 +209,10 @@ type keysLowLevelClient interface {
 // wire-shape-hidden) to the low-level client (parameter-explicit, returning
 // typed wire structs). Translates Key ↔ types.KeyRequest/Response and
 // surfaces HTTP errors as *aruba.HTTPError.
-type keysClientAdapter struct{ low keysLowLevelClient }
+type keysClientAdapter struct {
+	low  keysLowLevelClient
+	rest *restclient.Client
+}
 
 var _ KeysClient = (*keysClientAdapter)(nil)
 
@@ -217,7 +220,7 @@ func newKeysClientAdapter(rest *restclient.Client) *keysClientAdapter {
 	if rest == nil {
 		return &keysClientAdapter{}
 	}
-	return &keysClientAdapter{low: security.NewKeyClientImpl(rest)}
+	return &keysClientAdapter{low: security.NewKeyClientImpl(rest), rest: rest}
 }
 
 // Create posts a new Key to the API and hydrates the wrapper from the response.
@@ -316,8 +319,38 @@ func (a *keysClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOp
 			items = append(items, k)
 		}
 	}
-	refetch := func(_ context.Context, _ string) (*List[*Key], error) {
-		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	var refetch func(ctx context.Context, pageURL string) (*List[*Key], error)
+	refetch = func(ctx context.Context, pageURL string) (*List[*Key], error) {
+		fetch := listPageFetch[types.KeyList](a.rest, opts)
+		pageResp, fetchErr := fetch(ctx, pageURL)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if pageResp != nil && !pageResp.IsSuccess() {
+			return nil, &HTTPError{StatusCode: pageResp.StatusCode, Body: pageResp.RawBody, ErrResp: pageResp.Error}
+		}
+		var pageItems []*Key
+		if pageResp != nil && pageResp.Data != nil {
+			pageItems = make([]*Key, 0, len(pageResp.Data.Values))
+			for i := range pageResp.Data.Values {
+				k := &Key{}
+				k.projectID = projectID
+				k.kmsID = kmsID
+				k.fromResponse(&pageResp.Data.Values[i])
+				pageItems = append(pageItems, k)
+			}
+		}
+		var total2 int64
+		var self2, prev2, next2, first2, last2 string
+		if pageResp != nil && pageResp.Data != nil {
+			total2 = pageResp.Data.Total
+			self2 = pageResp.Data.Self
+			prev2 = pageResp.Data.Prev
+			next2 = pageResp.Data.Next
+			first2 = pageResp.Data.First
+			last2 = pageResp.Data.Last
+		}
+		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
 	}
 	var total int64
 	var self, prev, next, first, last string

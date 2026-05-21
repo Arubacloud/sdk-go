@@ -492,9 +492,7 @@ func TestDeleteProject(t *testing.T) {
 		}
 	})
 
-	// TODO(TD-010): Delete never parses the response body for errors — resp.Error is
-	// always nil regardless of status code. RawBody contains the raw error bytes.
-	t.Run("not found", func(t *testing.T) {
+	t.Run("not found — error body parsed", func(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusNotFound)
@@ -509,8 +507,8 @@ func TestDeleteProject(t *testing.T) {
 		if resp.StatusCode != http.StatusNotFound {
 			t.Errorf("expected status 404, got %d", resp.StatusCode)
 		}
-		if resp.Error != nil {
-			t.Errorf("expected nil Error (Delete never parses error body), got %v", resp.Error)
+		if resp.Error == nil {
+			t.Error("expected Error to be populated from response body, got nil")
 		}
 	})
 

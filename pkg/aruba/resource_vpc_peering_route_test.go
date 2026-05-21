@@ -1103,3 +1103,15 @@ func TestVPCPeeringRoutesClientAdapter_Get_InjectsRefresh(t *testing.T) {
 		t.Error("Get should inject a refresh callback into the returned VPCPeeringRoute")
 	}
 }
+
+func TestVPCPeeringRouteRef(t *testing.T) {
+	ref := VPCPeeringRouteRef("p-1", "vpc-1", "peer-1", "rt-1")
+	want := "/projects/p-1/providers/Aruba.Network/vpcs/vpc-1/vpcPeerings/peer-1/vpcPeeringRoutes/rt-1"
+	if ref.URI() != want {
+		t.Errorf("VPCPeeringRouteRef URI = %q, want %q", ref.URI(), want)
+	}
+	ids := parseURIIDs(ref.URI())
+	if ids["projects"] != "p-1" || ids["vpcPeerings"] != "peer-1" || ids["vpcPeeringRoutes"] != "rt-1" {
+		t.Errorf("parseURIIDs = %v", ids)
+	}
+}

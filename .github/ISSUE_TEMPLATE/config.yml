@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Aruba Cloud Documentation
+    url: https://arubacloud.com/
+    about: Visit the official Aruba Cloud website for general product and API documentation.

@@ -9,6 +9,11 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// ElasticIPRef returns a Ref that points to the ElasticIP with the given IDs.
+func ElasticIPRef(projectID, eipID string) Ref {
+	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/elasticIps/%s", projectID, eipID))
+}
+
 // ---- Wrapper ----
 
 // ElasticIP is the wrapper for an Aruba Cloud Elastic IP (a child of a Project).
@@ -193,7 +198,10 @@ type elasticIPLowLevelClient interface {
 // wire-shape-hidden) to the low-level client (parameter-explicit, returning
 // typed wire structs). Translates ElasticIP ↔ types.ElasticIPRequest/Response and
 // surfaces HTTP errors as *aruba.HTTPError.
-type elasticIPsClientAdapter struct{ low elasticIPLowLevelClient }
+type elasticIPsClientAdapter struct {
+	low  elasticIPLowLevelClient
+	rest *restclient.Client
+}
 
 var _ ElasticIPsClient = (*elasticIPsClientAdapter)(nil)
 
@@ -201,7 +209,7 @@ func newElasticIPsClientAdapter(rest *restclient.Client) *elasticIPsClientAdapte
 	if rest == nil {
 		return &elasticIPsClientAdapter{}
 	}
-	return &elasticIPsClientAdapter{low: network.NewElasticIPsClientImpl(rest)}
+	return &elasticIPsClientAdapter{low: network.NewElasticIPsClientImpl(rest), rest: rest}
 }
 
 // Create posts a new ElasticIP to the API and hydrates the wrapper from the response.
@@ -364,8 +372,49 @@ func (a *elasticIPsClientAdapter) List(ctx context.Context, project Ref, opts ..
 			items = append(items, e)
 		}
 	}
-	refetch := func(_ context.Context, _ string) (*List[*ElasticIP], error) {
-		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	var refetch func(ctx context.Context, pageURL string) (*List[*ElasticIP], error)
+	refetch = func(ctx context.Context, pageURL string) (*List[*ElasticIP], error) {
+		fetch := listPageFetch[types.ElasticList](a.rest, opts)
+		pageResp, fetchErr := fetch(ctx, pageURL)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if pageResp != nil && !pageResp.IsSuccess() {
+			return nil, &HTTPError{StatusCode: pageResp.StatusCode, Body: pageResp.RawBody, ErrResp: pageResp.Error}
+		}
+		var pageItems []*ElasticIP
+		if pageResp != nil && pageResp.Data != nil {
+			pageItems = make([]*ElasticIP, 0, len(pageResp.Data.Values))
+			for i := range pageResp.Data.Values {
+				e := &ElasticIP{}
+				e.fromResponse(&pageResp.Data.Values[i])
+				e.setRefresh(func(ctx context.Context) error {
+					fresh, err := a.Get(ctx, e)
+					if err != nil {
+						return err
+					}
+					if fresh != nil && fresh.Raw() != nil {
+						e.fromResponse(fresh.Raw())
+					}
+					return nil
+				})
+				if e.projectID == "" {
+					e.projectID = projectID
+				}
+				pageItems = append(pageItems, e)
+			}
+		}
+		var total2 int64
+		var self2, prev2, next2, first2, last2 string
+		if pageResp != nil && pageResp.Data != nil {
+			total2 = pageResp.Data.Total
+			self2 = pageResp.Data.Self
+			prev2 = pageResp.Data.Prev
+			next2 = pageResp.Data.Next
+			first2 = pageResp.Data.First
+			last2 = pageResp.Data.Last
+		}
+		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
 	}
 	var total int64
 	var self, prev, next, first, last string

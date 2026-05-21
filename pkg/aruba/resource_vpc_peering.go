@@ -9,6 +9,11 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// VPCPeeringRef returns a Ref that points to the VPCPeering nested under a VPC.
+func VPCPeeringRef(projectID, vpcID, peeringID string) Ref {
+	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/vpcs/%s/vpcPeerings/%s", projectID, vpcID, peeringID))
+}
+
 // ---- Wrapper ----
 
 // VPCPeering is the wrapper for an Aruba Cloud VPC Peering (a child of a VPC).
@@ -172,7 +177,10 @@ type vpcPeeringLowLevelClient interface {
 // wire-shape-hidden) to the low-level client (parameter-explicit, returning
 // typed wire structs). Translates VPCPeering ↔ types.VPCPeeringRequest/Response and
 // surfaces HTTP errors as *aruba.HTTPError.
-type vpcPeeringsClientAdapter struct{ low vpcPeeringLowLevelClient }
+type vpcPeeringsClientAdapter struct {
+	low  vpcPeeringLowLevelClient
+	rest *restclient.Client
+}
 
 var _ VPCPeeringsClient = (*vpcPeeringsClientAdapter)(nil)
 
@@ -180,7 +188,7 @@ func newVPCPeeringsClientAdapter(rest *restclient.Client) *vpcPeeringsClientAdap
 	if rest == nil {
 		return &vpcPeeringsClientAdapter{}
 	}
-	return &vpcPeeringsClientAdapter{low: network.NewVPCPeeringsClientImpl(rest)}
+	return &vpcPeeringsClientAdapter{low: network.NewVPCPeeringsClientImpl(rest), rest: rest}
 }
 
 // Create posts a new VPCPeering to the API and hydrates the wrapper from the response.
@@ -351,8 +359,52 @@ func (a *vpcPeeringsClientAdapter) List(ctx context.Context, vpc Ref, opts ...Ca
 			items = append(items, p)
 		}
 	}
-	refetch := func(_ context.Context, _ string) (*List[*VPCPeering], error) {
-		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	var refetch func(ctx context.Context, pageURL string) (*List[*VPCPeering], error)
+	refetch = func(ctx context.Context, pageURL string) (*List[*VPCPeering], error) {
+		fetch := listPageFetch[types.VPCPeeringList](a.rest, opts)
+		pageResp, fetchErr := fetch(ctx, pageURL)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if pageResp != nil && !pageResp.IsSuccess() {
+			return nil, &HTTPError{StatusCode: pageResp.StatusCode, Body: pageResp.RawBody, ErrResp: pageResp.Error}
+		}
+		var pageItems []*VPCPeering
+		if pageResp != nil && pageResp.Data != nil {
+			pageItems = make([]*VPCPeering, 0, len(pageResp.Data.Values))
+			for i := range pageResp.Data.Values {
+				item := &VPCPeering{}
+				item.fromResponse(&pageResp.Data.Values[i])
+				item.setRefresh(func(ctx context.Context) error {
+					fresh, err := a.Get(ctx, item)
+					if err != nil {
+						return err
+					}
+					if fresh != nil && fresh.Raw() != nil {
+						item.fromResponse(fresh.Raw())
+					}
+					return nil
+				})
+				if item.vpcID == "" {
+					item.vpcID = vpcID
+				}
+				if item.projectID == "" {
+					item.projectID = projectID
+				}
+				pageItems = append(pageItems, item)
+			}
+		}
+		var total2 int64
+		var self2, prev2, next2, first2, last2 string
+		if pageResp != nil && pageResp.Data != nil {
+			total2 = pageResp.Data.Total
+			self2 = pageResp.Data.Self
+			prev2 = pageResp.Data.Prev
+			next2 = pageResp.Data.Next
+			first2 = pageResp.Data.First
+			last2 = pageResp.Data.Last
+		}
+		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
 	}
 	var total int64
 	var self, prev, next, first, last string

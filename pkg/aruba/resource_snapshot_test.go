@@ -919,15 +919,15 @@ func TestSnapshotsClientAdapter_List_TwoItems(t *testing.T) {
 
 func TestSnapshot_FromResponse_SetsTerminalStates(t *testing.T) {
 	s := &Snapshot{}
-	state := "Available"
+	state := "Active"
 	s.fromResponse(&types.SnapshotResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
 	if len(s.terminalStates) == 0 {
 		t.Error("fromResponse should set terminalStates on the wrapper")
 	}
-	if !s.terminalStates["Available"] {
-		t.Error("terminalStates[Available] should be true for Snapshot")
+	if !s.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for Snapshot")
 	}
 	if s.terminalStates["Error"] {
 		t.Error("terminalStates[Error] should be false for Snapshot")

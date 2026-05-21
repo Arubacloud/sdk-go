@@ -104,7 +104,10 @@ func (k *KaaS) WithBillingPeriod(period BillingPeriod) *KaaS {
 // WithSecurityGroup attaches a SecurityGroup to the cluster. The KaaS API
 // stores only the SG's name (not its URI), so the supplied Ref must be a
 // *SecurityGroup whose Name() is non-empty. Bare URI refs are rejected
-// because the name cannot be recovered from a URI.
+// because the name cannot be recovered from a URI alone.
+//
+// If you only have the SG name (e.g. from a CLI flag), use
+// WithSecurityGroupName instead.
 func (k *KaaS) WithSecurityGroup(sg Ref) *KaaS {
 	if sg == nil {
 		k.addErr(fmt.Errorf("WithSecurityGroup: nil Ref"))
@@ -112,12 +115,24 @@ func (k *KaaS) WithSecurityGroup(sg Ref) *KaaS {
 	}
 	typed, ok := sg.(*SecurityGroup)
 	if !ok {
-		k.addErr(fmt.Errorf("WithSecurityGroup: requires *SecurityGroup, got %T", sg))
+		k.addErr(fmt.Errorf("WithSecurityGroup: requires *SecurityGroup, got %T; for name-only callers use WithSecurityGroupName", sg))
 		return k
 	}
 	name := typed.Name()
 	if name == "" {
 		k.addErr(fmt.Errorf("WithSecurityGroup: SecurityGroup has empty Name"))
+		return k
+	}
+	k.securityGroupName = &name
+	return k
+}
+
+// WithSecurityGroupName attaches a Security Group to the cluster by name. Use
+// this when only the SG name is known (e.g. from a CLI flag) and a typed
+// *SecurityGroup is not available. The wire API stores only the name.
+func (k *KaaS) WithSecurityGroupName(name string) *KaaS {
+	if name == "" {
+		k.addErr(fmt.Errorf("WithSecurityGroupName: name cannot be empty"))
 		return k
 	}
 	k.securityGroupName = &name
@@ -179,6 +194,27 @@ func (k *KaaS) AddNodePool(np *NodePool) *KaaS {
 	}
 	k.nodePools = append(k.nodePools, np)
 	return k
+}
+
+// ClearNodePools removes all previously-added node pools from the cluster.
+func (k *KaaS) ClearNodePools() *KaaS {
+	k.nodePools = nil
+	return k
+}
+
+// ReplaceNodePools replaces the entire node pool list with the given pools.
+// Equivalent to ClearNodePools followed by AddNodePool for each entry.
+func (k *KaaS) ReplaceNodePools(pools ...*NodePool) *KaaS {
+	k.nodePools = nil
+	for _, np := range pools {
+		k.AddNodePool(np)
+	}
+	return k
+}
+
+// SetNodePools is an alias for ReplaceNodePools for naming-convention parity.
+func (k *KaaS) SetNodePools(pools ...*NodePool) *KaaS {
+	return k.ReplaceNodePools(pools...)
 }
 
 // DownloadKubeconfig downloads the kubeconfig for this cluster and returns it
@@ -551,7 +587,8 @@ type kaasLowLevelClient interface {
 // typed wire structs). Translates KaaS ↔ types.KaaSRequest/Response and
 // surfaces HTTP errors as *aruba.HTTPError.
 type kaasClientAdapter struct {
-	low kaasLowLevelClient
+	low  kaasLowLevelClient
+	rest *restclient.Client
 }
 
 var _ kaasActions = (*kaasClientAdapter)(nil)
@@ -560,7 +597,7 @@ func newKaaSClientAdapter(rest *restclient.Client) *kaasClientAdapter {
 	if rest == nil {
 		return &kaasClientAdapter{}
 	}
-	return &kaasClientAdapter{low: container.NewKaaSClientImpl(rest)}
+	return &kaasClientAdapter{low: container.NewKaaSClientImpl(rest), rest: rest}
 }
 
 // Create posts a new KaaS to the API and hydrates the wrapper from the response.
@@ -731,8 +768,51 @@ func (a *kaasClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOp
 			items = append(items, k)
 		}
 	}
-	refetch := func(_ context.Context, _ string) (*List[*KaaS], error) {
-		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	var refetch func(ctx context.Context, pageURL string) (*List[*KaaS], error)
+	refetch = func(ctx context.Context, pageURL string) (*List[*KaaS], error) {
+		fetch := listPageFetch[types.KaaSList](a.rest, opts)
+		pageResp, fetchErr := fetch(ctx, pageURL)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if pageResp != nil && !pageResp.IsSuccess() {
+			return nil, &HTTPError{StatusCode: pageResp.StatusCode, Body: pageResp.RawBody, ErrResp: pageResp.Error}
+		}
+		var pageItems []*KaaS
+		if pageResp != nil && pageResp.Data != nil {
+			pageItems = make([]*KaaS, 0, len(pageResp.Data.Values))
+			for i := range pageResp.Data.Values {
+				k := &KaaS{}
+				k.projectID = projectID
+				k.fromResponse(&pageResp.Data.Values[i])
+				k.setRefresh(func(ctx context.Context) error {
+					fresh, err := a.Get(ctx, k)
+					if err != nil {
+						return err
+					}
+					if fresh != nil && fresh.Raw() != nil {
+						k.fromResponse(fresh.Raw())
+					}
+					return nil
+				})
+				if k.projectID == "" {
+					k.projectID = projectID
+				}
+				k.actions = a
+				pageItems = append(pageItems, k)
+			}
+		}
+		var total2 int64
+		var self2, prev2, next2, first2, last2 string
+		if pageResp != nil && pageResp.Data != nil {
+			total2 = pageResp.Data.Total
+			self2 = pageResp.Data.Self
+			prev2 = pageResp.Data.Prev
+			next2 = pageResp.Data.Next
+			first2 = pageResp.Data.First
+			last2 = pageResp.Data.Last
+		}
+		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
 	}
 	var total int64
 	var self, prev, next, first, last string

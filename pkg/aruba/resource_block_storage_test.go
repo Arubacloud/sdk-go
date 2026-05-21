@@ -208,8 +208,9 @@ func TestBlockStorage_ToRequest_UnsetOptionals_AreNilOrZero(t *testing.T) {
 		Named("bare").WithSizeGB(10).OfType(BlockStorageTypeStandard)
 	req := bs.RawRequest()
 
+	// RawRequest delegates to toCreateRequest where bootable defaults to false.
 	if req.Properties.Bootable == nil || *req.Properties.Bootable != false {
-		t.Errorf("Bootable should default to false, got %v", req.Properties.Bootable)
+		t.Errorf("Bootable should default to false in Create request, got %v", req.Properties.Bootable)
 	}
 	if req.Properties.Image != nil {
 		t.Errorf("Image should be nil, got %v", req.Properties.Image)
@@ -1001,3 +1002,31 @@ func TestVolumesClientAdapter_Get_InjectsRefresh(t *testing.T) {
 		t.Error("Get should inject a refresh callback into the returned BlockStorage")
 	}
 }
+
+func TestBlockStorage_UpdateRequest_OmitsUnsetBootable(t *testing.T) {
+	// When the API's Get response omits the bootable field (common when the value
+	// is the platform default), fromResponse leaves b.bootable nil. The old
+	// toRequest() would send bootable=false via blockStorageBootable, silently
+	// clobbering a server-side bootable=true. toUpdateRequest must omit the
+	// field instead so the server preserves its own value.
+	bs := &BlockStorage{}
+	bs.fromResponse(&types.BlockStorageResponse{
+		Metadata:   types.ResourceMetadataResponse{ID: lo("bs-1"), Name: lo("vol")},
+		Properties: types.BlockStoragePropertiesResponse{}, // bootable absent in API response
+	})
+
+	req := bs.toUpdateRequest()
+	if req.Properties.Bootable != nil {
+		t.Errorf("Update request bootable should be nil (omitted) when never set by caller, got %v", *req.Properties.Bootable)
+	}
+}
+
+func TestBlockStorage_UpdateRequest_ExplicitBootable(t *testing.T) {
+	bs := NewBlockStorage().Named("vol").WithSizeGB(10).UnsetBootable()
+	req := bs.toUpdateRequest()
+	if req.Properties.Bootable == nil || *req.Properties.Bootable != false {
+		t.Errorf("Update request bootable should be false when UnsetBootable was called, got %v", req.Properties.Bootable)
+	}
+}
+
+func lo(s string) *string { return &s }

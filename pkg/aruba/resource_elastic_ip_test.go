@@ -918,3 +918,15 @@ func TestElasticIPsClientAdapter_Get_InjectsRefresh(t *testing.T) {
 		t.Error("Get should inject a refresh callback into the returned ElasticIP")
 	}
 }
+
+func TestElasticIPRef(t *testing.T) {
+	ref := ElasticIPRef("p-1", "eip-1")
+	want := "/projects/p-1/providers/Aruba.Network/elasticIps/eip-1"
+	if ref.URI() != want {
+		t.Errorf("ElasticIPRef URI = %q, want %q", ref.URI(), want)
+	}
+	ids := parseURIIDs(ref.URI())
+	if ids["projects"] != "p-1" || ids["elasticIps"] != "eip-1" {
+		t.Errorf("parseURIIDs = %v", ids)
+	}
+}

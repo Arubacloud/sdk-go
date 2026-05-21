@@ -512,3 +512,15 @@ func TestLoadBalancersClientAdapter_Get_InjectsRefresh(t *testing.T) {
 		t.Error("Get should inject a refresh callback into the returned LoadBalancer")
 	}
 }
+
+func TestLoadBalancerRef(t *testing.T) {
+	ref := LoadBalancerRef("p-1", "lb-1")
+	want := "/projects/p-1/providers/Aruba.Network/loadbalancers/lb-1"
+	if ref.URI() != want {
+		t.Errorf("LoadBalancerRef URI = %q, want %q", ref.URI(), want)
+	}
+	ids := parseURIIDs(ref.URI())
+	if ids["projects"] != "p-1" || ids["loadbalancers"] != "lb-1" {
+		t.Errorf("parseURIIDs = %v", ids)
+	}
+}

@@ -68,9 +68,7 @@ func (j *Job) ReplaceTags(ts ...string) *Job { j.replaceTags(ts...); return j }
 // InRegion sets the region for this resource.
 func (j *Job) InRegion(region Region) *Job { j.inRegion(region); return j }
 
-// WithEnabled sets whether the job is active.
-// Note: the underlying wire type uses bool with omitempty, so false is dropped
-// by the JSON marshaler. WithEnabled(false) will not disable an already-enabled job.
+// WithEnabled sets whether the job is active. Pass false to disable the job via Update.
 func (j *Job) WithEnabled(enabled bool) *Job { j.enabled = &enabled; return j }
 
 // OneShotAt schedules a one-time execution at t (UTC, RFC3339).
@@ -182,9 +180,7 @@ func (j *Job) toRequest() types.JobRequest {
 		ScheduleAt:   j.scheduleAt,
 		ExecuteUntil: j.executeUntil,
 		Cron:         j.cron,
-	}
-	if j.enabled != nil {
-		props.Enabled = *j.enabled
+		Enabled:      j.enabled,
 	}
 	if j.jobType != nil {
 		props.JobType = *j.jobType
@@ -341,7 +337,8 @@ type jobsLowLevelClient interface {
 // typed wire structs). Translates Job ↔ types.JobRequest/Response and
 // surfaces HTTP errors as *aruba.HTTPError.
 type jobsClientAdapter struct {
-	low jobsLowLevelClient
+	low  jobsLowLevelClient
+	rest *restclient.Client
 }
 
 var _ JobsClient = (*jobsClientAdapter)(nil)
@@ -350,7 +347,7 @@ func newJobsClientAdapter(rest *restclient.Client) *jobsClientAdapter {
 	if rest == nil {
 		return &jobsClientAdapter{}
 	}
-	return &jobsClientAdapter{low: schedule.NewJobsClientImpl(rest)}
+	return &jobsClientAdapter{low: schedule.NewJobsClientImpl(rest), rest: rest}
 }
 
 // Create posts a new Job to the API and hydrates the wrapper from the response.
@@ -517,8 +514,50 @@ func (a *jobsClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOp
 			items = append(items, j)
 		}
 	}
-	refetch := func(_ context.Context, _ string) (*List[*Job], error) {
-		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	var refetch func(ctx context.Context, pageURL string) (*List[*Job], error)
+	refetch = func(ctx context.Context, pageURL string) (*List[*Job], error) {
+		fetch := listPageFetch[types.JobList](a.rest, opts)
+		pageResp, fetchErr := fetch(ctx, pageURL)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if pageResp != nil && !pageResp.IsSuccess() {
+			return nil, &HTTPError{StatusCode: pageResp.StatusCode, Body: pageResp.RawBody, ErrResp: pageResp.Error}
+		}
+		var pageItems []*Job
+		if pageResp != nil && pageResp.Data != nil {
+			pageItems = make([]*Job, 0, len(pageResp.Data.Values))
+			for i := range pageResp.Data.Values {
+				j := &Job{}
+				j.projectID = projectID
+				j.fromResponse(&pageResp.Data.Values[i])
+				j.setRefresh(func(ctx context.Context) error {
+					fresh, err := a.Get(ctx, j)
+					if err != nil {
+						return err
+					}
+					if fresh != nil && fresh.Raw() != nil {
+						j.fromResponse(fresh.Raw())
+					}
+					return nil
+				})
+				if j.projectID == "" {
+					j.projectID = projectID
+				}
+				pageItems = append(pageItems, j)
+			}
+		}
+		var total2 int64
+		var self2, prev2, next2, first2, last2 string
+		if pageResp != nil && pageResp.Data != nil {
+			total2 = pageResp.Data.Total
+			self2 = pageResp.Data.Self
+			prev2 = pageResp.Data.Prev
+			next2 = pageResp.Data.Next
+			first2 = pageResp.Data.First
+			last2 = pageResp.Data.Last
+		}
+		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
 	}
 	var total int64
 	var self, prev, next, first, last string

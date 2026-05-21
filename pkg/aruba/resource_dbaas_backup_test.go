@@ -878,18 +878,36 @@ func TestDBaaSBackupsClient_NoUpdateMethod(t *testing.T) {
 
 func TestDBaaSBackup_FromResponse_SetsTerminalStates(t *testing.T) {
 	b := &DBaaSBackup{}
-	state := "Available"
+	state := "Active"
 	b.fromResponse(&types.BackupResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
 	if len(b.terminalStates) == 0 {
 		t.Error("fromResponse should set terminalStates on the wrapper")
 	}
-	if !b.terminalStates["Available"] {
-		t.Error("terminalStates[Available] should be true for DBaaSBackup")
+	if !b.terminalStates["Active"] {
+		t.Error("terminalStates[Active] should be true for DBaaSBackup")
 	}
 	if b.terminalStates["Error"] {
 		t.Error("terminalStates[Error] should be false for DBaaSBackup")
+	}
+}
+
+func TestDBaaSBackup_InZone_OverridesRegionDerivedZone(t *testing.T) {
+	b := NewDBaaSBackup().
+		InRegion(RegionITBGBergamo).
+		InZone(ZoneITBG1)
+	req := b.RawRequest()
+	if req.Properties.Zone != ZoneITBG1 {
+		t.Errorf("Zone = %q, want %q", req.Properties.Zone, ZoneITBG1)
+	}
+}
+
+func TestDBaaSBackup_NoInZone_DerivesZoneFromRegion(t *testing.T) {
+	b := NewDBaaSBackup().InRegion(RegionITBGBergamo)
+	req := b.RawRequest()
+	if req.Properties.Zone != Zone(RegionITBGBergamo) {
+		t.Errorf("Zone = %q, want region-derived %q", req.Properties.Zone, Zone(RegionITBGBergamo))
 	}
 }
 

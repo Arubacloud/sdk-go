@@ -33,9 +33,10 @@ type CloudServer struct {
 	httpEnvelopeMixin
 
 	// Request-side scalars.
-	flavor    *CloudServerFlavor
-	userData  *string
-	vpcPreset *bool
+	flavor        *CloudServerFlavor
+	userData      *string
+	vpcPreset     *bool
+	billingPeriod *BillingPeriod
 
 	// Body-refs (single).
 	vpcRef        *string
@@ -89,6 +90,12 @@ func (cs *CloudServer) WithUserData(b64 string) *CloudServer { cs.userData = &b6
 
 // WithVPCPreset marks the server to use VPC preset networking.
 func (cs *CloudServer) WithVPCPreset(b bool) *CloudServer { cs.vpcPreset = &b; return cs }
+
+// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
+func (cs *CloudServer) WithBillingPeriod(period BillingPeriod) *CloudServer {
+	cs.billingPeriod = &period
+	return cs
+}
 
 // Single body-ref setters.
 
@@ -231,6 +238,14 @@ func (cs *CloudServer) IsVPCPreset() bool {
 	return *cs.vpcPreset
 }
 
+// BillingPeriod returns the billing period, or "" if unset.
+func (cs *CloudServer) BillingPeriod() BillingPeriod {
+	if cs.billingPeriod == nil {
+		return ""
+	}
+	return *cs.billingPeriod
+}
+
 // Action methods (require hydration via a client Get/Create/Update/List call).
 
 // PowerOn powers on the cloud server. Requires the wrapper to be obtained via a client call.
@@ -346,6 +361,7 @@ func (cs *CloudServer) toRequest() types.CloudServerRequest {
 			props.SecurityGroups = append(props.SecurityGroups, types.ReferenceResource{URI: u})
 		}
 	}
+	props.BillingPeriod = defaultBillingPeriod(cs.billingPeriod)
 	return types.CloudServerRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: cs.toMetadata(),
@@ -392,6 +408,9 @@ func (cs *CloudServer) fromResponse(resp *types.CloudServerResponse) {
 	if resp.Properties.KeyPair.URI != "" {
 		v := resp.Properties.KeyPair.URI
 		cs.keyPairRef = &v
+	}
+	if resp.Properties.BillingPeriod != nil {
+		cs.billingPeriod = resp.Properties.BillingPeriod
 	}
 
 	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
@@ -447,7 +466,10 @@ type cloudServerLowLevelClient interface {
 // wire-shape-hidden) to the low-level client (parameter-explicit, returning
 // typed wire structs). Translates CloudServer ↔ types.CloudServerRequest/Response and
 // surfaces HTTP errors as *aruba.HTTPError.
-type cloudServersClientAdapter struct{ low cloudServerLowLevelClient }
+type cloudServersClientAdapter struct {
+	low  cloudServerLowLevelClient
+	rest *restclient.Client
+}
 
 var _ cloudServerActions = (*cloudServersClientAdapter)(nil)
 var _ CloudServersClient = (*cloudServersClientAdapter)(nil)
@@ -456,7 +478,7 @@ func newCloudServersClientAdapter(rest *restclient.Client) *cloudServersClientAd
 	if rest == nil {
 		return &cloudServersClientAdapter{}
 	}
-	return &cloudServersClientAdapter{low: compute.NewCloudServersClientImpl(rest)}
+	return &cloudServersClientAdapter{low: compute.NewCloudServersClientImpl(rest), rest: rest}
 }
 
 // Create posts a new CloudServer to the API and hydrates the wrapper from the response.
@@ -625,8 +647,50 @@ func (a *cloudServersClientAdapter) List(ctx context.Context, project Ref, opts 
 			items = append(items, cs)
 		}
 	}
-	refetch := func(_ context.Context, _ string) (*List[*CloudServer], error) {
-		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	var refetch func(ctx context.Context, pageURL string) (*List[*CloudServer], error)
+	refetch = func(ctx context.Context, pageURL string) (*List[*CloudServer], error) {
+		fetch := listPageFetch[types.CloudServerList](a.rest, opts)
+		pageResp, fetchErr := fetch(ctx, pageURL)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if pageResp != nil && !pageResp.IsSuccess() {
+			return nil, &HTTPError{StatusCode: pageResp.StatusCode, Body: pageResp.RawBody, ErrResp: pageResp.Error}
+		}
+		var pageItems []*CloudServer
+		if pageResp != nil && pageResp.Data != nil {
+			pageItems = make([]*CloudServer, 0, len(pageResp.Data.Values))
+			for i := range pageResp.Data.Values {
+				cs := &CloudServer{}
+				cs.fromResponse(&pageResp.Data.Values[i])
+				cs.setRefresh(func(ctx context.Context) error {
+					fresh, err := a.Get(ctx, cs)
+					if err != nil {
+						return err
+					}
+					if fresh != nil && fresh.Raw() != nil {
+						cs.fromResponse(fresh.Raw())
+					}
+					return nil
+				})
+				if cs.projectID == "" {
+					cs.projectID = projectID
+				}
+				cs.actions = a
+				pageItems = append(pageItems, cs)
+			}
+		}
+		var total2 int64
+		var self2, prev2, next2, first2, last2 string
+		if pageResp != nil && pageResp.Data != nil {
+			total2 = pageResp.Data.Total
+			self2 = pageResp.Data.Self
+			prev2 = pageResp.Data.Prev
+			next2 = pageResp.Data.Next
+			first2 = pageResp.Data.First
+			last2 = pageResp.Data.Last
+		}
+		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
 	}
 	var total int64
 	var self, prev, next, first, last string
