@@ -273,14 +273,14 @@ func dbaasBackupTestResponse(name string) *types.BackupResponse {
 			},
 		},
 		Properties: types.BackupPropertiesResponse{
-			Zone:          ZoneITBG1,
-			DBaaS:         types.ReferenceResource{URI: dbaasURI},
-			Database:      types.ReferenceResource{URI: dbURI},
+			Zone:     ZoneITBG1,
+			DBaaS:    types.ReferenceResource{URI: dbaasURI},
+			Database: types.ReferenceResource{URI: dbURI},
 			BillingPlan: func() *types.BillingPlan {
 				v := BillingPeriodHour
 				return &types.BillingPlan{BillingPeriod: &v}
 			}(),
-			Storage:       types.BackupStorageResponse{Size: 50},
+			Storage: types.BackupStorageResponse{Size: 50},
 		},
 		Status: types.ResourceStatus{
 			State: &state,

@@ -32,7 +32,7 @@ type ElasticIP struct {
 	linkedMixin
 	httpEnvelopeMixin
 
-	billingPeriod *BillingPeriod // Properties.BillingPlan.BillingPeriod
+	billingPeriod *BillingPeriod           // Properties.BillingPlan.BillingPeriod
 	address       *string                  // Properties.Address (read-only from response)
 	response      *types.ElasticIPResponse // backs Raw()
 }

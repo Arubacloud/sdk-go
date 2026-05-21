@@ -506,7 +506,7 @@ func vpnTunnelTestResponse(id, name, uri, projectID string) *types.VPNTunnelResp
 		Properties: types.VPNTunnelPropertiesResponse{
 			VPNType:           &vpnType,
 			VPNClientProtocol: &proto,
-			BillingPlan: &types.BillingPlan{BillingPeriod: &bp},
+			BillingPlan:       &types.BillingPlan{BillingPeriod: &bp},
 			VPNClientSettings: &types.VPNClientSettings{
 				PeerClientPublicIP: &peerIP,
 			},
