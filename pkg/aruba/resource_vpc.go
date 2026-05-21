@@ -9,6 +9,11 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+// VPCRef returns a Ref that points to the VPC with the given IDs.
+func VPCRef(projectID, vpcID string) Ref {
+	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/vpcs/%s", projectID, vpcID))
+}
+
 // ---- Wrapper ----
 
 // VPC is the wrapper for an Aruba Cloud VPC (a child of a Project).
@@ -164,7 +169,10 @@ type vpcLowLevelClient interface {
 // wire-shape-hidden) to the low-level client (parameter-explicit, returning
 // typed wire structs). Translates VPC ↔ types.VPCRequest/Response and
 // surfaces HTTP errors as *aruba.HTTPError.
-type vpcsClientAdapter struct{ low vpcLowLevelClient }
+type vpcsClientAdapter struct {
+	low  vpcLowLevelClient
+	rest *restclient.Client
+}
 
 var _ VPCsClient = (*vpcsClientAdapter)(nil)
 
@@ -172,7 +180,7 @@ func newVPCsClientAdapter(rest *restclient.Client) *vpcsClientAdapter {
 	if rest == nil {
 		return &vpcsClientAdapter{}
 	}
-	return &vpcsClientAdapter{low: network.NewVPCsClientImpl(rest)}
+	return &vpcsClientAdapter{low: network.NewVPCsClientImpl(rest), rest: rest}
 }
 
 // Create posts a new VPC to the API and hydrates the wrapper from the response.
@@ -219,6 +227,7 @@ func (a *vpcsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption
 	rp := co.toRequestParameters()
 	resp, err := a.low.Get(ctx, projectID, vpcID, rp)
 	out := &VPC{}
+	out.projectID = projectID
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
@@ -317,6 +326,7 @@ func (a *vpcsClientAdapter) List(ctx context.Context, project Ref, opts ...CallO
 		items = make([]*VPC, 0, len(resp.Data.Values))
 		for i := range resp.Data.Values {
 			v := &VPC{}
+			v.projectID = projectID
 			v.fromResponse(&resp.Data.Values[i])
 			v.setRefresh(func(ctx context.Context) error {
 				fresh, err := a.Get(ctx, v)
@@ -331,8 +341,47 @@ func (a *vpcsClientAdapter) List(ctx context.Context, project Ref, opts ...CallO
 			items = append(items, v)
 		}
 	}
-	refetch := func(_ context.Context, _ string) (*List[*VPC], error) {
-		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	var refetch func(ctx context.Context, pageURL string) (*List[*VPC], error)
+	refetch = func(ctx context.Context, pageURL string) (*List[*VPC], error) {
+		fetch := listPageFetch[types.VPCList](a.rest, opts)
+		pageResp, fetchErr := fetch(ctx, pageURL)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if pageResp != nil && !pageResp.IsSuccess() {
+			return nil, &HTTPError{StatusCode: pageResp.StatusCode, Body: pageResp.RawBody, ErrResp: pageResp.Error}
+		}
+		var pageItems []*VPC
+		if pageResp != nil && pageResp.Data != nil {
+			pageItems = make([]*VPC, 0, len(pageResp.Data.Values))
+			for i := range pageResp.Data.Values {
+				item := &VPC{}
+				item.projectID = projectID
+				item.fromResponse(&pageResp.Data.Values[i])
+				item.setRefresh(func(ctx context.Context) error {
+					fresh, err := a.Get(ctx, item)
+					if err != nil {
+						return err
+					}
+					if fresh != nil && fresh.Raw() != nil {
+						item.fromResponse(fresh.Raw())
+					}
+					return nil
+				})
+				pageItems = append(pageItems, item)
+			}
+		}
+		var total2 int64
+		var self2, prev2, next2, first2, last2 string
+		if pageResp != nil && pageResp.Data != nil {
+			total2 = pageResp.Data.Total
+			self2 = pageResp.Data.Self
+			prev2 = pageResp.Data.Prev
+			next2 = pageResp.Data.Next
+			first2 = pageResp.Data.First
+			last2 = pageResp.Data.Last
+		}
+		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
 	}
 	var total int64
 	var self, prev, next, first, last string

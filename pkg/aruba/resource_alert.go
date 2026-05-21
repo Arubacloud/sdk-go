@@ -2,7 +2,6 @@ package aruba
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/Arubacloud/sdk-go/internal/clients/metric"
@@ -271,7 +270,10 @@ type alertsLowLevelClient interface {
 // wire-shape-hidden) to the low-level client (parameter-explicit, returning
 // typed wire structs). Translates Alert ↔ types.AlertResponse and surfaces HTTP
 // errors as *aruba.HTTPError.
-type alertsClientAdapter struct{ low alertsLowLevelClient }
+type alertsClientAdapter struct {
+	low  alertsLowLevelClient
+	rest *restclient.Client
+}
 
 var _ AlertsClient = (*alertsClientAdapter)(nil)
 
@@ -279,7 +281,7 @@ func newAlertsClientAdapter(rest *restclient.Client) *alertsClientAdapter {
 	if rest == nil {
 		return &alertsClientAdapter{}
 	}
-	return &alertsClientAdapter{low: metric.NewAlertsClientImpl(rest)}
+	return &alertsClientAdapter{low: metric.NewAlertsClientImpl(rest), rest: rest}
 }
 
 // List returns a paginated list of Alert in the given parent scope.
@@ -308,8 +310,38 @@ func (a *alertsClientAdapter) List(ctx context.Context, project Ref, opts ...Cal
 			items = append(items, al)
 		}
 	}
-	refetch := func(_ context.Context, _ string) (*List[*Alert], error) {
-		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	var refetch func(ctx context.Context, pageURL string) (*List[*Alert], error)
+	refetch = func(ctx context.Context, pageURL string) (*List[*Alert], error) {
+		fetch := listPageFetch[types.AlertsListResponse](a.rest, opts)
+		pageResp, fetchErr := fetch(ctx, pageURL)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if pageResp != nil && !pageResp.IsSuccess() {
+			return nil, &HTTPError{StatusCode: pageResp.StatusCode, Body: pageResp.RawBody, ErrResp: pageResp.Error}
+		}
+		var pageItems []*Alert
+		if pageResp != nil && pageResp.Data != nil {
+			pageItems = make([]*Alert, 0, len(pageResp.Data.Values))
+			for i := range pageResp.Data.Values {
+				al := &Alert{}
+				al.fromResponse(&pageResp.Data.Values[i])
+				al.projectID = projectID
+				populateHTTPEnvelope(&al.httpEnvelopeMixin, pageResp)
+				pageItems = append(pageItems, al)
+			}
+		}
+		var total2 int64
+		var self2, prev2, next2, first2, last2 string
+		if pageResp != nil && pageResp.Data != nil {
+			total2 = pageResp.Data.Total
+			self2 = pageResp.Data.Self
+			prev2 = pageResp.Data.Prev
+			next2 = pageResp.Data.Next
+			first2 = pageResp.Data.First
+			last2 = pageResp.Data.Last
+		}
+		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
 	}
 	var total int64
 	var self, prev, next, first, last string

@@ -253,13 +253,16 @@ type kmipsLowLevelClient interface {
 // wire-shape-hidden) to the low-level client (parameter-explicit, returning
 // typed wire structs). Translates Kmip ↔ types.KmipRequest/Response and
 // surfaces HTTP errors as *aruba.HTTPError.
-type kmipsClientAdapter struct{ low kmipsLowLevelClient }
+type kmipsClientAdapter struct {
+	low  kmipsLowLevelClient
+	rest *restclient.Client
+}
 
 func newKmipsClientAdapter(rest *restclient.Client) *kmipsClientAdapter {
 	if rest == nil {
 		return &kmipsClientAdapter{}
 	}
-	return &kmipsClientAdapter{low: security.NewKmipClientImpl(rest)}
+	return &kmipsClientAdapter{low: security.NewKmipClientImpl(rest), rest: rest}
 }
 
 // Create posts a new Kmip to the API and hydrates the wrapper from the response.
@@ -388,8 +391,48 @@ func (a *kmipsClientAdapter) List(ctx context.Context, parent Ref, opts ...CallO
 			items = append(items, km)
 		}
 	}
-	refetch := func(_ context.Context, _ string) (*List[*Kmip], error) {
-		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	var refetch func(ctx context.Context, pageURL string) (*List[*Kmip], error)
+	refetch = func(ctx context.Context, pageURL string) (*List[*Kmip], error) {
+		fetch := listPageFetch[types.KmipList](a.rest, opts)
+		pageResp, fetchErr := fetch(ctx, pageURL)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if pageResp != nil && !pageResp.IsSuccess() {
+			return nil, &HTTPError{StatusCode: pageResp.StatusCode, Body: pageResp.RawBody, ErrResp: pageResp.Error}
+		}
+		var pageItems []*Kmip
+		if pageResp != nil && pageResp.Data != nil {
+			pageItems = make([]*Kmip, 0, len(pageResp.Data.Values))
+			for i := range pageResp.Data.Values {
+				km := &Kmip{}
+				km.projectID = projectID
+				km.kmsID = kmsID
+				km.fromResponse(&pageResp.Data.Values[i])
+				km.setRefresh(func(ctx context.Context) error {
+					fresh, err := a.Get(ctx, km)
+					if err != nil {
+						return err
+					}
+					if fresh != nil && fresh.Raw() != nil {
+						km.fromResponse(fresh.Raw())
+					}
+					return nil
+				})
+				pageItems = append(pageItems, km)
+			}
+		}
+		var total2 int64
+		var self2, prev2, next2, first2, last2 string
+		if pageResp != nil && pageResp.Data != nil {
+			total2 = pageResp.Data.Total
+			self2 = pageResp.Data.Self
+			prev2 = pageResp.Data.Prev
+			next2 = pageResp.Data.Next
+			first2 = pageResp.Data.First
+			last2 = pageResp.Data.Last
+		}
+		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
 	}
 	var total int64
 	var self, prev, next, first, last string

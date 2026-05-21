@@ -134,4 +134,17 @@ docs-cleanup-old: docs-install ## Cleanup old documentation versions, keeping on
 .PHONY: docs
 docs: docs-serve ## Alias for docs-serve
 
+# E2E targets (requires CLIENT_ID and CLIENT_SECRET env vars)
+.PHONY: e2e-create
+e2e-create: ## Run e2e all-resources example in create mode (CLIENT_ID, CLIENT_SECRET required)
+	@$(GO) run ./examples/all-resources -clientID=$$CLIENT_ID -clientSecret=$$CLIENT_SECRET -mode=create -debug 2>&1 | tee create.log
+
+.PHONY: e2e-delete
+e2e-delete: ## Run e2e all-resources example in delete mode (CLIENT_ID, CLIENT_SECRET required)
+	@if [ -z "$$PROJECT_ID" ]; then \
+		echo "Error: PROJECT_ID is required. Usage: make e2e-delete PROJECT_ID=your_project_id"; \
+		exit 1; \
+	fi
+	@$(GO) run ./examples/all-resources -clientID=$$CLIENT_ID -clientSecret=$$CLIENT_SECRET -projectID=$$PROJECT_ID -mode=delete -debug 2>&1 | tee delete.log
+
 .DEFAULT_GOAL := help

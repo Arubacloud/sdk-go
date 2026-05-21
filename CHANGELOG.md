@@ -24,6 +24,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.2.1] — 2026-05-16
+
+> **Patch release.** Stabilises the v0.2.0 wrapper layer based on
+> migration feedback from [acloud-cli PR #111](https://github.com/Arubacloud/acloud-cli/pull/111).
+> 20 Pre-Live milestone issues resolved.
+>
+> **Narrow source-incompatible change:** `types.JobPropertiesRequest.Enabled`
+> changed from `bool` to `*bool` (required to fix #282 — `omitempty` silently
+> dropped `false`). Code that constructs `types.JobPropertiesRequest` literals
+> directly (`Enabled: true`) must be updated to `Enabled: types.BoolPtr(true)`.
+> Callers using the `pkg/aruba` wrapper layer (`job.WithEnabled(bool)`) are
+> unaffected.
+
+### Added
+
+- Typed network `Ref` constructors for all 10 network resources:
+  `VPCRef`, `SubnetRef`, `SecurityGroupRef`, `SecurityRuleRef`,
+  `ElasticIPRef`, `LoadBalancerRef`, `VPCPeeringRef`,
+  `VPCPeeringRouteRef`, `VPNTunnelRef`, `VPNRouteRef` — eliminates
+  the need for downstream consumers to hand-build URI strings. (#268)
+- `*CloudServer.WithBillingPeriod(period)` fluent setter and matching
+  `BillingPeriod` field on `types.CloudServerPropertiesRequest`. (#267)
+- `*KaaS.WithSecurityGroupName(name)` convenience for callers that have
+  only the SG name (e.g. a CLI flag value). (#278)
+- `*KaaS.ClearNodePools()`, `ReplaceNodePools(...)`, `SetNodePools(...)`
+  for explicit node-pool control during Update round-trips. (#279)
+- `*DBaaSBackup.InZone(zone)` setter for zone selection within a region,
+  independent of the region-derived default. (#275)
+- `KubernetesVersion1313` re-added as a **deprecated** alias of
+  `KubernetesVersion1323`. Will be removed in v0.3.0. (#280)
+
+### Fixed
+
+- `List[T].Next/Prev/First/Last` now follows server-supplied pagination
+  links across all 31 resource adapters. Previously returned a "not yet
+  wired" stub error. (#269, #271, #277, #281, #283)
+- `vpcsClientAdapter.Get` and `List` now backfill `projectID` from the
+  caller-supplied `Ref`, so subsequent `Update` calls succeed without a
+  defensive `IntoProject` workaround. (#284)
+- `projectsClientImpl.Delete` now parses the error response body, so
+  `*HTTPError.ErrResp` carries structured error details on failed
+  deletes. (#285)
+- `Job.WithEnabled(false)` now actually disables a job via Update. The
+  wire field `JobPropertiesRequest.Enabled` changed from `bool` to
+  `*bool` so `false` is no longer dropped by `omitempty`. (#282)
+- `Snapshot` and `DBaaSBackup` terminal state maps now use `"Active"` to
+  match the wire form, consistent with other storage resources.
+  `WaitUntilActive` no longer times out spuriously on these resources.
+  (#270, #274)
+- `DBaaS.fromResponse` now back-populates autoscaling fields from the
+  server response, so `Get → Update` round-trips preserve previously
+  configured autoscaling settings. (#276)
+- `BlockStorage.Update` no longer silently sends `bootable=false` when
+  the caller never called `SetBootable`/`UnsetBootable`; the field is
+  omitted from the PUT body when not explicitly set. (#272)
+
+### Docs
+
+- `StorageRestoreClient.Update` now carries a godoc note explaining that
+  platform support for PUT on restore resources is unverified; callers
+  should prefer Create+Delete workflows. (#273)
+- `KaaS.WithSecurityGroup` documents the `*SecurityGroup` requirement
+  and points to `WithSecurityGroupName` for name-only callers. (#278)
+- CHANGELOG retro-note: `KubernetesVersion1313` was removed in v0.2.0
+  (Kubernetes 1.31.3 left the live catalog); a deprecated alias is
+  restored in v0.2.1 and will be removed in v0.3.0. (#280)
+
+### Closed without code change
+
+- #45 — README async import alias. The current README no longer imports
+  `pkg/async` in its example; original concern not reproducible. Closed
+  as stale.
+
+### Deferred to v0.3.0
+
+- #97 — REST-compliant per-operation request/response model split.
+- #110 — Query `FilterBuilder` ergonomics feature.
+
+---
+
 ## [0.2.0] — 2026-05-13
 
 > **Breaking change release.** All service-client CRUD interfaces have
@@ -93,7 +173,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Removed ⚠️ Breaking
 
 - `KubernetesVersion1313` — Kubernetes 1.31.3 is no longer in the live
-  catalog.
+  catalog. *(A deprecated alias pointing at `KubernetesVersion1323` was
+  restored in v0.2.1 and will be removed in v0.3.0.)*
 - `restclient.WaitForResourceState` polling primitive; polling now lives
   in wrapper `WaitUntil*` methods.
 - Client-side polling in `BlockStorage`, `VPC`, and `SecurityGroup`

@@ -248,7 +248,7 @@ func vpnRouteTestResponse(id, name, uri, projectID string) *types.VPNRouteRespon
 			},
 		},
 		Properties: types.VPNRoutePropertiesResponse{
-			CloudSubnet:  cloud,
+			CloudSubnet:  types.SubnetCIDROrRef{CIDR: cloud},
 			OnPremSubnet: onPrem,
 			LinkedResources: []types.LinkedResource{
 				{URI: "/projects/p/providers/Aruba.Network/vpnTunnels/t-1"},
@@ -1044,5 +1044,60 @@ func TestVPNRoutesClientAdapter_Get_InjectsRefresh(t *testing.T) {
 	}
 	if !refreshIsSet(&route.statusMixin) {
 		t.Error("Get should inject a refresh callback into the returned VPNRoute")
+	}
+}
+
+// vpnRouteCreateObjectSubnetBody simulates the Create response where cloudSubnet
+// is returned as a full subnet resource object rather than a plain CIDR string.
+const vpnRouteCreateObjectSubnetBody = `{` +
+	`"metadata":{` +
+	`"id":"r-1","name":"my-route",` +
+	`"uri":"/projects/p/providers/Aruba.Network/vpnTunnels/t-1/vpnRoutes/r-1",` +
+	`"project":{"id":"p"}` +
+	`},` +
+	`"properties":{` +
+	`"cloudSubnet":{` +
+	`"metadata":{"id":"sub-1","name":"my-subnet"},` +
+	`"properties":{"network":{"address":"10.1.0.0/24"}}` +
+	`},` +
+	`"onPremSubnet":"192.168.129.0/24"` +
+	`},` +
+	`"status":{"state":"Active"}}`
+
+func TestVPNRoutesClientAdapter_Create_CloudSubnetAsObject(t *testing.T) {
+	adapter := buildVPNRouteTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprint(w, vpnRouteCreateObjectSubnetBody)
+	})
+
+	route := NewVPNRoute().
+		IntoVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")).
+		Named("my-route").
+		InRegion(RegionITBGBergamo).
+		WithCloudSubnet("10.1.0.0/24").
+		WithOnPremSubnet("192.168.129.0/24")
+
+	result, err := adapter.Create(context.Background(), route)
+	if err != nil {
+		t.Fatalf("Create error: %v", err)
+	}
+	if result.CloudSubnet() != "10.1.0.0/24" {
+		t.Errorf("CloudSubnet() = %q, want %q", result.CloudSubnet(), "10.1.0.0/24")
+	}
+	if result.OnPremSubnet() != "192.168.129.0/24" {
+		t.Errorf("OnPremSubnet() = %q, want %q", result.OnPremSubnet(), "192.168.129.0/24")
+	}
+}
+
+func TestVPNRouteRef(t *testing.T) {
+	ref := VPNRouteRef("p-1", "tun-1", "rt-1")
+	want := "/projects/p-1/providers/Aruba.Network/vpnTunnels/tun-1/vpnRoutes/rt-1"
+	if ref.URI() != want {
+		t.Errorf("VPNRouteRef URI = %q, want %q", ref.URI(), want)
+	}
+	ids := parseURIIDs(ref.URI())
+	if ids["projects"] != "p-1" || ids["vpnTunnels"] != "tun-1" || ids["vpnRoutes"] != "rt-1" {
+		t.Errorf("parseURIIDs = %v", ids)
 	}
 }

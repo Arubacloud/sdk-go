@@ -213,7 +213,10 @@ type grantsLowLevelClient interface {
 // wire-shape-hidden) to the low-level client (parameter-explicit, returning
 // typed wire structs). Translates Grant ↔ types.GrantRequest/Response and
 // surfaces HTTP errors as *aruba.HTTPError.
-type grantsClientAdapter struct{ low grantsLowLevelClient }
+type grantsClientAdapter struct {
+	low  grantsLowLevelClient
+	rest *restclient.Client
+}
 
 var _ GrantsClient = (*grantsClientAdapter)(nil)
 
@@ -221,7 +224,7 @@ func newGrantsClientAdapter(rest *restclient.Client) *grantsClientAdapter {
 	if rest == nil {
 		return &grantsClientAdapter{}
 	}
-	return &grantsClientAdapter{low: database.NewGrantsClientImpl(rest)}
+	return &grantsClientAdapter{low: database.NewGrantsClientImpl(rest), rest: rest}
 }
 
 // Create posts a new Grant to the API and hydrates the wrapper from the response.
@@ -371,8 +374,39 @@ func (a *grantsClientAdapter) List(ctx context.Context, parent Ref, opts ...Call
 			items = append(items, g)
 		}
 	}
-	refetch := func(_ context.Context, _ string) (*List[*Grant], error) {
-		return nil, fmt.Errorf("List pagination by URL not yet wired; re-call List with adjusted CallOptions")
+	var refetch func(ctx context.Context, pageURL string) (*List[*Grant], error)
+	refetch = func(ctx context.Context, pageURL string) (*List[*Grant], error) {
+		fetch := listPageFetch[types.GrantList](a.rest, opts)
+		pageResp, fetchErr := fetch(ctx, pageURL)
+		if fetchErr != nil {
+			return nil, fetchErr
+		}
+		if pageResp != nil && !pageResp.IsSuccess() {
+			return nil, &HTTPError{StatusCode: pageResp.StatusCode, Body: pageResp.RawBody, ErrResp: pageResp.Error}
+		}
+		var pageItems []*Grant
+		if pageResp != nil && pageResp.Data != nil {
+			pageItems = make([]*Grant, 0, len(pageResp.Data.Values))
+			for i := range pageResp.Data.Values {
+				g := &Grant{}
+				g.databaseID = databaseID
+				g.dbaasID = dbaasID
+				g.projectID = projectID
+				g.fromResponse(&pageResp.Data.Values[i])
+				pageItems = append(pageItems, g)
+			}
+		}
+		var total2 int64
+		var self2, prev2, next2, first2, last2 string
+		if pageResp != nil && pageResp.Data != nil {
+			total2 = pageResp.Data.Total
+			self2 = pageResp.Data.Self
+			prev2 = pageResp.Data.Prev
+			next2 = pageResp.Data.Next
+			first2 = pageResp.Data.First
+			last2 = pageResp.Data.Last
+		}
+		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
 	}
 	var total int64
 	var self, prev, next, first, last string

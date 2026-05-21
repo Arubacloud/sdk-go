@@ -1207,3 +1207,47 @@ func TestDBaaSClientAdapter_Get_InjectsRefresh(t *testing.T) {
 		t.Error("Get should inject a refresh callback into the returned DBaaS")
 	}
 }
+
+func TestDBaaS_FromResponse_BackPopulatesAutoscaling(t *testing.T) {
+	avail := int32(20)
+	step := int32(10)
+	status := "Enabled"
+
+	d := &DBaaS{}
+	d.fromResponse(&types.DBaaSResponse{
+		Properties: types.DBaaSPropertiesResponse{
+			Autoscaling: &types.DBaaSAutoscalingResponse{
+				Status:         &status,
+				AvailableSpace: &avail,
+				StepSize:       &step,
+			},
+		},
+	})
+
+	if !d.AutoscalingEnabled() {
+		t.Error("AutoscalingEnabled() should be true when Status=Enabled")
+	}
+	req := d.toRequest()
+	if req.Properties.Autoscaling == nil {
+		t.Fatal("Update request must include autoscaling block after fromResponse")
+	}
+	if req.Properties.Autoscaling.AvailableSpace == nil || *req.Properties.Autoscaling.AvailableSpace != 20 {
+		t.Errorf("AvailableSpace = %v, want 20", req.Properties.Autoscaling.AvailableSpace)
+	}
+	if req.Properties.Autoscaling.StepSize == nil || *req.Properties.Autoscaling.StepSize != 10 {
+		t.Errorf("StepSize = %v, want 10", req.Properties.Autoscaling.StepSize)
+	}
+}
+
+func TestDBaaS_FromResponse_AutoscalingDisabledStatus(t *testing.T) {
+	status := "Disabled"
+	d := &DBaaS{}
+	d.fromResponse(&types.DBaaSResponse{
+		Properties: types.DBaaSPropertiesResponse{
+			Autoscaling: &types.DBaaSAutoscalingResponse{Status: &status},
+		},
+	})
+	if d.AutoscalingEnabled() {
+		t.Error("AutoscalingEnabled() should be false when Status=Disabled")
+	}
+}
