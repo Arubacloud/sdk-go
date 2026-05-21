@@ -379,7 +379,7 @@ func dbaasTestResponse(id, name, uri string) *types.DBaaSResponse {
 			Engine:      &types.DBaaSEngineResponse{Type: &engineType},
 			Flavor:      &types.DBaaSFlavorResponse{Name: &flavorName},
 			Storage:     &types.DBaaSStorageResponse{SizeGB: &sizeGB},
-			BillingPlan: &types.DBaaSBillingPlan{BillingPeriod: &billingPeriod},
+			BillingPlan: &types.BillingPlan{BillingPeriod: &billingPeriod},
 			Networking: &types.DBaaSNetworkingResponse{
 				VPC:           &types.ReferenceResource{URI: vpcURI},
 				Subnet:        &types.ReferenceResource{URI: subnetURI},

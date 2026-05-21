@@ -346,7 +346,7 @@ func (d *DBaaS) toRequest() types.DBaaSRequest {
 		}
 		props.Autoscaling = a
 	}
-	props.BillingPlan = &types.DBaaSBillingPlan{BillingPeriod: defaultBillingPeriod(d.billingPeriod)}
+	props.BillingPlan = &types.BillingPlan{BillingPeriod: defaultBillingPeriod(d.billingPeriod)}
 	if d.vpcRef != nil || d.subnetRef != nil || d.securityGroupRef != nil || d.elasticIPRef != nil {
 		net := &types.DBaaSNetworking{}
 		if d.vpcRef != nil {
