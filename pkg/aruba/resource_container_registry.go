@@ -208,8 +208,8 @@ func (r *ContainerRegistry) SizeFlavor() types.ContainerRegistrySizeFlavor {
 
 // BillingPeriod returns the billing period for the registry, or "" if unset.
 func (r *ContainerRegistry) BillingPeriod() BillingPeriod {
-	if r.response != nil && r.response.Properties.BillingPeriod != nil {
-		return *r.response.Properties.BillingPeriod
+	if r.response != nil && r.response.Properties.BillingPlan != nil && r.response.Properties.BillingPlan.BillingPeriod != nil {
+		return *r.response.Properties.BillingPlan.BillingPeriod
 	}
 	if r.billingPeriod == nil {
 		return ""
@@ -243,7 +243,7 @@ func (r *ContainerRegistry) toRequest() types.ContainerRegistryRequest {
 	if r.concurrentUsers != nil {
 		props.ConcurrentUsers = r.concurrentUsers
 	}
-	props.BillingPeriod = defaultBillingPeriod(r.billingPeriod)
+	props.BillingPlan = &types.BillingPlan{BillingPeriod: defaultBillingPeriod(r.billingPeriod)}
 	return types.ContainerRegistryRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: r.toMetadata(),
@@ -298,8 +298,8 @@ func (r *ContainerRegistry) fromResponse(resp *types.ContainerRegistryResponse) 
 		v := *resp.Properties.ConcurrentUsers
 		r.concurrentUsers = &v
 	}
-	if resp.Properties.BillingPeriod != nil {
-		r.billingPeriod = resp.Properties.BillingPeriod
+	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
+		r.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
 	}
 
 	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {

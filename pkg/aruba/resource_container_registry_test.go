@@ -392,8 +392,8 @@ func TestContainerRegistry_ToRequest(t *testing.T) {
 	if req.Properties.ConcurrentUsers == nil || *req.Properties.ConcurrentUsers != "HighPerf" {
 		t.Errorf("Properties.ConcurrentUsers = %v", req.Properties.ConcurrentUsers)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
-		t.Errorf("Properties.BillingPeriod = %v", req.Properties.BillingPeriod)
+	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
+		t.Errorf("Properties.BillingPlan.BillingPeriod = %v", req.Properties.BillingPlan)
 	}
 }
 
@@ -408,8 +408,8 @@ func TestContainerRegistry_ToRequest_Empty(t *testing.T) {
 	if req.Properties.ConcurrentUsers != nil {
 		t.Errorf("ConcurrentUsers should be nil, got %v", req.Properties.ConcurrentUsers)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
-		t.Errorf("BillingPeriod should default to Hour, got %v", req.Properties.BillingPeriod)
+	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPlan.BillingPeriod should default to Hour, got %v", req.Properties.BillingPlan)
 	}
 	// Body-ref ReferenceResource fields should have empty URIs.
 	if req.Properties.VPC.URI != "" {
@@ -450,7 +450,10 @@ func containerRegistryTestResponse(name string) *types.ContainerRegistryResponse
 			BlockStorage:    types.ReferenceResource{URI: bsURI},
 			AdminUser:       &types.UserCredential{Username: "admin"},
 			ConcurrentUsers: &size,
-			BillingPeriod:   func() *BillingPeriod { v := BillingPeriodHour; return &v }(),
+			BillingPlan: func() *types.BillingPlan {
+				v := BillingPeriodHour
+				return &types.BillingPlan{BillingPeriod: &v}
+			}(),
 		},
 		Status: types.ResourceStatus{
 			State: &state,
@@ -626,7 +629,7 @@ const containerRegistrySuccessBody = `{` +
 	`"securityGroup":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1"},` +
 	`"publicIp":{"uri":"/projects/p/providers/Aruba.Network/elasticips/eip-1"},` +
 	`"blockStorage":{"uri":"/projects/p/providers/Aruba.Storage/blockstorages/bs-1"},` +
-	`"adminUser":{"username":"admin"},"size":"Small","billingPeriod":"Hour"` +
+	`"adminUser":{"username":"admin"},"size":"Small","billingPlan":{"billingPeriod":"Hour"}` +
 	`},` +
 	`"status":{"state":"Active"}}`
 
@@ -1006,8 +1009,8 @@ func TestContainerRegistriesClientAdapter_List_TwoItems(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
-			`{"metadata":{"id":"cr-1","name":"n1","uri":"/projects/p/providers/Aruba.Container/registries/cr-1","project":{"id":"p"}},"properties":{"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},"size":"Small","billingPeriod":"Hour"},"status":{}},`+
-			`{"metadata":{"id":"cr-2","name":"n2","uri":"/projects/p/providers/Aruba.Container/registries/cr-2","project":{"id":"p"}},"properties":{"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},"size":"Medium","billingPeriod":"Hour"},"status":{}}`+
+			`{"metadata":{"id":"cr-1","name":"n1","uri":"/projects/p/providers/Aruba.Container/registries/cr-1","project":{"id":"p"}},"properties":{"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},"size":"Small","billingPlan":{"billingPeriod":"Hour"}},"status":{}},`+
+			`{"metadata":{"id":"cr-2","name":"n2","uri":"/projects/p/providers/Aruba.Container/registries/cr-2","project":{"id":"p"}},"properties":{"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},"size":"Medium","billingPlan":{"billingPeriod":"Hour"}},"status":{}}`+
 			`]}`)
 	})
 
