@@ -115,7 +115,7 @@ func (r *VPCPeeringRoute) BillingPeriod() BillingPeriod {
 // toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (r *VPCPeeringRoute) toRequest() types.VPCPeeringRouteRequest {
 	props := types.VPCPeeringRoutePropertiesRequest{
-		BillingPeriod: defaultBillingPeriod(r.billingPeriod),
+		BillingPlan: &types.BillingPlan{BillingPeriod: defaultBillingPeriod(r.billingPeriod)},
 	}
 	if r.localCIDR != nil {
 		props.LocalNetworkAddress = *r.localCIDR
@@ -157,8 +157,8 @@ func (r *VPCPeeringRoute) fromResponse(resp *types.VPCPeeringRouteResponse) {
 		v := resp.Properties.RemoteNetworkAddress
 		r.remoteCIDR = &v
 	}
-	if resp.Properties.BillingPeriod != nil {
-		r.billingPeriod = resp.Properties.BillingPeriod
+	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
+		r.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
 	}
 
 	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {

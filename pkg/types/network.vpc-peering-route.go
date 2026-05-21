@@ -8,7 +8,7 @@ type VPCPeeringRoutePropertiesRequest struct {
 	// RemoteNetworkAddress Remote network address in CIDR notation
 	RemoteNetworkAddress string `json:"remoteNetworkAddress"`
 
-	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
+	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
 }
 
 type VPCPeeringRoutePropertiesResponse struct {
@@ -18,7 +18,7 @@ type VPCPeeringRoutePropertiesResponse struct {
 	// RemoteNetworkAddress Remote network address in CIDR notation
 	RemoteNetworkAddress string `json:"remoteNetworkAddress"`
 
-	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
+	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
 }
 
 type VPCPeeringRouteRequest struct {
