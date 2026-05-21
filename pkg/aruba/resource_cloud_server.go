@@ -361,7 +361,7 @@ func (cs *CloudServer) toRequest() types.CloudServerRequest {
 			props.SecurityGroups = append(props.SecurityGroups, types.ReferenceResource{URI: u})
 		}
 	}
-	props.BillingPeriod = defaultBillingPeriod(cs.billingPeriod)
+	props.BillingPlan = &types.BillingPlan{BillingPeriod: defaultBillingPeriod(cs.billingPeriod)}
 	return types.CloudServerRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: cs.toMetadata(),
@@ -409,8 +409,8 @@ func (cs *CloudServer) fromResponse(resp *types.CloudServerResponse) {
 		v := resp.Properties.KeyPair.URI
 		cs.keyPairRef = &v
 	}
-	if resp.Properties.BillingPeriod != nil {
-		cs.billingPeriod = resp.Properties.BillingPeriod
+	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
+		cs.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
 	}
 
 	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {

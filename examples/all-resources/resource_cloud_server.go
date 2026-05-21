@@ -53,7 +53,8 @@ write_files:
 		AddSubnet(resources.SubnetBasic).
 		AddSecurityGroup(resources.SecurityGroup).
 		WithElasticIP(resources.CloudServerEIP).
-		WithKeyPair(resources.KeyPair)
+		WithKeyPair(resources.KeyPair).
+		WithBillingPeriod(aruba.BillingPeriodMonth)
 
 	cs, err := arubaClient.FromCompute().CloudServers().Create(ctx, cs)
 	if err != nil {
