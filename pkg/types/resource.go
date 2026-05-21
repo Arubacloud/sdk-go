@@ -109,6 +109,12 @@ const (
 	BillingPeriodYear  BillingPeriod = "Year"
 )
 
+// BillingPlan is the nested wire wrapper used by resources whose API encodes
+// billing inside a billingPlan object rather than as a flat billingPeriod field.
+type BillingPlan struct {
+	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
+}
+
 type ReferenceResource struct {
 	URI string `json:"uri"`
 }

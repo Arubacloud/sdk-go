@@ -169,13 +169,6 @@ type DBaaSAutoscalingResponse struct {
 	RuleID *string `json:"ruleId,omitempty"`
 }
 
-// DBaaSBillingPlan is the wire wrapper for DBaaS billing configuration.
-// The DBaaS API expects this as a nested object on properties; sending a flat
-// "billingPeriod" string is rejected with "Property Billing Plan is null".
-type DBaaSBillingPlan struct {
-	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
-}
-
 // DBaaSPropertiesRequest contains properties required to create a DBaaS instance
 type DBaaSPropertiesRequest struct {
 	// Zone where DBaaS will be created (optional).
@@ -192,7 +185,7 @@ type DBaaSPropertiesRequest struct {
 	Storage *DBaaSStorage `json:"storage,omitempty"`
 
 	// BillingPlan Billing plan (wraps billingPeriod)
-	BillingPlan *DBaaSBillingPlan `json:"billingPlan,omitempty"`
+	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
 
 	// Networking Network information for the DBaaS instance
 	Networking *DBaaSNetworking `json:"networking,omitempty"`
@@ -219,7 +212,7 @@ type DBaaSPropertiesResponse struct {
 	Storage *DBaaSStorageResponse `json:"storage,omitempty"`
 
 	// BillingPlan Billing plan (wraps billingPeriod)
-	BillingPlan *DBaaSBillingPlan `json:"billingPlan,omitempty"`
+	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
 
 	// Autoscaling Autoscaling response configuration
 	Autoscaling *DBaaSAutoscalingResponse `json:"autoscaling,omitempty"`
