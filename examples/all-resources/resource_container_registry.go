@@ -28,7 +28,7 @@ func createContainerRegistry(ctx context.Context, arubaClient aruba.Client, reso
 		InRegion(aruba.RegionITBGBergamo).
 		OfSize(aruba.ContainerRegistrySizeFlavorSmall).
 		WithAdminUsername("adminuser").
-		WithBillingPeriod(aruba.BillingPeriodHour).
+		WithBillingPeriod(aruba.BillingPeriodMonth).
 		WithVPC(resources.VPC).
 		WithSubnet(resources.SubnetBasic).
 		WithSecurityGroup(resources.SecurityGroup).
