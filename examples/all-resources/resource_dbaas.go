@@ -33,7 +33,7 @@ func createDBaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, 
 		OfFlavor(aruba.DBaaSFlavorDBO2A4).
 		WithSizeGB(10).
 		WithAutoscaling(2, 5).
-		WithBillingPeriod(aruba.BillingPeriodHour).
+		WithBillingPeriod(aruba.BillingPeriodMonth).
 		WithVPC(vpc).
 		WithSubnet(subnet).
 		WithSecurityGroup(sg).
