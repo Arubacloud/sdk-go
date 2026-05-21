@@ -144,7 +144,7 @@ type KaaSPropertiesRequest struct {
 
 	Storage StorageKubernetes `json:"storage,omitempty"`
 
-	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
+	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
 
 	Identity *IdentityProperties `json:"identity,omitempty"`
 
@@ -268,7 +268,7 @@ type KaaSPropertiesResponse struct {
 
 	Storage *StorageKubernetes `json:"storage,omitempty"`
 
-	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
+	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
 
 	ManagementIP *string `json:"managementIp,omitempty"`
 
@@ -288,7 +288,7 @@ type KaaSPropertiesUpdateRequest struct {
 
 	Storage *StorageKubernetes `json:"storage,omitempty"`
 
-	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
+	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
 }
 
 type KaaSRequest struct {
