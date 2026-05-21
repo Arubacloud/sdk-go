@@ -394,8 +394,8 @@ func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
 	if req.Properties.VPNClientProtocol == nil || *req.Properties.VPNClientProtocol != VPNClientProtocolIKEv2 {
 		t.Errorf("Properties.VPNClientProtocol = %v", req.Properties.VPNClientProtocol)
 	}
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
-		t.Errorf("BillingPeriod = %v", req.Properties.BillingPeriod)
+	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPlan.BillingPeriod = %v", req.Properties.BillingPlan)
 	}
 	if cs := req.Properties.VPNClientSettings; cs == nil {
 		t.Fatal("VPNClientSettings must be set")
@@ -437,8 +437,8 @@ func TestVPNTunnel_ToRequest_NoBillingPeriod_DefaultsToHour(t *testing.T) {
 	tun := NewVPNTunnel().
 		Named("bare")
 	req := tun.RawRequest()
-	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
-		t.Errorf("BillingPeriod should default to Hour when not set, got %+v", req.Properties.BillingPeriod)
+	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPlan.BillingPeriod should default to Hour when not set, got %+v", req.Properties.BillingPlan)
 	}
 }
 
@@ -506,7 +506,7 @@ func vpnTunnelTestResponse(id, name, uri, projectID string) *types.VPNTunnelResp
 		Properties: types.VPNTunnelPropertiesResponse{
 			VPNType:           &vpnType,
 			VPNClientProtocol: &proto,
-			BillingPeriod:     &bp,
+			BillingPlan: &types.BillingPlan{BillingPeriod: &bp},
 			VPNClientSettings: &types.VPNClientSettings{
 				PeerClientPublicIP: &peerIP,
 			},

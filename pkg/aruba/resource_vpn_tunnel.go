@@ -206,7 +206,7 @@ func (t *VPNTunnel) toRequest() types.VPNTunnelRequest {
 		}
 		props.VPNClientSettings = cs
 	}
-	props.BillingPeriod = defaultBillingPeriod(t.billingPeriod)
+	props.BillingPlan = &types.BillingPlan{BillingPeriod: defaultBillingPeriod(t.billingPeriod)}
 	return types.VPNTunnelRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: t.toMetadata(),
@@ -241,8 +241,8 @@ func (t *VPNTunnel) fromResponse(resp *types.VPNTunnelResponse) {
 		p := *resp.Properties.VPNClientProtocol
 		t.vpnClientProtocol = &p
 	}
-	if resp.Properties.BillingPeriod != nil {
-		t.billingPeriod = resp.Properties.BillingPeriod
+	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
+		t.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
 	}
 	if cs := resp.Properties.VPNClientSettings; cs != nil && cs.PeerClientPublicIP != nil {
 		v := *cs.PeerClientPublicIP
