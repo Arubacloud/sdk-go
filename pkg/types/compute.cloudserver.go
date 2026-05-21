@@ -45,7 +45,7 @@ type CloudServerPropertiesRequest struct {
 
 	UserData *string `json:"userData,omitempty"`
 
-	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
+	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
 }
 
 type CloudServerFlavorResponse struct {
@@ -87,7 +87,7 @@ type CloudServerPropertiesResult struct {
 
 	NetworkInterfaces []CloudServerNetworkInterfaceDetails `json:"networkInterfaces,omitempty"`
 
-	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
+	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
 }
 
 type CloudServerRequest struct {
