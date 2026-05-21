@@ -32,7 +32,7 @@ type ElasticIP struct {
 	linkedMixin
 	httpEnvelopeMixin
 
-	billingPeriod *BillingPeriod           // Properties.BillingPlan.BillingPeriod
+	billingPeriod *BillingPeriod // Properties.BillingPlan.BillingPeriod
 	address       *string                  // Properties.Address (read-only from response)
 	response      *types.ElasticIPResponse // backs Raw()
 }
@@ -100,7 +100,7 @@ func (e *ElasticIP) toRequest() types.ElasticIPRequest {
 			Location:                e.toLocation(),
 		},
 		Properties: types.ElasticIPPropertiesRequest{
-			BillingPeriod: elasticIPBillingPeriodWire().Out(defaultBillingPeriod(e.billingPeriod)),
+			BillingPlan: &types.BillingPlan{BillingPeriod: defaultBillingPeriod(e.billingPeriod)},
 		},
 	}
 }
@@ -123,8 +123,8 @@ func (e *ElasticIP) fromResponse(resp *types.ElasticIPResponse) {
 	e.setTerminalStates(elasticIPTerminalStates)
 	e.setLinked(resp.Properties.LinkedResources)
 
-	if resp.Properties.BillingPeriod != nil {
-		e.billingPeriod = elasticIPBillingPeriodWire().In(resp.Properties.BillingPeriod)
+	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
+		e.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
 	}
 	if resp.Properties.Address != nil && *resp.Properties.Address != "" {
 		addr := *resp.Properties.Address
@@ -146,16 +146,6 @@ func elasticIPDerefString(p *string) string {
 		return ""
 	}
 	return *p
-}
-
-// elasticIPBillingPeriodWire returns a translator for ElasticIP's lowercase
-// wire billing-period values (e.g. "hourly") vs. the standard SDK constants.
-func elasticIPBillingPeriodWire() *billingPeriodTranslator {
-	return newBillingPeriodTranslator(map[BillingPeriod]string{
-		BillingPeriodHour:  "hourly",
-		BillingPeriodMonth: "monthly",
-		BillingPeriodYear:  "yearly",
-	})
 }
 
 var elasticIPTerminalStates = map[string]bool{

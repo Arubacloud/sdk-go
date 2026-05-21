@@ -17,7 +17,7 @@ func createElasticIP(ctx context.Context, arubaClient aruba.Client, proj aruba.R
 		AddTag("network").
 		AddTag("public").
 		InRegion(aruba.RegionITBGBergamo).
-		WithBillingPeriod(aruba.BillingPeriodHour)
+		WithBillingPeriod(aruba.BillingPeriodMonth)
 
 	created, err := arubaClient.FromNetwork().ElasticIPs().Create(ctx, eip)
 	if err != nil {
