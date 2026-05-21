@@ -29,7 +29,7 @@ func TestListBackups(t *testing.T) {
 								Zone:          "ITBG-1",
 								DBaaS:         types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
 								Database:      types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
-								BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
+								BillingPlan: func() *types.BillingPlan { v := types.BillingPeriod("Hour"); return &types.BillingPlan{BillingPeriod: &v} }(),
 								Storage:       types.BackupStorageResponse{Size: 10},
 							},
 							Status: types.ResourceStatus{State: types.StringPtr("active")},
@@ -154,7 +154,7 @@ func TestGetBackup(t *testing.T) {
 						Zone:          "ITBG-1",
 						DBaaS:         types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
 						Database:      types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
-						BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
+						BillingPlan: func() *types.BillingPlan { v := types.BillingPeriod("Hour"); return &types.BillingPlan{BillingPeriod: &v} }(),
 						Storage:       types.BackupStorageResponse{Size: 10},
 					},
 					Status: types.ResourceStatus{State: types.StringPtr("active")},
@@ -288,7 +288,7 @@ func TestCreateBackup(t *testing.T) {
 						Zone:          "ITBG-1",
 						DBaaS:         types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
 						Database:      types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
-						BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
+						BillingPlan: func() *types.BillingPlan { v := types.BillingPeriod("Hour"); return &types.BillingPlan{BillingPeriod: &v} }(),
 					},
 					Status: types.ResourceStatus{State: types.StringPtr("creating")},
 				}
@@ -308,7 +308,7 @@ func TestCreateBackup(t *testing.T) {
 				Zone:          "ITBG-1",
 				DBaaS:         types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
 				Database:      types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
-				BillingPeriod: func() *types.BillingPeriod { v := types.BillingPeriod("Hour"); return &v }(),
+				BillingPlan: func() *types.BillingPlan { v := types.BillingPeriod("Hour"); return &types.BillingPlan{BillingPeriod: &v} }(),
 			},
 		}
 

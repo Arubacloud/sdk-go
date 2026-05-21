@@ -7,7 +7,7 @@ type BackupPropertiesRequest struct {
 
 	Database ReferenceResource `json:"database"`
 
-	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
+	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
 }
 
 type BackupStorageResponse struct {
@@ -23,7 +23,7 @@ type BackupPropertiesResponse struct {
 
 	Database ReferenceResource `json:"database"`
 
-	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
+	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
 
 	Storage BackupStorageResponse `json:"storage"`
 }
