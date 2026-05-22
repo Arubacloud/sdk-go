@@ -2,6 +2,7 @@ package aruba
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -45,7 +46,8 @@ func (u *User) IntoDBaaS(parent Ref) *User { u.intoDBaaS(parent); return u }
 // WithUsername sets the username. Used as the path identifier; required before Create.
 func (u *User) WithUsername(name string) *User { u.username = &name; return u }
 
-// WithPassword sets the password for Create/Update. Write-only: no Password() getter is exposed.
+// WithPassword sets the clear-text password for Create/Update. The wrapper base64-encodes it
+// at the wire boundary; callers always pass plain text. Write-only: no Password() getter is exposed.
 func (u *User) WithPassword(pw string) *User { u.password = &pw; return u }
 
 // Getters — general → specific
@@ -95,7 +97,7 @@ func (u *User) CreatedBy() string {
 func (u *User) Raw() *types.UserResponse { return u.response }
 
 // RawRequest returns the wire body that would be sent on Create/Update. It
-// includes the locally-set password if WithPassword was called — by design,
+// includes the base64-encoded password if WithPassword was called — by design,
 // for parity with other wrappers' RawRequest debugging surface. There is no
 // Password() accessor on *User; the password is intentionally not exposed
 // through any read-only path other than this wire mirror.
@@ -103,11 +105,12 @@ func (u *User) RawRequest() types.UserRequest { return u.toRequest() }
 
 // Wire converters
 
-// toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
+// toRequest assembles the Create/Update body from current setter state.
+// The API expects the password base64-encoded, so the clear-text value is encoded here at the wire boundary.
 func (u *User) toRequest() types.UserRequest {
 	return types.UserRequest{
 		Username: userDerefString(u.username),
-		Password: userDerefString(u.password),
+		Password: base64.StdEncoding.EncodeToString([]byte(userDerefString(u.password))),
 	}
 }
 
