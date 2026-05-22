@@ -94,4 +94,3 @@ func TestWaitUntilGone_ContextCancellation(t *testing.T) {
 		t.Errorf("expected context.Canceled, got %v", err)
 	}
 }
-
