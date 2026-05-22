@@ -70,7 +70,7 @@ type ResourceMetadataResponse struct {
 
 // Status
 type PreviousStatus struct {
-	State        *string    `json:"state,omitempty"`
+	State        *State     `json:"state,omitempty"`
 	CreationDate *time.Time `json:"creationDate,omitempty"`
 }
 
@@ -80,7 +80,7 @@ type DisableStatusInfo struct {
 }
 
 type ResourceStatus struct {
-	State             *string            `json:"state,omitempty"`
+	State             *State             `json:"state,omitempty"`
 	CreationDate      *time.Time         `json:"creationDate,omitempty"`
 	DisableStatusInfo *DisableStatusInfo `json:"disableStatusInfo,omitempty"`
 	PreviousStatus    *PreviousStatus    `json:"previousStatus,omitempty"`

@@ -683,19 +683,16 @@ func applyWaitOptions(opts []WaitOption) waitOptions {
 }
 
 type statusMixin struct {
-	status         *types.ResourceStatus
-	refresh        func(ctx context.Context) error
-	terminalStates map[string]bool // true = success, false = error
+	status  *types.ResourceStatus
+	refresh func(ctx context.Context) error
 }
 
 func (m *statusMixin) setStatus(s *types.ResourceStatus) { m.status = s }
 
 func (m *statusMixin) setRefresh(fn func(context.Context) error) { m.refresh = fn }
 
-func (m *statusMixin) setTerminalStates(states map[string]bool) { m.terminalStates = states }
-
-// State returns the current lifecycle state string, or "".
-func (m *statusMixin) State() string {
+// State returns the current lifecycle state, or the zero State ("").
+func (m *statusMixin) State() types.State {
 	if m.status == nil || m.status.State == nil {
 		return ""
 	}
@@ -726,8 +723,8 @@ func (m *statusMixin) FailureReason() string {
 	return *m.status.FailureReason
 }
 
-// PreviousState returns the previous lifecycle state string, or "".
-func (m *statusMixin) PreviousState() string {
+// PreviousState returns the previous lifecycle state, or the zero State ("").
+func (m *statusMixin) PreviousState() types.State {
 	if m.status == nil || m.status.PreviousStatus == nil || m.status.PreviousStatus.State == nil {
 		return ""
 	}
@@ -735,26 +732,40 @@ func (m *statusMixin) PreviousState() string {
 }
 
 // WaitUntilActive blocks until the resource reaches the "Active" state.
-// Equivalent to WaitUntilStates(ctx, []string{"Active"}, opts...).
+// Equivalent to WaitUntilStates(ctx, []State{StateActive}, opts...).
 func (m *statusMixin) WaitUntilActive(ctx context.Context, opts ...WaitOption) error {
-	return m.WaitUntilStates(ctx, []string{"Active"}, opts...)
+	return m.WaitUntilStates(ctx, []types.State{types.StateActive}, opts...)
 }
 
-// WaitUntilReady blocks until the resource reaches any positive terminal
-// lifecycle state: "Active", "NotUsed", "InUse", or "Used". Use this when a
-// caller does not care which steady state the resource lands in — only that it
-// is no longer transitioning. For resources that reach "Active" (VPC, Subnet,
-// SecurityGroup, KeyPair, …) this is equivalent to WaitUntilActive. For
-// attach/detach resources (BlockStorage, ElasticIP) it succeeds whether the
-// resource is currently attached or not.
+// WaitUntilReady blocks until the resource reaches any healthy settled state.
+// Use this when a caller does not care which steady state the resource lands in
+// — only that it is no longer transitioning. Succeeds on Active, Running,
+// Stopped, NotUsed, Reserved, InUse, or Used.
 func (m *statusMixin) WaitUntilReady(ctx context.Context, opts ...WaitOption) error {
-	return m.WaitUntilStates(ctx, []string{"Active", "NotUsed", "InUse", "Used"}, opts...)
+	return m.WaitUntilStates(ctx, []types.State{
+		types.StateActive,
+		types.StateRunning,
+		types.StateStopped,
+		types.StateNotUsed,
+		types.StateReserved,
+		types.StateInUse,
+		types.StateUsed,
+	}, opts...)
 }
 
 // WaitUntilStates blocks until the resource reaches any of the given target states.
-// Returns immediately with an error if the resource enters a known error terminal state.
-// Returns a descriptive error if the refresh callback was not set (resource not produced by an adapter).
-func (m *statusMixin) WaitUntilStates(ctx context.Context, targets []string, opts ...WaitOption) error {
+//
+// The check applies four rules in order:
+//  1. state ∈ targets → success.
+//  2. state.IsFailure() → terminal error.
+//  3. state == "" || state.IsTransitory() → keep polling.
+//  4. otherwise (settled, non-target) → terminal error.
+//
+// Rule 4 makes wait semantics context-dependent: a resource that settles in
+// "Reserved" succeeds for a waiter that lists Reserved as a target and fails
+// fast for one that does not. Returns a descriptive error if the refresh
+// callback was not set (resource not produced by an adapter).
+func (m *statusMixin) WaitUntilStates(ctx context.Context, targets []types.State, opts ...WaitOption) error {
 	if m.refresh == nil {
 		return errors.New("WaitUntilStates: refresh callback not set; resource must be produced by an adapter (Create/Get/Update/List) to support polling")
 	}
@@ -773,11 +784,16 @@ func (m *statusMixin) WaitUntilStates(ctx context.Context, targets []string, opt
 				return true, nil
 			}
 		}
-		if isSuccess, isTerminal := m.terminalStates[state]; isTerminal && !isSuccess {
-			terminalErr = fmt.Errorf("resource entered terminal error state %q (targets %q)", state, targets)
+		if state.IsFailure() {
+			terminalErr = fmt.Errorf("resource entered failure state %q (targets %v)", state, targets)
 			return true, terminalErr
 		}
-		return false, nil
+		if state == "" || state.IsTransitory() {
+			return false, nil
+		}
+		// settled, non-target, non-failure
+		terminalErr = fmt.Errorf("resource settled in state %q which is not a wait target %v", state, targets)
+		return true, terminalErr
 	}
 	_, err := async.WaitFor[any](ctx, cfg.retries, cfg.baseDelay, cfg.timeout, call, check).Await(ctx)
 	if terminalErr != nil {

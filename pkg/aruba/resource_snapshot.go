@@ -160,7 +160,6 @@ func (s *Snapshot) fromResponse(resp *types.SnapshotResponse) {
 		s.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	s.setStatus(&resp.Status)
-	s.setTerminalStates(snapshotTerminalStates)
 
 	if resp.Properties.SizeGB != nil {
 		v := *resp.Properties.SizeGB
@@ -209,12 +208,6 @@ func snapshotDerefZone(p *Zone) Zone {
 		return ""
 	}
 	return *p
-}
-
-var snapshotTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

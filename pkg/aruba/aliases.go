@@ -232,6 +232,37 @@ const (
 	ZoneITBG3 = types.ZoneITBG3 // Bergamo availability zone 3
 )
 
+// ---------------------------------------------------------------------------
+// Resource lifecycle state
+// ---------------------------------------------------------------------------
+
+// State is the lifecycle state of an Aruba Cloud resource.
+// Use the State* constants below instead of raw strings.
+type State = types.State
+
+const (
+	StateInCreation   = types.StateInCreation   // operation in progress: resource being provisioned
+	StateCreating     = types.StateCreating     // operation in progress: resource being created
+	StateUpdating     = types.StateUpdating     // operation in progress: configuration update in progress
+	StateProvisioning = types.StateProvisioning // operation in progress: platform-level provisioning
+	StateDeleting     = types.StateDeleting     // operation in progress: deletion in progress
+	StateDisabling    = types.StateDisabling    // operation in progress: disabling in progress
+	StateEnabling     = types.StateEnabling     // operation in progress: enabling in progress
+
+	StateActive   = types.StateActive   // settled: resource is active and serving
+	StateRunning  = types.StateRunning  // settled: resource is running
+	StateStopped  = types.StateStopped  // settled: resource is stopped
+	StateNotUsed  = types.StateNotUsed  // settled: resource is free to be bound
+	StateReserved = types.StateReserved // settled + bound: reserved as a dependency, not actively in use
+	StateInUse    = types.StateInUse    // settled + bound + operational: actively attached or consumed
+	StateUsed     = types.StateUsed     // settled + bound + operational: in use (alias variant)
+	StateDeleted  = types.StateDeleted  // settled: resource has been deleted
+
+	StateFailed   = types.StateFailed   // failure: provisioning or operational fault
+	StateError    = types.StateError    // failure: resource is in an error state
+	StateDisabled = types.StateDisabled // failure: administratively disabled, requires manual re-enablement
+)
+
 // BillingPeriod identifies the billing cadence for a resource. Not every
 // wrapper accepts every period — consult the individual resource documentation
 // for the authoritative list of accepted values.

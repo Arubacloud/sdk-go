@@ -133,7 +133,7 @@ func TestKMS_ToRequest_FullyPopulated(t *testing.T) {
 func kmsTestResponse(name string) *types.KmsResponse {
 	id := "kms-1"
 	uri := "/projects/p/providers/Aruba.Security/kms/kms-1"
-	state := "Active"
+	state := types.State("Active")
 	return &types.KmsResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:               &id,
@@ -764,20 +764,14 @@ func TestSecurityClient_HasKmipsMethod(t *testing.T) {
 	}
 }
 
-func TestKMS_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestKMS_FromResponse_SetsStatus(t *testing.T) {
 	k := &KMS{}
-	state := "Active"
+	state := types.State("Active")
 	k.fromResponse(&types.KmsResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(k.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !k.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for KMS")
-	}
-	if k.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for KMS")
+	if k.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", k.State())
 	}
 }
 

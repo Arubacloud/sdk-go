@@ -185,12 +185,33 @@ func withDeleteDeadline(parent context.Context, fn func(context.Context)) {
 
 type waitFunc func(context.Context, ...aruba.WaitOption) error
 
+// stateReporter is satisfied by every statusMixin-backed wrapper.
+// It lets wait helpers print the final state and failure reason on error.
+type stateReporter interface {
+	State() aruba.State
+	FailureReason() string
+}
+
+// depEntry pairs a wait function with its optional state reporter so
+// dependency helpers can emit state/reason detail on failure.
+type depEntry struct {
+	wait     waitFunc
+	reporter stateReporter // may be nil
+}
+
+// dep constructs a depEntry. The reporter is typically the resource itself.
+func dep(r stateReporter, w waitFunc) depEntry { return depEntry{wait: w, reporter: r} }
+
 // waitForDependencies blocks until every entry in deps reaches its ready state.
-func waitForDependencies(ctx context.Context, resourceLabel string, deps map[string]waitFunc) error {
+func waitForDependencies(ctx context.Context, resourceLabel string, deps map[string]depEntry) error {
 	fmt.Printf("⏳ Waiting for %s dependencies...\n", resourceLabel)
-	for label, wait := range deps {
-		if err := wait(ctx); err != nil {
-			return fmt.Errorf("%s dep %s: %w", resourceLabel, label, err)
+	for label, d := range deps {
+		if err := d.wait(ctx); err != nil {
+			stateDetail := ""
+			if d.reporter != nil {
+				stateDetail = fmt.Sprintf(" (state=%s reason=%q)", d.reporter.State(), d.reporter.FailureReason())
+			}
+			return fmt.Errorf("%s dep %s: %w%s", resourceLabel, label, err, stateDetail)
 		}
 		fmt.Printf("   ✓ %s ready\n", label)
 	}
@@ -200,11 +221,15 @@ func waitForDependencies(ctx context.Context, resourceLabel string, deps map[str
 
 // waitPostDependencies waits for downstream effects after a resource is created
 // (e.g., an Elastic IP or Block Storage transitioning to Used state).
-func waitPostDependencies(ctx context.Context, resourceLabel string, deps map[string]waitFunc) {
+func waitPostDependencies(ctx context.Context, resourceLabel string, deps map[string]depEntry) {
 	fmt.Printf("⏳ Waiting for %s post-dependencies...\n", resourceLabel)
-	for label, wait := range deps {
-		if err := wait(ctx); err != nil {
-			log.Printf("%s post-dep %s: %v", resourceLabel, label, err)
+	for label, d := range deps {
+		if err := d.wait(ctx); err != nil {
+			stateDetail := ""
+			if d.reporter != nil {
+				stateDetail = fmt.Sprintf(" (state=%s reason=%q)", d.reporter.State(), d.reporter.FailureReason())
+			}
+			log.Printf("%s post-dep %s: %v%s", resourceLabel, label, err, stateDetail)
 			continue
 		}
 		fmt.Printf("   ✓ %s ready\n", label)
@@ -215,10 +240,10 @@ func waitPostDependencies(ctx context.Context, resourceLabel string, deps map[st
 // waitUntilSelfReady wraps a resource's WaitUntilReady call with entry and
 // success lifecycle messages. Logs entry, success, and error in one place so
 // every resource_*.go create func collapses its boilerplate to a single call.
-func waitUntilSelfReady(ctx context.Context, pretty, name string, wait waitFunc, opts ...aruba.WaitOption) {
+func waitUntilSelfReady(ctx context.Context, pretty, name string, reporter stateReporter, wait waitFunc, opts ...aruba.WaitOption) {
 	fmt.Printf("⏳ Waiting for %s %s to become Ready...\n", pretty, name)
 	if err := wait(ctx, opts...); err != nil {
-		printSelfWaitError(pretty, name, err)
+		printSelfWaitError(pretty, name, reporter, err)
 		return
 	}
 	fmt.Printf("✓ %s %s is Ready\n", pretty, name)
@@ -230,84 +255,89 @@ func waitUntilSelfReady(ctx context.Context, pretty, name string, wait waitFunc,
 func waitAllReady(ctx context.Context, r *ResourceCollection) {
 	fmt.Println("\n=== Final readiness check ===")
 	type waiter struct {
-		label string
-		wait  waitFunc
+		label    string
+		wait     waitFunc
+		reporter stateReporter // may be nil
 	}
 	var ws []waiter
 	if r.VPC != nil {
-		ws = append(ws, waiter{"VPC", r.VPC.WaitUntilReady})
+		ws = append(ws, waiter{"VPC", r.VPC.WaitUntilReady, r.VPC})
 	}
 	if r.SubnetAdvanced != nil {
-		ws = append(ws, waiter{"Subnet (Advanced)", r.SubnetAdvanced.WaitUntilReady})
+		ws = append(ws, waiter{"Subnet (Advanced)", r.SubnetAdvanced.WaitUntilReady, r.SubnetAdvanced})
 	}
 	if r.SubnetBasic != nil {
-		ws = append(ws, waiter{"Subnet (Basic)", r.SubnetBasic.WaitUntilReady})
+		ws = append(ws, waiter{"Subnet (Basic)", r.SubnetBasic.WaitUntilReady, r.SubnetBasic})
 	}
 	if r.SecurityGroup != nil {
-		ws = append(ws, waiter{"SecurityGroup", r.SecurityGroup.WaitUntilReady})
+		ws = append(ws, waiter{"SecurityGroup", r.SecurityGroup.WaitUntilReady, r.SecurityGroup})
 	}
 	for _, rule := range r.SecurityRulesIngress {
 		if rule != nil {
 			label := "SecurityRule:" + rule.Name()
-			ws = append(ws, waiter{label, rule.WaitUntilReady})
+			ws = append(ws, waiter{label, rule.WaitUntilReady, rule})
 		}
 	}
 	if r.SecurityRuleEgress != nil {
-		ws = append(ws, waiter{"SecurityRuleEgress", r.SecurityRuleEgress.WaitUntilReady})
+		ws = append(ws, waiter{"SecurityRuleEgress", r.SecurityRuleEgress.WaitUntilReady, r.SecurityRuleEgress})
 	}
 	if r.KeyPair != nil {
-		ws = append(ws, waiter{"KeyPair", r.KeyPair.WaitUntilReady})
+		ws = append(ws, waiter{"KeyPair", r.KeyPair.WaitUntilReady, r.KeyPair})
 	}
 	if r.CloudServerEIP != nil {
-		ws = append(ws, waiter{"CloudServer EIP", r.CloudServerEIP.WaitUntilReady})
+		ws = append(ws, waiter{"CloudServer EIP", r.CloudServerEIP.WaitUntilReady, r.CloudServerEIP})
 	}
 	if r.DBaaSEIP != nil {
-		ws = append(ws, waiter{"DBaaS EIP", r.DBaaSEIP.WaitUntilReady})
+		ws = append(ws, waiter{"DBaaS EIP", r.DBaaSEIP.WaitUntilReady, r.DBaaSEIP})
 	}
 	if r.ContainerRegistryEIP != nil {
-		ws = append(ws, waiter{"CR EIP", r.ContainerRegistryEIP.WaitUntilReady})
+		ws = append(ws, waiter{"CR EIP", r.ContainerRegistryEIP.WaitUntilReady, r.ContainerRegistryEIP})
 	}
 	if r.CloudServerBlockStorage != nil {
-		ws = append(ws, waiter{"CloudServer BS", r.CloudServerBlockStorage.WaitUntilReady})
+		ws = append(ws, waiter{"CloudServer BS", r.CloudServerBlockStorage.WaitUntilReady, r.CloudServerBlockStorage})
 	}
 	if r.ContainerRegistryStorage != nil {
-		ws = append(ws, waiter{"CR BS", r.ContainerRegistryStorage.WaitUntilReady})
+		ws = append(ws, waiter{"CR BS", r.ContainerRegistryStorage.WaitUntilReady, r.ContainerRegistryStorage})
 	}
 	if r.RestoreTargetStorage != nil {
-		ws = append(ws, waiter{"Restore-target BS", r.RestoreTargetStorage.WaitUntilReady})
+		ws = append(ws, waiter{"Restore-target BS", r.RestoreTargetStorage.WaitUntilReady, r.RestoreTargetStorage})
 	}
 	if r.DBaaS != nil {
 		ws = append(ws, waiter{"DBaaS", func(ctx context.Context, _ ...aruba.WaitOption) error {
 			return r.DBaaS.WaitUntilReady(ctx, longWaitOpts...)
-		}})
+		}, r.DBaaS})
 	}
 	if r.KaaS != nil {
-		ws = append(ws, waiter{"KaaS", r.KaaS.WaitUntilReady})
+		ws = append(ws, waiter{"KaaS", r.KaaS.WaitUntilReady, r.KaaS})
 	}
 	if r.CloudServer != nil {
-		ws = append(ws, waiter{"CloudServer", r.CloudServer.WaitUntilReady})
+		ws = append(ws, waiter{"CloudServer", r.CloudServer.WaitUntilReady, r.CloudServer})
 	}
 	if r.ContainerRegistry != nil {
 		ws = append(ws, waiter{"ContainerRegistry", func(ctx context.Context, _ ...aruba.WaitOption) error {
 			return r.ContainerRegistry.WaitUntilReady(ctx, longWaitOpts...)
-		}})
+		}, r.ContainerRegistry})
 	}
 	if r.Backup != nil {
-		ws = append(ws, waiter{"StorageBackup", r.Backup.WaitUntilReady})
+		ws = append(ws, waiter{"StorageBackup", r.Backup.WaitUntilReady, r.Backup})
 	}
 	if r.Restore != nil {
-		ws = append(ws, waiter{"StorageRestore", r.Restore.WaitUntilReady})
+		ws = append(ws, waiter{"StorageRestore", r.Restore.WaitUntilReady, r.Restore})
 	}
 	if r.KMS != nil {
-		ws = append(ws, waiter{"KMS", r.KMS.WaitUntilReady})
+		ws = append(ws, waiter{"KMS", r.KMS.WaitUntilReady, r.KMS})
 	}
 	if r.Kmip != nil {
-		ws = append(ws, waiter{"KMIP", r.Kmip.WaitUntilReady})
+		ws = append(ws, waiter{"KMIP", r.Kmip.WaitUntilReady, nil})
 	}
 
 	for _, w := range ws {
 		if err := w.wait(ctx); err != nil {
-			log.Printf("✗ %s not Ready: %v", w.label, err)
+			detail := err.Error()
+			if w.reporter != nil && w.reporter.State() != "" {
+				detail = fmt.Sprintf("%s (state=%s reason=%q)", detail, w.reporter.State(), w.reporter.FailureReason())
+			}
+			log.Printf("✗ %s not Ready: %s", w.label, detail)
 		} else {
 			fmt.Printf("✓ %s Ready\n", w.label)
 		}
@@ -421,9 +451,13 @@ func describeWaitFailure(err error) string {
 	return err.Error()
 }
 
-// printSelfWaitError logs a post-create self-readiness wait failure.
-func printSelfWaitError(pretty, name string, err error) {
-	log.Printf("✗ %s %s did not become Ready: %s", pretty, name, describeWaitFailure(err))
+// printSelfWaitError logs a post-create self-readiness wait failure with state/reason.
+func printSelfWaitError(pretty, name string, reporter stateReporter, err error) {
+	detail := describeWaitFailure(err)
+	if reporter != nil && reporter.State() != "" {
+		detail = fmt.Sprintf("%s (state=%s reason=%q)", detail, reporter.State(), reporter.FailureReason())
+	}
+	log.Printf("✗ %s %s did not become Ready: %s", pretty, name, detail)
 }
 
 // printDeleteBanner emits a delete section header: `--- Deleting {pretty} ---`.
@@ -543,12 +577,4 @@ func printResourceSummary(resources *ResourceCollection) {
 	if resources.JobOneShot != nil && resources.JobOneShot.JobID() != "" {
 		fmt.Println("- OneShot Job ID:", resources.JobOneShot.JobID())
 	}
-}
-
-// stringValue dereferences a *string and returns "" when nil.
-func stringValue(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }

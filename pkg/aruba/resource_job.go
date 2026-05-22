@@ -215,7 +215,6 @@ func (j *Job) fromResponse(resp *types.JobResponse) {
 		j.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	j.setStatus(&resp.Status)
-	j.setTerminalStates(jobTerminalStates)
 
 	// Hydrate request-side cache.
 	e := resp.Properties.Enabled
@@ -309,12 +308,6 @@ func jobIDsFromRef(ref Ref) (projectID, jobID string, err error) {
 		return "", "", fmt.Errorf("cannot determine project ID from Ref %q", ref.URI())
 	}
 	return pid, jid, nil
-}
-
-var jobTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

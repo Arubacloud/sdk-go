@@ -115,7 +115,6 @@ func (k *KMS) fromResponse(resp *types.KmsResponse) {
 		k.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	k.setStatus(&resp.Status)
-	k.setTerminalStates(kmsTerminalStates)
 
 	if resp.Properties.BillingPeriod != nil {
 		k.billingPeriod = resp.Properties.BillingPeriod
@@ -158,12 +157,6 @@ func kmsIDsFromRef(ref Ref) (projectID, kmsID string, err error) {
 		return "", "", fmt.Errorf("cannot determine project ID from Ref %q", ref.URI())
 	}
 	return pid, kid, nil
-}
-
-var kmsTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

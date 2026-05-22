@@ -165,7 +165,6 @@ func (b *StorageBackup) fromResponse(resp *types.StorageBackupResponse) {
 		b.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	b.setStatus(&resp.Status)
-	b.setTerminalStates(storageBackupTerminalStates)
 
 	if resp.Properties.Type != "" {
 		v := resp.Properties.Type
@@ -208,12 +207,6 @@ func storageBackupBillingPeriodWire() *billingPeriodTranslator {
 		BillingPeriodMonth: "Monthly",
 		BillingPeriodYear:  "Yearly",
 	})
-}
-
-var storageBackupTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

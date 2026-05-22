@@ -232,7 +232,7 @@ func TestVPNRoute_RefSatisfaction(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func vpnRouteTestResponse(id, name, uri, projectID string) *types.VPNRouteResponse {
-	state := "Active"
+	state := types.State("Active")
 	cloud := "10.0.0.0/24"
 	onPrem := "192.168.0.0/24"
 	loc := &types.LocationResponse{Value: RegionITBGBergamo}
@@ -1014,20 +1014,14 @@ func TestVPNRoutesClientAdapter_List_TwoItems(t *testing.T) {
 	}
 }
 
-func TestVPNRoute_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestVPNRoute_FromResponse_SetsStatus(t *testing.T) {
 	r := &VPNRoute{}
-	state := "Active"
+	state := types.State("Active")
 	r.fromResponse(&types.VPNRouteResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(r.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !r.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for VPNRoute")
-	}
-	if r.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for VPNRoute")
+	if r.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", r.State())
 	}
 }
 

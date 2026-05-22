@@ -396,7 +396,6 @@ func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 	}
 	d.setLinked(resp.Properties.LinkedResources)
 	d.setStatus(&resp.Status)
-	d.setTerminalStates(dbaasTerminalStates)
 
 	// Hydrate request-side fields from response for round-trip Update support.
 	if resp.Properties.Engine != nil && resp.Properties.Engine.Type != nil {
@@ -475,12 +474,6 @@ func dbaasNetworkingURI(resp *types.DBaaSResponse, pick func(*types.DBaaSNetwork
 		}
 	}
 	return dbaasDerefString(fallback)
-}
-
-var dbaasTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

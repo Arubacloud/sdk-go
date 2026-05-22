@@ -26,7 +26,7 @@ func createElasticIP(ctx context.Context, arubaClient aruba.Client, proj aruba.R
 	}
 	printCreated("Elastic IP", created.Name(), created.ID())
 
-	waitUntilSelfReady(ctx, "Elastic IP", created.Name(), created.WaitUntilReady)
+	waitUntilSelfReady(ctx, "Elastic IP", created.Name(), created, created.WaitUntilReady)
 
 	return created
 }

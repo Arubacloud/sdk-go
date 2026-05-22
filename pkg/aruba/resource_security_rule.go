@@ -199,7 +199,7 @@ func (r *SecurityRule) fromResponse(resp *types.SecurityRuleResponse) {
 		r.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	r.setStatus(&resp.Status)
-	r.setTerminalStates(securityRuleTerminalStates)
+
 	r.setLinked(resp.Properties.LinkedResources)
 
 	if resp.Properties.Direction != "" {
@@ -247,12 +247,6 @@ func securityRuleDerefString(p *string) string {
 		return ""
 	}
 	return *p
-}
-
-var securityRuleTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

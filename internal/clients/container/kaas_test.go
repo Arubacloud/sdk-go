@@ -33,7 +33,7 @@ func TestListKaaS(t *testing.T) {
 								},
 							},
 							Status: types.ResourceStatus{
-								State: types.StringPtr("active"),
+								State: types.StatePtr(types.State("active")),
 							},
 						},
 					},
@@ -167,7 +167,7 @@ func TestGetKaaS(t *testing.T) {
 						ManagementIP: types.StringPtr("10.0.0.100"),
 					},
 					Status: types.ResourceStatus{
-						State: types.StringPtr("active"),
+						State: types.StatePtr(types.State("active")),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -297,7 +297,7 @@ func TestCreateKaaS(t *testing.T) {
 						},
 					},
 					Status: types.ResourceStatus{
-						State: types.StringPtr("creating"),
+						State: types.StatePtr(types.State("creating")),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -490,7 +490,7 @@ func TestUpdateKaaS(t *testing.T) {
 						},
 					},
 					Status: types.ResourceStatus{
-						State: types.StringPtr("updating"),
+						State: types.StatePtr(types.State("updating")),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)

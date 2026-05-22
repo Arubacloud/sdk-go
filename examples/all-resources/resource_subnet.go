@@ -10,8 +10,8 @@ import (
 func createAdvancedSubnet(ctx context.Context, arubaClient aruba.Client, vpc *aruba.VPC) *aruba.Subnet {
 	printBanner("Subnet", "Advanced")
 
-	if err := waitForDependencies(ctx, "Subnet (Advanced)", map[string]waitFunc{
-		"VPC": vpc.WaitUntilActive,
+	if err := waitForDependencies(ctx, "Subnet (Advanced)", map[string]depEntry{
+		"VPC": dep(vpc, vpc.WaitUntilActive),
 	}); err != nil {
 		printDepWaitError("Subnet (Advanced)", err)
 		return nil
@@ -38,7 +38,7 @@ func createAdvancedSubnet(ctx context.Context, arubaClient aruba.Client, vpc *ar
 	}
 	printCreated("Subnet (Advanced)", result.Name(), result.ID())
 
-	waitUntilSelfReady(ctx, "Subnet (Advanced)", result.Name(), result.WaitUntilReady)
+	waitUntilSelfReady(ctx, "Subnet (Advanced)", result.Name(), result, result.WaitUntilReady)
 
 	return result
 }
@@ -47,8 +47,8 @@ func createAdvancedSubnet(ctx context.Context, arubaClient aruba.Client, vpc *ar
 func createBasicSubnet(ctx context.Context, arubaClient aruba.Client, vpc *aruba.VPC) *aruba.Subnet {
 	printBanner("Subnet", "Basic")
 
-	if err := waitForDependencies(ctx, "Subnet (Basic)", map[string]waitFunc{
-		"VPC": vpc.WaitUntilActive,
+	if err := waitForDependencies(ctx, "Subnet (Basic)", map[string]depEntry{
+		"VPC": dep(vpc, vpc.WaitUntilActive),
 	}); err != nil {
 		printDepWaitError("Subnet (Basic)", err)
 		return nil
@@ -69,7 +69,7 @@ func createBasicSubnet(ctx context.Context, arubaClient aruba.Client, vpc *aruba
 	}
 	printCreated("Subnet (Basic)", result.Name(), result.ID())
 
-	waitUntilSelfReady(ctx, "Subnet (Basic)", result.Name(), result.WaitUntilReady)
+	waitUntilSelfReady(ctx, "Subnet (Basic)", result.Name(), result, result.WaitUntilReady)
 
 	return result
 }

@@ -347,7 +347,7 @@ func TestCloudServer_ToRequest_AllUnset(t *testing.T) {
 
 func cloudServerTestResponse(id, name, uri string) *types.CloudServerResponse {
 	loc := &types.LocationResponse{Value: RegionITBGBergamo}
-	state := "Running"
+	state := types.State("Running")
 	return &types.CloudServerResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:               &id,
@@ -1318,20 +1318,14 @@ func TestCloudServersClientAdapter_List_NonTwoXX(t *testing.T) {
 	}
 }
 
-func TestCloudServer_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestCloudServer_FromResponse_SetsStatus(t *testing.T) {
 	cs := &CloudServer{}
-	state := "Active"
+	state := types.State("Active")
 	cs.fromResponse(&types.CloudServerResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(cs.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !cs.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for CloudServer")
-	}
-	if cs.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for CloudServer")
+	if cs.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", cs.State())
 	}
 }
 

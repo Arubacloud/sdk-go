@@ -11,8 +11,8 @@ import (
 func createSnapshot(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, bs *aruba.BlockStorage) *aruba.Snapshot {
 	fmt.Println("--- Snapshot ---")
 
-	if err := waitForDependencies(ctx, "Snapshot", map[string]waitFunc{
-		"Block Storage": bs.WaitUntilReady,
+	if err := waitForDependencies(ctx, "Snapshot", map[string]depEntry{
+		"Block Storage": dep(bs, bs.WaitUntilReady),
 	}); err != nil {
 		printDepWaitError("Snapshot", err)
 		return nil
@@ -34,7 +34,7 @@ func createSnapshot(ctx context.Context, arubaClient aruba.Client, proj aruba.Re
 	}
 	printCreated("Snapshot", snap.Name(), snap.ID())
 
-	waitUntilSelfReady(ctx, "Snapshot", snap.Name(), snap.WaitUntilReady)
+	waitUntilSelfReady(ctx, "Snapshot", snap.Name(), snap, snap.WaitUntilReady)
 
 	return snap
 }

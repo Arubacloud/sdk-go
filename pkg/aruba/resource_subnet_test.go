@@ -213,7 +213,7 @@ func TestSubnet_ToRequestRoundTrip(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func subnetTestResponse(id, name, uri, projectID string) *types.SubnetResponse {
-	state := "Active"
+	state := types.State("Active")
 	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	addr := "10.0.0.0/24"
 	return &types.SubnetResponse{
@@ -1002,20 +1002,14 @@ func TestSubnetsClientAdapter_List_TwoItems(t *testing.T) {
 	}
 }
 
-func TestSubnet_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestSubnet_FromResponse_SetsStatus(t *testing.T) {
 	s := &Subnet{}
-	state := "Active"
+	state := types.State("Active")
 	s.fromResponse(&types.SubnetResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(s.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !s.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for Subnet")
-	}
-	if s.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for Subnet")
+	if s.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", s.State())
 	}
 }
 

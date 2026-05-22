@@ -11,9 +11,9 @@ import (
 func createRestore(ctx context.Context, arubaClient aruba.Client, b *aruba.StorageBackup, target *aruba.BlockStorage) *aruba.StorageRestore {
 	fmt.Println("--- Storage Restore ---")
 
-	if err := waitForDependencies(ctx, "Storage Restore", map[string]waitFunc{
-		"Backup":               b.WaitUntilReady,
-		"Target Block Storage": target.WaitUntilNotUsed,
+	if err := waitForDependencies(ctx, "Storage Restore", map[string]depEntry{
+		"Backup":               dep(b, b.WaitUntilReady),
+		"Target Block Storage": dep(target, target.WaitUntilNotUsed),
 	}); err != nil {
 		printDepWaitError("Storage Restore", err)
 		return nil
@@ -32,7 +32,7 @@ func createRestore(ctx context.Context, arubaClient aruba.Client, b *aruba.Stora
 	}
 	printCreated("Storage Restore", r.Name(), r.RestoreID())
 
-	waitUntilSelfReady(ctx, "Storage Restore", r.Name(), r.WaitUntilReady)
+	waitUntilSelfReady(ctx, "Storage Restore", r.Name(), r, r.WaitUntilReady)
 
 	return r
 }

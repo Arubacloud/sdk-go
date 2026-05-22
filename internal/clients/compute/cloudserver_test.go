@@ -13,6 +13,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+func statePtr(s types.State) *types.State { return &s }
+
 func TestListCloudServers(t *testing.T) {
 	t.Run("successful list", func(t *testing.T) {
 		apiCalled := false
@@ -529,7 +531,7 @@ func TestPowerOnCloudServer(t *testing.T) {
 			resp := types.CloudServerResponse{
 				Metadata:   types.ResourceMetadataResponse{Name: types.StringPtr("my-server")},
 				Properties: types.CloudServerPropertiesResult{Zone: "ITBG-1"},
-				Status:     types.ResourceStatus{State: types.StringPtr("active")},
+				Status:     types.ResourceStatus{State: statePtr(types.State("active"))},
 			}
 			json.NewEncoder(w).Encode(resp)
 		})
@@ -634,7 +636,7 @@ func TestPowerOffCloudServer(t *testing.T) {
 			resp := types.CloudServerResponse{
 				Metadata:   types.ResourceMetadataResponse{Name: types.StringPtr("my-server")},
 				Properties: types.CloudServerPropertiesResult{Zone: "ITBG-1"},
-				Status:     types.ResourceStatus{State: types.StringPtr("stopped")},
+				Status:     types.ResourceStatus{State: statePtr(types.State("stopped"))},
 			}
 			json.NewEncoder(w).Encode(resp)
 		})

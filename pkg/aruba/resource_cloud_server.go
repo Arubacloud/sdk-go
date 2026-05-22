@@ -387,7 +387,6 @@ func (cs *CloudServer) fromResponse(resp *types.CloudServerResponse) {
 	}
 	cs.setLinked(resp.Properties.LinkedResources)
 	cs.setStatus(&resp.Status)
-	cs.setTerminalStates(cloudServerTerminalStates)
 
 	if resp.Properties.Zone != "" {
 		v := resp.Properties.Zone
@@ -427,12 +426,6 @@ func cloudServerDerefString(p *string) string {
 		return ""
 	}
 	return *p
-}
-
-var cloudServerTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

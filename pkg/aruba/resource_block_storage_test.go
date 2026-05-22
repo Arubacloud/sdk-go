@@ -254,7 +254,7 @@ func TestBlockStorage_ToRequest_ZonalVsRegional(t *testing.T) {
 
 func blockStorageTestResponse(id, name, uri, projectID string) *types.BlockStorageResponse {
 	loc := &types.LocationResponse{Value: RegionITBGBergamo}
-	state := "Active"
+	state := types.State("Active")
 	img := VolumeImageLU22001
 	boot := true
 	zone := ZoneITBG1
@@ -371,7 +371,7 @@ func TestBlockStorage_FromResponsePartial(t *testing.T) {
 func TestBlockStorage_FromResponseURIBackfill(t *testing.T) {
 	id := "bs-99"
 	uri := "/projects/p-uri/providers/Aruba.Storage/blockstorages/bs-99"
-	state := ""
+	state := types.State("")
 	resp := &types.BlockStorageResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:  &id,
@@ -915,33 +915,21 @@ func findSubstring(s, substr string) bool {
 	return false
 }
 
-func TestBlockStorage_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestBlockStorage_FromResponse_SetsStatus(t *testing.T) {
 	b := &BlockStorage{}
-	state := "NotUsed"
+	state := types.State("NotUsed")
 	b.fromResponse(&types.BlockStorageResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(b.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !b.terminalStates["NotUsed"] {
-		t.Error("terminalStates[NotUsed] should be true for BlockStorage")
-	}
-	if !b.terminalStates["InUse"] {
-		t.Error("terminalStates[InUse] should be true for BlockStorage")
-	}
-	if !b.terminalStates["Used"] {
-		t.Error("terminalStates[Used] should be true for BlockStorage")
-	}
-	if b.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for BlockStorage")
+	if b.State() != types.StateNotUsed {
+		t.Errorf("State() = %q after fromResponse, want NotUsed", b.State())
 	}
 }
 
 func TestBlockStorage_WaitUntilNotUsed_HappyPath(t *testing.T) {
 	b := &BlockStorage{}
 	calls := 0
-	state := "InCreation"
+	state := types.State("InCreation")
 	b.setRefresh(func(_ context.Context) error {
 		calls++
 		if calls >= 2 {
@@ -951,7 +939,6 @@ func TestBlockStorage_WaitUntilNotUsed_HappyPath(t *testing.T) {
 		b.setStatus(&types.ResourceStatus{State: &s})
 		return nil
 	})
-	b.setTerminalStates(blockStorageTerminalStates)
 	if err := b.WaitUntilNotUsed(context.Background(), fastOpts()...); err != nil {
 		t.Fatalf("WaitUntilNotUsed error: %v", err)
 	}
@@ -961,12 +948,11 @@ func TestBlockStorage_WaitUntilNotUsed_HappyPath(t *testing.T) {
 }
 
 func TestBlockStorage_WaitUntilUsed_HappyPath(t *testing.T) {
-	for _, attachedState := range []string{"InUse", "Used"} {
-		attachedState := attachedState
-		t.Run(attachedState, func(t *testing.T) {
+	for _, attachedState := range []types.State{types.StateInUse, types.StateUsed, types.StateReserved} {
+		t.Run(string(attachedState), func(t *testing.T) {
 			b := &BlockStorage{}
 			calls := 0
-			state := "NotUsed"
+			state := types.State("InCreation")
 			b.setRefresh(func(_ context.Context) error {
 				calls++
 				if calls >= 2 {
@@ -976,7 +962,6 @@ func TestBlockStorage_WaitUntilUsed_HappyPath(t *testing.T) {
 				b.setStatus(&types.ResourceStatus{State: &s})
 				return nil
 			})
-			b.setTerminalStates(blockStorageTerminalStates)
 			if err := b.WaitUntilUsed(context.Background(), fastOpts()...); err != nil {
 				t.Fatalf("WaitUntilUsed error for %q: %v", attachedState, err)
 			}

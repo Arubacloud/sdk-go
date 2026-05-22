@@ -428,7 +428,7 @@ func (k *KaaS) fromResponse(resp *types.KaaSResponse) {
 		k.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	k.setStatus(&resp.Status)
-	k.setTerminalStates(kaasTerminalStates)
+
 	k.setLinked(resp.Properties.LinkedResources)
 	k.kaasHydrateCacheFromProps(resp.Properties)
 	k.nodePools = kaasRebuildNodePools(resp.Properties.NodePools)
@@ -558,12 +558,6 @@ func kaasIDsFromRef(ref Ref) (projectID, kaasID string, err error) {
 // kaasActions is the contract for KaaS lifecycle action operations (Start, Stop, etc.).
 type kaasActions interface {
 	downloadKubeconfig(ctx context.Context, projectID, kaasID string, rp *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error)
-}
-
-var kaasTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

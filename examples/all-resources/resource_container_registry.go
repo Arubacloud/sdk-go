@@ -11,12 +11,12 @@ import (
 func createContainerRegistry(ctx context.Context, arubaClient aruba.Client, resources *ResourceCollection) *aruba.ContainerRegistry {
 	fmt.Println("--- Container Registry ---")
 
-	if err := waitForDependencies(ctx, "Container Registry", map[string]waitFunc{
-		"VPC":            resources.VPC.WaitUntilActive,
-		"Subnet":         resources.SubnetBasic.WaitUntilActive,
-		"Security Group": resources.SecurityGroup.WaitUntilActive,
-		"Block Storage":  resources.ContainerRegistryStorage.WaitUntilNotUsed,
-		"Elastic IP":     resources.ContainerRegistryEIP.WaitUntilNotUsed,
+	if err := waitForDependencies(ctx, "Container Registry", map[string]depEntry{
+		"VPC":            dep(resources.VPC, resources.VPC.WaitUntilActive),
+		"Subnet":         dep(resources.SubnetBasic, resources.SubnetBasic.WaitUntilActive),
+		"Security Group": dep(resources.SecurityGroup, resources.SecurityGroup.WaitUntilActive),
+		"Block Storage":  dep(resources.ContainerRegistryStorage, resources.ContainerRegistryStorage.WaitUntilNotUsed),
+		"Elastic IP":     dep(resources.ContainerRegistryEIP, resources.ContainerRegistryEIP.WaitUntilNotUsed),
 	}); err != nil {
 		printDepWaitError("Container Registry", err)
 		return nil
@@ -42,11 +42,11 @@ func createContainerRegistry(ctx context.Context, arubaClient aruba.Client, reso
 	}
 	printCreated("Container Registry", resp.Name(), resp.ContainerRegistryID())
 
-	waitUntilSelfReady(ctx, "Container Registry", resp.Name(), resp.WaitUntilReady, longWaitOpts...)
+	waitUntilSelfReady(ctx, "Container Registry", resp.Name(), resp, resp.WaitUntilReady, longWaitOpts...)
 
-	waitPostDependencies(ctx, "Container Registry", map[string]waitFunc{
-		"Elastic IP":    resources.ContainerRegistryEIP.WaitUntilUsed,
-		"Block Storage": resources.ContainerRegistryStorage.WaitUntilUsed,
+	waitPostDependencies(ctx, "Container Registry", map[string]depEntry{
+		"Elastic IP":    dep(resources.ContainerRegistryEIP, resources.ContainerRegistryEIP.WaitUntilUsed),
+		"Block Storage": dep(resources.ContainerRegistryStorage, resources.ContainerRegistryStorage.WaitUntilUsed),
 	})
 
 	return resp

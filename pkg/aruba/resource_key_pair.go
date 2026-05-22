@@ -106,7 +106,6 @@ func (k *KeyPair) fromResponse(resp *types.KeyPairResponse) {
 	}
 	k.setLinked(resp.Properties.LinkedResources)
 	k.setStatus(&resp.Status)
-	k.setTerminalStates(keyPairTerminalStates)
 
 	if resp.Properties.Value != "" {
 		v := resp.Properties.Value
@@ -120,12 +119,6 @@ func (k *KeyPair) fromResponse(resp *types.KeyPairResponse) {
 		ids := parseURIIDs(k.RespURI())
 		k.projectID = ids["projects"]
 	}
-}
-
-var keyPairTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 func keyPairDerefString(p *string) string {

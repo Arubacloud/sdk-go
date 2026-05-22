@@ -105,7 +105,7 @@ func (sg *SecurityGroup) fromResponse(resp *types.SecurityGroupResponse) {
 		sg.replaceTags(resp.Metadata.Tags...)
 	}
 	sg.setStatus(&resp.Status)
-	sg.setTerminalStates(securityGroupTerminalStates)
+
 	sg.setLinked(resp.Properties.LinkedResources)
 
 	// Properties.Default is plain bool on the response — backfill into our *bool field.
@@ -132,12 +132,6 @@ func securityGroupDerefString(p *string) string {
 		return ""
 	}
 	return *p
-}
-
-var securityGroupTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

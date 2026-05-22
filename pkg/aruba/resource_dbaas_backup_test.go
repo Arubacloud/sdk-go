@@ -258,7 +258,7 @@ func TestDBaaSBackup_ToRequest_Empty(t *testing.T) {
 func dbaasBackupTestResponse(name string) *types.BackupResponse {
 	id := "bkp-1"
 	uri := "/projects/p/providers/Aruba.Database/backups/bkp-1"
-	state := "Active"
+	state := types.State("Active")
 	dbaasURI := "/projects/p/providers/Aruba.Database/dbaas/d-1"
 	dbURI := "/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb"
 	return &types.BackupResponse{
@@ -879,20 +879,14 @@ func TestDBaaSBackupsClient_NoUpdateMethod(t *testing.T) {
 	}
 }
 
-func TestDBaaSBackup_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestDBaaSBackup_FromResponse_SetsStatus(t *testing.T) {
 	b := &DBaaSBackup{}
-	state := "Active"
+	state := types.State("Active")
 	b.fromResponse(&types.BackupResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(b.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !b.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for DBaaSBackup")
-	}
-	if b.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for DBaaSBackup")
+	if b.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", b.State())
 	}
 }
 

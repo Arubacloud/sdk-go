@@ -25,7 +25,7 @@ func createVPC(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *a
 	}
 	printCreated("VPC", created.Name(), created.ID())
 
-	waitUntilSelfReady(ctx, "VPC", created.Name(), created.WaitUntilReady)
+	waitUntilSelfReady(ctx, "VPC", created.Name(), created, created.WaitUntilReady)
 
 	return created
 }

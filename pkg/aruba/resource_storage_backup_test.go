@@ -224,7 +224,7 @@ func TestStorageBackup_ToRequest_UnsetOptionals_AreNilOrEmpty(t *testing.T) {
 
 func storageBackupTestResponse(id, name, uri, projectID string) *types.StorageBackupResponse {
 	loc := &types.LocationResponse{Value: RegionITBGBergamo}
-	state := "Active"
+	state := types.State("Active")
 	billingPeriod := BillingPeriodHour
 	retentionDays := 30
 	originURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
@@ -323,7 +323,7 @@ func TestStorageBackup_FromResponsePartial(t *testing.T) {
 func TestStorageBackup_FromResponseURIBackfill(t *testing.T) {
 	id := "bkp-99"
 	uri := "/projects/p-uri/providers/Aruba.Storage/backups/bkp-99"
-	state := ""
+	state := types.State("")
 	resp := &types.StorageBackupResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:  &id,
@@ -916,20 +916,14 @@ func TestStorageBackupsClientAdapter_List_TwoItems(t *testing.T) {
 	}
 }
 
-func TestStorageBackup_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestStorageBackup_FromResponse_SetsStatus(t *testing.T) {
 	b := &StorageBackup{}
-	state := "Active"
+	state := types.State("Active")
 	b.fromResponse(&types.StorageBackupResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(b.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !b.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for StorageBackup")
-	}
-	if b.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for StorageBackup")
+	if b.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", b.State())
 	}
 }
 

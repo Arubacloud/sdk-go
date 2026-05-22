@@ -116,7 +116,7 @@ func (r *VPNRoute) fromResponse(resp *types.VPNRouteResponse) {
 		r.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	r.setStatus(&resp.Status)
-	r.setTerminalStates(vpnRouteTerminalStates)
+
 	if len(resp.Properties.LinkedResources) > 0 {
 		r.setLinked(resp.Properties.LinkedResources)
 	}
@@ -152,12 +152,6 @@ func vpnRouteDerefString(p *string) string {
 		return ""
 	}
 	return *p
-}
-
-var vpnRouteTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

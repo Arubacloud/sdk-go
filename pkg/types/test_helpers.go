@@ -31,3 +31,8 @@ func BoolPtr(b bool) *bool {
 func Float64Ptr(f float64) *float64 {
 	return &f
 }
+
+// StatePtr returns a pointer to the given State value.
+func StatePtr(s State) *State {
+	return &s
+}

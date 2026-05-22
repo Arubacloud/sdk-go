@@ -226,7 +226,7 @@ func TestVPCPeeringRoute_ToRequest_BillingPeriodAlwaysEmitted(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func vpcPeeringRouteTestResponse(id, name, uri, projectID string) *types.VPCPeeringRouteResponse {
-	state := "Active"
+	state := types.State("Active")
 	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	return &types.VPCPeeringRouteResponse{
 		Metadata: types.ResourceMetadataResponse{
@@ -1074,20 +1074,14 @@ func TestVPCPeeringRoutesClientAdapter_List_TwoItems(t *testing.T) {
 	}
 }
 
-func TestVPCPeeringRoute_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestVPCPeeringRoute_FromResponse_SetsStatus(t *testing.T) {
 	r := &VPCPeeringRoute{}
-	state := "Active"
+	state := types.State("Active")
 	r.fromResponse(&types.VPCPeeringRouteResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(r.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !r.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for VPCPeeringRoute")
-	}
-	if r.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for VPCPeeringRoute")
+	if r.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", r.State())
 	}
 }
 
