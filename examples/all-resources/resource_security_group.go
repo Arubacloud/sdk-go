@@ -89,7 +89,6 @@ func createSecurityGroupEgressRule(ctx context.Context, arubaClient aruba.Client
 		InRegion(aruba.RegionITBGBergamo).
 		WithDirection(aruba.RuleDirectionEgress).
 		WithProtocol(aruba.RuleProtocolANY).
-		WithPort("*").
 		WithTargetCIDR("0.0.0.0/0")
 
 	created, err := arubaClient.FromNetwork().SecurityGroupRules().Create(ctx, rule)
