@@ -2,6 +2,7 @@ package aruba
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,8 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
+
+const testPassword = "Prova123456789AC@"
 
 // --------------------------------------------------------------------------
 // Compile-time satisfaction checks
@@ -42,7 +45,7 @@ func TestUser_FluentSetters(t *testing.T) {
 	u := NewUser().
 		IntoDBaaS(URI("/projects/p-1/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("alice").
-		WithPassword("s3cret")
+		WithPassword(testPassword)
 
 	if u.Username() != "alice" {
 		t.Errorf("Username() = %q", u.Username())
@@ -60,8 +63,9 @@ func TestUser_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", u.Err())
 	}
 	// Password should not be readable through Username/ID/etc., only through RawRequest.
-	if u.RawRequest().Password != "s3cret" {
-		t.Errorf("RawRequest().Password = %q, want %q", u.RawRequest().Password, "s3cret")
+	wantPw := base64.StdEncoding.EncodeToString([]byte(testPassword))
+	if u.RawRequest().Password != wantPw {
+		t.Errorf("RawRequest().Password = %q, want %q", u.RawRequest().Password, wantPw)
 	}
 }
 
@@ -153,13 +157,26 @@ func TestUser_URI_MissingUsername(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestUser_ToRequest(t *testing.T) {
-	u := NewUser().WithUsername("alice").WithPassword("s3cret")
+	u := NewUser().WithUsername("alice").WithPassword(testPassword)
 	req := u.toRequest()
 	if req.Username != "alice" {
 		t.Errorf("toRequest().Username = %q", req.Username)
 	}
-	if req.Password != "s3cret" {
-		t.Errorf("toRequest().Password = %q", req.Password)
+	wantPw := base64.StdEncoding.EncodeToString([]byte(testPassword))
+	if req.Password != wantPw {
+		t.Errorf("toRequest().Password = %q, want %q", req.Password, wantPw)
+	}
+}
+
+func TestUser_ToRequest_EncodesPassword(t *testing.T) {
+	u := NewUser().WithPassword(testPassword)
+	encoded := u.toRequest().Password
+	decoded, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		t.Fatalf("toRequest().Password is not valid base64: %v", err)
+	}
+	if string(decoded) != testPassword {
+		t.Errorf("decoded password = %q, want %q", string(decoded), testPassword)
 	}
 }
 
@@ -225,10 +242,11 @@ func TestUser_FromResponse_NilSafe(t *testing.T) {
 }
 
 func TestUser_FromResponse_PreservesPassword(t *testing.T) {
-	u := NewUser().WithPassword("my-secret")
+	u := NewUser().WithPassword(testPassword)
 	u.fromResponse(userTestResponse("alice"))
 	// The locally-set password must survive hydration.
-	if u.RawRequest().Password != "my-secret" {
+	wantPw := base64.StdEncoding.EncodeToString([]byte(testPassword))
+	if u.RawRequest().Password != wantPw {
 		t.Errorf("fromResponse clobbered the locally-set password; got %q", u.RawRequest().Password)
 	}
 }
@@ -316,7 +334,7 @@ func TestUsersClientAdapter_Create_Success(t *testing.T) {
 	u := NewUser().
 		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("my-user").
-		WithPassword("s3cret")
+		WithPassword(testPassword)
 
 	result, err := adapter.Create(context.Background(), u)
 	if err != nil {
@@ -334,8 +352,9 @@ func TestUsersClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Username != "my-user" {
 		t.Errorf("wire body Username = %q", gotBody.Username)
 	}
-	if gotBody.Password != "s3cret" {
-		t.Errorf("wire body Password = %q", gotBody.Password)
+	wantPw := base64.StdEncoding.EncodeToString([]byte(testPassword))
+	if gotBody.Password != wantPw {
+		t.Errorf("wire body Password = %q, want %q", gotBody.Password, wantPw)
 	}
 }
 
@@ -344,7 +363,7 @@ func TestUsersClientAdapter_Create_NoParent(t *testing.T) {
 	adapter := buildUserTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 	})
-	u := NewUser().WithUsername("alice").WithPassword("pw") // no IntoDBaaS
+	u := NewUser().WithUsername("alice").WithPassword(testPassword) // no IntoDBaaS
 	_, err := adapter.Create(context.Background(), u)
 	if err == nil {
 		t.Error("expected error when parent DBaaS is missing")
@@ -361,7 +380,7 @@ func TestUsersClientAdapter_Create_NoUsername(t *testing.T) {
 	})
 	u := NewUser().
 		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
-		WithPassword("pw") // no WithUsername
+		WithPassword(testPassword) // no WithUsername
 	_, err := adapter.Create(context.Background(), u)
 	if err == nil {
 		t.Error("expected error when username is missing")
@@ -398,7 +417,7 @@ func TestUsersClientAdapter_Create_NonTwoXX(t *testing.T) {
 	u := NewUser().
 		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("my-user").
-		WithPassword("s3cret")
+		WithPassword(testPassword)
 	_, err := adapter.Create(context.Background(), u)
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {
@@ -426,7 +445,7 @@ func TestUsersClientAdapter_Update_Success(t *testing.T) {
 	u := NewUser().
 		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("my-user").
-		WithPassword("new-pw")
+		WithPassword(testPassword)
 
 	result, err := adapter.Update(context.Background(), u)
 	if err != nil {
@@ -438,8 +457,9 @@ func TestUsersClientAdapter_Update_Success(t *testing.T) {
 	if gotBody.Username != "my-user" {
 		t.Errorf("wire body Username = %q", gotBody.Username)
 	}
-	if gotBody.Password != "new-pw" {
-		t.Errorf("wire body Password = %q", gotBody.Password)
+	wantPw := base64.StdEncoding.EncodeToString([]byte(testPassword))
+	if gotBody.Password != wantPw {
+		t.Errorf("wire body Password = %q, want %q", gotBody.Password, wantPw)
 	}
 }
 
@@ -578,7 +598,7 @@ func TestUsersClientAdapter_Create_Conflict(t *testing.T) {
 	u := NewUser().
 		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("alice").
-		WithPassword("s3cret")
+		WithPassword(testPassword)
 	_, err := adapter.Create(context.Background(), u)
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {
@@ -600,7 +620,7 @@ func TestUsersClientAdapter_Update_NoDBaaS(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 	// Has username and password but no parent DBaaS
-	u := NewUser().WithUsername("alice").WithPassword("s3cret")
+	u := NewUser().WithUsername("alice").WithPassword(testPassword)
 	_, err := adapter.Update(context.Background(), u)
 	if err == nil {
 		t.Fatal("expected error when DBaaS is missing")
@@ -621,7 +641,7 @@ func TestUsersClientAdapter_Update_NoProject(t *testing.T) {
 	u.dbaasID = "d-1"
 	name := "alice"
 	u.username = &name
-	pw := "s3cret"
+	pw := testPassword
 	u.password = &pw
 	_, err := adapter.Update(context.Background(), u)
 	if err == nil {
@@ -641,7 +661,7 @@ func TestUsersClientAdapter_Update_NonTwoXX(t *testing.T) {
 	u := NewUser().
 		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("alice").
-		WithPassword("s3cret")
+		WithPassword(testPassword)
 	_, err := adapter.Update(context.Background(), u)
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {
@@ -707,7 +727,7 @@ func TestUsersClientAdapter_Create_ErrMixin(t *testing.T) {
 		callCount++
 	})
 	// IntoDBaaS with bad URI sets errMixin
-	u := NewUser().IntoDBaaS(URI("/garbage")).WithUsername("alice").WithPassword("s3cret")
+	u := NewUser().IntoDBaaS(URI("/garbage")).WithUsername("alice").WithPassword(testPassword)
 	_, err := adapter.Create(context.Background(), u)
 	if err == nil {
 		t.Fatal("expected error from errMixin")
