@@ -70,7 +70,6 @@ func main() {
 
 ## Prossimi Passi
 
-- Leggi la [Guida al Walkthrough API](./walkthrough) per un percorso completo attraverso il ciclo di vita delle risorse
 - Scopri le [Opzioni di Configurazione](./options) per personalizzare il tuo client SDK
 - Esplora le [Risorse API](./resources) per vedere cosa puoi gestire
 - Comprendi la [Gestione delle Risposte](./response-handling) per una gestione robusta degli errori

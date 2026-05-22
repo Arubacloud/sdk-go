@@ -7,7 +7,7 @@
 make docs-install
 
 # Or manually
-cd docs
+cd docs/website
 npm install
 ```
 
@@ -18,7 +18,7 @@ npm install
 make docs-serve
 
 # Or manually
-cd docs
+cd docs/website
 npm start
 ```
 
@@ -36,7 +36,7 @@ Press `Ctrl+C` to stop the server.
 make docs-build
 
 # Or manually
-cd docs
+cd docs/website
 npm run build
 ```
 
@@ -46,14 +46,14 @@ This should complete without errors and create a `build/` directory.
 
 ```bash
 # Clean any existing versions first
-cd docs
+cd docs/website
 rm -rf versioned_docs versioned_sidebars versions.json
 
 # Create a test version
 make docs-version VERSION=0.1.5-test
 
 # Or manually
-npm run docs:version 0.1.5-test
+npm run version 0.1.5-test
 ```
 
 **Expected result:**
@@ -69,7 +69,7 @@ npm run docs:version 0.1.5-test
 ## Step 5: Test Build with Versions
 
 ```bash
-cd docs
+cd docs/website
 npm run build
 ```
 
@@ -78,7 +78,7 @@ The build should succeed and include the versioned docs.
 ## Step 6: Clean Up Test Version
 
 ```bash
-cd docs
+cd docs/website
 rm -rf versioned_docs/version-0.1.5-test
 rm -f versioned_sidebars/version-0.1.5-test-sidebars.json
 rm -f versions.json

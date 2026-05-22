@@ -6,7 +6,7 @@
 set -e
 
 VERSION="0.1.5-test"
-DOCS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOCS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/website" && pwd)"
 
 echo "🧪 Testing Docusaurus Versioning"
 echo "=================================="
@@ -23,7 +23,7 @@ fi
 # Step 2: Test versioning command
 echo ""
 echo "📝 Step 2: Creating version $VERSION..."
-npm run docs:version "$VERSION"
+npm run version "$VERSION"
 
 # Step 3: Verify versioned files were created
 echo ""
@@ -78,7 +78,6 @@ echo ""
 echo "🎉 All tests passed!"
 echo ""
 echo "To clean up test version, run:"
-echo "  rm -rf docs/versioned_docs/version-$VERSION"
-echo "  rm -f docs/versioned_sidebars/version-$VERSION-sidebars.json"
-echo "  rm -f docs/versions.json"
+echo "  rm -rf docs/website/versioned_docs/version-$VERSION"
+echo "  rm -f docs/website/versioned_sidebars/version-$VERSION-sidebars.json"
 

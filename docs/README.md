@@ -32,7 +32,7 @@ When you first set up the documentation, versioning is disabled by default. This
 
 1. Install dependencies:
    ```bash
-   cd docs
+   cd docs/website
    npm install
    ```
 
@@ -54,7 +54,7 @@ make docs-serve-build
 # Or step by step
 make docs-build    # Build the documentation
 make docs-test     # Test and validate
-cd docs && npm run serve  # Serve the built site
+cd docs/website && npm run serve  # Serve the built site
 ```
 
 The built files will be in the `docs/build/` directory. The `docs-serve-build` target builds and serves the production version, which is useful for testing exactly what will be deployed.
@@ -66,7 +66,7 @@ To build the documentation for production:
 ```bash
 make docs-build
 # or
-cd docs && npm run build
+cd docs/website && npm run build
 ```
 
 The built files will be in the `docs/build/` directory.
@@ -111,12 +111,12 @@ When you release a new version of the SDK:
 Alternatively, you can create a version manually:
 
 ```bash
-npm run docs:version <version>
+npm run version <version>
 ```
 
 For example:
 ```bash
-npm run docs:version 1.0.0
+npm run version 1.0.0
 ```
 
 This will:
@@ -135,7 +135,7 @@ The navbar includes a version dropdown that allows users to switch between diffe
 
 ### Syncing Italian Translations for All Versions
 
-The site is available in English (default) and Italian. When you add a new version (e.g. after running the release workflow or `npm run docs:version`), Italian content for that version must be created so the Italian locale does not fall back to English.
+The site is available in English (default) and Italian. When you add a new version (e.g. after running the release workflow or `npm run version`), Italian content for that version must be created so the Italian locale does not fall back to English.
 
 From the `docs/website` directory, run:
 

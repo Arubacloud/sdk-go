@@ -5,7 +5,7 @@ This guide explains how to test the documentation locally and verify versioning 
 ## Prerequisites
 
 1. Node.js 18+ installed
-2. Dependencies installed: `make docs-install` or `cd docs && npm install`
+2. Dependencies installed: `make docs-install` or `cd docs/website && npm install`
 
 ## Local Development Testing
 
@@ -16,7 +16,7 @@ This guide explains how to test the documentation locally and verify versioning 
 make docs-serve
 
 # Or directly
-cd docs && npm start
+cd docs/website && npm start
 ```
 
 The server will start at `http://localhost:3000`. You should see:
@@ -31,7 +31,7 @@ The server will start at `http://localhost:3000`. You should see:
 make docs-build
 
 # Or directly
-cd docs && npm run build
+cd docs/website && npm run build
 ```
 
 This will:
@@ -47,7 +47,7 @@ This will:
 make docs-serve-build
 
 # Or directly
-cd docs && npm run build && npm run serve
+cd docs/website && npm run build && npm run serve
 ```
 
 This builds and serves the production version, simulating what GitHub Pages will serve.
@@ -57,7 +57,7 @@ This builds and serves the production version, simulating what GitHub Pages will
 ### 1. Clean Previous Versions (if any)
 
 ```bash
-cd docs
+cd docs/website
 rm -rf versioned_docs versioned_sidebars versions.json
 ```
 
@@ -68,7 +68,7 @@ rm -rf versioned_docs versioned_sidebars versions.json
 make docs-version VERSION=0.1.5-test
 
 # Or directly
-cd docs && npm run docs:version 0.1.5-test
+cd docs/website && npm run version 0.1.5-test
 ```
 
 **Expected behavior:**
@@ -84,7 +84,7 @@ cd docs && npm run docs:version 0.1.5-test
 ### 3. Verify Versioned Files
 
 ```bash
-cd docs
+cd docs/website
 
 # Check versioned docs exist
 ls -la versioned_docs/version-0.1.5-test/
@@ -99,7 +99,7 @@ cat versions.json
 ### 4. Test Build with Versions
 
 ```bash
-cd docs && npm run build
+cd docs/website && npm run build
 ```
 
 The build should include:
@@ -128,7 +128,7 @@ You should see a version dropdown in the navbar.
 ### 6. Clean Up Test Version
 
 ```bash
-cd docs
+cd docs/website
 rm -rf versioned_docs/version-0.1.5-test
 rm -f versioned_sidebars/version-0.1.5-test-sidebars.json
 # Edit versions.json to remove the test version, or delete it if it's the only version
@@ -139,7 +139,7 @@ rm -f versioned_sidebars/version-0.1.5-test-sidebars.json
 For Linux/Mac/WSL, you can use the test script:
 
 ```bash
-cd docs
+cd docs/website
 chmod +x test-versioning.sh
 ./test-versioning.sh
 ```
