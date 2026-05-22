@@ -10,7 +10,7 @@ Questa pagina è il riferimento esaustivo per ogni wrapper di risorsa nel pacche
 2. Uno snippet `Create` pronto all'uso
 3. I metodi accessor di risposta disponibili sul wrapper restituito
 
-Per il walkthrough end-to-end del ciclo di vita (come `Create`, `Get`, `Update`, `List`, `Delete` e il polling si integrano) vedi la [Guida al Walkthrough API](./walkthrough).
+Per il walkthrough end-to-end del ciclo di vita (come `Create`, `Get`, `Update`, `List`, `Delete` e il polling si integrano).
 
 ---
 
@@ -40,8 +40,8 @@ fmt.Println(result.ID(), result.Name(), result.State())
 - `aruba.NewX()` — factory constructor per ogni builder di risorsa
 - `IntoFoo(ref)` — lega lo scope del genitore; accetta qualsiasi `aruba.Ref` (wrapper idratato o `aruba.URI("…")`)
 - `WithFoo(...)` — setter fluenti; gli errori sono differiti fino a `Create`/`Update`
-- `WaitUntilReady(ctx, opts...)` — disponibile sulle risorse marcate **async** qui sotto; vedi [Async / Await](./async) per le opzioni complete
-- `aruba.URI(s)` — avvolge un percorso stringa grezzo in un `Ref` (vedi [Guida al Walkthrough API](./walkthrough#5-ottenere-una-risorsa-specifica))
+- `WaitUntilReady(ctx, opts...)` — disponibile sulle risorse marcate **async** qui sotto
+- `aruba.URI(s)` — avvolge un percorso stringa grezzo in un `Ref`
 
 :::info Formato dei tag
 L'API di Aruba valida i valori dei tag contro `^[A-Za-z0-9-]{4,30}$`: **solo caratteri alfanumerici e trattini, lunghezza da 4 a 30**. Due punti, punti, underscore, spazi e altra punteggiatura vengono rifiutati con `400 — One or more validation error occurred`. L'SDK non valida i tag lato client, quindi un tag non valido fallisce solo quando la richiesta raggiunge il server.

@@ -10,16 +10,16 @@ The SDK exposes three layers for dealing with this:
 
 | Layer | When to use |
 |-------|-------------|
-| `WaitUntilReady(ctx)` | 95% of cases — block until the resource is ready (accepts `Active`, `NotUsed`, `InUse`, `Used`) |
+| `WaitUntilReady(ctx)` | 95% of cases — block until the resource is ready (accepts `Active`, `Running`, `Stopped`, `NotUsed`, `Reserved`, `InUse`, `Used`) |
 | `WaitUntilActive(ctx)` | When you specifically need the `Active` state only |
-| `WaitUntilStates(ctx, []string{...}, opts...)` | Wait for any named states (e.g. `[]string{"Stopped"}`) |
+| `WaitUntilStates(ctx, []types.State{...}, opts...)` | Wait for any named states (e.g. `[]types.State{types.StateStopped}`) |
 | `pkg/async.WaitFor` + `AsyncClient.Await` | Advanced — start polling in a background goroutine, do other work, collect the result later |
 
 ---
 
 ## `WaitUntilReady`
 
-After any `Create`, `Update`, or `Get`, call `WaitUntilReady` on the returned wrapper to block until the resource reaches any of the positive terminal states: `"Active"`, `"NotUsed"`, `"InUse"`, or `"Used"`.
+After any `Create`, `Update`, or `Get`, call `WaitUntilReady` on the returned wrapper to block until the resource reaches any of the 7 healthy settled states: `Active`, `Running`, `Stopped`, `NotUsed`, `Reserved`, `InUse`, or `Used`.
 
 ```go
 vpc, err := arubaClient.FromNetwork().VPCs().Create(ctx, vpc)
@@ -74,14 +74,14 @@ Use `WaitUntilStates` when you need to wait for one or more specific states — 
 
 ```go
 // Wait for a Cloud Server to fully stop after PowerOff
-if err := cs.WaitUntilStates(ctx, []string{"Stopped"}); err != nil {
+if err := cs.WaitUntilStates(ctx, []types.State{types.StateStopped}); err != nil {
     log.Fatalf("Cloud Server did not stop: %v", err)
 }
 ```
 
 ```go
 // Wait until a DBaaS instance finishes an in-progress update
-if err := db.WaitUntilStates(ctx, []string{"Active"},
+if err := db.WaitUntilStates(ctx, []types.State{types.StateActive},
     aruba.WithRetries(120),
     aruba.WithBaseDelay(15*time.Second),
 ); err != nil {
@@ -92,8 +92,8 @@ if err := db.WaitUntilStates(ctx, []string{"Active"},
 The same error-terminal-state early exit applies: if the resource reaches `"Error"` or `"Failed"` while you are waiting for `"Stopped"`, the call returns immediately with an error that names both the actual state and the target states.
 
 `WaitUntilActive` and `WaitUntilReady` are convenience wrappers around `WaitUntilStates`:
-- `WaitUntilActive(ctx, opts...)` — equivalent to `WaitUntilStates(ctx, []string{"Active"}, opts...)`
-- `WaitUntilReady(ctx, opts...)` — equivalent to `WaitUntilStates(ctx, []string{"Active", "NotUsed", "InUse", "Used"}, opts...)`
+- `WaitUntilActive(ctx, opts...)` — equivalent to `WaitUntilStates(ctx, []types.State{types.StateActive}, opts...)`
+- `WaitUntilReady(ctx, opts...)` — equivalent to `WaitUntilStates(ctx, []types.State{types.StateActive, types.StateRunning, types.StateStopped, types.StateNotUsed, types.StateReserved, types.StateInUse, types.StateUsed}, opts...)`
 
 ---
 
@@ -103,8 +103,8 @@ Every wrapper that supports polling also exposes fine-grained status accessors. 
 
 | Method | Returns | Typical use |
 |--------|---------|-------------|
-| `State()` | `string` — current state | Logging, conditional branching |
-| `PreviousState()` | `string` — state before the last transition | Post-mortem after a failed wait |
+| `State()` | `types.State` — current state | Logging, conditional branching |
+| `PreviousState()` | `types.State` — state before the last transition | Post-mortem after a failed wait |
 | `FailureReason()` | `string` — server-supplied error text | Surface to end user / log alert |
 | `IsDisabled()` | `bool` | Gate operations when server disables a resource |
 | `DisableReasons()` | `[]string` | Explain why a resource is disabled |
@@ -150,7 +150,7 @@ The following resource wrappers support `WaitUntilReady`, `WaitUntilActive`, `Wa
 | `VPNTunnel` | — | |
 | `VPNRoute` | — | |
 | `KMS` | — | |
-| `Kmip` | `WaitUntilCertificateAvailable` (alias of `WaitUntilReady`) | Succeeds on `CertificateAvailable` **or** `Active` |
+| `Kmip` | `WaitUntilCertificateAvailable` | Custom waiter (Family B — no `statusMixin`); polls `KmipResponse.Status` directly against an explicit terminal-state map |
 
 > **Project does not support polling.** It is synchronously ready immediately after `Create` returns — no `WaitUntilActive` call is needed or available.
 
@@ -216,12 +216,12 @@ futureVPC1 := async.DefaultWaitFor(ctx,
         if resp == nil || resp.Data == nil {
             return false, nil
         }
-        state := ""
+        var state types.State
         if resp.Data.Properties != nil && resp.Data.Properties.Status != nil &&
             resp.Data.Properties.Status.State != nil {
             state = *resp.Data.Properties.Status.State
         }
-        return state == "Active", nil
+        return state == types.StateActive, nil
     },
 )
 
@@ -232,7 +232,7 @@ resp1, err1 := futureVPC1.Await(ctx)
 resp2, err2 := futureVPC2.Await(ctx)
 ```
 
-`DefaultWaitFor` uses the same defaults as `WaitUntilActive`: 60 retries, 10s delay, 600s timeout. Use `async.WaitFor(ctx, retries, baseDelay, timeout, call, check)` to override.
+`DefaultWaitFor` uses the package defaults: `DefaultRetries=60`, `DefaultBaseDelay=10s`, `DefaultTimeout=600s`. Use `async.WaitFor(ctx, retries, baseDelay, timeout, call, check)` to override.
 
 ### `WaitFor` signature
 

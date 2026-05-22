@@ -184,7 +184,7 @@ if err := cs.SetPassword(ctx, "NewStr0ngP@ss!"); err != nil { log.Fatalf("SetPas
 - `NetworkInterfaces()` — slice of network interface descriptors
 - `Template()` — image/template used at boot
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()` — from `statusMixin`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -296,7 +296,7 @@ if err != nil {
 - `KubernetesVersion()` — Kubernetes version string
 - `BillingPeriod()` — billing cadence
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -347,7 +347,7 @@ fmt.Printf("✓ Registry: %s (public IP: %s)\n", reg.Name(), reg.PublicIP())
 - `AdminUsername()` — registry admin user
 - `BillingPeriod()` — billing cadence
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -406,7 +406,7 @@ fmt.Printf("✓ DBaaS: %s (engine: %s)\n", db.Name(), db.Engine())
 - `VPC()`, `Subnet()`, `SecurityGroup()`, `ElasticIP()` — `aruba.Ref` to networking resources
 - `BillingPeriod()` — billing cadence
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -446,7 +446,7 @@ fmt.Printf("✓ Database: %s\n", database.Name())
 - `DatabaseID()` — provider-assigned database ID
 - `DBaaSID()` — parent DBaaS ID
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -488,7 +488,7 @@ fmt.Printf("✓ User: %s\n", user.Name())
 - `Username()` — database username
 - `DBaaSID()` — parent DBaaS ID
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -529,7 +529,7 @@ fmt.Printf("✓ Grant: %s (privileges: %s)\n", grant.Name(), grant.Privileges())
 - `DatabaseID()` — parent Database ID
 - `Privileges()` — privilege string
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -575,7 +575,7 @@ fmt.Printf("✓ DBaaS Backup: %s\n", backup.Name())
 - `Zone()` — availability zone
 - `BillingPeriod()` — billing cadence
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -687,7 +687,7 @@ fmt.Printf("✓ VPC: %s\n", vpc.Name())
 - `Region()` — region slug
 - `IsDefault()`, `IsPreset()` — flags
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -745,7 +745,7 @@ fmt.Printf("✓ Subnet: %s (CIDR: %s)\n", subnet.Name(), subnet.CIDR())
 - `IsDefault()` — bool
 - `Region()` — region slug
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -789,7 +789,7 @@ fmt.Printf("✓ Elastic IP: %s (%s)\n", eip.Name(), eip.Address())
 - `BillingPeriod()` — billing cadence
 - `Region()` — region slug
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilNotUsed(ctx, opts...)`, `WaitUntilUsed(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilNotUsed(ctx, opts...)`, `WaitUntilUsed(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -830,7 +830,7 @@ fmt.Printf("✓ Security Group: %s (ID: %s)\n", sg.Name(), sg.ID())
 - `SecurityGroupID()` — provider-assigned group ID
 - `IsDefault()` — bool
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -957,7 +957,7 @@ fmt.Printf("✓ VPC Peering: %s\n", peering.Name())
 - `VPCID()` — source VPC ID
 - `PeerVPC()` — `aruba.Ref` to the peer VPC
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -1001,7 +1001,7 @@ fmt.Printf("✓ Peering Route: %s (CIDR: %s)\n", route.Name(), route.CIDR())
 - `Target()` — `aruba.Ref` to the route target
 - `VPCPeeringID()` — parent peering ID
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -1060,7 +1060,7 @@ fmt.Printf("✓ VPN Tunnel: %s (gateway: %s)\n", tunnel.Name(), tunnel.PeerClien
 - `ESP()` — `*aruba.VPNESP` ESP settings
 - `PSK()` — `*aruba.VPNPSK` PSK settings
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -1104,7 +1104,7 @@ fmt.Printf("✓ VPN Route: %s (CIDR: %s)\n", vpnRoute.Name(), vpnRoute.CIDR())
 - `Target()` — `aruba.Ref` to the route target
 - `VPNTunnelID()` — parent VPN Tunnel ID
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -1204,7 +1204,7 @@ fmt.Printf("✓ KMS: %s (ID: %s)\n", kms.Name(), kms.ID())
 - `KMSID()` — provider-assigned KMS instance ID
 - `BillingPeriod()` — billing cadence
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -1296,7 +1296,7 @@ fmt.Println("Key:",  cert.Key())
 - `KmipID()` — provider-assigned KMIP ID
 - `KmipStatus()` — KMIP-specific status
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilCertificateAvailable(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilCertificateAvailable(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -1370,7 +1370,7 @@ bs, err := arubaClient.FromStorage().Volumes().Create(
 - `Image()` — image reference
 - `SnapshotURI()` — source snapshot URI (if created from snapshot)
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilNotUsed(ctx, opts...)`, `WaitUntilUsed(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilNotUsed(ctx, opts...)`, `WaitUntilUsed(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -1418,7 +1418,7 @@ fmt.Printf("✓ Snapshot: %s\n", snap.Name())
 - `Bootable()` — bool
 - `VolumeURI()` — source volume URI
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -1467,7 +1467,7 @@ fmt.Printf("✓ Storage Backup: %s\n", backup.Name())
 - `OriginURI()` — source volume URI
 - `BillingPeriod()` — billing cadence
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
@@ -1508,7 +1508,7 @@ fmt.Printf("✓ Storage Restore: %s\n", restore.Name())
 - `RestoreID()` — provider-assigned restore ID
 - `TargetURI()` — target volume URI
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []string{target}, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`
 - `Raw()` — underlying wire struct
 
 :::tip Runnable example
