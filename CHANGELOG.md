@@ -15,12 +15,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **`main` — v0.2.x (current)**: Introduces the `pkg/aruba/` wrapper
   layer — a major, breaking redesign of the public API surface. Adopters
   upgrading from v0.1.x should expect compile-time breakage; see the
-  [v0.2.0 Unreleased](#unreleased--v020) section below for a full
+  [v0.2.0](#020--2026-05-13) section below for a full
   migration summary.
 - **`legacy` — v0.1.x (maintenance)**: Supported for **6 months** after
   the v0.2.0 release date with bug-fix and security-patch releases only
   (tagged `v0.1.29`, `v0.1.30`, …). No new features will be backported.
   Once the support window closes the `legacy` branch will be archived.
+
+---
+
+## [0.2.3] — 2026-05-22
+
+> **Minor release.** Adds `WaitUntilGone` teardown polling and a typed `State` API;
+> internal mixin and file-layout restructuring.
+
+### Added
+
+- `WaitUntilGone(ctx, opts...)` on every deletable, pollable resource wrapper — blocks
+  until `Get` returns HTTP 404. Backed by a new shared `refreshMixin` that owns the
+  adapter `refresh` callback (embedded by `statusMixin` and the Family-B pollable
+  resources `Kmip`, `Grant`, `Database`, `User`, `Key`). Accepts the same `WaitOption`s
+  as `WaitUntilReady`.
+- Typed `types.State` with overlapping predicates (`IsActive`, `IsTerminal`, …) and
+  exported `State*` constants (`StateActive`, `StateRunning`, `StateStopped`, …),
+  re-exported via `pkg/aruba`. Replaces per-resource string `terminalStates` maps.
+
+### Changed ⚠️ Breaking
+
+- `WaitUntilStates` signature changed from `[]string` to `[]types.State`. Callers
+  passing string slices must switch to the `types.State*` constants.
+- `pkg/types` convenience pointer helpers removed (`BoolPtr`, `StringPtr`, `IntPtr`,
+  `Int32Ptr`, `Int64Ptr`, `Float64Ptr`, `StatePtr`). Use `ptr.To(...)` from
+  `k8s.io/utils/ptr` instead. The `[0.2.1]` note referencing `types.BoolPtr(true)` for
+  `Job.WithEnabled(false)` should be updated to `ptr.To(true)`.
+
+### Docs
+
+- `WaitUntilGone` documented in the walkthrough (§6 teardown), async, and resources
+  guides — EN and IT. The walkthrough no longer hand-rolls a `pkg/async` helper.
+- EN/IT doc coherence fixes, versioning structure, and tooling-path updates.
+- `ai/` architecture artifacts updated for the mixin split, typed State, `client_` file
+  rename, and `refreshMixin`.
+
+### Internal
+
+- `mixins.go` decomposed into `mixin_common.go`, `mixin_scoped.go`, `mixin_status.go`,
+  and `mixin_refresh.go`.
+- Resource client files renamed under a `client_` prefix; `New*` factories co-located
+  with their resource types.
+- `examples/all-resources` drops its hand-rolled `waitUntilGone` helper in favour of the
+  wrapper method value `x.WaitUntilGone`.
+- `refreshMixin` unit tests and adapter `WaitUntilGone` tests added.
+
+---
+
+## [0.2.2] — 2026-05-22
+
+> **Patch release.** Migrates billing configuration from the legacy `billingPeriod`
+> string field to a structured `billingPlan` object across all billed resources.
+
+### Changed
+
+- `billingPeriod` wire field replaced by a structured `billingPlan` object across
+  `CloudServer`, `ElasticIP`, `KaaS`, `ContainerRegistry`, `VPNTunnel`, `VPCPeeringRoute`,
+  and `DBaaSBackup`. New shared `types.BillingPlan` wire type; `DBaaS` uses it directly.
+- `DBaaSBillingPlan` alias removed — use `types.BillingPlan` directly.
+- `ElasticIP` lowercase billing-period translator removed (superseded by the `billingPlan`
+  object).
+
+### Fixed
+
+- DBaaS `User` password is now base64-encoded at the wire boundary, matching the API
+  contract.
+
+### Internal
+
+- `examples/all-resources` updated for the new billing fields (billing period Hour, DBaaS
+  flavor refreshed); KMS example uses Month; security-rule egress example drops the port.
+  gofmt pass over the billing changes.
 
 ---
 
@@ -558,7 +630,11 @@ Initial Alpha release of the Aruba Cloud SDK for Go.
 ---
 
 <!-- compare links -->
-[Unreleased]: https://github.com/Arubacloud/sdk-go/compare/v0.1.28...HEAD
+[Unreleased]: https://github.com/Arubacloud/sdk-go/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/Arubacloud/sdk-go/compare/v0.2.2...v0.2.3
+[0.2.2]: https://github.com/Arubacloud/sdk-go/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/Arubacloud/sdk-go/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/Arubacloud/sdk-go/compare/v0.1.28...v0.2.0
 [0.1.28]: https://github.com/Arubacloud/sdk-go/compare/v0.1.27...v0.1.28
 [0.1.27]: https://github.com/Arubacloud/sdk-go/compare/v0.1.26...v0.1.27
 [0.1.26]: https://github.com/Arubacloud/sdk-go/compare/v0.1.25...v0.1.26
