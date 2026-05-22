@@ -10,11 +10,7 @@ Issues are grouped by severity. Address Critical items before new features ship;
 
 | ID | Summary | Severity | Effort | Impact |
 |---|---|---|---|---|
-| [TD-001](#td-001) | File token repo param order swap | Critical | XS | Critical |
-| [TD-002](#td-002) | Static token silently ignored | Critical | XS | Critical |
 | [TD-003](#td-003) | `lastUsage` race under RLock | Critical | S | High |
-| [TD-005](#td-005) | Typo `buildDetebaseClient` | High | XS | Low |
-| [TD-007](#td-007) | Variable shadowing in `WaitFor` | High | XS | Low |
 | [TD-009](#td-009) | Caller headers override `Content-Type` | High | XS | Medium |
 | [TD-010](#td-010) | 2 000+ lines duplicated response parsing | High | L | High |
 | [TD-012](#td-012) | Expired token injected after failed refresh | Medium | S | High |
@@ -27,7 +23,7 @@ Issues are grouped by severity. Address Critical items before new features ship;
 
 ### Recommended execution order
 
-**Wave 1 — Quick Wins** (XS effort, ship same PR): TD-001, TD-002, TD-005, TD-007, TD-009, TD-014, TD-015, TD-017
+**Wave 1 — Quick Wins** (XS effort, ship same PR): TD-009, TD-014, TD-015, TD-017
 
 **Wave 2 — High-value focused fixes** (S effort, High+ impact): TD-003, TD-012
 
@@ -72,7 +68,7 @@ Resolved by reordering: persistent write first; on success, increment ticket and
 ---
 
 ### TD-019 · Missing compile-time interface satisfaction checks — [#129](https://github.com/Arubacloud/sdk-go/issues/129) · **Resolved**
-Guards were missing for all ~24 resource-level client impls under `internal/clients/`. Adding them directly inside those packages would create an import cycle (`pkg/aruba/builder.go` already imports every internal client package). The guards are consolidated in a new file `pkg/aruba/assertions.go`, using each impl's exported constructor with `nil` args to obtain a typed value of the unexported impl type — the exact same assignment the existing `buildXxxClient` return types already checked implicitly.
+Guards were missing for all ~24 resource-level client impls under `internal/clients/`. Adding them directly inside those packages would create an import cycle (`pkg/aruba/builder.go` already imports every internal client package). The guards are in `pkg/aruba/assertions_test.go` as a `TestCompileTimeInterfaceGuards` function that declares typed local variables via `:=` — a compile-time-only check that runs no code in production binaries.
 
 The security domain is intentionally excluded: `KMSClient`, `KeyClient`, and `KmipClient` in `pkg/aruba/security.go` are type aliases to concrete pointer types, not interfaces, so satisfaction guards would be degenerate.
 
@@ -89,6 +85,26 @@ All five now `panic("... is required and cannot be nil")` when the injected dep 
 
 ---
 
+### TD-001 · Parameter order swap in file token repository constructor — [#111](https://github.com/Arubacloud/sdk-go/issues/111) · **Resolved**
+`pkg/aruba/builder.go` now calls `NewFileTokenRepository(clientID, options.baseDir)` (correct order). Verified in the current code.
+
+---
+
+### TD-002 · Static token is never stored — access token parameter silently ignored — [#112](https://github.com/Arubacloud/sdk-go/issues/112) · **Resolved**
+`internal/impl/auth/tokenrepository/memory/memory.go` — `NewTokenRepositoryWithAccessToken` now returns `&TokenRepository{token: &auth.Token{AccessToken: accessToken}}`. Verified in the current code.
+
+---
+
+### TD-005 · Typo in builder function name: `buildDetebaseClient` — [#115](https://github.com/Arubacloud/sdk-go/issues/115) · **Resolved**
+The function is now correctly named `buildDatabaseClient` in `pkg/aruba/builder.go`. Verified in the current code.
+
+---
+
+### TD-007 · Variable shadowing creates unreachable `AsyncClient` in `WaitFor` nil-call path — [#117](https://github.com/Arubacloud/sdk-go/issues/117) · **Resolved**
+`pkg/async/async_client.go` — the nil-check on `callFunc` was moved before the outer `asyncClient` variable is created, eliminating the shadowing. Both early-return paths return their own `AsyncClient` directly with no outer variable to shadow. Verified in the current code.
+
+---
+
 ### TD-011 · Silent failure when parsing error response body — [#121](https://github.com/Arubacloud/sdk-go/issues/121) · **Resolved**
 `pkg/types/utils.go` — when a 4xx/5xx response body could not be unmarshalled as JSON, the error was silently discarded and `response.Error` remained `nil`.
 
@@ -97,28 +113,6 @@ Resolved by adding a `DebugLogger` interface to `pkg/types` (one method: `Debugf
 ---
 
 ## Critical
-
-### TD-001 · Parameter order swap in file token repository constructor — [#111](https://github.com/Arubacloud/sdk-go/issues/111)
-`pkg/aruba/builder.go` calls `NewFileTokenRepository(options.baseDir, clientID)` but the function signature is `NewFileTokenRepository(clientID, baseDir string)`. The arguments are swapped: the base directory is used as the client ID and vice versa, producing a wrong token file path and breaking file-based token persistence entirely.
-
-**Fix:** Change the call to `NewFileTokenRepository(clientID, options.baseDir)`.
-
-**Effort:** XS — swap 2 arguments at 1 call site.
-
-**Impact:** Critical — file-based token persistence is completely broken.
-
----
-
-### TD-002 · Static token is never stored — access token parameter silently ignored — [#112](https://github.com/Arubacloud/sdk-go/issues/112)
-`internal/impl/auth/tokenrepository/memory/memory.go` — `NewTokenRepositoryWithAccessToken(accessToken string)` ignores its parameter and returns `&TokenRepository{}`. Any client created with `WithToken()` will always get an empty token, causing all requests to fail authentication silently.
-
-**Fix:** Initialize the struct with `token: &auth.Token{AccessToken: accessToken}`.
-
-**Effort:** XS — add 1 struct field initialization.
-
-**Impact:** Critical — `WithToken()` static auth is completely broken; every API call returns 401.
-
----
 
 ### TD-003 · Race condition: `lastUsage` written under read lock in Multitenant — [#113](https://github.com/Arubacloud/sdk-go/issues/113)
 `pkg/multitenant/multitenant.go` — `Get()`, `MustGet()`, and `GetOrNil()` all hold `RLock` while writing `e.lastUsage = time.Now()`. Mutating a struct field through a map value under a read lock is a data race detected by the Go race detector.
@@ -132,28 +126,6 @@ Resolved by adding a `DebugLogger` interface to `pkg/types` (one method: `Debugf
 ---
 
 ## High
-
-### TD-005 · Typo in builder function name: `buildDetebaseClient` — [#115](https://github.com/Arubacloud/sdk-go/issues/115)
-`pkg/aruba/builder.go` — the function is named `buildDetebaseClient` instead of `buildDatabaseClient`. Harmless at runtime but breaks searchability and violates naming consistency.
-
-**Fix:** Rename to `buildDatabaseClient`.
-
-**Effort:** XS — rename 1 unexported function.
-
-**Impact:** Low — cosmetic only; no runtime effect.
-
----
-
-### TD-007 · Variable shadowing creates unreachable `AsyncClient` in `WaitFor` nil-call path — [#117](https://github.com/Arubacloud/sdk-go/issues/117)
-`pkg/async/async_client.go` — when `callFunc == nil`, a new inner `asyncClient` variable (`:=`) shadows the outer one. The outer variable is discarded; the inner one is returned. The code works by accident but is fragile and confusing.
-
-**Fix:** Remove the inner `:=` and reuse the outer `asyncClient`.
-
-**Effort:** XS — delete 1 `:=` keyword.
-
-**Impact:** Low — works today by accident; purely a correctness and readability cleanup.
-
----
 
 ### TD-009 · Caller headers can override SDK-controlled `Content-Type` — [#119](https://github.com/Arubacloud/sdk-go/issues/119)
 `internal/restclient/client.go` — the code sets `Content-Type: application/json` then overwrites headers with caller-supplied values using `req.Header.Set(k, v)`. A caller can silently override `Content-Type` (and in principle `Authorization`), breaking server-side request parsing.
