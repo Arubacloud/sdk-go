@@ -50,7 +50,7 @@ Every resource method must follow this sequence exactly:
 6. Marshal body with `json.Marshal` if the method takes a body
 7. `c.client.DoRequest(ctx, method, path, body, queryParams, headers)`
 8. `defer httpResp.Body.Close()`
-9. `types.ParseResponseBody[T](httpResp)` for standard responses; manual unmarshal only for complex cases
+9. `types.ParseResponseBody[T](httpResp, c.client.Logger())` for standard responses; manual unmarshal only for complex cases (the logger parameter is required — it logs non-JSON error bodies at `Debug` level)
 
 ## Error handling
 
@@ -117,7 +117,7 @@ All chainable setters follow `func (rcv *T) Verb(...) *T` and return the receive
 | `Set<X>()` / `Unset<X>()` | explicit boolean toggle (builder) | `*BlockStorage.SetBootable()` |
 | `Is<X>()` (read) / `As<X>()`, `Not<X>()` (write) | paired-bool idiom for `*bool` fields | `*SecurityGroup.AsDefault()`, `*VPC.NotDefault()` |
 
-**Important:** `Set*` on its own (not `Unset*`) is reserved for non-chainable, side-effecting action methods (`*CloudServer.SetPassword(ctx, pw, opts...)` at `resource_cloud_server.go:279`) — never use it for a builder setter.
+**Important:** `Set*` on its own (not `Unset*`) is reserved for non-chainable, side-effecting action methods (`*CloudServer.SetPassword(ctx, pw, opts...)` in `resource_cloud_server.go`) — never use it for a builder setter.
 
 ### Wire-level translation rules
 
@@ -126,8 +126,8 @@ The wrapper API never echoes a wire field name verbatim if a clearer Go-idiomati
 - **Units explicit in the method name:** `WithSizeGB(int)` (wire field `size` / JSON `sizeGb`) on `*BlockStorage` and `*DBaaS`.
 - **Paired-bool idiom for tri-state `*bool` flags:** `IsDefault()` read + `AsDefault()` / `NotDefault()` write on SecurityGroup, VPC, Subnet, Project — preserves the `nil` / `false` / `true` distinction across the wire.
 - **`Ref`-accepting setters hide URI assembly:** `FromVolume(Ref)`, `FromSnapshot(Ref)`, `FromDBaaS(Ref)`, `FromDatabase(Ref)` — an empty URI from the `Ref` goes on the error sink, not on the wire.
-- **Sub-builder errors propagate:** `WithIKESettings(*VPNIKE)` drains the sub-builder's `errMixin` into the tunnel's accumulator (`resource_vpn_tunnel.go:84-89`).
-- **Shape-collapsing:** `*Job.OneShotAt(t)` sets both `JobType` and `ScheduleAt`; `WithCron + RecurringUntil` sets `JobType` + `Cron` + `ExecuteUntil`. Mode conflicts record a setter-time error via `requireMode` (`resource_job.go:108`).
+- **Sub-builder errors propagate:** `WithIKESettings(*VPNIKE)` drains the sub-builder's `errMixin` into the tunnel's accumulator (`resource_vpn_tunnel.go`).
+- **Shape-collapsing:** `*Job.OneShotAt(t)` sets both `JobType` and `ScheduleAt`; `WithCron + RecurringUntil` sets `JobType` + `Cron` + `ExecuteUntil`. Mode conflicts record a setter-time error via `requireMode` in `resource_job.go`.
 
 ### Typed-enum aliases (`pkg/aruba/aliases.go`)
 
@@ -157,6 +157,6 @@ Setter signatures take the alias type, not `string`.
 
 ### Wait conventions
 
-- Resources that embed `statusMixin` (`mixins.go:685`) get `WaitUntilActive`, `WaitUntilReady`, and `WaitUntilStates(ctx, targets, opts...)` for free.
+- Resources that embed `statusMixin` (`pkg/aruba/mixin_status.go`) get `WaitUntilActive`, `WaitUntilReady`, and `WaitUntilStates(ctx, targets, opts...)` for free.
 - Adapters install a `refresh` closure after `Create` / `Get` / `List` — without it, `WaitUntilStates` returns an immediate error.
-- Family B resources without `statusMixin` define their own `WaitUntil*` that drive `pkg/async.WaitFor` directly (e.g. `*Kmip.WaitUntilCertificateAvailable` at `resource_kmip.go:69`).
+- Family B resources without `statusMixin` define their own `WaitUntil*` that drive `pkg/async.WaitFor` directly (e.g. `*Kmip.WaitUntilCertificateAvailable` in `resource_kmip.go`).
