@@ -27,7 +27,7 @@ func createKMS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *a
 	}
 	printCreated("KMS Instance", result.Name(), result.KMSID())
 
-	waitUntilSelfReady(ctx, "KMS Instance", result.Name(), result.WaitUntilReady)
+	waitUntilSelfReady(ctx, "KMS Instance", result.Name(), result, result.WaitUntilReady)
 
 	return result
 }
@@ -36,8 +36,8 @@ func createKMS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *a
 func createKMSKey(ctx context.Context, arubaClient aruba.Client, kmsParent *aruba.KMS) *aruba.Key {
 	printBanner("KMS Key", "")
 
-	if err := waitForDependencies(ctx, "KMS Key", map[string]waitFunc{
-		"KMS": kmsParent.WaitUntilActive,
+	if err := waitForDependencies(ctx, "KMS Key", map[string]depEntry{
+		"KMS": dep(kmsParent, kmsParent.WaitUntilActive),
 	}); err != nil {
 		printDepWaitError("KMS Key", err)
 		return nil
@@ -62,8 +62,8 @@ func createKMSKey(ctx context.Context, arubaClient aruba.Client, kmsParent *arub
 func createKmip(ctx context.Context, arubaClient aruba.Client, kmsParent *aruba.KMS) *aruba.Kmip {
 	fmt.Println("--- KMIP Service ---")
 
-	if err := waitForDependencies(ctx, "KMIP Service", map[string]waitFunc{
-		"KMS": kmsParent.WaitUntilActive,
+	if err := waitForDependencies(ctx, "KMIP Service", map[string]depEntry{
+		"KMS": dep(kmsParent, kmsParent.WaitUntilActive),
 	}); err != nil {
 		printDepWaitError("KMIP Service", err)
 		return nil
@@ -79,7 +79,7 @@ func createKmip(ctx context.Context, arubaClient aruba.Client, kmsParent *aruba.
 	}
 	printCreated("KMIP Service", created.Name(), created.KmipID())
 
-	waitUntilSelfReady(ctx, "KMIP Service", created.Name(), created.WaitUntilReady)
+	waitUntilSelfReady(ctx, "KMIP Service", created.Name(), nil, created.WaitUntilReady)
 
 	return created
 }

@@ -123,7 +123,7 @@ func (p *VPCPeering) fromResponse(resp *types.VPCPeeringResponse) {
 		p.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	p.setStatus(&resp.Status)
-	p.setTerminalStates(vpcPeeringTerminalStates)
+
 	p.setLinked(resp.Properties.LinkedResources)
 
 	if resp.Properties.RemoteVPC != nil {
@@ -150,12 +150,6 @@ func vpcPeeringDerefString(s *string) string {
 		return ""
 	}
 	return *s
-}
-
-var vpcPeeringTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

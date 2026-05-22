@@ -12,6 +12,8 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
+func statePtr(s types.State) *types.State { return &s }
+
 func TestListDBaaS(t *testing.T) {
 	t.Run("successful list", func(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +33,7 @@ func TestListDBaaS(t *testing.T) {
 									Version: types.StringPtr("8.0"),
 								},
 							},
-							Status: types.ResourceStatus{State: types.StringPtr("active")},
+							Status: types.ResourceStatus{State: statePtr(types.State("active"))},
 						},
 					},
 				}
@@ -155,7 +157,7 @@ func TestGetDBaaS(t *testing.T) {
 							Name: types.StringPtr("M4-8"),
 						},
 					},
-					Status: types.ResourceStatus{State: types.StringPtr("active")},
+					Status: types.ResourceStatus{State: statePtr(types.State("active"))},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return
@@ -285,7 +287,7 @@ func TestCreateDBaaS(t *testing.T) {
 					Properties: types.DBaaSPropertiesResponse{
 						Engine: &types.DBaaSEngineResponse{Type: types.StringPtr("MySQL")},
 					},
-					Status: types.ResourceStatus{State: types.StringPtr("creating")},
+					Status: types.ResourceStatus{State: statePtr(types.State("creating"))},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return
@@ -467,7 +469,7 @@ func TestUpdateDBaaS(t *testing.T) {
 					Properties: types.DBaaSPropertiesResponse{
 						Engine: &types.DBaaSEngineResponse{Type: types.StringPtr("MySQL")},
 					},
-					Status: types.ResourceStatus{State: types.StringPtr("updating")},
+					Status: types.ResourceStatus{State: statePtr(types.State("updating"))},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return

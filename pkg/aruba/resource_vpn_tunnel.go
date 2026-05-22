@@ -231,7 +231,6 @@ func (t *VPNTunnel) fromResponse(resp *types.VPNTunnelResponse) {
 		t.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	t.setStatus(&resp.Status)
-	t.setTerminalStates(vpnTunnelTerminalStates)
 
 	if resp.Properties.VPNType != nil {
 		v := *resp.Properties.VPNType
@@ -264,12 +263,6 @@ func vpnTunnelDerefString(p *string) string {
 		return ""
 	}
 	return *p
-}
-
-var vpnTunnelTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

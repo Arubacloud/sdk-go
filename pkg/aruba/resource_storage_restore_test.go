@@ -190,7 +190,7 @@ func TestStorageRestore_ToRequest_UnsetTarget(t *testing.T) {
 
 func storageRestoreTestResponse(id, name, uri, targetURI string) *types.StorageRestoreResponse {
 	loc := &types.LocationResponse{Value: RegionITBGBergamo}
-	state := "Active"
+	state := types.State("Active")
 	return &types.StorageRestoreResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:               &id,
@@ -247,7 +247,7 @@ func TestStorageRestore_FromResponseHydration(t *testing.T) {
 func TestStorageRestore_FromResponseURIBackfill(t *testing.T) {
 	id := "r-99"
 	uri := "/projects/p-uri/providers/Aruba.Storage/backups/bkp-99/restores/r-99"
-	state := ""
+	state := types.State("")
 	resp := &types.StorageRestoreResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:  &id,
@@ -903,20 +903,14 @@ func TestStorageRestoresClientAdapter_List_TwoItems(t *testing.T) {
 	}
 }
 
-func TestStorageRestore_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestStorageRestore_FromResponse_SetsStatus(t *testing.T) {
 	r := &StorageRestore{}
-	state := "Active"
+	state := types.State("Active")
 	r.fromResponse(&types.StorageRestoreResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(r.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !r.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for StorageRestore")
-	}
-	if r.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for StorageRestore")
+	if r.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", r.State())
 	}
 }
 

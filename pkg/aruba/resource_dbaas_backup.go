@@ -178,7 +178,6 @@ func (b *DBaaSBackup) fromResponse(resp *types.BackupResponse) {
 		b.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	b.setStatus(&resp.Status)
-	b.setTerminalStates(dbaasBackupTerminalStates)
 
 	if resp.Properties.DBaaS.URI != "" {
 		v := resp.Properties.DBaaS.URI
@@ -207,12 +206,6 @@ func dbaasBackupDerefString(p *string) string {
 		return ""
 	}
 	return *p
-}
-
-var dbaasBackupTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

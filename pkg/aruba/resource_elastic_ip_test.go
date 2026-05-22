@@ -148,7 +148,7 @@ func TestElasticIP_BillingPeriod_WireBillingPlan(t *testing.T) {
 
 func elasticIPTestResponse(id, name, uri, projectID string) *types.ElasticIPResponse {
 	loc := &types.LocationResponse{Value: RegionITBGBergamo}
-	state := "Active"
+	state := types.State("Active")
 	addr := "1.2.3.4"
 	return &types.ElasticIPResponse{
 		Metadata: types.ResourceMetadataResponse{
@@ -831,30 +831,21 @@ func TestElasticIP_FromResponse_URIBackfillProjectID(t *testing.T) {
 	}
 }
 
-func TestElasticIP_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestElasticIP_FromResponse_SetsStatus(t *testing.T) {
 	e := &ElasticIP{}
-	state := "NotUsed"
+	state := types.State("NotUsed")
 	e.fromResponse(&types.ElasticIPResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(e.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !e.terminalStates["NotUsed"] {
-		t.Error("terminalStates[NotUsed] should be true for ElasticIP")
-	}
-	if !e.terminalStates["InUse"] {
-		t.Error("terminalStates[InUse] should be true for ElasticIP")
-	}
-	if e.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for ElasticIP")
+	if e.State() != types.StateNotUsed {
+		t.Errorf("State() = %q after fromResponse, want NotUsed", e.State())
 	}
 }
 
 func TestElasticIP_WaitUntilNotUsed_HappyPath(t *testing.T) {
 	e := &ElasticIP{}
 	calls := 0
-	state := "InCreation"
+	state := types.State("InCreation")
 	e.setRefresh(func(_ context.Context) error {
 		calls++
 		if calls >= 2 {
@@ -864,7 +855,6 @@ func TestElasticIP_WaitUntilNotUsed_HappyPath(t *testing.T) {
 		e.setStatus(&types.ResourceStatus{State: &s})
 		return nil
 	})
-	e.setTerminalStates(elasticIPTerminalStates)
 	if err := e.WaitUntilNotUsed(context.Background(), fastOpts()...); err != nil {
 		t.Fatalf("WaitUntilNotUsed error: %v", err)
 	}
@@ -874,12 +864,11 @@ func TestElasticIP_WaitUntilNotUsed_HappyPath(t *testing.T) {
 }
 
 func TestElasticIP_WaitUntilUsed_HappyPath(t *testing.T) {
-	for _, attachedState := range []string{"InUse", "Used"} {
-		attachedState := attachedState
-		t.Run(attachedState, func(t *testing.T) {
+	for _, attachedState := range []types.State{types.StateInUse, types.StateUsed, types.StateReserved} {
+		t.Run(string(attachedState), func(t *testing.T) {
 			e := &ElasticIP{}
 			calls := 0
-			state := "NotUsed"
+			state := types.State("InCreation")
 			e.setRefresh(func(_ context.Context) error {
 				calls++
 				if calls >= 2 {
@@ -889,7 +878,6 @@ func TestElasticIP_WaitUntilUsed_HappyPath(t *testing.T) {
 				e.setStatus(&types.ResourceStatus{State: &s})
 				return nil
 			})
-			e.setTerminalStates(elasticIPTerminalStates)
 			if err := e.WaitUntilUsed(context.Background(), fastOpts()...); err != nil {
 				t.Fatalf("WaitUntilUsed error for %q: %v", attachedState, err)
 			}

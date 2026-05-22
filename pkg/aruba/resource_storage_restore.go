@@ -112,7 +112,6 @@ func (r *StorageRestore) fromResponse(resp *types.StorageRestoreResponse) {
 		r.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	r.setStatus(&resp.Status)
-	r.setTerminalStates(storageRestoreTerminalStates)
 
 	// Response shape uses Destination (not Target).
 	if resp.Properties.Destination.URI != "" {
@@ -139,12 +138,6 @@ func storageRestoreDerefString(p *string) string {
 		return ""
 	}
 	return *p
-}
-
-var storageRestoreTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

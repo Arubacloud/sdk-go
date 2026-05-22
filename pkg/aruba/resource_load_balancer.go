@@ -75,7 +75,7 @@ func (l *LoadBalancer) fromResponse(resp *types.LoadBalancerResponse) {
 		l.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	l.setStatus(&resp.Status)
-	l.setTerminalStates(loadBalancerTerminalStates)
+
 	l.setLinked(resp.Properties.LinkedResources)
 
 	if resp.Properties.Address != nil && *resp.Properties.Address != "" {
@@ -102,12 +102,6 @@ func loadBalancerDerefString(p *string) string {
 		return ""
 	}
 	return *p
-}
-
-var loadBalancerTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

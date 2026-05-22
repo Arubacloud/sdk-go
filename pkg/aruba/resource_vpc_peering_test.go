@@ -203,7 +203,7 @@ func TestVPCPeering_ToRequestRoundTrip(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func vpcPeeringTestResponse(id, name, uri, projectID string) *types.VPCPeeringResponse {
-	state := "Active"
+	state := types.State("Active")
 	loc := &types.LocationResponse{Value: RegionITBGBergamo}
 	remoteURI := "/projects/p2/providers/Aruba.Network/vpcs/v2"
 	return &types.VPCPeeringResponse{
@@ -987,20 +987,14 @@ func TestVPCPeeringsClientAdapter_List_TwoItems(t *testing.T) {
 	}
 }
 
-func TestVPCPeering_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestVPCPeering_FromResponse_SetsStatus(t *testing.T) {
 	p := &VPCPeering{}
-	state := "Active"
+	state := types.State("Active")
 	p.fromResponse(&types.VPCPeeringResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(p.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !p.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for VPCPeering")
-	}
-	if p.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for VPCPeering")
+	if p.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", p.State())
 	}
 }
 

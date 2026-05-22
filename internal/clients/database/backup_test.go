@@ -35,7 +35,7 @@ func TestListBackups(t *testing.T) {
 								}(),
 								Storage: types.BackupStorageResponse{Size: 10},
 							},
-							Status: types.ResourceStatus{State: types.StringPtr("active")},
+							Status: types.ResourceStatus{State: statePtr(types.State("active"))},
 						},
 					},
 				}
@@ -163,7 +163,7 @@ func TestGetBackup(t *testing.T) {
 						}(),
 						Storage: types.BackupStorageResponse{Size: 10},
 					},
-					Status: types.ResourceStatus{State: types.StringPtr("active")},
+					Status: types.ResourceStatus{State: statePtr(types.State("active"))},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return
@@ -299,7 +299,7 @@ func TestCreateBackup(t *testing.T) {
 							return &types.BillingPlan{BillingPeriod: &v}
 						}(),
 					},
-					Status: types.ResourceStatus{State: types.StringPtr("creating")},
+					Status: types.ResourceStatus{State: statePtr(types.State("creating"))},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return

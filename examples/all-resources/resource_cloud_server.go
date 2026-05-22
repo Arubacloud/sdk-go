@@ -12,13 +12,13 @@ import (
 func createCloudServer(ctx context.Context, arubaClient aruba.Client, resources *ResourceCollection) *aruba.CloudServer {
 	fmt.Println("--- Cloud Server ---")
 
-	if err := waitForDependencies(ctx, "Cloud Server", map[string]waitFunc{
-		"VPC":            resources.VPC.WaitUntilActive,
-		"Subnet":         resources.SubnetBasic.WaitUntilActive,
-		"Security Group": resources.SecurityGroup.WaitUntilActive,
-		"Elastic IP":     resources.CloudServerEIP.WaitUntilNotUsed,
-		"Block Storage":  resources.CloudServerBlockStorage.WaitUntilNotUsed,
-		"Key Pair":       resources.KeyPair.WaitUntilActive,
+	if err := waitForDependencies(ctx, "Cloud Server", map[string]depEntry{
+		"VPC":            dep(resources.VPC, resources.VPC.WaitUntilActive),
+		"Subnet":         dep(resources.SubnetBasic, resources.SubnetBasic.WaitUntilActive),
+		"Security Group": dep(resources.SecurityGroup, resources.SecurityGroup.WaitUntilActive),
+		"Elastic IP":     dep(resources.CloudServerEIP, resources.CloudServerEIP.WaitUntilNotUsed),
+		"Block Storage":  dep(resources.CloudServerBlockStorage, resources.CloudServerBlockStorage.WaitUntilNotUsed),
+		"Key Pair":       dep(resources.KeyPair, resources.KeyPair.WaitUntilActive),
 	}); err != nil {
 		printDepWaitError("Cloud Server", err)
 		return nil
@@ -63,11 +63,11 @@ write_files:
 	}
 	printCreated("Cloud Server", cs.Name(), cs.CloudServerID())
 
-	waitUntilSelfReady(ctx, "Cloud Server", cs.Name(), cs.WaitUntilReady)
+	waitUntilSelfReady(ctx, "Cloud Server", cs.Name(), cs, cs.WaitUntilReady)
 
-	waitPostDependencies(ctx, "Cloud Server", map[string]waitFunc{
-		"Elastic IP":    resources.CloudServerEIP.WaitUntilUsed,
-		"Block Storage": resources.CloudServerBlockStorage.WaitUntilUsed,
+	waitPostDependencies(ctx, "Cloud Server", map[string]depEntry{
+		"Elastic IP":    dep(resources.CloudServerEIP, resources.CloudServerEIP.WaitUntilUsed),
+		"Block Storage": dep(resources.CloudServerBlockStorage, resources.CloudServerBlockStorage.WaitUntilUsed),
 	})
 
 	return cs

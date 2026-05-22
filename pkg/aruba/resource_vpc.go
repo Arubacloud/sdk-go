@@ -128,7 +128,7 @@ func (v *VPC) fromResponse(resp *types.VPCResponse) {
 		v.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	v.setStatus(&resp.Status)
-	v.setTerminalStates(vpcTerminalStates)
+
 	v.setLinked(resp.Properties.LinkedResources)
 	d := resp.Properties.Default
 	v.defaultVPC = &d
@@ -142,12 +142,6 @@ func vpcDerefString(s *string) string {
 		return ""
 	}
 	return *s
-}
-
-var vpcTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

@@ -27,7 +27,7 @@ func createKeyPair(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref
 		return nil
 	}
 	printCreated("SSH Key Pair", kp.Name(), kp.KeyPairID())
-	waitUntilSelfReady(ctx, "SSH Key Pair", kp.Name(), kp.WaitUntilReady)
+	waitUntilSelfReady(ctx, "SSH Key Pair", kp.Name(), kp, kp.WaitUntilReady)
 
 	return kp
 }

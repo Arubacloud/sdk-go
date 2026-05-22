@@ -315,7 +315,7 @@ func TestJob_ToRequest_Recurring(t *testing.T) {
 func jobTestResponse(name string) *types.JobResponse {
 	id := "job-1"
 	uri := "/projects/p/providers/Aruba.Schedule/jobs/job-1"
-	state := "Active"
+	state := types.State("Active")
 	schedAt := "2026-05-01T12:00:00Z"
 	cronExpr := "0 8 * * 1-5"
 	execUntil := "2026-12-31T00:00:00Z"
@@ -1035,20 +1035,14 @@ func TestJobsClient_HasUpdateMethod(t *testing.T) {
 	}
 }
 
-func TestJob_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestJob_FromResponse_SetsStatus(t *testing.T) {
 	j := &Job{}
-	state := "Active"
+	state := types.State("Active")
 	j.fromResponse(&types.JobResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(j.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !j.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for Job")
-	}
-	if j.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for Job")
+	if j.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", j.State())
 	}
 }
 

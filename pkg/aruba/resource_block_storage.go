@@ -224,7 +224,7 @@ func (b *BlockStorage) fromResponse(resp *types.BlockStorageResponse) {
 		b.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	b.setStatus(&resp.Status)
-	b.setTerminalStates(blockStorageTerminalStates)
+
 	b.setLinked(resp.Properties.LinkedResources)
 
 	if resp.Properties.SizeGB != 0 {
@@ -283,26 +283,18 @@ func blockStorageDerefString(p *string) string {
 	return *p
 }
 
-var blockStorageTerminalStates = map[string]bool{
-	"NotUsed": true,
-	"InUse":   true,
-	"Used":    true,
-	"Error":   false,
-	"Failed":  false,
-}
-
 // WaitUntilNotUsed blocks until the BlockStorage reaches the "NotUsed" state —
 // the steady terminal state for an unattached volume. Call this after Create
 // and before passing the volume to a CloudServer.
 func (b *BlockStorage) WaitUntilNotUsed(ctx context.Context, opts ...WaitOption) error {
-	return b.WaitUntilStates(ctx, []string{"NotUsed"}, opts...)
+	return b.WaitUntilStates(ctx, []types.State{types.StateNotUsed}, opts...)
 }
 
-// WaitUntilUsed blocks until the BlockStorage reaches the "InUse" or "Used"
-// state — both signal that the volume has been attached to a CloudServer. The
-// platform may emit either value; this method succeeds on whichever arrives.
+// WaitUntilUsed blocks until the BlockStorage is bound to a consumer resource.
+// The platform may emit "InUse", "Used", or "Reserved" (bound as a dependency
+// but not actively in use); this method succeeds on whichever arrives first.
 func (b *BlockStorage) WaitUntilUsed(ctx context.Context, opts ...WaitOption) error {
-	return b.WaitUntilStates(ctx, []string{"InUse", "Used"}, opts...)
+	return b.WaitUntilStates(ctx, []types.State{types.StateInUse, types.StateUsed, types.StateReserved}, opts...)
 }
 
 // ---- Low-level client interface ----

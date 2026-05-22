@@ -147,7 +147,6 @@ func (r *VPCPeeringRoute) fromResponse(resp *types.VPCPeeringRouteResponse) {
 		r.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	r.setStatus(&resp.Status)
-	r.setTerminalStates(vpcPeeringRouteTerminalStates)
 
 	if resp.Properties.LocalNetworkAddress != "" {
 		v := resp.Properties.LocalNetworkAddress
@@ -189,12 +188,6 @@ func vpcPeeringRouteDerefString(p *string) string {
 		return ""
 	}
 	return *p
-}
-
-var vpcPeeringRouteTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

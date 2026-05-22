@@ -12,11 +12,11 @@ import (
 func createDBaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, vpc *aruba.VPC, subnet *aruba.Subnet, sg *aruba.SecurityGroup, eip *aruba.ElasticIP) *aruba.DBaaS {
 	fmt.Println("--- DBaaS ---")
 
-	if err := waitForDependencies(ctx, "DBaaS", map[string]waitFunc{
-		"VPC":            vpc.WaitUntilActive,
-		"Subnet":         subnet.WaitUntilActive,
-		"Security Group": sg.WaitUntilActive,
-		"Elastic IP":     eip.WaitUntilNotUsed,
+	if err := waitForDependencies(ctx, "DBaaS", map[string]depEntry{
+		"VPC":            dep(vpc, vpc.WaitUntilActive),
+		"Subnet":         dep(subnet, subnet.WaitUntilActive),
+		"Security Group": dep(sg, sg.WaitUntilActive),
+		"Elastic IP":     dep(eip, eip.WaitUntilNotUsed),
 	}); err != nil {
 		printDepWaitError("DBaaS", err)
 		return nil
@@ -50,10 +50,10 @@ func createDBaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, 
 	}
 	printCreated("DBaaS", result.Name(), result.DBaaSID())
 
-	waitUntilSelfReady(ctx, "DBaaS", result.Name(), result.WaitUntilReady, longWaitOpts...)
+	waitUntilSelfReady(ctx, "DBaaS", result.Name(), result, result.WaitUntilReady, longWaitOpts...)
 
-	waitPostDependencies(ctx, "DBaaS", map[string]waitFunc{
-		"Elastic IP": eip.WaitUntilUsed,
+	waitPostDependencies(ctx, "DBaaS", map[string]depEntry{
+		"Elastic IP": dep(eip, eip.WaitUntilUsed),
 	})
 
 	return result

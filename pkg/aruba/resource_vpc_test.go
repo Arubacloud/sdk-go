@@ -134,7 +134,7 @@ func TestVPC_ToRequestRoundTrip(t *testing.T) {
 
 func vpcTestResponse(id, name, uri, projectID string) *types.VPCResponse {
 	loc := &types.LocationResponse{Value: RegionITBGBergamo}
-	state := "Active"
+	state := types.State("Active")
 	return &types.VPCResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:               &id,
@@ -801,20 +801,14 @@ func TestVPCIDsFromRef_MissingProjectID(t *testing.T) {
 	}
 }
 
-func TestVPC_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestVPC_FromResponse_SetsStatus(t *testing.T) {
 	v := &VPC{}
-	state := "Active"
+	state := types.State("Active")
 	v.fromResponse(&types.VPCResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(v.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !v.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for VPC")
-	}
-	if v.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for VPC")
+	if v.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", v.State())
 	}
 }
 

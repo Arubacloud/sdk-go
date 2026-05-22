@@ -362,7 +362,7 @@ func dbaasTestResponse(id, name, uri string) *types.DBaaSResponse {
 	flavorName := string(DBaaSFlavorDBO2A4)
 	sizeGB := int32(20)
 	billingPeriod := BillingPeriodHour
-	state := "Active"
+	state := types.State("Active")
 	vpcURI := "/vpcs/v"
 	subnetURI := "/subnets/s"
 	sgURI := "/sgs/sg"
@@ -1175,20 +1175,14 @@ func TestDBaaSClientAdapter_List_TwoItems(t *testing.T) {
 	}
 }
 
-func TestDBaaS_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestDBaaS_FromResponse_SetsStatus(t *testing.T) {
 	d := &DBaaS{}
-	state := "Active"
+	state := types.State("Active")
 	d.fromResponse(&types.DBaaSResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(d.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !d.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for DBaaS")
-	}
-	if d.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for DBaaS")
+	if d.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", d.State())
 	}
 }
 

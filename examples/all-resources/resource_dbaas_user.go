@@ -10,8 +10,8 @@ import (
 func createDBaaSUser(ctx context.Context, arubaClient aruba.Client, dbaas *aruba.DBaaS) *aruba.User {
 	printBanner("DBaaS User", "")
 
-	if err := waitForDependencies(ctx, "DBaaS User", map[string]waitFunc{
-		"DBaaS": dbaas.WaitUntilReady,
+	if err := waitForDependencies(ctx, "DBaaS User", map[string]depEntry{
+		"DBaaS": dep(dbaas, dbaas.WaitUntilReady),
 	}); err != nil {
 		printDepWaitError("DBaaS User", err)
 		return nil

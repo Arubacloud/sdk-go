@@ -113,7 +113,7 @@ func TestSecurityGroup_ToRequestRoundTrip(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func securityGroupTestResponse(id, name, uri, projectID string) *types.SecurityGroupResponse {
-	state := "Active"
+	state := types.State("Active")
 	return &types.SecurityGroupResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:   &id,
@@ -882,20 +882,14 @@ func TestSecurityGroupsClientAdapter_List_TwoItems(t *testing.T) {
 	}
 }
 
-func TestSecurityGroup_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestSecurityGroup_FromResponse_SetsStatus(t *testing.T) {
 	sg := &SecurityGroup{}
-	state := "Active"
+	state := types.State("Active")
 	sg.fromResponse(&types.SecurityGroupResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(sg.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !sg.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for SecurityGroup")
-	}
-	if sg.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for SecurityGroup")
+	if sg.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", sg.State())
 	}
 }
 

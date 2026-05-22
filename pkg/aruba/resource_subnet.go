@@ -156,7 +156,7 @@ func (s *Subnet) fromResponse(resp *types.SubnetResponse) {
 		s.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	s.setStatus(&resp.Status)
-	s.setTerminalStates(subnetTerminalStates)
+
 	s.setLinked(resp.Properties.LinkedResources)
 
 	if resp.Properties.Type != "" {
@@ -193,12 +193,6 @@ func subnetDerefString(p *string) string {
 		return ""
 	}
 	return *p
-}
-
-var subnetTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

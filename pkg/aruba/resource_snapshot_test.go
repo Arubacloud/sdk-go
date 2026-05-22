@@ -188,7 +188,7 @@ func TestSnapshot_ToRequest_UnsetOptionals_AreNilOrEmpty(t *testing.T) {
 
 func snapshotTestResponse(id, name, uri, projectID string) *types.SnapshotResponse {
 	loc := &types.LocationResponse{Value: RegionITBGBergamo}
-	state := "Active"
+	state := types.State("Active")
 	billingPeriod := BillingPeriodHour
 	sizeGB := int32(20)
 	boot := true
@@ -298,7 +298,7 @@ func TestSnapshot_FromResponsePartial(t *testing.T) {
 func TestSnapshot_FromResponseURIBackfill(t *testing.T) {
 	id := "snap-99"
 	uri := "/projects/p-uri/providers/Aruba.Storage/snapshots/snap-99"
-	state := ""
+	state := types.State("")
 	resp := &types.SnapshotResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:  &id,
@@ -318,7 +318,7 @@ func TestSnapshot_FromResponseURIBackfill(t *testing.T) {
 func TestSnapshot_FromResponse_VolumeInfo_NilURI(t *testing.T) {
 	id := "snap-1"
 	uri := "/projects/p/providers/Aruba.Storage/snapshots/snap-1"
-	state := ""
+	state := types.State("")
 	resp := &types.SnapshotResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:  &id,
@@ -917,20 +917,14 @@ func TestSnapshotsClientAdapter_List_TwoItems(t *testing.T) {
 	}
 }
 
-func TestSnapshot_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestSnapshot_FromResponse_SetsStatus(t *testing.T) {
 	s := &Snapshot{}
-	state := "Active"
+	state := types.State("Active")
 	s.fromResponse(&types.SnapshotResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(s.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !s.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for Snapshot")
-	}
-	if s.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for Snapshot")
+	if s.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", s.State())
 	}
 }
 

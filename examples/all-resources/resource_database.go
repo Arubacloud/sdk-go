@@ -10,8 +10,8 @@ import (
 func createDatabase(ctx context.Context, arubaClient aruba.Client, dbaas *aruba.DBaaS) *aruba.Database {
 	printBanner("DBaaS Database", "")
 
-	if err := waitForDependencies(ctx, "DBaaS Database", map[string]waitFunc{
-		"DBaaS": dbaas.WaitUntilReady,
+	if err := waitForDependencies(ctx, "DBaaS Database", map[string]depEntry{
+		"DBaaS": dep(dbaas, dbaas.WaitUntilReady),
 	}); err != nil {
 		printDepWaitError("DBaaS Database", err)
 		return nil

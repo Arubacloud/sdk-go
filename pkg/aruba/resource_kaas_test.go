@@ -468,7 +468,7 @@ func TestKaaS_ToUpdateRequest_Empty(t *testing.T) {
 func kaasTestResponse(name string) *types.KaaSResponse {
 	id := "kaas-1"
 	uri := "/projects/p/providers/Aruba.Container/kaas/kaas-1"
-	state := "Active"
+	state := types.State("Active")
 	vpcURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1"
 	subnetURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1"
 	sgName := "sg-name"
@@ -1645,20 +1645,14 @@ func TestKaaSClientAdapter_Get_LowLevelError(t *testing.T) {
 	}
 }
 
-func TestKaaS_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestKaaS_FromResponse_SetsStatus(t *testing.T) {
 	k := &KaaS{}
-	state := "Active"
+	state := types.State("Active")
 	k.fromResponse(&types.KaaSResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(k.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !k.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for KaaS")
-	}
-	if k.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for KaaS")
+	if k.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", k.State())
 	}
 }
 

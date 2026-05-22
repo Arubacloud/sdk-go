@@ -50,7 +50,7 @@ func TestListContainerRegistry(t *testing.T) {
 								ConcurrentUsers: types.StringPtr("100"),
 							},
 							Status: types.ResourceStatus{
-								State: types.StringPtr("active"),
+								State: types.StatePtr(types.State("active")),
 							},
 						},
 					},
@@ -218,7 +218,7 @@ func TestGetContainerRegistry(t *testing.T) {
 						ConcurrentUsers: types.StringPtr("100"),
 					},
 					Status: types.ResourceStatus{
-						State: types.StringPtr("active"),
+						State: types.StatePtr(types.State("active")),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -377,7 +377,7 @@ func TestCreateContainerRegistry(t *testing.T) {
 						ConcurrentUsers: types.StringPtr("100"),
 					},
 					Status: types.ResourceStatus{
-						State: types.StringPtr("creating"),
+						State: types.StatePtr(types.State("creating")),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -618,7 +618,7 @@ func TestUpdateContainerRegistry(t *testing.T) {
 						ConcurrentUsers: types.StringPtr("100"),
 					},
 					Status: types.ResourceStatus{
-						State: types.StringPtr("updating"),
+						State: types.StatePtr(types.State("updating")),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)

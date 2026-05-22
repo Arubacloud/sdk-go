@@ -23,7 +23,7 @@ var _ Ref = (*LoadBalancer)(nil)
 
 func loadBalancerTestResponse(id, name, uri, projectID string) *types.LoadBalancerResponse {
 	loc := &types.LocationResponse{Value: RegionITBGBergamo}
-	state := "Active"
+	state := types.State("Active")
 	addr := "10.0.0.1"
 	vpcURI := "/projects/" + projectID + "/providers/Aruba.Network/vpcs/vpc-1"
 	return &types.LoadBalancerResponse{
@@ -480,20 +480,14 @@ func TestLoadBalancersClientAdapter_List_ProjectIDBackfill(t *testing.T) {
 	}
 }
 
-func TestLoadBalancer_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestLoadBalancer_FromResponse_SetsStatus(t *testing.T) {
 	l := &LoadBalancer{}
-	state := "Active"
+	state := types.State("Active")
 	l.fromResponse(&types.LoadBalancerResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(l.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !l.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for LoadBalancer")
-	}
-	if l.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for LoadBalancer")
+	if l.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", l.State())
 	}
 }
 

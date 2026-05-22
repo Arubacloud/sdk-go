@@ -440,7 +440,7 @@ func TestResponseMetadataMixin_Populated(t *testing.T) {
 
 func TestStatusMixin_SetStatus(t *testing.T) {
 	var m statusMixin
-	state := "Active"
+	var state types.State = "Active"
 	m.setStatus(&types.ResourceStatus{State: &state})
 	if m.State() != "Active" {
 		t.Errorf("State() after setStatus = %q", m.State())
@@ -489,8 +489,8 @@ func TestStatusMixin_Nil(t *testing.T) {
 }
 
 func TestStatusMixin_Populated(t *testing.T) {
-	state := "Active"
-	prev := "Pending"
+	var state types.State = "Active"
+	var prev types.State = "Pending"
 	reason := "disk full"
 	m := statusMixin{
 		status: &types.ResourceStatus{
@@ -530,7 +530,7 @@ func TestStatusMixin_WaitRefreshNil(t *testing.T) {
 	if err := m.WaitUntilActive(context.Background()); err == nil {
 		t.Error("WaitUntilActive with nil refresh should return an error")
 	}
-	if err := m.WaitUntilStates(context.Background(), []string{"Active"}); err == nil {
+	if err := m.WaitUntilStates(context.Background(), []types.State{types.StateActive}); err == nil {
 		t.Error("WaitUntilStates with nil refresh should return an error")
 	}
 }

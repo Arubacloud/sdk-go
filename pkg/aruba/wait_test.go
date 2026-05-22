@@ -63,7 +63,7 @@ func TestWaitOption_NilOption_Skipped(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// setRefresh / setTerminalStates setters
+// setRefresh setter
 // --------------------------------------------------------------------------
 
 func TestStatusMixin_SetRefresh(t *testing.T) {
@@ -80,28 +80,13 @@ func TestStatusMixin_SetRefresh(t *testing.T) {
 	}
 }
 
-func TestStatusMixin_SetTerminalStates(t *testing.T) {
-	var m statusMixin
-	ts := map[string]bool{"Active": true, "Error": false}
-	m.setTerminalStates(ts)
-	if len(m.terminalStates) != 2 {
-		t.Errorf("terminalStates len = %d, want 2", len(m.terminalStates))
-	}
-	if !m.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true")
-	}
-	if m.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false")
-	}
-}
-
 // --------------------------------------------------------------------------
 // WaitUntilStates / WaitUntilActive — nil refresh
 // --------------------------------------------------------------------------
 
 func TestWaitUntilStates_RefreshNil_Error(t *testing.T) {
 	var m statusMixin
-	err := m.WaitUntilStates(context.Background(), []string{"Active"})
+	err := m.WaitUntilStates(context.Background(), []types.State{types.StateActive})
 	if err == nil {
 		t.Fatal("expected error when refresh is nil")
 	}
@@ -125,11 +110,11 @@ func fastOpts() []WaitOption {
 func TestWaitUntilActive_HappyPath(t *testing.T) {
 	var m statusMixin
 	calls := 0
-	state := "Pending"
+	var state types.State = "InCreation"
 	m.setRefresh(func(_ context.Context) error {
 		calls++
 		if calls >= 3 {
-			state = "Active"
+			state = types.StateActive
 		}
 		s := state
 		m.setStatus(&types.ResourceStatus{State: &s})
@@ -138,7 +123,7 @@ func TestWaitUntilActive_HappyPath(t *testing.T) {
 	if err := m.WaitUntilActive(context.Background(), fastOpts()...); err != nil {
 		t.Fatalf("WaitUntilActive error: %v", err)
 	}
-	if m.State() != "Active" {
+	if m.State() != types.StateActive {
 		t.Errorf("State() = %q after wait, want Active", m.State())
 	}
 	if calls < 3 {
@@ -149,7 +134,7 @@ func TestWaitUntilActive_HappyPath(t *testing.T) {
 func TestWaitUntilStates_CustomTarget(t *testing.T) {
 	var m statusMixin
 	calls := 0
-	state := "Pending"
+	var state types.State = "InCreation"
 	m.setRefresh(func(_ context.Context) error {
 		calls++
 		if calls >= 2 {
@@ -159,7 +144,7 @@ func TestWaitUntilStates_CustomTarget(t *testing.T) {
 		m.setStatus(&types.ResourceStatus{State: &s})
 		return nil
 	})
-	if err := m.WaitUntilStates(context.Background(), []string{"Available"}, fastOpts()...); err != nil {
+	if err := m.WaitUntilStates(context.Background(), []types.State{"Available"}, fastOpts()...); err != nil {
 		t.Fatalf("WaitUntilStates error: %v", err)
 	}
 	if m.State() != "Available" {
@@ -168,12 +153,15 @@ func TestWaitUntilStates_CustomTarget(t *testing.T) {
 }
 
 func TestWaitUntilReady_HappyPath(t *testing.T) {
-	for _, target := range []string{"Active", "NotUsed", "InUse", "Used"} {
+	for _, target := range []types.State{
+		types.StateActive, types.StateRunning, types.StateStopped,
+		types.StateNotUsed, types.StateReserved, types.StateInUse, types.StateUsed,
+	} {
 		target := target
-		t.Run(target, func(t *testing.T) {
+		t.Run(string(target), func(t *testing.T) {
 			var m statusMixin
 			calls := 0
-			state := "InCreation"
+			state := types.StateInCreation
 			m.setRefresh(func(_ context.Context) error {
 				calls++
 				if calls >= 2 {
@@ -194,18 +182,48 @@ func TestWaitUntilReady_HappyPath(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// Error terminal state
+// Failure state — fast fail
 // --------------------------------------------------------------------------
 
-func TestWaitUntilActive_ErrorTerminal(t *testing.T) {
+func TestWaitUntilActive_FailureState(t *testing.T) {
+	for _, failState := range []types.State{types.StateFailed, types.StateError, types.StateDisabled} {
+		failState := failState
+		t.Run(string(failState), func(t *testing.T) {
+			var m statusMixin
+			calls := 0
+			state := types.StateInCreation
+			m.setRefresh(func(_ context.Context) error {
+				calls++
+				if calls >= 2 {
+					state = failState
+				}
+				s := state
+				m.setStatus(&types.ResourceStatus{State: &s})
+				return nil
+			})
+			err := m.WaitUntilActive(context.Background(), fastOpts()...)
+			if err == nil {
+				t.Fatal("expected error when failure state reached")
+			}
+			if !strings.Contains(err.Error(), "failure state") {
+				t.Errorf("error = %q; want 'failure state'", err.Error())
+			}
+		})
+	}
+}
+
+// --------------------------------------------------------------------------
+// Settled non-target state — fast fail (rule 4)
+// --------------------------------------------------------------------------
+
+func TestWaitUntilActive_SettledNonTarget(t *testing.T) {
 	var m statusMixin
-	m.setTerminalStates(map[string]bool{"Active": true, "Error": false})
-	state := "Pending"
+	state := types.StateInCreation
 	calls := 0
 	m.setRefresh(func(_ context.Context) error {
 		calls++
 		if calls >= 2 {
-			state = "Error"
+			state = types.StateReserved // settled non-target for WaitUntilActive
 		}
 		s := state
 		m.setStatus(&types.ResourceStatus{State: &s})
@@ -213,10 +231,65 @@ func TestWaitUntilActive_ErrorTerminal(t *testing.T) {
 	})
 	err := m.WaitUntilActive(context.Background(), fastOpts()...)
 	if err == nil {
-		t.Fatal("expected error when terminal error state reached")
+		t.Fatal("expected error when resource settles in non-target state")
 	}
-	if !strings.Contains(err.Error(), "terminal error state") {
-		t.Errorf("error = %q; want 'terminal error state'", err.Error())
+	if !strings.Contains(err.Error(), "settled in state") {
+		t.Errorf("error = %q; want 'settled in state'", err.Error())
+	}
+}
+
+// --------------------------------------------------------------------------
+// Reserved is a valid WaitUntilUsed target
+// --------------------------------------------------------------------------
+
+func TestWaitUntilStates_ReservedIsTarget(t *testing.T) {
+	var m statusMixin
+	state := types.StateInCreation
+	calls := 0
+	m.setRefresh(func(_ context.Context) error {
+		calls++
+		if calls >= 2 {
+			state = types.StateReserved
+		}
+		s := state
+		m.setStatus(&types.ResourceStatus{State: &s})
+		return nil
+	})
+	// Listing Reserved as a target (as WaitUntilUsed does) must succeed.
+	err := m.WaitUntilStates(context.Background(),
+		[]types.State{types.StateInUse, types.StateUsed, types.StateReserved},
+		fastOpts()...)
+	if err != nil {
+		t.Fatalf("WaitUntilStates with Reserved as target: unexpected error: %v", err)
+	}
+	if m.State() != types.StateReserved {
+		t.Errorf("State() = %q, want Reserved", m.State())
+	}
+}
+
+// WaitUntilNotUsed must fail fast when resource settles in Reserved.
+func TestWaitUntilStates_ReservedFailsFastWhenNotTarget(t *testing.T) {
+	var m statusMixin
+	state := types.StateInCreation
+	calls := 0
+	m.setRefresh(func(_ context.Context) error {
+		calls++
+		if calls >= 2 {
+			state = types.StateReserved
+		}
+		s := state
+		m.setStatus(&types.ResourceStatus{State: &s})
+		return nil
+	})
+	// NotUsed only — Reserved is not in the target list.
+	err := m.WaitUntilStates(context.Background(),
+		[]types.State{types.StateNotUsed},
+		fastOpts()...)
+	if err == nil {
+		t.Fatal("expected error: Reserved is settled but not in target list")
+	}
+	if !strings.Contains(err.Error(), "settled in state") {
+		t.Errorf("error = %q; want 'settled in state'", err.Error())
 	}
 }
 
@@ -227,13 +300,13 @@ func TestWaitUntilActive_ErrorTerminal(t *testing.T) {
 func TestWaitUntilActive_RefreshError_Retried(t *testing.T) {
 	var m statusMixin
 	calls := 0
-	state := "Pending"
+	state := types.StateInCreation
 	m.setRefresh(func(_ context.Context) error {
 		calls++
 		if calls < 3 {
 			return errors.New("transient network error")
 		}
-		state = "Active"
+		state = types.StateActive
 		s := state
 		m.setStatus(&types.ResourceStatus{State: &s})
 		return nil
@@ -249,8 +322,7 @@ func TestWaitUntilActive_RefreshError_Retried(t *testing.T) {
 
 func TestWaitUntilActive_RetriesExhausted(t *testing.T) {
 	var m statusMixin
-	state := "Pending"
-	s := state
+	s := types.StateInCreation
 	m.setStatus(&types.ResourceStatus{State: &s})
 	m.setRefresh(func(_ context.Context) error { return nil }) // never advances state
 	err := m.WaitUntilActive(context.Background(),
@@ -269,8 +341,7 @@ func TestWaitUntilActive_RetriesExhausted(t *testing.T) {
 
 func TestWaitUntilActive_Timeout(t *testing.T) {
 	var m statusMixin
-	state := "Pending"
-	s := state
+	s := types.StateInCreation
 	m.setStatus(&types.ResourceStatus{State: &s})
 	m.setRefresh(func(_ context.Context) error { return nil }) // never advances
 	err := m.WaitUntilActive(context.Background(),
@@ -289,8 +360,7 @@ func TestWaitUntilActive_Timeout(t *testing.T) {
 
 func TestWaitUntilActive_ContextCancellation(t *testing.T) {
 	var m statusMixin
-	state := "Pending"
-	s := state
+	s := types.StateInCreation
 	m.setStatus(&types.ResourceStatus{State: &s})
 	m.setRefresh(func(_ context.Context) error { return nil })
 	ctx, cancel := context.WithCancel(context.Background())

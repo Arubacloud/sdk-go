@@ -632,27 +632,21 @@ func TestKeyPairsClientAdapter_List_NonTwoXX(t *testing.T) {
 	}
 }
 
-func TestKeyPair_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestKeyPair_FromResponse_SetsStatus(t *testing.T) {
 	k := &KeyPair{}
-	state := "NotUsed"
+	state := types.State("Active")
 	k.fromResponse(&types.KeyPairResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(k.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !k.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for KeyPair")
-	}
-	if k.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for KeyPair")
+	if k.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", k.State())
 	}
 }
 
 func TestKeyPair_WaitUntilActive_HappyPath(t *testing.T) {
 	k := &KeyPair{}
 	calls := 0
-	state := "InCreation"
+	state := types.State("InCreation")
 	k.setRefresh(func(_ context.Context) error {
 		calls++
 		if calls >= 2 {
@@ -662,7 +656,6 @@ func TestKeyPair_WaitUntilActive_HappyPath(t *testing.T) {
 		k.setStatus(&types.ResourceStatus{State: &s})
 		return nil
 	})
-	k.setTerminalStates(keyPairTerminalStates)
 	if err := k.WaitUntilActive(context.Background(), fastOpts()...); err != nil {
 		t.Fatalf("WaitUntilActive error: %v", err)
 	}

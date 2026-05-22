@@ -246,7 +246,7 @@ func TestSecurityRule_ToRequestRoundTrip(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func securityRuleTestResponse(id, name, uri, projectID string) *types.SecurityRuleResponse {
-	state := "Active"
+	state := types.State("Active")
 	dir := RuleDirectionEgress
 	proto := RuleProtocolUDP
 	port := "53"
@@ -1118,20 +1118,14 @@ func TestSecurityGroupRulesClientAdapter_List_TwoItems(t *testing.T) {
 	}
 }
 
-func TestSecurityRule_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestSecurityRule_FromResponse_SetsStatus(t *testing.T) {
 	r := &SecurityRule{}
-	state := "Active"
+	state := types.State("Active")
 	r.fromResponse(&types.SecurityRuleResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(r.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !r.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for SecurityRule")
-	}
-	if r.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for SecurityRule")
+	if r.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", r.State())
 	}
 }
 

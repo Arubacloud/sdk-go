@@ -268,7 +268,6 @@ func (r *ContainerRegistry) fromResponse(resp *types.ContainerRegistryResponse) 
 		r.inRegion(resp.Metadata.LocationResponse.Value)
 	}
 	r.setStatus(&resp.Status)
-	r.setTerminalStates(containerRegistryTerminalStates)
 
 	if resp.Properties.PublicIp.URI != "" {
 		v := resp.Properties.PublicIp.URI
@@ -317,12 +316,6 @@ func containerRegistryDeref(p *string) string {
 		return ""
 	}
 	return *p
-}
-
-var containerRegistryTerminalStates = map[string]bool{
-	"Active": true,
-	"Error":  false,
-	"Failed": false,
 }
 
 // ---- Low-level client interface ----

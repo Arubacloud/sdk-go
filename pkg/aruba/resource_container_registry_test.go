@@ -424,7 +424,7 @@ func TestContainerRegistry_ToRequest_Empty(t *testing.T) {
 func containerRegistryTestResponse(name string) *types.ContainerRegistryResponse {
 	id := "cr-1"
 	uri := "/projects/p/providers/Aruba.Container/registries/cr-1"
-	state := "Active"
+	state := types.State("Active")
 	size := "Small"
 	vpcURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1"
 	subnetURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1"
@@ -1325,20 +1325,14 @@ func TestContainerRegistriesClientAdapter_List_LowLevelError(t *testing.T) {
 	}
 }
 
-func TestContainerRegistry_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestContainerRegistry_FromResponse_SetsStatus(t *testing.T) {
 	r := &ContainerRegistry{}
-	state := "Active"
+	state := types.State("Active")
 	r.fromResponse(&types.ContainerRegistryResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(r.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !r.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for ContainerRegistry")
-	}
-	if r.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for ContainerRegistry")
+	if r.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", r.State())
 	}
 }
 

@@ -11,8 +11,8 @@ import (
 func createSecurityGroup(ctx context.Context, arubaClient aruba.Client, vpc *aruba.VPC) *aruba.SecurityGroup {
 	printBanner("Security Group", "")
 
-	if err := waitForDependencies(ctx, "Security Group", map[string]waitFunc{
-		"VPC": vpc.WaitUntilActive,
+	if err := waitForDependencies(ctx, "Security Group", map[string]depEntry{
+		"VPC": dep(vpc, vpc.WaitUntilActive),
 	}); err != nil {
 		printDepWaitError("Security Group", err)
 		return nil
@@ -31,7 +31,7 @@ func createSecurityGroup(ctx context.Context, arubaClient aruba.Client, vpc *aru
 	}
 	printCreated("Security Group", created.Name(), created.ID())
 
-	waitUntilSelfReady(ctx, "Security Group", created.Name(), created.WaitUntilReady)
+	waitUntilSelfReady(ctx, "Security Group", created.Name(), created, created.WaitUntilReady)
 
 	return created
 }
@@ -40,8 +40,8 @@ func createSecurityGroup(ctx context.Context, arubaClient aruba.Client, vpc *aru
 func createSecurityGroupIngressRule(ctx context.Context, arubaClient aruba.Client, sg *aruba.SecurityGroup, name, tag string, protocol aruba.RuleProtocol, port string) *aruba.SecurityRule {
 	fmt.Printf("--- Security Rule (Ingress/%s) ---\n", name)
 
-	if err := waitForDependencies(ctx, "Security Rule (Ingress)", map[string]waitFunc{
-		"Security Group": sg.WaitUntilActive,
+	if err := waitForDependencies(ctx, "Security Rule (Ingress)", map[string]depEntry{
+		"Security Group": dep(sg, sg.WaitUntilActive),
 	}); err != nil {
 		printDepWaitError("Security Rule (Ingress)", err)
 		return nil
@@ -65,7 +65,7 @@ func createSecurityGroupIngressRule(ctx context.Context, arubaClient aruba.Clien
 	}
 	printCreated("Security Rule (Ingress)", created.Name(), created.ID())
 
-	waitUntilSelfReady(ctx, "Security Rule (Ingress)", created.Name(), created.WaitUntilReady)
+	waitUntilSelfReady(ctx, "Security Rule (Ingress)", created.Name(), created, created.WaitUntilReady)
 
 	return created
 }
@@ -75,8 +75,8 @@ func createSecurityGroupIngressRule(ctx context.Context, arubaClient aruba.Clien
 func createSecurityGroupEgressRule(ctx context.Context, arubaClient aruba.Client, sg *aruba.SecurityGroup) *aruba.SecurityRule {
 	printBanner("Security Rule", "Egress")
 
-	if err := waitForDependencies(ctx, "Security Rule (Egress)", map[string]waitFunc{
-		"Security Group": sg.WaitUntilActive,
+	if err := waitForDependencies(ctx, "Security Rule (Egress)", map[string]depEntry{
+		"Security Group": dep(sg, sg.WaitUntilActive),
 	}); err != nil {
 		printDepWaitError("Security Rule (Egress)", err)
 		return nil
@@ -98,7 +98,7 @@ func createSecurityGroupEgressRule(ctx context.Context, arubaClient aruba.Client
 	}
 	printCreated("Security Rule (Egress)", created.Name(), created.ID())
 
-	waitUntilSelfReady(ctx, "Security Rule (Egress)", created.Name(), created.WaitUntilReady)
+	waitUntilSelfReady(ctx, "Security Rule (Egress)", created.Name(), created, created.WaitUntilReady)
 
 	return created
 }

@@ -31,7 +31,7 @@ func createBlockStorage(ctx context.Context, arubaClient aruba.Client, proj arub
 	}
 	printCreated("Block Storage", bs.Name(), bs.ID())
 
-	waitUntilSelfReady(ctx, "Block Storage", bs.Name(), bs.WaitUntilReady)
+	waitUntilSelfReady(ctx, "Block Storage", bs.Name(), bs, bs.WaitUntilReady)
 
 	return bs
 }

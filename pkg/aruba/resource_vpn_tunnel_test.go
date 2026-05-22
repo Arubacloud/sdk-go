@@ -486,7 +486,7 @@ func TestVPNTunnel_AbsorbsSubBuilderErrors(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func vpnTunnelTestResponse(id, name, uri, projectID string) *types.VPNTunnelResponse {
-	state := "Active"
+	state := types.State("Active")
 	vpnType := VPNTypeSiteToSite
 	proto := VPNClientProtocolIKEv2
 	loc := &types.LocationResponse{Value: RegionITBGBergamo}
@@ -1316,20 +1316,14 @@ func TestVPNTunnelsClientAdapter_List_TwoItems(t *testing.T) {
 	}
 }
 
-func TestVPNTunnel_FromResponse_SetsTerminalStates(t *testing.T) {
+func TestVPNTunnel_FromResponse_SetsStatus(t *testing.T) {
 	tun := &VPNTunnel{}
-	state := "Active"
+	state := types.State("Active")
 	tun.fromResponse(&types.VPNTunnelResponse{
 		Status: types.ResourceStatus{State: &state},
 	})
-	if len(tun.terminalStates) == 0 {
-		t.Error("fromResponse should set terminalStates on the wrapper")
-	}
-	if !tun.terminalStates["Active"] {
-		t.Error("terminalStates[Active] should be true for VPNTunnel")
-	}
-	if tun.terminalStates["Error"] {
-		t.Error("terminalStates[Error] should be false for VPNTunnel")
+	if tun.State() != types.StateActive {
+		t.Errorf("State() = %q after fromResponse, want Active", tun.State())
 	}
 }
 

@@ -12,9 +12,9 @@ import (
 func createKaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, vpc *aruba.VPC, subnet *aruba.Subnet) *aruba.KaaS {
 	printBanner("KaaS Cluster", "")
 
-	if err := waitForDependencies(ctx, "KaaS Cluster", map[string]waitFunc{
-		"VPC":    vpc.WaitUntilActive,
-		"Subnet": subnet.WaitUntilActive,
+	if err := waitForDependencies(ctx, "KaaS Cluster", map[string]depEntry{
+		"VPC":    dep(vpc, vpc.WaitUntilActive),
+		"Subnet": dep(subnet, subnet.WaitUntilActive),
 	}); err != nil {
 		printDepWaitError("KaaS Cluster", err)
 		return nil
@@ -51,7 +51,7 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, v
 	}
 	printCreated("KaaS Cluster", result.Name(), result.KaaSID())
 
-	waitUntilSelfReady(ctx, "KaaS Cluster", result.Name(), result.WaitUntilReady)
+	waitUntilSelfReady(ctx, "KaaS Cluster", result.Name(), result, result.WaitUntilReady)
 
 	return result
 }
