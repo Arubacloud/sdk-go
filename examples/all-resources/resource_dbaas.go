@@ -30,10 +30,10 @@ func createDBaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, 
 		InRegion(aruba.RegionITBGBergamo).
 		InZone(aruba.ZoneITBG1).
 		OfEngine(aruba.DatabaseEngineMySQL80).
-		OfFlavor(aruba.DBaaSFlavorDBO2A4).
+		OfFlavor(aruba.DBaaSFlavorDBO4A8).
 		WithSizeGB(10).
 		WithAutoscaling(2, 5).
-		WithBillingPeriod(aruba.BillingPeriodMonth).
+		WithBillingPeriod(aruba.BillingPeriodHour).
 		WithVPC(vpc).
 		WithSubnet(subnet).
 		WithSecurityGroup(sg).
