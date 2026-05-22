@@ -33,7 +33,7 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, v
 		WithPodCIDR("10.0.3.0/24").
 		WithNodeCIDR("172.16.0.0/16", resourceName(NameKaaSNodeCIDR)).
 		WithHA(true).
-		WithBillingPeriod(aruba.BillingPeriodMonth).
+		WithBillingPeriod(aruba.BillingPeriodHour).
 		WithVPC(vpc).
 		WithSubnet(subnet).
 		WithSecurityGroup(kaasSG).
@@ -65,7 +65,7 @@ func updateKaaS(ctx context.Context, arubaClient aruba.Client, k *aruba.KaaS) {
 	k.Named(updatedName(k.Name())).
 		ReplaceTags("kubernetes", "container", "updated").
 		WithMaxStorageQuotaGB(100).
-		WithBillingPeriod(aruba.BillingPeriodMonth).
+		WithBillingPeriod(aruba.BillingPeriodHour).
 		WithHA(true).
 		AddNodePool(aruba.NewNodePool().
 			Named(resourceName(NameNodePool)).
