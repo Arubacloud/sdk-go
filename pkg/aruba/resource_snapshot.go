@@ -36,6 +36,14 @@ type Snapshot struct {
 	response *types.SnapshotResponse
 }
 
+// NewSnapshot returns a fresh *Snapshot ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewSnapshot() *Snapshot {
+	s := &Snapshot{}
+	s.projectScopedMixin = bindProjectScoped(&s.errMixin)
+	return s
+}
+
 // Setters — chainable, general → specific
 
 // IntoProject binds this Snapshot to its parent project. Required before Create.

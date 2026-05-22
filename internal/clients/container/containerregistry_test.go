@@ -10,6 +10,7 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 func TestListContainerRegistry(t *testing.T) {
@@ -22,23 +23,23 @@ func TestListContainerRegistry(t *testing.T) {
 					Values: []types.ContainerRegistryResponse{
 						{
 							Metadata: types.ResourceMetadataResponse{
-								Name: types.StringPtr("test-registry"),
+								Name: ptr.To("test-registry"),
 							},
 							Properties: types.ContainerRegistryPropertiesResult{
 								VPC: types.ReferenceResource{
-									URI: *types.StringPtr("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"),
+									URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"),
 								},
 								Subnet: types.ReferenceResource{
-									URI: *types.StringPtr("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"),
+									URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"),
 								},
 								SecurityGroup: types.ReferenceResource{
-									URI: *types.StringPtr("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"),
+									URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"),
 								},
 								PublicIp: types.ReferenceResource{
-									URI: *types.StringPtr("/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"),
+									URI: *ptr.To("/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"),
 								},
 								BlockStorage: types.ReferenceResource{
-									URI: *types.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
+									URI: *ptr.To("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
 								},
 								BillingPlan: func() *types.BillingPlan {
 									v := types.BillingPeriodHour
@@ -47,10 +48,10 @@ func TestListContainerRegistry(t *testing.T) {
 								AdminUser: &types.UserCredential{
 									Username: "admin",
 								},
-								ConcurrentUsers: types.StringPtr("100"),
+								ConcurrentUsers: ptr.To("100"),
 							},
 							Status: types.ResourceStatus{
-								State: types.StatePtr(types.State("active")),
+								State: ptr.To(types.State("active")),
 							},
 						},
 					},
@@ -189,24 +190,24 @@ func TestGetContainerRegistry(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				resp := types.ContainerRegistryResponse{
 					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("test-registry"),
-						ID:   types.StringPtr("registry-123"),
+						Name: ptr.To("test-registry"),
+						ID:   ptr.To("registry-123"),
 					},
 					Properties: types.ContainerRegistryPropertiesResult{
 						VPC: types.ReferenceResource{
-							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"),
 						},
 						Subnet: types.ReferenceResource{
-							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"),
 						},
 						SecurityGroup: types.ReferenceResource{
-							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"),
 						},
 						PublicIp: types.ReferenceResource{
-							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"),
 						},
 						BlockStorage: types.ReferenceResource{
-							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
 						},
 						BillingPlan: func() *types.BillingPlan {
 							v := types.BillingPeriodHour
@@ -215,10 +216,10 @@ func TestGetContainerRegistry(t *testing.T) {
 						AdminUser: &types.UserCredential{
 							Username: "admin",
 						},
-						ConcurrentUsers: types.StringPtr("100"),
+						ConcurrentUsers: ptr.To("100"),
 					},
 					Status: types.ResourceStatus{
-						State: types.StatePtr(types.State("active")),
+						State: ptr.To(types.State("active")),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -347,25 +348,25 @@ func TestCreateContainerRegistry(t *testing.T) {
 				w.WriteHeader(http.StatusCreated)
 				resp := types.ContainerRegistryResponse{
 					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("new-registry"),
-						ID:   types.StringPtr("registry-456"),
-						URI:  types.StringPtr("/projects/test-project/providers/Aruba.Container/registries/registry-456"),
+						Name: ptr.To("new-registry"),
+						ID:   ptr.To("registry-456"),
+						URI:  ptr.To("/projects/test-project/providers/Aruba.Container/registries/registry-456"),
 					},
 					Properties: types.ContainerRegistryPropertiesResult{
 						VPC: types.ReferenceResource{
-							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"),
 						},
 						Subnet: types.ReferenceResource{
-							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"),
 						},
 						SecurityGroup: types.ReferenceResource{
-							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"),
 						},
 						PublicIp: types.ReferenceResource{
-							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"),
 						},
 						BlockStorage: types.ReferenceResource{
-							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
 						},
 						BillingPlan: func() *types.BillingPlan {
 							v := types.BillingPeriodHour
@@ -374,10 +375,10 @@ func TestCreateContainerRegistry(t *testing.T) {
 						AdminUser: &types.UserCredential{
 							Username: "admin",
 						},
-						ConcurrentUsers: types.StringPtr("100"),
+						ConcurrentUsers: ptr.To("100"),
 					},
 					Status: types.ResourceStatus{
-						State: types.StatePtr(types.State("creating")),
+						State: ptr.To(types.State("creating")),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -405,7 +406,7 @@ func TestCreateContainerRegistry(t *testing.T) {
 					return &types.BillingPlan{BillingPeriod: &v}
 				}(),
 				AdminUser:       &types.UserCredential{Username: "admin"},
-				ConcurrentUsers: types.StringPtr("100"),
+				ConcurrentUsers: ptr.To("100"),
 			},
 		}
 
@@ -589,24 +590,24 @@ func TestUpdateContainerRegistry(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				resp := types.ContainerRegistryResponse{
 					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("updated-registry"),
-						ID:   types.StringPtr("registry-123"),
+						Name: ptr.To("updated-registry"),
+						ID:   ptr.To("registry-123"),
 					},
 					Properties: types.ContainerRegistryPropertiesResult{
 						VPC: types.ReferenceResource{
-							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"),
 						},
 						Subnet: types.ReferenceResource{
-							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"),
 						},
 						SecurityGroup: types.ReferenceResource{
-							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"),
 						},
 						PublicIp: types.ReferenceResource{
-							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"),
 						},
 						BlockStorage: types.ReferenceResource{
-							URI: *types.StringPtr("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
 						},
 						BillingPlan: func() *types.BillingPlan {
 							v := types.BillingPeriodHour
@@ -615,10 +616,10 @@ func TestUpdateContainerRegistry(t *testing.T) {
 						AdminUser: &types.UserCredential{
 							Username: "admin",
 						},
-						ConcurrentUsers: types.StringPtr("100"),
+						ConcurrentUsers: ptr.To("100"),
 					},
 					Status: types.ResourceStatus{
-						State: types.StatePtr(types.State("updating")),
+						State: ptr.To(types.State("updating")),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -646,7 +647,7 @@ func TestUpdateContainerRegistry(t *testing.T) {
 					return &types.BillingPlan{BillingPeriod: &v}
 				}(),
 				AdminUser:       &types.UserCredential{Username: "admin"},
-				ConcurrentUsers: types.StringPtr("100"),
+				ConcurrentUsers: ptr.To("100"),
 			},
 		}
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/utils/ptr"
+
 	"github.com/Arubacloud/sdk-go/internal/clients/network"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
 	"github.com/Arubacloud/sdk-go/pkg/types"
@@ -37,6 +39,14 @@ type Subnet struct {
 	cidr          *string               // Properties.Network.Address
 	dhcp          *SubnetDHCP           // Properties.DHCP (sub-builder)
 	response      *types.SubnetResponse // backs Raw()
+}
+
+// NewSubnet returns a fresh *Subnet ready for fluent setters and a Create call.
+// Binds vpcScopedMixin's error sink so IntoVPC failures surface via Err().
+func NewSubnet() *Subnet {
+	s := &Subnet{defaultSubnet: ptr.To(false)}
+	s.vpcScopedMixin = bindVPCScoped(&s.errMixin)
+	return s
 }
 
 // Setters — chainable, general → specific

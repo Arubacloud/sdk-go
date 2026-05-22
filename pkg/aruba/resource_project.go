@@ -25,6 +25,9 @@ type Project struct {
 	defaultProj bool // ProjectPropertiesRequest.Default is plain bool — no tri-state needed
 }
 
+// NewProject returns a fresh *Project ready for fluent setters and a Create call.
+func NewProject() *Project { return &Project{} }
+
 // Setters — chainable, general → specific
 
 // Named sets the project name.

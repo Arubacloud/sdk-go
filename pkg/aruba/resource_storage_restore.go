@@ -29,6 +29,14 @@ type StorageRestore struct {
 	response *types.StorageRestoreResponse
 }
 
+// NewStorageRestore returns a fresh *StorageRestore ready for fluent setters and a Create call.
+// Binds backupScopedMixin's error sink so IntoBackup failures surface via Err().
+func NewStorageRestore() *StorageRestore {
+	r := &StorageRestore{}
+	r.backupScopedMixin = bindBackupScoped(&r.errMixin)
+	return r
+}
+
 // Setters — chainable, general → specific
 
 // IntoBackup binds this StorageRestore to its parent StorageBackup. Required before Create.

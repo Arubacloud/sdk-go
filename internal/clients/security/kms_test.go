@@ -9,6 +9,7 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 func TestListKMSKeys(t *testing.T) {
@@ -238,7 +239,7 @@ func TestCreateKMSKey(t *testing.T) {
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-encryption-key"},
 				Location:                types.LocationRequest{Value: "it-eur"},
 			},
-			Properties: types.KmsPropertiesRequest{BillingPeriod: (*types.BillingPeriod)(types.StringPtr("Month"))},
+			Properties: types.KmsPropertiesRequest{BillingPeriod: (*types.BillingPeriod)(ptr.To("Month"))},
 		}
 		resp, err := svc.Create(context.Background(), "test-project", body, nil)
 		if err != nil {
@@ -400,7 +401,7 @@ func TestUpdateKMSKey(t *testing.T) {
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "updated-encryption-key"},
 				Location:                types.LocationRequest{Value: "it-eur"},
 			},
-			Properties: types.KmsPropertiesRequest{BillingPeriod: (*types.BillingPeriod)(types.StringPtr("Year"))},
+			Properties: types.KmsPropertiesRequest{BillingPeriod: (*types.BillingPeriod)(ptr.To("Year"))},
 		}
 		resp, err := svc.Update(context.Background(), "test-project", "kms-123", body, nil)
 		if err != nil {

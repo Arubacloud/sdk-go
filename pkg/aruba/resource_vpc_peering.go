@@ -36,6 +36,14 @@ type VPCPeering struct {
 	response  *types.VPCPeeringResponse
 }
 
+// NewVPCPeering returns a fresh *VPCPeering ready for fluent setters and a Create call.
+// Binds vpcScopedMixin's error sink so IntoVPC failures surface via Err().
+func NewVPCPeering() *VPCPeering {
+	p := &VPCPeering{}
+	p.vpcScopedMixin = bindVPCScoped(&p.errMixin)
+	return p
+}
+
 // Setters — chainable, general → specific
 
 // IntoVPC binds this VPCPeering to its parent VPC. Required before Create.

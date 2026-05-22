@@ -22,6 +22,9 @@ type NodePool struct {
 	autoscaling *bool
 }
 
+// NewNodePool returns a fresh *NodePool sub-builder for configuring a KaaS node pool.
+func NewNodePool() *NodePool { return &NodePool{} }
+
 // Named sets the node pool name.
 func (n *NodePool) Named(name string) *NodePool { n.name = &name; return n }
 

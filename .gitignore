@@ -52,3 +52,6 @@ docs/website/*~
 
 # Example binaries
 examples/all-resources/all-resources
+
+# Log files
+*.log

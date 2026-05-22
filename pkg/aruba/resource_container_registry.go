@@ -44,6 +44,14 @@ type ContainerRegistry struct {
 	response *types.ContainerRegistryResponse
 }
 
+// NewContainerRegistry returns a fresh *ContainerRegistry ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewContainerRegistry() *ContainerRegistry {
+	r := &ContainerRegistry{}
+	r.projectScopedMixin = bindProjectScoped(&r.errMixin)
+	return r
+}
+
 // Setters — chainable, general → specific
 
 // Standard setters.

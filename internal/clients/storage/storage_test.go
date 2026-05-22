@@ -10,6 +10,7 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 func newSnapshotSvc(t *testing.T, baseURL string) *snapshotsClientImpl {
@@ -252,8 +253,8 @@ func TestCreateBlockStorageVolume(t *testing.T) {
 			},
 			Properties: types.BlockStoragePropertiesRequest{
 				SizeGB:        50,
-				BillingPeriod: (*types.BillingPeriod)(types.StringPtr("Hour")),
-				Zone:          (*types.Zone)(types.StringPtr("it-eur-1")),
+				BillingPeriod: (*types.BillingPeriod)(ptr.To("Hour")),
+				Zone:          (*types.Zone)(ptr.To("it-eur-1")),
 				Type:          types.BlockStorageTypeStandard,
 			},
 		}
@@ -419,7 +420,7 @@ func TestUpdateBlockStorageVolume(t *testing.T) {
 			},
 			Properties: types.BlockStoragePropertiesRequest{
 				SizeGB:        100,
-				BillingPeriod: (*types.BillingPeriod)(types.StringPtr("Hour")),
+				BillingPeriod: (*types.BillingPeriod)(ptr.To("Hour")),
 				Type:          types.BlockStorageTypeStandard,
 			},
 		}
@@ -972,7 +973,7 @@ func TestUpdateSnapshot(t *testing.T) {
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "updated-snapshot"},
 			},
 			Properties: types.SnapshotPropertiesRequest{
-				BillingPeriod: (*types.BillingPeriod)(types.StringPtr("Hour")),
+				BillingPeriod: (*types.BillingPeriod)(ptr.To("Hour")),
 			},
 		}
 		resp, err := svc.Update(context.Background(), "test-project", "snap-123", body, nil)

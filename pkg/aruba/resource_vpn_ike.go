@@ -17,6 +17,9 @@ type VPNIKE struct {
 	dpdTimeout  int32
 }
 
+// NewVPNIKE returns a fresh *VPNIKE sub-builder for configuring IKE settings.
+func NewVPNIKE() *VPNIKE { return &VPNIKE{} }
+
 // WithLifetimeSeconds sets the IKE SA lifetime in seconds.
 func (k *VPNIKE) WithLifetimeSeconds(s int) *VPNIKE { k.lifetime = int32(s); return k }
 

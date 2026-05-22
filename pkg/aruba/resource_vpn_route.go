@@ -38,6 +38,14 @@ type VPNRoute struct {
 	response *types.VPNRouteResponse
 }
 
+// NewVPNRoute returns a fresh *VPNRoute ready for fluent setters and a Create call.
+// Binds vpnTunnelScopedMixin's error sink so IntoVPNTunnel failures surface via Err().
+func NewVPNRoute() *VPNRoute {
+	r := &VPNRoute{}
+	r.vpnTunnelScopedMixin = bindVPNTunnelScoped(&r.errMixin)
+	return r
+}
+
 // Setters — chainable, general → specific
 
 // IntoVPNTunnel binds this VPNRoute to its parent VPNTunnel. Required before Create.

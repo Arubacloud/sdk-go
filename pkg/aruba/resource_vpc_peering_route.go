@@ -37,6 +37,14 @@ type VPCPeeringRoute struct {
 	response      *types.VPCPeeringRouteResponse
 }
 
+// NewVPCPeeringRoute returns a fresh *VPCPeeringRoute ready for fluent setters and a Create call.
+// Binds vpcPeeringScopedMixin's error sink so IntoVPCPeering failures surface via Err().
+func NewVPCPeeringRoute() *VPCPeeringRoute {
+	r := &VPCPeeringRoute{}
+	r.vpcPeeringScopedMixin = bindVPCPeeringScoped(&r.errMixin)
+	return r
+}
+
 // Setters — chainable, general → specific
 
 // IntoVPCPeering binds this VPCPeeringRoute to its parent VPCPeering. Required before Create.

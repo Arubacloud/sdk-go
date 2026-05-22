@@ -36,6 +36,14 @@ type Kmip struct {
 	response *types.KmipResponse
 }
 
+// NewKmip returns a fresh *Kmip ready for fluent setters and a Create call.
+// Binds kmsScopedMixin's error sink so IntoKMS failures surface via Err().
+func NewKmip() *Kmip {
+	km := &Kmip{}
+	km.kmsScopedMixin = bindKMSScoped(&km.errMixin)
+	return km
+}
+
 func (km *Kmip) setRefresh(fn func(context.Context) error) { km.refresh = fn }
 
 var kmipTerminalStates = map[string]bool{

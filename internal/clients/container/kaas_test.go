@@ -10,6 +10,7 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 func TestListKaaS(t *testing.T) {
@@ -22,18 +23,18 @@ func TestListKaaS(t *testing.T) {
 					Values: []types.KaaSResponse{
 						{
 							Metadata: types.ResourceMetadataResponse{
-								Name: types.StringPtr("test-kaas"),
+								Name: ptr.To("test-kaas"),
 							},
 							Properties: types.KaaSPropertiesResponse{
 								Preset: false,
-								HA:     types.BoolPtr(true),
+								HA:     ptr.To(true),
 								KubernetesVersion: types.KubernetesVersionInfoResponse{
-									Value:       types.StringPtr("1.28.0"),
+									Value:       ptr.To("1.28.0"),
 									Recommended: true,
 								},
 							},
 							Status: types.ResourceStatus{
-								State: types.StatePtr(types.State("active")),
+								State: ptr.To(types.State("active")),
 							},
 						},
 					},
@@ -142,32 +143,32 @@ func TestGetKaaS(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				resp := types.KaaSResponse{
 					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("test-kaas"),
-						ID:   types.StringPtr("kaas-123"),
+						Name: ptr.To("test-kaas"),
+						ID:   ptr.To("kaas-123"),
 					},
 					Properties: types.KaaSPropertiesResponse{
 						Preset: false,
-						HA:     types.BoolPtr(true),
+						HA:     ptr.To(true),
 						KubernetesVersion: types.KubernetesVersionInfoResponse{
-							Value:       types.StringPtr("1.28.0"),
+							Value:       ptr.To("1.28.0"),
 							Recommended: true,
 						},
 						NodePools: func() *[]types.NodePoolPropertiesResponse {
 							pools := []types.NodePoolPropertiesResponse{
 								{
-									Name:        types.StringPtr("default-pool"),
-									Nodes:       types.Int32Ptr(3),
-									Instance:    &types.InstanceResponse{Name: types.StringPtr("small")},
-									DataCenter:  &types.DataCenterResponse{Code: types.StringPtr("dc-01")},
+									Name:        ptr.To("default-pool"),
+									Nodes:       ptr.To(int32(3)),
+									Instance:    &types.InstanceResponse{Name: ptr.To("small")},
+									DataCenter:  &types.DataCenterResponse{Code: ptr.To("dc-01")},
 									Autoscaling: false,
 								},
 							}
 							return &pools
 						}(),
-						ManagementIP: types.StringPtr("10.0.0.100"),
+						ManagementIP: ptr.To("10.0.0.100"),
 					},
 					Status: types.ResourceStatus{
-						State: types.StatePtr(types.State("active")),
+						State: ptr.To(types.State("active")),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -285,19 +286,19 @@ func TestCreateKaaS(t *testing.T) {
 				w.WriteHeader(http.StatusCreated)
 				resp := types.KaaSResponse{
 					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("new-kaas"),
-						ID:   types.StringPtr("kaas-456"),
-						URI:  types.StringPtr("/projects/test-project/providers/Aruba.Container/kaas/kaas-456"),
+						Name: ptr.To("new-kaas"),
+						ID:   ptr.To("kaas-456"),
+						URI:  ptr.To("/projects/test-project/providers/Aruba.Container/kaas/kaas-456"),
 					},
 					Properties: types.KaaSPropertiesResponse{
 						Preset: false,
-						HA:     types.BoolPtr(true),
+						HA:     ptr.To(true),
 						KubernetesVersion: types.KubernetesVersionInfoResponse{
-							Value: types.StringPtr("1.28.0"),
+							Value: ptr.To("1.28.0"),
 						},
 					},
 					Status: types.ResourceStatus{
-						State: types.StatePtr(types.State("creating")),
+						State: ptr.To(types.State("creating")),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -315,8 +316,8 @@ func TestCreateKaaS(t *testing.T) {
 				},
 			},
 			Properties: types.KaaSPropertiesRequest{
-				Preset: types.BoolPtr(false),
-				HA:     types.BoolPtr(true),
+				Preset: ptr.To(false),
+				HA:     ptr.To(true),
 				KubernetesVersion: types.KubernetesVersionInfo{
 					Value: "1.28.0",
 				},
@@ -479,18 +480,18 @@ func TestUpdateKaaS(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				resp := types.KaaSResponse{
 					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("updated-kaas"),
-						ID:   types.StringPtr("kaas-123"),
+						Name: ptr.To("updated-kaas"),
+						ID:   ptr.To("kaas-123"),
 					},
 					Properties: types.KaaSPropertiesResponse{
 						Preset: false,
-						HA:     types.BoolPtr(true),
+						HA:     ptr.To(true),
 						KubernetesVersion: types.KubernetesVersionInfoResponse{
-							Value: types.StringPtr("1.29.0"),
+							Value: ptr.To("1.29.0"),
 						},
 					},
 					Status: types.ResourceStatus{
-						State: types.StatePtr(types.State("updating")),
+						State: ptr.To(types.State("updating")),
 					},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -519,7 +520,7 @@ func TestUpdateKaaS(t *testing.T) {
 						Zone:     "ITBG-1",
 					},
 				},
-				HA: types.BoolPtr(true),
+				HA: ptr.To(true),
 			},
 		}
 

@@ -38,6 +38,14 @@ type User struct {
 	response *types.UserResponse
 }
 
+// NewUser returns a fresh *User ready for fluent setters and a Create call.
+// Binds dbaasScopedMixin's error sink so IntoDBaaS failures surface via Err().
+func NewUser() *User {
+	u := &User{}
+	u.dbaasScopedMixin = bindDBaaSScoped(&u.errMixin)
+	return u
+}
+
 // Setters — chainable, general → specific
 
 // IntoDBaaS binds this User to its parent DBaaS instance. Required before Create.

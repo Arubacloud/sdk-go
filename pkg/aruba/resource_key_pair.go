@@ -29,6 +29,14 @@ type KeyPair struct {
 	response *types.KeyPairResponse
 }
 
+// NewKeyPair returns a fresh *KeyPair ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewKeyPair() *KeyPair {
+	k := &KeyPair{}
+	k.projectScopedMixin = bindProjectScoped(&k.errMixin)
+	return k
+}
+
 // Setters — chainable, general → specific
 
 // IntoProject binds this KeyPair to its parent project. Required before Create.

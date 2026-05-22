@@ -10,6 +10,7 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 func TestListBackups(t *testing.T) {
@@ -22,8 +23,8 @@ func TestListBackups(t *testing.T) {
 					Values: []types.BackupResponse{
 						{
 							Metadata: types.ResourceMetadataResponse{
-								Name: types.StringPtr("backup-1"),
-								ID:   types.StringPtr("bk-123"),
+								Name: ptr.To("backup-1"),
+								ID:   ptr.To("bk-123"),
 							},
 							Properties: types.BackupPropertiesResponse{
 								Zone:     "ITBG-1",
@@ -150,8 +151,8 @@ func TestGetBackup(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				resp := types.BackupResponse{
 					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("backup-1"),
-						ID:   types.StringPtr("bk-123"),
+						Name: ptr.To("backup-1"),
+						ID:   ptr.To("bk-123"),
 					},
 					Properties: types.BackupPropertiesResponse{
 						Zone:     "ITBG-1",
@@ -286,9 +287,9 @@ func TestCreateBackup(t *testing.T) {
 				w.WriteHeader(http.StatusCreated)
 				resp := types.BackupResponse{
 					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("backup-1"),
-						ID:   types.StringPtr("bk-123"),
-						URI:  types.StringPtr("/projects/test-project/providers/Aruba.Database/backups/bk-123"),
+						Name: ptr.To("backup-1"),
+						ID:   ptr.To("bk-123"),
+						URI:  ptr.To("/projects/test-project/providers/Aruba.Database/backups/bk-123"),
 					},
 					Properties: types.BackupPropertiesResponse{
 						Zone:     "ITBG-1",

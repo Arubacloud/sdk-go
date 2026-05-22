@@ -32,6 +32,14 @@ type Key struct {
 	response  *types.KeyResponse
 }
 
+// NewKey returns a fresh *Key ready for fluent setters and a Create call.
+// Binds kmsScopedMixin's error sink so IntoKMS failures surface via Err().
+func NewKey() *Key {
+	k := &Key{}
+	k.kmsScopedMixin = bindKMSScoped(&k.errMixin)
+	return k
+}
+
 // Setters — chainable, general → specific
 
 // IntoKMS binds this Key to its parent KMS instance. Required before Create.

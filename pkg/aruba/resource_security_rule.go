@@ -39,6 +39,14 @@ type SecurityRule struct {
 	response  *types.SecurityRuleResponse
 }
 
+// NewSecurityRule returns a fresh *SecurityRule ready for fluent setters and a Create call.
+// Binds securityGroupScopedMixin's error sink so IntoSecurityGroup failures surface via Err().
+func NewSecurityRule() *SecurityRule {
+	r := &SecurityRule{}
+	r.securityGroupScopedMixin = bindSecurityGroupScoped(&r.errMixin)
+	return r
+}
+
 // Setters — chainable, general → specific
 
 // IntoSecurityGroup binds this SecurityRule to its parent SecurityGroup. Required before Create.

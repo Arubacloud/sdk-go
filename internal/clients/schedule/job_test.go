@@ -9,6 +9,7 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 func TestListScheduleJobs(t *testing.T) {
@@ -262,13 +263,13 @@ func TestCreateScheduleJob(t *testing.T) {
 				Location:                types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.JobPropertiesRequest{
-				Enabled:      types.BoolPtr(true),
+				Enabled:      ptr.To(true),
 				JobType:      types.JobTypeRecurring,
-				Cron:         types.StringPtr("0 3 * * 0"),
-				ExecuteUntil: types.StringPtr("2026-01-01T00:00:00Z"),
+				Cron:         ptr.To("0 3 * * 0"),
+				ExecuteUntil: ptr.To("2026-01-01T00:00:00Z"),
 				Steps: []types.JobStep{
 					{
-						Name:        types.StringPtr("cleanup-old-snapshots"),
+						Name:        ptr.To("cleanup-old-snapshots"),
 						ResourceURI: "/projects/test-project/providers/Aruba.Storage/snapshots",
 						ActionURI:   "/cleanup",
 						HttpVerb:    "POST",
@@ -308,12 +309,12 @@ func TestCreateScheduleJob(t *testing.T) {
 				Location:                types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.JobPropertiesRequest{
-				Enabled:    types.BoolPtr(true),
+				Enabled:    ptr.To(true),
 				JobType:    types.JobTypeOneShot,
-				ScheduleAt: types.StringPtr("2025-11-20T22:00:00Z"),
+				ScheduleAt: ptr.To("2025-11-20T22:00:00Z"),
 				Steps: []types.JobStep{
 					{
-						Name:        types.StringPtr("stop-servers"),
+						Name:        ptr.To("stop-servers"),
 						ResourceURI: "/projects/test-project/providers/Aruba.Compute/cloudservers/vm-123",
 						ActionURI:   "/stop",
 						HttpVerb:    "POST",
@@ -488,13 +489,13 @@ func TestUpdateScheduleJob(t *testing.T) {
 				Location:                types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.JobPropertiesRequest{
-				Enabled:      types.BoolPtr(false),
+				Enabled:      ptr.To(false),
 				JobType:      types.JobTypeRecurring,
-				Cron:         types.StringPtr("0 4 * * *"),
-				ExecuteUntil: types.StringPtr("2025-12-31T23:59:59Z"),
+				Cron:         ptr.To("0 4 * * *"),
+				ExecuteUntil: ptr.To("2025-12-31T23:59:59Z"),
 				Steps: []types.JobStep{
 					{
-						Name:        types.StringPtr("updated-backup-step"),
+						Name:        ptr.To("updated-backup-step"),
 						ResourceURI: "/projects/test-project/providers/Aruba.Storage/block-storages/vol-456",
 						ActionURI:   "/snapshot",
 						HttpVerb:    "POST",

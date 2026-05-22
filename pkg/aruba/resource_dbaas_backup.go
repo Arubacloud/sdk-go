@@ -38,6 +38,14 @@ type DBaaSBackup struct {
 	response *types.BackupResponse
 }
 
+// NewDBaaSBackup returns a fresh *DBaaSBackup ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewDBaaSBackup() *DBaaSBackup {
+	b := &DBaaSBackup{}
+	b.projectScopedMixin = bindProjectScoped(&b.errMixin)
+	return b
+}
+
 // Setters — chainable, general → specific
 
 // IntoProject binds this DBaaSBackup to its parent project. Required before Create.

@@ -45,6 +45,14 @@ type VPNTunnel struct {
 	response *types.VPNTunnelResponse
 }
 
+// NewVPNTunnel returns a fresh *VPNTunnel ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewVPNTunnel() *VPNTunnel {
+	t := &VPNTunnel{}
+	t.projectScopedMixin = bindProjectScoped(&t.errMixin)
+	return t
+}
+
 // Setters — chainable, general → specific
 
 // IntoProject binds this VPNTunnel to its parent project. Required before Create.

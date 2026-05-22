@@ -9,6 +9,7 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 func TestListProjects(t *testing.T) {
@@ -221,7 +222,7 @@ func TestCreateProject(t *testing.T) {
 		body := types.ProjectRequest{
 			Metadata: types.ResourceMetadataRequest{Name: "new-project"},
 			Properties: types.ProjectPropertiesRequest{
-				Description: types.StringPtr("A new project"),
+				Description: ptr.To("A new project"),
 				Default:     false,
 			},
 		}
@@ -374,7 +375,7 @@ func TestUpdateProject(t *testing.T) {
 		body := types.ProjectRequest{
 			Metadata: types.ResourceMetadataRequest{Name: "updated-project"},
 			Properties: types.ProjectPropertiesRequest{
-				Description: types.StringPtr("Updated description"),
+				Description: ptr.To("Updated description"),
 				Default:     false,
 			},
 		}
