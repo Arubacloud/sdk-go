@@ -48,6 +48,14 @@ type Job struct {
 	response *types.JobResponse
 }
 
+// NewJob returns a fresh *Job ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewJob() *Job {
+	j := &Job{}
+	j.projectScopedMixin = bindProjectScoped(&j.errMixin)
+	return j
+}
+
 // Setters — chainable, general → specific
 
 // IntoProject binds this Job to its parent project. Required before Create.

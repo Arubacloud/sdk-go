@@ -10,6 +10,7 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 func TestListEvents(t *testing.T) {
@@ -28,30 +29,30 @@ func TestListEvents(t *testing.T) {
 							Timestamp: time.Now(),
 							Operation: types.Operation{
 								ID:    "Microsoft.Compute/virtualMachines/start/action",
-								Value: types.StringPtr("Start Virtual Machine"),
+								Value: ptr.To("Start Virtual Machine"),
 							},
 							Event: types.EventInfo{
 								ID:    "event-123",
-								Value: types.StringPtr("Virtual Machine Started"),
+								Value: ptr.To("Virtual Machine Started"),
 								Type:  "operational",
 							},
 							Category: types.EventCategory{
 								Value:       "Administrative",
-								Description: types.StringPtr("Administrative operations"),
+								Description: ptr.To("Administrative operations"),
 							},
 							Origin:  "user",
 							Channel: "Operation",
 							Status: types.Status{
 								Value:       "Succeeded",
-								Description: types.StringPtr("Operation completed successfully"),
-								Code:        types.Int32Ptr(200),
+								Description: ptr.To("Operation completed successfully"),
+								Code:        ptr.To(int32(200)),
 							},
 							Identity: types.Identity{
 								Caller: types.Caller{
 									Subject:  "user@example.com",
-									Username: types.StringPtr("testuser"),
-									Company:  types.StringPtr("TestCompany"),
-									TenantID: types.StringPtr("tenant-123"),
+									Username: ptr.To("testuser"),
+									Company:  ptr.To("TestCompany"),
+									TenantID: ptr.To("tenant-123"),
 								},
 							},
 						},
@@ -126,7 +127,7 @@ func TestListEvents(t *testing.T) {
 							Category:      types.EventCategory{Value: "Security"},
 							Origin:        "system",
 							Channel:       "Security",
-							Status:        types.Status{Value: "Failed", Code: types.Int32Ptr(403)},
+							Status:        types.Status{Value: "Failed", Code: ptr.To(int32(403))},
 							Identity:      types.Identity{Caller: types.Caller{Subject: "system"}},
 						},
 					},
@@ -140,8 +141,8 @@ func TestListEvents(t *testing.T) {
 		svc := NewEventsClientImpl(c)
 
 		params := &types.RequestParameters{
-			Limit:  types.Int32Ptr(10),
-			Offset: types.Int32Ptr(5),
+			Limit:  ptr.To(int32(10)),
+			Offset: ptr.To(int32(5)),
 		}
 		resp, err := svc.List(context.Background(), "test-project", params)
 		if err != nil {

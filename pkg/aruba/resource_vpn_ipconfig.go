@@ -19,6 +19,9 @@ type VPNIPConfig struct {
 	hasSubnet  bool
 }
 
+// NewVPNIPConfig returns a fresh *VPNIPConfig sub-builder for configuring IP settings.
+func NewVPNIPConfig() *VPNIPConfig { return &VPNIPConfig{} }
+
 // WithVPC sets the VPC reference for this IP configuration. Errors if v's URI is empty.
 func (c *VPNIPConfig) WithVPC(v Ref) *VPNIPConfig {
 	if v == nil || v.URI() == "" {

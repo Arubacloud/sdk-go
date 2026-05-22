@@ -65,6 +65,14 @@ type DBaaS struct {
 	response *types.DBaaSResponse
 }
 
+// NewDBaaS returns a fresh *DBaaS ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewDBaaS() *DBaaS {
+	d := &DBaaS{}
+	d.projectScopedMixin = bindProjectScoped(&d.errMixin)
+	return d
+}
+
 // Setters — chainable, general → specific
 
 // IntoProject binds this DBaaS to its parent project. Required before Create.

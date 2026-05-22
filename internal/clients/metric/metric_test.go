@@ -8,6 +8,7 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 func TestListMetrics(t *testing.T) {
@@ -243,7 +244,7 @@ func TestListAlerts(t *testing.T) {
 		c := testutil.NewClient(t, server.URL)
 		svc := NewAlertsClientImpl(c)
 		params := &types.RequestParameters{
-			Filter: types.StringPtr("resourceID eq 'vm-789'"),
+			Filter: ptr.To("resourceID eq 'vm-789'"),
 		}
 		resp, err := svc.List(context.Background(), "test-project", params)
 		if err != nil {

@@ -4,9 +4,8 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
-
-func ptr[T any](v T) *T { return &v }
 
 func TestCallOptions_Individual(t *testing.T) {
 	opts := applyCallOptions([]CallOption{
@@ -66,7 +65,7 @@ func TestCallOptions_Empty(t *testing.T) {
 // WithRawParameters followed by WithFilter: the explicit option wins.
 func TestCallOptions_RawThenExplicit(t *testing.T) {
 	raw := &types.RequestParameters{
-		Filter: ptr("from-raw"),
+		Filter: ptr.To("from-raw"),
 	}
 	opts := applyCallOptions([]CallOption{
 		WithRawParameters(raw),
@@ -80,7 +79,7 @@ func TestCallOptions_RawThenExplicit(t *testing.T) {
 // WithFilter followed by WithRawParameters: the raw param wins.
 func TestCallOptions_ExplicitThenRaw(t *testing.T) {
 	raw := &types.RequestParameters{
-		Filter: ptr("from-raw"),
+		Filter: ptr.To("from-raw"),
 	}
 	opts := applyCallOptions([]CallOption{
 		WithFilter("explicit"),
@@ -94,7 +93,7 @@ func TestCallOptions_ExplicitThenRaw(t *testing.T) {
 // WithRawParameters with nil Limit does not clobber a previously set WithLimit.
 func TestCallOptions_RawNilLimitPreservesExplicit(t *testing.T) {
 	raw := &types.RequestParameters{
-		Filter: ptr("from-raw"),
+		Filter: ptr.To("from-raw"),
 		// Limit is nil
 	}
 	opts := applyCallOptions([]CallOption{

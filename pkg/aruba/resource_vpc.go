@@ -7,6 +7,7 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/network"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 // VPCRef returns a Ref that points to the VPC with the given IDs.
@@ -35,6 +36,15 @@ type VPC struct {
 	defaultVPC *bool
 	preset     *bool
 	response   *types.VPCResponse
+}
+
+// NewVPC returns a fresh *VPC ready for fluent setters and a Create call.
+// Binds the projectScopedMixin's error sink to the VPC's errMixin so IntoProject
+// failures surface via Err().
+func NewVPC() *VPC {
+	v := &VPC{defaultVPC: ptr.To(false)}
+	v.projectScopedMixin = bindProjectScoped(&v.errMixin)
+	return v
 }
 
 // Setters — chainable, general → specific

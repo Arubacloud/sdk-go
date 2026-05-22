@@ -37,6 +37,14 @@ type ElasticIP struct {
 	response      *types.ElasticIPResponse // backs Raw()
 }
 
+// NewElasticIP returns a fresh *ElasticIP ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewElasticIP() *ElasticIP {
+	e := &ElasticIP{}
+	e.projectScopedMixin = bindProjectScoped(&e.errMixin)
+	return e
+}
+
 // Setters — chainable, general → specific
 
 // IntoProject binds this ElasticIP to its parent project. Required before Create.

@@ -10,6 +10,7 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 func TestListSubnets(t *testing.T) {
@@ -247,9 +248,9 @@ func TestCreateSubnet(t *testing.T) {
 			w.WriteHeader(http.StatusCreated)
 			resp := types.SubnetResponse{
 				Metadata: types.ResourceMetadataResponse{
-					ID:   types.StringPtr("subnet-123"),
-					Name: types.StringPtr("new-subnet"),
-					URI:  types.StringPtr("/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/subnets/subnet-123"),
+					ID:   ptr.To("subnet-123"),
+					Name: ptr.To("new-subnet"),
+					URI:  ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-123/subnets/subnet-123"),
 				},
 				Properties: types.SubnetPropertiesResponse{
 					Type: types.SubnetTypeAdvanced,

@@ -10,6 +10,7 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 func statePtr(s types.State) *types.State { return &s }
@@ -24,13 +25,13 @@ func TestListDBaaS(t *testing.T) {
 					Values: []types.DBaaSResponse{
 						{
 							Metadata: types.ResourceMetadataResponse{
-								Name: types.StringPtr("dbaas-1"),
-								ID:   types.StringPtr("dbaas-123"),
+								Name: ptr.To("dbaas-1"),
+								ID:   ptr.To("dbaas-123"),
 							},
 							Properties: types.DBaaSPropertiesResponse{
 								Engine: &types.DBaaSEngineResponse{
-									Type:    types.StringPtr("MySQL"),
-									Version: types.StringPtr("8.0"),
+									Type:    ptr.To("MySQL"),
+									Version: ptr.To("8.0"),
 								},
 							},
 							Status: types.ResourceStatus{State: statePtr(types.State("active"))},
@@ -145,16 +146,16 @@ func TestGetDBaaS(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				resp := types.DBaaSResponse{
 					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("dbaas-1"),
-						ID:   types.StringPtr("dbaas-123"),
+						Name: ptr.To("dbaas-1"),
+						ID:   ptr.To("dbaas-123"),
 					},
 					Properties: types.DBaaSPropertiesResponse{
 						Engine: &types.DBaaSEngineResponse{
-							Type:    types.StringPtr("MySQL"),
-							Version: types.StringPtr("8.0"),
+							Type:    ptr.To("MySQL"),
+							Version: ptr.To("8.0"),
 						},
 						Flavor: &types.DBaaSFlavorResponse{
-							Name: types.StringPtr("M4-8"),
+							Name: ptr.To("M4-8"),
 						},
 					},
 					Status: types.ResourceStatus{State: statePtr(types.State("active"))},
@@ -280,12 +281,12 @@ func TestCreateDBaaS(t *testing.T) {
 				w.WriteHeader(http.StatusCreated)
 				resp := types.DBaaSResponse{
 					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("dbaas-1"),
-						ID:   types.StringPtr("dbaas-123"),
-						URI:  types.StringPtr("/projects/test-project/providers/Aruba.Database/dbaas/dbaas-123"),
+						Name: ptr.To("dbaas-1"),
+						ID:   ptr.To("dbaas-123"),
+						URI:  ptr.To("/projects/test-project/providers/Aruba.Database/dbaas/dbaas-123"),
 					},
 					Properties: types.DBaaSPropertiesResponse{
-						Engine: &types.DBaaSEngineResponse{Type: types.StringPtr("MySQL")},
+						Engine: &types.DBaaSEngineResponse{Type: ptr.To("MySQL")},
 					},
 					Status: types.ResourceStatus{State: statePtr(types.State("creating"))},
 				}
@@ -463,11 +464,11 @@ func TestUpdateDBaaS(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				resp := types.DBaaSResponse{
 					Metadata: types.ResourceMetadataResponse{
-						Name: types.StringPtr("dbaas-updated"),
-						ID:   types.StringPtr("dbaas-123"),
+						Name: ptr.To("dbaas-updated"),
+						ID:   ptr.To("dbaas-123"),
 					},
 					Properties: types.DBaaSPropertiesResponse{
-						Engine: &types.DBaaSEngineResponse{Type: types.StringPtr("MySQL")},
+						Engine: &types.DBaaSEngineResponse{Type: ptr.To("MySQL")},
 					},
 					Status: types.ResourceStatus{State: statePtr(types.State("updating"))},
 				}

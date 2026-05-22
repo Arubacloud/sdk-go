@@ -11,6 +11,7 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 func statePtr(s types.State) *types.State { return &s }
@@ -24,7 +25,7 @@ func TestListCloudServers(t *testing.T) {
 			resp := types.CloudServerList{
 				ListResponse: types.ListResponse{Total: 2},
 				Values: []types.CloudServerResponse{
-					{Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("server-1")}},
+					{Metadata: types.ResourceMetadataResponse{Name: ptr.To("server-1")}},
 				},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -128,7 +129,7 @@ func TestGetCloudServer(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			resp := types.CloudServerResponse{
-				Metadata:   types.ResourceMetadataResponse{Name: types.StringPtr("my-server")},
+				Metadata:   types.ResourceMetadataResponse{Name: ptr.To("my-server")},
 				Properties: types.CloudServerPropertiesResult{Zone: "ITBG-1"},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -269,7 +270,7 @@ func TestCreateCloudServer(t *testing.T) {
 		},
 		Properties: types.CloudServerPropertiesRequest{
 			Zone:     "ITBG-1",
-			UserData: types.StringPtr(userData),
+			UserData: ptr.To(userData),
 		},
 	}
 
@@ -529,7 +530,7 @@ func TestPowerOnCloudServer(t *testing.T) {
 			}
 			w.WriteHeader(http.StatusOK)
 			resp := types.CloudServerResponse{
-				Metadata:   types.ResourceMetadataResponse{Name: types.StringPtr("my-server")},
+				Metadata:   types.ResourceMetadataResponse{Name: ptr.To("my-server")},
 				Properties: types.CloudServerPropertiesResult{Zone: "ITBG-1"},
 				Status:     types.ResourceStatus{State: statePtr(types.State("active"))},
 			}
@@ -634,7 +635,7 @@ func TestPowerOffCloudServer(t *testing.T) {
 			}
 			w.WriteHeader(http.StatusOK)
 			resp := types.CloudServerResponse{
-				Metadata:   types.ResourceMetadataResponse{Name: types.StringPtr("my-server")},
+				Metadata:   types.ResourceMetadataResponse{Name: ptr.To("my-server")},
 				Properties: types.CloudServerPropertiesResult{Zone: "ITBG-1"},
 				Status:     types.ResourceStatus{State: statePtr(types.State("stopped"))},
 			}

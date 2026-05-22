@@ -7,6 +7,7 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/clients/network"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 // SecurityGroupRef returns a Ref that points to the SecurityGroup nested under a VPC.
@@ -33,6 +34,14 @@ type SecurityGroup struct {
 
 	defaultSG *bool                        // Properties.Default (request: *bool for omitempty; response: plain bool)
 	response  *types.SecurityGroupResponse // backs Raw()
+}
+
+// NewSecurityGroup returns a fresh *SecurityGroup ready for fluent setters and a Create call.
+// Binds vpcScopedMixin's error sink so IntoVPC failures surface via Err().
+func NewSecurityGroup() *SecurityGroup {
+	sg := &SecurityGroup{defaultSG: ptr.To(false)}
+	sg.vpcScopedMixin = bindVPCScoped(&sg.errMixin)
+	return sg
 }
 
 // Setters — chainable, general → specific

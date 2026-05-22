@@ -33,6 +33,14 @@ type StorageBackup struct {
 	response *types.StorageBackupResponse
 }
 
+// NewStorageBackup returns a fresh *StorageBackup ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewStorageBackup() *StorageBackup {
+	b := &StorageBackup{}
+	b.projectScopedMixin = bindProjectScoped(&b.errMixin)
+	return b
+}
+
 // Setters — chainable, general → specific
 
 // IntoProject binds this StorageBackup to its parent project. Required before Create.

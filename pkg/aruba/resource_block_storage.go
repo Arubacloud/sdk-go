@@ -34,6 +34,14 @@ type BlockStorage struct {
 	response *types.BlockStorageResponse
 }
 
+// NewBlockStorage returns a fresh *BlockStorage ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewBlockStorage() *BlockStorage {
+	b := &BlockStorage{}
+	b.projectScopedMixin = bindProjectScoped(&b.errMixin)
+	return b
+}
+
 // Setters — chainable, general → specific
 
 // IntoProject binds this BlockStorage to its parent project. Required before Create.

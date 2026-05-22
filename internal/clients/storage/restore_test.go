@@ -10,6 +10,7 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 func newRestoreSvc(t *testing.T, baseURL string) *restoreClientImpl {
@@ -668,14 +669,14 @@ func TestValidateStorageRestore(t *testing.T) {
 	})
 
 	t.Run("empty-string-pointer restoreID", func(t *testing.T) {
-		err := types.ValidateStorageRestore("test-project", "backup-123", types.StringPtr(""))
+		err := types.ValidateStorageRestore("test-project", "backup-123", ptr.To(""))
 		if err == nil {
 			t.Fatal("expected error for empty-string-pointer restoreID, got nil")
 		}
 	})
 
 	t.Run("non-empty restoreID is valid", func(t *testing.T) {
-		err := types.ValidateStorageRestore("test-project", "backup-123", types.StringPtr("restore-123"))
+		err := types.ValidateStorageRestore("test-project", "backup-123", ptr.To("restore-123"))
 		if err != nil {
 			t.Fatalf("expected nil error for non-empty restoreID, got %v", err)
 		}

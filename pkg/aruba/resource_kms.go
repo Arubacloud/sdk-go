@@ -36,6 +36,14 @@ type KMS struct {
 	response *types.KmsResponse
 }
 
+// NewKMS returns a fresh *KMS ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewKMS() *KMS {
+	k := &KMS{}
+	k.projectScopedMixin = bindProjectScoped(&k.errMixin)
+	return k
+}
+
 // Setters — chainable, general → specific
 
 // IntoProject binds this KMS to its parent project. Required before Create.

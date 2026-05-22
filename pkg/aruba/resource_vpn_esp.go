@@ -14,6 +14,9 @@ type VPNESP struct {
 	pfs        *ESPPFSGroup
 }
 
+// NewVPNESP returns a fresh *VPNESP sub-builder for configuring ESP settings.
+func NewVPNESP() *VPNESP { return &VPNESP{} }
+
 // WithLifetimeSeconds sets the ESP SA lifetime in seconds.
 func (e *VPNESP) WithLifetimeSeconds(s int) *VPNESP { e.lifetime = int32(s); return e }
 

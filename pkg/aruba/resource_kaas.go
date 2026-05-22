@@ -63,6 +63,14 @@ type KaaS struct {
 	response *types.KaaSResponse
 }
 
+// NewKaaS returns a fresh *KaaS ready for fluent setters and a Create call.
+// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+func NewKaaS() *KaaS {
+	k := &KaaS{}
+	k.projectScopedMixin = bindProjectScoped(&k.errMixin)
+	return k
+}
+
 // Setters — chainable, general → specific
 
 // IntoProject binds this KaaS to its parent project. Required before Create.

@@ -13,6 +13,9 @@ type VPNPSK struct {
 	secret     *string
 }
 
+// NewVPNPSK returns a fresh *VPNPSK sub-builder for configuring PSK settings.
+func NewVPNPSK() *VPNPSK { return &VPNPSK{} }
+
 // WithCloudSite sets the cloud-side identifier for the PSK tunnel.
 func (p *VPNPSK) WithCloudSite(v string) *VPNPSK { p.cloudSite = &v; return p }
 

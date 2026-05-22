@@ -9,6 +9,7 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 func TestListBackups(t *testing.T) {
@@ -246,8 +247,8 @@ func TestCreateBackup(t *testing.T) {
 			Properties: types.StorageBackupPropertiesRequest{
 				StorageBackupType: types.StorageBackupTypeFull,
 				Origin:            types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/volume-456"},
-				RetentionDays:     types.IntPtr(20),
-				BillingPeriod:     (*types.BillingPeriod)(types.StringPtr("Yearly")),
+				RetentionDays:     ptr.To(20),
+				BillingPeriod:     (*types.BillingPeriod)(ptr.To("Yearly")),
 			},
 		}
 		resp, err := svc.Create(context.Background(), "test-project", body, nil)
@@ -412,8 +413,8 @@ func TestUpdateBackup(t *testing.T) {
 			Properties: types.StorageBackupPropertiesRequest{
 				StorageBackupType: types.StorageBackupTypeIncremental,
 				Origin:            types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/volume-123"},
-				RetentionDays:     types.IntPtr(30),
-				BillingPeriod:     (*types.BillingPeriod)(types.StringPtr("Monthly")),
+				RetentionDays:     ptr.To(30),
+				BillingPeriod:     (*types.BillingPeriod)(ptr.To("Monthly")),
 			},
 		}
 		resp, err := svc.Update(context.Background(), "test-project", "backup-123", body, nil)

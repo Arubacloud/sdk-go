@@ -31,6 +31,14 @@ type Database struct {
 	response *types.DatabaseResponse
 }
 
+// NewDatabase returns a fresh *Database ready for fluent setters and a Create call.
+// Binds dbaasScopedMixin's error sink so IntoDBaaS failures surface via Err().
+func NewDatabase() *Database {
+	d := &Database{}
+	d.dbaasScopedMixin = bindDBaaSScoped(&d.errMixin)
+	return d
+}
+
 // Setters — chainable, general → specific
 
 // IntoDBaaS binds this Database to its parent DBaaS instance. Required before Create.

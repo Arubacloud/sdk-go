@@ -40,6 +40,14 @@ type Grant struct {
 	response *types.GrantResponse
 }
 
+// NewGrant returns a fresh *Grant ready for fluent setters and a Create call.
+// Binds databaseScopedMixin's error sink so IntoDatabase failures surface via Err().
+func NewGrant() *Grant {
+	g := &Grant{}
+	g.databaseScopedMixin = bindDatabaseScoped(&g.errMixin)
+	return g
+}
+
 // Setters — chainable, general → specific
 
 // IntoDatabase binds this Grant to its parent Database. Required before Create.

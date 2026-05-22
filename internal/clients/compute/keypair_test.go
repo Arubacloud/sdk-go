@@ -10,6 +10,7 @@ import (
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"k8s.io/utils/ptr"
 )
 
 func TestListKeyPairs(t *testing.T) {
@@ -19,7 +20,7 @@ func TestListKeyPairs(t *testing.T) {
 			resp := types.KeyPairListResponse{
 				ListResponse: types.ListResponse{Total: 1},
 				Values: []types.KeyPairResponse{
-					{Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("my-keypair")}},
+					{Metadata: types.ResourceMetadataResponse{Name: ptr.To("my-keypair")}},
 				},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -123,7 +124,7 @@ func TestGetKeyPair(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			resp := types.KeyPairResponse{
-				Metadata: types.ResourceMetadataResponse{Name: types.StringPtr("my-keypair")},
+				Metadata: types.ResourceMetadataResponse{Name: ptr.To("my-keypair")},
 			}
 			json.NewEncoder(w).Encode(resp)
 		})

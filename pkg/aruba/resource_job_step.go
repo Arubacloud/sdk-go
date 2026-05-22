@@ -24,6 +24,9 @@ type JobStep struct {
 	body        *string
 }
 
+// NewJobStep returns a fresh *JobStep sub-builder for configuring a Job step.
+func NewJobStep() *JobStep { return &JobStep{} }
+
 // Named sets the step name.
 func (s *JobStep) Named(name string) *JobStep { s.name = &name; return s }
 
