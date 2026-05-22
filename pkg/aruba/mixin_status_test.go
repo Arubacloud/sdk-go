@@ -11,9 +11,97 @@ import (
 	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
-// refreshIsSet is a package-internal helper used by wrapper tests to assert
-// that the adapter has injected a refresh callback.
-func refreshIsSet(m *statusMixin) bool { return m.refresh != nil }
+// --------------------------------------------------------------------------
+// statusMixin — basic getters
+// --------------------------------------------------------------------------
+
+func TestStatusMixin_SetStatus(t *testing.T) {
+	var m statusMixin
+	var state types.State = "Active"
+	m.setStatus(&types.ResourceStatus{State: &state})
+	if m.State() != "Active" {
+		t.Errorf("State() after setStatus = %q", m.State())
+	}
+}
+
+func TestStatusMixin_RefreshField(t *testing.T) {
+	called := false
+	m := statusMixin{
+		refresh: func(_ context.Context) error {
+			called = true
+			return nil
+		},
+	}
+	if err := m.refresh(context.Background()); err != nil || !called {
+		t.Errorf("refresh callback did not execute: called=%v err=%v", called, err)
+	}
+}
+
+func TestStatusMixin_Nil(t *testing.T) {
+	var m statusMixin
+	if m.State() != "" {
+		t.Errorf("State() on nil = %q", m.State())
+	}
+	if m.IsDisabled() {
+		t.Error("IsDisabled() on nil should be false")
+	}
+	if m.DisableReasons() != nil {
+		t.Errorf("DisableReasons() on nil = %v", m.DisableReasons())
+	}
+	if m.FailureReason() != "" {
+		t.Errorf("FailureReason() on nil = %q", m.FailureReason())
+	}
+	if m.PreviousState() != "" {
+		t.Errorf("PreviousState() on nil = %q", m.PreviousState())
+	}
+}
+
+func TestStatusMixin_Populated(t *testing.T) {
+	var state types.State = "Active"
+	var prev types.State = "Pending"
+	reason := "disk full"
+	m := statusMixin{
+		status: &types.ResourceStatus{
+			State:         &state,
+			FailureReason: &reason,
+			DisableStatusInfo: &types.DisableStatusInfo{
+				IsDisabled: true,
+				Reasons:    []string{"maintenance"},
+			},
+			PreviousStatus: &types.PreviousStatus{
+				State: &prev,
+			},
+		},
+	}
+
+	if m.State() != "Active" {
+		t.Errorf("State() = %q", m.State())
+	}
+	if !m.IsDisabled() {
+		t.Error("IsDisabled() should be true")
+	}
+	if len(m.DisableReasons()) != 1 || m.DisableReasons()[0] != "maintenance" {
+		t.Errorf("DisableReasons() = %v", m.DisableReasons())
+	}
+	if m.FailureReason() != "disk full" {
+		t.Errorf("FailureReason() = %q", m.FailureReason())
+	}
+	if m.PreviousState() != "Pending" {
+		t.Errorf("PreviousState() = %q", m.PreviousState())
+	}
+}
+
+func TestStatusMixin_WaitRefreshNil(t *testing.T) {
+	// When no refresh callback is set, all wait methods must return a descriptive
+	// error rather than panicking. Full wait behaviour is tested below.
+	var m statusMixin
+	if err := m.WaitUntilActive(context.Background()); err == nil {
+		t.Error("WaitUntilActive with nil refresh should return an error")
+	}
+	if err := m.WaitUntilStates(context.Background(), []types.State{types.StateActive}); err == nil {
+		t.Error("WaitUntilStates with nil refresh should return an error")
+	}
+}
 
 // --------------------------------------------------------------------------
 // WaitOption machinery
@@ -79,6 +167,10 @@ func TestStatusMixin_SetRefresh(t *testing.T) {
 		t.Error("setRefresh: injected function was not called")
 	}
 }
+
+// refreshIsSet is a package-internal helper used by wrapper tests to assert
+// that the adapter has injected a refresh callback.
+func refreshIsSet(m *statusMixin) bool { return m.refresh != nil }
 
 // --------------------------------------------------------------------------
 // WaitUntilStates / WaitUntilActive — nil refresh
