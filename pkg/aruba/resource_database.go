@@ -23,6 +23,7 @@ import (
 // is constructed from (projectID, dbaasID, name).
 type Database struct {
 	errMixin
+	refreshMixin
 	dbaasScopedMixin
 	responseMetadataMixin
 	httpEnvelopeMixin
@@ -178,6 +179,16 @@ func (a *databasesClientAdapter) Create(ctx context.Context, db *Database, opts 
 	populateHTTPEnvelope(&db.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		db.fromResponse(resp.Data)
+		db.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, db)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				db.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return db, err
@@ -208,6 +219,16 @@ func (a *databasesClientAdapter) Update(ctx context.Context, db *Database, opts 
 	populateHTTPEnvelope(&db.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		db.fromResponse(resp.Data)
+		db.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, db)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				db.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return db, err
@@ -235,6 +256,16 @@ func (a *databasesClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallO
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return out, err
@@ -286,6 +317,16 @@ func (a *databasesClientAdapter) List(ctx context.Context, dbaas Ref, opts ...Ca
 			db.dbaasID = dbaasID
 			db.projectID = projectID
 			db.fromResponse(&resp.Data.Values[i])
+			db.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, db)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					db.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			items = append(items, db)
 		}
 	}
@@ -307,6 +348,16 @@ func (a *databasesClientAdapter) List(ctx context.Context, dbaas Ref, opts ...Ca
 				db.dbaasID = dbaasID
 				db.projectID = projectID
 				db.fromResponse(&pageResp.Data.Values[i])
+				db.setRefresh(func(ctx context.Context) error {
+					fresh, err := a.Get(ctx, db)
+					if err != nil {
+						return err
+					}
+					if fresh != nil && fresh.Raw() != nil {
+						db.fromResponse(fresh.Raw())
+					}
+					return nil
+				})
 				pageItems = append(pageItems, db)
 			}
 		}

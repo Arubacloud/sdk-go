@@ -38,8 +38,5 @@ func deleteVPC(ctx context.Context, arubaClient aruba.Client, vpc *aruba.VPC) {
 		return
 	}
 	printDeleteSubmitted("VPC", vpc.Name())
-	waitUntilGone(ctx, "VPC "+vpc.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromNetwork().VPCs().Get(ctx, vpc)
-		return err
-	})
+	waitUntilGone(ctx, "VPC "+vpc.Name(), vpc.WaitUntilGone)
 }

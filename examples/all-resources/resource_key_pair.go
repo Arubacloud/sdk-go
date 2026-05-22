@@ -40,8 +40,5 @@ func deleteKeyPair(ctx context.Context, arubaClient aruba.Client, kp *aruba.KeyP
 		return
 	}
 	printDeleteSubmitted("SSH Key Pair", kp.Name())
-	waitUntilGone(ctx, "SSH Key Pair "+kp.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromCompute().KeyPairs().Get(ctx, kp)
-		return err
-	})
+	waitUntilGone(ctx, "SSH Key Pair "+kp.Name(), kp.WaitUntilGone)
 }

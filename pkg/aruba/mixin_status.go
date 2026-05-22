@@ -51,13 +51,11 @@ func applyWaitOptions(opts []WaitOption) waitOptions {
 }
 
 type statusMixin struct {
-	status  *types.ResourceStatus
-	refresh func(ctx context.Context) error
+	refreshMixin
+	status *types.ResourceStatus
 }
 
 func (m *statusMixin) setStatus(s *types.ResourceStatus) { m.status = s }
-
-func (m *statusMixin) setRefresh(fn func(context.Context) error) { m.refresh = fn }
 
 // State returns the current lifecycle state, or the zero State ("").
 func (m *statusMixin) State() types.State {

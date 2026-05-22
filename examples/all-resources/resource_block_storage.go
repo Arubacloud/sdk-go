@@ -46,8 +46,5 @@ func deleteBlockStorage(ctx context.Context, arubaClient aruba.Client, bs *aruba
 		return
 	}
 	printDeleteSubmitted("Block Storage", bs.Name())
-	waitUntilGone(ctx, "Block Storage "+bs.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromStorage().Volumes().Get(ctx, bs)
-		return err
-	})
+	waitUntilGone(ctx, "Block Storage "+bs.Name(), bs.WaitUntilGone)
 }

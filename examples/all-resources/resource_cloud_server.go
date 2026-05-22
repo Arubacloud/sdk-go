@@ -85,8 +85,5 @@ func deleteCloudServer(ctx context.Context, arubaClient aruba.Client, cs *aruba.
 		return
 	}
 	printDeleteSubmitted("Cloud Server", cs.Name())
-	waitUntilGone(ctx, "Cloud Server "+cs.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromCompute().CloudServers().Get(ctx, cs)
-		return err
-	})
+	waitUntilGone(ctx, "Cloud Server "+cs.Name(), cs.WaitUntilGone)
 }

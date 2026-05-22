@@ -876,3 +876,29 @@ func TestVPCRef(t *testing.T) {
 		t.Errorf("parseURIIDs = %v", ids)
 	}
 }
+
+func TestVPCsClientAdapter_WaitUntilGone(t *testing.T) {
+	callCount := 0
+	adapter := buildVPCTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.Header().Set("Content-Type", "application/json")
+		if callCount == 1 {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, `{"metadata":{"id":"vid","name":"my-vpc","uri":"/projects/p/providers/Aruba.Network/vpcs/vid","project":{"id":"p"}},"properties":{"default":false},"status":{"state":"Active"}}`)
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "vpc not found", 404))
+		}
+	})
+
+	vpc, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/vid"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if err := vpc.WaitUntilGone(context.Background(), fastOpts()...); err != nil {
+		t.Fatalf("WaitUntilGone error: %v", err)
+	}
+	if callCount < 2 {
+		t.Errorf("expected at least 2 calls (1 Get + 1 refresh returning 404), got %d", callCount)
+	}
+}

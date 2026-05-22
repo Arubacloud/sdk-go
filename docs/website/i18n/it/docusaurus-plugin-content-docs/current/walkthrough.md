@@ -217,70 +217,30 @@ vpcs, err := arubaClient.FromNetwork().VPCs().List(ctx, proj)
 
 ## 6. Eliminazione (Ordine Inverso)
 
-Elimina i figli prima dei genitori. L'API Aruba Cloud restituisce **HTTP 400** quando si tenta di eliminare un genitore che ha ancora risorse figlio attive o in fase di eliminazione — non 409/422. Il pattern sicuro è emettere ogni delete sul figlio, poi attendere che la risorsa sia completamente sparita (HTTP 404) prima di salire nella catena delle dipendenze.
+Elimina i figli prima dei genitori. L'API Aruba Cloud restituisce **HTTP 400** quando si tenta di eliminare un genitore che ha ancora risorse figlio attive o in fase di eliminazione — non 409/422. Il pattern sicuro è emettere ogni delete sul figlio, poi attendere che la risorsa sia completamente sparita prima di salire nella catena delle dipendenze.
 
-Usa `pkg/async.WaitFor` per attendere il 404 — centralizza la logica di retry/timeout/cadenza:
-
-```go
-import (
-    "errors"
-    "net/http"
-
-    "github.com/Arubacloud/sdk-go/pkg/aruba"
-    "github.com/Arubacloud/sdk-go/pkg/async"
-    "github.com/Arubacloud/sdk-go/pkg/types"
-)
-
-// waitUntilGone blocca finché il Get della risorsa restituisce HTTP 404.
-func waitUntilGone(ctx context.Context, poll func(context.Context) error) error {
-    const gone = "gone"
-    fut := async.DefaultWaitFor(ctx,
-        func(ctx context.Context) (*types.Response[string], error) {
-            err := poll(ctx)
-            if err == nil {
-                return &types.Response[string]{}, nil // esiste ancora
-            }
-            var httpErr *aruba.HTTPError
-            if errors.As(err, &httpErr) && httpErr.StatusCode == http.StatusNotFound {
-                return &types.Response[string]{Data: &[]string{gone}[0]}, nil // eliminata
-            }
-            return nil, err // transitorio — riprova
-        },
-        func(resp *types.Response[string]) (bool, error) {
-            return resp != nil && resp.Data != nil, nil
-        },
-    )
-    _, err := fut.Await(ctx)
-    return err
-}
-```
-
-Poi elimina in ordine inverso delle dipendenze, attendendo che ogni figlio sparisca completamente prima di eliminare il suo genitore:
+`WaitUntilGone` blocca finché la risorsa non esiste più — ovvero finché il suo `Get` restituisce HTTP 404. Chiamalo sul wrapper idratato che già possiedi (`Delete` restituisce solo un `error`, nessun wrapper):
 
 ```go
 // subnet → VPC → progetto
 if err := arubaClient.FromNetwork().Subnets().Delete(ctx, subnet); err != nil {
     log.Printf("Delete subnet: %v", err)
-} else {
-    waitUntilGone(ctx, func(ctx context.Context) error {
-        _, err := arubaClient.FromNetwork().Subnets().Get(ctx, subnet)
-        return err
-    })
+} else if err := subnet.WaitUntilGone(ctx); err != nil {
+    log.Printf("Subnet not gone: %v", err)
 }
 
 if err := arubaClient.FromNetwork().VPCs().Delete(ctx, vpc); err != nil {
     log.Printf("Delete VPC: %v", err)
-} else {
-    waitUntilGone(ctx, func(ctx context.Context) error {
-        _, err := arubaClient.FromNetwork().VPCs().Get(ctx, vpc)
-        return err
-    })
+} else if err := vpc.WaitUntilGone(ctx); err != nil {
+    log.Printf("VPC not gone: %v", err)
 }
 
 if err := arubaClient.FromProject().Delete(ctx, proj); err != nil {
     log.Printf("Delete project: %v", err)
 }
 ```
+
+`WaitUntilGone` accetta le stesse `WaitOption` di `WaitUntilReady` (`WithRetries`, `WithBaseDelay`, `WithTimeout`) ed è disponibile su ogni wrapper di risorsa che supporta il polling. `Project` non ha polling — viene eliminato per ultimo, senza figli da attendere.
 
 `Delete` accetta qualsiasi `aruba.Ref` — puoi passare il wrapper idratato direttamente o `aruba.URI(…)` se hai solo il percorso.
 

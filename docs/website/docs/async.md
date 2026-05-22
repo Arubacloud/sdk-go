@@ -13,6 +13,7 @@ The SDK exposes three layers for dealing with this:
 | `WaitUntilReady(ctx)` | 95% of cases — block until the resource is ready (accepts `Active`, `Running`, `Stopped`, `NotUsed`, `Reserved`, `InUse`, `Used`) |
 | `WaitUntilActive(ctx)` | When you specifically need the `Active` state only |
 | `WaitUntilStates(ctx, []types.State{...}, opts...)` | Wait for any named states (e.g. `[]types.State{types.StateStopped}`) |
+| `WaitUntilGone(ctx)` | After `Delete` — block until the resource's `Get` returns HTTP 404 (fully removed) |
 | `pkg/async.WaitFor` + `AsyncClient.Await` | Advanced — start polling in a background goroutine, do other work, collect the result later |
 
 ---
@@ -81,7 +82,7 @@ if err := cs.WaitUntilStates(ctx, []types.State{types.StateStopped}); err != nil
 
 ```go
 // Wait until a DBaaS instance finishes an in-progress update
-if err := db.WaitUntilStates(ctx, []types.State{types.StateActive},
+if err := db.WaitUntilActive(ctx,
     aruba.WithRetries(120),
     aruba.WithBaseDelay(15*time.Second),
 ); err != nil {
@@ -94,6 +95,24 @@ The same error-terminal-state early exit applies: if the resource reaches `"Erro
 `WaitUntilActive` and `WaitUntilReady` are convenience wrappers around `WaitUntilStates`:
 - `WaitUntilActive(ctx, opts...)` — equivalent to `WaitUntilStates(ctx, []types.State{types.StateActive}, opts...)`
 - `WaitUntilReady(ctx, opts...)` — equivalent to `WaitUntilStates(ctx, []types.State{types.StateActive, types.StateRunning, types.StateStopped, types.StateNotUsed, types.StateReserved, types.StateInUse, types.StateUsed}, opts...)`
+
+---
+
+## `WaitUntilGone`
+
+Use `WaitUntilGone` after a `Delete` call to block until the resource is fully removed — that is, until its `Get` returns HTTP 404:
+
+```go
+if err := arubaClient.FromNetwork().Subnets().Delete(ctx, subnet); err != nil {
+    log.Printf("Delete subnet: %v", err)
+} else if err := subnet.WaitUntilGone(ctx); err != nil {
+    log.Printf("Subnet not gone: %v", err)
+}
+```
+
+`WaitUntilGone` is available on every resource wrapper that supports polling (see [Resources That Support Polling](#resources-that-support-polling) below). It accepts the same `WaitOption`s as `WaitUntilReady`. Any error from `Get` other than HTTP 404 is treated as transient and retried; a 404 signals success.
+
+`Project` has no polling support and therefore no `WaitUntilGone`. It is deleted last, with no child left to wait on.
 
 ---
 
@@ -125,7 +144,7 @@ if err := vpc.WaitUntilReady(ctx); err != nil {
 
 ## Resources That Support Polling
 
-The following resource wrappers support `WaitUntilReady`, `WaitUntilActive`, `WaitUntilStates`, and the status accessors. Resources marked with a special wait method expose an additional named form.
+The following resource wrappers support `WaitUntilReady`, `WaitUntilActive`, `WaitUntilStates`, `WaitUntilGone`, and the status accessors. Resources marked with a special wait method expose an additional named form.
 
 | Resource | Special wait | Notes |
 |---|---|---|
@@ -160,7 +179,7 @@ The following resource wrappers support `WaitUntilReady`, `WaitUntilActive`, `Wa
 
 ### Hydrated wrapper required
 
-`WaitUntilReady`, `WaitUntilActive`, and `WaitUntilStates` only work on wrappers that were **returned by an adapter call** (`Create`, `Get`, `Update`, or `List`). Calling either method on a freshly-built request builder returns:
+`WaitUntilReady`, `WaitUntilActive`, `WaitUntilStates`, and `WaitUntilGone` only work on wrappers that were **returned by an adapter call** (`Create`, `Get`, `Update`, or `List`). Calling any of these methods on a freshly-built request builder returns:
 
 ```
 WaitUntilStates: refresh callback not set; resource must be produced by an adapter (Create/Get/Update/List) to support polling

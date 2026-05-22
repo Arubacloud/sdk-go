@@ -26,12 +26,12 @@ import (
 // from (projectID, kmsID, kmipID).
 type Kmip struct {
 	errMixin
+	refreshMixin
 	kmsScopedMixin
 	responseMetadataMixin // present but never populated; ID/URI shadowed below
 	httpEnvelopeMixin
 
-	name    *string
-	refresh func(ctx context.Context) error
+	name *string
 
 	response *types.KmipResponse
 }
@@ -43,8 +43,6 @@ func NewKmip() *Kmip {
 	km.kmsScopedMixin = bindKMSScoped(&km.errMixin)
 	return km
 }
-
-func (km *Kmip) setRefresh(fn func(context.Context) error) { km.refresh = fn }
 
 var kmipTerminalStates = map[string]bool{
 	string(types.ServiceStatusCertificateAvailable): true,

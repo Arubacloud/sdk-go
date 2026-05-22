@@ -7,13 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"strings"
 	"time"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
-	"github.com/Arubacloud/sdk-go/pkg/async"
-	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
 // ---------------------------------------------------------------------------
@@ -344,33 +341,11 @@ func waitAllReady(ctx context.Context, r *ResourceCollection) {
 	}
 }
 
-// waitUntilGone polls the given Get function until it returns HTTP 404, which is
-// the platform's signal that an async delete has fully propagated. The retry,
-// fixed-delay, and timeout machinery comes from the SDK's pkg/async.WaitFor —
-// the call/check pair encodes the "404 means success" contract.
-func waitUntilGone(ctx context.Context, label string, poll func(context.Context) error) {
+// waitUntilGone blocks until the resource's WaitUntilGone reports it is fully
+// deleted (Get returns HTTP 404), wrapping the call with lifecycle messages.
+func waitUntilGone(ctx context.Context, label string, wait waitFunc) {
 	fmt.Printf("⏳ Waiting for %s to fully terminate...\n", label)
-	const goneSentinel = "gone"
-	fut := async.DefaultWaitFor(ctx,
-		func(ctx context.Context) (*types.Response[string], error) {
-			err := poll(ctx)
-			if err == nil {
-				// resource still exists — keep polling
-				return &types.Response[string]{}, nil
-			}
-			var httpErr *aruba.HTTPError
-			if errors.As(err, &httpErr) && httpErr.StatusCode == http.StatusNotFound {
-				marker := goneSentinel
-				return &types.Response[string]{Data: &marker}, nil
-			}
-			// transient — record for diagnostics but stay in the loop
-			return nil, err
-		},
-		func(resp *types.Response[string]) (bool, error) {
-			return resp != nil && resp.Data != nil && *resp.Data == goneSentinel, nil
-		},
-	)
-	if _, err := fut.Await(ctx); err != nil {
+	if err := wait(ctx); err != nil {
 		log.Printf("Wait for %s to terminate: %v", label, err)
 		return
 	}
@@ -465,8 +440,7 @@ func printDeleteBanner(pretty string) {
 	fmt.Printf("--- Deleting %s ---\n", pretty)
 }
 
-// printDeleteSubmitted emits the "delete accepted" line. The actual
-// "fully gone" confirmation is emitted later by waitUntilGone.
+// printDeleteSubmitted emits the "delete accepted" line.
 func printDeleteSubmitted(pretty, idOrName string) {
 	fmt.Printf("→ Submitted delete for %s: %s\n", pretty, idOrName)
 }

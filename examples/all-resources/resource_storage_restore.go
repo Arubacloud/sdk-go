@@ -45,8 +45,5 @@ func deleteRestore(ctx context.Context, arubaClient aruba.Client, r *aruba.Stora
 		return
 	}
 	printDeleteSubmitted("Storage Restore", r.Name())
-	waitUntilGone(ctx, "Storage Restore "+r.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromStorage().Restores().Get(ctx, r)
-		return err
-	})
+	waitUntilGone(ctx, "Storage Restore "+r.Name(), r.WaitUntilGone)
 }

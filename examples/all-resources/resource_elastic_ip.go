@@ -41,8 +41,5 @@ func deleteElasticIP(ctx context.Context, arubaClient aruba.Client, eip *aruba.E
 		return
 	}
 	printDeleteSubmitted("Elastic IP", eip.Name())
-	waitUntilGone(ctx, "Elastic IP "+eip.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromNetwork().ElasticIPs().Get(ctx, eip)
-		return err
-	})
+	waitUntilGone(ctx, "Elastic IP "+eip.Name(), eip.WaitUntilGone)
 }

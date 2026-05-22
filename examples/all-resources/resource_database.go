@@ -41,8 +41,5 @@ func deleteDatabase(ctx context.Context, arubaClient aruba.Client, db *aruba.Dat
 		return
 	}
 	printDeleteSubmitted("DBaaS Database", db.Name())
-	waitUntilGone(ctx, "DBaaS Database "+db.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromDatabase().Databases().Get(ctx, db)
-		return err
-	})
+	waitUntilGone(ctx, "DBaaS Database "+db.Name(), db.WaitUntilGone)
 }
