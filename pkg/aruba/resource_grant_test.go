@@ -324,6 +324,37 @@ func buildGrantTestAdapter(t *testing.T, handler http.HandlerFunc) *grantsClient
 
 const grantSuccessBody = `{"user":{"username":"alice"},"role":{"name":"READ_WRITE"},"database":{"name":"db-1"},"createdBy":"admin@example.com"}`
 
+// --------------------------------------------------------------------------
+// WaitUntilGone — adapter-level test (Family-B path)
+// --------------------------------------------------------------------------
+
+func TestGrantsClientAdapter_WaitUntilGone(t *testing.T) {
+	callCount := 0
+	adapter := buildGrantTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.Header().Set("Content-Type", "application/json")
+		if callCount == 1 {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, grantSuccessBody)
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "grant not found", 404))
+		}
+	})
+
+	ref := URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/db-1/grants/g-1")
+	grant, err := adapter.Get(context.Background(), ref)
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if err := grant.WaitUntilGone(context.Background(), fastOpts()...); err != nil {
+		t.Fatalf("WaitUntilGone error: %v", err)
+	}
+	if callCount < 2 {
+		t.Errorf("expected at least 2 calls (1 Get + 1 refresh returning 404), got %d", callCount)
+	}
+}
+
 func TestGrantsClientAdapter_Create_Success(t *testing.T) {
 	var gotBody types.GrantRequest
 	callCount := 0

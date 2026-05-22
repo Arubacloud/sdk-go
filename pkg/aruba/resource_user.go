@@ -29,6 +29,7 @@ import (
 // Password field, so hydration cannot accidentally surface it either.
 type User struct {
 	errMixin
+	refreshMixin
 	dbaasScopedMixin
 	responseMetadataMixin
 	httpEnvelopeMixin
@@ -229,6 +230,16 @@ func (a *usersClientAdapter) Create(ctx context.Context, u *User, opts ...CallOp
 	populateHTTPEnvelope(&u.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		u.fromResponse(resp.Data)
+		u.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, u)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				u.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return u, err
@@ -262,6 +273,16 @@ func (a *usersClientAdapter) Update(ctx context.Context, u *User, opts ...CallOp
 	populateHTTPEnvelope(&u.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		u.fromResponse(resp.Data)
+		u.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, u)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				u.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return u, err
@@ -289,6 +310,16 @@ func (a *usersClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOptio
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return out, err
@@ -340,6 +371,16 @@ func (a *usersClientAdapter) List(ctx context.Context, dbaas Ref, opts ...CallOp
 			u.dbaasID = dbaasID
 			u.projectID = projectID
 			u.fromResponse(&resp.Data.Values[i])
+			u.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, u)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					u.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			items = append(items, u)
 		}
 	}
@@ -361,6 +402,16 @@ func (a *usersClientAdapter) List(ctx context.Context, dbaas Ref, opts ...CallOp
 				item.dbaasID = dbaasID
 				item.projectID = projectID
 				item.fromResponse(&pageResp.Data.Values[i])
+				item.setRefresh(func(ctx context.Context) error {
+					fresh, err := a.Get(ctx, item)
+					if err != nil {
+						return err
+					}
+					if fresh != nil && fresh.Raw() != nil {
+						item.fromResponse(fresh.Raw())
+					}
+					return nil
+				})
 				pageItems = append(pageItems, item)
 			}
 		}

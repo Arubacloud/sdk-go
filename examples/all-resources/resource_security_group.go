@@ -113,10 +113,7 @@ func deleteSecurityGroup(ctx context.Context, arubaClient aruba.Client, sg *arub
 		return
 	}
 	printDeleteSubmitted("Security Group", sg.Name())
-	waitUntilGone(ctx, "Security Group "+sg.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromNetwork().SecurityGroups().Get(ctx, sg)
-		return err
-	})
+	waitUntilGone(ctx, "Security Group "+sg.Name(), sg.WaitUntilGone)
 }
 
 // deleteSecurityGroupRule removes the security group rule and waits until it is fully gone.
@@ -127,8 +124,5 @@ func deleteSecurityGroupRule(ctx context.Context, arubaClient aruba.Client, rule
 		return
 	}
 	printDeleteSubmitted("Security Group Rule", rule.Name())
-	waitUntilGone(ctx, "Security Group Rule "+rule.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromNetwork().SecurityGroupRules().Get(ctx, rule)
-		return err
-	})
+	waitUntilGone(ctx, "Security Group Rule "+rule.Name(), rule.WaitUntilGone)
 }

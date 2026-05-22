@@ -62,8 +62,5 @@ func deleteContainerRegistry(ctx context.Context, arubaClient aruba.Client, r *a
 		return
 	}
 	printDeleteSubmitted("Container Registry", r.Name())
-	waitUntilGone(ctx, "Container Registry "+r.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromContainer().ContainerRegistry().Get(ctx, r)
-		return err
-	})
+	waitUntilGone(ctx, "Container Registry "+r.Name(), r.WaitUntilGone)
 }

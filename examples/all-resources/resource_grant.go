@@ -32,8 +32,5 @@ func deleteGrant(ctx context.Context, arubaClient aruba.Client, g *aruba.Grant) 
 		return
 	}
 	printDeleteSubmitted("Grant", g.ID())
-	waitUntilGone(ctx, "Grant "+g.ID(), func(ctx context.Context) error {
-		_, err := arubaClient.FromDatabase().Grants().Get(ctx, g)
-		return err
-	})
+	waitUntilGone(ctx, "Grant "+g.ID(), g.WaitUntilGone)
 }

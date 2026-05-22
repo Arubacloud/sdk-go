@@ -82,10 +82,7 @@ func deleteAdvancedSubnet(ctx context.Context, arubaClient aruba.Client, subnet 
 		return
 	}
 	printDeleteSubmitted("Subnet (Advanced)", subnet.Name())
-	waitUntilGone(ctx, "Subnet (Advanced) "+subnet.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromNetwork().Subnets().Get(ctx, subnet)
-		return err
-	})
+	waitUntilGone(ctx, "Subnet (Advanced) "+subnet.Name(), subnet.WaitUntilGone)
 }
 
 // deleteBasicSubnet tears down the basic subnet and waits until gone.
@@ -96,8 +93,5 @@ func deleteBasicSubnet(ctx context.Context, arubaClient aruba.Client, subnet *ar
 		return
 	}
 	printDeleteSubmitted("Subnet (Basic)", subnet.Name())
-	waitUntilGone(ctx, "Subnet (Basic) "+subnet.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromNetwork().Subnets().Get(ctx, subnet)
-		return err
-	})
+	waitUntilGone(ctx, "Subnet (Basic) "+subnet.Name(), subnet.WaitUntilGone)
 }

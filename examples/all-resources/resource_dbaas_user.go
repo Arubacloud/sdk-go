@@ -39,8 +39,5 @@ func deleteDBaaSUser(ctx context.Context, arubaClient aruba.Client, u *aruba.Use
 		return
 	}
 	printDeleteSubmitted("DBaaS User", u.Username())
-	waitUntilGone(ctx, "DBaaS User "+u.Username(), func(ctx context.Context) error {
-		_, err := arubaClient.FromDatabase().Users().Get(ctx, u)
-		return err
-	})
+	waitUntilGone(ctx, "DBaaS User "+u.Username(), u.WaitUntilGone)
 }

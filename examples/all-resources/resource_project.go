@@ -53,8 +53,4 @@ func deleteProject(ctx context.Context, arubaClient aruba.Client, proj *aruba.Pr
 		return
 	}
 	printDeleteSubmitted("Project", proj.Name())
-	waitUntilGone(ctx, "Project "+proj.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromProject().Get(ctx, proj)
-		return err
-	})
 }

@@ -224,7 +224,8 @@ The mixins were split into three files by responsibility:
 | `kmsScopedMixin` | `mixin_scoped.go` | Direct child of a KMS instance. |
 | `vpnTunnelScopedMixin` | `mixin_scoped.go` | Direct child of a VPN tunnel; tolerates both `vpn-tunnels` and `vpnTunnels` URI forms. |
 | `vpcPeeringScopedMixin` | `mixin_scoped.go` | Direct child of a VPC peering; inherits `vpcID` + `projectID`. |
-| `statusMixin` | `mixin_status.go` | Holds `*types.ResourceStatus` + a `refresh` callback; powers `WaitUntilActive`, `WaitUntilReady`, `WaitUntilStates` against typed `[]types.State` targets. |
+| `refreshMixin` | `mixin_refresh.go` | Holds the `refresh func(ctx) error` callback (a `Get` closure installed by adapters) and `WaitUntilGone` — polls `refresh`, treats HTTP 404 as success, any other error as transient. Embedded by `statusMixin` and by Family-B pollable resources (`Kmip`, `Grant`, `Database`, `User`, `Key`). |
+| `statusMixin` | `mixin_status.go` | Embeds `refreshMixin`; holds `*types.ResourceStatus`; powers `WaitUntilActive`, `WaitUntilReady`, `WaitUntilStates` against typed `[]types.State` targets, plus `WaitUntilGone` promoted from `refreshMixin`. |
 
 `populateHTTPEnvelope[T]` is a package-level generic function in `mixin_common.go` (Go does not allow generic methods on structs).
 
@@ -259,7 +260,9 @@ Generic paginated container, constrained to `Wrapper { URI(); ID() }`. Carries `
 
 ### Wait helpers and async
 
-`statusMixin` (`pkg/aruba/mixin_status.go`) provides three wait methods, all backed by `pkg/async.WaitFor[any]`:
+`refreshMixin` (`pkg/aruba/mixin_refresh.go`) owns the `refresh func(ctx) error` callback (a `Get` closure installed by adapters) and the `WaitUntilGone` method. `WaitUntilGone` drives `async.WaitFor[any]` directly: nil from `refresh` (resource still exists) → keep polling; `*HTTPError{404}` → success; any other error → transient, retried. It is embedded by `statusMixin` and by the Family-B pollable resources (`Kmip`, `Grant`, `Database`, `User`, `Key`).
+
+`statusMixin` (`pkg/aruba/mixin_status.go`) embeds `refreshMixin` and provides three additional wait methods, all backed by `pkg/async.WaitFor[any]`:
 
 - `WaitUntilActive` — targets `types.StateActive` only.
 - `WaitUntilReady` — accepts any of the 7 healthy settled states: `Active`, `Running`, `Stopped`, `NotUsed`, `Reserved`, `InUse`, `Used`. Use this when the caller does not care which steady state the resource lands in.
@@ -274,7 +277,7 @@ Adapters install the `refresh` closure post-`Create`/`Get`/`List` (e.g. in `reso
 Defaults: `DefaultRetries=60`, `DefaultBaseDelay=10s`, `DefaultTimeout=600s` (from `pkg/async` constants). Overridable via `WaitOption` helpers: `WithRetries(n)`, `WithBaseDelay(d)`, `WithTimeout(d)`.
 
 **Per-resource specialised waiters:**
-- `*Kmip.WaitUntilCertificateAvailable` (in `resource_kmip.go`) — Family B has no `statusMixin`; drives `async.WaitFor` directly against `KmipResponse.Status` with an explicit terminal map `kmipTerminalStates`.
+- `*Kmip.WaitUntilCertificateAvailable` (in `resource_kmip.go`) — drives `async.WaitFor` directly against `KmipResponse.Status` with an explicit terminal map `kmipTerminalStates`. `Kmip` embeds `refreshMixin` and gains `WaitUntilGone`.
 - `*BlockStorage.WaitUntilUsed` / `WaitUntilNotUsed` and `*ElasticIP` equivalents — attach/detach lifecycle, three positive terminals (`InUse`, `Used`, `NotUsed`).
 
 ### HTTP envelope and typed `*HTTPError`

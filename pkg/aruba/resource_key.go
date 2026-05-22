@@ -23,6 +23,7 @@ import (
 // read from KeyResponse.KeyID, and URI() is constructed from (projectID, kmsID, keyID).
 type Key struct {
 	errMixin
+	refreshMixin
 	kmsScopedMixin
 	responseMetadataMixin // present but never populated; ID/URI shadowed below
 	httpEnvelopeMixin
@@ -248,6 +249,16 @@ func (a *keysClientAdapter) Create(ctx context.Context, k *Key, opts ...CallOpti
 	populateHTTPEnvelope(&k.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		k.fromResponse(resp.Data)
+		k.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, k)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				k.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return k, err
@@ -273,6 +284,16 @@ func (a *keysClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOption
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return out, err
@@ -324,6 +345,16 @@ func (a *keysClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOp
 			k.projectID = projectID
 			k.kmsID = kmsID
 			k.fromResponse(&resp.Data.Values[i])
+			k.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, k)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					k.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			items = append(items, k)
 		}
 	}
@@ -345,6 +376,16 @@ func (a *keysClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOp
 				k.projectID = projectID
 				k.kmsID = kmsID
 				k.fromResponse(&pageResp.Data.Values[i])
+				k.setRefresh(func(ctx context.Context) error {
+					fresh, err := a.Get(ctx, k)
+					if err != nil {
+						return err
+					}
+					if fresh != nil && fresh.Raw() != nil {
+						k.fromResponse(fresh.Raw())
+					}
+					return nil
+				})
 				pageItems = append(pageItems, k)
 			}
 		}

@@ -217,64 +217,22 @@ vpcs, err := arubaClient.FromNetwork().VPCs().List(ctx, proj)
 
 ## 6. Tear Down (Reverse Order)
 
-Delete children before parents. The Aruba Cloud API returns **HTTP 400** when you try to delete a parent that still has live or still-deleting children — not 409/422. The safe pattern is to issue each child delete, then poll until the resource is fully gone (HTTP 404) before moving up the dependency chain.
+Delete children before parents. The Aruba Cloud API returns **HTTP 400** when you try to delete a parent that still has live or still-deleting children — not 409/422. The safe pattern is to issue each child delete, then wait until the resource is fully gone before moving up the dependency chain.
 
-Use `pkg/async.WaitFor` to poll for 404 — it centralises the retry/timeout/cadence logic:
-
-```go
-import (
-    "errors"
-    "net/http"
-
-    "github.com/Arubacloud/sdk-go/pkg/aruba"
-    "github.com/Arubacloud/sdk-go/pkg/async"
-    "github.com/Arubacloud/sdk-go/pkg/types"
-)
-
-// waitUntilGone blocks until the resource's Get returns HTTP 404.
-func waitUntilGone(ctx context.Context, poll func(context.Context) error) error {
-    const gone = "gone"
-    fut := async.DefaultWaitFor(ctx,
-        func(ctx context.Context) (*types.Response[string], error) {
-            err := poll(ctx)
-            if err == nil {
-                return &types.Response[string]{}, nil // still exists
-            }
-            var httpErr *aruba.HTTPError
-            if errors.As(err, &httpErr) && httpErr.StatusCode == http.StatusNotFound {
-                return &types.Response[string]{Data: &[]string{gone}[0]}, nil // gone
-            }
-            return nil, err // transient — retry
-        },
-        func(resp *types.Response[string]) (bool, error) {
-            return resp != nil && resp.Data != nil, nil
-        },
-    )
-    _, err := fut.Await(ctx)
-    return err
-}
-```
-
-Then delete in reverse dependency order, waiting for each child to fully disappear before deleting its parent:
+`WaitUntilGone` blocks until the resource no longer exists — that is, until its `Get` returns HTTP 404. Call it on the hydrated wrapper you already hold (`Delete` itself returns only an `error`, no wrapper):
 
 ```go
 // subnet → VPC → project
 if err := arubaClient.FromNetwork().Subnets().Delete(ctx, subnet); err != nil {
     log.Printf("Delete subnet: %v", err)
-} else {
-    waitUntilGone(ctx, func(ctx context.Context) error {
-        _, err := arubaClient.FromNetwork().Subnets().Get(ctx, subnet)
-        return err
-    })
+} else if err := subnet.WaitUntilGone(ctx); err != nil {
+    log.Printf("Subnet not gone: %v", err)
 }
 
 if err := arubaClient.FromNetwork().VPCs().Delete(ctx, vpc); err != nil {
     log.Printf("Delete VPC: %v", err)
-} else {
-    waitUntilGone(ctx, func(ctx context.Context) error {
-        _, err := arubaClient.FromNetwork().VPCs().Get(ctx, vpc)
-        return err
-    })
+} else if err := vpc.WaitUntilGone(ctx); err != nil {
+    log.Printf("VPC not gone: %v", err)
 }
 
 if err := arubaClient.FromProject().Delete(ctx, proj); err != nil {
@@ -282,7 +240,9 @@ if err := arubaClient.FromProject().Delete(ctx, proj); err != nil {
 }
 ```
 
-`Delete` accepts any `aruba.Ref` — you can pass the hydrated wrapper directly or `aruba.URI(…)` if you only have the path.
+`WaitUntilGone` accepts the same `WaitOption`s as `WaitUntilReady` (`WithRetries`, `WithBaseDelay`, `WithTimeout`) and is available on every resource wrapper that supports polling. `Project` has no polling — it is deleted last, with no child left to wait on.
+
+`Delete` accepts any `aruba.Ref` — pass the hydrated wrapper directly or `aruba.URI(…)` if you only have the path.
 
 For a full stack teardown sequence (Security Rules → Security Groups → Subnets → VPC → Cloud Server → Block Storage → Project) see the [Full Example](#full-example) below.
 
@@ -312,7 +272,7 @@ if err := vpc.WaitUntilReady(ctx,
 }
 ```
 
-For `WaitUntilStates(ctx, []string{...}, opts...)` (any target states, not just `"Active"`), status accessors (`State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`), and the low-level `pkg/async.WaitFor` future for concurrent polling, see the [Async / Await](./async) guide.
+For `WaitUntilStates(ctx, []types.State{...}, opts...)` (any target states, not just `"Active"`), status accessors (`State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`), and the low-level `pkg/async.WaitFor` future for concurrent polling, see the [Async / Await](./async) guide.
 
 ---
 

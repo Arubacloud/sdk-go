@@ -91,8 +91,5 @@ func deleteKaaS(ctx context.Context, arubaClient aruba.Client, k *aruba.KaaS) {
 		return
 	}
 	printDeleteSubmitted("KaaS Cluster", k.Name())
-	waitUntilGone(ctx, "KaaS Cluster "+k.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromContainer().KaaS().Get(ctx, k)
-		return err
-	})
+	waitUntilGone(ctx, "KaaS Cluster "+k.Name(), k.WaitUntilGone)
 }

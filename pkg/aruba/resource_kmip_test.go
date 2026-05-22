@@ -893,6 +893,36 @@ func TestKmip_WaitUntilReady_AcceptsActive(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
+// WaitUntilGone — adapter-level test (Kmip path)
+// --------------------------------------------------------------------------
+
+func TestKmipsClientAdapter_WaitUntilGone(t *testing.T) {
+	callCount := 0
+	adapter := buildKmipTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.Header().Set("Content-Type", "application/json")
+		if callCount == 1 {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, kmipSuccessBody)
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "kmip not found", 404))
+		}
+	})
+
+	km, err := adapter.Get(context.Background(), URI("/projects/p-1/providers/Aruba.Security/kms/kms-1/kmips/kmip-1"))
+	if err != nil {
+		t.Fatalf("Get error: %v", err)
+	}
+	if err := km.WaitUntilGone(context.Background(), fastOpts()...); err != nil {
+		t.Fatalf("WaitUntilGone error: %v", err)
+	}
+	if callCount < 2 {
+		t.Errorf("expected at least 2 calls (1 Get + 1 refresh returning 404), got %d", callCount)
+	}
+}
+
+// --------------------------------------------------------------------------
 // Reflective guard: KmipsClient must NOT expose Update (Family B, no-Update)
 // --------------------------------------------------------------------------
 

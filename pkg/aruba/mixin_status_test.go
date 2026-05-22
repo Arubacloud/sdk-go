@@ -27,9 +27,11 @@ func TestStatusMixin_SetStatus(t *testing.T) {
 func TestStatusMixin_RefreshField(t *testing.T) {
 	called := false
 	m := statusMixin{
-		refresh: func(_ context.Context) error {
-			called = true
-			return nil
+		refreshMixin: refreshMixin{
+			refresh: func(_ context.Context) error {
+				called = true
+				return nil
+			},
 		},
 	}
 	if err := m.refresh(context.Background()); err != nil || !called {

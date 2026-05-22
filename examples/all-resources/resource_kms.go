@@ -118,10 +118,7 @@ func deleteKMS(ctx context.Context, arubaClient aruba.Client, k *aruba.KMS) {
 		return
 	}
 	printDeleteSubmitted("KMS Instance", k.Name())
-	waitUntilGone(ctx, "KMS Instance "+k.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromSecurity().KMS().Get(ctx, k)
-		return err
-	})
+	waitUntilGone(ctx, "KMS Instance "+k.Name(), k.WaitUntilGone)
 }
 
 // deleteKMSKey removes the cryptographic key from the KMS instance and waits until gone.
@@ -132,10 +129,7 @@ func deleteKMSKey(ctx context.Context, arubaClient aruba.Client, key *aruba.Key)
 		return
 	}
 	printDeleteSubmitted("KMS Key", key.Name())
-	waitUntilGone(ctx, "KMS Key "+key.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromSecurity().Keys().Get(ctx, key)
-		return err
-	})
+	waitUntilGone(ctx, "KMS Key "+key.Name(), key.WaitUntilGone)
 }
 
 // deleteKmip tears down the KMIP service and waits until it is fully gone.
@@ -146,8 +140,5 @@ func deleteKmip(ctx context.Context, arubaClient aruba.Client, km *aruba.Kmip) {
 		return
 	}
 	printDeleteSubmitted("KMIP Service", km.Name())
-	waitUntilGone(ctx, "KMIP Service "+km.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromSecurity().Kmips().Get(ctx, km)
-		return err
-	})
+	waitUntilGone(ctx, "KMIP Service "+km.Name(), km.WaitUntilGone)
 }

@@ -86,8 +86,5 @@ func deleteDBaaS(ctx context.Context, arubaClient aruba.Client, d *aruba.DBaaS) 
 		return
 	}
 	printDeleteSubmitted("DBaaS", d.Name())
-	waitUntilGone(ctx, "DBaaS "+d.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromDatabase().DBaaS().Get(ctx, d)
-		return err
-	})
+	waitUntilGone(ctx, "DBaaS "+d.Name(), d.WaitUntilGone)
 }

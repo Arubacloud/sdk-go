@@ -30,6 +30,7 @@ import (
 //   - Update requires the wrapper to already carry ID() — typically from Get.
 type Grant struct {
 	errMixin
+	refreshMixin
 	databaseScopedMixin
 	responseMetadataMixin
 	httpEnvelopeMixin
@@ -261,6 +262,16 @@ func (a *grantsClientAdapter) Create(ctx context.Context, g *Grant, opts ...Call
 	populateHTTPEnvelope(&g.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		g.fromResponse(resp.Data)
+		g.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, g)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				g.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return g, err
@@ -300,6 +311,16 @@ func (a *grantsClientAdapter) Update(ctx context.Context, g *Grant, opts ...Call
 	populateHTTPEnvelope(&g.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		g.fromResponse(resp.Data)
+		g.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, g)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				g.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return g, err
@@ -327,6 +348,16 @@ func (a *grantsClientAdapter) Get(ctx context.Context, ref Ref, opts ...CallOpti
 	populateHTTPEnvelope(&out.httpEnvelopeMixin, resp)
 	if resp != nil && resp.Data != nil {
 		out.fromResponse(resp.Data)
+		out.setRefresh(func(ctx context.Context) error {
+			fresh, err := a.Get(ctx, out)
+			if err != nil {
+				return err
+			}
+			if fresh != nil && fresh.Raw() != nil {
+				out.fromResponse(fresh.Raw())
+			}
+			return nil
+		})
 	}
 	if err != nil {
 		return out, err
@@ -379,6 +410,16 @@ func (a *grantsClientAdapter) List(ctx context.Context, parent Ref, opts ...Call
 			g.dbaasID = dbaasID
 			g.projectID = projectID
 			g.fromResponse(&resp.Data.Values[i])
+			g.setRefresh(func(ctx context.Context) error {
+				fresh, err := a.Get(ctx, g)
+				if err != nil {
+					return err
+				}
+				if fresh != nil && fresh.Raw() != nil {
+					g.fromResponse(fresh.Raw())
+				}
+				return nil
+			})
 			items = append(items, g)
 		}
 	}
@@ -401,6 +442,16 @@ func (a *grantsClientAdapter) List(ctx context.Context, parent Ref, opts ...Call
 				g.dbaasID = dbaasID
 				g.projectID = projectID
 				g.fromResponse(&pageResp.Data.Values[i])
+				g.setRefresh(func(ctx context.Context) error {
+					fresh, err := a.Get(ctx, g)
+					if err != nil {
+						return err
+					}
+					if fresh != nil && fresh.Raw() != nil {
+						g.fromResponse(fresh.Raw())
+					}
+					return nil
+				})
 				pageItems = append(pageItems, g)
 			}
 		}

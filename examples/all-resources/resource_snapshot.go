@@ -47,8 +47,5 @@ func deleteSnapshot(ctx context.Context, arubaClient aruba.Client, snap *aruba.S
 		return
 	}
 	printDeleteSubmitted("Snapshot", snap.Name())
-	waitUntilGone(ctx, "Snapshot "+snap.Name(), func(ctx context.Context) error {
-		_, err := arubaClient.FromStorage().Snapshots().Get(ctx, snap)
-		return err
-	})
+	waitUntilGone(ctx, "Snapshot "+snap.Name(), snap.WaitUntilGone)
 }
