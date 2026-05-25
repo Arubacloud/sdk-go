@@ -60,8 +60,8 @@ func main() {
 
 	proj := aruba.NewProject().
 		Named("my-first-project").
-		DescribedAs("Created from the Go SDK Quick Start").
-		Tagged("go-sdk")
+		Tagged("go-sdk").
+		DescribedAs("Created from the Go SDK Quick Start")
 
 	if _, err := arubaClient.FromProject().Create(ctx, proj); err != nil {
 		log.Fatalf("create project: %v", err)
@@ -178,7 +178,7 @@ Most cloud resources reach their terminal state asynchronously. Every wrapper th
 
 ```go
 vpc, err := arubaClient.FromNetwork().VPCs().Create(ctx,
-    aruba.NewVPC().InProject(proj).Named("prod-vpc"))
+    aruba.NewVPC().Named("prod-vpc").InProject(proj))
 if err != nil { log.Fatal(err) }
 
 if err := vpc.WaitUntilReady(ctx); err != nil {
@@ -224,10 +224,10 @@ Typed constants for regions, zones, flavors, billing periods, Kubernetes version
 
 ```go
 cs := aruba.NewCloudServer().
+    OfFlavor(aruba.CloudServerFlavorCSO4A8).
     InProject(proj).
     InRegion(aruba.RegionITBGBergamo).
     InZone(aruba.ZoneITBG1).
-    OfFlavor(aruba.CloudServerFlavorCSO4A8).
     BilledBy(aruba.BillingPeriodHour)
 ```
 

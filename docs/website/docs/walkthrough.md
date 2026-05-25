@@ -56,8 +56,8 @@ proj, err := arubaClient.FromProject().Create(
     ctx,
     aruba.NewProject().
         Named("my-project").
-        DescribedAs("Created via the Aruba Cloud Go SDK").
         Tagged("go-sdk").
+        DescribedAs("Created via the Aruba Cloud Go SDK").
         NotDefault())
 if err != nil {
     log.Fatalf("Create project: %v", err)
@@ -71,9 +71,9 @@ fmt.Printf("✓ Project created: %s (ID: %s)\n", proj.Name(), proj.ID())
 vpc, err := arubaClient.FromNetwork().VPCs().Create(
     ctx,
     aruba.NewVPC().
-        InProject(proj).
         Named("my-vpc").
         Tagged("network").
+        InProject(proj).
         InRegion(aruba.RegionITBGBergamo).
         NotDefault().
         WithoutPreset())
@@ -97,18 +97,18 @@ if err := vpc.WaitUntilReady(ctx); err != nil {
 subnet, err := arubaClient.FromNetwork().Subnets().Create(
     ctx,
     aruba.NewSubnet().
-        InVPC(vpc).
+        OfType(aruba.SubnetTypeAdvanced).
         Named("my-subnet").
         Tagged("network").
+        InVPC(vpc).
         InRegion(aruba.RegionITBGBergamo).
-        OfType(aruba.SubnetTypeAdvanced).
-        NotDefault().
         WithCIDR("192.168.1.0/25").
         WithDHCP(aruba.NewSubnetDHCP().
             Enabled().
             WithRange("192.168.1.10", 50).
             WithRoutes(aruba.SubnetDHCPRoute{Address: "10.0.0.0/8", Gateway: "192.168.1.1"}).
-            WithDNSServers("8.8.8.8", "8.8.4.4")))
+            WithDNSServers("8.8.8.8", "8.8.4.4")).
+        NotDefault())
 if err != nil {
     log.Fatalf("Create subnet: %v", err)
 }

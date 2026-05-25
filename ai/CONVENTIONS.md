@@ -125,6 +125,32 @@ All chainable setters follow `func (rcv *T) Verb(...) *T` and return the receive
 
 **Important:** bare `Set*` is reserved for non-chainable, side-effecting action methods (`*CloudServer.SetPassword(ctx, pw, opts...)` in `resource_cloud_server.go`) — never use it for a builder setter.
 
+### Canonical chain order
+
+Every builder chain should read like a natural English sentence — imagine an *Eloquent Old Grandma* at a cloud booking office placing an order: "I'd like a CloudServer of flavor Ubuntu 24.04, named 'my-server-01', tagged 'prod', in project Foo, in region Italy, booting from volume V, with VPC X, billed hourly."
+
+Setters cluster into 13 ordered buckets. Within a chain, appear top-to-bottom in this order; skip buckets that don't apply.
+
+| # | Bucket | Setters |
+|---|---|---|
+| 1 | **noun** | `New<X>()` |
+| 2 | **classifier** | `OfFlavor`, `OfType`, `OfEngine`, `OfSize`, `OfAlgorithm`, `OfInstance`, `OfRole` |
+| 3 | **name** | `Named` |
+| 4 | **labels** | `Tagged(…)` — variadic, **single call** |
+| 5 | **containment** | `InProject`, `InVPC`, `InSecurityGroup`, `InDBaaS`, `InDatabase`, `InKMS`, `InVPNTunnel`, `InVPCPeering` |
+| 6 | **geography** | `InRegion`, `InZone` |
+| 7 | **descriptive scalars** | `SizedGB`, `WithCIDR`, `WithKubernetesVersion`, `WithPodCIDR`, `WithNodeCIDR`, `WithPublicKey`, `WithAdminUsername`, `WithUsername`, `WithPassword`, `WithUserData`, `DescribedAs`, `RetainedForDays`, `WithMaxStorageQuotaGB`, `WithAutoscaling`, `WithCron`, `RecurringUntil`, `OneShotAt`, `WithAction`, `WithVerb`, `WithPort`, `WithProtocol`, `WithDirection`, `WithPeerClientPublicIP` |
+| 8 | **origin** | `FromImage`, `FromVolume`, `FromBackup`, `FromSnapshot`, `FromDBaaS`, `FromDatabase`, `BootingFrom` |
+| 9 | **attached config** | `WithVPC`, `WithSubnet`, `WithSecurityGroup`, `WithSecurityGroups`, `WithElasticIP`, `WithBlockStorage`, `WithDHCP`, `WithNodePools`, `WithSteps`, `WithIKESettings`, `WithESPSettings`, `WithPSKSettings`, `WithPeerVPC`, `WithTarget` |
+| 10 | **network placement** | `OnSubnets` |
+| 11 | **active relationship** | `UsingKeyPair`, `Targeting`, `TargetingCIDR`, `ForUser`, `ToVolume` |
+| 12 | **boolean / policy state** | `Enabled`/`Disabled`, `HighlyAvailable`, `AsBootable`/`NotBootable`, `AsDefault`/`NotDefault`, `WithPreset`/`WithoutPreset`, `WithoutAutoscaling` |
+| 13 | **billing** | `BilledBy(period)` |
+
+**Variadic-collapse rule:** when the same variadic setter would be called twice on the same builder, collapse to a single call — `Tagged("a").Tagged("b")` → `Tagged("a", "b")`. Applies to `Tagged`, `WithDNSServers`, and any other plural-named collection setter.
+
+Per-resource canonical chains are exercised in `examples/all-resources/` — treat those files as the executable specification of the correct ordering.
+
 ### Wire-level translation rules
 
 The wrapper API never echoes a wire field name verbatim if a clearer Go-idiomatic name exists:

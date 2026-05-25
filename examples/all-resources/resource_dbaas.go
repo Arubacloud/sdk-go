@@ -23,21 +23,20 @@ func createDBaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, 
 	}
 
 	d := aruba.NewDBaaS().
-		InProject(proj).
-		Named(resourceName(NameDBaaS)).
-		Tagged("database").
-		Tagged("mysql").
-		InRegion(aruba.RegionITBGBergamo).
-		InZone(aruba.ZoneITBG1).
 		OfEngine(aruba.DatabaseEngineMySQL80).
 		OfFlavor(aruba.DBaaSFlavorDBO4A8).
+		Named(resourceName(NameDBaaS)).
+		Tagged("database", "mysql").
+		InProject(proj).
+		InRegion(aruba.RegionITBGBergamo).
+		InZone(aruba.ZoneITBG1).
 		SizedGB(10).
 		WithAutoscaling(2, 5).
-		BilledBy(aruba.BillingPeriodHour).
 		WithVPC(vpc).
 		WithSubnet(subnet).
 		WithSecurityGroup(sg).
-		WithElasticIP(eip)
+		WithElasticIP(eip).
+		BilledBy(aruba.BillingPeriodHour)
 	if err := d.Err(); err != nil {
 		log.Printf("✗ Invalid DBaaS request: %v", err)
 		return nil

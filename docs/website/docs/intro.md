@@ -57,9 +57,8 @@ func main() {
 		ctx,
 		aruba.NewProject().
 			Named("my-first-project").
-			DescribedAs("A project with the Go SDK").
-			Tagged("go-sdk").
-			Tagged("quick-start"))
+			Tagged("go-sdk", "quick-start").
+			DescribedAs("A project with the Go SDK"))
 	if err != nil {
 		log.Fatalf("Error creating project: %v", err)
 	}

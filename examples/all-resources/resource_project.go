@@ -15,8 +15,7 @@ func createProject(ctx context.Context, arubaClient aruba.Client) *aruba.Project
 
 	proj := aruba.NewProject().
 		Named(resourceName(NameProject)).
-		Tagged("production").
-		Tagged("arubacloud-sdk").
+		Tagged("production", "arubacloud-sdk").
 		DescribedAs("My production project")
 
 	created, err := arubaClient.FromProject().Create(ctx, proj)

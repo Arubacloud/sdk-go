@@ -56,9 +56,9 @@ proj, err := arubaClient.FromProject().Create(
     ctx,
     aruba.NewProject().
         Named("my-project").
-        DescribedAs("Creato tramite l'SDK Go di Aruba Cloud").
         Tagged("go-sdk").
-        WithDefault(false))
+        DescribedAs("Creato tramite l'SDK Go di Aruba Cloud").
+        NotDefault())
 if err != nil {
     log.Fatalf("Create project: %v", err)
 }
@@ -71,11 +71,11 @@ fmt.Printf("✓ Progetto creato: %s (ID: %s)\n", proj.Name(), proj.ID())
 vpc, err := arubaClient.FromNetwork().VPCs().Create(
     ctx,
     aruba.NewVPC().
-        InProject(proj).
         Named("my-vpc").
         Tagged("network").
-        InRegion("ITBG-Bergamo").
-        WithDefault(false).
+        InProject(proj).
+        InRegion(aruba.RegionITBGBergamo).
+        NotDefault().
         WithoutPreset())
 if err != nil {
     log.Fatalf("Create VPC: %v", err)
@@ -97,18 +97,18 @@ if err := vpc.WaitUntilReady(ctx); err != nil {
 subnet, err := arubaClient.FromNetwork().Subnets().Create(
     ctx,
     aruba.NewSubnet().
-        InVPC(vpc).
+        OfType(aruba.SubnetTypeAdvanced).
         Named("my-subnet").
         Tagged("network").
-        InRegion("ITBG-Bergamo").
-        WithType(string(aruba.SubnetTypeAdvanced)).
-        WithDefault(false).
+        InVPC(vpc).
+        InRegion(aruba.RegionITBGBergamo).
         WithCIDR("192.168.1.0/25").
         WithDHCP(aruba.NewSubnetDHCP().
             Enabled().
             WithRange("192.168.1.10", 50).
             WithRoutes(aruba.SubnetDHCPRoute{Address: "10.0.0.0/8", Gateway: "192.168.1.1"}).
-            WithDNSServers("8.8.8.8", "8.8.4.4")))
+            WithDNSServers("8.8.8.8", "8.8.4.4")).
+        NotDefault())
 if err != nil {
     log.Fatalf("Create subnet: %v", err)
 }
@@ -121,7 +121,7 @@ if err := subnet.WaitUntilReady(ctx); err != nil {
 
 `aruba.NewSubnetDHCP()` è un sub-builder per la configurazione DHCP. Si allega alla subnet con `WithDHCP(...)`.
 
-`WithType` accetta `string(aruba.SubnetTypeBasic)` o `string(aruba.SubnetTypeAdvanced)`.
+`OfType` accetta `aruba.SubnetTypeBasic` o `aruba.SubnetTypeAdvanced`.
 
 > Ogni altra risorsa — Security Group, Elastic IP, Block Storage, Cloud Server, cluster KaaS, istanze DBaaS e altro — segue esattamente la stessa struttura `NewX()` → `IntoParent(ref)` → `Create(ctx, ...)` → `WaitUntilReady(ctx)`. Vedi [Risorse](./resources) per l'elenco completo con snippet pronti all'uso.
 
