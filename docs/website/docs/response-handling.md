@@ -95,6 +95,27 @@ raw := vpc.Raw()                         // underlying wire struct
 fmt.Println(raw.Properties.IsDefault)    // field not on the wrapper
 ```
 
+## List Responses
+
+`List[T]` exposes the same introspection surface as single-resource wrappers:
+
+```go
+vpcList, err := arubaClient.FromNetwork().VPCs().List(ctx, proj)
+if err != nil { /* … */ }
+
+// Wire payload — JSON-marshalable; contains pagination links and values.
+raw := vpcList.Raw().(*types.VPCList)
+fmt.Println("server total:", raw.Total)
+
+// HTTP envelope — same accessors as single-resource wrappers.
+fmt.Println("status:", vpcList.StatusCode())
+fmt.Println("trace-id:", vpcList.Headers().Get("X-Trace-Id"))
+_, body := vpcList.RawHTTP()
+fmt.Println("raw body bytes:", len(body))
+```
+
+`Raw()` returns only the JSON-safe payload (`*types.XxxList`). The HTTP envelope is exposed via separate accessors because `*http.Response` is not JSON-serialisable.
+
 ## Setter-Time Errors
 
 Fluent builder setters never return errors — instead they record them internally. The error surfaces the first time you call `Create` or `Update`. You can also check eagerly:

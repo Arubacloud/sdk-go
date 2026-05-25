@@ -2,7 +2,11 @@ package aruba
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 	"testing"
+
+	"github.com/Arubacloud/sdk-go/pkg/types"
 )
 
 // testItem is a minimal Wrapper implementation for list tests.
@@ -157,5 +161,77 @@ func TestList_Raw(t *testing.T) {
 	got, ok := l.Raw().(struct{ n int })
 	if !ok || got.n != 42 {
 		t.Errorf("Raw() = %v", l.Raw())
+	}
+}
+
+// TestList_Raw_JSONMarshalable is the regression test for #298: prior to the
+// fix Raw() returned *types.Response[L] whose embedded *http.Response.GetBody
+// is a non-serialisable func, breaking json.Marshal. Raw() now returns only
+// the JSON-safe wire payload (*types.XxxList).
+func TestList_Raw_JSONMarshalable(t *testing.T) {
+	resp := &types.Response[types.VPCList]{
+		Data: &types.VPCList{
+			ListResponse: types.ListResponse{Total: 2, Self: "/self", Next: "/next"},
+			Values:       []types.VPCResponse{},
+		},
+		StatusCode: 200,
+	}
+	l := newListFromResponse[testItem, types.VPCList](nil, resp, nil, nil)
+
+	b, err := json.Marshal(l.Raw())
+	if err != nil {
+		t.Fatalf("json.Marshal(list.Raw()): %v", err)
+	}
+	var back types.VPCList
+	if err := json.Unmarshal(b, &back); err != nil {
+		t.Fatalf("json.Unmarshal: %v", err)
+	}
+	if back.Total != 2 || back.Self != "/self" || back.Next != "/next" {
+		t.Errorf("round-trip lost fields: %+v", back)
+	}
+}
+
+// TestList_HTTPEnvelopeAccessors verifies the accessors promoted from the
+// embedded httpEnvelopeMixin (parity with single-resource wrappers).
+func TestList_HTTPEnvelopeAccessors(t *testing.T) {
+	resp := &types.Response[types.VPCList]{
+		Data:       &types.VPCList{ListResponse: types.ListResponse{Total: 0}},
+		StatusCode: 200,
+		Headers:    http.Header{"X-Trace-Id": []string{"abc-123"}},
+		RawBody:    []byte(`{"total":0,"values":[]}`),
+	}
+	l := newListFromResponse[testItem, types.VPCList](nil, resp, nil, nil)
+
+	if l.StatusCode() != 200 {
+		t.Errorf("StatusCode() = %d, want 200", l.StatusCode())
+	}
+	if got := l.Headers().Get("X-Trace-Id"); got != "abc-123" {
+		t.Errorf("Headers X-Trace-Id = %q", got)
+	}
+	if _, body := l.RawHTTP(); string(body) != `{"total":0,"values":[]}` {
+		t.Errorf("RawHTTP body = %q", string(body))
+	}
+	if l.RawError() != nil {
+		t.Errorf("RawError() = %v, want nil for 2xx", l.RawError())
+	}
+}
+
+// TestList_NewListFromResponse_NilSafe ensures the helper tolerates a nil
+// response and a nil resp.Data.
+func TestList_NewListFromResponse_NilSafe(t *testing.T) {
+	l1 := newListFromResponse[testItem, types.VPCList](nil, nil, nil, nil)
+	if l1 == nil || l1.Total() != 0 || l1.HasNext() || l1.HasPrev() {
+		t.Errorf("nil resp produced bad list: %+v", l1)
+	}
+	l2 := newListFromResponse[testItem, types.VPCList](
+		nil,
+		&types.Response[types.VPCList]{StatusCode: 200},
+		nil, nil,
+	)
+	if l2.Raw() != nil {
+		t.Errorf("Raw() should be nil when resp.Data is nil, got %v", l2.Raw())
+	}
+	if l2.StatusCode() != 200 {
+		t.Errorf("StatusCode() = %d, want 200", l2.StatusCode())
 	}
 }

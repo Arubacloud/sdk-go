@@ -26,8 +26,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `List[T]` now embeds `httpEnvelopeMixin`, exposing the same HTTP-envelope
+  accessors as single-resource wrappers — `StatusCode()`, `Headers()`,
+  `RawHTTP()`, `RawError()` — so list responses are fully introspectable on a
+  par with `Create`/`Get`/`Update` calls. (#298)
+- `types.ListResponse.BaseList()` returns the embedded pagination/total
+  metadata; promoted automatically onto every `*types.XxxList` via Go's
+  method-promotion rules. (#298)
+
 ### Fixed
 
+- `List[T].Raw()` previously returned the full `*types.Response[XxxList]`
+  envelope, which contains `*http.Response` whose `GetBody` is a function
+  field — `json.Marshal(list.Raw())` failed with
+  `json: unsupported type: func() (io.ReadCloser, error)` for every resource
+  list. `Raw()` now returns only the JSON-safe wire payload (`*types.XxxList`,
+  i.e. `resp.Data`). (#298)
 - `SecurityGroupsClient.Get`/`Update`/`Delete` rejected every ref produced by
   `aruba.SecurityGroupRef(...)` with `cannot determine security group ID from Ref "..."`,
   because the lookup expected a hyphenated `security-groups` segment that the Ref never

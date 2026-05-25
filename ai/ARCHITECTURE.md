@@ -214,7 +214,7 @@ The mixins were split into three files by responsibility:
 | `zonalMixin` | `mixin_common.go` | Extends `regionalMixin` with an availability-zone pointer (wire field `dataCenter`). |
 | `responseMetadataMixin` | `mixin_common.go` | Holds the post-server `*types.ResourceMetadataResponse`; exposes `ID()`, `RespURI()`, `CreatedAt()`, `Version()`, etc. |
 | `linkedMixin` | `mixin_common.go` | Stores `[]types.LinkedResource` returned by the API. |
-| `httpEnvelopeMixin` | `mixin_common.go` | Captures StatusCode / Headers / RawBody / `*http.Response` / parsed ErrorResponse after every adapter call. |
+| `httpEnvelopeMixin` | `mixin_common.go` | Captures StatusCode / Headers / RawBody / `*http.Response` / parsed ErrorResponse after every adapter call. Embedded by every single-resource wrapper and by `List[T]`. |
 | `projectScopedMixin` | `mixin_scoped.go` | Direct child of a Project; `intoProject(Ref)` extracts `projectID` via `extractID`. |
 | `vpcScopedMixin` | `mixin_scoped.go` | Direct child of a VPC; inherits `projectID` from parent. |
 | `securityGroupScopedMixin` | `mixin_scoped.go` | Direct child of a SecurityGroup; inherits `vpcID` + `projectID`. |
@@ -256,7 +256,9 @@ type Ref interface { URI() string; ID() string }
 
 ### `List[T Wrapper]` (`pkg/aruba/list.go`)
 
-Generic paginated container, constrained to `Wrapper { URI(); ID() }`. Carries `items`, `total`, pagination link URLs (`self/prev/next/first/last`), `callerOpts`, `raw` HTTP envelope, and a `refetch` callback. Navigation methods: `Items()`, `Total()`, `HasNext()`, `Next(ctx)`, `All(ctx, yield)`. The `refetch` callback is structurally wired in every adapter but currently returns a "not yet wired" error — pagination requires re-calling `List` with updated `CallOption` paging parameters.
+Generic paginated container, constrained to `Wrapper { URI(); ID() }`. Embeds `httpEnvelopeMixin` (same HTTP envelope accessors as single-resource wrappers). Carries `items`, `total`, pagination link URLs (`self/prev/next/first/last`), `callerOpts`, `raw` (JSON-safe wire payload, a `*types.XxxList`), and a `refetch` callback. Navigation methods: `Items()`, `Total()`, `HasNext()`, `Next(ctx)`, `All(ctx, yield)`.
+
+Adapters construct lists via `newListFromResponse[T Wrapper, L listPayload](items, resp, opts, refetch)` — a generic helper that extracts pagination from `resp.Data.BaseList()` (promoted from the embedded `types.ListResponse`), stores `resp.Data` as the JSON-safe `raw` payload, and populates the HTTP envelope mixin. The low-level `newList(...)` constructor is preserved for use in unit tests.
 
 ### Wait helpers and async
 
