@@ -113,14 +113,8 @@ func (k *KaaS) WithPodCIDR(cidr string) *KaaS { k.podCIDR = &cidr; return k }
 // HighlyAvailable enables high-availability mode for the control plane.
 func (k *KaaS) HighlyAvailable() *KaaS { v := true; k.ha = &v; return k }
 
-// BilledHourly sets hourly billing.
-func (k *KaaS) BilledHourly() *KaaS { v := BillingPeriodHour; k.billingPeriod = &v; return k }
-
-// BilledMonthly sets monthly billing.
-func (k *KaaS) BilledMonthly() *KaaS { v := BillingPeriodMonth; k.billingPeriod = &v; return k }
-
-// BilledYearly sets yearly billing.
-func (k *KaaS) BilledYearly() *KaaS { v := BillingPeriodYear; k.billingPeriod = &v; return k }
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (k *KaaS) BilledBy(period BillingPeriod) *KaaS { k.billingPeriod = &period; return k }
 
 // WithSecurityGroup attaches a SecurityGroup to the cluster. The KaaS API
 // stores only the SG's name (not its URI), so the supplied Ref must be a

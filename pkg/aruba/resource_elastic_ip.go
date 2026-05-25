@@ -75,18 +75,8 @@ func (e *ElasticIP) RetaggedAs(ts ...string) *ElasticIP { e.replaceTags(ts...); 
 // InRegion sets the region for this resource.
 func (e *ElasticIP) InRegion(region Region) *ElasticIP { e.inRegion(region); return e }
 
-// BilledHourly sets hourly billing.
-func (e *ElasticIP) BilledHourly() *ElasticIP { v := BillingPeriodHour; e.billingPeriod = &v; return e }
-
-// BilledMonthly sets monthly billing.
-func (e *ElasticIP) BilledMonthly() *ElasticIP {
-	v := BillingPeriodMonth
-	e.billingPeriod = &v
-	return e
-}
-
-// BilledYearly sets yearly billing.
-func (e *ElasticIP) BilledYearly() *ElasticIP { v := BillingPeriodYear; e.billingPeriod = &v; return e }
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (e *ElasticIP) BilledBy(period BillingPeriod) *ElasticIP { e.billingPeriod = &period; return e }
 
 // Getters — general → specific
 

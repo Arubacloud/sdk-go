@@ -92,18 +92,8 @@ func (t *VPNTunnel) WithVPNClientProtocol(s VPNClientProtocol) *VPNTunnel {
 	return t
 }
 
-// BilledHourly sets hourly billing.
-func (t *VPNTunnel) BilledHourly() *VPNTunnel { v := BillingPeriodHour; t.billingPeriod = &v; return t }
-
-// BilledMonthly sets monthly billing.
-func (t *VPNTunnel) BilledMonthly() *VPNTunnel {
-	v := BillingPeriodMonth
-	t.billingPeriod = &v
-	return t
-}
-
-// BilledYearly sets yearly billing.
-func (t *VPNTunnel) BilledYearly() *VPNTunnel { v := BillingPeriodYear; t.billingPeriod = &v; return t }
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (t *VPNTunnel) BilledBy(period BillingPeriod) *VPNTunnel { t.billingPeriod = &period; return t }
 
 // WithPeerClientPublicIP sets the public IP of the remote VPN peer.
 func (t *VPNTunnel) WithPeerClientPublicIP(s string) *VPNTunnel {

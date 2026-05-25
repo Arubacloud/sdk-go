@@ -35,7 +35,7 @@ func TestStorageBackup_FluentSetters(t *testing.T) {
 		InRegion(RegionITBGBergamo).
 		OfType(StorageBackupTypeFull).
 		RetainedForDays(30).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	if bkp.Name() != "my-backup" {
 		t.Errorf("Name() = %q", bkp.Name())
@@ -172,7 +172,7 @@ func TestStorageBackup_ToRequestRoundTrip(t *testing.T) {
 		OfType(StorageBackupTypeFull).
 		FromVolume(URI(volURI)).
 		RetainedForDays(14).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	req := bkp.RawRequest()
 
@@ -476,7 +476,7 @@ func TestStorageBackupsClientAdapter_Create_Success(t *testing.T) {
 		InRegion(RegionITBGBergamo).
 		OfType(StorageBackupTypeFull).
 		RetainedForDays(30).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), bkp)
 	if err != nil {
@@ -931,16 +931,15 @@ func TestStorageBackup_BillingPeriod_WireTranslation(t *testing.T) {
 	cases := []struct {
 		sdk  BillingPeriod
 		wire string
-		set  func(*StorageBackup) *StorageBackup
 	}{
-		{BillingPeriodHour, "Hourly", (*StorageBackup).BilledHourly},
-		{BillingPeriodMonth, "Monthly", (*StorageBackup).BilledMonthly},
-		{BillingPeriodYear, "Yearly", (*StorageBackup).BilledYearly},
+		{BillingPeriodHour, "Hourly"},
+		{BillingPeriodMonth, "Monthly"},
+		{BillingPeriodYear, "Yearly"},
 	}
 
 	for _, c := range cases {
 		// outbound: SDK constant → wire value
-		req := c.set(NewStorageBackup().Named("x").InRegion(RegionITBGBergamo)).RawRequest()
+		req := NewStorageBackup().Named("x").InRegion(RegionITBGBergamo).BilledBy(c.sdk).RawRequest()
 		if got := string(*req.Properties.BillingPeriod); got != c.wire {
 			t.Errorf("toRequest(%q) wire = %q, want %q", c.sdk, got, c.wire)
 		}

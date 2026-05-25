@@ -136,14 +136,8 @@ func (d *DBaaS) WithoutAutoscaling() *DBaaS {
 	return d
 }
 
-// BilledHourly sets hourly billing.
-func (d *DBaaS) BilledHourly() *DBaaS { v := BillingPeriodHour; d.billingPeriod = &v; return d }
-
-// BilledMonthly sets monthly billing.
-func (d *DBaaS) BilledMonthly() *DBaaS { v := BillingPeriodMonth; d.billingPeriod = &v; return d }
-
-// BilledYearly sets yearly billing.
-func (d *DBaaS) BilledYearly() *DBaaS { v := BillingPeriodYear; d.billingPeriod = &v; return d }
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (d *DBaaS) BilledBy(period BillingPeriod) *DBaaS { d.billingPeriod = &period; return d }
 
 // WithVPC sets the VPC for this DBaaS via its URI. Wire field: VPCURI.
 func (d *DBaaS) WithVPC(v Ref) *DBaaS { return d.setSingleRef("WithVPC", v, &d.vpcRef) }

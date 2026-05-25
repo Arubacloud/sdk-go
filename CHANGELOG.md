@@ -38,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   |---|---|
   | `IntoProject` / `IntoVPC` / `IntoKMS` / … | `InProject` / `InVPC` / `InKMS` / … |
   | `AddTag(s)` / `RemoveTag(s)` / `ReplaceTags(…)` | `Tagged(…)` / `Untagged(…)` / `RetaggedAs(…)` — variadic |
-  | `WithBillingPeriod(BillingPeriodHour\|Month\|Year)` | `BilledHourly()` / `BilledMonthly()` / `BilledYearly()` |
+  | `WithBillingPeriod(BillingPeriod)` | `BilledBy(BillingPeriod)` |
   | `WithSizeGB(n)` | `SizedGB(n)` |
   | `SetBootable()` / `UnsetBootable()` | `AsBootable()` / `NotBootable()` |
   | `Bootable()` getter | `IsBootable()` |

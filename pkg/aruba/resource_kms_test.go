@@ -38,7 +38,7 @@ func TestKMS_FluentSetters(t *testing.T) {
 		Tagged("encryption").
 		Tagged("security"). // dedupe
 		InRegion(RegionITBGBergamo).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	if k.Name() != "my-kms" {
 		t.Errorf("Name() = %q", k.Name())
@@ -95,7 +95,7 @@ func TestKMS_IntoProject_BadRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestKMS_WithBillingPeriod_RoundTrip(t *testing.T) {
-	k := NewKMS().BilledHourly()
+	k := NewKMS().BilledBy(BillingPeriodHour)
 	req := k.RawRequest()
 	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("Properties.BillingPeriod = %v", req.Properties.BillingPeriod)
@@ -112,7 +112,7 @@ func TestKMS_ToRequest_FullyPopulated(t *testing.T) {
 		Named("kms-name").
 		Tagged("tag1").
 		InRegion(RegionITBGBergamo).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	req := k.RawRequest()
 	if req.Metadata.Name != "kms-name" {
@@ -281,7 +281,7 @@ func TestKMSClientAdapter_Create_Success(t *testing.T) {
 		InProject(URI("/projects/p")).
 		Named("my-kms").
 		InRegion(RegionITBGBergamo).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), k)
 	if err != nil {
@@ -373,7 +373,7 @@ func TestKMSClientAdapter_Update_Success(t *testing.T) {
 
 	k := &KMS{}
 	k.fromResponse(kmsTestResponse("my-kms"))
-	k.BilledHourly()
+	k.BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Update(context.Background(), k)
 	if err != nil {
@@ -589,7 +589,7 @@ func TestKMS_Accessors_ZeroValue(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestKMS_BillingPeriod_RequestFallback(t *testing.T) {
-	k := NewKMS().BilledHourly()
+	k := NewKMS().BilledBy(BillingPeriodHour)
 	// response is nil, so it falls through to the request-side value
 	if k.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() request fallback = %q", k.BillingPeriod())

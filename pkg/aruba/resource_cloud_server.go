@@ -116,24 +116,9 @@ func (cs *CloudServer) WithVPCPreset() *CloudServer { v := true; cs.vpcPreset = 
 // WithoutVPCPreset disables VPC preset networking.
 func (cs *CloudServer) WithoutVPCPreset() *CloudServer { v := false; cs.vpcPreset = &v; return cs }
 
-// BilledHourly sets hourly billing.
-func (cs *CloudServer) BilledHourly() *CloudServer {
-	v := BillingPeriodHour
-	cs.billingPeriod = &v
-	return cs
-}
-
-// BilledMonthly sets monthly billing.
-func (cs *CloudServer) BilledMonthly() *CloudServer {
-	v := BillingPeriodMonth
-	cs.billingPeriod = &v
-	return cs
-}
-
-// BilledYearly sets yearly billing.
-func (cs *CloudServer) BilledYearly() *CloudServer {
-	v := BillingPeriodYear
-	cs.billingPeriod = &v
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (cs *CloudServer) BilledBy(period BillingPeriod) *CloudServer {
+	cs.billingPeriod = &period
 	return cs
 }
 

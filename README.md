@@ -228,7 +228,7 @@ cs := aruba.NewCloudServer().
     InRegion(aruba.RegionITBGBergamo).
     InZone(aruba.ZoneITBG1).
     OfFlavor(aruba.CloudServerFlavorCSO4A8).
-    BilledHourly()
+    BilledBy(aruba.BillingPeriodHour)
 ```
 
 When the wrapper doesn't yet expose a wire field, fall back via `wrapper.Raw()`:

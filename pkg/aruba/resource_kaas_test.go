@@ -50,7 +50,7 @@ func TestKaaS_FluentSetters(t *testing.T) {
 		WithKubernetesVersion("1.32.3").
 		HighlyAvailable().
 		WithMaxStorageQuotaGB(100).
-		BilledHourly().
+		BilledBy(BillingPeriodHour).
 		WithIdentity("cid", "csecret")
 
 	if k.Name() != "my-cluster" {
@@ -252,7 +252,7 @@ func TestKaaS_WithKubernetesVersion(t *testing.T) {
 }
 
 func TestKaaS_WithBillingPeriod(t *testing.T) {
-	k := NewKaaS().BilledHourly()
+	k := NewKaaS().BilledBy(BillingPeriodHour)
 	if k.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", k.BillingPeriod())
 	}
@@ -352,7 +352,7 @@ func TestKaaS_ToRequest(t *testing.T) {
 		WithKubernetesVersion("1.32.3").
 		HighlyAvailable().
 		WithMaxStorageQuotaGB(100).
-		BilledHourly().
+		BilledBy(BillingPeriodHour).
 		WithIdentity("cid", "csecret").
 		WithNodePools(NewNodePool().
 			Named("pool-1").OfInstance(NodePoolInstanceK4A8).InZone(ZoneITBG1).WithCount(3))
@@ -425,7 +425,7 @@ func TestKaaS_ToUpdateRequest_MutableOnly(t *testing.T) {
 		WithKubernetesVersion("1.33.0").
 		HighlyAvailable().
 		WithMaxStorageQuotaGB(200).
-		BilledHourly().
+		BilledBy(BillingPeriodHour).
 		WithNodePools(NewNodePool().
 			Named("pool-1").WithCount(5).OfInstance(NodePoolInstanceK4A8).InZone(ZoneITBG1))
 
@@ -743,7 +743,7 @@ func TestKaaSClientAdapter_Create_Success(t *testing.T) {
 		WithSecurityGroup(sgFixture).
 		WithNodeCIDR("10.100.0.0/16", "node-cidr").
 		WithKubernetesVersion("1.32.3").
-		BilledHourly().
+		BilledBy(BillingPeriodHour).
 		HighlyAvailable().
 		WithNodePools(NewNodePool().
 			Named("pool-1").WithCount(3).OfInstance(NodePoolInstanceK4A8).InZone(ZoneITBG1))

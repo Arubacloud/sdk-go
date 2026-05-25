@@ -74,14 +74,8 @@ func (s *Snapshot) RetaggedAs(ts ...string) *Snapshot { s.replaceTags(ts...); re
 // InRegion sets the region for this resource.
 func (s *Snapshot) InRegion(region Region) *Snapshot { s.inRegion(region); return s }
 
-// BilledHourly sets hourly billing.
-func (s *Snapshot) BilledHourly() *Snapshot { v := BillingPeriodHour; s.billingPeriod = &v; return s }
-
-// BilledMonthly sets monthly billing.
-func (s *Snapshot) BilledMonthly() *Snapshot { v := BillingPeriodMonth; s.billingPeriod = &v; return s }
-
-// BilledYearly sets yearly billing.
-func (s *Snapshot) BilledYearly() *Snapshot { v := BillingPeriodYear; s.billingPeriod = &v; return s }
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (s *Snapshot) BilledBy(period BillingPeriod) *Snapshot { s.billingPeriod = &period; return s }
 
 // FromVolume binds the source BlockStorage via its URI. Pass any Ref (typed or
 // aruba.URI(...)). Empty URIs are recorded on the error sink and the field

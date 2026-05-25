@@ -21,7 +21,7 @@ func createBlockStorage(ctx context.Context, arubaClient aruba.Client, proj arub
 		OfType(aruba.BlockStorageTypeStandard).
 		SizedGB(20).
 		AsBootable().
-		BilledHourly().
+		BilledBy(aruba.BillingPeriodHour).
 		FromImage(aruba.VolumeImageLU22001)
 
 	bs, err := arubaClient.FromStorage().Volumes().Create(ctx, bs)

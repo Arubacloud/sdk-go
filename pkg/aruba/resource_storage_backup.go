@@ -85,24 +85,9 @@ func (b *StorageBackup) RetainedForDays(days int) *StorageBackup {
 	return b
 }
 
-// BilledHourly sets hourly billing.
-func (b *StorageBackup) BilledHourly() *StorageBackup {
-	v := BillingPeriodHour
-	b.billingPeriod = &v
-	return b
-}
-
-// BilledMonthly sets monthly billing.
-func (b *StorageBackup) BilledMonthly() *StorageBackup {
-	v := BillingPeriodMonth
-	b.billingPeriod = &v
-	return b
-}
-
-// BilledYearly sets yearly billing.
-func (b *StorageBackup) BilledYearly() *StorageBackup {
-	v := BillingPeriodYear
-	b.billingPeriod = &v
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (b *StorageBackup) BilledBy(period BillingPeriod) *StorageBackup {
+	b.billingPeriod = &period
 	return b
 }
 

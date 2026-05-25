@@ -54,7 +54,7 @@ write_files:
 		WithSecurityGroups(resources.SecurityGroup).
 		WithElasticIP(resources.CloudServerEIP).
 		UsingKeyPair(resources.KeyPair).
-		BilledHourly()
+		BilledBy(aruba.BillingPeriodHour)
 
 	cs, err := arubaClient.FromCompute().CloudServers().Create(ctx, cs)
 	if err != nil {

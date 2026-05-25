@@ -33,7 +33,7 @@ func TestElasticIP_FluentSetters(t *testing.T) {
 		Tagged("public").
 		Tagged("net"). // dedupe
 		InRegion(RegionITBGBergamo).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	if e.Name() != "my-eip" {
 		t.Errorf("Name() = %q", e.Name())
@@ -86,7 +86,7 @@ func TestElasticIP_ToRequestRoundTrip(t *testing.T) {
 		Tagged("t1").
 		Tagged("t2").
 		InRegion(RegionITBGBergamo).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	req := e.RawRequest()
 
@@ -117,32 +117,25 @@ func TestElasticIP_ToRequestRoundTrip(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestElasticIP_BillingPeriod_WireBillingPlan(t *testing.T) {
-	cases := []struct {
-		period BillingPeriod
-		set    func(*ElasticIP) *ElasticIP
-	}{
-		{BillingPeriodHour, (*ElasticIP).BilledHourly},
-		{BillingPeriodMonth, (*ElasticIP).BilledMonthly},
-		{BillingPeriodYear, (*ElasticIP).BilledYearly},
-	}
-	for _, tc := range cases {
-		t.Run(string(tc.period), func(t *testing.T) {
-			req := tc.set(NewElasticIP().Named("x").InRegion(RegionITBGBergamo)).RawRequest()
+	for _, period := range []BillingPeriod{BillingPeriodHour, BillingPeriodMonth, BillingPeriodYear} {
+		tc := period
+		t.Run(string(tc), func(t *testing.T) {
+			req := NewElasticIP().Named("x").InRegion(RegionITBGBergamo).BilledBy(tc).RawRequest()
 			if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil {
 				t.Fatal("BillingPlan or BillingPlan.BillingPeriod is nil")
 			}
-			if got := *req.Properties.BillingPlan.BillingPeriod; got != tc.period {
-				t.Errorf("toRequest wire = %q, want %q", got, tc.period)
+			if got := *req.Properties.BillingPlan.BillingPeriod; got != tc {
+				t.Errorf("toRequest wire = %q, want %q", got, tc)
 			}
-			std := tc.period
+			std := tc
 			e := &ElasticIP{}
 			e.fromResponse(&types.ElasticIPResponse{
 				Properties: types.ElasticIPPropertiesResponse{
 					BillingPlan: &types.BillingPlan{BillingPeriod: &std},
 				},
 			})
-			if e.BillingPeriod() != tc.period {
-				t.Errorf("fromResponse getter = %q, want %q", e.BillingPeriod(), tc.period)
+			if e.BillingPeriod() != tc {
+				t.Errorf("fromResponse getter = %q, want %q", e.BillingPeriod(), tc)
 			}
 		})
 	}
@@ -334,7 +327,7 @@ func TestElasticIPsClientAdapter_Create_Success(t *testing.T) {
 		InProject(URI("/projects/p")).
 		Named("my-eip").
 		InRegion(RegionITBGBergamo).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), eip)
 	if err != nil {
@@ -477,7 +470,7 @@ func TestElasticIPsClientAdapter_Update_Success(t *testing.T) {
 
 	e := &ElasticIP{}
 	e.fromResponse(elasticIPTestResponse("eid", "orig", "/projects/p/providers/Aruba.Network/elasticIps/eid", "p"))
-	e.Named("renamed").BilledHourly()
+	e.Named("renamed").BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Update(context.Background(), e)
 	if err != nil {

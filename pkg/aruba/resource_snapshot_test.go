@@ -33,7 +33,7 @@ func TestSnapshot_FluentSetters(t *testing.T) {
 		Tagged("storage").
 		Tagged("backup"). // dedupe
 		InRegion(RegionITBGBergamo).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	if snap.Name() != "my-snap" {
 		t.Errorf("Name() = %q", snap.Name())
@@ -147,7 +147,7 @@ func TestSnapshot_ToRequestRoundTrip(t *testing.T) {
 		"snap-rt").
 		Tagged("t1").Tagged("t2").
 		InRegion(RegionITBGBergamo).
-		BilledHourly().
+		BilledBy(BillingPeriodHour).
 		FromVolume(URI(volURI))
 
 	req := snap.RawRequest()
@@ -475,7 +475,7 @@ func TestSnapshotsClientAdapter_Create_Success(t *testing.T) {
 		InProject(URI("/projects/p")).
 		Named("my-snap").
 		InRegion(RegionITBGBergamo).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), snap)
 	if err != nil {
@@ -654,7 +654,7 @@ func TestSnapshotsClientAdapter_Update_Success(t *testing.T) {
 
 	snap := &Snapshot{}
 	snap.fromResponse(snapshotTestResponse("snap-1", "my-snap", "/projects/p/providers/Aruba.Storage/snapshots/snap-1", "p"))
-	snap.BilledHourly()
+	snap.BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Update(context.Background(), snap)
 	if err != nil {
@@ -825,7 +825,7 @@ func TestSnapshotsClientAdapter_Update_NonTwoXX(t *testing.T) {
 
 	snap := &Snapshot{}
 	snap.fromResponse(snapshotTestResponse("snap-1", "my-snap", "/projects/p/providers/Aruba.Storage/snapshots/snap-1", "p"))
-	snap.BilledHourly()
+	snap.BilledBy(BillingPeriodHour)
 
 	_, err := adapter.Update(context.Background(), snap)
 	if err == nil {

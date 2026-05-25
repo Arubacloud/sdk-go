@@ -87,24 +87,9 @@ func (r *VPCPeeringRoute) WithRemoteCIDR(cidr string) *VPCPeeringRoute {
 	return r
 }
 
-// BilledHourly sets hourly billing.
-func (r *VPCPeeringRoute) BilledHourly() *VPCPeeringRoute {
-	v := BillingPeriodHour
-	r.billingPeriod = &v
-	return r
-}
-
-// BilledMonthly sets monthly billing.
-func (r *VPCPeeringRoute) BilledMonthly() *VPCPeeringRoute {
-	v := BillingPeriodMonth
-	r.billingPeriod = &v
-	return r
-}
-
-// BilledYearly sets yearly billing.
-func (r *VPCPeeringRoute) BilledYearly() *VPCPeeringRoute {
-	v := BillingPeriodYear
-	r.billingPeriod = &v
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (r *VPCPeeringRoute) BilledBy(period BillingPeriod) *VPCPeeringRoute {
+	r.billingPeriod = &period
 	return r
 }
 

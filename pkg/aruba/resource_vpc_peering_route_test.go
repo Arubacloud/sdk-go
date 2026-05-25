@@ -37,7 +37,7 @@ func TestVPCPeeringRoute_FluentSetters(t *testing.T) {
 		InRegion(RegionITBGBergamo).
 		WithLocalCIDR("10.0.0.0/24").
 		WithRemoteCIDR("192.168.0.0/24").
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	if r.Name() != "my-route" {
 		t.Errorf("Name() = %q", r.Name())
@@ -155,7 +155,7 @@ func TestVPCPeeringRoute_ToRequestRoundTrip(t *testing.T) {
 		InRegion(RegionITBGBergamo).
 		WithLocalCIDR("10.0.0.0/24").
 		WithRemoteCIDR("192.168.0.0/24").
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	req := r.RawRequest()
 
@@ -469,7 +469,7 @@ func TestVPCPeeringRoutesClientAdapter_Create_Success(t *testing.T) {
 		InRegion(RegionITBGBergamo).
 		WithLocalCIDR("10.0.0.0/24").
 		WithRemoteCIDR("192.168.0.0/24").
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), route)
 	if err != nil {

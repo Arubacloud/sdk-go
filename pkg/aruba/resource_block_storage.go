@@ -84,24 +84,9 @@ func (b *BlockStorage) OfType(t types.BlockStorageType) *BlockStorage {
 	return b
 }
 
-// BilledHourly sets hourly billing.
-func (b *BlockStorage) BilledHourly() *BlockStorage {
-	v := BillingPeriodHour
-	b.billingPeriod = &v
-	return b
-}
-
-// BilledMonthly sets monthly billing.
-func (b *BlockStorage) BilledMonthly() *BlockStorage {
-	v := BillingPeriodMonth
-	b.billingPeriod = &v
-	return b
-}
-
-// BilledYearly sets yearly billing.
-func (b *BlockStorage) BilledYearly() *BlockStorage {
-	v := BillingPeriodYear
-	b.billingPeriod = &v
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (b *BlockStorage) BilledBy(period BillingPeriod) *BlockStorage {
+	b.billingPeriod = &period
 	return b
 }
 

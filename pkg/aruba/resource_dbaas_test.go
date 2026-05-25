@@ -37,7 +37,7 @@ func TestDBaaS_FluentSetters(t *testing.T) {
 		OfEngine(DatabaseEngineMySQL80).
 		OfFlavor(DBaaSFlavorDBO2A4).
 		SizedGB(20).
-		BilledHourly().
+		BilledBy(BillingPeriodHour).
 		WithAutoscaling(50, 10)
 
 	if d.Name() != "my-dbaas" {
@@ -259,7 +259,7 @@ func TestDBaaS_WithoutAutoscaling(t *testing.T) {
 }
 
 func TestDBaaS_BilledMonthly(t *testing.T) {
-	d := NewDBaaS().BilledMonthly()
+	d := NewDBaaS().BilledBy(BillingPeriodMonth)
 	if d.BillingPeriod() != BillingPeriodMonth {
 		t.Errorf("BillingPeriod() = %q", d.BillingPeriod())
 	}
@@ -279,7 +279,7 @@ func TestDBaaS_ToRequestRoundTrip(t *testing.T) {
 		OfEngine(DatabaseEngineMySQL80).
 		OfFlavor(DBaaSFlavorDBO2A4).
 		SizedGB(20).
-		BilledHourly().
+		BilledBy(BillingPeriodHour).
 		WithAutoscaling(50, 10).
 		WithVPC(URI("/vpcs/v")).
 		WithSubnet(URI("/subnets/s")).
@@ -668,7 +668,7 @@ func TestDBaaSClientAdapter_Create_Success(t *testing.T) {
 		OfEngine(DatabaseEngineMySQL80).
 		OfFlavor(DBaaSFlavorDBO2A4).
 		SizedGB(20).
-		BilledHourly().
+		BilledBy(BillingPeriodHour).
 		WithAutoscaling(50, 10).
 		WithVPC(URI("/vpcs/v")).
 		WithSubnet(URI("/subnets/s")).

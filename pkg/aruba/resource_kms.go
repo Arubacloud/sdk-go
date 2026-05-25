@@ -74,14 +74,8 @@ func (k *KMS) RetaggedAs(ts ...string) *KMS { k.replaceTags(ts...); return k }
 // InRegion sets the region for this resource.
 func (k *KMS) InRegion(region Region) *KMS { k.inRegion(region); return k }
 
-// BilledHourly sets hourly billing.
-func (k *KMS) BilledHourly() *KMS { v := BillingPeriodHour; k.billingPeriod = &v; return k }
-
-// BilledMonthly sets monthly billing.
-func (k *KMS) BilledMonthly() *KMS { v := BillingPeriodMonth; k.billingPeriod = &v; return k }
-
-// BilledYearly sets yearly billing.
-func (k *KMS) BilledYearly() *KMS { v := BillingPeriodYear; k.billingPeriod = &v; return k }
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (k *KMS) BilledBy(period BillingPeriod) *KMS { k.billingPeriod = &period; return k }
 
 // Getters — general → specific
 

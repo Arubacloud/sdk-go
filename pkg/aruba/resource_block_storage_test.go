@@ -35,7 +35,7 @@ func TestBlockStorage_FluentSetters(t *testing.T) {
 		InRegion(RegionITBGBergamo).
 		SizedGB(50).
 		OfType(BlockStorageTypeStandard).
-		BilledHourly().
+		BilledBy(BillingPeriodHour).
 		FromImage(VolumeImageLU22001).
 		AsBootable()
 
@@ -164,7 +164,7 @@ func TestBlockStorage_ToRequestRoundTrip(t *testing.T) {
 		SizedGB(30).
 		OfType(BlockStorageTypePerformance).
 		InZone(ZoneITBG1).
-		BilledHourly().
+		BilledBy(BillingPeriodHour).
 		AsBootable().
 		FromImage(VolumeImageLU22001).
 		FromSnapshot(URI(snapURI))
@@ -496,7 +496,7 @@ func TestVolumesClientAdapter_Create_Success(t *testing.T) {
 		InRegion(RegionITBGBergamo).
 		SizedGB(20).
 		OfType(BlockStorageTypeStandard).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), bs)
 	if err != nil {

@@ -255,7 +255,7 @@ k, err := arubaClient.FromContainer().KaaS().Create(
         WithPodCIDR("10.200.0.0/16").
         WithKubernetesVersion("1.32.3").
         HighlyAvailable().
-        BilledHourly().
+        BilledBy(aruba.BillingPeriodHour).
         WithNodePools(aruba.NewNodePool().
             Named("default-pool").
             WithCount(3).
@@ -328,7 +328,7 @@ reg, err := arubaClient.FromContainer().ContainerRegistry().Create(
         WithBlockStorage(blockStorage).
         WithAdminUsername("admin").
         OfSize(aruba.ContainerRegistrySizeFlavorSmall).
-        BilledHourly())
+        BilledBy(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create ContainerRegistry: %v", err)
 }
@@ -380,7 +380,7 @@ db, err := arubaClient.FromDatabase().DBaaS().Create(
         WithEngine("mysql-8.0").
         WithFlavor("DBO2A4").
         WithStorage(20).
-        BilledHourly().
+        BilledBy(aruba.BillingPeriodHour).
         WithAutoscaling(true).
         WithNetworking(vpc, subnet, sg, eip))
 if err != nil {
@@ -552,7 +552,7 @@ backup, err := arubaClient.FromDatabase().DBaaSBackups().Create(
         InProject(proj).
         Named("my-db-backup").
         FromDBaaS(db).
-        BilledHourly().
+        BilledBy(aruba.BillingPeriodHour).
         Tagged("backup"))
 if err != nil {
     log.Fatalf("Create DBaaSBackup: %v", err)
@@ -766,7 +766,7 @@ eip, err := arubaClient.FromNetwork().ElasticIPs().Create(
         Named("my-eip").
         Tagged("network").
         InRegion("ITBG-Bergamo").
-        BilledHourly())
+        BilledBy(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create ElasticIP: %v", err)
 }
@@ -1182,7 +1182,7 @@ kms, err := arubaClient.FromSecurity().KMS().Create(
         Named("my-kms").
         Tagged("security").
         InRegion("ITBG-Bergamo").
-        BilledHourly())
+        BilledBy(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create KMS: %v", err)
 }
@@ -1326,7 +1326,7 @@ bs, err := arubaClient.FromStorage().Volumes().Create(
         InZone(aruba.ZoneITBG1).
         SizedGB(20).
         OfType(aruba.BlockStorageTypeStandard).
-        BilledHourly().
+        BilledBy(aruba.BillingPeriodHour).
         AsBootable().
         FromImage("LU22-001"))
 if err != nil {
@@ -1351,7 +1351,7 @@ bs, err := arubaClient.FromStorage().Volumes().Create(
         InZone(aruba.ZoneITBG1).
         SizedGB(20).
         OfType(aruba.BlockStorageTypeStandard).
-        BilledHourly().
+        BilledBy(aruba.BillingPeriodHour).
         AsBootable().
         FromSnapshot(snapshot))
 ```
@@ -1393,7 +1393,7 @@ snap, err := arubaClient.FromStorage().Snapshots().Create(
         Named("my-snapshot").
         Tagged("backup").
         InRegion("ITBG-Bergamo").
-        BilledHourly().
+        BilledBy(aruba.BillingPeriodHour).
         OfVolume(bs))
 if err != nil {
     log.Fatalf("Create Snapshot: %v", err)
@@ -1445,7 +1445,7 @@ backup, err := arubaClient.FromStorage().Backups().Create(
         FromVolume(bs).
         OfType(aruba.StorageBackupTypeFull).
         RetainedForDays(30).
-        BilledHourly())
+        BilledBy(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create StorageBackup: %v", err)
 }

@@ -36,7 +36,7 @@ func TestVPNTunnel_FluentSetters(t *testing.T) {
 		InRegion(RegionITBGBergamo).
 		OfType(VPNTypeSiteToSite).
 		WithVPNClientProtocol(VPNClientProtocolIKEv2).
-		BilledHourly().
+		BilledBy(BillingPeriodHour).
 		WithPeerClientPublicIP("1.2.3.4")
 
 	if tun.Name() != "my-tunnel" {
@@ -352,7 +352,7 @@ func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
 		InRegion(RegionITBGBergamo).
 		OfType(VPNTypeSiteToSite).
 		WithVPNClientProtocol(VPNClientProtocolIKEv2).
-		BilledHourly().
+		BilledBy(BillingPeriodHour).
 		WithPeerClientPublicIP("1.2.3.4").
 		WithIPConfig(
 			NewVPNIPConfig().

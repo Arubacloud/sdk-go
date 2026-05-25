@@ -1350,14 +1350,14 @@ func TestCloudServersClientAdapter_Get_InjectsRefresh(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestCloudServer_WithBillingPeriod_SetsField(t *testing.T) {
-	cs := NewCloudServer().BilledHourly()
+	cs := NewCloudServer().BilledBy(BillingPeriodHour)
 	if cs.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q, want %q", cs.BillingPeriod(), BillingPeriodHour)
 	}
 }
 
 func TestCloudServer_WithBillingPeriod_InRequest(t *testing.T) {
-	cs := NewCloudServer().BilledMonthly()
+	cs := NewCloudServer().BilledBy(BillingPeriodMonth)
 	req := cs.RawRequest()
 	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodMonth {
 		t.Errorf("request BillingPlan.BillingPeriod = %v, want %q", req.Properties.BillingPlan, BillingPeriodMonth)

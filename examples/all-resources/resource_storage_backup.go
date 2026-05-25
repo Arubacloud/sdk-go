@@ -24,7 +24,7 @@ func createStorageBackup(ctx context.Context, arubaClient aruba.Client, proj aru
 		InRegion(aruba.RegionITBGBergamo).
 		OfType(aruba.StorageBackupTypeFull).
 		RetainedForDays(10).
-		BilledHourly().
+		BilledBy(aruba.BillingPeriodHour).
 		FromVolume(bs)
 
 	result, err := arubaClient.FromStorage().Backups().Create(ctx, b)

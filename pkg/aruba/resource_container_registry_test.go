@@ -50,7 +50,7 @@ func TestContainerRegistry_FluentSetters(t *testing.T) {
 		WithBlockStorage(bsURI).
 		WithAdminUsername("admin").
 		OfSize(ContainerRegistrySizeFlavorSmall).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	if cr.Name() != "my-registry" {
 		t.Errorf("Name() = %q", cr.Name())
@@ -330,7 +330,7 @@ func TestContainerRegistry_OfSize(t *testing.T) {
 }
 
 func TestContainerRegistry_WithBillingPeriod(t *testing.T) {
-	cr := NewContainerRegistry().BilledHourly()
+	cr := NewContainerRegistry().BilledBy(BillingPeriodHour)
 	if cr.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", cr.BillingPeriod())
 	}
@@ -358,7 +358,7 @@ func TestContainerRegistry_ToRequest(t *testing.T) {
 		WithBlockStorage(URI(bsURI)).
 		WithAdminUsername("admin").
 		OfSize(ContainerRegistrySizeFlavorHighPerf).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	req := cr.RawRequest()
 
@@ -662,7 +662,7 @@ func TestContainerRegistriesClientAdapter_Create_Success(t *testing.T) {
 		WithBlockStorage(URI("/projects/p/providers/Aruba.Storage/blockStorages/bs-1")).
 		WithAdminUsername("admin").
 		OfSize(ContainerRegistrySizeFlavorSmall).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), cr)
 	if err != nil {

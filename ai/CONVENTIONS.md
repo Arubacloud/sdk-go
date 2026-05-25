@@ -116,8 +116,8 @@ All chainable setters follow `func (rcv *T) Verb(...) *T` and return the receive
 | participial (`<Verb>ing…`) | active relationship | `BootingFrom`, `UsingKeyPair`, `Targeting`, `PeeredWith` |
 | `On<Noun>` | network placement | `OnSubnets` |
 | `Tagged` / `Untagged` / `RetaggedAs` | tag-set mutation — variadic, append / remove / replace | `Tagged("prod","sdk")` |
-| `SizedGB(int)` / `RetainedForDays(int)` / `DescribedAs(string)` | descriptive value phrases | `SizedGB(20)` |
-| no-arg adjective/participle | boolean state | `Enabled()`, `Disabled()`, `HighlyAvailable()`, `BilledHourly()` |
+| `SizedGB(int)` / `RetainedForDays(int)` / `DescribedAs(string)` / `BilledBy(BillingPeriod)` | descriptive value phrases | `SizedGB(20)`, `BilledBy(BillingPeriodHour)` |
+| no-arg adjective/participle | boolean state | `Enabled()`, `Disabled()`, `HighlyAvailable()` |
 | `As<Adj>()` / `Not<Adj>()` + `Is<Adj>()` getter | tri-state `*bool` idiom | `AsDefault`/`NotDefault`/`IsDefault`, `AsBootable`/`NotBootable`/`IsBootable` |
 | `With<X>()` / `Without<X>()` | no-arg boolean pair | `WithPreset`/`WithoutPreset`, `WithoutAutoscaling`, `WithoutNodePools` |
 
@@ -142,7 +142,7 @@ Public callers never pass raw strings. Every domain that accepts an enum has typ
 | Domain | Alias prefix | Typical setter |
 |---|---|---|
 | Geography | `aruba.Region*`, `aruba.Zone*` | `InRegion(...)`, `InZone(...)` |
-| Billing | `aruba.BillingPeriod*` | `BilledHourly()` / `BilledMonthly()` / `BilledYearly()` |
+| Billing | `aruba.BillingPeriod*` | `BilledBy(BillingPeriod)` |
 | Compute | `aruba.CloudServerFlavor*`, `aruba.VolumeImage*` | `OfFlavor(...)`, `FromImage(...)` |
 | Storage | `aruba.BlockStorageType*`, `aruba.StorageBackupType*` | `OfType(...)` |
 | Database | `aruba.DatabaseEngine*`, `aruba.DBaaSFlavor*` | `OfEngine(...)`, `OfFlavor(...)` |

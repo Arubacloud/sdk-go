@@ -104,24 +104,9 @@ func (b *DBaaSBackup) FromDatabase(db Ref) *DBaaSBackup {
 	return b
 }
 
-// BilledHourly sets hourly billing.
-func (b *DBaaSBackup) BilledHourly() *DBaaSBackup {
-	v := BillingPeriodHour
-	b.billingPeriod = &v
-	return b
-}
-
-// BilledMonthly sets monthly billing.
-func (b *DBaaSBackup) BilledMonthly() *DBaaSBackup {
-	v := BillingPeriodMonth
-	b.billingPeriod = &v
-	return b
-}
-
-// BilledYearly sets yearly billing.
-func (b *DBaaSBackup) BilledYearly() *DBaaSBackup {
-	v := BillingPeriodYear
-	b.billingPeriod = &v
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (b *DBaaSBackup) BilledBy(period BillingPeriod) *DBaaSBackup {
+	b.billingPeriod = &period
 	return b
 }
 

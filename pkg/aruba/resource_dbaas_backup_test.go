@@ -44,7 +44,7 @@ func TestDBaaSBackup_FluentSetters(t *testing.T) {
 		InRegion(RegionITBGBergamo).
 		FromDBaaS(dbaasURI).
 		FromDatabase(dbURI).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	if bkp.Name() != "my-dbaas-backup" {
 		t.Errorf("Name() = %q", bkp.Name())
@@ -205,7 +205,7 @@ func TestDBaaSBackup_ToRequest(t *testing.T) {
 		InRegion(RegionITBGBergamo).
 		FromDBaaS(URI(dbaasURI)).
 		FromDatabase(URI(dbURI)).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	req := bkp.RawRequest()
 
@@ -476,7 +476,7 @@ func TestDBaaSBackupsClientAdapter_Create_Success(t *testing.T) {
 		InRegion(RegionITBGBergamo).
 		FromDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		FromDatabase(URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb")).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), bkp)
 	if err != nil {
@@ -598,7 +598,7 @@ func TestDBaaSBackupsClientAdapter_Create_WithBodyRefs_ViaFake(t *testing.T) {
 		InRegion(RegionITBGBergamo).
 		FromDBaaS(URI(dbaasURI)).
 		FromDatabase(URI(dbURI)).
-		BilledHourly()
+		BilledBy(BillingPeriodHour)
 
 	_, err := adapter.Create(context.Background(), bkp)
 	if err != nil {

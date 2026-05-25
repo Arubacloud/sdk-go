@@ -145,24 +145,9 @@ func (r *ContainerRegistry) OfSize(flavor types.ContainerRegistrySizeFlavor) *Co
 	return r
 }
 
-// BilledHourly sets hourly billing.
-func (r *ContainerRegistry) BilledHourly() *ContainerRegistry {
-	v := BillingPeriodHour
-	r.billingPeriod = &v
-	return r
-}
-
-// BilledMonthly sets monthly billing.
-func (r *ContainerRegistry) BilledMonthly() *ContainerRegistry {
-	v := BillingPeriodMonth
-	r.billingPeriod = &v
-	return r
-}
-
-// BilledYearly sets yearly billing.
-func (r *ContainerRegistry) BilledYearly() *ContainerRegistry {
-	v := BillingPeriodYear
-	r.billingPeriod = &v
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (r *ContainerRegistry) BilledBy(period BillingPeriod) *ContainerRegistry {
+	r.billingPeriod = &period
 	return r
 }
 
