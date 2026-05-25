@@ -43,20 +43,30 @@ func NewStorageBackup() *StorageBackup {
 
 // Setters — chainable, general → specific
 
-// IntoProject binds this StorageBackup to its parent project. Required before Create.
-func (b *StorageBackup) IntoProject(p Ref) *StorageBackup { b.intoProject(p); return b }
+// InProject binds this StorageBackup to its parent project. Required before Create.
+func (b *StorageBackup) InProject(p Ref) *StorageBackup { b.intoProject(p); return b }
 
 // Named sets the resource name. Required by the API.
 func (b *StorageBackup) Named(n string) *StorageBackup { b.named(n); return b }
 
-// AddTag appends a tag for filtering and accounting.
-func (b *StorageBackup) AddTag(t string) *StorageBackup { b.addTag(t); return b }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (b *StorageBackup) Tagged(ts ...string) *StorageBackup {
+	for _, t := range ts {
+		b.addTag(t)
+	}
+	return b
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (b *StorageBackup) RemoveTag(t string) *StorageBackup { b.removeTag(t); return b }
+// Untagged removes each listed tag. No-op for tags not present.
+func (b *StorageBackup) Untagged(ts ...string) *StorageBackup {
+	for _, t := range ts {
+		b.removeTag(t)
+	}
+	return b
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (b *StorageBackup) ReplaceTags(ts ...string) *StorageBackup { b.replaceTags(ts...); return b }
+// RetaggedAs replaces the entire tag set with the given values.
+func (b *StorageBackup) RetaggedAs(ts ...string) *StorageBackup { b.replaceTags(ts...); return b }
 
 // InRegion sets the region for this resource.
 func (b *StorageBackup) InRegion(region Region) *StorageBackup { b.inRegion(region); return b }
@@ -68,16 +78,31 @@ func (b *StorageBackup) OfType(t types.StorageBackupType) *StorageBackup {
 	return b
 }
 
-// WithRetentionDays sets the number of days the backup is retained.
-func (b *StorageBackup) WithRetentionDays(days int) *StorageBackup {
+// RetainedForDays sets the number of days the backup is retained.
+func (b *StorageBackup) RetainedForDays(days int) *StorageBackup {
 	v := days
 	b.retentionDays = &v
 	return b
 }
 
-// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
-func (b *StorageBackup) WithBillingPeriod(p BillingPeriod) *StorageBackup {
-	b.billingPeriod = &p
+// BilledHourly sets hourly billing.
+func (b *StorageBackup) BilledHourly() *StorageBackup {
+	v := BillingPeriodHour
+	b.billingPeriod = &v
+	return b
+}
+
+// BilledMonthly sets monthly billing.
+func (b *StorageBackup) BilledMonthly() *StorageBackup {
+	v := BillingPeriodMonth
+	b.billingPeriod = &v
+	return b
+}
+
+// BilledYearly sets yearly billing.
+func (b *StorageBackup) BilledYearly() *StorageBackup {
+	v := BillingPeriodYear
+	b.billingPeriod = &v
 	return b
 }
 
@@ -258,7 +283,7 @@ func (a *storageBackupsClientAdapter) Create(ctx context.Context, b *StorageBack
 		return b, err
 	}
 	if b.ProjectID() == "" {
-		return b, fmt.Errorf("Create: StorageBackup has no project — call IntoProject first")
+		return b, fmt.Errorf("Create: StorageBackup has no project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -331,7 +356,7 @@ func (a *storageBackupsClientAdapter) Update(ctx context.Context, b *StorageBack
 		return b, fmt.Errorf("Update: StorageBackup has no ID — call Get first or seed from response metadata")
 	}
 	if b.ProjectID() == "" {
-		return b, fmt.Errorf("Update: StorageBackup has no project — call IntoProject first")
+		return b, fmt.Errorf("Update: StorageBackup has no project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

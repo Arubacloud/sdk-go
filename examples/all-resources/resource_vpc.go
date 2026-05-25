@@ -12,11 +12,11 @@ func createVPC(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *a
 	fmt.Println("--- VPC ---")
 
 	vpc := aruba.NewVPC().
-		IntoProject(proj).
+		InProject(proj).
 		Named(resourceName(NameVPC)).
-		AddTag("network").AddTag("infrastructure").
+		Tagged("network").Tagged("infrastructure").
 		InRegion(aruba.RegionITBGBergamo).
-		WithPreset(false)
+		WithoutPreset()
 
 	created, err := arubaClient.FromNetwork().VPCs().Create(ctx, vpc)
 	if err != nil {

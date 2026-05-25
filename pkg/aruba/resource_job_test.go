@@ -33,13 +33,13 @@ func TestJob_FluentSetters(t *testing.T) {
 	proj.fromResponse(projectTestResponse("p-1", "my-proj", "/projects/p-1"))
 
 	j := NewJob().
-		IntoProject(proj).
+		InProject(proj).
 		Named("my-job").
-		AddTag("env:prod").
-		AddTag("schedule").
-		AddTag("env:prod"). // dedupe
+		Tagged("env:prod").
+		Tagged("schedule").
+		Tagged("env:prod"). // dedupe
 		InRegion(RegionITBGBergamo).
-		WithEnabled(true)
+		Enabled()
 
 	if j.Name() != "my-job" {
 		t.Errorf("Name() = %q", j.Name())
@@ -50,7 +50,7 @@ func TestJob_FluentSetters(t *testing.T) {
 	if j.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", j.Region())
 	}
-	if !j.Enabled() {
+	if !j.IsEnabled() {
 		t.Error("Enabled() should be true")
 	}
 	if j.ProjectID() != "p-1" {
@@ -68,7 +68,7 @@ func TestJob_FluentSetters(t *testing.T) {
 func TestJob_IntoProject_TypedRef(t *testing.T) {
 	proj := &Project{}
 	proj.fromResponse(projectTestResponse("p-42", "proj", "/projects/p-42"))
-	j := NewJob().IntoProject(proj)
+	j := NewJob().InProject(proj)
 	if j.ProjectID() != "p-42" {
 		t.Errorf("ProjectID() = %q", j.ProjectID())
 	}
@@ -78,14 +78,14 @@ func TestJob_IntoProject_TypedRef(t *testing.T) {
 }
 
 func TestJob_IntoProject_URIRef(t *testing.T) {
-	j := NewJob().IntoProject(URI("/projects/p-uri"))
+	j := NewJob().InProject(URI("/projects/p-uri"))
 	if j.ProjectID() != "p-uri" {
 		t.Errorf("ProjectID() = %q", j.ProjectID())
 	}
 }
 
 func TestJob_IntoProject_BadRef(t *testing.T) {
-	j := NewJob().IntoProject(URI("not-a-project-uri"))
+	j := NewJob().InProject(URI("not-a-project-uri"))
 	if j.Err() == nil {
 		t.Error("expected Err() != nil for non-project URI")
 	}
@@ -96,7 +96,7 @@ func TestJob_IntoProject_BadRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestJob_WithEnabled_True(t *testing.T) {
-	j := NewJob().WithEnabled(true)
+	j := NewJob().Enabled()
 	req := j.RawRequest()
 	if req.Properties.Enabled == nil || !*req.Properties.Enabled {
 		t.Error("Enabled should be true")
@@ -104,7 +104,7 @@ func TestJob_WithEnabled_True(t *testing.T) {
 }
 
 func TestJob_WithEnabled_False(t *testing.T) {
-	j := NewJob().WithEnabled(false)
+	j := NewJob().Disabled()
 	if j.enabled == nil || *j.enabled != false {
 		t.Error("enabled *bool should be set to false")
 	}
@@ -207,7 +207,7 @@ func TestJob_WithCron_Then_OneShotAt_Errors(t *testing.T) {
 func TestJobStep_Build_Basic(t *testing.T) {
 	s := NewJobStep().
 		Named("restart").
-		OfResource(URI("/projects/p/providers/Aruba.Compute/cloudServers/srv-1")).
+		Targeting(URI("/projects/p/providers/Aruba.Compute/cloudServers/srv-1")).
 		WithAction("/projects/p/providers/Aruba.Compute/cloudServers/srv-1/providers/Aruba.Compute/actions/reboot").
 		WithVerb(HTTPVerbPOST).
 		WithBody(`{"force":true}`)
@@ -228,24 +228,24 @@ func TestJobStep_Build_Basic(t *testing.T) {
 }
 
 func TestJobStep_OfResource_EmptyURI_Errors(t *testing.T) {
-	s := NewJobStep().OfResource(URI(""))
+	s := NewJobStep().Targeting(URI(""))
 	if s.Err() == nil {
 		t.Error("expected Err() != nil for empty resource URI")
 	}
 }
 
 func TestJob_AddStep_DrainErrors(t *testing.T) {
-	step := NewJobStep().OfResource(URI("")) // adds error to step
-	j := NewJob().AddStep(step)
+	step := NewJobStep().Targeting(URI("")) // adds error to step
+	j := NewJob().WithSteps(step)
 	if j.Err() == nil {
 		t.Error("expected step errors to be drained into job")
 	}
 }
 
 func TestJob_AddStep_Nil(t *testing.T) {
-	j := NewJob().AddStep(nil)
+	j := NewJob().WithSteps(nil)
 	if j.Err() != nil {
-		t.Errorf("AddStep(nil) should not error: %v", j.Err())
+		t.Errorf("WithSteps(nil) should not error: %v", j.Err())
 	}
 }
 
@@ -256,14 +256,14 @@ func TestJob_AddStep_Nil(t *testing.T) {
 func TestJob_ToRequest_OneShot(t *testing.T) {
 	ts := time.Date(2026, 5, 1, 12, 0, 0, 0, time.UTC)
 	j := NewJob().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("one-shot-job").
 		InRegion(RegionITBGBergamo).
-		WithEnabled(true).
+		Enabled().
 		OneShotAt(ts).
-		AddStep(NewJobStep().
+		WithSteps(NewJobStep().
 			Named("step-1").
-			OfResource(URI("/projects/p/providers/Aruba.Compute/cloudServers/s-1")).
+			Targeting(URI("/projects/p/providers/Aruba.Compute/cloudServers/s-1")).
 			WithAction("/projects/p/providers/Aruba.Compute/cloudServers/s-1/actions/start").
 			WithVerb(HTTPVerbPOST))
 
@@ -291,7 +291,7 @@ func TestJob_ToRequest_OneShot(t *testing.T) {
 func TestJob_ToRequest_Recurring(t *testing.T) {
 	until := time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)
 	j := NewJob().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("cron-job").
 		WithCron("0 8 * * 1-5").
 		RecurringUntil(until)
@@ -370,7 +370,7 @@ func TestJob_FromResponseHydration(t *testing.T) {
 	if j.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", j.Region())
 	}
-	if !j.Enabled() {
+	if !j.IsEnabled() {
 		t.Error("Enabled() should be true")
 	}
 	if j.JobType() != JobTypeOneShot {
@@ -504,10 +504,10 @@ func TestJobsClientAdapter_Create_Success(t *testing.T) {
 
 	ts := time.Date(2026, 5, 1, 12, 0, 0, 0, time.UTC)
 	j := NewJob().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-job").
 		InRegion(RegionITBGBergamo).
-		WithEnabled(true).
+		Enabled().
 		OneShotAt(ts)
 
 	result, err := adapter.Create(context.Background(), j)
@@ -555,7 +555,7 @@ func TestJobsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"j","uri":"/projects/p/providers/Aruba.Schedule/jobs/x"},"properties":{},"status":{}}`)
 	})
 
-	j := NewJob().IntoProject(URI("/projects/p")).
+	j := NewJob().InProject(URI("/projects/p")).
 		Named("j")
 	result, err := adapter.Create(context.Background(), j)
 	if err == nil {
@@ -576,7 +576,7 @@ func TestJobsClientAdapter_Create_NonTwoXX(t *testing.T) {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, `{"message":"bad request"}`)
 	})
-	_, err := adapter.Create(context.Background(), NewJob().IntoProject(URI("/projects/p")).
+	_, err := adapter.Create(context.Background(), NewJob().InProject(URI("/projects/p")).
 		Named("j"))
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {
@@ -601,7 +601,7 @@ func TestJobsClientAdapter_Update_Success(t *testing.T) {
 	// Load from response, then only update non-schedule fields to avoid mode conflict.
 	j := &Job{}
 	j.fromResponse(jobTestResponse("my-job"))
-	j.Named("my-job-updated").WithEnabled(false)
+	j.Named("my-job-updated").Disabled()
 
 	result, err := adapter.Update(context.Background(), j)
 	if err != nil {
@@ -616,7 +616,7 @@ func TestJobsClientAdapter_Update_NoID(t *testing.T) {
 	adapter := buildJobsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	j := NewJob().IntoProject(URI("/projects/p")).
+	j := NewJob().InProject(URI("/projects/p")).
 		Named("x")
 	_, err := adapter.Update(context.Background(), j)
 	if err == nil {
@@ -760,11 +760,11 @@ func TestJobsClientAdapter_List_TwoItems(t *testing.T) {
 
 func TestJob_SetterDelegation(t *testing.T) {
 	j := NewJob().
-		AddTag("a").
-		AddTag("b").
-		AddTag("c").
-		RemoveTag("b").
-		ReplaceTags("x", "y").
+		Tagged("a").
+		Tagged("b").
+		Tagged("c").
+		Untagged("b").
+		RetaggedAs("x", "y").
 		InRegion(RegionITBGBergamo)
 
 	tags := j.Tags()
@@ -807,7 +807,7 @@ func TestJob_Accessors_ZeroValue(t *testing.T) {
 	if j.Raw() != nil {
 		t.Errorf("Raw() zero = %v", j.Raw())
 	}
-	if j.Enabled() != false {
+	if j.IsEnabled() != false {
 		t.Error("Enabled() zero should be false")
 	}
 	if j.JobType() != "" {
@@ -823,8 +823,8 @@ func TestJob_Accessors_ZeroValue(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestJob_Enabled_RequestFallback(t *testing.T) {
-	j := NewJob().WithEnabled(true)
-	if !j.Enabled() {
+	j := NewJob().Enabled()
+	if !j.IsEnabled() {
 		t.Error("Enabled() request fallback should be true")
 	}
 }
@@ -975,7 +975,7 @@ func TestJobsClientAdapter_Update_ErrSet(t *testing.T) {
 	adapter := buildJobsTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	j := NewJob().IntoProject(URI("not-a-project-uri")) // sets Err()
+	j := NewJob().InProject(URI("not-a-project-uri")) // sets Err()
 	_, err := adapter.Update(context.Background(), j)
 	if err == nil {
 		t.Fatal("expected error when Job has Err() set")

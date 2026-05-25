@@ -14,10 +14,10 @@ func createKeyPair(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref
 	sshPublicKey := "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEA2No7At0tgHrcZTL0kGWyLLUqPKfOhD9hGdNV9PbJxhjOGNFxcwdQ9wCXsJ3RQaRHBuGIgVodDurrlqzxFK86yCHMgXT2YLHF0j9P4m9GDiCfOK6msbFb89p5xZExjwD2zK+w68r7iOKZeRB2yrznW5TD3KDemSPIQQIVcyLF+yxft49HWBTI3PVQ4rBVOBJ2PdC9SAOf7CYnptW24CRrC0h85szIDwMA+Kmasfl3YGzk4MxheHrTO8C40aXXpieJ9S2VQA4VJAMRyAboptIK0cKjBYrbt5YkEL0AlyBGPIu6MPYr5K/MHyDunDi9yc7VYRYRR0f46MBOSqMUiGPnMw=="
 
 	kp := aruba.NewKeyPair().
-		IntoProject(proj).
+		InProject(proj).
 		Named(resourceName(NameKeyPair)).
-		AddTag("ssh-access").
-		AddTag("ingress").
+		Tagged("ssh-access").
+		Tagged("ingress").
 		InRegion(aruba.RegionITBGBergamo).
 		WithPublicKey(sshPublicKey)
 

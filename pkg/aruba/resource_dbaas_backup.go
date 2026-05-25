@@ -13,7 +13,7 @@ import (
 
 // DBaaSBackup is the wrapper for an Aruba Cloud DBaaS Backup (a direct child
 // of a Project; the source DBaaS and Database are body-refs, not path-parents).
-// Construct with aruba.NewDBaaSBackup() and bind it via IntoProject(project),
+// Construct with aruba.NewDBaaSBackup() and bind it via InProject(project),
 // FromDBaaS(d), and FromDatabase(db).
 //
 // Family A: regional, Metadata/Properties envelope, location-aware. No Update
@@ -48,20 +48,30 @@ func NewDBaaSBackup() *DBaaSBackup {
 
 // Setters — chainable, general → specific
 
-// IntoProject binds this DBaaSBackup to its parent project. Required before Create.
-func (b *DBaaSBackup) IntoProject(p Ref) *DBaaSBackup { b.intoProject(p); return b }
+// InProject binds this DBaaSBackup to its parent project. Required before Create.
+func (b *DBaaSBackup) InProject(p Ref) *DBaaSBackup { b.intoProject(p); return b }
 
 // Named sets the resource name. Required by the API.
 func (b *DBaaSBackup) Named(n string) *DBaaSBackup { b.named(n); return b }
 
-// AddTag appends a tag for filtering and accounting.
-func (b *DBaaSBackup) AddTag(t string) *DBaaSBackup { b.addTag(t); return b }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (b *DBaaSBackup) Tagged(ts ...string) *DBaaSBackup {
+	for _, t := range ts {
+		b.addTag(t)
+	}
+	return b
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (b *DBaaSBackup) RemoveTag(t string) *DBaaSBackup { b.removeTag(t); return b }
+// Untagged removes each listed tag. No-op for tags not present.
+func (b *DBaaSBackup) Untagged(ts ...string) *DBaaSBackup {
+	for _, t := range ts {
+		b.removeTag(t)
+	}
+	return b
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (b *DBaaSBackup) ReplaceTags(ts ...string) *DBaaSBackup { b.replaceTags(ts...); return b }
+// RetaggedAs replaces the entire tag set with the given values.
+func (b *DBaaSBackup) RetaggedAs(ts ...string) *DBaaSBackup { b.replaceTags(ts...); return b }
 
 // InRegion sets the region for this resource.
 func (b *DBaaSBackup) InRegion(region Region) *DBaaSBackup { b.inRegion(region); return b }
@@ -94,9 +104,24 @@ func (b *DBaaSBackup) FromDatabase(db Ref) *DBaaSBackup {
 	return b
 }
 
-// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
-func (b *DBaaSBackup) WithBillingPeriod(p BillingPeriod) *DBaaSBackup {
-	b.billingPeriod = &p
+// BilledHourly sets hourly billing.
+func (b *DBaaSBackup) BilledHourly() *DBaaSBackup {
+	v := BillingPeriodHour
+	b.billingPeriod = &v
+	return b
+}
+
+// BilledMonthly sets monthly billing.
+func (b *DBaaSBackup) BilledMonthly() *DBaaSBackup {
+	v := BillingPeriodMonth
+	b.billingPeriod = &v
+	return b
+}
+
+// BilledYearly sets yearly billing.
+func (b *DBaaSBackup) BilledYearly() *DBaaSBackup {
+	v := BillingPeriodYear
+	b.billingPeriod = &v
 	return b
 }
 
@@ -283,7 +308,7 @@ func (a *dbaasBackupsClientAdapter) Create(ctx context.Context, b *DBaaSBackup, 
 		return b, err
 	}
 	if b.ProjectID() == "" {
-		return b, fmt.Errorf("Create: DBaaSBackup has no parent project — call IntoProject first")
+		return b, fmt.Errorf("Create: DBaaSBackup has no parent project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

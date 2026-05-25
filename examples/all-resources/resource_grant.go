@@ -11,9 +11,9 @@ func createGrant(ctx context.Context, arubaClient aruba.Client, db *aruba.Databa
 	printBanner("DBaaS Grant", "")
 
 	g := aruba.NewGrant().
-		IntoDatabase(db).
-		WithUsername(user.Username()).
-		WithRoleName("liteadmin")
+		InDatabase(db).
+		ForUser(user.Username()).
+		OfRole("liteadmin")
 
 	res, err := arubaClient.FromDatabase().Grants().Create(ctx, g)
 	if err != nil {

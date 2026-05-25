@@ -37,11 +37,11 @@ func TestContainerRegistry_FluentSetters(t *testing.T) {
 	bsURI := URI("/projects/p-1/providers/Aruba.Storage/blockStorages/bs-1")
 
 	cr := NewContainerRegistry().
-		IntoProject(proj).
+		InProject(proj).
 		Named("my-registry").
-		AddTag("env:prod").
-		AddTag("registry").
-		AddTag("env:prod"). // dedupe
+		Tagged("env:prod").
+		Tagged("registry").
+		Tagged("env:prod"). // dedupe
 		InRegion(RegionITBGBergamo).
 		WithVPC(vpcURI).
 		WithSubnet(subnetURI).
@@ -50,7 +50,7 @@ func TestContainerRegistry_FluentSetters(t *testing.T) {
 		WithBlockStorage(bsURI).
 		WithAdminUsername("admin").
 		OfSize(ContainerRegistrySizeFlavorSmall).
-		WithBillingPeriod(BillingPeriodHour)
+		BilledHourly()
 
 	if cr.Name() != "my-registry" {
 		t.Errorf("Name() = %q", cr.Name())
@@ -92,12 +92,12 @@ func TestContainerRegistry_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", cr.Err())
 	}
 
-	cr.RemoveTag("env:prod")
+	cr.Untagged("env:prod")
 	if tags := cr.Tags(); len(tags) != 1 || tags[0] != "registry" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	cr.ReplaceTags("x", "y")
+	cr.RetaggedAs("x", "y")
 	if tags := cr.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -110,7 +110,7 @@ func TestContainerRegistry_FluentSetters(t *testing.T) {
 func TestContainerRegistry_IntoProject_TypedRef(t *testing.T) {
 	proj := &Project{}
 	proj.fromResponse(projectTestResponse("p-42", "n", "/projects/p-42"))
-	cr := NewContainerRegistry().IntoProject(proj)
+	cr := NewContainerRegistry().InProject(proj)
 	if cr.ProjectID() != "p-42" {
 		t.Errorf("ProjectID() = %q", cr.ProjectID())
 	}
@@ -120,7 +120,7 @@ func TestContainerRegistry_IntoProject_TypedRef(t *testing.T) {
 }
 
 func TestContainerRegistry_IntoProject_URIRef(t *testing.T) {
-	cr := NewContainerRegistry().IntoProject(URI("/projects/p-uri"))
+	cr := NewContainerRegistry().InProject(URI("/projects/p-uri"))
 	if cr.ProjectID() != "p-uri" {
 		t.Errorf("ProjectID() = %q", cr.ProjectID())
 	}
@@ -130,7 +130,7 @@ func TestContainerRegistry_IntoProject_URIRef(t *testing.T) {
 }
 
 func TestContainerRegistry_IntoProject_BadRef(t *testing.T) {
-	cr := NewContainerRegistry().IntoProject(URI("/garbage"))
+	cr := NewContainerRegistry().InProject(URI("/garbage"))
 	if cr.Err() == nil {
 		t.Error("expected Err() != nil for unresolvable Ref")
 	}
@@ -330,7 +330,7 @@ func TestContainerRegistry_OfSize(t *testing.T) {
 }
 
 func TestContainerRegistry_WithBillingPeriod(t *testing.T) {
-	cr := NewContainerRegistry().WithBillingPeriod(BillingPeriodHour)
+	cr := NewContainerRegistry().BilledHourly()
 	if cr.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", cr.BillingPeriod())
 	}
@@ -349,7 +349,7 @@ func TestContainerRegistry_ToRequest(t *testing.T) {
 
 	cr := NewContainerRegistry().Named(
 		"reg-rt").
-		AddTag("t1").AddTag("t2").
+		Tagged("t1").Tagged("t2").
 		InRegion(RegionITBGBergamo).
 		WithVPC(URI(vpcURI)).
 		WithSubnet(URI(subnetURI)).
@@ -358,7 +358,7 @@ func TestContainerRegistry_ToRequest(t *testing.T) {
 		WithBlockStorage(URI(bsURI)).
 		WithAdminUsername("admin").
 		OfSize(ContainerRegistrySizeFlavorHighPerf).
-		WithBillingPeriod(BillingPeriodHour)
+		BilledHourly()
 
 	req := cr.RawRequest()
 
@@ -652,7 +652,7 @@ func TestContainerRegistriesClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	cr := NewContainerRegistry().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-registry").
 		InRegion(RegionITBGBergamo).
 		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1")).
@@ -662,7 +662,7 @@ func TestContainerRegistriesClientAdapter_Create_Success(t *testing.T) {
 		WithBlockStorage(URI("/projects/p/providers/Aruba.Storage/blockStorages/bs-1")).
 		WithAdminUsername("admin").
 		OfSize(ContainerRegistrySizeFlavorSmall).
-		WithBillingPeriod(BillingPeriodHour)
+		BilledHourly()
 
 	result, err := adapter.Create(context.Background(), cr)
 	if err != nil {
@@ -714,7 +714,7 @@ func TestContainerRegistriesClientAdapter_Create_MetadataValidationError(t *test
 		fmt.Fprint(w, `{"metadata":{"name":"reg","uri":"/projects/p/providers/Aruba.Container/registries/x"},"properties":{},"status":{}}`)
 	})
 
-	cr := NewContainerRegistry().IntoProject(URI("/projects/p")).
+	cr := NewContainerRegistry().InProject(URI("/projects/p")).
 		Named("reg")
 	result, err := adapter.Create(context.Background(), cr)
 	if err == nil {
@@ -736,7 +736,7 @@ func TestContainerRegistriesClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "name is required", 422))
 	})
 
-	cr := NewContainerRegistry().IntoProject(URI("/projects/p"))
+	cr := NewContainerRegistry().InProject(URI("/projects/p"))
 	result, err := adapter.Create(context.Background(), cr)
 	if err == nil {
 		t.Fatal("expected error on 422")
@@ -774,7 +774,7 @@ func TestContainerRegistriesClientAdapter_Create_WithBodyRefs_ViaFake(t *testing
 	adapter := &containerRegistriesClientAdapter{low: fake}
 
 	cr := NewContainerRegistry().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		InRegion(RegionITBGBergamo).
 		WithVPC(URI(vpcURI)).
 		WithSubnet(URI(subnetURI)).
@@ -829,7 +829,7 @@ func TestContainerRegistriesClientAdapter_Update_Success(t *testing.T) {
 	})
 
 	cr := NewContainerRegistry().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-registry").
 		InRegion(RegionITBGBergamo).
 		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1"))
@@ -856,7 +856,7 @@ func TestContainerRegistriesClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	cr := NewContainerRegistry().IntoProject(URI("/projects/p")).
+	cr := NewContainerRegistry().InProject(URI("/projects/p")).
 		Named("x")
 	_, err := adapter.Update(context.Background(), cr)
 	if err == nil {

@@ -51,14 +51,14 @@ func NewGrant() *Grant {
 
 // Setters — chainable, general → specific
 
-// IntoDatabase binds this Grant to its parent Database. Required before Create.
-func (g *Grant) IntoDatabase(parent Ref) *Grant { g.intoDatabase(parent); return g }
+// InDatabase binds this Grant to its parent Database. Required before Create.
+func (g *Grant) InDatabase(parent Ref) *Grant { g.intoDatabase(parent); return g }
 
-// WithUsername sets the database username this grant applies to. Wire field: User.Username.
-func (g *Grant) WithUsername(name string) *Grant { g.username = &name; return g }
+// ForUser sets the database username this grant applies to. Wire field: User.Username.
+func (g *Grant) ForUser(name string) *Grant { g.username = &name; return g }
 
-// WithRoleName sets the role to grant to the user. Wire field: Role.Name.
-func (g *Grant) WithRoleName(name string) *Grant { g.roleName = &name; return g }
+// OfRole sets the role to grant to the user. Wire field: Role.Name.
+func (g *Grant) OfRole(name string) *Grant { g.roleName = &name; return g }
 
 // Getters — general → specific
 
@@ -244,19 +244,19 @@ func (a *grantsClientAdapter) Create(ctx context.Context, g *Grant, opts ...Call
 		return g, err
 	}
 	if g.ProjectID() == "" {
-		return g, fmt.Errorf("Create: Grant has no parent project — call IntoDatabase first")
+		return g, fmt.Errorf("Create: Grant has no parent project — call InDatabase first")
 	}
 	if g.DBaaSID() == "" {
-		return g, fmt.Errorf("Create: Grant has no parent DBaaS — call IntoDatabase first")
+		return g, fmt.Errorf("Create: Grant has no parent DBaaS — call InDatabase first")
 	}
 	if g.DatabaseID() == "" {
-		return g, fmt.Errorf("Create: Grant has no parent database — call IntoDatabase first")
+		return g, fmt.Errorf("Create: Grant has no parent database — call InDatabase first")
 	}
 	if g.username == nil {
-		return g, fmt.Errorf("Create: Grant has no username — call WithUsername first")
+		return g, fmt.Errorf("Create: Grant has no username — call ForUser first")
 	}
 	if g.roleName == nil {
-		return g, fmt.Errorf("Create: Grant has no role — call WithRoleName first")
+		return g, fmt.Errorf("Create: Grant has no role — call OfRole first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -293,19 +293,19 @@ func (a *grantsClientAdapter) Update(ctx context.Context, g *Grant, opts ...Call
 		return g, fmt.Errorf("Update: Grant has no ID — get the grant via Get first to obtain the opaque ID")
 	}
 	if g.DatabaseID() == "" {
-		return g, fmt.Errorf("Update: Grant has no parent database — call IntoDatabase first")
+		return g, fmt.Errorf("Update: Grant has no parent database — call InDatabase first")
 	}
 	if g.DBaaSID() == "" {
-		return g, fmt.Errorf("Update: Grant has no parent DBaaS — call IntoDatabase first")
+		return g, fmt.Errorf("Update: Grant has no parent DBaaS — call InDatabase first")
 	}
 	if g.ProjectID() == "" {
-		return g, fmt.Errorf("Update: Grant has no parent project — call IntoDatabase first")
+		return g, fmt.Errorf("Update: Grant has no parent project — call InDatabase first")
 	}
 	if g.username == nil {
-		return g, fmt.Errorf("Update: Grant has no username — call WithUsername first")
+		return g, fmt.Errorf("Update: Grant has no username — call ForUser first")
 	}
 	if g.roleName == nil {
-		return g, fmt.Errorf("Update: Grant has no role — call WithRoleName first")
+		return g, fmt.Errorf("Update: Grant has no role — call OfRole first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

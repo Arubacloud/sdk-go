@@ -24,20 +24,20 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, v
 		Named(resourceName(NameKaaSSecurityGroup))
 
 	k := aruba.NewKaaS().
-		IntoProject(proj).
+		InProject(proj).
 		Named(resourceName(NameKaaS)).
-		AddTag("kubernetes").
-		AddTag("container").
+		Tagged("kubernetes").
+		Tagged("container").
 		InRegion(aruba.RegionITBGBergamo).
 		WithKubernetesVersion(aruba.KubernetesVersion1341).
 		WithPodCIDR("10.0.3.0/24").
 		WithNodeCIDR("172.16.0.0/16", resourceName(NameKaaSNodeCIDR)).
-		WithHA(true).
-		WithBillingPeriod(aruba.BillingPeriodHour).
+		HighlyAvailable().
+		BilledHourly().
 		WithVPC(vpc).
 		WithSubnet(subnet).
 		WithSecurityGroup(kaasSG).
-		AddNodePool(aruba.NewNodePool().
+		WithNodePools(aruba.NewNodePool().
 			Named(resourceName(NameNodePool)).
 			WithCount(2).
 			WithAutoscaling(1, 5).
@@ -63,11 +63,11 @@ func updateKaaS(ctx context.Context, arubaClient aruba.Client, k *aruba.KaaS) {
 	// Mutate only the fields exposed by KaaSUpdateRequest.
 	// Networking URIs and CIDRs are immutable after creation.
 	k.Named(updatedName(k.Name())).
-		ReplaceTags("kubernetes", "container", "updated").
+		RetaggedAs("kubernetes", "container", "updated").
 		WithMaxStorageQuotaGB(100).
-		WithBillingPeriod(aruba.BillingPeriodHour).
-		WithHA(true).
-		AddNodePool(aruba.NewNodePool().
+		BilledHourly().
+		HighlyAvailable().
+		WithNodePools(aruba.NewNodePool().
 			Named(resourceName(NameNodePool)).
 			WithCount(5).
 			WithAutoscaling(1, 5).

@@ -49,20 +49,30 @@ func NewSecurityRule() *SecurityRule {
 
 // Setters — chainable, general → specific
 
-// IntoSecurityGroup binds this SecurityRule to its parent SecurityGroup. Required before Create.
-func (r *SecurityRule) IntoSecurityGroup(sg Ref) *SecurityRule { r.intoSecurityGroup(sg); return r }
+// InSecurityGroup binds this SecurityRule to its parent SecurityGroup. Required before Create.
+func (r *SecurityRule) InSecurityGroup(sg Ref) *SecurityRule { r.intoSecurityGroup(sg); return r }
 
 // Named sets the resource name. Required by the API.
 func (r *SecurityRule) Named(n string) *SecurityRule { r.named(n); return r }
 
-// AddTag appends a tag for filtering and accounting.
-func (r *SecurityRule) AddTag(t string) *SecurityRule { r.addTag(t); return r }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (r *SecurityRule) Tagged(ts ...string) *SecurityRule {
+	for _, t := range ts {
+		r.addTag(t)
+	}
+	return r
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (r *SecurityRule) RemoveTag(t string) *SecurityRule { r.removeTag(t); return r }
+// Untagged removes each listed tag. No-op for tags not present.
+func (r *SecurityRule) Untagged(ts ...string) *SecurityRule {
+	for _, t := range ts {
+		r.removeTag(t)
+	}
+	return r
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (r *SecurityRule) ReplaceTags(ts ...string) *SecurityRule { r.replaceTags(ts...); return r }
+// RetaggedAs replaces the entire tag set with the given values.
+func (r *SecurityRule) RetaggedAs(ts ...string) *SecurityRule { r.replaceTags(ts...); return r }
 
 // InRegion sets the region for this resource.
 func (r *SecurityRule) InRegion(region Region) *SecurityRule { r.inRegion(region); return r }
@@ -85,27 +95,27 @@ func (r *SecurityRule) WithPort(port string) *SecurityRule {
 	return r
 }
 
-// WithTargetCIDR sets the target as an IP/CIDR endpoint.
-// Mutually exclusive with WithTargetSecurityGroup — setting both records a setter-time error.
-func (r *SecurityRule) WithTargetCIDR(cidr string) *SecurityRule {
+// TargetingCIDR sets the target as an IP/CIDR endpoint.
+// Mutually exclusive with TargetingSecurityGroup — setting both records a setter-time error.
+func (r *SecurityRule) TargetingCIDR(cidr string) *SecurityRule {
 	if r.target != nil && r.target.Kind == types.EndpointTypeSecurityGroup {
-		r.addErr(fmt.Errorf("WithTargetCIDR: target already set to SecurityGroup; pick one"))
+		r.addErr(fmt.Errorf("TargetingCIDR: target already set to SecurityGroup; pick one"))
 		return r
 	}
 	r.target = &types.RuleTarget{Kind: types.EndpointTypeIP, Value: cidr}
 	return r
 }
 
-// WithTargetSecurityGroup sets the target as another SecurityGroup endpoint.
-// Mutually exclusive with WithTargetCIDR — setting both records a setter-time error.
-func (r *SecurityRule) WithTargetSecurityGroup(sg Ref) *SecurityRule {
+// TargetingSecurityGroup sets the target as another SecurityGroup endpoint.
+// Mutually exclusive with TargetingCIDR — setting both records a setter-time error.
+func (r *SecurityRule) TargetingSecurityGroup(sg Ref) *SecurityRule {
 	if r.target != nil && r.target.Kind == types.EndpointTypeIP {
-		r.addErr(fmt.Errorf("WithTargetSecurityGroup: target already set to CIDR; pick one"))
+		r.addErr(fmt.Errorf("TargetingSecurityGroup: target already set to CIDR; pick one"))
 		return r
 	}
 	uri := sg.URI()
 	if uri == "" {
-		r.addErr(fmt.Errorf("WithTargetSecurityGroup: target SecurityGroup Ref has empty URI"))
+		r.addErr(fmt.Errorf("TargetingSecurityGroup: target SecurityGroup Ref has empty URI"))
 		return r
 	}
 	r.target = &types.RuleTarget{Kind: types.EndpointTypeSecurityGroup, Value: uri}
@@ -298,7 +308,7 @@ func (a *securityRulesClientAdapter) Create(ctx context.Context, rule *SecurityR
 		return rule, err
 	}
 	if rule.SecurityGroupID() == "" || rule.VPCID() == "" || rule.ProjectID() == "" {
-		return rule, fmt.Errorf("Create: security rule has no SecurityGroup — call IntoSecurityGroup first")
+		return rule, fmt.Errorf("Create: security rule has no SecurityGroup — call InSecurityGroup first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -377,7 +387,7 @@ func (a *securityRulesClientAdapter) Update(ctx context.Context, rule *SecurityR
 		return rule, fmt.Errorf("Update: security rule has no ID — call Get first or seed from response metadata")
 	}
 	if rule.SecurityGroupID() == "" || rule.VPCID() == "" || rule.ProjectID() == "" {
-		return rule, fmt.Errorf("Update: security rule has no SecurityGroup — call IntoSecurityGroup first")
+		return rule, fmt.Errorf("Update: security rule has no SecurityGroup — call InSecurityGroup first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

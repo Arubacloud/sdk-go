@@ -13,7 +13,7 @@ import (
 
 // BlockStorage is the wrapper for an Aruba Cloud BlockStorage volume
 // (a direct child of a Project). Construct with aruba.NewBlockStorage()
-// and bind it via IntoProject(project).
+// and bind it via InProject(project).
 type BlockStorage struct {
 	errMixin
 	metadataMixin
@@ -44,20 +44,30 @@ func NewBlockStorage() *BlockStorage {
 
 // Setters — chainable, general → specific
 
-// IntoProject binds this BlockStorage to its parent project. Required before Create.
-func (b *BlockStorage) IntoProject(p Ref) *BlockStorage { b.intoProject(p); return b }
+// InProject binds this BlockStorage to its parent project. Required before Create.
+func (b *BlockStorage) InProject(p Ref) *BlockStorage { b.intoProject(p); return b }
 
 // Named sets the resource name. Required by the API.
 func (b *BlockStorage) Named(n string) *BlockStorage { b.named(n); return b }
 
-// AddTag appends a tag for filtering and accounting.
-func (b *BlockStorage) AddTag(t string) *BlockStorage { b.addTag(t); return b }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (b *BlockStorage) Tagged(ts ...string) *BlockStorage {
+	for _, t := range ts {
+		b.addTag(t)
+	}
+	return b
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (b *BlockStorage) RemoveTag(t string) *BlockStorage { b.removeTag(t); return b }
+// Untagged removes each listed tag. No-op for tags not present.
+func (b *BlockStorage) Untagged(ts ...string) *BlockStorage {
+	for _, t := range ts {
+		b.removeTag(t)
+	}
+	return b
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (b *BlockStorage) ReplaceTags(ts ...string) *BlockStorage { b.replaceTags(ts...); return b }
+// RetaggedAs replaces the entire tag set with the given values.
+func (b *BlockStorage) RetaggedAs(ts ...string) *BlockStorage { b.replaceTags(ts...); return b }
 
 // InRegion sets the region for this resource.
 func (b *BlockStorage) InRegion(region Region) *BlockStorage { b.inRegion(region); return b }
@@ -65,8 +75,8 @@ func (b *BlockStorage) InRegion(region Region) *BlockStorage { b.inRegion(region
 // InZone sets the availability zone. More specific than InRegion.
 func (b *BlockStorage) InZone(zone Zone) *BlockStorage { b.inZone(zone); return b }
 
-// WithSizeGB sets the volume size in GiB.
-func (b *BlockStorage) WithSizeGB(gb int) *BlockStorage { v := int32(gb); b.sizeGB = &v; return b }
+// SizedGB sets the volume size in GiB.
+func (b *BlockStorage) SizedGB(gb int) *BlockStorage { v := int32(gb); b.sizeGB = &v; return b }
 
 // OfType sets the storage type (e.g. SSD, HDD).
 func (b *BlockStorage) OfType(t types.BlockStorageType) *BlockStorage {
@@ -74,20 +84,35 @@ func (b *BlockStorage) OfType(t types.BlockStorageType) *BlockStorage {
 	return b
 }
 
-// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
-func (b *BlockStorage) WithBillingPeriod(p BillingPeriod) *BlockStorage {
-	b.billingPeriod = &p
+// BilledHourly sets hourly billing.
+func (b *BlockStorage) BilledHourly() *BlockStorage {
+	v := BillingPeriodHour
+	b.billingPeriod = &v
+	return b
+}
+
+// BilledMonthly sets monthly billing.
+func (b *BlockStorage) BilledMonthly() *BlockStorage {
+	v := BillingPeriodMonth
+	b.billingPeriod = &v
+	return b
+}
+
+// BilledYearly sets yearly billing.
+func (b *BlockStorage) BilledYearly() *BlockStorage {
+	v := BillingPeriodYear
+	b.billingPeriod = &v
 	return b
 }
 
 // FromImage sets the source image name for bootable volumes.
 func (b *BlockStorage) FromImage(img string) *BlockStorage { b.image = &img; return b }
 
-// SetBootable marks the volume as bootable.
-func (b *BlockStorage) SetBootable() *BlockStorage { v := true; b.bootable = &v; return b }
+// AsBootable marks the volume as bootable.
+func (b *BlockStorage) AsBootable() *BlockStorage { v := true; b.bootable = &v; return b }
 
-// UnsetBootable explicitly marks the volume as non-bootable.
-func (b *BlockStorage) UnsetBootable() *BlockStorage { v := false; b.bootable = &v; return b }
+// NotBootable explicitly marks the volume as non-bootable.
+func (b *BlockStorage) NotBootable() *BlockStorage { v := false; b.bootable = &v; return b }
 
 // FromSnapshot binds the source snapshot via its URI. Pass any Ref (typed or
 // aruba.URI(...)). Empty URIs are recorded on the error sink and the field
@@ -145,8 +170,8 @@ func (b *BlockStorage) BillingPeriod() BillingPeriod {
 // Image returns the source image name, or "" if unset.
 func (b *BlockStorage) Image() string { return blockStorageDerefString(b.image) }
 
-// Bootable returns whether the volume is bootable, or false if unset.
-func (b *BlockStorage) Bootable() bool {
+// IsBootable returns whether the volume is bootable, or false if unset.
+func (b *BlockStorage) IsBootable() bool {
 	if b.bootable == nil {
 		return false
 	}
@@ -346,7 +371,7 @@ func (a *volumesClientAdapter) Create(ctx context.Context, vol *BlockStorage, op
 		return vol, err
 	}
 	if vol.ProjectID() == "" {
-		return vol, fmt.Errorf("Create: BlockStorage has no project — call IntoProject first")
+		return vol, fmt.Errorf("Create: BlockStorage has no project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -419,7 +444,7 @@ func (a *volumesClientAdapter) Update(ctx context.Context, vol *BlockStorage, op
 		return vol, fmt.Errorf("Update: BlockStorage has no ID — call Get first or seed from response metadata")
 	}
 	if vol.ProjectID() == "" {
-		return vol, fmt.Errorf("Update: BlockStorage has no project — call IntoProject first")
+		return vol, fmt.Errorf("Update: BlockStorage has no project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

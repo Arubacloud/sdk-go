@@ -44,7 +44,7 @@ func kmipMakeKMSParent(projectID, kmsID string) *KMS {
 func TestKmip_FluentSetters(t *testing.T) {
 	parent := kmipMakeKMSParent("p-1", "kms-1")
 	km := NewKmip().
-		IntoKMS(parent).
+		InKMS(parent).
 		Named("my-kmip")
 
 	if km.Name() != "my-kmip" {
@@ -67,7 +67,7 @@ func TestKmip_FluentSetters(t *testing.T) {
 
 func TestKmip_IntoKMS_TypedRef(t *testing.T) {
 	parent := kmipMakeKMSParent("p-42", "kms-42")
-	km := NewKmip().IntoKMS(parent)
+	km := NewKmip().InKMS(parent)
 	if km.KMSID() != "kms-42" {
 		t.Errorf("KMSID() = %q", km.KMSID())
 	}
@@ -80,7 +80,7 @@ func TestKmip_IntoKMS_TypedRef(t *testing.T) {
 }
 
 func TestKmip_IntoKMS_URIRef(t *testing.T) {
-	km := NewKmip().IntoKMS(URI("/projects/p-uri/providers/Aruba.Security/kms/kms-uri"))
+	km := NewKmip().InKMS(URI("/projects/p-uri/providers/Aruba.Security/kms/kms-uri"))
 	if km.KMSID() != "kms-uri" {
 		t.Errorf("KMSID() = %q", km.KMSID())
 	}
@@ -93,14 +93,14 @@ func TestKmip_IntoKMS_URIRef(t *testing.T) {
 }
 
 func TestKmip_IntoKMS_BadRef_NoKMS(t *testing.T) {
-	km := NewKmip().IntoKMS(URI("/projects/p-1"))
+	km := NewKmip().InKMS(URI("/projects/p-1"))
 	if km.Err() == nil {
 		t.Error("expected Err() != nil for URI missing kms segment")
 	}
 }
 
 func TestKmip_IntoKMS_BadRef_NoProject(t *testing.T) {
-	km := NewKmip().IntoKMS(URI("/providers/Aruba.Security/kms/kms-1"))
+	km := NewKmip().InKMS(URI("/providers/Aruba.Security/kms/kms-1"))
 	if km.Err() == nil {
 		t.Error("expected Err() != nil for URI missing project segment")
 	}
@@ -364,7 +364,7 @@ func TestKmipsClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	parent := kmipMakeKMSParent("p-1", "kms-1")
-	km := NewKmip().IntoKMS(parent).
+	km := NewKmip().InKMS(parent).
 		Named("my-kmip")
 
 	result, err := adapter.Create(context.Background(), km)
@@ -424,7 +424,7 @@ func TestKmipsClientAdapter_Create_ErrMixin(t *testing.T) {
 	adapter := buildKmipTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 	})
-	km := NewKmip().IntoKMS(URI("not-a-valid-kms-uri"))
+	km := NewKmip().InKMS(URI("not-a-valid-kms-uri"))
 	_, err := adapter.Create(context.Background(), km)
 	if err == nil {
 		t.Fatal("expected error from errMixin when IntoKMS failed")
@@ -438,7 +438,7 @@ func TestKmipsClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, `{"message":"bad request"}`)
 	})
 	parent := kmipMakeKMSParent("p-1", "kms-1")
-	_, err := adapter.Create(context.Background(), NewKmip().IntoKMS(parent).
+	_, err := adapter.Create(context.Background(), NewKmip().InKMS(parent).
 		Named("km"))
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {
@@ -820,7 +820,7 @@ func TestKmipsClientAdapter_Create_InjectsRefresh(t *testing.T) {
 		fmt.Fprint(w, kmipSuccessBody)
 	})
 	parent := kmipMakeKMSParent("p-1", "kms-1")
-	km, err := adapter.Create(context.Background(), NewKmip().IntoKMS(parent).
+	km, err := adapter.Create(context.Background(), NewKmip().InKMS(parent).
 		Named("my-kmip"))
 	if err != nil {
 		t.Fatalf("Create error: %v", err)

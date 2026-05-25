@@ -13,12 +13,12 @@ func createKMS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref) *a
 	fmt.Println("--- KMS Instance ---")
 
 	k := aruba.NewKMS().
-		IntoProject(proj).
+		InProject(proj).
 		Named(resourceName(NameKMS)).
-		AddTag("security").
-		AddTag("encryption").
+		Tagged("security").
+		Tagged("encryption").
 		InRegion(aruba.RegionITBGBergamo).
-		WithBillingPeriod(aruba.BillingPeriodHour)
+		BilledHourly()
 
 	result, err := arubaClient.FromSecurity().KMS().Create(ctx, k)
 	if err != nil {
@@ -44,7 +44,7 @@ func createKMSKey(ctx context.Context, arubaClient aruba.Client, kmsParent *arub
 	}
 
 	key := aruba.NewKey().
-		IntoKMS(kmsParent).
+		InKMS(kmsParent).
 		Named(resourceName(NameKMSKey)).
 		OfAlgorithm(aruba.KeyAlgorithmAes)
 
@@ -69,7 +69,7 @@ func createKmip(ctx context.Context, arubaClient aruba.Client, kmsParent *aruba.
 		return nil
 	}
 
-	km := aruba.NewKmip().IntoKMS(kmsParent).
+	km := aruba.NewKmip().InKMS(kmsParent).
 		Named(resourceName(NameKmip))
 
 	created, err := arubaClient.FromSecurity().Kmips().Create(ctx, km)

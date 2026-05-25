@@ -6,7 +6,7 @@ sidebar_position: 2
 
 L'SDK Go di Aruba Cloud fornisce un singolo import — `github.com/Arubacloud/sdk-go/pkg/aruba` — che espone un'API fluente con pattern builder per ogni risorsa cloud. Si costruisce la descrizione della risorsa con una catena `aruba.NewX()`, la si passa al metodo del client appropriato (`Create`, `Get`, `Update`, `Delete` o `List`), e si lavora con il wrapper tipizzato restituito.
 
-Le risorse sono organizzate in un **Progetto**, e le risorse figlio referenziano i propri genitori tramite l'interfaccia `aruba.Ref`. Non è mai necessario estrarre o passare manualmente stringhe di ID grezzi: si passa direttamente il wrapper idratato (restituito da `Create` o `Get`) come parametro `Ref` ai metodi builder come `IntoProject(proj)`, `IntoVPC(vpc)` o `IntoSecurityGroup(sg)`.
+Le risorse sono organizzate in un **Progetto**, e le risorse figlio referenziano i propri genitori tramite l'interfaccia `aruba.Ref`. Non è mai necessario estrarre o passare manualmente stringhe di ID grezzi: si passa direttamente il wrapper idratato (restituito da `Create` o `Get`) come parametro `Ref` ai metodi builder come `InProject(proj)`, `InVPC(vpc)` o `InSecurityGroup(sg)`.
 
 Questa pagina illustra il ciclo CRUD completo su un esempio minimale — Project + VPC + Subnet. Ogni altra risorsa segue esattamente la stessa struttura. Vedi [Risorse](./resources) per snippet pronti all'uso per tutte le risorse supportate.
 
@@ -56,8 +56,8 @@ proj, err := arubaClient.FromProject().Create(
     ctx,
     aruba.NewProject().
         Named("my-project").
-        WithDescription("Creato tramite l'SDK Go di Aruba Cloud").
-        AddTag("go-sdk").
+        DescribedAs("Creato tramite l'SDK Go di Aruba Cloud").
+        Tagged("go-sdk").
         WithDefault(false))
 if err != nil {
     log.Fatalf("Create project: %v", err)
@@ -71,12 +71,12 @@ fmt.Printf("✓ Progetto creato: %s (ID: %s)\n", proj.Name(), proj.ID())
 vpc, err := arubaClient.FromNetwork().VPCs().Create(
     ctx,
     aruba.NewVPC().
-        IntoProject(proj).
+        InProject(proj).
         Named("my-vpc").
-        AddTag("network").
+        Tagged("network").
         InRegion("ITBG-Bergamo").
         WithDefault(false).
-        WithPreset(false))
+        WithoutPreset())
 if err != nil {
     log.Fatalf("Create VPC: %v", err)
 }
@@ -89,7 +89,7 @@ if err := vpc.WaitUntilReady(ctx); err != nil {
 }
 ```
 
-`IntoProject(proj)` accetta qualsiasi `aruba.Ref` — lega lo scope del progetto senza richiedere l'estrazione di un ID stringa grezzo.
+`InProject(proj)` accetta qualsiasi `aruba.Ref` — lega lo scope del progetto senza richiedere l'estrazione di un ID stringa grezzo.
 
 ### Subnet
 
@@ -97,9 +97,9 @@ if err := vpc.WaitUntilReady(ctx); err != nil {
 subnet, err := arubaClient.FromNetwork().Subnets().Create(
     ctx,
     aruba.NewSubnet().
-        IntoVPC(vpc).
+        InVPC(vpc).
         Named("my-subnet").
-        AddTag("network").
+        Tagged("network").
         InRegion("ITBG-Bergamo").
         WithType(string(aruba.SubnetTypeAdvanced)).
         WithDefault(false).
@@ -107,9 +107,8 @@ subnet, err := arubaClient.FromNetwork().Subnets().Create(
         WithDHCP(aruba.NewSubnetDHCP().
             Enabled().
             WithRange("192.168.1.10", 50).
-            AddRoute("10.0.0.0/8", "192.168.1.1").
-            AddDNS("8.8.8.8").
-            AddDNS("8.8.4.4")))
+            WithRoutes(aruba.SubnetDHCPRoute{Address: "10.0.0.0/8", Gateway: "192.168.1.1"}).
+            WithDNSServers("8.8.8.8", "8.8.4.4")))
 if err != nil {
     log.Fatalf("Create subnet: %v", err)
 }
@@ -141,7 +140,7 @@ if err != nil {
 
 // Muta
 vpc.Named("my-vpc-updated").
-    ReplaceTags("network", "updated")
+    RetaggedAs("network", "updated")
 
 // Aggiorna
 updated, err := arubaClient.FromNetwork().VPCs().Update(ctx, vpc)
@@ -286,16 +285,16 @@ I setter del builder non restituiscono mai un errore — lo registrano nel wrapp
 
 ```go
 rule := aruba.NewSecurityRule().
-    IntoSecurityGroup(sg).
-    WithTargetCIDR("0.0.0.0/0").
-    WithTargetSecurityGroup(otherSG) // in conflitto — registrato come errore
+    InSecurityGroup(sg).
+    TargetingCIDR("0.0.0.0/0").
+    TargetingSecurityGroup(otherSG) // in conflitto — registrato come errore
 
 if err := rule.Err(); err != nil {
     log.Fatalf("Bad rule config: %v", err)
 }
 ```
 
-> **Avvertenza**: `WithTargetCIDR` e `WithTargetSecurityGroup` si escludono a vicenda. Impostarli entrambi registra un errore al momento del setter che emerge su `Create`.
+> **Avvertenza**: `TargetingCIDR` e `TargetingSecurityGroup` si escludono a vicenda. Impostarli entrambi registra un errore al momento del setter che emerge su `Create`.
 
 ### `WaitUntilReady` / `WaitUntilActive` richiedono un wrapper idratato
 

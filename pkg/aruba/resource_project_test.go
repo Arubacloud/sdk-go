@@ -25,10 +25,10 @@ var _ Ref = (*Project)(nil)
 func TestProject_FluentSetters(t *testing.T) {
 	p := NewProject().Named(
 		"my-project").
-		AddTag("a").
-		AddTag("b").
-		AddTag("a"). // dedupe
-		WithDescription("desc").
+		Tagged("a").
+		Tagged("b").
+		Tagged("a"). // dedupe
+		DescribedAs("desc").
 		AsDefault()
 
 	if p.Name() != "my-project" {
@@ -44,12 +44,12 @@ func TestProject_FluentSetters(t *testing.T) {
 		t.Error("IsDefault() should be true")
 	}
 
-	p.RemoveTag("a")
+	p.Untagged("a")
 	if tags := p.Tags(); len(tags) != 1 || tags[0] != "b" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	p.ReplaceTags("x", "y")
+	p.RetaggedAs("x", "y")
 	if tags := p.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -69,9 +69,9 @@ func TestProject_Description_Unset(t *testing.T) {
 func TestProject_ToRequestRoundTrip(t *testing.T) {
 	p := NewProject().Named(
 		"proj").
-		AddTag("t1").
-		AddTag("t2").
-		WithDescription("d").
+		Tagged("t1").
+		Tagged("t2").
+		DescribedAs("d").
 		AsDefault()
 
 	req := p.toRequest()

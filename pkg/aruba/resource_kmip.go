@@ -14,7 +14,7 @@ import (
 // ---- Wrapper ----
 
 // Kmip is the wrapper for a KMIP service nested inside a KMS instance.
-// Construct with aruba.NewKmip() and bind via IntoKMS(parent).
+// Construct with aruba.NewKmip() and bind via InKMS(parent).
 //
 // Family B: flat request (no Metadata/Properties boxing, no metadataMixin,
 // no tags, no location).
@@ -37,7 +37,7 @@ type Kmip struct {
 }
 
 // NewKmip returns a fresh *Kmip ready for fluent setters and a Create call.
-// Binds kmsScopedMixin's error sink so IntoKMS failures surface via Err().
+// Binds kmsScopedMixin's error sink so InKMS failures surface via Err().
 func NewKmip() *Kmip {
 	km := &Kmip{}
 	km.kmsScopedMixin = bindKMSScoped(&km.errMixin)
@@ -104,8 +104,8 @@ func (km *Kmip) WaitUntilCertificateAvailable(ctx context.Context, opts ...WaitO
 
 // Setters — chainable, general → specific
 
-// IntoKMS binds this Kmip to its parent KMS instance. Required before Create.
-func (km *Kmip) IntoKMS(parent Ref) *Kmip { km.intoKMS(parent); return km }
+// InKMS binds this Kmip to its parent KMS instance. Required before Create.
+func (km *Kmip) InKMS(parent Ref) *Kmip { km.intoKMS(parent); return km }
 
 // Named sets the resource name. Required by the API.
 func (km *Kmip) Named(n string) *Kmip { km.name = &n; return km }
@@ -279,10 +279,10 @@ func (a *kmipsClientAdapter) Create(ctx context.Context, km *Kmip, opts ...CallO
 		return km, err
 	}
 	if km.ProjectID() == "" {
-		return km, fmt.Errorf("Create: Kmip has no parent project — call IntoKMS first")
+		return km, fmt.Errorf("Create: Kmip has no parent project — call InKMS first")
 	}
 	if km.KMSID() == "" {
-		return km, fmt.Errorf("Create: Kmip has no parent KMS — call IntoKMS first")
+		return km, fmt.Errorf("Create: Kmip has no parent KMS — call InKMS first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

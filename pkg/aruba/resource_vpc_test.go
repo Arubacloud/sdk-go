@@ -28,14 +28,14 @@ func TestVPC_FluentSetters(t *testing.T) {
 	parent.fromResponse(projectTestResponse("proj-1", "my-proj", "/projects/proj-1"))
 
 	v := NewVPC().
-		IntoProject(parent).
+		InProject(parent).
 		Named("my-vpc").
-		AddTag("net").
-		AddTag("infra").
-		AddTag("net"). // dedupe
+		Tagged("net").
+		Tagged("infra").
+		Tagged("net"). // dedupe
 		InRegion(RegionITBGBergamo).
 		AsDefault().
-		WithPreset(true)
+		WithPreset()
 
 	if v.Name() != "my-vpc" {
 		t.Errorf("Name() = %q", v.Name())
@@ -59,12 +59,12 @@ func TestVPC_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", v.Err())
 	}
 
-	v.RemoveTag("net")
+	v.Untagged("net")
 	if tags := v.Tags(); len(tags) != 1 || tags[0] != "infra" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	v.ReplaceTags("x", "y")
+	v.RetaggedAs("x", "y")
 	if tags := v.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -75,7 +75,7 @@ func TestVPC_FluentSetters(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestVPC_IntoProject_BadRef(t *testing.T) {
-	v := NewVPC().IntoProject(URI("/garbage"))
+	v := NewVPC().InProject(URI("/garbage"))
 	if v.Err() == nil {
 		t.Error("expected Err() != nil for unresolvable Ref, got nil")
 	}
@@ -88,11 +88,11 @@ func TestVPC_IntoProject_BadRef(t *testing.T) {
 func TestVPC_ToRequestRoundTrip(t *testing.T) {
 	v := NewVPC().Named(
 		"vpc-1").
-		AddTag("t1").
-		AddTag("t2").
+		Tagged("t1").
+		Tagged("t2").
 		InRegion(RegionITBGBergamo).
 		AsDefault().
-		WithPreset(false)
+		WithoutPreset()
 
 	req := v.RawRequest()
 
@@ -311,7 +311,7 @@ func TestVPCsClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	vpc := NewVPC().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-vpc").
 		NotDefault()
 
@@ -358,7 +358,7 @@ func TestVPCsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"v","uri":"/projects/p/providers/Aruba.Network/vpcs/x"},"properties":{},"status":{}}`)
 	})
 
-	vpc := NewVPC().IntoProject(URI("/projects/p")).
+	vpc := NewVPC().InProject(URI("/projects/p")).
 		Named("v")
 	result, err := adapter.Create(context.Background(), vpc)
 	if err == nil {
@@ -380,7 +380,7 @@ func TestVPCsClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "name is required", 422))
 	})
 
-	vpc := NewVPC().IntoProject(URI("/projects/p"))
+	vpc := NewVPC().InProject(URI("/projects/p"))
 	result, err := adapter.Create(context.Background(), vpc)
 	if err == nil {
 		t.Fatal("expected error on 422")
@@ -473,7 +473,7 @@ func TestVPCsClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	v := NewVPC().IntoProject(URI("/projects/p")).
+	v := NewVPC().InProject(URI("/projects/p")).
 		Named("x")
 	_, err := adapter.Update(context.Background(), v)
 	if err == nil {
@@ -693,7 +693,7 @@ func TestVPCsClientAdapter_Create_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusCreated)
 	})
-	v := NewVPC().IntoProject(URI("/garbage"))
+	v := NewVPC().InProject(URI("/garbage"))
 	_, err := adapter.Create(context.Background(), v)
 	if err == nil {
 		t.Fatal("expected error for builder error")
@@ -745,7 +745,7 @@ func TestVPCsClientAdapter_Update_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusOK)
 	})
-	v := NewVPC().IntoProject(URI("/garbage"))
+	v := NewVPC().InProject(URI("/garbage"))
 	_, err := adapter.Update(context.Background(), v)
 	if err == nil {
 		t.Fatal("expected error for builder error")

@@ -28,11 +28,11 @@ func TestSecurityGroup_FluentSetters(t *testing.T) {
 	parent.fromResponse(vpcTestResponse("v1", "my-vpc", "/projects/p1/providers/Aruba.Network/vpcs/v1", "p1"))
 
 	sg := NewSecurityGroup().
-		IntoVPC(parent).
+		InVPC(parent).
 		Named("my-sg").
-		AddTag("security").
-		AddTag("network").
-		AddTag("security"). // dedupe
+		Tagged("security").
+		Tagged("network").
+		Tagged("security"). // dedupe
 		AsDefault()
 
 	if sg.Name() != "my-sg" {
@@ -54,12 +54,12 @@ func TestSecurityGroup_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", sg.Err())
 	}
 
-	sg.RemoveTag("security")
+	sg.Untagged("security")
 	if tags := sg.Tags(); len(tags) != 1 || tags[0] != "network" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	sg.ReplaceTags("x", "y")
+	sg.RetaggedAs("x", "y")
 	if tags := sg.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -70,7 +70,7 @@ func TestSecurityGroup_FluentSetters(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestSecurityGroup_IntoVPC_BadRef(t *testing.T) {
-	sg := NewSecurityGroup().IntoVPC(URI("/garbage"))
+	sg := NewSecurityGroup().InVPC(URI("/garbage"))
 	if sg.Err() == nil {
 		t.Error("expected Err() != nil for unresolvable Ref, got nil")
 	}
@@ -83,8 +83,8 @@ func TestSecurityGroup_IntoVPC_BadRef(t *testing.T) {
 func TestSecurityGroup_ToRequestRoundTrip(t *testing.T) {
 	sg := NewSecurityGroup().Named(
 		"sg-1").
-		AddTag("t1").
-		AddTag("t2").
+		Tagged("t1").
+		Tagged("t2").
 		NotDefault()
 
 	req := sg.RawRequest()
@@ -343,7 +343,7 @@ func TestSecurityGroupsClientAdapter_Create_Success(t *testing.T) {
 	vpc.fromResponse(vpcTestResponse("v", "my-vpc", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
 
 	sg := NewSecurityGroup().
-		IntoVPC(vpc).
+		InVPC(vpc).
 		Named("my-sg").
 		NotDefault()
 
@@ -396,7 +396,7 @@ func TestSecurityGroupsClientAdapter_Create_MetadataValidationError(t *testing.T
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "my-vpc", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
 
-	sg := NewSecurityGroup().IntoVPC(vpc).
+	sg := NewSecurityGroup().InVPC(vpc).
 		Named("sg")
 	result, err := adapter.Create(context.Background(), sg)
 	if err == nil {
@@ -421,7 +421,7 @@ func TestSecurityGroupsClientAdapter_Create_NonTwoXX(t *testing.T) {
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "my-vpc", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
 
-	sg := NewSecurityGroup().IntoVPC(vpc)
+	sg := NewSecurityGroup().InVPC(vpc)
 	result, err := adapter.Create(context.Background(), sg)
 	if err == nil {
 		t.Fatal("expected error on 422")
@@ -538,7 +538,7 @@ func TestSecurityGroupsClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	sg := NewSecurityGroup().IntoVPC(URI("/projects/p/providers/Aruba.Network/vpcs/v")).
+	sg := NewSecurityGroup().InVPC(URI("/projects/p/providers/Aruba.Network/vpcs/v")).
 		Named("x")
 	_, err := adapter.Update(context.Background(), sg)
 	if err == nil {
@@ -706,7 +706,7 @@ func TestSecurityGroupsClientAdapter_Create_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusCreated)
 	})
-	sg := NewSecurityGroup().IntoVPC(URI("/garbage"))
+	sg := NewSecurityGroup().InVPC(URI("/garbage"))
 	_, err := adapter.Create(context.Background(), sg)
 	if err == nil {
 		t.Fatal("expected error for builder error")
@@ -740,7 +740,7 @@ func TestSecurityGroupsClientAdapter_Update_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusOK)
 	})
-	sg := NewSecurityGroup().IntoVPC(URI("/garbage"))
+	sg := NewSecurityGroup().InVPC(URI("/garbage"))
 	_, err := adapter.Update(context.Background(), sg)
 	if err == nil {
 		t.Fatal("expected error for builder error")

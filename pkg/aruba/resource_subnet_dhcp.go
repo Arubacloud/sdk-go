@@ -23,15 +23,17 @@ func (d *SubnetDHCP) WithRange(start string, count int) *SubnetDHCP {
 	return d
 }
 
-// AddRoute appends a static route advertised via DHCP.
-func (d *SubnetDHCP) AddRoute(addr, gw string) *SubnetDHCP {
-	d.inner.Routes = append(d.inner.Routes, types.SubnetDHCPRoute{Address: addr, Gateway: gw})
+// WithRoutes appends static routes advertised via DHCP. Repeated calls append.
+func (d *SubnetDHCP) WithRoutes(routes ...SubnetDHCPRoute) *SubnetDHCP {
+	for _, r := range routes {
+		d.inner.Routes = append(d.inner.Routes, types.SubnetDHCPRoute{Address: r.Address, Gateway: r.Gateway})
+	}
 	return d
 }
 
-// AddDNS appends a DNS server advertised via DHCP.
-func (d *SubnetDHCP) AddDNS(ip string) *SubnetDHCP {
-	d.inner.DNS = append(d.inner.DNS, ip)
+// WithDNSServers appends DNS servers advertised via DHCP. Repeated calls append.
+func (d *SubnetDHCP) WithDNSServers(ips ...string) *SubnetDHCP {
+	d.inner.DNS = append(d.inner.DNS, ips...)
 	return d
 }
 

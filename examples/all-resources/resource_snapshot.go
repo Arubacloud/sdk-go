@@ -19,12 +19,12 @@ func createSnapshot(ctx context.Context, arubaClient aruba.Client, proj aruba.Re
 	}
 
 	snap := aruba.NewSnapshot().
-		IntoProject(proj).
+		InProject(proj).
 		Named(resourceName(NameSnapshot)).
-		AddTag("backup").
-		AddTag("snapshot").
+		Tagged("backup").
+		Tagged("snapshot").
 		InRegion(aruba.RegionITBGBergamo).
-		WithBillingPeriod(aruba.BillingPeriodHour).
+		BilledHourly().
 		FromVolume(bs)
 
 	snap, err := arubaClient.FromStorage().Snapshots().Create(ctx, snap)

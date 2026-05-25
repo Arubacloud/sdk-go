@@ -147,9 +147,9 @@ I setter del builder fluente non restituiscono mai errori — li registrano inte
 
 ```go
 rule := aruba.NewSecurityRule().
-    IntoSecurityGroup(sg).
-    WithTargetCIDR("0.0.0.0/0").
-    WithTargetSecurityGroup(otherSG) // setter in conflitto — registra un errore
+    InSecurityGroup(sg).
+    TargetingCIDR("0.0.0.0/0").
+    TargetingSecurityGroup(otherSG) // setter in conflitto — registra un errore
 
 if err := rule.Err(); err != nil {
     log.Fatalf("Bad rule configuration: %v", err)

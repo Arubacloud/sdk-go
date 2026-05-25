@@ -21,7 +21,7 @@ func createDatabase(ctx context.Context, arubaClient aruba.Client, dbaas *aruba.
 	// helper is bypassed here. A database name only needs to be unique within
 	// its DBaaS instance, and each example run creates a fresh DBaaS.
 	db := aruba.NewDatabase().
-		IntoDBaaS(dbaas).
+		InDBaaS(dbaas).
 		Named(NameDatabase)
 
 	res, err := arubaClient.FromDatabase().Databases().Create(ctx, db)

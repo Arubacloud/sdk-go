@@ -46,30 +46,40 @@ func NewVPCPeering() *VPCPeering {
 
 // Setters — chainable, general → specific
 
-// IntoVPC binds this VPCPeering to its parent VPC. Required before Create.
-func (p *VPCPeering) IntoVPC(v Ref) *VPCPeering { p.intoVPC(v); return p }
+// InVPC binds this VPCPeering to its parent VPC. Required before Create.
+func (p *VPCPeering) InVPC(v Ref) *VPCPeering { p.intoVPC(v); return p }
 
 // Named sets the resource name. Required by the API.
 func (p *VPCPeering) Named(n string) *VPCPeering { p.named(n); return p }
 
-// AddTag appends a tag for filtering and accounting.
-func (p *VPCPeering) AddTag(t string) *VPCPeering { p.addTag(t); return p }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (p *VPCPeering) Tagged(ts ...string) *VPCPeering {
+	for _, t := range ts {
+		p.addTag(t)
+	}
+	return p
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (p *VPCPeering) RemoveTag(t string) *VPCPeering { p.removeTag(t); return p }
+// Untagged removes each listed tag. No-op for tags not present.
+func (p *VPCPeering) Untagged(ts ...string) *VPCPeering {
+	for _, t := range ts {
+		p.removeTag(t)
+	}
+	return p
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (p *VPCPeering) ReplaceTags(ts ...string) *VPCPeering { p.replaceTags(ts...); return p }
+// RetaggedAs replaces the entire tag set with the given values.
+func (p *VPCPeering) RetaggedAs(ts ...string) *VPCPeering { p.replaceTags(ts...); return p }
 
 // InRegion sets the region for this resource.
 func (p *VPCPeering) InRegion(region Region) *VPCPeering { p.inRegion(region); return p }
 
-// WithRemoteVPC stores the remote VPC URI in the request body Properties.
+// PeeredWith stores the remote VPC URI in the request body Properties.
 // Records a setter-time error if the supplied Ref's URI is empty.
-func (p *VPCPeering) WithRemoteVPC(v Ref) *VPCPeering {
+func (p *VPCPeering) PeeredWith(v Ref) *VPCPeering {
 	uri := v.URI()
 	if uri == "" {
-		p.addErr(fmt.Errorf("WithRemoteVPC: remote VPC Ref has empty URI"))
+		p.addErr(fmt.Errorf("PeeredWith: remote VPC Ref has empty URI"))
 		return p
 	}
 	p.remoteVPC = &types.ReferenceResource{URI: uri}
@@ -201,7 +211,7 @@ func (a *vpcPeeringsClientAdapter) Create(ctx context.Context, peering *VPCPeeri
 		return peering, err
 	}
 	if peering.VPCID() == "" || peering.ProjectID() == "" {
-		return peering, fmt.Errorf("Create: VPC peering has no VPC — call IntoVPC first")
+		return peering, fmt.Errorf("Create: VPC peering has no VPC — call InVPC first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -277,7 +287,7 @@ func (a *vpcPeeringsClientAdapter) Update(ctx context.Context, peering *VPCPeeri
 		return peering, fmt.Errorf("Update: VPC peering has no ID — call Get first or seed from response metadata")
 	}
 	if peering.VPCID() == "" || peering.ProjectID() == "" {
-		return peering, fmt.Errorf("Update: VPC peering has no VPC — call IntoVPC first")
+		return peering, fmt.Errorf("Update: VPC peering has no VPC — call InVPC first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

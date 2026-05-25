@@ -39,20 +39,30 @@ func NewKeyPair() *KeyPair {
 
 // Setters — chainable, general → specific
 
-// IntoProject binds this KeyPair to its parent project. Required before Create.
-func (k *KeyPair) IntoProject(p Ref) *KeyPair { k.intoProject(p); return k }
+// InProject binds this KeyPair to its parent project. Required before Create.
+func (k *KeyPair) InProject(p Ref) *KeyPair { k.intoProject(p); return k }
 
 // Named sets the resource name. Required by the API.
 func (k *KeyPair) Named(n string) *KeyPair { k.named(n); return k }
 
-// AddTag appends a tag for filtering and accounting.
-func (k *KeyPair) AddTag(t string) *KeyPair { k.addTag(t); return k }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (k *KeyPair) Tagged(ts ...string) *KeyPair {
+	for _, t := range ts {
+		k.addTag(t)
+	}
+	return k
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (k *KeyPair) RemoveTag(t string) *KeyPair { k.removeTag(t); return k }
+// Untagged removes each listed tag. No-op for tags not present.
+func (k *KeyPair) Untagged(ts ...string) *KeyPair {
+	for _, t := range ts {
+		k.removeTag(t)
+	}
+	return k
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (k *KeyPair) ReplaceTags(ts ...string) *KeyPair { k.replaceTags(ts...); return k }
+// RetaggedAs replaces the entire tag set with the given values.
+func (k *KeyPair) RetaggedAs(ts ...string) *KeyPair { k.replaceTags(ts...); return k }
 
 // InRegion sets the region for this resource.
 func (k *KeyPair) InRegion(region Region) *KeyPair { k.inRegion(region); return k }
@@ -176,7 +186,7 @@ func (a *keyPairsClientAdapter) Create(ctx context.Context, kp *KeyPair, opts ..
 		return kp, err
 	}
 	if kp.ProjectID() == "" {
-		return kp, fmt.Errorf("Create: KeyPair has no parent project — call IntoProject first")
+		return kp, fmt.Errorf("Create: KeyPair has no parent project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

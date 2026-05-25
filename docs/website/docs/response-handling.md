@@ -152,9 +152,9 @@ Fluent builder setters never return errors — instead they record them internal
 
 ```go
 rule := aruba.NewSecurityRule().
-    IntoSecurityGroup(sg).
-    WithTargetCIDR("0.0.0.0/0").
-    WithTargetSecurityGroup(otherSG) // conflicting setter — records an error
+    InSecurityGroup(sg).
+    TargetingCIDR("0.0.0.0/0").
+    TargetingSecurityGroup(otherSG) // conflicting setter — records an error
 
 if err := rule.Err(); err != nil {
     log.Fatalf("Bad rule configuration: %v", err)

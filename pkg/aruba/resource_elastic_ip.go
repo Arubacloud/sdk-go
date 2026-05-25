@@ -47,26 +47,46 @@ func NewElasticIP() *ElasticIP {
 
 // Setters — chainable, general → specific
 
-// IntoProject binds this ElasticIP to its parent project. Required before Create.
-func (e *ElasticIP) IntoProject(p Ref) *ElasticIP { e.intoProject(p); return e }
+// InProject binds this ElasticIP to its parent project. Required before Create.
+func (e *ElasticIP) InProject(p Ref) *ElasticIP { e.intoProject(p); return e }
 
 // Named sets the resource name. Required by the API.
 func (e *ElasticIP) Named(n string) *ElasticIP { e.named(n); return e }
 
-// AddTag appends a tag for filtering and accounting.
-func (e *ElasticIP) AddTag(t string) *ElasticIP { e.addTag(t); return e }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (e *ElasticIP) Tagged(ts ...string) *ElasticIP {
+	for _, t := range ts {
+		e.addTag(t)
+	}
+	return e
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (e *ElasticIP) RemoveTag(t string) *ElasticIP { e.removeTag(t); return e }
+// Untagged removes each listed tag. No-op for tags not present.
+func (e *ElasticIP) Untagged(ts ...string) *ElasticIP {
+	for _, t := range ts {
+		e.removeTag(t)
+	}
+	return e
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (e *ElasticIP) ReplaceTags(ts ...string) *ElasticIP { e.replaceTags(ts...); return e }
+// RetaggedAs replaces the entire tag set with the given values.
+func (e *ElasticIP) RetaggedAs(ts ...string) *ElasticIP { e.replaceTags(ts...); return e }
 
 // InRegion sets the region for this resource.
 func (e *ElasticIP) InRegion(region Region) *ElasticIP { e.inRegion(region); return e }
 
-// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
-func (e *ElasticIP) WithBillingPeriod(p BillingPeriod) *ElasticIP { e.billingPeriod = &p; return e }
+// BilledHourly sets hourly billing.
+func (e *ElasticIP) BilledHourly() *ElasticIP { v := BillingPeriodHour; e.billingPeriod = &v; return e }
+
+// BilledMonthly sets monthly billing.
+func (e *ElasticIP) BilledMonthly() *ElasticIP {
+	v := BillingPeriodMonth
+	e.billingPeriod = &v
+	return e
+}
+
+// BilledYearly sets yearly billing.
+func (e *ElasticIP) BilledYearly() *ElasticIP { v := BillingPeriodYear; e.billingPeriod = &v; return e }
 
 // Getters — general → specific
 
@@ -211,7 +231,7 @@ func (a *elasticIPsClientAdapter) Create(ctx context.Context, e *ElasticIP, opts
 		return e, err
 	}
 	if e.ProjectID() == "" {
-		return e, fmt.Errorf("Create: elastic IP has no project — call IntoProject first")
+		return e, fmt.Errorf("Create: elastic IP has no project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -282,7 +302,7 @@ func (a *elasticIPsClientAdapter) Update(ctx context.Context, e *ElasticIP, opts
 		return e, fmt.Errorf("Update: elastic IP has no ID — call Get first or seed from response metadata")
 	}
 	if e.ProjectID() == "" {
-		return e, fmt.Errorf("Update: elastic IP has no project — call IntoProject first")
+		return e, fmt.Errorf("Update: elastic IP has no project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

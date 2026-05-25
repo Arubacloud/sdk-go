@@ -27,11 +27,11 @@ func TestKeyPair_FluentSetters(t *testing.T) {
 	proj.fromResponse(projectTestResponse("p-1", "my-project", "/projects/p-1"))
 
 	kp := NewKeyPair().
-		IntoProject(proj).
+		InProject(proj).
 		Named("allow-ssh").
-		AddTag("ssh-access").
-		AddTag("ingress").
-		AddTag("ssh-access"). // dedupe
+		Tagged("ssh-access").
+		Tagged("ingress").
+		Tagged("ssh-access"). // dedupe
 		InRegion(RegionITBGBergamo).
 		WithPublicKey("ssh-rsa AAAA...")
 
@@ -54,12 +54,12 @@ func TestKeyPair_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", kp.Err())
 	}
 
-	kp.RemoveTag("ssh-access")
+	kp.Untagged("ssh-access")
 	if tags := kp.Tags(); len(tags) != 1 || tags[0] != "ingress" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	kp.ReplaceTags("x", "y")
+	kp.RetaggedAs("x", "y")
 	if tags := kp.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -73,7 +73,7 @@ func TestKeyPair_IntoProject_TypedRef(t *testing.T) {
 	proj := &Project{}
 	proj.fromResponse(projectTestResponse("p-42", "n", "/projects/p-42"))
 
-	kp := NewKeyPair().IntoProject(proj)
+	kp := NewKeyPair().InProject(proj)
 	if kp.ProjectID() != "p-42" {
 		t.Errorf("ProjectID() = %q", kp.ProjectID())
 	}
@@ -83,7 +83,7 @@ func TestKeyPair_IntoProject_TypedRef(t *testing.T) {
 }
 
 func TestKeyPair_IntoProject_URIRef(t *testing.T) {
-	kp := NewKeyPair().IntoProject(URI("/projects/p-uri"))
+	kp := NewKeyPair().InProject(URI("/projects/p-uri"))
 	if kp.ProjectID() != "p-uri" {
 		t.Errorf("ProjectID() = %q", kp.ProjectID())
 	}
@@ -93,7 +93,7 @@ func TestKeyPair_IntoProject_URIRef(t *testing.T) {
 }
 
 func TestKeyPair_IntoProject_BadRef(t *testing.T) {
-	kp := NewKeyPair().IntoProject(URI("/something/else"))
+	kp := NewKeyPair().InProject(URI("/something/else"))
 	if kp.Err() == nil {
 		t.Error("expected Err() != nil for unresolvable Ref")
 	}
@@ -120,7 +120,7 @@ func TestKeyPair_WithPublicKey(t *testing.T) {
 func TestKeyPair_ToRequestRoundTrip(t *testing.T) {
 	kp := NewKeyPair().Named(
 		"my-keypair").
-		AddTag("t1").AddTag("t2").
+		Tagged("t1").Tagged("t2").
 		InRegion(RegionITBGBergamo).
 		WithPublicKey("ssh-rsa AAAA...")
 
@@ -337,7 +337,7 @@ func TestKeyPairsClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	kp := NewKeyPair().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("allow-ssh").
 		InRegion(RegionITBGBergamo).
 		WithPublicKey("ssh-rsa AAAA...")
@@ -388,7 +388,7 @@ func TestKeyPairsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"kp","uri":"/projects/p/providers/Aruba.Compute/keyPairs/x"},"properties":{}}`)
 	})
 
-	kp := NewKeyPair().IntoProject(URI("/projects/p")).
+	kp := NewKeyPair().InProject(URI("/projects/p")).
 		Named("kp").WithPublicKey("ssh-rsa AAAA...")
 	result, err := adapter.Create(context.Background(), kp)
 	if err == nil {
@@ -410,7 +410,7 @@ func TestKeyPairsClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "value is required", 422))
 	})
 
-	kp := NewKeyPair().IntoProject(URI("/projects/p")).WithPublicKey("ssh-rsa")
+	kp := NewKeyPair().InProject(URI("/projects/p")).WithPublicKey("ssh-rsa")
 	result, err := adapter.Create(context.Background(), kp)
 	if err == nil {
 		t.Fatal("expected error on 422")

@@ -12,16 +12,16 @@ func createBlockStorage(ctx context.Context, arubaClient aruba.Client, proj arub
 	fmt.Printf("--- Block Storage (%s) ---\n", name)
 
 	bs := aruba.NewBlockStorage().
-		IntoProject(proj).
+		InProject(proj).
 		Named(name).
-		AddTag("storage").
-		AddTag("data").
+		Tagged("storage").
+		Tagged("data").
 		InRegion(aruba.RegionITBGBergamo).
 		InZone(aruba.ZoneITBG1).
 		OfType(aruba.BlockStorageTypeStandard).
-		WithSizeGB(20).
-		SetBootable().
-		WithBillingPeriod(aruba.BillingPeriodHour).
+		SizedGB(20).
+		AsBootable().
+		BilledHourly().
 		FromImage(aruba.VolumeImageLU22001)
 
 	bs, err := arubaClient.FromStorage().Volumes().Create(ctx, bs)

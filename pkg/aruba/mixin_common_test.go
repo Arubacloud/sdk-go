@@ -73,7 +73,7 @@ func TestMetadataMixin(t *testing.T) {
 	m.removeTag("a")
 	tags := m.Tags()
 	if len(tags) != 1 || tags[0] != "b" {
-		t.Errorf("after RemoveTag(a): %v", tags)
+		t.Errorf("after Untagged(a): %v", tags)
 	}
 
 	m.removeTag("nonexistent") // no-op

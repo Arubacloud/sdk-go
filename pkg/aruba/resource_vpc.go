@@ -49,20 +49,30 @@ func NewVPC() *VPC {
 
 // Setters — chainable, general → specific
 
-// IntoProject binds this VPC to its parent project. Required before Create.
-func (v *VPC) IntoProject(p Ref) *VPC { v.intoProject(p); return v }
+// InProject binds this VPC to its parent project. Required before Create.
+func (v *VPC) InProject(p Ref) *VPC { v.intoProject(p); return v }
 
 // Named sets the resource name. Required by the API.
 func (v *VPC) Named(n string) *VPC { v.named(n); return v }
 
-// AddTag appends a tag for filtering and accounting.
-func (v *VPC) AddTag(t string) *VPC { v.addTag(t); return v }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (v *VPC) Tagged(ts ...string) *VPC {
+	for _, t := range ts {
+		v.addTag(t)
+	}
+	return v
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (v *VPC) RemoveTag(t string) *VPC { v.removeTag(t); return v }
+// Untagged removes each listed tag. No-op for tags not present.
+func (v *VPC) Untagged(ts ...string) *VPC {
+	for _, t := range ts {
+		v.removeTag(t)
+	}
+	return v
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (v *VPC) ReplaceTags(ts ...string) *VPC { v.replaceTags(ts...); return v }
+// RetaggedAs replaces the entire tag set with the given values.
+func (v *VPC) RetaggedAs(ts ...string) *VPC { v.replaceTags(ts...); return v }
 
 // InRegion sets the region for this resource.
 func (v *VPC) InRegion(region Region) *VPC { v.inRegion(region); return v }
@@ -73,8 +83,11 @@ func (v *VPC) AsDefault() *VPC { t := true; v.defaultVPC = &t; return v }
 // NotDefault explicitly unsets the default flag.
 func (v *VPC) NotDefault() *VPC { f := false; v.defaultVPC = &f; return v }
 
-// WithPreset enables or disables preset subnet/security-group creation.
-func (v *VPC) WithPreset(b bool) *VPC { v.preset = &b; return v }
+// WithPreset marks the VPC to use preset networking.
+func (v *VPC) WithPreset() *VPC { t := true; v.preset = &t; return v }
+
+// WithoutPreset disables VPC preset networking.
+func (v *VPC) WithoutPreset() *VPC { f := false; v.preset = &f; return v }
 
 // Getters — general → specific
 
@@ -195,7 +208,7 @@ func (a *vpcsClientAdapter) Create(ctx context.Context, v *VPC, opts ...CallOpti
 		return v, err
 	}
 	if v.ProjectID() == "" {
-		return v, fmt.Errorf("Create: VPC has no project — call IntoProject first")
+		return v, fmt.Errorf("Create: VPC has no project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -266,7 +279,7 @@ func (a *vpcsClientAdapter) Update(ctx context.Context, v *VPC, opts ...CallOpti
 		return v, fmt.Errorf("Update: VPC has no ID — call Get first or seed from response metadata")
 	}
 	if v.ProjectID() == "" {
-		return v, fmt.Errorf("Update: VPC has no project — call IntoProject first")
+		return v, fmt.Errorf("Update: VPC has no project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

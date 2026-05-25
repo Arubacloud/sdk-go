@@ -13,7 +13,7 @@ import (
 
 // Snapshot is the wrapper for an Aruba Cloud Snapshot (a direct child of a
 // Project, derived from a BlockStorage volume). Construct with
-// aruba.NewSnapshot() and bind it via IntoProject(project) and FromVolume(bs).
+// aruba.NewSnapshot() and bind it via InProject(project) and FromVolume(bs).
 type Snapshot struct {
 	errMixin
 	metadataMixin
@@ -46,26 +46,42 @@ func NewSnapshot() *Snapshot {
 
 // Setters — chainable, general → specific
 
-// IntoProject binds this Snapshot to its parent project. Required before Create.
-func (s *Snapshot) IntoProject(p Ref) *Snapshot { s.intoProject(p); return s }
+// InProject binds this Snapshot to its parent project. Required before Create.
+func (s *Snapshot) InProject(p Ref) *Snapshot { s.intoProject(p); return s }
 
 // Named sets the resource name. Required by the API.
 func (s *Snapshot) Named(n string) *Snapshot { s.named(n); return s }
 
-// AddTag appends a tag for filtering and accounting.
-func (s *Snapshot) AddTag(t string) *Snapshot { s.addTag(t); return s }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (s *Snapshot) Tagged(ts ...string) *Snapshot {
+	for _, t := range ts {
+		s.addTag(t)
+	}
+	return s
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (s *Snapshot) RemoveTag(t string) *Snapshot { s.removeTag(t); return s }
+// Untagged removes each listed tag. No-op for tags not present.
+func (s *Snapshot) Untagged(ts ...string) *Snapshot {
+	for _, t := range ts {
+		s.removeTag(t)
+	}
+	return s
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (s *Snapshot) ReplaceTags(ts ...string) *Snapshot { s.replaceTags(ts...); return s }
+// RetaggedAs replaces the entire tag set with the given values.
+func (s *Snapshot) RetaggedAs(ts ...string) *Snapshot { s.replaceTags(ts...); return s }
 
 // InRegion sets the region for this resource.
 func (s *Snapshot) InRegion(region Region) *Snapshot { s.inRegion(region); return s }
 
-// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
-func (s *Snapshot) WithBillingPeriod(p BillingPeriod) *Snapshot { s.billingPeriod = &p; return s }
+// BilledHourly sets hourly billing.
+func (s *Snapshot) BilledHourly() *Snapshot { v := BillingPeriodHour; s.billingPeriod = &v; return s }
+
+// BilledMonthly sets monthly billing.
+func (s *Snapshot) BilledMonthly() *Snapshot { v := BillingPeriodMonth; s.billingPeriod = &v; return s }
+
+// BilledYearly sets yearly billing.
+func (s *Snapshot) BilledYearly() *Snapshot { v := BillingPeriodYear; s.billingPeriod = &v; return s }
 
 // FromVolume binds the source BlockStorage via its URI. Pass any Ref (typed or
 // aruba.URI(...)). Empty URIs are recorded on the error sink and the field
@@ -128,8 +144,8 @@ func (s *Snapshot) Type() types.BlockStorageType {
 // Zone returns the availability zone of the snapshot, or "" if unset.
 func (s *Snapshot) Zone() Zone { return snapshotDerefZone(s.zone) }
 
-// Bootable returns whether the snapshot was taken from a bootable volume, or false if unset.
-func (s *Snapshot) Bootable() bool {
+// IsBootable returns whether the snapshot was taken from a bootable volume, or false if unset.
+func (s *Snapshot) IsBootable() bool {
 	if s.bootable == nil {
 		return false
 	}
@@ -262,7 +278,7 @@ func (a *snapshotsClientAdapter) Create(ctx context.Context, snap *Snapshot, opt
 		return snap, err
 	}
 	if snap.ProjectID() == "" {
-		return snap, fmt.Errorf("Create: Snapshot has no project — call IntoProject first")
+		return snap, fmt.Errorf("Create: Snapshot has no project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -335,7 +351,7 @@ func (a *snapshotsClientAdapter) Update(ctx context.Context, snap *Snapshot, opt
 		return snap, fmt.Errorf("Update: Snapshot has no ID — call Get first or seed from response metadata")
 	}
 	if snap.ProjectID() == "" {
-		return snap, fmt.Errorf("Update: Snapshot has no project — call IntoProject first")
+		return snap, fmt.Errorf("Update: Snapshot has no project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

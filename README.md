@@ -14,7 +14,7 @@ Official Go SDK for the Aruba Cloud API. Manage cloud resources — compute inst
 
 ## Highlights
 
-- **Fluent builder API** — construct any resource with chained, type-safe setters: `aruba.NewVPC().IntoProject(p).Named("prod")...`
+- **Fluent builder API** — construct any resource with chained, type-safe setters: `aruba.NewVPC().InProject(p).Named("prod")...`
 - **Single import** — `pkg/aruba` re-exports every typed enum and factory; `pkg/types` is reserved for advanced escape hatches.
 - **Built-in async polling** — `wrapper.WaitUntilReady(ctx)` covers 95% of long-running operations; specialized waits cover the rest.
 - **Configurable authentication** — OAuth2 client credentials by default, plus static tokens and Vault-backed credential storage.
@@ -60,8 +60,8 @@ func main() {
 
 	proj := aruba.NewProject().
 		Named("my-first-project").
-		WithDescription("Created from the Go SDK Quick Start").
-		AddTag("go-sdk")
+		DescribedAs("Created from the Go SDK Quick Start").
+		Tagged("go-sdk")
 
 	if _, err := arubaClient.FromProject().Create(ctx, proj); err != nil {
 		log.Fatalf("create project: %v", err)
@@ -178,7 +178,7 @@ Most cloud resources reach their terminal state asynchronously. Every wrapper th
 
 ```go
 vpc, err := arubaClient.FromNetwork().VPCs().Create(ctx,
-    aruba.NewVPC().IntoProject(proj).Named("prod-vpc"))
+    aruba.NewVPC().InProject(proj).Named("prod-vpc"))
 if err != nil { log.Fatal(err) }
 
 if err := vpc.WaitUntilReady(ctx); err != nil {
@@ -224,11 +224,11 @@ Typed constants for regions, zones, flavors, billing periods, Kubernetes version
 
 ```go
 cs := aruba.NewCloudServer().
-    IntoProject(proj).
+    InProject(proj).
     InRegion(aruba.RegionITBGBergamo).
     InZone(aruba.ZoneITBG1).
     OfFlavor(aruba.CloudServerFlavorCSO4A8).
-    WithBillingPeriod(aruba.BillingPeriodHour)
+    BilledHourly()
 ```
 
 When the wrapper doesn't yet expose a wire field, fall back via `wrapper.Raw()`:

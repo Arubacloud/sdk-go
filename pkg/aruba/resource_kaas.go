@@ -13,7 +13,7 @@ import (
 
 // KaaS is the wrapper for an Aruba Cloud Kubernetes-as-a-Service cluster
 // (a direct child of a Project). Construct with aruba.NewKaaS() and bind it
-// via IntoProject(project), WithVPC(vpc), WithSubnet(subnet), etc.
+// via InProject(project), WithVPC(vpc), WithSubnet(subnet), etc.
 //
 // Family A: regional, Metadata/Properties envelope, location-aware.
 // Supports full CRUD. Update emits KaaSUpdateRequest (narrower than KaaSRequest):
@@ -73,20 +73,30 @@ func NewKaaS() *KaaS {
 
 // Setters — chainable, general → specific
 
-// IntoProject binds this KaaS to its parent project. Required before Create.
-func (k *KaaS) IntoProject(p Ref) *KaaS { k.intoProject(p); return k }
+// InProject binds this KaaS to its parent project. Required before Create.
+func (k *KaaS) InProject(p Ref) *KaaS { k.intoProject(p); return k }
 
 // Named sets the resource name. Required by the API.
 func (k *KaaS) Named(n string) *KaaS { k.named(n); return k }
 
-// AddTag appends a tag for filtering and accounting.
-func (k *KaaS) AddTag(t string) *KaaS { k.addTag(t); return k }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (k *KaaS) Tagged(ts ...string) *KaaS {
+	for _, t := range ts {
+		k.addTag(t)
+	}
+	return k
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (k *KaaS) RemoveTag(t string) *KaaS { k.removeTag(t); return k }
+// Untagged removes each listed tag. No-op for tags not present.
+func (k *KaaS) Untagged(ts ...string) *KaaS {
+	for _, t := range ts {
+		k.removeTag(t)
+	}
+	return k
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (k *KaaS) ReplaceTags(ts ...string) *KaaS { k.replaceTags(ts...); return k }
+// RetaggedAs replaces the entire tag set with the given values.
+func (k *KaaS) RetaggedAs(ts ...string) *KaaS { k.replaceTags(ts...); return k }
 
 // InRegion sets the region for this resource.
 func (k *KaaS) InRegion(region Region) *KaaS { k.inRegion(region); return k }
@@ -100,14 +110,17 @@ func (k *KaaS) WithKubernetesVersion(v KubernetesVersion) *KaaS {
 // WithPodCIDR sets the pod CIDR block for the cluster network.
 func (k *KaaS) WithPodCIDR(cidr string) *KaaS { k.podCIDR = &cidr; return k }
 
-// WithHA enables or disables high-availability mode for the control plane.
-func (k *KaaS) WithHA(enabled bool) *KaaS { k.ha = &enabled; return k }
+// HighlyAvailable enables high-availability mode for the control plane.
+func (k *KaaS) HighlyAvailable() *KaaS { v := true; k.ha = &v; return k }
 
-// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
-func (k *KaaS) WithBillingPeriod(period BillingPeriod) *KaaS {
-	k.billingPeriod = &period
-	return k
-}
+// BilledHourly sets hourly billing.
+func (k *KaaS) BilledHourly() *KaaS { v := BillingPeriodHour; k.billingPeriod = &v; return k }
+
+// BilledMonthly sets monthly billing.
+func (k *KaaS) BilledMonthly() *KaaS { v := BillingPeriodMonth; k.billingPeriod = &v; return k }
+
+// BilledYearly sets yearly billing.
+func (k *KaaS) BilledYearly() *KaaS { v := BillingPeriodYear; k.billingPeriod = &v; return k }
 
 // WithSecurityGroup attaches a SecurityGroup to the cluster. The KaaS API
 // stores only the SG's name (not its URI), so the supplied Ref must be a
@@ -191,38 +204,35 @@ func (k *KaaS) setSingleRef(label string, ref Ref, dst **string) *KaaS {
 	return k
 }
 
-// AddNodePool appends np to the cluster's node pool list.
-// Errors accumulated on np are drained into k at attachment time.
-func (k *KaaS) AddNodePool(np *NodePool) *KaaS {
-	if np == nil {
-		return k
+// WithNodePools appends node pools to the cluster's pool list.
+// Errors accumulated on each pool are drained into k at attachment time.
+func (k *KaaS) WithNodePools(nps ...*NodePool) *KaaS {
+	for _, np := range nps {
+		if np == nil {
+			continue
+		}
+		for _, e := range np.errs {
+			k.addErr(e)
+		}
+		k.nodePools = append(k.nodePools, np)
 	}
-	for _, e := range np.errs {
-		k.addErr(e)
-	}
-	k.nodePools = append(k.nodePools, np)
 	return k
 }
 
-// ClearNodePools removes all previously-added node pools from the cluster.
-func (k *KaaS) ClearNodePools() *KaaS {
+// WithoutNodePools removes all previously-added node pools from the cluster.
+func (k *KaaS) WithoutNodePools() *KaaS {
 	k.nodePools = nil
 	return k
 }
 
 // ReplaceNodePools replaces the entire node pool list with the given pools.
-// Equivalent to ClearNodePools followed by AddNodePool for each entry.
+// Equivalent to WithoutNodePools followed by WithNodePools for each entry.
 func (k *KaaS) ReplaceNodePools(pools ...*NodePool) *KaaS {
 	k.nodePools = nil
 	for _, np := range pools {
-		k.AddNodePool(np)
+		k.WithNodePools(np)
 	}
 	return k
-}
-
-// SetNodePools is an alias for ReplaceNodePools for naming-convention parity.
-func (k *KaaS) SetNodePools(pools ...*NodePool) *KaaS {
-	return k.ReplaceNodePools(pools...)
 }
 
 // DownloadKubeconfig downloads the kubeconfig for this cluster and returns it
@@ -610,7 +620,7 @@ func (a *kaasClientAdapter) Create(ctx context.Context, k *KaaS, opts ...CallOpt
 		return k, err
 	}
 	if k.ProjectID() == "" {
-		return k, fmt.Errorf("Create: KaaS has no parent project — call IntoProject first")
+		return k, fmt.Errorf("Create: KaaS has no parent project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -648,7 +658,7 @@ func (a *kaasClientAdapter) Update(ctx context.Context, k *KaaS, opts ...CallOpt
 		return k, fmt.Errorf("Update: KaaS has no ID")
 	}
 	if k.ProjectID() == "" {
-		return k, fmt.Errorf("Update: KaaS has no parent project — call IntoProject first")
+		return k, fmt.Errorf("Update: KaaS has no parent project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

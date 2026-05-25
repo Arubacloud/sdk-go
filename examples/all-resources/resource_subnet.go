@@ -18,18 +18,18 @@ func createAdvancedSubnet(ctx context.Context, arubaClient aruba.Client, vpc *ar
 	}
 
 	subnet := aruba.NewSubnet().
-		IntoVPC(vpc).
+		InVPC(vpc).
 		Named(resourceName(NameSubnetAdvanced)).
-		AddTag("network").
-		AddTag("subnet").
+		Tagged("network").
+		Tagged("subnet").
 		InRegion(aruba.RegionITBGBergamo).
 		OfType(aruba.SubnetTypeAdvanced).
 		WithCIDR("10.0.1.0/24").
 		WithDHCP(aruba.NewSubnetDHCP().
 			Enabled().
 			WithRange("10.0.1.10", 100).
-			AddDNS("8.8.8.8").
-			AddDNS("8.8.4.4"))
+			WithDNSServers("8.8.8.8").
+			WithDNSServers("8.8.4.4"))
 
 	result, err := arubaClient.FromNetwork().Subnets().Create(ctx, subnet)
 	if err != nil {
@@ -55,10 +55,10 @@ func createBasicSubnet(ctx context.Context, arubaClient aruba.Client, vpc *aruba
 	}
 
 	subnet := aruba.NewSubnet().
-		IntoVPC(vpc).
+		InVPC(vpc).
 		Named(resourceName(NameSubnetBasic)).
-		AddTag("network").
-		AddTag("subnet").
+		Tagged("network").
+		Tagged("subnet").
 		InRegion(aruba.RegionITBGBergamo).
 		OfType(aruba.SubnetTypeBasic)
 

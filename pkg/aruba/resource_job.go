@@ -13,7 +13,7 @@ import (
 // ---- Wrapper ----
 
 // Job is the wrapper for an Aruba Cloud scheduled job (a direct child of a Project).
-// Construct with aruba.NewJob() and bind via IntoProject(project).
+// Construct with aruba.NewJob() and bind via InProject(project).
 //
 // Family A: regional, Metadata/Properties envelope, location-aware.
 // Supports full CRUD. Create and Update share the same request type (JobRequest) —
@@ -58,26 +58,39 @@ func NewJob() *Job {
 
 // Setters — chainable, general → specific
 
-// IntoProject binds this Job to its parent project. Required before Create.
-func (j *Job) IntoProject(p Ref) *Job { j.intoProject(p); return j }
+// InProject binds this Job to its parent project. Required before Create.
+func (j *Job) InProject(p Ref) *Job { j.intoProject(p); return j }
 
 // Named sets the resource name. Required by the API.
 func (j *Job) Named(n string) *Job { j.named(n); return j }
 
-// AddTag appends a tag for filtering and accounting.
-func (j *Job) AddTag(t string) *Job { j.addTag(t); return j }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (j *Job) Tagged(ts ...string) *Job {
+	for _, t := range ts {
+		j.addTag(t)
+	}
+	return j
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (j *Job) RemoveTag(t string) *Job { j.removeTag(t); return j }
+// Untagged removes each listed tag. No-op for tags not present.
+func (j *Job) Untagged(ts ...string) *Job {
+	for _, t := range ts {
+		j.removeTag(t)
+	}
+	return j
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (j *Job) ReplaceTags(ts ...string) *Job { j.replaceTags(ts...); return j }
+// RetaggedAs replaces the entire tag set with the given values.
+func (j *Job) RetaggedAs(ts ...string) *Job { j.replaceTags(ts...); return j }
 
 // InRegion sets the region for this resource.
 func (j *Job) InRegion(region Region) *Job { j.inRegion(region); return j }
 
-// WithEnabled sets whether the job is active. Pass false to disable the job via Update.
-func (j *Job) WithEnabled(enabled bool) *Job { j.enabled = &enabled; return j }
+// Enabled marks the job as active.
+func (j *Job) Enabled() *Job { v := true; j.enabled = &v; return j }
+
+// Disabled deactivates the job.
+func (j *Job) Disabled() *Job { v := false; j.enabled = &v; return j }
 
 // OneShotAt schedules a one-time execution at t (UTC, RFC3339).
 // Returns an error if a Recurring schedule has already been configured.
@@ -120,16 +133,18 @@ func (j *Job) requireMode(want types.JobType, label string) bool {
 	return true
 }
 
-// AddStep appends step to the job's step list.
-// Errors accumulated on step are drained into j at attachment time.
-func (j *Job) AddStep(step *JobStep) *Job {
-	if step == nil {
-		return j
+// WithSteps appends steps to the job's step list.
+// Errors accumulated on each step are drained into j at attachment time.
+func (j *Job) WithSteps(steps ...*JobStep) *Job {
+	for _, step := range steps {
+		if step == nil {
+			continue
+		}
+		for _, e := range step.errs {
+			j.addErr(e)
+		}
+		j.steps = append(j.steps, step)
 	}
-	for _, e := range step.errs {
-		j.addErr(e)
-	}
-	j.steps = append(j.steps, step)
 	return j
 }
 
@@ -149,8 +164,8 @@ func (j *Job) RawYAML() []byte         { return marshalRawYAML(j.response) }
 // RawRequest returns what toRequest() would emit right now.
 func (j *Job) RawRequest() types.JobRequest { return j.toRequest() }
 
-// Enabled returns whether the job is active.
-func (j *Job) Enabled() bool {
+// IsEnabled returns whether the job is active.
+func (j *Job) IsEnabled() bool {
 	if j.response != nil {
 		return j.response.Properties.Enabled
 	}
@@ -359,7 +374,7 @@ func (a *jobsClientAdapter) Create(ctx context.Context, j *Job, opts ...CallOpti
 		return j, err
 	}
 	if j.ProjectID() == "" {
-		return j, fmt.Errorf("Create: Job has no parent project — call IntoProject first")
+		return j, fmt.Errorf("Create: Job has no parent project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -396,7 +411,7 @@ func (a *jobsClientAdapter) Update(ctx context.Context, j *Job, opts ...CallOpti
 		return j, fmt.Errorf("Update: Job has no ID")
 	}
 	if j.ProjectID() == "" {
-		return j, fmt.Errorf("Update: Job has no parent project — call IntoProject first")
+		return j, fmt.Errorf("Update: Job has no parent project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

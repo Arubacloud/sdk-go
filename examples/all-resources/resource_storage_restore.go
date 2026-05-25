@@ -20,7 +20,7 @@ func createRestore(ctx context.Context, arubaClient aruba.Client, b *aruba.Stora
 	}
 
 	r := aruba.NewStorageRestore().
-		IntoBackup(b).
+		FromBackup(b).
 		Named(resourceName(NameStorageRestore)).
 		InRegion(aruba.RegionITBGBergamo).
 		ToVolume(target)

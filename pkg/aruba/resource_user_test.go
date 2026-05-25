@@ -43,7 +43,7 @@ func TestUser_NoPasswordAccessor(t *testing.T) {
 
 func TestUser_FluentSetters(t *testing.T) {
 	u := NewUser().
-		IntoDBaaS(URI("/projects/p-1/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p-1/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("alice").
 		WithPassword(testPassword)
 
@@ -77,7 +77,7 @@ func TestUser_IntoDBaaS_TypedRef(t *testing.T) {
 	dbaas := &DBaaS{}
 	dbaas.fromResponse(dbaasTestResponse("d-1", "my-dbaas", "/projects/p-1/providers/Aruba.Database/dbaas/d-1"))
 
-	u := NewUser().IntoDBaaS(dbaas)
+	u := NewUser().InDBaaS(dbaas)
 	if u.DBaaSID() != "d-1" {
 		t.Errorf("DBaaSID() = %q", u.DBaaSID())
 	}
@@ -90,7 +90,7 @@ func TestUser_IntoDBaaS_TypedRef(t *testing.T) {
 }
 
 func TestUser_IntoDBaaS_URIRef(t *testing.T) {
-	u := NewUser().IntoDBaaS(URI("/projects/p-uri/providers/Aruba.Database/dbaas/d-uri"))
+	u := NewUser().InDBaaS(URI("/projects/p-uri/providers/Aruba.Database/dbaas/d-uri"))
 	if u.DBaaSID() != "d-uri" {
 		t.Errorf("DBaaSID() = %q", u.DBaaSID())
 	}
@@ -103,7 +103,7 @@ func TestUser_IntoDBaaS_URIRef(t *testing.T) {
 }
 
 func TestUser_IntoDBaaS_BadRef(t *testing.T) {
-	u := NewUser().IntoDBaaS(URI("/something/garbage"))
+	u := NewUser().InDBaaS(URI("/something/garbage"))
 	if u.Err() == nil {
 		t.Error("expected Err() to be set for unresolvable parent")
 	}
@@ -115,7 +115,7 @@ func TestUser_IntoDBaaS_BadRef(t *testing.T) {
 
 func TestUser_URI_Constructed(t *testing.T) {
 	u := NewUser().
-		IntoDBaaS(URI("/projects/p-1/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p-1/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("alice")
 	want := "/projects/p-1/providers/Aruba.Database/dbaas/d-1/users/alice"
 	if u.URI() != want {
@@ -257,7 +257,7 @@ func TestUser_FromResponse_PreservesPassword(t *testing.T) {
 
 func TestUserIDsFromRef_TypedRef(t *testing.T) {
 	u := NewUser().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("alice")
 	pid, did, name, err := userIDsFromRef(u)
 	if err != nil {
@@ -332,7 +332,7 @@ func TestUsersClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	u := NewUser().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("my-user").
 		WithPassword(testPassword)
 
@@ -379,7 +379,7 @@ func TestUsersClientAdapter_Create_NoUsername(t *testing.T) {
 		callCount++
 	})
 	u := NewUser().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		WithPassword(testPassword) // no WithUsername
 	_, err := adapter.Create(context.Background(), u)
 	if err == nil {
@@ -396,7 +396,7 @@ func TestUsersClientAdapter_Create_NoPassword(t *testing.T) {
 		callCount++
 	})
 	u := NewUser().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("alice") // no WithPassword
 	_, err := adapter.Create(context.Background(), u)
 	if err == nil {
@@ -415,7 +415,7 @@ func TestUsersClientAdapter_Create_NonTwoXX(t *testing.T) {
 	})
 
 	u := NewUser().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("my-user").
 		WithPassword(testPassword)
 	_, err := adapter.Create(context.Background(), u)
@@ -443,7 +443,7 @@ func TestUsersClientAdapter_Update_Success(t *testing.T) {
 	})
 
 	u := NewUser().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("my-user").
 		WithPassword(testPassword)
 
@@ -484,7 +484,7 @@ func TestUsersClientAdapter_Update_NoPassword(t *testing.T) {
 		callCount++
 	})
 	u := NewUser().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("alice") // no WithPassword
 	_, err := adapter.Update(context.Background(), u)
 	if err == nil {
@@ -529,7 +529,7 @@ func TestUsersClientAdapter_Get_TypedRef(t *testing.T) {
 	})
 
 	u := NewUser().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("my-user")
 
 	result, err := adapter.Get(context.Background(), u)
@@ -596,7 +596,7 @@ func TestUsersClientAdapter_Create_Conflict(t *testing.T) {
 		fmt.Fprint(w, `{"title":"Conflict","detail":"username taken"}`)
 	})
 	u := NewUser().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("alice").
 		WithPassword(testPassword)
 	_, err := adapter.Create(context.Background(), u)
@@ -659,7 +659,7 @@ func TestUsersClientAdapter_Update_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, `{"title":"Conflict","detail":"concurrent update"}`)
 	})
 	u := NewUser().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		WithUsername("alice").
 		WithPassword(testPassword)
 	_, err := adapter.Update(context.Background(), u)
@@ -727,7 +727,7 @@ func TestUsersClientAdapter_Create_ErrMixin(t *testing.T) {
 		callCount++
 	})
 	// IntoDBaaS with bad URI sets errMixin
-	u := NewUser().IntoDBaaS(URI("/garbage")).WithUsername("alice").WithPassword(testPassword)
+	u := NewUser().InDBaaS(URI("/garbage")).WithUsername("alice").WithPassword(testPassword)
 	_, err := adapter.Create(context.Background(), u)
 	if err == nil {
 		t.Fatal("expected error from errMixin")

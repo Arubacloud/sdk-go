@@ -17,7 +17,7 @@ func VPNRouteRef(projectID, tunnelID, routeID string) Ref {
 // ---- Wrapper ----
 
 // VPNRoute is the wrapper for an Aruba Cloud VPN Route (a child of a VPNTunnel).
-// Construct with aruba.NewVPNRoute() and bind it via IntoVPNTunnel(tunnel).
+// Construct with aruba.NewVPNRoute() and bind it via InVPNTunnel(tunnel).
 //
 // Wraps types.VPNRouteResponse / types.VPNRouteRequest. The wrapper carries
 // pointer-typed private fields so unset values round-trip through
@@ -39,7 +39,7 @@ type VPNRoute struct {
 }
 
 // NewVPNRoute returns a fresh *VPNRoute ready for fluent setters and a Create call.
-// Binds vpnTunnelScopedMixin's error sink so IntoVPNTunnel failures surface via Err().
+// Binds vpnTunnelScopedMixin's error sink so InVPNTunnel failures surface via Err().
 func NewVPNRoute() *VPNRoute {
 	r := &VPNRoute{}
 	r.vpnTunnelScopedMixin = bindVPNTunnelScoped(&r.errMixin)
@@ -48,20 +48,30 @@ func NewVPNRoute() *VPNRoute {
 
 // Setters — chainable, general → specific
 
-// IntoVPNTunnel binds this VPNRoute to its parent VPNTunnel. Required before Create.
-func (r *VPNRoute) IntoVPNTunnel(t Ref) *VPNRoute { r.intoVPNTunnel(t); return r }
+// InVPNTunnel binds this VPNRoute to its parent VPNTunnel. Required before Create.
+func (r *VPNRoute) InVPNTunnel(t Ref) *VPNRoute { r.intoVPNTunnel(t); return r }
 
 // Named sets the resource name. Required by the API.
 func (r *VPNRoute) Named(n string) *VPNRoute { r.named(n); return r }
 
-// AddTag appends a tag for filtering and accounting.
-func (r *VPNRoute) AddTag(tag string) *VPNRoute { r.addTag(tag); return r }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (r *VPNRoute) Tagged(ts ...string) *VPNRoute {
+	for _, tag := range ts {
+		r.addTag(tag)
+	}
+	return r
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (r *VPNRoute) RemoveTag(tag string) *VPNRoute { r.removeTag(tag); return r }
+// Untagged removes each listed tag. No-op for tags not present.
+func (r *VPNRoute) Untagged(ts ...string) *VPNRoute {
+	for _, tag := range ts {
+		r.removeTag(tag)
+	}
+	return r
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (r *VPNRoute) ReplaceTags(tags ...string) *VPNRoute { r.replaceTags(tags...); return r }
+// RetaggedAs replaces the entire tag set with the given values.
+func (r *VPNRoute) RetaggedAs(tags ...string) *VPNRoute { r.replaceTags(tags...); return r }
 
 // InRegion sets the region for this resource.
 func (r *VPNRoute) InRegion(region Region) *VPNRoute { r.inRegion(region); return r }
@@ -198,7 +208,7 @@ func (a *vpnRoutesClientAdapter) Create(ctx context.Context, r *VPNRoute, opts .
 		return r, err
 	}
 	if r.VPNTunnelID() == "" || r.ProjectID() == "" {
-		return r, fmt.Errorf("Create: VPN route has no parent tunnel — call IntoVPNTunnel first")
+		return r, fmt.Errorf("Create: VPN route has no parent tunnel — call InVPNTunnel first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -274,7 +284,7 @@ func (a *vpnRoutesClientAdapter) Update(ctx context.Context, r *VPNRoute, opts .
 		return r, fmt.Errorf("Update: VPN route has no ID — call Get first or seed from response metadata")
 	}
 	if r.VPNTunnelID() == "" || r.ProjectID() == "" {
-		return r, fmt.Errorf("Update: VPN route has no parent tunnel — call IntoVPNTunnel first")
+		return r, fmt.Errorf("Update: VPN route has no parent tunnel — call InVPNTunnel first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

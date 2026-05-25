@@ -44,7 +44,7 @@ func keyMakeKMSParent(projectID, kmsID string) *KMS {
 func TestKey_FluentSetters(t *testing.T) {
 	parent := keyMakeKMSParent("p-1", "kms-1")
 	k := NewKey().
-		IntoKMS(parent).
+		InKMS(parent).
 		Named("my-key").
 		OfAlgorithm(KeyAlgorithmAes)
 
@@ -71,7 +71,7 @@ func TestKey_FluentSetters(t *testing.T) {
 
 func TestKey_IntoKMS_TypedRef(t *testing.T) {
 	parent := keyMakeKMSParent("p-42", "kms-42")
-	k := NewKey().IntoKMS(parent)
+	k := NewKey().InKMS(parent)
 	if k.KMSID() != "kms-42" {
 		t.Errorf("KMSID() = %q", k.KMSID())
 	}
@@ -84,7 +84,7 @@ func TestKey_IntoKMS_TypedRef(t *testing.T) {
 }
 
 func TestKey_IntoKMS_URIRef(t *testing.T) {
-	k := NewKey().IntoKMS(URI("/projects/p-uri/providers/Aruba.Security/kms/kms-uri"))
+	k := NewKey().InKMS(URI("/projects/p-uri/providers/Aruba.Security/kms/kms-uri"))
 	if k.KMSID() != "kms-uri" {
 		t.Errorf("KMSID() = %q", k.KMSID())
 	}
@@ -97,14 +97,14 @@ func TestKey_IntoKMS_URIRef(t *testing.T) {
 }
 
 func TestKey_IntoKMS_BadRef_NoKMS(t *testing.T) {
-	k := NewKey().IntoKMS(URI("/projects/p-1"))
+	k := NewKey().InKMS(URI("/projects/p-1"))
 	if k.Err() == nil {
 		t.Error("expected Err() != nil for URI missing kms segment")
 	}
 }
 
 func TestKey_IntoKMS_BadRef_NoProject(t *testing.T) {
-	k := NewKey().IntoKMS(URI("/providers/Aruba.Security/kms/kms-1"))
+	k := NewKey().InKMS(URI("/providers/Aruba.Security/kms/kms-1"))
 	if k.Err() == nil {
 		t.Error("expected Err() != nil for URI missing project segment")
 	}
@@ -390,7 +390,7 @@ func TestKeysClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	parent := keyMakeKMSParent("p-1", "kms-1")
-	k := NewKey().IntoKMS(parent).
+	k := NewKey().InKMS(parent).
 		Named("my-key").OfAlgorithm(KeyAlgorithmAes)
 
 	result, err := adapter.Create(context.Background(), k)
@@ -453,7 +453,7 @@ func TestKeysClientAdapter_Create_ErrMixin(t *testing.T) {
 	adapter := buildKeyTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 	})
-	k := NewKey().IntoKMS(URI("not-a-valid-kms-uri"))
+	k := NewKey().InKMS(URI("not-a-valid-kms-uri"))
 	_, err := adapter.Create(context.Background(), k)
 	if err == nil {
 		t.Fatal("expected error from errMixin when IntoKMS failed")
@@ -467,7 +467,7 @@ func TestKeysClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, `{"message":"bad request"}`)
 	})
 	parent := keyMakeKMSParent("p-1", "kms-1")
-	_, err := adapter.Create(context.Background(), NewKey().IntoKMS(parent).
+	_, err := adapter.Create(context.Background(), NewKey().InKMS(parent).
 		Named("k").OfAlgorithm(KeyAlgorithmAes))
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {

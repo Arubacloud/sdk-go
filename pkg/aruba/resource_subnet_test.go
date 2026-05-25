@@ -27,11 +27,11 @@ func TestSubnet_FluentSetters(t *testing.T) {
 	parent.fromResponse(vpcTestResponse("vpc-1", "my-vpc", "/projects/p1/providers/Aruba.Network/vpcs/vpc-1", "p1"))
 
 	s := NewSubnet().
-		IntoVPC(parent).
+		InVPC(parent).
 		Named("my-subnet").
-		AddTag("net").
-		AddTag("infra").
-		AddTag("net"). // dedupe
+		Tagged("net").
+		Tagged("infra").
+		Tagged("net"). // dedupe
 		InRegion(RegionITBGBergamo).
 		OfType(SubnetTypeAdvanced).
 		NotDefault().
@@ -65,12 +65,12 @@ func TestSubnet_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", s.Err())
 	}
 
-	s.RemoveTag("net")
+	s.Untagged("net")
 	if tags := s.Tags(); len(tags) != 1 || tags[0] != "infra" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	s.ReplaceTags("x", "y")
+	s.RetaggedAs("x", "y")
 	if tags := s.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -81,7 +81,7 @@ func TestSubnet_FluentSetters(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestSubnet_IntoVPC_BadRef(t *testing.T) {
-	s := NewSubnet().IntoVPC(URI("/garbage"))
+	s := NewSubnet().InVPC(URI("/garbage"))
 	if s.Err() == nil {
 		t.Error("expected Err() != nil for unresolvable Ref, got nil")
 	}
@@ -95,10 +95,10 @@ func TestSubnet_DHCPSubBuilder(t *testing.T) {
 	d := NewSubnetDHCP().
 		Enabled().
 		WithRange("10.0.0.10", 50).
-		AddRoute("0.0.0.0/0", "10.0.0.1").
-		AddRoute("192.168.0.0/16", "10.0.0.2").
-		AddDNS("1.1.1.1").
-		AddDNS("8.8.8.8")
+		WithRoutes(SubnetDHCPRoute{Address: "0.0.0.0/0", Gateway: "10.0.0.1"}).
+		WithRoutes(SubnetDHCPRoute{Address: "192.168.0.0/16", Gateway: "10.0.0.2"}).
+		WithDNSServers("1.1.1.1").
+		WithDNSServers("8.8.8.8")
 
 	if !d.IsEnabled() {
 		t.Error("IsEnabled() should be true")
@@ -159,8 +159,8 @@ func TestSubnet_DHCPSubBuilder_NoRange(t *testing.T) {
 func TestSubnet_ToRequestRoundTrip(t *testing.T) {
 	s := NewSubnet().Named(
 		"sn-1").
-		AddTag("t1").
-		AddTag("t2").
+		Tagged("t1").
+		Tagged("t2").
 		InRegion(RegionITBGBergamo).
 		OfType(SubnetTypeBasic).
 		AsDefault().
@@ -168,8 +168,8 @@ func TestSubnet_ToRequestRoundTrip(t *testing.T) {
 		WithDHCP(NewSubnetDHCP().
 			Enabled().
 			WithRange("10.1.2.10", 20).
-			AddRoute("0.0.0.0/0", "10.1.2.1").
-			AddDNS("9.9.9.9"))
+			WithRoutes(SubnetDHCPRoute{Address: "0.0.0.0/0", Gateway: "10.1.2.1"}).
+			WithDNSServers("9.9.9.9"))
 
 	req := s.RawRequest()
 
@@ -448,7 +448,7 @@ func TestSubnetsClientAdapter_Create_Success(t *testing.T) {
 	vpc.fromResponse(vpcTestResponse("v", "my-vpc", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
 
 	s := NewSubnet().
-		IntoVPC(vpc).
+		InVPC(vpc).
 		Named("my-subnet").
 		OfType(SubnetTypeAdvanced).
 		WithCIDR("10.0.0.0/24")
@@ -502,7 +502,7 @@ func TestSubnetsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "n", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
 
-	result, err := adapter.Create(context.Background(), NewSubnet().IntoVPC(vpc).
+	result, err := adapter.Create(context.Background(), NewSubnet().InVPC(vpc).
 		Named("sn"))
 	if err == nil {
 		t.Fatal("expected MetadataValidationError, got nil")
@@ -526,7 +526,7 @@ func TestSubnetsClientAdapter_Create_NonTwoXX(t *testing.T) {
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "n", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
 
-	result, err := adapter.Create(context.Background(), NewSubnet().IntoVPC(vpc))
+	result, err := adapter.Create(context.Background(), NewSubnet().InVPC(vpc))
 	if err == nil {
 		t.Fatal("expected error on 422")
 	}
@@ -627,7 +627,7 @@ func TestSubnetsClientAdapter_Update_NoID(t *testing.T) {
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "n", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
 
-	s := NewSubnet().IntoVPC(vpc).
+	s := NewSubnet().InVPC(vpc).
 		Named("x")
 	_, err := adapter.Update(context.Background(), s)
 	if err == nil {
@@ -817,7 +817,7 @@ func TestSubnetsClientAdapter_Create_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusCreated)
 	})
-	s := NewSubnet().IntoVPC(URI("/garbage"))
+	s := NewSubnet().InVPC(URI("/garbage"))
 	_, err := adapter.Create(context.Background(), s)
 	if err == nil {
 		t.Fatal("expected error for builder error")
@@ -869,7 +869,7 @@ func TestSubnetsClientAdapter_Update_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusOK)
 	})
-	s := NewSubnet().IntoVPC(URI("/garbage"))
+	s := NewSubnet().InVPC(URI("/garbage"))
 	_, err := adapter.Update(context.Background(), s)
 	if err == nil {
 		t.Fatal("expected error for builder error")

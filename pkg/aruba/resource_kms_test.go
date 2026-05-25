@@ -32,13 +32,13 @@ func TestKMS_FluentSetters(t *testing.T) {
 	proj.fromResponse(projectTestResponse("p-1", "my-proj", "/projects/p-1"))
 
 	k := NewKMS().
-		IntoProject(proj).
+		InProject(proj).
 		Named("my-kms").
-		AddTag("security").
-		AddTag("encryption").
-		AddTag("security"). // dedupe
+		Tagged("security").
+		Tagged("encryption").
+		Tagged("security"). // dedupe
 		InRegion(RegionITBGBergamo).
-		WithBillingPeriod(BillingPeriodHour)
+		BilledHourly()
 
 	if k.Name() != "my-kms" {
 		t.Errorf("Name() = %q", k.Name())
@@ -67,7 +67,7 @@ func TestKMS_FluentSetters(t *testing.T) {
 func TestKMS_IntoProject_TypedRef(t *testing.T) {
 	proj := &Project{}
 	proj.fromResponse(projectTestResponse("p-42", "proj", "/projects/p-42"))
-	k := NewKMS().IntoProject(proj)
+	k := NewKMS().InProject(proj)
 	if k.ProjectID() != "p-42" {
 		t.Errorf("ProjectID() = %q", k.ProjectID())
 	}
@@ -77,14 +77,14 @@ func TestKMS_IntoProject_TypedRef(t *testing.T) {
 }
 
 func TestKMS_IntoProject_URIRef(t *testing.T) {
-	k := NewKMS().IntoProject(URI("/projects/p-uri"))
+	k := NewKMS().InProject(URI("/projects/p-uri"))
 	if k.ProjectID() != "p-uri" {
 		t.Errorf("ProjectID() = %q", k.ProjectID())
 	}
 }
 
 func TestKMS_IntoProject_BadRef(t *testing.T) {
-	k := NewKMS().IntoProject(URI("not-a-project-uri"))
+	k := NewKMS().InProject(URI("not-a-project-uri"))
 	if k.Err() == nil {
 		t.Error("expected Err() != nil for non-project URI")
 	}
@@ -95,7 +95,7 @@ func TestKMS_IntoProject_BadRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestKMS_WithBillingPeriod_RoundTrip(t *testing.T) {
-	k := NewKMS().WithBillingPeriod(BillingPeriodHour)
+	k := NewKMS().BilledHourly()
 	req := k.RawRequest()
 	if req.Properties.BillingPeriod == nil || *req.Properties.BillingPeriod != BillingPeriodHour {
 		t.Errorf("Properties.BillingPeriod = %v", req.Properties.BillingPeriod)
@@ -108,11 +108,11 @@ func TestKMS_WithBillingPeriod_RoundTrip(t *testing.T) {
 
 func TestKMS_ToRequest_FullyPopulated(t *testing.T) {
 	k := NewKMS().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("kms-name").
-		AddTag("tag1").
+		Tagged("tag1").
 		InRegion(RegionITBGBergamo).
-		WithBillingPeriod(BillingPeriodHour)
+		BilledHourly()
 
 	req := k.RawRequest()
 	if req.Metadata.Name != "kms-name" {
@@ -278,10 +278,10 @@ func TestKMSClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	k := NewKMS().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-kms").
 		InRegion(RegionITBGBergamo).
-		WithBillingPeriod(BillingPeriodHour)
+		BilledHourly()
 
 	result, err := adapter.Create(context.Background(), k)
 	if err != nil {
@@ -328,7 +328,7 @@ func TestKMSClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"k","uri":"/projects/p/providers/Aruba.Security/kms/x"},"properties":{},"status":{}}`)
 	})
 
-	k := NewKMS().IntoProject(URI("/projects/p")).
+	k := NewKMS().InProject(URI("/projects/p")).
 		Named("k")
 	result, err := adapter.Create(context.Background(), k)
 	if err == nil {
@@ -349,7 +349,7 @@ func TestKMSClientAdapter_Create_NonTwoXX(t *testing.T) {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, `{"message":"bad request"}`)
 	})
-	_, err := adapter.Create(context.Background(), NewKMS().IntoProject(URI("/projects/p")).
+	_, err := adapter.Create(context.Background(), NewKMS().InProject(URI("/projects/p")).
 		Named("k"))
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {
@@ -373,7 +373,7 @@ func TestKMSClientAdapter_Update_Success(t *testing.T) {
 
 	k := &KMS{}
 	k.fromResponse(kmsTestResponse("my-kms"))
-	k.WithBillingPeriod(BillingPeriodHour)
+	k.BilledHourly()
 
 	result, err := adapter.Update(context.Background(), k)
 	if err != nil {
@@ -388,7 +388,7 @@ func TestKMSClientAdapter_Update_NoID(t *testing.T) {
 	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	k := NewKMS().IntoProject(URI("/projects/p")).
+	k := NewKMS().InProject(URI("/projects/p")).
 		Named("x")
 	_, err := adapter.Update(context.Background(), k)
 	if err == nil {
@@ -532,11 +532,11 @@ func TestKMSClientAdapter_List_TwoItems(t *testing.T) {
 
 func TestKMS_SetterDelegation(t *testing.T) {
 	k := NewKMS().
-		AddTag("a").
-		AddTag("b").
-		AddTag("c").
-		RemoveTag("b").
-		ReplaceTags("x", "y").
+		Tagged("a").
+		Tagged("b").
+		Tagged("c").
+		Untagged("b").
+		RetaggedAs("x", "y").
 		InRegion(RegionITBGBergamo)
 
 	tags := k.Tags()
@@ -589,7 +589,7 @@ func TestKMS_Accessors_ZeroValue(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestKMS_BillingPeriod_RequestFallback(t *testing.T) {
-	k := NewKMS().WithBillingPeriod(BillingPeriodHour)
+	k := NewKMS().BilledHourly()
 	// response is nil, so it falls through to the request-side value
 	if k.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() request fallback = %q", k.BillingPeriod())
@@ -732,7 +732,7 @@ func TestKMSClientAdapter_Update_ErrSet(t *testing.T) {
 	adapter := buildKMSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	k := NewKMS().IntoProject(URI("not-a-project-uri")) // sets Err()
+	k := NewKMS().InProject(URI("not-a-project-uri")) // sets Err()
 	_, err := adapter.Update(context.Background(), k)
 	if err == nil {
 		t.Fatal("expected error when KMS has Err() set")
