@@ -293,13 +293,13 @@ func blockStorageTestResponse(id, name, uri, projectID string) *types.BlockStora
 
 func TestBlockStorage_FromResponseHydration(t *testing.T) {
 	bs := &BlockStorage{}
-	resp := blockStorageTestResponse("bs-1", "my-bs", "/projects/p1/providers/Aruba.Storage/blockstorages/bs-1", "p1")
+	resp := blockStorageTestResponse("bs-1", "my-bs", "/projects/p1/providers/Aruba.Storage/blockStorages/bs-1", "p1")
 	bs.fromResponse(resp)
 
 	if bs.ID() != "bs-1" {
 		t.Errorf("ID() = %q", bs.ID())
 	}
-	if bs.URI() != "/projects/p1/providers/Aruba.Storage/blockstorages/bs-1" {
+	if bs.URI() != "/projects/p1/providers/Aruba.Storage/blockStorages/bs-1" {
 		t.Errorf("URI() = %q", bs.URI())
 	}
 	if bs.BlockStorageID() != "bs-1" {
@@ -370,7 +370,7 @@ func TestBlockStorage_FromResponsePartial(t *testing.T) {
 
 func TestBlockStorage_FromResponseURIBackfill(t *testing.T) {
 	id := "bs-99"
-	uri := "/projects/p-uri/providers/Aruba.Storage/blockstorages/bs-99"
+	uri := "/projects/p-uri/providers/Aruba.Storage/blockStorages/bs-99"
 	state := types.State("")
 	resp := &types.BlockStorageResponse{
 		Metadata: types.ResourceMetadataResponse{
@@ -394,7 +394,7 @@ func TestBlockStorage_FromResponseURIBackfill(t *testing.T) {
 
 func TestBlockStorage_RefSatisfaction(t *testing.T) {
 	bs := &BlockStorage{}
-	bs.fromResponse(blockStorageTestResponse("bs-99", "n", "/projects/p99/providers/Aruba.Storage/blockstorages/bs-99", "p99"))
+	bs.fromResponse(blockStorageTestResponse("bs-99", "n", "/projects/p99/providers/Aruba.Storage/blockStorages/bs-99", "p99"))
 
 	// withBlockStorageID typed path
 	bid, ok := extractID(bs, func(r Ref) (string, bool) {
@@ -402,7 +402,7 @@ func TestBlockStorage_RefSatisfaction(t *testing.T) {
 			return w.BlockStorageID(), true
 		}
 		return "", false
-	}, "blockstorages")
+	}, "blockStorages")
 	if !ok || bid != "bs-99" {
 		t.Errorf("extractID via withBlockStorageID = (%q, %v)", bid, ok)
 	}
@@ -425,7 +425,7 @@ func TestBlockStorage_RefSatisfaction(t *testing.T) {
 
 func TestBlockStorageIDsFromRef_TypedRef(t *testing.T) {
 	bs := &BlockStorage{}
-	bs.fromResponse(blockStorageTestResponse("bid", "n", "/projects/p/providers/Aruba.Storage/blockstorages/bid", "p"))
+	bs.fromResponse(blockStorageTestResponse("bid", "n", "/projects/p/providers/Aruba.Storage/blockStorages/bid", "p"))
 	pid, bid, err := blockStorageIDsFromRef(bs)
 	if err != nil || pid != "p" || bid != "bid" {
 		t.Errorf("blockStorageIDsFromRef typed = (%q, %q, %v)", pid, bid, err)
@@ -433,7 +433,7 @@ func TestBlockStorageIDsFromRef_TypedRef(t *testing.T) {
 }
 
 func TestBlockStorageIDsFromRef_URIRef(t *testing.T) {
-	ref := URI("/projects/p/providers/Aruba.Storage/blockstorages/bs-1")
+	ref := URI("/projects/p/providers/Aruba.Storage/blockStorages/bs-1")
 	pid, bid, err := blockStorageIDsFromRef(ref)
 	if err != nil || pid != "p" || bid != "bs-1" {
 		t.Errorf("blockStorageIDsFromRef URI = (%q, %q, %v)", pid, bid, err)
@@ -443,12 +443,12 @@ func TestBlockStorageIDsFromRef_URIRef(t *testing.T) {
 func TestBlockStorageIDsFromRef_BadURI_MissingBlockStorage(t *testing.T) {
 	_, _, err := blockStorageIDsFromRef(URI("/projects/p/providers/Aruba.Storage/something/else"))
 	if err == nil {
-		t.Error("expected error for URI without /blockstorages/<id>")
+		t.Error("expected error for URI without /blockStorages/<id>")
 	}
 }
 
 func TestBlockStorageIDsFromRef_BadURI_MissingProject(t *testing.T) {
-	_, _, err := blockStorageIDsFromRef(URI("/providers/Aruba.Storage/blockstorages/bs-1"))
+	_, _, err := blockStorageIDsFromRef(URI("/providers/Aruba.Storage/blockStorages/bs-1"))
 	if err == nil {
 		t.Error("expected error for URI without /projects/<id>")
 	}
@@ -472,7 +472,7 @@ func buildVolumesTestAdapter(t *testing.T, handler http.HandlerFunc) *volumesCli
 }
 
 const blockStorageSuccessBody = `{` +
-	`"metadata":{"id":"bs-1","name":"my-bs","uri":"/projects/p/providers/Aruba.Storage/blockstorages/bs-1","project":{"id":"p"}},` +
+	`"metadata":{"id":"bs-1","name":"my-bs","uri":"/projects/p/providers/Aruba.Storage/blockStorages/bs-1","project":{"id":"p"}},` +
 	`"properties":{"sizeGB":20,"type":"Standard","billingPeriod":"Hour","zone":"ITBG-1"},` +
 	`"status":{"state":"Active"}}`
 
@@ -482,7 +482,7 @@ func TestVolumesClientAdapter_Create_Success(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
 			t.Errorf("decode request body: %v", err)
 		}
-		if !containsSubstring(r.URL.Path, "blockstorages") {
+		if !containsSubstring(r.URL.Path, "blockStorages") {
 			t.Errorf("path %q should contain 'blockstorages'", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -541,7 +541,7 @@ func TestVolumesClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		// Missing "id" field — triggers MetadataValidationError
-		fmt.Fprint(w, `{"metadata":{"name":"bs","uri":"/projects/p/providers/Aruba.Storage/blockstorages/x"},"properties":{},"status":{}}`)
+		fmt.Fprint(w, `{"metadata":{"name":"bs","uri":"/projects/p/providers/Aruba.Storage/blockStorages/x"},"properties":{},"status":{}}`)
 	})
 
 	bs := NewBlockStorage().IntoProject(URI("/projects/p")).
@@ -592,7 +592,7 @@ func TestVolumesClientAdapter_Get_URIRef(t *testing.T) {
 		fmt.Fprint(w, blockStorageSuccessBody)
 	})
 
-	ref := URI("/projects/p/providers/Aruba.Storage/blockstorages/bs-1")
+	ref := URI("/projects/p/providers/Aruba.Storage/blockStorages/bs-1")
 	result, err := adapter.Get(context.Background(), ref)
 	if err != nil {
 		t.Fatalf("Get error: %v", err)
@@ -603,7 +603,7 @@ func TestVolumesClientAdapter_Get_URIRef(t *testing.T) {
 	if result.ProjectID() != "p" {
 		t.Errorf("ProjectID() = %q", result.ProjectID())
 	}
-	if !containsSubstring(capturedPath, "blockstorages") {
+	if !containsSubstring(capturedPath, "blockStorages") {
 		t.Errorf("path %q should contain 'blockstorages'", capturedPath)
 	}
 }
@@ -616,7 +616,7 @@ func TestVolumesClientAdapter_Get_TypedRef(t *testing.T) {
 	})
 
 	existing := &BlockStorage{}
-	existing.fromResponse(blockStorageTestResponse("bs-1", "n", "/projects/p/providers/Aruba.Storage/blockstorages/bs-1", "p"))
+	existing.fromResponse(blockStorageTestResponse("bs-1", "n", "/projects/p/providers/Aruba.Storage/blockStorages/bs-1", "p"))
 
 	result, err := adapter.Get(context.Background(), existing)
 	if err != nil {
@@ -633,11 +633,11 @@ func TestVolumesClientAdapter_Update_Success(t *testing.T) {
 		_ = json.NewDecoder(r.Body).Decode(&capturedBody)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, `{"metadata":{"id":"bs-1","name":"my-bs","uri":"/projects/p/providers/Aruba.Storage/blockstorages/bs-1","project":{"id":"p"}},"properties":{"sizeGB":40,"type":"Standard","billingPeriod":"Hour"},"status":{}}`)
+		fmt.Fprint(w, `{"metadata":{"id":"bs-1","name":"my-bs","uri":"/projects/p/providers/Aruba.Storage/blockStorages/bs-1","project":{"id":"p"}},"properties":{"sizeGB":40,"type":"Standard","billingPeriod":"Hour"},"status":{}}`)
 	})
 
 	bs := &BlockStorage{}
-	bs.fromResponse(blockStorageTestResponse("bs-1", "my-bs", "/projects/p/providers/Aruba.Storage/blockstorages/bs-1", "p"))
+	bs.fromResponse(blockStorageTestResponse("bs-1", "my-bs", "/projects/p/providers/Aruba.Storage/blockStorages/bs-1", "p"))
 	bs.WithSizeGB(40)
 
 	result, err := adapter.Update(context.Background(), bs)
@@ -702,7 +702,7 @@ func TestVolumesClientAdapter_Delete_Success(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Storage/blockstorages/bs-1"))
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Storage/blockStorages/bs-1"))
 	if err != nil {
 		t.Fatalf("Delete error: %v", err)
 	}
@@ -715,7 +715,7 @@ func TestVolumesClientAdapter_Delete_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "block storage not found", 404))
 	})
 
-	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Storage/blockstorages/missing"))
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Storage/blockStorages/missing"))
 	if err == nil {
 		t.Fatal("expected error on 404")
 	}
@@ -733,8 +733,8 @@ func TestVolumesClientAdapter_List_TwoItems(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
-			`{"metadata":{"id":"bs-1","name":"n1","uri":"/projects/p/providers/Aruba.Storage/blockstorages/bs-1","project":{"id":"p"}},"properties":{"sizeGB":10,"type":"Standard","billingPeriod":"Hour"},"status":{}},`+
-			`{"metadata":{"id":"bs-2","name":"n2","uri":"/projects/p/providers/Aruba.Storage/blockstorages/bs-2","project":{"id":"p"}},"properties":{"sizeGB":20,"type":"Performance","billingPeriod":"Month"},"status":{}}`+
+			`{"metadata":{"id":"bs-1","name":"n1","uri":"/projects/p/providers/Aruba.Storage/blockStorages/bs-1","project":{"id":"p"}},"properties":{"sizeGB":10,"type":"Standard","billingPeriod":"Hour"},"status":{}},`+
+			`{"metadata":{"id":"bs-2","name":"n2","uri":"/projects/p/providers/Aruba.Storage/blockStorages/bs-2","project":{"id":"p"}},"properties":{"sizeGB":20,"type":"Performance","billingPeriod":"Month"},"status":{}}`+
 			`]}`)
 	})
 
@@ -821,7 +821,7 @@ func TestVolumesClientAdapter_Get_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "block storage not found", 404))
 	})
 
-	ref := URI("/projects/p/providers/Aruba.Storage/blockstorages/missing")
+	ref := URI("/projects/p/providers/Aruba.Storage/blockStorages/missing")
 	_, err := adapter.Get(context.Background(), ref)
 	if err == nil {
 		t.Fatal("expected error on 404")
@@ -843,7 +843,7 @@ func TestVolumesClientAdapter_Update_NonTwoXX(t *testing.T) {
 	})
 
 	bs := &BlockStorage{}
-	bs.fromResponse(blockStorageTestResponse("bs-1", "my-bs", "/projects/p/providers/Aruba.Storage/blockstorages/bs-1", "p"))
+	bs.fromResponse(blockStorageTestResponse("bs-1", "my-bs", "/projects/p/providers/Aruba.Storage/blockStorages/bs-1", "p"))
 	bs.WithSizeGB(99999)
 
 	_, err := adapter.Update(context.Background(), bs)
@@ -979,7 +979,7 @@ func TestVolumesClientAdapter_Get_InjectsRefresh(t *testing.T) {
 		fmt.Fprint(w, blockStorageSuccessBody)
 	})
 	adapter := newVolumesClientAdapter(testutil.NewClient(t, server.URL))
-	bs, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Storage/blockstorages/bs-1"))
+	bs, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Storage/blockStorages/bs-1"))
 	if err != nil {
 		t.Fatalf("Get error: %v", err)
 	}

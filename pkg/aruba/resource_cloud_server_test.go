@@ -146,8 +146,8 @@ func TestCloudServer_WithBootVolume_EmptyURI(t *testing.T) {
 }
 
 func TestCloudServer_WithKeyPair_URIRef(t *testing.T) {
-	cs := NewCloudServer().WithKeyPair(URI("/projects/p/providers/Aruba.Compute/keypairs/kp-1"))
-	if cs.KeyPair() != "/projects/p/providers/Aruba.Compute/keypairs/kp-1" {
+	cs := NewCloudServer().WithKeyPair(URI("/projects/p/providers/Aruba.Compute/keyPairs/kp-1"))
+	if cs.KeyPair() != "/projects/p/providers/Aruba.Compute/keyPairs/kp-1" {
 		t.Errorf("KeyPair() = %q", cs.KeyPair())
 	}
 	if cs.Err() != nil {

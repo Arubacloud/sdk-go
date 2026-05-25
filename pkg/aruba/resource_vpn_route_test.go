@@ -118,17 +118,6 @@ func TestVPNRoute_IntoVPNTunnel_URIRef_CamelCase(t *testing.T) {
 // IntoVPNTunnel — URI Ref (kebab form; mixin test form)
 // --------------------------------------------------------------------------
 
-func TestVPNRoute_IntoVPNTunnel_URIRef_KebabCase(t *testing.T) {
-	r := NewVPNRoute().IntoVPNTunnel(URI("/projects/p/network/vpn-tunnels/t-1"))
-
-	if r.Err() != nil {
-		t.Fatalf("unexpected Err() = %v", r.Err())
-	}
-	if r.VPNTunnelID() != "t-1" {
-		t.Errorf("VPNTunnelID() = %q", r.VPNTunnelID())
-	}
-}
-
 // --------------------------------------------------------------------------
 // IntoVPNTunnel — bad Ref
 // --------------------------------------------------------------------------
@@ -201,7 +190,7 @@ func TestVPNRoute_RefSatisfaction(t *testing.T) {
 			return w.VPNRouteID(), true
 		}
 		return "", false
-	}, "vpn-routes")
+	}, "vpnRoutes")
 	if !ok || rid != "r-1" {
 		t.Errorf("extractID via withVPNRouteID = (%q, %v)", rid, ok)
 	}
@@ -211,7 +200,7 @@ func TestVPNRoute_RefSatisfaction(t *testing.T) {
 			return w.VPNTunnelID(), true
 		}
 		return "", false
-	}, "vpn-tunnels")
+	}, "vpnTunnels")
 	if !ok || tid != "t-1" {
 		t.Errorf("extractID via withVPNTunnelID = (%q, %v)", tid, ok)
 	}
@@ -345,28 +334,6 @@ func TestVPNRoute_FromResponseURIBackfill_CamelCase(t *testing.T) {
 	}
 }
 
-func TestVPNRoute_FromResponseURIBackfill_KebabCase(t *testing.T) {
-	uri := "/projects/p3/network/vpn-tunnels/t-3/vpn-routes/r-3"
-	id := "r-3"
-	name := "kebab-route"
-	resp := &types.VPNRouteResponse{
-		Metadata: types.ResourceMetadataResponse{
-			ID:   &id,
-			URI:  &uri,
-			Name: &name,
-		},
-	}
-	r := &VPNRoute{}
-	r.fromResponse(resp)
-
-	if r.ProjectID() != "p3" {
-		t.Errorf("ProjectID() via URI fallback = %q", r.ProjectID())
-	}
-	if r.vpnTunnelID != "t-3" {
-		t.Errorf("vpnTunnelID via URI fallback = %q", r.vpnTunnelID)
-	}
-}
-
 // --------------------------------------------------------------------------
 // vpnRouteIDsFromRef helper
 // --------------------------------------------------------------------------
@@ -388,14 +355,6 @@ func TestVPNRouteIDsFromRef_URIRef_CamelCase(t *testing.T) {
 	pid, tid, rid, err := vpnRouteIDsFromRef(ref)
 	if err != nil || pid != "p" || tid != "t-1" || rid != "r-1" {
 		t.Errorf("vpnRouteIDsFromRef camelCase = (%q, %q, %q, %v)", pid, tid, rid, err)
-	}
-}
-
-func TestVPNRouteIDsFromRef_URIRef_KebabCase(t *testing.T) {
-	ref := URI("/projects/p/network/vpn-tunnels/t-1/vpn-routes/r-1")
-	pid, tid, rid, err := vpnRouteIDsFromRef(ref)
-	if err != nil || pid != "p" || tid != "t-1" || rid != "r-1" {
-		t.Errorf("vpnRouteIDsFromRef kebab = (%q, %q, %q, %v)", pid, tid, rid, err)
 	}
 }
 
@@ -797,16 +756,16 @@ func TestVPNRoutesClientAdapter_List_NonTwoXX(t *testing.T) {
 }
 
 func TestVPNRouteIDsFromRef_BadURI_MissingTunnelID(t *testing.T) {
-	// URI has vpn-routes but no vpn-tunnels segment
-	_, _, _, err := vpnRouteIDsFromRef(URI("/projects/p/vpn-routes/route"))
+	// URI has vpnRoutes but no vpnTunnels segment
+	_, _, _, err := vpnRouteIDsFromRef(URI("/projects/p/vpnRoutes/route"))
 	if err == nil {
 		t.Error("expected error for URI without vpn tunnel segment")
 	}
 }
 
 func TestVPNRouteIDsFromRef_BadURI_MissingProjectID(t *testing.T) {
-	// URI has vpn-routes+vpn-tunnels but no projects
-	_, _, _, err := vpnRouteIDsFromRef(URI("/providers/Aruba.Network/vpn-tunnels/t/vpn-routes/route"))
+	// URI has vpnRoutes+vpnTunnels but no projects
+	_, _, _, err := vpnRouteIDsFromRef(URI("/providers/Aruba.Network/vpnTunnels/t/vpnRoutes/route"))
 	if err == nil {
 		t.Error("expected error for URI without /projects/<id>")
 	}
@@ -858,7 +817,7 @@ func TestVPNRoutesClientAdapter_Get_TransportError(t *testing.T) {
 	})
 	adapter := newVPNRoutesClientAdapter(testutil.NewClient(t, server.URL))
 	result, err := adapter.Get(context.Background(),
-		URI("/projects/p/providers/Aruba.Network/vpn-tunnels/t/vpn-routes/r"))
+		URI("/projects/p/providers/Aruba.Network/vpnTunnels/t/vpnRoutes/r"))
 	if err == nil {
 		t.Fatal("expected transport error")
 	}
@@ -913,7 +872,7 @@ func TestVPNRoutesClientAdapter_Delete_TransportError(t *testing.T) {
 	})
 	adapter := newVPNRoutesClientAdapter(testutil.NewClient(t, server.URL))
 	err := adapter.Delete(context.Background(),
-		URI("/projects/p/providers/Aruba.Network/vpn-tunnels/t/vpn-routes/r"))
+		URI("/projects/p/providers/Aruba.Network/vpnTunnels/t/vpnRoutes/r"))
 	if err == nil {
 		t.Fatal("expected transport error")
 	}
@@ -946,7 +905,7 @@ func TestVPNRoutesClientAdapter_List_TransportError(t *testing.T) {
 	})
 	adapter := newVPNRoutesClientAdapter(testutil.NewClient(t, server.URL))
 	_, err := adapter.List(context.Background(),
-		URI("/projects/p/providers/Aruba.Network/vpn-tunnels/t"))
+		URI("/projects/p/providers/Aruba.Network/vpnTunnels/t"))
 	if err == nil {
 		t.Fatal("expected transport error")
 	}
@@ -963,7 +922,7 @@ func TestVPNRoutesClientAdapter_List_AncestorIDBackfill(t *testing.T) {
 	})
 
 	list, err := adapter.List(context.Background(),
-		URI("/projects/proj-x/providers/Aruba.Network/vpn-tunnels/tunnel-x"))
+		URI("/projects/proj-x/providers/Aruba.Network/vpnTunnels/tunnel-x"))
 	if err != nil {
 		t.Fatalf("List error: %v", err)
 	}

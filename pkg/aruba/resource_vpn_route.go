@@ -145,12 +145,7 @@ func (r *VPNRoute) fromResponse(resp *types.VPNRouteResponse) {
 			r.projectID = ids["projects"]
 		}
 		if r.vpnTunnelID == "" {
-			// Production URI uses "vpnTunnels"; mixin/test form uses "vpn-tunnels".
-			if v := ids["vpnTunnels"]; v != "" {
-				r.vpnTunnelID = v
-			} else {
-				r.vpnTunnelID = ids["vpn-tunnels"]
-			}
+			r.vpnTunnelID = ids["vpnTunnels"]
 		}
 	}
 }
@@ -424,20 +419,13 @@ func (a *vpnRoutesClientAdapter) List(ctx context.Context, tunnel Ref, opts ...C
 }
 
 // vpnRouteIDsFromRef extracts (projectID, vpnTunnelID, vpnRouteID) from a Ref.
-// Accepts camelCase segments ("vpnTunnels", "vpnRoutes") and kebab-case forms.
 func vpnRouteIDsFromRef(ref Ref) (projectID, vpnTunnelID, vpnRouteID string, err error) {
 	rid, ok := extractID(ref, func(r Ref) (string, bool) {
 		if w, ok := r.(withVPNRouteID); ok {
 			return w.VPNRouteID(), true
 		}
 		return "", false
-	}, "vpn-routes")
-	if !ok {
-		if v := parseURIIDs(ref.URI())["vpnRoutes"]; v != "" {
-			rid = v
-			ok = true
-		}
-	}
+	}, "vpnRoutes")
 	if !ok || rid == "" {
 		return "", "", "", fmt.Errorf("cannot determine VPN route ID from Ref %q", ref.URI())
 	}
@@ -446,13 +434,7 @@ func vpnRouteIDsFromRef(ref Ref) (projectID, vpnTunnelID, vpnRouteID string, err
 			return w.VPNTunnelID(), true
 		}
 		return "", false
-	}, "vpn-tunnels")
-	if !ok {
-		if v := parseURIIDs(ref.URI())["vpnTunnels"]; v != "" {
-			tid = v
-			ok = true
-		}
-	}
+	}, "vpnTunnels")
 	if !ok || tid == "" {
 		return "", "", "", fmt.Errorf("cannot determine VPN tunnel ID from Ref %q", ref.URI())
 	}

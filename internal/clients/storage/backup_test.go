@@ -17,7 +17,7 @@ func TestListBackups(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, `{"total":1,"values":[{"metadata":{"name":"test-backup"},"properties":{"type":"Full","sourceVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/volume-123"},"retentionDays":10,"billingPeriod":"Monthly"},"status":{"state":"active"}}]}`)
+			fmt.Fprint(w, `{"total":1,"values":[{"metadata":{"name":"test-backup"},"properties":{"type":"Full","sourceVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockStorages/volume-123"},"retentionDays":10,"billingPeriod":"Monthly"},"status":{"state":"active"}}]}`)
 		})
 		c := testutil.NewClient(t, server.URL)
 		svc := NewBackupClientImpl(c)
@@ -122,7 +122,7 @@ func TestGetBackup(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, `{"metadata":{"name":"test-backup","id":"backup-123"},"properties":{"type":"Full","sourceVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/volume-123"},"retentionDays":10,"billingPeriod":"Monthly"},"status":{"state":"active"}}`)
+			fmt.Fprint(w, `{"metadata":{"name":"test-backup","id":"backup-123"},"properties":{"type":"Full","sourceVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockStorages/volume-123"},"retentionDays":10,"billingPeriod":"Monthly"},"status":{"state":"active"}}`)
 		})
 		c := testutil.NewClient(t, server.URL)
 		svc := NewBackupClientImpl(c)
@@ -236,7 +236,7 @@ func TestCreateBackup(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"metadata":{"name":"new-backup","id":"backup-456","uri":"/projects/test-project/providers/Aruba.Storage/backups/backup-456"},"properties":{"type":"Full","sourceVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/volume-456"},"retentionDays":20,"billingPeriod":"Yearly"},"status":{"state":"creating"}}`)
+			fmt.Fprint(w, `{"metadata":{"name":"new-backup","id":"backup-456","uri":"/projects/test-project/providers/Aruba.Storage/backups/backup-456"},"properties":{"type":"Full","sourceVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockStorages/volume-456"},"retentionDays":20,"billingPeriod":"Yearly"},"status":{"state":"creating"}}`)
 		})
 		c := testutil.NewClient(t, server.URL)
 		svc := NewBackupClientImpl(c)
@@ -246,7 +246,7 @@ func TestCreateBackup(t *testing.T) {
 			},
 			Properties: types.StorageBackupPropertiesRequest{
 				StorageBackupType: types.StorageBackupTypeFull,
-				Origin:            types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/volume-456"},
+				Origin:            types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockStorages/volume-456"},
 				RetentionDays:     ptr.To(20),
 				BillingPeriod:     (*types.BillingPeriod)(ptr.To("Yearly")),
 			},
@@ -402,7 +402,7 @@ func TestUpdateBackup(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, `{"metadata":{"name":"updated-backup","id":"backup-123"},"properties":{"type":"Incremental","sourceVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/volume-123"},"retentionDays":30,"billingPeriod":"Monthly"},"status":{"state":"updating"}}`)
+			fmt.Fprint(w, `{"metadata":{"name":"updated-backup","id":"backup-123"},"properties":{"type":"Incremental","sourceVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockStorages/volume-123"},"retentionDays":30,"billingPeriod":"Monthly"},"status":{"state":"updating"}}`)
 		})
 		c := testutil.NewClient(t, server.URL)
 		svc := NewBackupClientImpl(c)
@@ -412,7 +412,7 @@ func TestUpdateBackup(t *testing.T) {
 			},
 			Properties: types.StorageBackupPropertiesRequest{
 				StorageBackupType: types.StorageBackupTypeIncremental,
-				Origin:            types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/volume-123"},
+				Origin:            types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockStorages/volume-123"},
 				RetentionDays:     ptr.To(30),
 				BillingPeriod:     (*types.BillingPeriod)(ptr.To("Monthly")),
 			},

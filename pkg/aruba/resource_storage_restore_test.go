@@ -33,7 +33,7 @@ func TestStorageRestore_FluentSetters(t *testing.T) {
 		AddTag("storage").
 		AddTag("restore"). // dedupe
 		InRegion(RegionITBGBergamo).
-		ToVolume(URI("/projects/p/providers/Aruba.Storage/blockstorages/bs-1"))
+		ToVolume(URI("/projects/p/providers/Aruba.Storage/blockStorages/bs-1"))
 
 	if r.Name() != "my-restore" {
 		t.Errorf("Name() = %q", r.Name())
@@ -44,7 +44,7 @@ func TestStorageRestore_FluentSetters(t *testing.T) {
 	if r.Region() != RegionITBGBergamo {
 		t.Errorf("Region() = %q", r.Region())
 	}
-	if r.TargetURI() != "/projects/p/providers/Aruba.Storage/blockstorages/bs-1" {
+	if r.TargetURI() != "/projects/p/providers/Aruba.Storage/blockStorages/bs-1" {
 		t.Errorf("TargetURI() = %q", r.TargetURI())
 	}
 	if r.BackupID() != "bkp-1" {
@@ -113,7 +113,7 @@ func TestStorageRestore_IntoBackup_BadRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestStorageRestore_ToVolume_URIRef(t *testing.T) {
-	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
+	volURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"
 	r := NewStorageRestore().ToVolume(URI(volURI))
 	if r.TargetURI() != volURI {
 		t.Errorf("TargetURI() = %q", r.TargetURI())
@@ -125,7 +125,7 @@ func TestStorageRestore_ToVolume_URIRef(t *testing.T) {
 
 func TestStorageRestore_ToVolume_TypedRef(t *testing.T) {
 	bs := &BlockStorage{}
-	bs.fromResponse(blockStorageTestResponse("bs-42", "n", "/projects/p/providers/Aruba.Storage/blockstorages/bs-42", "p"))
+	bs.fromResponse(blockStorageTestResponse("bs-42", "n", "/projects/p/providers/Aruba.Storage/blockStorages/bs-42", "p"))
 
 	r := NewStorageRestore().ToVolume(bs)
 	if r.TargetURI() != bs.URI() {
@@ -151,7 +151,7 @@ func TestStorageRestore_ToVolume_EmptyURI(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestStorageRestore_ToRequestRoundTrip(t *testing.T) {
-	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
+	volURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"
 	r := NewStorageRestore().Named(
 		"rt-restore").
 		AddTag("t1").AddTag("t2").
@@ -209,7 +209,7 @@ func storageRestoreTestResponse(id, name, uri, targetURI string) *types.StorageR
 }
 
 func TestStorageRestore_FromResponseHydration(t *testing.T) {
-	targetURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
+	targetURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"
 	r := &StorageRestore{}
 	r.backupID = "bkp-1" // pre-set to simulate IntoBackup
 	resp := storageRestoreTestResponse("r-1", "my-restore", "/projects/p/providers/Aruba.Storage/backups/bkp-1/restores/r-1", targetURI)
@@ -287,7 +287,7 @@ func TestStorageRestore_FromResponse_NilSafe(t *testing.T) {
 
 func TestStorageRestore_RefSatisfaction(t *testing.T) {
 	r := &StorageRestore{}
-	r.fromResponse(storageRestoreTestResponse("r-99", "n", "/projects/p99/providers/Aruba.Storage/backups/bkp-99/restores/r-99", "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"))
+	r.fromResponse(storageRestoreTestResponse("r-99", "n", "/projects/p99/providers/Aruba.Storage/backups/bkp-99/restores/r-99", "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"))
 
 	// withRestoreID typed path
 	rid, ok := extractID(r, func(ref Ref) (string, bool) {
@@ -412,7 +412,7 @@ func buildStorageRestoresTestAdapter(t *testing.T, handler http.HandlerFunc) *st
 
 const storageRestoreSuccessBody = `{` +
 	`"metadata":{"id":"r-1","name":"my-restore","uri":"/projects/p/providers/Aruba.Storage/backups/bkp-1/restores/r-1"},` +
-	`"properties":{"destinationVolume":{"uri":"/projects/p/providers/Aruba.Storage/blockstorages/bs-1"}},` +
+	`"properties":{"destinationVolume":{"uri":"/projects/p/providers/Aruba.Storage/blockStorages/bs-1"}},` +
 	`"status":{"state":"Active"}}`
 
 func TestStorageRestoresClientAdapter_Create_Success(t *testing.T) {
@@ -436,7 +436,7 @@ func TestStorageRestoresClientAdapter_Create_Success(t *testing.T) {
 		IntoBackup(bkp).
 		Named("my-restore").
 		InRegion(RegionITBGBergamo).
-		ToVolume(URI("/projects/p/providers/Aruba.Storage/blockstorages/bs-1"))
+		ToVolume(URI("/projects/p/providers/Aruba.Storage/blockStorages/bs-1"))
 
 	result, err := adapter.Create(context.Background(), r)
 	if err != nil {
@@ -454,7 +454,7 @@ func TestStorageRestoresClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "my-restore" {
 		t.Errorf("request Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Properties.Target.URI != "/projects/p/providers/Aruba.Storage/blockstorages/bs-1" {
+	if gotBody.Properties.Target.URI != "/projects/p/providers/Aruba.Storage/blockStorages/bs-1" {
 		t.Errorf("request Target.URI = %q", gotBody.Properties.Target.URI)
 	}
 }
@@ -600,7 +600,7 @@ func TestStorageRestoresClientAdapter_Get_TypedRef(t *testing.T) {
 }
 
 func TestStorageRestoresClientAdapter_Update_Success(t *testing.T) {
-	targetURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-new"
+	targetURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-new"
 	var capturedBody types.StorageRestoreRequest
 
 	respBody := storageRestoreTestResponse("r-1", "my-restore", "/projects/p/providers/Aruba.Storage/backups/bkp-1/restores/r-1", targetURI)
@@ -618,7 +618,7 @@ func TestStorageRestoresClientAdapter_Update_Success(t *testing.T) {
 	adapter := &storageRestoresClientAdapter{low: fake}
 
 	r := &StorageRestore{}
-	r.fromResponse(storageRestoreTestResponse("r-1", "my-restore", "/projects/p/providers/Aruba.Storage/backups/bkp-1/restores/r-1", "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"))
+	r.fromResponse(storageRestoreTestResponse("r-1", "my-restore", "/projects/p/providers/Aruba.Storage/backups/bkp-1/restores/r-1", "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"))
 	r.backupID = "bkp-1"
 	r.projectID = "p"
 	r.ToVolume(URI(targetURI))
@@ -770,7 +770,7 @@ func TestStorageRestoresClientAdapter_Get_NonTwoXX(t *testing.T) {
 }
 
 func TestStorageRestoresClientAdapter_Update_NonTwoXX(t *testing.T) {
-	targetURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-new"
+	targetURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-new"
 	fake := &fakeStorageRestoreLowLevel{
 		updateFunc: func(_ context.Context, _, _, _ string, _ types.StorageRestoreRequest, _ *types.RequestParameters) (*types.Response[types.StorageRestoreResponse], error) {
 			return &types.Response[types.StorageRestoreResponse]{
@@ -867,8 +867,8 @@ func TestStorageRestoresClientAdapter_List_TwoItems(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
-			`{"metadata":{"id":"r-1","name":"n1","uri":"/projects/p/providers/Aruba.Storage/backups/bkp-1/restores/r-1"},"properties":{"destinationVolume":{"uri":"/projects/p/providers/Aruba.Storage/blockstorages/bs-1"}},"status":{}},`+
-			`{"metadata":{"id":"r-2","name":"n2","uri":"/projects/p/providers/Aruba.Storage/backups/bkp-1/restores/r-2"},"properties":{"destinationVolume":{"uri":"/projects/p/providers/Aruba.Storage/blockstorages/bs-2"}},"status":{}}`+
+			`{"metadata":{"id":"r-1","name":"n1","uri":"/projects/p/providers/Aruba.Storage/backups/bkp-1/restores/r-1"},"properties":{"destinationVolume":{"uri":"/projects/p/providers/Aruba.Storage/blockStorages/bs-1"}},"status":{}},`+
+			`{"metadata":{"id":"r-2","name":"n2","uri":"/projects/p/providers/Aruba.Storage/backups/bkp-1/restores/r-2"},"properties":{"destinationVolume":{"uri":"/projects/p/providers/Aruba.Storage/blockStorages/bs-2"}},"status":{}}`+
 			`]}`)
 	})
 
@@ -889,10 +889,10 @@ func TestStorageRestoresClientAdapter_List_TwoItems(t *testing.T) {
 	if items[0].ID() != "r-1" || items[0].Name() != "n1" {
 		t.Errorf("items[0] = {%q, %q}", items[0].ID(), items[0].Name())
 	}
-	if items[0].TargetURI() != "/projects/p/providers/Aruba.Storage/blockstorages/bs-1" {
+	if items[0].TargetURI() != "/projects/p/providers/Aruba.Storage/blockStorages/bs-1" {
 		t.Errorf("items[0].TargetURI() = %q", items[0].TargetURI())
 	}
-	if items[1].ID() != "r-2" || items[1].TargetURI() != "/projects/p/providers/Aruba.Storage/blockstorages/bs-2" {
+	if items[1].ID() != "r-2" || items[1].TargetURI() != "/projects/p/providers/Aruba.Storage/blockStorages/bs-2" {
 		t.Errorf("items[1] ID=%q TargetURI=%q", items[1].ID(), items[1].TargetURI())
 	}
 	if items[0].BackupID() != "bkp-1" {

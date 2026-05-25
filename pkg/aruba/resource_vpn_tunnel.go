@@ -526,7 +526,6 @@ func (a *vpnTunnelsClientAdapter) List(ctx context.Context, project Ref, opts ..
 }
 
 // vpnTunnelIDsFromRef extracts (projectID, vpnTunnelID) from a Ref.
-// Accepts the production camelCase segment "vpnTunnels" and the mixin/test form "vpn-tunnels".
 func vpnTunnelIDsFromRef(ref Ref) (projectID, vpnTunnelID string, err error) {
 	tid, ok := extractID(ref, func(r Ref) (string, bool) {
 		if w, ok := r.(withVPNTunnelID); ok {
@@ -534,12 +533,6 @@ func vpnTunnelIDsFromRef(ref Ref) (projectID, vpnTunnelID string, err error) {
 		}
 		return "", false
 	}, "vpnTunnels")
-	if !ok || tid == "" {
-		if v := parseURIIDs(ref.URI())["vpn-tunnels"]; v != "" {
-			tid = v
-			ok = true
-		}
-	}
 	if !ok || tid == "" {
 		return "", "", fmt.Errorf("cannot determine VPN tunnel ID from Ref %q", ref.URI())
 	}

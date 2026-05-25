@@ -24,6 +24,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- `SecurityGroupsClient.Get`/`Update`/`Delete` rejected every ref produced by
+  `aruba.SecurityGroupRef(...)` with `cannot determine security group ID from Ref "..."`,
+  because the lookup expected a hyphenated `security-groups` segment that the Ref never
+  emits and the live API never returns. The lookup now uses the documented `securityGroups`
+  segment as the single canonical form. (#297)
+
+### Changed
+
+- URI path segments across all Ref helpers, internal client paths, and ref-parsing helpers
+  now match the canonical casing documented at <https://api.arubacloud.com/docs/>. Affected
+  segments: `securityGroups` (was `securitygroups`), `securityRules` (was `securityrules`),
+  `loadBalancers` (was `loadbalancers`), `keyPairs` (was `keypairs`), `blockStorages` (was
+  `blockstorages`). The Aruba API is case-insensitive on path routing, so outgoing requests
+  behave identically; this is purely an alignment to the published API spec. Hyphenated
+  test-only fallbacks (`security-groups`, `security-rules`, `vpn-tunnels`, `peerings`) and
+  duplicate-form lookups have been removed — each resource now has a single canonical URI
+  segment.
+
+---
+
 ## [0.2.3] — 2026-05-22
 
 > **Minor release.** Adds `WaitUntilGone` teardown polling and a typed `State` API;

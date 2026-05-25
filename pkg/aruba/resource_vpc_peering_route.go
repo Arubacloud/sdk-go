@@ -180,13 +180,7 @@ func (r *VPCPeeringRoute) fromResponse(resp *types.VPCPeeringRouteResponse) {
 			r.projectID = ids["projects"]
 		}
 		if r.vpcPeeringID == "" {
-			// Production URI uses "vpcPeerings"; mixin/test URIs use "peerings".
-			if v := ids["vpcPeerings"]; v != "" {
-				r.vpcPeeringID = v
-			}
-			if r.vpcPeeringID == "" {
-				r.vpcPeeringID = ids["peerings"]
-			}
+			r.vpcPeeringID = ids["vpcPeerings"]
 		}
 	}
 }
@@ -469,21 +463,13 @@ func (a *vpcPeeringRoutesClientAdapter) List(ctx context.Context, peering Ref, o
 }
 
 // vpcPeeringRouteIDsFromRef extracts (projectID, vpcID, vpcPeeringID, vpcPeeringRouteID) from a Ref.
-// Accepts the production camelCase segment "vpcPeeringRoutes" and the test form "vpc-peering-routes".
-// For the peering parent, accepts both "vpcPeerings" and "peerings".
 func vpcPeeringRouteIDsFromRef(ref Ref) (projectID, vpcID, vpcPeeringID, vpcPeeringRouteID string, err error) {
 	rid, ok := extractID(ref, func(r Ref) (string, bool) {
 		if w, ok := r.(withVPCPeeringRouteID); ok {
 			return w.VPCPeeringRouteID(), true
 		}
 		return "", false
-	}, "vpc-peering-routes")
-	if !ok {
-		if v := parseURIIDs(ref.URI())["vpcPeeringRoutes"]; v != "" {
-			rid = v
-			ok = true
-		}
-	}
+	}, "vpcPeeringRoutes")
 	if !ok {
 		return "", "", "", "", fmt.Errorf("cannot determine VPC peering route ID from Ref %q", ref.URI())
 	}
@@ -492,17 +478,7 @@ func vpcPeeringRouteIDsFromRef(ref Ref) (projectID, vpcID, vpcPeeringID, vpcPeer
 			return w.VPCPeeringID(), true
 		}
 		return "", false
-	}, "vpc-peerings")
-	if !ok {
-		m := parseURIIDs(ref.URI())
-		if v := m["vpcPeerings"]; v != "" {
-			pid = v
-			ok = true
-		} else if v := m["peerings"]; v != "" {
-			pid = v
-			ok = true
-		}
-	}
+	}, "vpcPeerings")
 	if !ok {
 		return "", "", "", "", fmt.Errorf("cannot determine VPC peering ID from Ref %q", ref.URI())
 	}

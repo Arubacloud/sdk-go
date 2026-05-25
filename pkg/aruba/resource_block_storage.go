@@ -564,7 +564,7 @@ func blockStorageIDsFromRef(ref Ref) (projectID, blockStorageID string, err erro
 			return w.BlockStorageID(), true
 		}
 		return "", false
-	}, "blockstorages")
+	}, "blockStorages")
 	if !ok || bid == "" {
 		return "", "", fmt.Errorf("cannot determine BlockStorage ID from Ref %q", ref.URI())
 	}

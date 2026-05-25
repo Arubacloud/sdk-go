@@ -111,7 +111,7 @@ func (p typedSGParent) SecurityGroupID() string { return p.sgID }
 func (p typedSGParent) VPCID() string           { return p.vpcID }
 func (p typedSGParent) ProjectID() string       { return p.projectID }
 func (p typedSGParent) URI() string {
-	return "/projects/" + p.projectID + "/network/vpcs/" + p.vpcID + "/security-groups/" + p.sgID
+	return "/projects/" + p.projectID + "/providers/Aruba.Network/vpcs/" + p.vpcID + "/securityGroups/" + p.sgID
 }
 func (p typedSGParent) ID() string { return p.sgID }
 
@@ -137,7 +137,7 @@ func TestSecurityGroupScopedMixin_TypedRef(t *testing.T) {
 func TestSecurityGroupScopedMixin_URIFallback(t *testing.T) {
 	errs := &errMixin{}
 	m := bindSecurityGroupScoped(errs)
-	m.intoSecurityGroup(URI("/projects/proj-2/network/vpcs/vpc-2/security-groups/sg-2"))
+	m.intoSecurityGroup(URI("/projects/proj-2/providers/Aruba.Network/vpcs/vpc-2/securityGroups/sg-2"))
 
 	if m.SecurityGroupID() != "sg-2" || m.VPCID() != "vpc-2" || m.ProjectID() != "proj-2" {
 		t.Errorf("got sg=%q vpc=%q proj=%q", m.SecurityGroupID(), m.VPCID(), m.ProjectID())
@@ -210,7 +210,7 @@ func TestKMSScopedMixin_URIFallback(t *testing.T) {
 func TestVPNTunnelScopedMixin_URIFallback(t *testing.T) {
 	errs := &errMixin{}
 	m := bindVPNTunnelScoped(errs)
-	m.intoVPNTunnel(URI("/projects/proj-1/network/vpn-tunnels/t-1"))
+	m.intoVPNTunnel(URI("/projects/proj-1/providers/Aruba.Network/vpnTunnels/t-1"))
 
 	if m.VPNTunnelID() != "t-1" || m.ProjectID() != "proj-1" {
 		t.Errorf("got tunnel=%q proj=%q", m.VPNTunnelID(), m.ProjectID())
@@ -237,7 +237,7 @@ func TestVPNTunnelScopedMixin_URIFallback_CamelCase(t *testing.T) {
 func TestVPCPeeringScopedMixin_URIFallback(t *testing.T) {
 	errs := &errMixin{}
 	m := bindVPCPeeringScoped(errs)
-	m.intoVPCPeering(URI("/projects/proj-1/network/vpcs/vpc-1/peerings/peer-1"))
+	m.intoVPCPeering(URI("/projects/proj-1/providers/Aruba.Network/vpcs/vpc-1/vpcPeerings/peer-1"))
 
 	if m.VPCPeeringID() != "peer-1" || m.VPCID() != "vpc-1" || m.ProjectID() != "proj-1" {
 		t.Errorf("got peering=%q vpc=%q proj=%q", m.VPCPeeringID(), m.VPCID(), m.ProjectID())

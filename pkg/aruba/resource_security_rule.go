@@ -11,7 +11,7 @@ import (
 
 // SecurityRuleRef returns a Ref that points to the SecurityRule nested under a SecurityGroup.
 func SecurityRuleRef(projectID, vpcID, sgID, ruleID string) Ref {
-	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/vpcs/%s/securitygroups/%s/securityrules/%s", projectID, vpcID, sgID, ruleID))
+	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/vpcs/%s/securityGroups/%s/securityRules/%s", projectID, vpcID, sgID, ruleID))
 }
 
 // ---- Wrapper ----
@@ -239,13 +239,7 @@ func (r *SecurityRule) fromResponse(resp *types.SecurityRuleResponse) {
 			r.projectID = ids["projects"]
 		}
 		if r.securityGroupID == "" {
-			// Production URI uses "securitygroups"; wrapper-test URIs use "security-groups".
-			if v := ids["securitygroups"]; v != "" {
-				r.securityGroupID = v
-			}
-			if r.securityGroupID == "" {
-				r.securityGroupID = ids["security-groups"]
-			}
+			r.securityGroupID = ids["securityGroups"]
 		}
 	}
 }
@@ -534,21 +528,14 @@ func (a *securityRulesClientAdapter) List(ctx context.Context, sg Ref, opts ...C
 }
 
 // securityRuleIDsFromRef extracts (projectID, vpcID, securityGroupID, securityRuleID) from a Ref.
-// Tries typed assertions first, then falls back to URI path parsing (both hyphenated and no-hyphen forms).
+// Tries typed assertions first, then falls back to URI path parsing.
 func securityRuleIDsFromRef(ref Ref) (projectID, vpcID, securityGroupID, securityRuleID string, err error) {
 	rid, ok := extractID(ref, func(r Ref) (string, bool) {
 		if w, ok := r.(withSecurityRuleID); ok {
 			return w.SecurityRuleID(), true
 		}
 		return "", false
-	}, "security-rules")
-	if !ok || rid == "" {
-		m := parseURIIDs(ref.URI())
-		if v := m["securityrules"]; v != "" {
-			rid = v
-			ok = true
-		}
-	}
+	}, "securityRules")
 	if !ok || rid == "" {
 		return "", "", "", "", fmt.Errorf("cannot determine security rule ID from Ref %q", ref.URI())
 	}
@@ -557,14 +544,7 @@ func securityRuleIDsFromRef(ref Ref) (projectID, vpcID, securityGroupID, securit
 			return w.SecurityGroupID(), true
 		}
 		return "", false
-	}, "security-groups")
-	if !ok || sgid == "" {
-		m := parseURIIDs(ref.URI())
-		if v := m["securitygroups"]; v != "" {
-			sgid = v
-			ok = true
-		}
-	}
+	}, "securityGroups")
 	if !ok || sgid == "" {
 		return "", "", "", "", fmt.Errorf("cannot determine security group ID from Ref %q", ref.URI())
 	}

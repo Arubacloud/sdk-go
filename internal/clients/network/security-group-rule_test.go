@@ -262,7 +262,7 @@ func TestCreateSecurityGroupRule(t *testing.T) {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"metadata":{"id":"rule-1","name":"my-rule","uri":"/projects/p/providers/Aruba.Network/vpcs/v/securitygroups/sg/securityrules/rule-1"}}`)
+			fmt.Fprint(w, `{"metadata":{"id":"rule-1","name":"my-rule","uri":"/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/rule-1"}}`)
 		})
 		c := testutil.NewClient(t, server.URL)
 		svc := NewSecurityGroupRulesClientImpl(c, NewSecurityGroupsClientImpl(c, NewVPCsClientImpl(c)))

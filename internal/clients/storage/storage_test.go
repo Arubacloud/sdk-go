@@ -731,7 +731,7 @@ func TestGetSnapshot(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, `{"metadata":{"name":"my-snapshot","id":"snap-123"},"properties":{"sizeGb":150,"billingPeriod":"Hour","dataCenter":"it-eur-1","type":"Performance","volume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/vol-123","name":"source-volume"}},"status":{"state":"available"}}`)
+			fmt.Fprint(w, `{"metadata":{"name":"my-snapshot","id":"snap-123"},"properties":{"sizeGb":150,"billingPeriod":"Hour","dataCenter":"it-eur-1","type":"Performance","volume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockStorages/vol-123","name":"source-volume"}},"status":{"state":"available"}}`)
 		})
 		svc := newSnapshotSvc(t, server.URL)
 		resp, err := svc.Get(context.Background(), "test-project", "snap-123", nil)

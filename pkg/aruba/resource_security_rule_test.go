@@ -25,7 +25,7 @@ var _ Ref = (*SecurityRule)(nil)
 
 func TestSecurityRule_FluentSetters(t *testing.T) {
 	sg := &SecurityGroup{}
-	sg.fromResponse(securityGroupTestResponse("sg-1", "my-sg", "/projects/p1/network/vpcs/v1/security-groups/sg-1", "p1"))
+	sg.fromResponse(securityGroupTestResponse("sg-1", "my-sg", "/projects/p1/providers/Aruba.Network/vpcs/v1/securityGroups/sg-1", "p1"))
 
 	rule := NewSecurityRule().
 		IntoSecurityGroup(sg).
@@ -93,7 +93,7 @@ func TestSecurityRule_FluentSetters(t *testing.T) {
 
 func TestSecurityRule_IntoSecurityGroup_TypedRef(t *testing.T) {
 	sg := &SecurityGroup{}
-	sg.fromResponse(securityGroupTestResponse("sg-1", "my-sg", "/projects/p1/network/vpcs/v1/security-groups/sg-1", "p1"))
+	sg.fromResponse(securityGroupTestResponse("sg-1", "my-sg", "/projects/p1/providers/Aruba.Network/vpcs/v1/securityGroups/sg-1", "p1"))
 
 	rule := NewSecurityRule().IntoSecurityGroup(sg)
 
@@ -116,7 +116,7 @@ func TestSecurityRule_IntoSecurityGroup_TypedRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestSecurityRule_IntoSecurityGroup_URIRef(t *testing.T) {
-	rule := NewSecurityRule().IntoSecurityGroup(URI("/projects/p/network/vpcs/v/security-groups/sg"))
+	rule := NewSecurityRule().IntoSecurityGroup(URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg"))
 
 	if rule.SecurityGroupID() != "sg" {
 		t.Errorf("SecurityGroupID() = %q", rule.SecurityGroupID())
@@ -148,7 +148,7 @@ func TestSecurityRule_IntoSecurityGroup_BadRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestSecurityRule_TargetMutuallyExclusive_CIDRThenSG(t *testing.T) {
-	otherSG := URI("/projects/p/network/vpcs/v/security-groups/sg-other")
+	otherSG := URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg-other")
 	rule := NewSecurityRule().
 		WithTargetCIDR("10.0.0.0/8").
 		WithTargetSecurityGroup(otherSG)
@@ -166,7 +166,7 @@ func TestSecurityRule_TargetMutuallyExclusive_CIDRThenSG(t *testing.T) {
 }
 
 func TestSecurityRule_TargetMutuallyExclusive_SGThenCIDR(t *testing.T) {
-	otherSG := URI("/projects/p/network/vpcs/v/security-groups/sg-other")
+	otherSG := URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg-other")
 	rule := NewSecurityRule().
 		WithTargetSecurityGroup(otherSG).
 		WithTargetCIDR("10.0.0.0/8")
@@ -279,7 +279,7 @@ func TestSecurityRule_FromResponseHydration(t *testing.T) {
 	resp := securityRuleTestResponse(
 		"r-1",
 		"allow-ssh",
-		"/projects/p1/providers/Aruba.Network/vpcs/v1/securitygroups/sg-1/securityrules/r-1",
+		"/projects/p1/providers/Aruba.Network/vpcs/v1/securityGroups/sg-1/securityRules/r-1",
 		"p1",
 	)
 	rule := &SecurityRule{}
@@ -353,7 +353,7 @@ func TestSecurityRule_FromResponsePartial(t *testing.T) {
 }
 
 func TestSecurityRule_FromResponseURIBackfill_HyphenForm(t *testing.T) {
-	uri := "/projects/p2/network/vpcs/v2/security-groups/sg-2/security-rules/r-2"
+	uri := "/projects/p2/providers/Aruba.Network/vpcs/v2/securityGroups/sg-2/securityRules/r-2"
 	id := "r-2"
 	name := "rule-uri"
 	resp := &types.SecurityRuleResponse{
@@ -386,7 +386,7 @@ func TestSecurityRule_RefSatisfaction(t *testing.T) {
 	rule.fromResponse(securityRuleTestResponse(
 		"r-99",
 		"n",
-		"/projects/p99/network/vpcs/v99/security-groups/sg-99/security-rules/r-99",
+		"/projects/p99/providers/Aruba.Network/vpcs/v99/securityGroups/sg-99/securityRules/r-99",
 		"p99",
 	))
 
@@ -395,7 +395,7 @@ func TestSecurityRule_RefSatisfaction(t *testing.T) {
 			return w.SecurityRuleID(), true
 		}
 		return "", false
-	}, "security-rules")
+	}, "securityRules")
 	if !ok || sid != "r-99" {
 		t.Errorf("extractID via withSecurityRuleID = (%q, %v)", sid, ok)
 	}
@@ -405,7 +405,7 @@ func TestSecurityRule_RefSatisfaction(t *testing.T) {
 			return w.SecurityGroupID(), true
 		}
 		return "", false
-	}, "security-groups")
+	}, "securityGroups")
 	if !ok || sgid != "sg-99" {
 		t.Errorf("extractID via withSecurityGroupID = (%q, %v)", sgid, ok)
 	}
@@ -440,7 +440,7 @@ func TestSecurityRuleIDsFromRef_TypedRef(t *testing.T) {
 	rule.fromResponse(securityRuleTestResponse(
 		"r-1",
 		"n",
-		"/projects/p/network/vpcs/v/security-groups/sg/security-rules/r-1",
+		"/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r-1",
 		"p",
 	))
 	pid, vid, sgid, rid, err := securityRuleIDsFromRef(rule)
@@ -450,7 +450,7 @@ func TestSecurityRuleIDsFromRef_TypedRef(t *testing.T) {
 }
 
 func TestSecurityRuleIDsFromRef_URIRef_APIForm(t *testing.T) {
-	ref := URI("/projects/p/providers/Aruba.Network/vpcs/v/securitygroups/sg/securityrules/r")
+	ref := URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r")
 	pid, vid, sgid, rid, err := securityRuleIDsFromRef(ref)
 	if err != nil || pid != "p" || vid != "v" || sgid != "sg" || rid != "r" {
 		t.Errorf("securityRuleIDsFromRef API form = (%q, %q, %q, %q, %v)", pid, vid, sgid, rid, err)
@@ -458,7 +458,7 @@ func TestSecurityRuleIDsFromRef_URIRef_APIForm(t *testing.T) {
 }
 
 func TestSecurityRuleIDsFromRef_URIRef_HyphenForm(t *testing.T) {
-	ref := URI("/projects/p/network/vpcs/v/security-groups/sg/security-rules/r")
+	ref := URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r")
 	pid, vid, sgid, rid, err := securityRuleIDsFromRef(ref)
 	if err != nil || pid != "p" || vid != "v" || sgid != "sg" || rid != "r" {
 		t.Errorf("securityRuleIDsFromRef hyphen form = (%q, %q, %q, %q, %v)", pid, vid, sgid, rid, err)
@@ -466,7 +466,7 @@ func TestSecurityRuleIDsFromRef_URIRef_HyphenForm(t *testing.T) {
 }
 
 func TestSecurityRuleIDsFromRef_BadURI_MissingRule(t *testing.T) {
-	_, _, _, _, err := securityRuleIDsFromRef(URI("/projects/p/network/vpcs/v/security-groups/sg"))
+	_, _, _, _, err := securityRuleIDsFromRef(URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg"))
 	if err == nil {
 		t.Error("expected error for URI without rule segment")
 	}
@@ -490,7 +490,7 @@ func buildSecurityRuleTestAdapter(t *testing.T, handler http.HandlerFunc) *secur
 }
 
 const securityRuleSuccessBody = `{` +
-	`"metadata":{"id":"r-1","name":"allow-ssh","uri":"/projects/p/network/vpcs/v/securitygroups/sg/securityrules/r-1","project":{"id":"p"}},` +
+	`"metadata":{"id":"r-1","name":"allow-ssh","uri":"/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r-1","project":{"id":"p"}},` +
 	`"properties":{"direction":"Ingress","protocol":"TCP","port":"22","target":{"kind":"Ip","value":"0.0.0.0/0"}},` +
 	`"status":{"state":"Active"}}`
 
@@ -506,7 +506,7 @@ func TestSecurityGroupRulesClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	sg := &SecurityGroup{}
-	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securitygroups/sg", "p"))
+	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg", "p"))
 
 	rule := NewSecurityRule().
 		IntoSecurityGroup(sg).
@@ -560,11 +560,11 @@ func TestSecurityGroupRulesClientAdapter_Create_MetadataValidationError(t *testi
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		// Missing "id" field — triggers MetadataValidationError
-		fmt.Fprint(w, `{"metadata":{"name":"rule","uri":"/projects/p/network/vpcs/v/securitygroups/sg/securityrules/x"},"properties":{},"status":{}}`)
+		fmt.Fprint(w, `{"metadata":{"name":"rule","uri":"/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/x"},"properties":{},"status":{}}`)
 	})
 
 	sg := &SecurityGroup{}
-	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securitygroups/sg", "p"))
+	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg", "p"))
 
 	rule := NewSecurityRule().IntoSecurityGroup(sg).
 		Named("rule")
@@ -589,7 +589,7 @@ func TestSecurityGroupRulesClientAdapter_Create_NonTwoXX(t *testing.T) {
 	})
 
 	sg := &SecurityGroup{}
-	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securitygroups/sg", "p"))
+	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg", "p"))
 
 	rule := NewSecurityRule().IntoSecurityGroup(sg)
 	result, err := adapter.Create(context.Background(), rule)
@@ -617,7 +617,7 @@ func TestSecurityGroupRulesClientAdapter_Get_URIRef(t *testing.T) {
 		fmt.Fprint(w, securityRuleSuccessBody)
 	})
 
-	ref := URI("/projects/p/network/vpcs/v/securitygroups/sg/security-rules/r-1")
+	ref := URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r-1")
 	result, err := adapter.Get(context.Background(), ref)
 	if err != nil {
 		t.Fatalf("Get error: %v", err)
@@ -637,8 +637,8 @@ func TestSecurityGroupRulesClientAdapter_Get_URIRef(t *testing.T) {
 	if result.StatusCode() != http.StatusOK {
 		t.Errorf("StatusCode() = %d", result.StatusCode())
 	}
-	if !strings.Contains(capturedPath, "securityrules") {
-		t.Errorf("path = %q, expected securityrules segment", capturedPath)
+	if !strings.Contains(capturedPath, "securityRules") {
+		t.Errorf("path = %q, expected securityRules segment", capturedPath)
 	}
 }
 
@@ -653,7 +653,7 @@ func TestSecurityGroupRulesClientAdapter_Get_TypedRef(t *testing.T) {
 	existing.fromResponse(securityRuleTestResponse(
 		"r-1",
 		"allow-ssh",
-		"/projects/p/network/vpcs/v/security-groups/sg/security-rules/r-1",
+		"/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r-1",
 		"p",
 	))
 
@@ -672,14 +672,14 @@ func TestSecurityGroupRulesClientAdapter_Update_Success(t *testing.T) {
 		_ = json.NewDecoder(r.Body).Decode(&capturedBody)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, `{"metadata":{"id":"r-1","name":"allow-https","uri":"/projects/p/network/vpcs/v/securitygroups/sg/securityrules/r-1","project":{"id":"p"}},"properties":{"direction":"Ingress","protocol":"TCP","port":"443"},"status":{}}`)
+		fmt.Fprint(w, `{"metadata":{"id":"r-1","name":"allow-https","uri":"/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r-1","project":{"id":"p"}},"properties":{"direction":"Ingress","protocol":"TCP","port":"443"},"status":{}}`)
 	})
 
 	rule := &SecurityRule{}
 	rule.fromResponse(securityRuleTestResponse(
 		"r-1",
 		"allow-ssh",
-		"/projects/p/network/vpcs/v/security-groups/sg/security-rules/r-1",
+		"/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r-1",
 		"p",
 	))
 	rule.Named("allow-https").WithPort("443")
@@ -707,7 +707,7 @@ func TestSecurityGroupRulesClientAdapter_Update_NoID(t *testing.T) {
 	})
 
 	sg := &SecurityGroup{}
-	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/network/vpcs/v/securitygroups/sg", "p"))
+	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg", "p"))
 
 	rule := NewSecurityRule().IntoSecurityGroup(sg).
 		Named("x")
@@ -767,7 +767,7 @@ func TestSecurityGroupRulesClientAdapter_Delete_Success(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	err := adapter.Delete(context.Background(), URI("/projects/p/network/vpcs/v/securitygroups/sg/securityrules/r-1"))
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r-1"))
 	if err != nil {
 		t.Fatalf("Delete error: %v", err)
 	}
@@ -780,7 +780,7 @@ func TestSecurityGroupRulesClientAdapter_Delete_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "security rule not found", 404))
 	})
 
-	err := adapter.Delete(context.Background(), URI("/projects/p/network/vpcs/v/securitygroups/sg/securityrules/missing"))
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/missing"))
 	if err == nil {
 		t.Fatal("expected error on 404")
 	}
@@ -831,7 +831,7 @@ func TestSecurityGroupRulesClientAdapter_Get_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "security rule not found", 404))
 	})
 
-	ref := URI("/projects/p/network/vpcs/v/securitygroups/sg/securityrules/missing")
+	ref := URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/missing")
 	result, err := adapter.Get(context.Background(), ref)
 	if err == nil {
 		t.Fatal("expected error on 404")
@@ -859,7 +859,7 @@ func TestSecurityGroupRulesClientAdapter_Update_NonTwoXX(t *testing.T) {
 	rule.fromResponse(securityRuleTestResponse(
 		"r-1",
 		"allow-ssh",
-		"/projects/p/network/vpcs/v/security-groups/sg/security-rules/r-1",
+		"/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r-1",
 		"p",
 	))
 	_, err := adapter.Update(context.Background(), rule)
@@ -876,7 +876,7 @@ func TestSecurityGroupRulesClientAdapter_List_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Forbidden", "access denied", 403))
 	})
 
-	sg := URI("/projects/p/network/vpcs/v/security-groups/sg")
+	sg := URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg")
 	_, err := adapter.List(context.Background(), sg)
 	var httpErr *HTTPError
 	if !errors.As(err, &httpErr) {
@@ -888,8 +888,8 @@ func TestSecurityGroupRulesClientAdapter_List_NonTwoXX(t *testing.T) {
 }
 
 func TestSecurityRuleIDsFromRef_BadURI_MissingSecurityGroup(t *testing.T) {
-	// URI has security-rules but no security-groups segment
-	_, _, _, _, err := securityRuleIDsFromRef(URI("/projects/p/network/vpcs/v/security-rules/r"))
+	// URI has securityRules but no securityGroups segment
+	_, _, _, _, err := securityRuleIDsFromRef(URI("/projects/p/providers/Aruba.Network/vpcs/v/securityRules/r"))
 	if err == nil {
 		t.Error("expected error for URI without security group segment")
 	}
@@ -897,7 +897,7 @@ func TestSecurityRuleIDsFromRef_BadURI_MissingSecurityGroup(t *testing.T) {
 
 func TestSecurityRuleIDsFromRef_BadURI_MissingVPC(t *testing.T) {
 	// URI has rules+sg but no vpcs
-	_, _, _, _, err := securityRuleIDsFromRef(URI("/projects/p/security-groups/sg/security-rules/r"))
+	_, _, _, _, err := securityRuleIDsFromRef(URI("/projects/p/securityGroups/sg/securityRules/r"))
 	if err == nil {
 		t.Error("expected error for URI without /vpcs/<id>")
 	}
@@ -905,7 +905,7 @@ func TestSecurityRuleIDsFromRef_BadURI_MissingVPC(t *testing.T) {
 
 func TestSecurityRuleIDsFromRef_BadURI_MissingProject(t *testing.T) {
 	// URI has rules+sg+vpcs but no projects
-	_, _, _, _, err := securityRuleIDsFromRef(URI("/providers/Aruba.Network/vpcs/v/security-groups/sg/security-rules/r"))
+	_, _, _, _, err := securityRuleIDsFromRef(URI("/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r"))
 	if err == nil {
 		t.Error("expected error for URI without /projects/<id>")
 	}
@@ -956,7 +956,7 @@ func TestSecurityGroupRulesClientAdapter_Get_TransportError(t *testing.T) {
 		conn.Close()
 	})
 	adapter := newSecurityRulesClientAdapter(testutil.NewClient(t, server.URL))
-	result, err := adapter.Get(context.Background(), URI("/projects/p/network/vpcs/v/security-groups/sg/security-rules/r"))
+	result, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r"))
 	if err == nil {
 		t.Fatal("expected transport error")
 	}
@@ -991,7 +991,7 @@ func TestSecurityGroupRulesClientAdapter_Update_TransportError(t *testing.T) {
 	})
 	adapter := newSecurityRulesClientAdapter(testutil.NewClient(t, server.URL))
 	rule := &SecurityRule{}
-	rule.fromResponse(securityRuleTestResponse("r-1", "rule-a", "/projects/p/network/vpcs/v/securitygroups/sg/securityrules/r-1", "p"))
+	rule.fromResponse(securityRuleTestResponse("r-1", "rule-a", "/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r-1", "p"))
 	_, err := adapter.Update(context.Background(), rule)
 	if err == nil {
 		t.Fatal("expected transport error")
@@ -1009,7 +1009,7 @@ func TestSecurityGroupRulesClientAdapter_Delete_TransportError(t *testing.T) {
 		conn.Close()
 	})
 	adapter := newSecurityRulesClientAdapter(testutil.NewClient(t, server.URL))
-	err := adapter.Delete(context.Background(), URI("/projects/p/network/vpcs/v/security-groups/sg/security-rules/r"))
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r"))
 	if err == nil {
 		t.Fatal("expected transport error")
 	}
@@ -1041,7 +1041,7 @@ func TestSecurityGroupRulesClientAdapter_List_TransportError(t *testing.T) {
 		conn.Close()
 	})
 	adapter := newSecurityRulesClientAdapter(testutil.NewClient(t, server.URL))
-	_, err := adapter.List(context.Background(), URI("/projects/p/network/vpcs/v/security-groups/sg"))
+	_, err := adapter.List(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg"))
 	if err == nil {
 		t.Fatal("expected transport error")
 	}
@@ -1057,7 +1057,7 @@ func TestSecurityGroupRulesClientAdapter_List_AncestorIDBackfill(t *testing.T) {
 			`]}`)
 	})
 
-	list, err := adapter.List(context.Background(), URI("/projects/proj-x/network/vpcs/vpc-x/security-groups/sg-x"))
+	list, err := adapter.List(context.Background(), URI("/projects/proj-x/providers/Aruba.Network/vpcs/vpc-x/securityGroups/sg-x"))
 	if err != nil {
 		t.Fatalf("List error: %v", err)
 	}
@@ -1081,12 +1081,12 @@ func TestSecurityGroupRulesClientAdapter_List_TwoItems(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
-			`{"metadata":{"id":"r-1","name":"rule-a","uri":"/projects/p/network/vpcs/v/securitygroups/sg/securityrules/r-1","project":{"id":"p"}},"properties":{"direction":"Ingress","protocol":"TCP","port":"22"},"status":{"state":"Active"}},`+
-			`{"metadata":{"id":"r-2","name":"rule-b","uri":"/projects/p/network/vpcs/v/securitygroups/sg/securityrules/r-2","project":{"id":"p"}},"properties":{"direction":"Egress","protocol":"UDP","port":"53"},"status":{"state":"Active"}}`+
+			`{"metadata":{"id":"r-1","name":"rule-a","uri":"/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r-1","project":{"id":"p"}},"properties":{"direction":"Ingress","protocol":"TCP","port":"22"},"status":{"state":"Active"}},`+
+			`{"metadata":{"id":"r-2","name":"rule-b","uri":"/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r-2","project":{"id":"p"}},"properties":{"direction":"Egress","protocol":"UDP","port":"53"},"status":{"state":"Active"}}`+
 			`]}`)
 	})
 
-	sg := URI("/projects/p/network/vpcs/v/security-groups/sg")
+	sg := URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg")
 	list, err := adapter.List(context.Background(), sg)
 	if err != nil {
 		t.Fatalf("List error: %v", err)
@@ -1136,7 +1136,7 @@ func TestSecurityGroupRulesClientAdapter_Get_InjectsRefresh(t *testing.T) {
 		fmt.Fprint(w, securityRuleSuccessBody)
 	})
 	adapter := newSecurityRulesClientAdapter(testutil.NewClient(t, server.URL))
-	rule, err := adapter.Get(context.Background(), URI("/projects/p/network/vpcs/v/securitygroups/sg/security-rules/r-1"))
+	rule, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg/securityRules/r-1"))
 	if err != nil {
 		t.Fatalf("Get error: %v", err)
 	}
@@ -1147,12 +1147,12 @@ func TestSecurityGroupRulesClientAdapter_Get_InjectsRefresh(t *testing.T) {
 
 func TestSecurityRuleRef(t *testing.T) {
 	ref := SecurityRuleRef("p-1", "vpc-1", "sg-1", "rule-1")
-	want := "/projects/p-1/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1/securityrules/rule-1"
+	want := "/projects/p-1/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-1/securityRules/rule-1"
 	if ref.URI() != want {
 		t.Errorf("SecurityRuleRef URI = %q, want %q", ref.URI(), want)
 	}
 	ids := parseURIIDs(ref.URI())
-	if ids["projects"] != "p-1" || ids["securitygroups"] != "sg-1" || ids["securityrules"] != "rule-1" {
+	if ids["projects"] != "p-1" || ids["securityGroups"] != "sg-1" || ids["securityRules"] != "rule-1" {
 		t.Errorf("parseURIIDs = %v", ids)
 	}
 }

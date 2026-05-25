@@ -55,13 +55,13 @@ func loadBalancerTestResponse(id, name, uri, projectID string) *types.LoadBalanc
 
 func TestLoadBalancer_FromResponseHydration(t *testing.T) {
 	lb := &LoadBalancer{}
-	resp := loadBalancerTestResponse("lb-1", "my-lb", "/projects/p1/providers/Aruba.Network/loadbalancers/lb-1", "p1")
+	resp := loadBalancerTestResponse("lb-1", "my-lb", "/projects/p1/providers/Aruba.Network/loadBalancers/lb-1", "p1")
 	lb.fromResponse(resp)
 
 	if lb.ID() != "lb-1" {
 		t.Errorf("ID() = %q", lb.ID())
 	}
-	if lb.URI() != "/projects/p1/providers/Aruba.Network/loadbalancers/lb-1" {
+	if lb.URI() != "/projects/p1/providers/Aruba.Network/loadBalancers/lb-1" {
 		t.Errorf("URI() = %q", lb.URI())
 	}
 	if lb.LoadBalancerID() != "lb-1" {
@@ -119,7 +119,7 @@ func TestLoadBalancer_FromResponsePartial(t *testing.T) {
 }
 
 func TestLoadBalancer_FromResponseProjectIDFromURI(t *testing.T) {
-	uri := "/projects/p2/providers/Aruba.Network/loadbalancers/lb-2"
+	uri := "/projects/p2/providers/Aruba.Network/loadBalancers/lb-2"
 	id := "lb-2"
 	name := "uri-lb"
 	resp := &types.LoadBalancerResponse{
@@ -143,7 +143,7 @@ func TestLoadBalancer_RawNilUntilHydrated(t *testing.T) {
 	if lb.Raw() != nil {
 		t.Error("Raw() must be nil before fromResponse is called")
 	}
-	resp := loadBalancerTestResponse("lb-1", "n", "/projects/p/providers/Aruba.Network/loadbalancers/lb-1", "p")
+	resp := loadBalancerTestResponse("lb-1", "n", "/projects/p/providers/Aruba.Network/loadBalancers/lb-1", "p")
 	lb.fromResponse(resp)
 	if lb.Raw() != resp {
 		t.Error("Raw() must return the exact resp pointer after fromResponse")
@@ -156,7 +156,7 @@ func TestLoadBalancer_RawNilUntilHydrated(t *testing.T) {
 
 func TestLoadBalancer_RefSatisfaction(t *testing.T) {
 	lb := &LoadBalancer{}
-	lb.fromResponse(loadBalancerTestResponse("lb-99", "n", "/projects/p99/providers/Aruba.Network/loadbalancers/lb-99", "p99"))
+	lb.fromResponse(loadBalancerTestResponse("lb-99", "n", "/projects/p99/providers/Aruba.Network/loadBalancers/lb-99", "p99"))
 
 	// withLoadBalancerID typed path
 	lid, ok := extractID(lb, func(r Ref) (string, bool) {
@@ -164,7 +164,7 @@ func TestLoadBalancer_RefSatisfaction(t *testing.T) {
 			return w.LoadBalancerID(), true
 		}
 		return "", false
-	}, "loadbalancers")
+	}, "loadBalancers")
 	if !ok || lid != "lb-99" {
 		t.Errorf("extractID via withLoadBalancerID = (%q, %v)", lid, ok)
 	}
@@ -187,7 +187,7 @@ func TestLoadBalancer_RefSatisfaction(t *testing.T) {
 
 func TestLoadBalancerIDsFromRef_TypedRef(t *testing.T) {
 	lb := &LoadBalancer{}
-	lb.fromResponse(loadBalancerTestResponse("lb-1", "n", "/projects/p/providers/Aruba.Network/loadbalancers/lb-1", "p"))
+	lb.fromResponse(loadBalancerTestResponse("lb-1", "n", "/projects/p/providers/Aruba.Network/loadBalancers/lb-1", "p"))
 	pid, lid, err := loadBalancerIDsFromRef(lb)
 	if err != nil || pid != "p" || lid != "lb-1" {
 		t.Errorf("loadBalancerIDsFromRef typed = (%q, %q, %v)", pid, lid, err)
@@ -195,7 +195,7 @@ func TestLoadBalancerIDsFromRef_TypedRef(t *testing.T) {
 }
 
 func TestLoadBalancerIDsFromRef_URIRef(t *testing.T) {
-	ref := URI("/projects/p/providers/Aruba.Network/loadbalancers/lb-1")
+	ref := URI("/projects/p/providers/Aruba.Network/loadBalancers/lb-1")
 	pid, lid, err := loadBalancerIDsFromRef(ref)
 	if err != nil || pid != "p" || lid != "lb-1" {
 		t.Errorf("loadBalancerIDsFromRef URI = (%q, %q, %v)", pid, lid, err)
@@ -205,12 +205,12 @@ func TestLoadBalancerIDsFromRef_URIRef(t *testing.T) {
 func TestLoadBalancerIDsFromRef_BadURI(t *testing.T) {
 	_, _, err := loadBalancerIDsFromRef(URI("/something/else"))
 	if err == nil {
-		t.Error("expected error for URI without /loadbalancers/<id>")
+		t.Error("expected error for URI without /loadBalancers/<id>")
 	}
 }
 
 func TestLoadBalancerIDsFromRef_NoProject(t *testing.T) {
-	_, _, err := loadBalancerIDsFromRef(URI("/loadbalancers/lb-1"))
+	_, _, err := loadBalancerIDsFromRef(URI("/loadBalancers/lb-1"))
 	if err == nil {
 		t.Error("expected error for URI without /projects/<id>")
 	}
@@ -227,7 +227,7 @@ func buildLoadBalancerTestAdapter(t *testing.T, handler http.HandlerFunc) *loadB
 }
 
 const loadBalancerSuccessBody = `{` +
-	`"metadata":{"id":"lb-1","name":"my-lb","uri":"/projects/p/providers/Aruba.Network/loadbalancers/lb-1","project":{"id":"p"}},` +
+	`"metadata":{"id":"lb-1","name":"my-lb","uri":"/projects/p/providers/Aruba.Network/loadBalancers/lb-1","project":{"id":"p"}},` +
 	`"properties":{"address":"10.0.0.1"},` +
 	`"status":{"state":"Active"}}`
 
@@ -240,7 +240,7 @@ func TestLoadBalancersClientAdapter_Get_URIRef(t *testing.T) {
 		fmt.Fprint(w, loadBalancerSuccessBody)
 	})
 
-	ref := URI("/projects/p/providers/Aruba.Network/loadbalancers/lb-1")
+	ref := URI("/projects/p/providers/Aruba.Network/loadBalancers/lb-1")
 	result, err := adapter.Get(context.Background(), ref)
 	if err != nil {
 		t.Fatalf("Get error: %v", err)
@@ -257,7 +257,7 @@ func TestLoadBalancersClientAdapter_Get_URIRef(t *testing.T) {
 	if result.StatusCode() != http.StatusOK {
 		t.Errorf("StatusCode() = %d", result.StatusCode())
 	}
-	wantPath := "/projects/p/providers/Aruba.Network/loadbalancers/lb-1"
+	wantPath := "/projects/p/providers/Aruba.Network/loadBalancers/lb-1"
 	if capturedPath != wantPath {
 		t.Errorf("path = %q, want %q", capturedPath, wantPath)
 	}
@@ -271,7 +271,7 @@ func TestLoadBalancersClientAdapter_Get_TypedRef(t *testing.T) {
 	})
 
 	existing := &LoadBalancer{}
-	existing.fromResponse(loadBalancerTestResponse("lb-1", "n", "/projects/p/providers/Aruba.Network/loadbalancers/lb-1", "p"))
+	existing.fromResponse(loadBalancerTestResponse("lb-1", "n", "/projects/p/providers/Aruba.Network/loadBalancers/lb-1", "p"))
 
 	result, err := adapter.Get(context.Background(), existing)
 	if err != nil {
@@ -289,7 +289,7 @@ func TestLoadBalancersClientAdapter_Get_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "load balancer not found", 404))
 	})
 
-	ref := URI("/projects/p/providers/Aruba.Network/loadbalancers/lb-missing")
+	ref := URI("/projects/p/providers/Aruba.Network/loadBalancers/lb-missing")
 	result, err := adapter.Get(context.Background(), ref)
 	if err == nil {
 		t.Fatal("expected error on 404")
@@ -330,8 +330,8 @@ func TestLoadBalancersClientAdapter_List_TwoItems(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
-			`{"metadata":{"id":"lb-1","name":"lb-a","uri":"/projects/p/providers/Aruba.Network/loadbalancers/lb-1","project":{"id":"p"}},"properties":{"address":"10.0.0.1"},"status":{"state":"Active"}},`+
-			`{"metadata":{"id":"lb-2","name":"lb-b","uri":"/projects/p/providers/Aruba.Network/loadbalancers/lb-2","project":{"id":"p"}},"properties":{"address":"10.0.0.2"},"status":{"state":"Inactive"}}`+
+			`{"metadata":{"id":"lb-1","name":"lb-a","uri":"/projects/p/providers/Aruba.Network/loadBalancers/lb-1","project":{"id":"p"}},"properties":{"address":"10.0.0.1"},"status":{"state":"Active"}},`+
+			`{"metadata":{"id":"lb-2","name":"lb-b","uri":"/projects/p/providers/Aruba.Network/loadBalancers/lb-2","project":{"id":"p"}},"properties":{"address":"10.0.0.2"},"status":{"state":"Inactive"}}`+
 			`]}`)
 	})
 
@@ -432,7 +432,7 @@ func TestLoadBalancersClientAdapter_Get_TransportError(t *testing.T) {
 		conn.Close()
 	})
 	adapter := newLoadBalancersClientAdapter(testutil.NewClient(t, server.URL))
-	result, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/loadbalancers/lb-1"))
+	result, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/loadBalancers/lb-1"))
 	if err == nil {
 		t.Fatal("expected transport error")
 	}
@@ -498,7 +498,7 @@ func TestLoadBalancersClientAdapter_Get_InjectsRefresh(t *testing.T) {
 		fmt.Fprint(w, loadBalancerSuccessBody)
 	})
 	adapter := newLoadBalancersClientAdapter(testutil.NewClient(t, server.URL))
-	lb, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/loadbalancers/lb-1"))
+	lb, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/loadBalancers/lb-1"))
 	if err != nil {
 		t.Fatalf("Get error: %v", err)
 	}
@@ -509,12 +509,12 @@ func TestLoadBalancersClientAdapter_Get_InjectsRefresh(t *testing.T) {
 
 func TestLoadBalancerRef(t *testing.T) {
 	ref := LoadBalancerRef("p-1", "lb-1")
-	want := "/projects/p-1/providers/Aruba.Network/loadbalancers/lb-1"
+	want := "/projects/p-1/providers/Aruba.Network/loadBalancers/lb-1"
 	if ref.URI() != want {
 		t.Errorf("LoadBalancerRef URI = %q, want %q", ref.URI(), want)
 	}
 	ids := parseURIIDs(ref.URI())
-	if ids["projects"] != "p-1" || ids["loadbalancers"] != "lb-1" {
+	if ids["projects"] != "p-1" || ids["loadBalancers"] != "lb-1" {
 		t.Errorf("parseURIIDs = %v", ids)
 	}
 }
