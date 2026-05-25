@@ -22,6 +22,16 @@ The public entry point is `NewClient(options *Options) (Client, error)` in `pkg/
 
 **Cross-client injection:** Some service clients receive other concrete impl clients at build time to enforce resource pre-conditions. For example, `SecurityGroupRulesClientImpl` holds a `*securityGroupsClientImpl` and calls `waitForSecurityGroupActive()` before creating a rule. These dependencies are always concrete types, not interfaces, because they call internal methods not on any interface.
 
+## Single-import design principle
+
+`pkg/aruba` is the user-facing entry point. The contract: importing only `github.com/Arubacloud/sdk-go/pkg/aruba` resolves ~99.9% of real-world use cases. This shapes three concrete patterns in the codebase:
+
+1. **Re-exported enums** — every wire-string enum from `pkg/types` is aliased in `pkg/aruba/aliases.go` (`type State = types.State`, plus matching constants `aruba.StateActive`, `aruba.RuleProtocolTCP`, etc.). When adding a new enum to `pkg/types`, add the matching alias in `aliases.go`.
+2. **Wrapper-side serialisation** — every wrapper and `List[T]` exposes `Raw()`, `RawJSON()`, `RawYAML()` (`pkg/aruba/raw_marshal.go`, `pkg/aruba/list.go`). Callers serialising responses for `--output json/yaml` never need to import `pkg/types`.
+3. **Wait helpers on the wrapper** — `WaitUntilReady`, `WaitUntilActive`, `WaitUntilStates` cover the polling surface. `pkg/async` is reserved for genuinely multi-import scenarios (concurrent waits, arbitrary-condition polling).
+
+The residual cases where users must reach into `pkg/types` or `pkg/async` — non-promoted wire fields, structured validation error types (`types.ValidationError`, `types.MetadataValidationError`), `LinkedResources()` traversal, and `pkg/async` background polling — are documented in `docs/website/docs/working-at-low-level.md`. When introducing new public surface, ask first whether it can be exposed via `pkg/aruba` (direct method, alias, or `Raw*` helper) before pushing callers into a second import.
+
 ## HTTP request lifecycle (`internal/restclient/`)
 
 `restclient.Client.DoRequest(ctx, method, path, body, queryParams, headers)` follows these steps:

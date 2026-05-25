@@ -5,6 +5,7 @@
 - Public API surface lives in `pkg/` — types, interfaces, and the `NewClient` entry point
 - Concrete implementations live in `internal/` — not importable by external modules
 - Only interfaces and data types are exported; concrete impl structs are always unexported
+- **Prefer `aruba.X` over `types.X` in public surface.** When `pkg/aruba` needs to refer to a `pkg/types` enum or struct, alias it in `pkg/aruba/aliases.go` (`type Foo = types.Foo` plus matching constants). This preserves the single-import contract — see `ai/ARCHITECTURE.md` › "Single-import design principle".
 
 ## Naming
 

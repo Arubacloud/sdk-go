@@ -40,6 +40,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   marshalers for the typed response payload returned by `Raw()`. Return `nil`
   when the wrapper has no payload. YAML output uses `gopkg.in/yaml.v3`
   (promoted from indirect to direct dependency).
+- New documentation page **Working at Low Level** (EN + IT) collecting the
+  residual cases that require importing `pkg/types` or `pkg/async`:
+  non-promoted wire fields, structured validation errors, `LinkedResources()`
+  traversal, and concurrent/custom polling. The `pkg/async` deep-dive moved
+  here from `async.md`. Existing `response-handling.md` examples updated to
+  use single-import equivalents (`vpcList.Total()`, `RawJSON()`, etc.).
 
 ### Fixed
 

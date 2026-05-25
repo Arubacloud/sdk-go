@@ -101,23 +101,27 @@ For CLI-style `--output json` / `--output yaml` flags, every wrapper exposes
 pre-marshaled byte slices:
 
 ```go
-fmt.Println(string(vpc.RawJSON()))   // JSON-encoded *types.VPCResponse
-fmt.Println(string(vpc.RawYAML()))   // YAML-encoded *types.VPCResponse
+fmt.Println(string(vpc.RawJSON()))   // JSON-encoded payload
+fmt.Println(string(vpc.RawYAML()))   // YAML-encoded payload
 ```
 
 Returns `nil` if the wrapper has not been populated yet (zero-value receiver).
 
 ## List Responses
 
-`List[T]` exposes the same introspection surface as single-resource wrappers:
+`List[T]` exposes the same introspection surface as single-resource wrappers,
+all without ever importing `pkg/types`:
 
 ```go
 vpcList, err := arubaClient.FromNetwork().VPCs().List(ctx, proj)
 if err != nil { /* … */ }
 
-// Wire payload — JSON-marshalable; contains pagination links and values.
-raw := vpcList.Raw().(*types.VPCList)
-fmt.Println("server total:", raw.Total)
+// Pagination + counts — typed accessors on the wrapper.
+fmt.Println("server total:", vpcList.Total())
+if vpcList.HasNext() {
+    nextPage, _ := vpcList.Next(ctx)
+    _ = nextPage
+}
 
 // HTTP envelope — same accessors as single-resource wrappers.
 fmt.Println("status:", vpcList.StatusCode())
@@ -131,13 +135,16 @@ fmt.Println("raw body bytes:", len(body))
 `List[T]` also exposes `RawJSON()` and `RawYAML()` for the typed list payload:
 
 ```go
-fmt.Println(string(vpcList.RawJSON()))   // JSON-encoded *types.VPCList
-fmt.Println(string(vpcList.RawYAML()))   // YAML-encoded *types.VPCList
+fmt.Println(string(vpcList.RawJSON()))   // JSON-encoded payload
+fmt.Println(string(vpcList.RawYAML()))   // YAML-encoded payload
 ```
 
 Returns `nil` when the list has no payload (`Raw() == nil`).
 
-`Raw()` returns only the JSON-safe payload (`*types.XxxList`). The HTTP envelope is exposed via separate accessors because `*http.Response` is not JSON-serialisable.
+> **Reaching non-promoted fields.** If you need a field that isn't exposed by
+> the wrapper surface, see [Working at Low Level](./working-at-low-level) —
+> it covers the typed wire-struct cast and the few other escape hatches that
+> require importing `pkg/types`.
 
 ## Setter-Time Errors
 

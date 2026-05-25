@@ -46,6 +46,11 @@ const sidebars = {
     },
     {
       type: 'doc',
+      id: 'working-at-low-level',
+      label: 'Working at Low Level',
+    },
+    {
+      type: 'doc',
       id: 'multitenancy',
       label: 'Multitenancy',
     },
