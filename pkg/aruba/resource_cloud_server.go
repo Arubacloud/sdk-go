@@ -172,14 +172,13 @@ func (cs *CloudServer) setSingleRef(label string, r Ref, dst **string) *CloudSer
 	return cs
 }
 
-func (cs *CloudServer) appendRef(label string, r Ref, dst *[]string) *CloudServer {
+func (cs *CloudServer) appendRef(label string, r Ref, dst *[]string) {
 	uri := r.URI()
 	if uri == "" {
 		cs.addErr(fmt.Errorf("%s: empty URI", label))
-		return cs
+		return
 	}
 	*dst = append(*dst, uri)
-	return cs
 }
 
 // Getters — general → specific
