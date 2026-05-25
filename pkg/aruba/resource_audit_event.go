@@ -46,6 +46,8 @@ func (e *AuditEvent) CreatedAt() time.Time {
 
 // Raw returns the underlying wire payload. Shadows responseMetadataMixin.Raw().
 func (e *AuditEvent) Raw() *types.AuditEvent { return e.response }
+func (e *AuditEvent) RawJSON() []byte        { return marshalRawJSON(e.response) }
+func (e *AuditEvent) RawYAML() []byte        { return marshalRawYAML(e.response) }
 
 // SeverityLevel returns the event severity level, or "" when unset.
 func (e *AuditEvent) SeverityLevel() string {

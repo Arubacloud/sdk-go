@@ -155,6 +155,8 @@ func (r *ContainerRegistry) ContainerRegistryID() string { return r.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed ContainerRegistry response.
 func (r *ContainerRegistry) Raw() *types.ContainerRegistryResponse { return r.response }
+func (r *ContainerRegistry) RawJSON() []byte                       { return marshalRawJSON(r.response) }
+func (r *ContainerRegistry) RawYAML() []byte                       { return marshalRawYAML(r.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (r *ContainerRegistry) RawRequest() types.ContainerRegistryRequest { return r.toRequest() }

@@ -77,6 +77,8 @@ func (k *KMS) KMSID() string { return k.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed KMS response.
 func (k *KMS) Raw() *types.KmsResponse { return k.response }
+func (k *KMS) RawJSON() []byte         { return marshalRawJSON(k.response) }
+func (k *KMS) RawYAML() []byte         { return marshalRawYAML(k.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (k *KMS) RawRequest() types.KmsRequest { return k.toRequest() }

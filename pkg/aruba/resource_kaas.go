@@ -272,6 +272,8 @@ func (k *KaaS) KaaSID() string { return k.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed KaaS response.
 func (k *KaaS) Raw() *types.KaaSResponse { return k.response }
+func (k *KaaS) RawJSON() []byte          { return marshalRawJSON(k.response) }
+func (k *KaaS) RawYAML() []byte          { return marshalRawYAML(k.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (k *KaaS) RawRequest() types.KaaSRequest { return k.toRequest() }

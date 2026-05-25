@@ -90,6 +90,8 @@ func (s *Snapshot) SnapshotID() string { return s.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed Snapshot response.
 func (s *Snapshot) Raw() *types.SnapshotResponse { return s.response }
+func (s *Snapshot) RawJSON() []byte              { return marshalRawJSON(s.response) }
+func (s *Snapshot) RawYAML() []byte              { return marshalRawYAML(s.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (s *Snapshot) RawRequest() types.SnapshotRequest { return s.toRequest() }

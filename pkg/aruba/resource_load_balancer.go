@@ -44,6 +44,8 @@ func (l *LoadBalancer) LoadBalancerID() string { return l.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the full LoadBalancer response.
 func (l *LoadBalancer) Raw() *types.LoadBalancerResponse { return l.response }
+func (l *LoadBalancer) RawJSON() []byte                  { return marshalRawJSON(l.response) }
+func (l *LoadBalancer) RawYAML() []byte                  { return marshalRawYAML(l.response) }
 
 // Address returns the public IP address assigned to this Load Balancer, or "" if absent.
 func (l *LoadBalancer) Address() string {

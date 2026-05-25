@@ -73,6 +73,8 @@ func (k *KeyPair) KeyPairID() string { return k.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed key-pair response.
 func (k *KeyPair) Raw() *types.KeyPairResponse { return k.response }
+func (k *KeyPair) RawJSON() []byte             { return marshalRawJSON(k.response) }
+func (k *KeyPair) RawYAML() []byte             { return marshalRawYAML(k.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (k *KeyPair) RawRequest() types.KeyPairRequest { return k.toRequest() }

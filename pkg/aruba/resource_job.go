@@ -143,6 +143,8 @@ func (j *Job) JobID() string { return j.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed Job response.
 func (j *Job) Raw() *types.JobResponse { return j.response }
+func (j *Job) RawJSON() []byte         { return marshalRawJSON(j.response) }
+func (j *Job) RawYAML() []byte         { return marshalRawYAML(j.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (j *Job) RawRequest() types.JobRequest { return j.toRequest() }

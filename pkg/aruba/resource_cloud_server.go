@@ -177,6 +177,8 @@ func (cs *CloudServer) CloudServerID() string { return cs.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed CloudServer response.
 func (cs *CloudServer) Raw() *types.CloudServerResponse { return cs.response }
+func (cs *CloudServer) RawJSON() []byte                 { return marshalRawJSON(cs.response) }
+func (cs *CloudServer) RawYAML() []byte                 { return marshalRawYAML(cs.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (cs *CloudServer) RawRequest() types.CloudServerRequest { return cs.toRequest() }

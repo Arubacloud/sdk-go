@@ -94,6 +94,8 @@ func (s *Subnet) SubnetID() string { return s.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the full subnet response.
 func (s *Subnet) Raw() *types.SubnetResponse { return s.response }
+func (s *Subnet) RawJSON() []byte            { return marshalRawJSON(s.response) }
+func (s *Subnet) RawYAML() []byte            { return marshalRawYAML(s.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (s *Subnet) RawRequest() types.SubnetRequest { return s.toRequest() }

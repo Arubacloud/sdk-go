@@ -77,6 +77,8 @@ func (k *Key) URI() string {
 
 // Raw shadows responseMetadataMixin.Raw() with the typed Key response.
 func (k *Key) Raw() *types.KeyResponse { return k.response }
+func (k *Key) RawJSON() []byte         { return marshalRawJSON(k.response) }
+func (k *Key) RawYAML() []byte         { return marshalRawYAML(k.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (k *Key) RawRequest() types.KeyRequest { return k.toRequest() }

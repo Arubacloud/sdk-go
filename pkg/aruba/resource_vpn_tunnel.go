@@ -145,6 +145,8 @@ func (t *VPNTunnel) VPNTunnelID() string { return t.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed VPN tunnel response.
 func (t *VPNTunnel) Raw() *types.VPNTunnelResponse { return t.response }
+func (t *VPNTunnel) RawJSON() []byte               { return marshalRawJSON(t.response) }
+func (t *VPNTunnel) RawYAML() []byte               { return marshalRawYAML(t.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (t *VPNTunnel) RawRequest() types.VPNTunnelRequest { return t.toRequest() }

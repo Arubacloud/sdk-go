@@ -126,6 +126,8 @@ func (g *Grant) CreatedBy() string {
 
 // Raw shadows responseMetadataMixin.Raw() with the typed Grant response.
 func (g *Grant) Raw() *types.GrantResponse { return g.response }
+func (g *Grant) RawJSON() []byte           { return marshalRawJSON(g.response) }
+func (g *Grant) RawYAML() []byte           { return marshalRawYAML(g.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (g *Grant) RawRequest() types.GrantRequest { return g.toRequest() }

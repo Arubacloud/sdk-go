@@ -78,6 +78,8 @@ func (e *ElasticIP) ElasticIPID() string { return e.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the full ElasticIP response.
 func (e *ElasticIP) Raw() *types.ElasticIPResponse { return e.response }
+func (e *ElasticIP) RawJSON() []byte               { return marshalRawJSON(e.response) }
+func (e *ElasticIP) RawYAML() []byte               { return marshalRawYAML(e.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (e *ElasticIP) RawRequest() types.ElasticIPRequest { return e.toRequest() }

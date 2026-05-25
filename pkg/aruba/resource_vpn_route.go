@@ -82,6 +82,8 @@ func (r *VPNRoute) VPNRouteID() string { return r.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed VPN route response.
 func (r *VPNRoute) Raw() *types.VPNRouteResponse { return r.response }
+func (r *VPNRoute) RawJSON() []byte              { return marshalRawJSON(r.response) }
+func (r *VPNRoute) RawYAML() []byte              { return marshalRawYAML(r.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (r *VPNRoute) RawRequest() types.VPNRouteRequest { return r.toRequest() }

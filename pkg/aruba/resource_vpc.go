@@ -86,6 +86,8 @@ func (v *VPC) VPCID() string { return v.ID() }
 
 // Raw shadows the promoted responseMetadataMixin.Raw() returning the full response.
 func (v *VPC) Raw() *types.VPCResponse { return v.response }
+func (v *VPC) RawJSON() []byte         { return marshalRawJSON(v.response) }
+func (v *VPC) RawYAML() []byte         { return marshalRawYAML(v.response) }
 
 // RawRequest returns the wire-level request that toRequest() would emit.
 func (v *VPC) RawRequest() types.VPCRequest { return v.toRequest() }

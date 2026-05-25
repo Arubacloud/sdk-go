@@ -98,6 +98,8 @@ func (d *Database) CreatedBy() string {
 
 // Raw shadows responseMetadataMixin.Raw() with the typed Database response.
 func (d *Database) Raw() *types.DatabaseResponse { return d.response }
+func (d *Database) RawJSON() []byte              { return marshalRawJSON(d.response) }
+func (d *Database) RawYAML() []byte              { return marshalRawYAML(d.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (d *Database) RawRequest() types.DatabaseRequest { return d.toRequest() }

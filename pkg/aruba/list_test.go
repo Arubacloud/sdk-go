@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"gopkg.in/yaml.v3"
 )
 
 // testItem is a minimal Wrapper implementation for list tests.
@@ -233,5 +234,61 @@ func TestList_NewListFromResponse_NilSafe(t *testing.T) {
 	}
 	if l2.StatusCode() != 200 {
 		t.Errorf("StatusCode() = %d, want 200", l2.StatusCode())
+	}
+}
+
+func TestList_RawJSON_RoundTrip(t *testing.T) {
+	resp := &types.Response[types.VPCList]{
+		Data: &types.VPCList{
+			ListResponse: types.ListResponse{Total: 3, Self: "/self", Next: "/next"},
+			Values:       []types.VPCResponse{},
+		},
+	}
+	l := newListFromResponse[testItem, types.VPCList](nil, resp, nil, nil)
+	b := l.RawJSON()
+	if len(b) == 0 {
+		t.Fatal("RawJSON() returned empty")
+	}
+	var back types.VPCList
+	if err := json.Unmarshal(b, &back); err != nil {
+		t.Fatalf("json.Unmarshal: %v", err)
+	}
+	if back.Total != 3 || back.Self != "/self" || back.Next != "/next" {
+		t.Errorf("round-trip lost fields: %+v", back)
+	}
+}
+
+func TestList_RawYAML_RoundTrip(t *testing.T) {
+	resp := &types.Response[types.VPCList]{
+		Data: &types.VPCList{
+			ListResponse: types.ListResponse{Total: 5, Self: "/s", Next: "/n"},
+			Values:       []types.VPCResponse{},
+		},
+	}
+	l := newListFromResponse[testItem, types.VPCList](nil, resp, nil, nil)
+	b := l.RawYAML()
+	if len(b) == 0 {
+		t.Fatal("RawYAML() returned empty")
+	}
+	var back types.VPCList
+	if err := yaml.Unmarshal(b, &back); err != nil {
+		t.Fatalf("yaml.Unmarshal: %v", err)
+	}
+	if back.Total != 5 || back.Self != "/s" || back.Next != "/n" {
+		t.Errorf("round-trip lost fields: %+v", back)
+	}
+}
+
+func TestList_RawJSON_NilSafe(t *testing.T) {
+	l := newListFromResponse[testItem, types.VPCList](nil, nil, nil, nil)
+	if b := l.RawJSON(); b != nil {
+		t.Errorf("RawJSON() = %q, want nil", b)
+	}
+}
+
+func TestList_RawYAML_NilSafe(t *testing.T) {
+	l := newListFromResponse[testItem, types.VPCList](nil, nil, nil, nil)
+	if b := l.RawYAML(); b != nil {
+		t.Errorf("RawYAML() = %q, want nil", b)
 	}
 }

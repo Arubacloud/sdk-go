@@ -135,6 +135,8 @@ func (km *Kmip) URI() string {
 
 // Raw shadows responseMetadataMixin.Raw() with the typed Kmip response.
 func (km *Kmip) Raw() *types.KmipResponse { return km.response }
+func (km *Kmip) RawJSON() []byte          { return marshalRawJSON(km.response) }
+func (km *Kmip) RawYAML() []byte          { return marshalRawYAML(km.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (km *Kmip) RawRequest() types.KmipRequest { return km.toRequest() }
@@ -483,3 +485,5 @@ func (c *KmipCertificate) Raw() *types.KmipCertificateResponse {
 	}
 	return c.response
 }
+func (c *KmipCertificate) RawJSON() []byte { return marshalRawJSON(c.response) }
+func (c *KmipCertificate) RawYAML() []byte { return marshalRawYAML(c.response) }

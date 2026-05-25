@@ -80,6 +80,8 @@ func (r *StorageRestore) RestoreID() string { return r.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed restore response.
 func (r *StorageRestore) Raw() *types.StorageRestoreResponse { return r.response }
+func (r *StorageRestore) RawJSON() []byte                    { return marshalRawJSON(r.response) }
+func (r *StorageRestore) RawYAML() []byte                    { return marshalRawYAML(r.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (r *StorageRestore) RawRequest() types.StorageRestoreRequest { return r.toRequest() }

@@ -37,6 +37,8 @@ func (a *Alert) URI() string { return "" }
 
 // Raw returns the underlying wire payload. Shadows responseMetadataMixin.Raw().
 func (a *Alert) Raw() *types.AlertResponse { return a.response }
+func (a *Alert) RawJSON() []byte           { return marshalRawJSON(a.response) }
+func (a *Alert) RawYAML() []byte           { return marshalRawYAML(a.response) }
 
 // EventID returns the event ID associated with this alert, or "" when unset.
 func (a *Alert) EventID() string {

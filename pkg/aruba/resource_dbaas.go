@@ -169,6 +169,8 @@ func (d *DBaaS) DBaaSID() string { return d.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed DBaaS response.
 func (d *DBaaS) Raw() *types.DBaaSResponse { return d.response }
+func (d *DBaaS) RawJSON() []byte           { return marshalRawJSON(d.response) }
+func (d *DBaaS) RawYAML() []byte           { return marshalRawYAML(d.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (d *DBaaS) RawRequest() types.DBaaSRequest { return d.toRequest() }

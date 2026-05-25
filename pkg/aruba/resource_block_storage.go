@@ -112,6 +112,8 @@ func (b *BlockStorage) BlockStorageID() string { return b.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed BlockStorage response.
 func (b *BlockStorage) Raw() *types.BlockStorageResponse { return b.response }
+func (b *BlockStorage) RawJSON() []byte                  { return marshalRawJSON(b.response) }
+func (b *BlockStorage) RawYAML() []byte                  { return marshalRawYAML(b.response) }
 
 // RawRequest returns what toCreateRequest() would emit right now.
 func (b *BlockStorage) RawRequest() types.BlockStorageRequest { return b.toCreateRequest() }

@@ -122,6 +122,8 @@ func (r *SecurityRule) SecurityRuleID() string { return r.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the full SecurityRule response.
 func (r *SecurityRule) Raw() *types.SecurityRuleResponse { return r.response }
+func (r *SecurityRule) RawJSON() []byte                  { return marshalRawJSON(r.response) }
+func (r *SecurityRule) RawYAML() []byte                  { return marshalRawYAML(r.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (r *SecurityRule) RawRequest() types.SecurityRuleRequest { return r.toRequest() }

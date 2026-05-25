@@ -90,6 +90,8 @@ func (r *VPCPeeringRoute) VPCPeeringRouteID() string { return r.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed VPC peering route response.
 func (r *VPCPeeringRoute) Raw() *types.VPCPeeringRouteResponse { return r.response }
+func (r *VPCPeeringRoute) RawJSON() []byte                     { return marshalRawJSON(r.response) }
+func (r *VPCPeeringRoute) RawYAML() []byte                     { return marshalRawYAML(r.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (r *VPCPeeringRoute) RawRequest() types.VPCPeeringRouteRequest { return r.toRequest() }

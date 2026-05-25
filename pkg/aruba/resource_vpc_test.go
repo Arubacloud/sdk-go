@@ -657,6 +657,36 @@ func TestVPCsClientAdapter_List_TwoItems(t *testing.T) {
 // strPtr is a test helper local to this file.
 func strPtr(s string) *string { return &s }
 
+func TestVPC_RawJSON_RoundTrip(t *testing.T) {
+	v := &VPC{}
+	wire := vpcTestResponse("vpc-1", "my-vpc", "/projects/p/providers/Aruba.Network/vpcs/vpc-1", "p")
+	v.fromResponse(wire)
+	b := v.RawJSON()
+	if len(b) == 0 {
+		t.Fatal("RawJSON() returned empty")
+	}
+	var back types.VPCResponse
+	if err := json.Unmarshal(b, &back); err != nil {
+		t.Fatalf("json.Unmarshal: %v", err)
+	}
+	if back.Metadata.ID == nil || *back.Metadata.ID != "vpc-1" {
+		t.Errorf("round-trip lost ID: %+v", back.Metadata)
+	}
+	if back.Metadata.Name == nil || *back.Metadata.Name != "my-vpc" {
+		t.Errorf("round-trip lost Name: %+v", back.Metadata)
+	}
+}
+
+func TestVPC_RawJSON_NilSafe(t *testing.T) {
+	v := &VPC{}
+	if v.RawJSON() != nil {
+		t.Error("RawJSON() on zero-value VPC should return nil")
+	}
+	if v.RawYAML() != nil {
+		t.Error("RawYAML() on zero-value VPC should return nil")
+	}
+}
+
 func TestVPCsClientAdapter_Create_WithBuilderError(t *testing.T) {
 	callCount := 0
 	adapter := buildVPCTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {

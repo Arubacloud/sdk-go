@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `types.ListResponse.BaseList()` returns the embedded pagination/total
   metadata; promoted automatically onto every `*types.XxxList` via Go's
   method-promotion rules. (#298)
+- `RawJSON() []byte` / `RawYAML() []byte` on every resource wrapper (31
+  resources including `KmipCertificate`) and on `List[T]`. Convenience
+  marshalers for the typed response payload returned by `Raw()`. Return `nil`
+  when the wrapper has no payload. YAML output uses `gopkg.in/yaml.v3`
+  (promoted from indirect to direct dependency).
 
 ### Fixed
 

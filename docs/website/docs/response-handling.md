@@ -95,6 +95,18 @@ raw := vpc.Raw()                         // underlying wire struct
 fmt.Println(raw.Properties.IsDefault)    // field not on the wrapper
 ```
 
+### JSON / YAML convenience
+
+For CLI-style `--output json` / `--output yaml` flags, every wrapper exposes
+pre-marshaled byte slices:
+
+```go
+fmt.Println(string(vpc.RawJSON()))   // JSON-encoded *types.VPCResponse
+fmt.Println(string(vpc.RawYAML()))   // YAML-encoded *types.VPCResponse
+```
+
+Returns `nil` if the wrapper has not been populated yet (zero-value receiver).
+
 ## List Responses
 
 `List[T]` exposes the same introspection surface as single-resource wrappers:
@@ -113,6 +125,17 @@ fmt.Println("trace-id:", vpcList.Headers().Get("X-Trace-Id"))
 _, body := vpcList.RawHTTP()
 fmt.Println("raw body bytes:", len(body))
 ```
+
+### JSON / YAML convenience
+
+`List[T]` also exposes `RawJSON()` and `RawYAML()` for the typed list payload:
+
+```go
+fmt.Println(string(vpcList.RawJSON()))   // JSON-encoded *types.VPCList
+fmt.Println(string(vpcList.RawYAML()))   // YAML-encoded *types.VPCList
+```
+
+Returns `nil` when the list has no payload (`Raw() == nil`).
 
 `Raw()` returns only the JSON-safe payload (`*types.XxxList`). The HTTP envelope is exposed via separate accessors because `*http.Response` is not JSON-serialisable.
 

@@ -104,6 +104,8 @@ func (u *User) CreatedBy() string {
 
 // Raw shadows responseMetadataMixin.Raw() with the typed User response.
 func (u *User) Raw() *types.UserResponse { return u.response }
+func (u *User) RawJSON() []byte          { return marshalRawJSON(u.response) }
+func (u *User) RawYAML() []byte          { return marshalRawYAML(u.response) }
 
 // RawRequest returns the wire body that would be sent on Create/Update. It
 // includes the base64-encoded password if WithPassword was called — by design,

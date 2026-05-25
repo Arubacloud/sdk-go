@@ -78,6 +78,8 @@ func (sg *SecurityGroup) SecurityGroupID() string { return sg.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the full SecurityGroup response.
 func (sg *SecurityGroup) Raw() *types.SecurityGroupResponse { return sg.response }
+func (sg *SecurityGroup) RawJSON() []byte                   { return marshalRawJSON(sg.response) }
+func (sg *SecurityGroup) RawYAML() []byte                   { return marshalRawYAML(sg.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (sg *SecurityGroup) RawRequest() types.SecurityGroupRequest { return sg.toRequest() }

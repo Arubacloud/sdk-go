@@ -36,6 +36,8 @@ func (m *Metric) URI() string { return "" }
 
 // Raw returns the underlying wire payload. Shadows responseMetadataMixin.Raw().
 func (m *Metric) Raw() *types.MetricResponse { return m.response }
+func (m *Metric) RawJSON() []byte            { return marshalRawJSON(m.response) }
+func (m *Metric) RawYAML() []byte            { return marshalRawYAML(m.response) }
 
 // ReferenceID returns the metric reference ID, or "" when unset.
 func (m *Metric) ReferenceID() string {

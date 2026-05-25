@@ -256,7 +256,7 @@ type Ref interface { URI() string; ID() string }
 
 ### `List[T Wrapper]` (`pkg/aruba/list.go`)
 
-Generic paginated container, constrained to `Wrapper { URI(); ID() }`. Embeds `httpEnvelopeMixin` (same HTTP envelope accessors as single-resource wrappers). Carries `items`, `total`, pagination link URLs (`self/prev/next/first/last`), `callerOpts`, `raw` (JSON-safe wire payload, a `*types.XxxList`), and a `refetch` callback. Navigation methods: `Items()`, `Total()`, `HasNext()`, `Next(ctx)`, `All(ctx, yield)`.
+Generic paginated container, constrained to `Wrapper { URI(); ID() }`. Embeds `httpEnvelopeMixin` (same HTTP envelope accessors as single-resource wrappers). Carries `items`, `total`, pagination link URLs (`self/prev/next/first/last`), `callerOpts`, `raw` (JSON-safe wire payload, a `*types.XxxList`), and a `refetch` callback. Navigation methods: `Items()`, `Total()`, `HasNext()`, `Next(ctx)`, `All(ctx, yield)`. Convenience marshalers `RawJSON() []byte` and `RawYAML() []byte` are available on `List[T]` and on every single-resource wrapper.
 
 Adapters construct lists via `newListFromResponse[T Wrapper, L listPayload](items, resp, opts, refetch)` — a generic helper that extracts pagination from `resp.Data.BaseList()` (promoted from the embedded `types.ListResponse`), stores `resp.Data` as the JSON-safe `raw` payload, and populates the HTTP envelope mixin. The low-level `newList(...)` constructor is preserved for use in unit tests.
 

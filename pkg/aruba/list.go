@@ -2,9 +2,11 @@ package aruba
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/Arubacloud/sdk-go/pkg/types"
+	"gopkg.in/yaml.v3"
 )
 
 // Wrapper is the constraint for List items: every resource wrapper satisfies it.
@@ -150,6 +152,32 @@ func (l *List[T]) Cursor() (next, prev string) {
 // HTTP envelope (status, headers, raw body, error envelope) is exposed via
 // StatusCode(), Headers(), RawHTTP(), RawError() on the same list value.
 func (l *List[T]) Raw() any { return l.raw }
+
+// RawJSON returns the wire payload marshaled as JSON, or nil if the list has
+// no payload (Raw() == nil).
+func (l *List[T]) RawJSON() []byte {
+	if l.raw == nil {
+		return nil
+	}
+	b, err := json.Marshal(l.raw)
+	if err != nil {
+		return nil
+	}
+	return b
+}
+
+// RawYAML returns the wire payload marshaled as YAML, or nil if the list has
+// no payload (Raw() == nil).
+func (l *List[T]) RawYAML() []byte {
+	if l.raw == nil {
+		return nil
+	}
+	b, err := yaml.Marshal(l.raw)
+	if err != nil {
+		return nil
+	}
+	return b
+}
 
 // All iterates all pages, calling yield for each item. Iteration stops early
 // if yield returns false. Returns the first error encountered while fetching.
