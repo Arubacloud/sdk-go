@@ -32,9 +32,9 @@ func TestContainerRegistry_FluentSetters(t *testing.T) {
 
 	vpcURI := URI("/projects/p-1/providers/Aruba.Network/vpcs/vpc-1")
 	subnetURI := URI("/projects/p-1/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1")
-	sgURI := URI("/projects/p-1/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1")
+	sgURI := URI("/projects/p-1/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-1")
 	eipURI := URI("/projects/p-1/providers/Aruba.Network/elasticips/eip-1")
-	bsURI := URI("/projects/p-1/providers/Aruba.Storage/blockstorages/bs-1")
+	bsURI := URI("/projects/p-1/providers/Aruba.Storage/blockStorages/bs-1")
 
 	cr := NewContainerRegistry().
 		IntoProject(proj).
@@ -243,7 +243,7 @@ func TestContainerRegistry_WithSubnet_EmptyURI(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestContainerRegistry_WithSecurityGroup_URIRef(t *testing.T) {
-	uri := "/projects/p-1/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1"
+	uri := "/projects/p-1/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-1"
 	cr := NewContainerRegistry().WithSecurityGroup(URI(uri))
 	if cr.SecurityGroup() != uri {
 		t.Errorf("SecurityGroup() = %q", cr.SecurityGroup())
@@ -254,7 +254,7 @@ func TestContainerRegistry_WithSecurityGroup_URIRef(t *testing.T) {
 }
 
 func TestContainerRegistry_WithSecurityGroup_TypedRef(t *testing.T) {
-	ref := URI("/projects/p-1/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1")
+	ref := URI("/projects/p-1/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-1")
 	cr := NewContainerRegistry().WithSecurityGroup(ref)
 	if cr.SecurityGroup() != ref.URI() {
 		t.Errorf("SecurityGroup() = %q, want %q", cr.SecurityGroup(), ref.URI())
@@ -276,7 +276,7 @@ func TestContainerRegistry_WithSecurityGroup_EmptyURI(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestContainerRegistry_WithBlockStorage_URIRef(t *testing.T) {
-	uri := "/projects/p-1/providers/Aruba.Storage/blockstorages/bs-1"
+	uri := "/projects/p-1/providers/Aruba.Storage/blockStorages/bs-1"
 	cr := NewContainerRegistry().WithBlockStorage(URI(uri))
 	if cr.BlockStorage() != uri {
 		t.Errorf("BlockStorage() = %q", cr.BlockStorage())
@@ -287,7 +287,7 @@ func TestContainerRegistry_WithBlockStorage_URIRef(t *testing.T) {
 }
 
 func TestContainerRegistry_WithBlockStorage_TypedRef(t *testing.T) {
-	ref := URI("/projects/p-1/providers/Aruba.Storage/blockstorages/bs-1")
+	ref := URI("/projects/p-1/providers/Aruba.Storage/blockStorages/bs-1")
 	cr := NewContainerRegistry().WithBlockStorage(ref)
 	if cr.BlockStorage() != ref.URI() {
 		t.Errorf("BlockStorage() = %q, want %q", cr.BlockStorage(), ref.URI())
@@ -343,9 +343,9 @@ func TestContainerRegistry_WithBillingPeriod(t *testing.T) {
 func TestContainerRegistry_ToRequest(t *testing.T) {
 	vpcURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1"
 	subnetURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1"
-	sgURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1"
+	sgURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-1"
 	eipURI := "/projects/p/providers/Aruba.Network/elasticips/eip-1"
-	bsURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
+	bsURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"
 
 	cr := NewContainerRegistry().Named(
 		"reg-rt").
@@ -428,9 +428,9 @@ func containerRegistryTestResponse(name string) *types.ContainerRegistryResponse
 	size := "Small"
 	vpcURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1"
 	subnetURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1"
-	sgURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1"
+	sgURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-1"
 	eipURI := "/projects/p/providers/Aruba.Network/elasticips/eip-1"
-	bsURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
+	bsURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"
 	return &types.ContainerRegistryResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:               &id,
@@ -497,13 +497,13 @@ func TestContainerRegistry_FromResponseHydration(t *testing.T) {
 	if cr.Subnet() != "/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1" {
 		t.Errorf("Subnet() = %q", cr.Subnet())
 	}
-	if cr.SecurityGroup() != "/projects/p/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1" {
+	if cr.SecurityGroup() != "/projects/p/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-1" {
 		t.Errorf("SecurityGroup() = %q", cr.SecurityGroup())
 	}
 	if cr.ElasticIP() != "/projects/p/providers/Aruba.Network/elasticips/eip-1" {
 		t.Errorf("PublicIP() = %q", cr.ElasticIP())
 	}
-	if cr.BlockStorage() != "/projects/p/providers/Aruba.Storage/blockstorages/bs-1" {
+	if cr.BlockStorage() != "/projects/p/providers/Aruba.Storage/blockStorages/bs-1" {
 		t.Errorf("BlockStorage() = %q", cr.BlockStorage())
 	}
 	if cr.AdminUsername() != "admin" {
@@ -626,9 +626,9 @@ const containerRegistrySuccessBody = `{` +
 	`"properties":{` +
 	`"vpc":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1"},` +
 	`"subnet":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1"},` +
-	`"securityGroup":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1"},` +
+	`"securityGroup":{"uri":"/projects/p/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-1"},` +
 	`"publicIp":{"uri":"/projects/p/providers/Aruba.Network/elasticips/eip-1"},` +
-	`"blockStorage":{"uri":"/projects/p/providers/Aruba.Storage/blockstorages/bs-1"},` +
+	`"blockStorage":{"uri":"/projects/p/providers/Aruba.Storage/blockStorages/bs-1"},` +
 	`"adminUser":{"username":"admin"},"size":"Small","billingPlan":{"billingPeriod":"Hour"}` +
 	`},` +
 	`"status":{"state":"Active"}}`
@@ -657,9 +657,9 @@ func TestContainerRegistriesClientAdapter_Create_Success(t *testing.T) {
 		InRegion(RegionITBGBergamo).
 		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1")).
 		WithSubnet(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1")).
-		WithSecurityGroup(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1")).
+		WithSecurityGroup(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-1")).
 		WithElasticIP(URI("/projects/p/providers/Aruba.Network/elasticips/eip-1")).
-		WithBlockStorage(URI("/projects/p/providers/Aruba.Storage/blockstorages/bs-1")).
+		WithBlockStorage(URI("/projects/p/providers/Aruba.Storage/blockStorages/bs-1")).
 		WithAdminUsername("admin").
 		OfSize(ContainerRegistrySizeFlavorSmall).
 		WithBillingPeriod(BillingPeriodHour)
@@ -756,9 +756,9 @@ func TestContainerRegistriesClientAdapter_Create_NonTwoXX(t *testing.T) {
 func TestContainerRegistriesClientAdapter_Create_WithBodyRefs_ViaFake(t *testing.T) {
 	vpcURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1"
 	subnetURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1"
-	sgURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1"
+	sgURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-1"
 	eipURI := "/projects/p/providers/Aruba.Network/elasticips/eip-1"
-	bsURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
+	bsURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"
 
 	var captured types.ContainerRegistryRequest
 	resp := &types.Response[types.ContainerRegistryResponse]{

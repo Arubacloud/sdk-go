@@ -296,7 +296,7 @@ func TestVPCPeering_FromResponsePartial(t *testing.T) {
 }
 
 func TestVPCPeering_FromResponseURIBackfill(t *testing.T) {
-	uri := "/projects/p2/network/vpcs/v2/peerings/peer-2"
+	uri := "/projects/p2/providers/Aruba.Network/vpcs/v2/vpcPeerings/peer-2"
 	id := "peer-2"
 	name := "uri-peering"
 	resp := &types.VPCPeeringResponse{
@@ -333,7 +333,7 @@ func TestVPCPeering_RefSatisfaction(t *testing.T) {
 			return w.VPCPeeringID(), true
 		}
 		return "", false
-	}, "vpc-peerings")
+	}, "vpcPeerings")
 	if !ok || pid != "peer-99" {
 		t.Errorf("extractID via withVPCPeeringID = (%q, %v)", pid, ok)
 	}
@@ -368,7 +368,7 @@ func TestVPCPeering_RefSatisfaction(t *testing.T) {
 func TestVPCPeeringIDsFromRef_TypedRef(t *testing.T) {
 	p := &VPCPeering{}
 	p.fromResponse(vpcPeeringTestResponse("peer-1", "n",
-		"/projects/p/network/vpcs/v/peerings/peer-1", "p"))
+		"/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1", "p"))
 	pid, vid, peerid, err := vpcPeeringIDsFromRef(p)
 	if err != nil || pid != "p" || vid != "v" || peerid != "peer-1" {
 		t.Errorf("vpcPeeringIDsFromRef typed = (%q, %q, %q, %v)", pid, vid, peerid, err)
@@ -380,14 +380,6 @@ func TestVPCPeeringIDsFromRef_URIRef_CamelCase(t *testing.T) {
 	pid, vid, peerid, err := vpcPeeringIDsFromRef(ref)
 	if err != nil || pid != "p" || vid != "v" || peerid != "peer-1" {
 		t.Errorf("vpcPeeringIDsFromRef camelCase = (%q, %q, %q, %v)", pid, vid, peerid, err)
-	}
-}
-
-func TestVPCPeeringIDsFromRef_URIRef_LowerCase(t *testing.T) {
-	ref := URI("/projects/p/network/vpcs/v/peerings/peer-1")
-	pid, vid, peerid, err := vpcPeeringIDsFromRef(ref)
-	if err != nil || pid != "p" || vid != "v" || peerid != "peer-1" {
-		t.Errorf("vpcPeeringIDsFromRef lowercase = (%q, %q, %q, %v)", pid, vid, peerid, err)
 	}
 }
 
@@ -775,16 +767,16 @@ func TestVPCPeeringsClientAdapter_List_NonTwoXX(t *testing.T) {
 }
 
 func TestVPCPeeringIDsFromRef_BadURI_MissingVPC(t *testing.T) {
-	// URI has vpc-peerings but no vpcs segment
-	_, _, _, err := vpcPeeringIDsFromRef(URI("/projects/p/vpc-peerings/peer"))
+	// URI has vpcPeerings but no vpcs segment
+	_, _, _, err := vpcPeeringIDsFromRef(URI("/projects/p/vpcPeerings/peer"))
 	if err == nil {
 		t.Error("expected error for URI without /vpcs/<id>")
 	}
 }
 
 func TestVPCPeeringIDsFromRef_BadURI_MissingProject(t *testing.T) {
-	// URI has vpc-peerings+vpcs but no projects
-	_, _, _, err := vpcPeeringIDsFromRef(URI("/providers/Aruba.Network/vpcs/v/vpc-peerings/peer"))
+	// URI has vpcPeerings+vpcs but no projects
+	_, _, _, err := vpcPeeringIDsFromRef(URI("/providers/Aruba.Network/vpcs/v/vpcPeerings/peer"))
 	if err == nil {
 		t.Error("expected error for URI without /projects/<id>")
 	}
@@ -835,7 +827,7 @@ func TestVPCPeeringsClientAdapter_Get_TransportError(t *testing.T) {
 		conn.Close()
 	})
 	adapter := newVPCPeeringsClientAdapter(testutil.NewClient(t, server.URL))
-	result, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v/vpc-peerings/peer"))
+	result, err := adapter.Get(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer"))
 	if err == nil {
 		t.Fatal("expected transport error")
 	}
@@ -888,7 +880,7 @@ func TestVPCPeeringsClientAdapter_Delete_TransportError(t *testing.T) {
 		conn.Close()
 	})
 	adapter := newVPCPeeringsClientAdapter(testutil.NewClient(t, server.URL))
-	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v/vpc-peerings/peer"))
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer"))
 	if err == nil {
 		t.Fatal("expected transport error")
 	}

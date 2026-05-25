@@ -11,7 +11,7 @@ import (
 
 // LoadBalancerRef returns a Ref that points to the LoadBalancer with the given IDs.
 func LoadBalancerRef(projectID, lbID string) Ref {
-	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/loadbalancers/%s", projectID, lbID))
+	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/loadBalancers/%s", projectID, lbID))
 }
 
 // ---- Wrapper ----
@@ -270,7 +270,7 @@ func loadBalancerIDsFromRef(ref Ref) (projectID, loadBalancerID string, err erro
 			return w.LoadBalancerID(), true
 		}
 		return "", false
-	}, "loadbalancers")
+	}, "loadBalancers")
 	if !ok || lid == "" {
 		return "", "", fmt.Errorf("cannot determine load balancer ID from Ref %q", ref.URI())
 	}

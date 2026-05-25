@@ -33,13 +33,13 @@ func TestListContainerRegistry(t *testing.T) {
 									URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"),
 								},
 								SecurityGroup: types.ReferenceResource{
-									URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"),
+									URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890"),
 								},
 								PublicIp: types.ReferenceResource{
 									URI: *ptr.To("/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"),
 								},
 								BlockStorage: types.ReferenceResource{
-									URI: *ptr.To("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
+									URI: *ptr.To("/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321"),
 								},
 								BillingPlan: func() *types.BillingPlan {
 									v := types.BillingPeriodHour
@@ -92,10 +92,10 @@ func TestListContainerRegistry(t *testing.T) {
 		if resp.Data.Values[0].Properties.Subnet.URI != "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124" {
 			t.Errorf("expected Subnet URI")
 		}
-		if resp.Data.Values[0].Properties.SecurityGroup.URI != "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890" {
+		if resp.Data.Values[0].Properties.SecurityGroup.URI != "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890" {
 			t.Errorf("expected SecurityGroup URI")
 		}
-		if resp.Data.Values[0].Properties.BlockStorage.URI != "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321" {
+		if resp.Data.Values[0].Properties.BlockStorage.URI != "/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321" {
 			t.Errorf("expected BlockStorage URI")
 		}
 		if resp.Data.Values[0].Properties.BillingPlan == nil || resp.Data.Values[0].Properties.BillingPlan.BillingPeriod == nil || *resp.Data.Values[0].Properties.BillingPlan.BillingPeriod != "Hour" {
@@ -201,13 +201,13 @@ func TestGetContainerRegistry(t *testing.T) {
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"),
 						},
 						SecurityGroup: types.ReferenceResource{
-							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890"),
 						},
 						PublicIp: types.ReferenceResource{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"),
 						},
 						BlockStorage: types.ReferenceResource{
-							URI: *ptr.To("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321"),
 						},
 						BillingPlan: func() *types.BillingPlan {
 							v := types.BillingPeriodHour
@@ -249,10 +249,10 @@ func TestGetContainerRegistry(t *testing.T) {
 		if resp.Data.Properties.Subnet.URI != "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124" {
 			t.Errorf("expected Subnet URI")
 		}
-		if resp.Data.Properties.SecurityGroup.URI != "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890" {
+		if resp.Data.Properties.SecurityGroup.URI != "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890" {
 			t.Errorf("expected SecurityGroup URI")
 		}
-		if resp.Data.Properties.BlockStorage.URI != "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321" {
+		if resp.Data.Properties.BlockStorage.URI != "/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321" {
 			t.Errorf("expected BlockStorage URI")
 		}
 		if resp.Data.Properties.BillingPlan == nil || resp.Data.Properties.BillingPlan.BillingPeriod == nil || *resp.Data.Properties.BillingPlan.BillingPeriod != "Hour" {
@@ -360,13 +360,13 @@ func TestCreateContainerRegistry(t *testing.T) {
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"),
 						},
 						SecurityGroup: types.ReferenceResource{
-							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890"),
 						},
 						PublicIp: types.ReferenceResource{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"),
 						},
 						BlockStorage: types.ReferenceResource{
-							URI: *ptr.To("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321"),
 						},
 						BillingPlan: func() *types.BillingPlan {
 							v := types.BillingPeriodHour
@@ -399,8 +399,8 @@ func TestCreateContainerRegistry(t *testing.T) {
 				PublicIp:      types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"},
 				VPC:           types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"},
 				Subnet:        types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"},
-				SecurityGroup: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"},
-				BlockStorage:  types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"},
+				SecurityGroup: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890"},
+				BlockStorage:  types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321"},
 				BillingPlan: func() *types.BillingPlan {
 					v := types.BillingPeriod("Hour")
 					return &types.BillingPlan{BillingPeriod: &v}
@@ -429,10 +429,10 @@ func TestCreateContainerRegistry(t *testing.T) {
 		if resp.Data.Properties.Subnet.URI != "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124" {
 			t.Errorf("expected Subnet URI")
 		}
-		if resp.Data.Properties.SecurityGroup.URI != "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890" {
+		if resp.Data.Properties.SecurityGroup.URI != "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890" {
 			t.Errorf("expected SecurityGroup URI")
 		}
-		if resp.Data.Properties.BlockStorage.URI != "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321" {
+		if resp.Data.Properties.BlockStorage.URI != "/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321" {
 			t.Errorf("expected BlockStorage URI")
 		}
 		if resp.Data.Properties.BillingPlan == nil || resp.Data.Properties.BillingPlan.BillingPeriod == nil || *resp.Data.Properties.BillingPlan.BillingPeriod != "Hour" {
@@ -601,13 +601,13 @@ func TestUpdateContainerRegistry(t *testing.T) {
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"),
 						},
 						SecurityGroup: types.ReferenceResource{
-							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890"),
 						},
 						PublicIp: types.ReferenceResource{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"),
 						},
 						BlockStorage: types.ReferenceResource{
-							URI: *ptr.To("/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"),
+							URI: *ptr.To("/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321"),
 						},
 						BillingPlan: func() *types.BillingPlan {
 							v := types.BillingPeriodHour
@@ -640,8 +640,8 @@ func TestUpdateContainerRegistry(t *testing.T) {
 				PublicIp:      types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"},
 				VPC:           types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"},
 				Subnet:        types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"},
-				SecurityGroup: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890"},
-				BlockStorage:  types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321"},
+				SecurityGroup: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890"},
+				BlockStorage:  types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321"},
 				BillingPlan: func() *types.BillingPlan {
 					v := types.BillingPeriod("Hour")
 					return &types.BillingPlan{BillingPeriod: &v}
@@ -670,10 +670,10 @@ func TestUpdateContainerRegistry(t *testing.T) {
 		if resp.Data.Properties.Subnet.URI != "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124" {
 			t.Errorf("expected Subnet URI")
 		}
-		if resp.Data.Properties.SecurityGroup.URI != "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-67890" {
+		if resp.Data.Properties.SecurityGroup.URI != "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890" {
 			t.Errorf("expected SecurityGroup URI")
 		}
-		if resp.Data.Properties.BlockStorage.URI != "/projects/test-project/providers/Aruba.Storage/blockstorages/bs-54321" {
+		if resp.Data.Properties.BlockStorage.URI != "/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321" {
 			t.Errorf("expected BlockStorage URI")
 		}
 		if resp.Data.Properties.BillingPlan == nil || resp.Data.Properties.BillingPlan.BillingPeriod == nil || *resp.Data.Properties.BillingPlan.BillingPeriod != "Hour" {

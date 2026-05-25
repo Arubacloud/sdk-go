@@ -10,6 +10,6 @@ const (
 	CloudServerPasswordPath = "/projects/%s/providers/Aruba.Compute/cloudServers/%s/password"
 
 	// KeyPair paths
-	KeyPairsPath = "/projects/%s/providers/Aruba.Compute/keypairs"
-	KeyPairPath  = "/projects/%s/providers/Aruba.Compute/keypairs/%s"
+	KeyPairsPath = "/projects/%s/providers/Aruba.Compute/keyPairs"
+	KeyPairPath  = "/projects/%s/providers/Aruba.Compute/keyPairs/%s"
 )

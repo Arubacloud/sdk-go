@@ -472,7 +472,7 @@ func kaasTestResponse(name string) *types.KaaSResponse {
 	vpcURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1"
 	subnetURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1"
 	sgName := "sg-name"
-	sgURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/securitygroups/sg-1"
+	sgURI := "/projects/p/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-1"
 	nodeCIDRAddr := "10.100.0.0/16"
 	nodeCIDRName := "node-cidr"
 	podCIDRAddr := "10.200.0.0/16"

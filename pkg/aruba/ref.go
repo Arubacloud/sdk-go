@@ -41,8 +41,8 @@ var namespaceSegments = map[string]bool{
 
 // parseURIIDs splits a URI path into resource-type → id pairs, skipping namespace prefixes.
 //
-// Example: "/projects/p/network/vpcs/v/security-groups/s"
-// → {"projects":"p","vpcs":"v","security-groups":"s"}
+// Example: "/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/s"
+// → {"projects":"p","providers":"Aruba.Network","vpcs":"v","securityGroups":"s"}
 func parseURIIDs(uri string) map[string]string {
 	result := make(map[string]string)
 	parts := strings.Split(strings.TrimPrefix(uri, "/"), "/")

@@ -103,7 +103,7 @@ func TestSnapshot_IntoProject_BadRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestSnapshot_FromVolume_URIRef(t *testing.T) {
-	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
+	volURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"
 	snap := NewSnapshot().FromVolume(URI(volURI))
 	if snap.VolumeURI() != volURI {
 		t.Errorf("VolumeURI() = %q", snap.VolumeURI())
@@ -116,7 +116,7 @@ func TestSnapshot_FromVolume_URIRef(t *testing.T) {
 func TestSnapshot_FromVolume_TypedRef(t *testing.T) {
 	// Simulate a typed BlockStorage with a known URI.
 	bs := &BlockStorage{}
-	bs.fromResponse(blockStorageTestResponse("bs-42", "n", "/projects/p/providers/Aruba.Storage/blockstorages/bs-42", "p"))
+	bs.fromResponse(blockStorageTestResponse("bs-42", "n", "/projects/p/providers/Aruba.Storage/blockStorages/bs-42", "p"))
 
 	snap := NewSnapshot().FromVolume(bs)
 	if snap.VolumeURI() != bs.URI() {
@@ -142,7 +142,7 @@ func TestSnapshot_FromVolume_EmptyURI(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestSnapshot_ToRequestRoundTrip(t *testing.T) {
-	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
+	volURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"
 	snap := NewSnapshot().Named(
 		"snap-rt").
 		AddTag("t1").AddTag("t2").
@@ -193,7 +193,7 @@ func snapshotTestResponse(id, name, uri, projectID string) *types.SnapshotRespon
 	sizeGB := int32(20)
 	boot := true
 	zone := ZoneITBG1
-	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
+	volURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"
 	return &types.SnapshotResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:               &id,
@@ -268,7 +268,7 @@ func TestSnapshot_FromResponseHydration(t *testing.T) {
 	if !snap.Bootable() {
 		t.Error("Bootable() should be true")
 	}
-	if snap.VolumeURI() != "/projects/p/providers/Aruba.Storage/blockstorages/bs-1" {
+	if snap.VolumeURI() != "/projects/p/providers/Aruba.Storage/blockStorages/bs-1" {
 		t.Errorf("VolumeURI() = %q", snap.VolumeURI())
 	}
 	if snap.ProjectID() != "p1" {
@@ -565,7 +565,7 @@ func TestSnapshotsClientAdapter_Create_NonTwoXX(t *testing.T) {
 // TestSnapshotsClientAdapter_Create_WithVolume uses the fake low-level client
 // to assert the Volume.URI is wired correctly in the request body.
 func TestSnapshotsClientAdapter_Create_WithVolume(t *testing.T) {
-	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
+	volURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"
 	var capturedBody types.SnapshotRequest
 
 	snapResp := snapshotTestResponse("snap-1", "my-snap", "/projects/p/providers/Aruba.Storage/snapshots/snap-1", "p")

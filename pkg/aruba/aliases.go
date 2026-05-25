@@ -419,7 +419,7 @@ type AcceptHeader = types.AcceptHeader
 // IKEEncryption is the encryption algorithm for IKESettings.Encryption.
 // Values are StrongSwan wire identifiers. The authoritative list is at:
 //
-//	GET /providers/Aruba.Network/vpn-tunnels
+//	GET /providers/Aruba.Network/vpnTunnels
 type IKEEncryption = types.IKEEncryption
 
 const (
@@ -543,7 +543,7 @@ const (
 // ESPEncryption is the encryption algorithm for ESPSettings.Encryption.
 // Values are StrongSwan wire identifiers. The authoritative list is at:
 //
-//	GET /providers/Aruba.Network/vpn-tunnels
+//	GET /providers/Aruba.Network/vpnTunnels
 type ESPEncryption = types.ESPEncryption
 
 const (

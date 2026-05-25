@@ -11,20 +11,20 @@ const (
 	SubnetPath  = "/projects/%s/providers/Aruba.Network/vpcs/%s/subnets/%s"
 
 	// Security Group paths (nested under VPC)
-	SecurityGroupsPath = "/projects/%s/providers/Aruba.Network/vpcs/%s/securitygroups"
-	SecurityGroupPath  = "/projects/%s/providers/Aruba.Network/vpcs/%s/securitygroups/%s"
+	SecurityGroupsPath = "/projects/%s/providers/Aruba.Network/vpcs/%s/securityGroups"
+	SecurityGroupPath  = "/projects/%s/providers/Aruba.Network/vpcs/%s/securityGroups/%s"
 
 	// Security Group Rule paths (nested under VPC and Security Group)
-	SecurityGroupRulesPath = "/projects/%s/providers/Aruba.Network/vpcs/%s/securitygroups/%s/securityrules"
-	SecurityGroupRulePath  = "/projects/%s/providers/Aruba.Network/vpcs/%s/securitygroups/%s/securityrules/%s"
+	SecurityGroupRulesPath = "/projects/%s/providers/Aruba.Network/vpcs/%s/securityGroups/%s/securityRules"
+	SecurityGroupRulePath  = "/projects/%s/providers/Aruba.Network/vpcs/%s/securityGroups/%s/securityRules/%s"
 
 	// Elastic IP paths
 	ElasticIPsPath = "/projects/%s/providers/Aruba.Network/elasticIps"
 	ElasticIPPath  = "/projects/%s/providers/Aruba.Network/elasticIps/%s"
 
 	// Load Balancer paths
-	LoadBalancersPath = "/projects/%s/providers/Aruba.Network/loadbalancers"
-	LoadBalancerPath  = "/projects/%s/providers/Aruba.Network/loadbalancers/%s"
+	LoadBalancersPath = "/projects/%s/providers/Aruba.Network/loadBalancers"
+	LoadBalancerPath  = "/projects/%s/providers/Aruba.Network/loadBalancers/%s"
 
 	// VPC Peering Connection paths
 	VPCPeeringsPath = "/projects/%s/providers/Aruba.Network/vpcs/%s/vpcPeerings"

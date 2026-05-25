@@ -244,7 +244,7 @@ func TestCreateSecurityGroup(t *testing.T) {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"metadata":{"id":"sg-1","name":"my-sg","uri":"/projects/p/providers/Aruba.Network/vpcs/v/securitygroups/sg-1"}}`)
+			fmt.Fprint(w, `{"metadata":{"id":"sg-1","name":"my-sg","uri":"/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg-1"}}`)
 		})
 		c := testutil.NewClient(t, server.URL)
 		svc := NewSecurityGroupsClientImpl(c, NewVPCsClientImpl(c))

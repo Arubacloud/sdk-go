@@ -28,24 +28,24 @@ func TestParseURIIDs(t *testing.T) {
 			want: map[string]string{"projects": "p", "vpcs": "v"},
 		},
 		{
-			uri:  "/projects/p/network/vpcs/v/security-groups/s",
-			want: map[string]string{"projects": "p", "vpcs": "v", "security-groups": "s"},
+			uri:  "/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/s",
+			want: map[string]string{"projects": "p", "providers": "Aruba.Network", "vpcs": "v", "securityGroups": "s"},
 		},
 		{
-			uri:  "/projects/p/network/vpcs/v/security-groups/s/rules/r",
-			want: map[string]string{"projects": "p", "vpcs": "v", "security-groups": "s", "rules": "r"},
+			uri:  "/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/s/rules/r",
+			want: map[string]string{"projects": "p", "providers": "Aruba.Network", "vpcs": "v", "securityGroups": "s", "rules": "r"},
 		},
 		{
-			uri:  "/projects/p/network/vpcs/v/peerings/pr",
-			want: map[string]string{"projects": "p", "vpcs": "v", "peerings": "pr"},
+			uri:  "/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/pr",
+			want: map[string]string{"projects": "p", "providers": "Aruba.Network", "vpcs": "v", "vpcPeerings": "pr"},
 		},
 		{
-			uri:  "/projects/p/network/vpcs/v/peerings/pr/routes/r",
-			want: map[string]string{"projects": "p", "vpcs": "v", "peerings": "pr", "routes": "r"},
+			uri:  "/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/pr/routes/r",
+			want: map[string]string{"projects": "p", "providers": "Aruba.Network", "vpcs": "v", "vpcPeerings": "pr", "routes": "r"},
 		},
 		{
-			uri:  "/projects/p/network/vpn-tunnels/t",
-			want: map[string]string{"projects": "p", "vpn-tunnels": "t"},
+			uri:  "/projects/p/providers/Aruba.Network/vpnTunnels/t",
+			want: map[string]string{"projects": "p", "providers": "Aruba.Network", "vpnTunnels": "t"},
 		},
 		{
 			uri:  "/projects/p/database/dbaas/d/databases/db",
@@ -84,8 +84,8 @@ func TestParseURIIDs(t *testing.T) {
 // missingSegmentReturnsEmpty verifies that a URI lacking an expected segment returns an empty entry.
 func TestParseURIIDsMissingSegment(t *testing.T) {
 	got := parseURIIDs("/projects/p/network/vpcs/v")
-	if _, ok := got["security-groups"]; ok {
-		t.Error("expected no security-groups key in map")
+	if _, ok := got["securityGroups"]; ok {
+		t.Error("expected no securityGroups key in map")
 	}
 	if got["vpcs"] != "v" {
 		t.Errorf("vpcs = %q, want %q", got["vpcs"], "v")

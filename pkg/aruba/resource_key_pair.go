@@ -337,7 +337,7 @@ func keyPairIDsFromRef(ref Ref) (projectID, keyPairID string, err error) {
 			return w.KeyPairID(), true
 		}
 		return "", false
-	}, "keypairs")
+	}, "keyPairs")
 	if !ok || kid == "" {
 		return "", "", fmt.Errorf("cannot determine KeyPair ID from Ref %q", ref.URI())
 	}

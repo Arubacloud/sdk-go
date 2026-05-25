@@ -24,7 +24,7 @@ func TestListRestores(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, `{"total":1,"values":[{"metadata":{"name":"test-restore"},"properties":{"destinationVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"}}}]}`)
+			fmt.Fprint(w, `{"total":1,"values":[{"metadata":{"name":"test-restore"},"properties":{"destinationVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockStorages/vol-789"}}}]}`)
 		})
 		svc := newRestoreSvc(t, server.URL)
 		resp, err := svc.List(context.Background(), "test-project", "backup-123", nil)
@@ -132,7 +132,7 @@ func TestGetRestore(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, `{"metadata":{"name":"test-restore","id":"restore-123"},"properties":{"destinationVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"}}}`)
+			fmt.Fprint(w, `{"metadata":{"name":"test-restore","id":"restore-123"},"properties":{"destinationVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockStorages/vol-789"}}}`)
 		})
 		svc := newRestoreSvc(t, server.URL)
 		resp, err := svc.Get(context.Background(), "test-project", "backup-123", "restore-123", nil)
@@ -245,7 +245,7 @@ func TestCreateRestore(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"metadata":{"name":"new-restore","id":"restore-456","uri":"/projects/test-project/providers/Aruba.Storage/restores/restore-456"},"properties":{"destinationVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"}},"status":{"state":"creating"}}`)
+			fmt.Fprint(w, `{"metadata":{"name":"new-restore","id":"restore-456","uri":"/projects/test-project/providers/Aruba.Storage/restores/restore-456"},"properties":{"destinationVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockStorages/vol-789"}},"status":{"state":"creating"}}`)
 		})
 		svc := newRestoreSvc(t, server.URL)
 		body := types.StorageRestoreRequest{
@@ -253,7 +253,7 @@ func TestCreateRestore(t *testing.T) {
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-restore"},
 			},
 			Properties: types.StorageRestorePropertiesRequest{
-				Target: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"},
+				Target: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockStorages/vol-789"},
 			},
 		}
 		resp, err := svc.Create(context.Background(), "test-project", "backup-123", body, nil)
@@ -415,7 +415,7 @@ func TestUpdateRestore(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, `{"metadata":{"name":"updated-restore","id":"restore-123"},"properties":{"destinationVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"}},"status":{"state":"updating"}}`)
+			fmt.Fprint(w, `{"metadata":{"name":"updated-restore","id":"restore-123"},"properties":{"destinationVolume":{"uri":"/projects/test-project/providers/Aruba.Storage/blockStorages/vol-789"}},"status":{"state":"updating"}}`)
 		})
 		svc := newRestoreSvc(t, server.URL)
 		body := types.StorageRestoreRequest{
@@ -423,7 +423,7 @@ func TestUpdateRestore(t *testing.T) {
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "updated-restore"},
 			},
 			Properties: types.StorageRestorePropertiesRequest{
-				Target: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockstorages/vol-789"},
+				Target: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockStorages/vol-789"},
 			},
 		}
 		resp, err := svc.Update(context.Background(), "test-project", "backup-123", "restore-123", body, nil)

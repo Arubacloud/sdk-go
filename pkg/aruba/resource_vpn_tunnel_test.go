@@ -619,7 +619,7 @@ func TestVPNTunnel_RefSatisfaction(t *testing.T) {
 			return w.VPNTunnelID(), true
 		}
 		return "", false
-	}, "vpn-tunnels")
+	}, "vpnTunnels")
 	if !ok || tid != "t-99" {
 		t.Errorf("extractID via withVPNTunnelID = (%q, %v)", tid, ok)
 	}
@@ -655,14 +655,6 @@ func TestVPNTunnelIDsFromRef_URIRef_CamelCase(t *testing.T) {
 	pid, tid, err := vpnTunnelIDsFromRef(ref)
 	if err != nil || pid != "p" || tid != "t-1" {
 		t.Errorf("vpnTunnelIDsFromRef camelCase = (%q, %q, %v)", pid, tid, err)
-	}
-}
-
-func TestVPNTunnelIDsFromRef_URIRef_KebabCase(t *testing.T) {
-	ref := URI("/projects/p/providers/Aruba.Network/vpn-tunnels/t-1")
-	pid, tid, err := vpnTunnelIDsFromRef(ref)
-	if err != nil || pid != "p" || tid != "t-1" {
-		t.Errorf("vpnTunnelIDsFromRef kebab-case = (%q, %q, %v)", pid, tid, err)
 	}
 }
 

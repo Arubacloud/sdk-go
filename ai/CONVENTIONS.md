@@ -160,3 +160,10 @@ Setter signatures take the alias type, not `string`.
 - Resources that embed `statusMixin` (`pkg/aruba/mixin_status.go`) get `WaitUntilActive`, `WaitUntilReady`, and `WaitUntilStates(ctx, targets, opts...)` for free.
 - Adapters install a `refresh` closure after `Create` / `Get` / `List` — without it, `WaitUntilStates` returns an immediate error.
 - Family B resources without `statusMixin` define their own `WaitUntil*` that drive `pkg/async.WaitFor` directly (e.g. `*Kmip.WaitUntilCertificateAvailable` in `resource_kmip.go`).
+
+### URI segment casing
+
+- URI segments use the **exact casing published at <https://api.arubacloud.com/docs/>**. Examples: `securityGroups`, `securityRules`, `loadBalancers`, `keyPairs`, `blockStorages`, `vpnTunnels`, `vpcPeerings`.
+- Each resource has **one canonical segment**. `*IDsFromRef` helpers and scoped-mixin lookups use that single form — no fallbacks, no alternative spellings.
+- `parseURIIDs` in `pkg/aruba/ref.go` preserves case; never normalise segment keys to lowercase.
+- Ref helper templates (`<Resource>Ref(...)`) and `internal/clients/<domain>/path.go` constants must use the same canonical segment so outgoing requests and incoming `Metadata.URI` values remain self-consistent.

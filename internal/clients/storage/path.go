@@ -4,8 +4,8 @@ package storage
 const (
 
 	// Storage Bucket paths
-	BlockStoragesPath = "/projects/%s/providers/Aruba.Storage/blockstorages"
-	BlockStoragePath  = "/projects/%s/providers/Aruba.Storage/blockstorages/%s"
+	BlockStoragesPath = "/projects/%s/providers/Aruba.Storage/blockStorages"
+	BlockStoragePath  = "/projects/%s/providers/Aruba.Storage/blockStorages/%s"
 
 	//Snapshot paths
 	SnapshotsPath = "/projects/%s/providers/Aruba.Storage/snapshots"

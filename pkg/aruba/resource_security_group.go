@@ -12,7 +12,7 @@ import (
 
 // SecurityGroupRef returns a Ref that points to the SecurityGroup nested under a VPC.
 func SecurityGroupRef(projectID, vpcID, sgID string) Ref {
-	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/vpcs/%s/securitygroups/%s", projectID, vpcID, sgID))
+	return URI(fmt.Sprintf("/projects/%s/providers/Aruba.Network/vpcs/%s/securityGroups/%s", projectID, vpcID, sgID))
 }
 
 // ---- Wrapper ----
@@ -411,7 +411,7 @@ func securityGroupIDsFromRef(ref Ref) (projectID, vpcID, securityGroupID string,
 			return w.SecurityGroupID(), true
 		}
 		return "", false
-	}, "security-groups")
+	}, "securityGroups")
 	if !ok || sgid == "" {
 		return "", "", "", fmt.Errorf("cannot determine security group ID from Ref %q", ref.URI())
 	}

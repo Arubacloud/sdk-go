@@ -171,13 +171,13 @@ func keyPairTestResponse(id, name, uri string) *types.KeyPairResponse {
 
 func TestKeyPair_FromResponseHydration(t *testing.T) {
 	kp := &KeyPair{}
-	resp := keyPairTestResponse("kp-1", "allow-ssh", "/projects/p/providers/Aruba.Compute/keypairs/kp-1")
+	resp := keyPairTestResponse("kp-1", "allow-ssh", "/projects/p/providers/Aruba.Compute/keyPairs/kp-1")
 	kp.fromResponse(resp)
 
 	if kp.ID() != "kp-1" {
 		t.Errorf("ID() = %q", kp.ID())
 	}
-	if kp.URI() != "/projects/p/providers/Aruba.Compute/keypairs/kp-1" {
+	if kp.URI() != "/projects/p/providers/Aruba.Compute/keyPairs/kp-1" {
 		t.Errorf("URI() = %q", kp.URI())
 	}
 	if kp.KeyPairID() != "kp-1" {
@@ -206,7 +206,7 @@ func TestKeyPair_FromResponseHydration(t *testing.T) {
 
 func TestKeyPair_FromResponseURIBackfill(t *testing.T) {
 	id := "kp-99"
-	uri := "/projects/p-uri/providers/Aruba.Compute/keypairs/kp-99"
+	uri := "/projects/p-uri/providers/Aruba.Compute/keyPairs/kp-99"
 	resp := &types.KeyPairResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:  &id,
@@ -241,7 +241,7 @@ func TestKeyPair_FromResponse_NilSafe(t *testing.T) {
 
 func TestKeyPair_RefSatisfaction(t *testing.T) {
 	kp := &KeyPair{}
-	kp.fromResponse(keyPairTestResponse("kp-99", "n", "/projects/p99/providers/Aruba.Compute/keypairs/kp-99"))
+	kp.fromResponse(keyPairTestResponse("kp-99", "n", "/projects/p99/providers/Aruba.Compute/keyPairs/kp-99"))
 
 	// withKeyPairID typed path
 	kid, ok := extractID(kp, func(ref Ref) (string, bool) {
@@ -249,7 +249,7 @@ func TestKeyPair_RefSatisfaction(t *testing.T) {
 			return w.KeyPairID(), true
 		}
 		return "", false
-	}, "keypairs")
+	}, "keyPairs")
 	if !ok || kid != "kp-99" {
 		t.Errorf("extractID via withKeyPairID = (%q, %v)", kid, ok)
 	}
@@ -272,7 +272,7 @@ func TestKeyPair_RefSatisfaction(t *testing.T) {
 
 func TestKeyPairIDsFromRef_TypedRef(t *testing.T) {
 	kp := &KeyPair{}
-	kp.fromResponse(keyPairTestResponse("kp-1", "n", "/projects/p/providers/Aruba.Compute/keypairs/kp-1"))
+	kp.fromResponse(keyPairTestResponse("kp-1", "n", "/projects/p/providers/Aruba.Compute/keyPairs/kp-1"))
 	pid, kid, err := keyPairIDsFromRef(kp)
 	if err != nil || pid != "p" || kid != "kp-1" {
 		t.Errorf("keyPairIDsFromRef typed = (%q, %q, %v)", pid, kid, err)
@@ -280,7 +280,7 @@ func TestKeyPairIDsFromRef_TypedRef(t *testing.T) {
 }
 
 func TestKeyPairIDsFromRef_URIRef(t *testing.T) {
-	ref := URI("/projects/p/providers/Aruba.Compute/keypairs/kp-1")
+	ref := URI("/projects/p/providers/Aruba.Compute/keyPairs/kp-1")
 	pid, kid, err := keyPairIDsFromRef(ref)
 	if err != nil || pid != "p" || kid != "kp-1" {
 		t.Errorf("keyPairIDsFromRef URI = (%q, %q, %v)", pid, kid, err)
@@ -290,12 +290,12 @@ func TestKeyPairIDsFromRef_URIRef(t *testing.T) {
 func TestKeyPairIDsFromRef_BadURI_MissingKeyPair(t *testing.T) {
 	_, _, err := keyPairIDsFromRef(URI("/projects/p/providers/Aruba.Compute"))
 	if err == nil {
-		t.Error("expected error for URI without /keypairs/<id>")
+		t.Error("expected error for URI without /keyPairs/<id>")
 	}
 }
 
 func TestKeyPairIDsFromRef_BadURI_MissingProject(t *testing.T) {
-	_, _, err := keyPairIDsFromRef(URI("/providers/Aruba.Compute/keypairs/kp-1"))
+	_, _, err := keyPairIDsFromRef(URI("/providers/Aruba.Compute/keyPairs/kp-1"))
 	if err == nil {
 		t.Error("expected error for URI without /projects/<id>")
 	}
@@ -319,7 +319,7 @@ func buildKeyPairsTestAdapter(t *testing.T, handler http.HandlerFunc) *keyPairsC
 }
 
 const keyPairSuccessBody = `{` +
-	`"metadata":{"id":"kp-1","name":"allow-ssh","uri":"/projects/p/providers/Aruba.Compute/keypairs/kp-1"},` +
+	`"metadata":{"id":"kp-1","name":"allow-ssh","uri":"/projects/p/providers/Aruba.Compute/keyPairs/kp-1"},` +
 	`"properties":{"value":"ssh-rsa AAAA..."}}`
 
 func TestKeyPairsClientAdapter_Create_Success(t *testing.T) {
@@ -328,7 +328,7 @@ func TestKeyPairsClientAdapter_Create_Success(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
 			t.Errorf("decode request body: %v", err)
 		}
-		if !containsSubstring(r.URL.Path, "keypairs") {
+		if !containsSubstring(r.URL.Path, "keyPairs") {
 			t.Errorf("path %q should contain 'keypairs'", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -385,7 +385,7 @@ func TestKeyPairsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		// Missing "id" field — triggers MetadataValidationError
-		fmt.Fprint(w, `{"metadata":{"name":"kp","uri":"/projects/p/providers/Aruba.Compute/keypairs/x"},"properties":{}}`)
+		fmt.Fprint(w, `{"metadata":{"name":"kp","uri":"/projects/p/providers/Aruba.Compute/keyPairs/x"},"properties":{}}`)
 	})
 
 	kp := NewKeyPair().IntoProject(URI("/projects/p")).
@@ -436,7 +436,7 @@ func TestKeyPairsClientAdapter_Get_URIRef(t *testing.T) {
 		fmt.Fprint(w, keyPairSuccessBody)
 	})
 
-	ref := URI("/projects/p/providers/Aruba.Compute/keypairs/kp-1")
+	ref := URI("/projects/p/providers/Aruba.Compute/keyPairs/kp-1")
 	result, err := adapter.Get(context.Background(), ref)
 	if err != nil {
 		t.Fatalf("Get error: %v", err)
@@ -447,7 +447,7 @@ func TestKeyPairsClientAdapter_Get_URIRef(t *testing.T) {
 	if result.ProjectID() != "p" {
 		t.Errorf("ProjectID() = %q", result.ProjectID())
 	}
-	if !containsSubstring(capturedPath, "keypairs") {
+	if !containsSubstring(capturedPath, "keyPairs") {
 		t.Errorf("path %q should contain 'keypairs'", capturedPath)
 	}
 }
@@ -460,7 +460,7 @@ func TestKeyPairsClientAdapter_Get_TypedRef(t *testing.T) {
 	})
 
 	existing := &KeyPair{}
-	existing.fromResponse(keyPairTestResponse("kp-1", "n", "/projects/p/providers/Aruba.Compute/keypairs/kp-1"))
+	existing.fromResponse(keyPairTestResponse("kp-1", "n", "/projects/p/providers/Aruba.Compute/keyPairs/kp-1"))
 
 	result, err := adapter.Get(context.Background(), existing)
 	if err != nil {
@@ -482,7 +482,7 @@ func TestKeyPairsClientAdapter_Delete_Success(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Compute/keypairs/kp-1"))
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Compute/keyPairs/kp-1"))
 	if err != nil {
 		t.Fatalf("Delete error: %v", err)
 	}
@@ -495,7 +495,7 @@ func TestKeyPairsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "key pair not found", 404))
 	})
 
-	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Compute/keypairs/missing"))
+	err := adapter.Delete(context.Background(), URI("/projects/p/providers/Aruba.Compute/keyPairs/missing"))
 	if err == nil {
 		t.Fatal("expected error on 404")
 	}
@@ -513,8 +513,8 @@ func TestKeyPairsClientAdapter_List_TwoItems(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
-			`{"metadata":{"id":"kp-1","name":"n1","uri":"/projects/p/providers/Aruba.Compute/keypairs/kp-1"},"properties":{"value":"ssh-rsa AAAA..."}},`+
-			`{"metadata":{"id":"kp-2","name":"n2","uri":"/projects/p/providers/Aruba.Compute/keypairs/kp-2"},"properties":{"value":"ssh-rsa BBBB..."}}`+
+			`{"metadata":{"id":"kp-1","name":"n1","uri":"/projects/p/providers/Aruba.Compute/keyPairs/kp-1"},"properties":{"value":"ssh-rsa AAAA..."}},`+
+			`{"metadata":{"id":"kp-2","name":"n2","uri":"/projects/p/providers/Aruba.Compute/keyPairs/kp-2"},"properties":{"value":"ssh-rsa BBBB..."}}`+
 			`]}`)
 	})
 
@@ -565,7 +565,7 @@ func TestKeyPairsClientAdapter_Get_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "key pair not found", 404))
 	})
 
-	ref := URI("/projects/p/providers/Aruba.Compute/keypairs/kp-missing")
+	ref := URI("/projects/p/providers/Aruba.Compute/keyPairs/kp-missing")
 	result, err := adapter.Get(context.Background(), ref)
 	if err == nil {
 		t.Fatal("expected error on 404")

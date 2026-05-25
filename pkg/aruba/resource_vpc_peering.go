@@ -422,27 +422,13 @@ func (a *vpcPeeringsClientAdapter) List(ctx context.Context, vpc Ref, opts ...Ca
 }
 
 // vpcPeeringIDsFromRef extracts (projectID, vpcID, vpcPeeringID) from a Ref.
-// Accepts the production camelCase segment "vpcPeerings" and the mixin/test form "peerings".
 func vpcPeeringIDsFromRef(ref Ref) (projectID, vpcID, vpcPeeringID string, err error) {
 	pid, ok := extractID(ref, func(r Ref) (string, bool) {
 		if w, ok := r.(withVPCPeeringID); ok {
 			return w.VPCPeeringID(), true
 		}
 		return "", false
-	}, "vpc-peerings")
-	if !ok || pid == "" {
-		m := parseURIIDs(ref.URI())
-		if v := m["vpcPeerings"]; v != "" {
-			pid = v
-			ok = true
-		}
-		if pid == "" {
-			if v := m["peerings"]; v != "" {
-				pid = v
-				ok = true
-			}
-		}
-	}
+	}, "vpcPeerings")
 	if !ok || pid == "" {
 		return "", "", "", fmt.Errorf("cannot determine VPC peering ID from Ref %q", ref.URI())
 	}

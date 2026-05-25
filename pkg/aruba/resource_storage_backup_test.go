@@ -111,7 +111,7 @@ func TestStorageBackup_IntoProject_BadRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestStorageBackup_FromVolume_URIRef(t *testing.T) {
-	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
+	volURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"
 	bkp := NewStorageBackup().FromVolume(URI(volURI))
 	if bkp.OriginURI() != volURI {
 		t.Errorf("OriginURI() = %q", bkp.OriginURI())
@@ -123,7 +123,7 @@ func TestStorageBackup_FromVolume_URIRef(t *testing.T) {
 
 func TestStorageBackup_FromVolume_TypedRef(t *testing.T) {
 	bs := &BlockStorage{}
-	bs.fromResponse(blockStorageTestResponse("bs-42", "n", "/projects/p/providers/Aruba.Storage/blockstorages/bs-42", "p"))
+	bs.fromResponse(blockStorageTestResponse("bs-42", "n", "/projects/p/providers/Aruba.Storage/blockStorages/bs-42", "p"))
 
 	bkp := NewStorageBackup().FromVolume(bs)
 	if bkp.OriginURI() != bs.URI() {
@@ -164,7 +164,7 @@ func TestStorageBackup_OfType_Enum(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestStorageBackup_ToRequestRoundTrip(t *testing.T) {
-	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
+	volURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"
 	bkp := NewStorageBackup().Named(
 		"bkp-rt").
 		AddTag("t1").AddTag("t2").
@@ -227,7 +227,7 @@ func storageBackupTestResponse(id, name, uri, projectID string) *types.StorageBa
 	state := types.State("Active")
 	billingPeriod := BillingPeriodHour
 	retentionDays := 30
-	originURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
+	originURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"
 	return &types.StorageBackupResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:               &id,
@@ -286,7 +286,7 @@ func TestStorageBackup_FromResponseHydration(t *testing.T) {
 	if bkp.Type() != StorageBackupTypeFull {
 		t.Errorf("Type() = %q", bkp.Type())
 	}
-	if bkp.OriginURI() != "/projects/p/providers/Aruba.Storage/blockstorages/bs-1" {
+	if bkp.OriginURI() != "/projects/p/providers/Aruba.Storage/blockStorages/bs-1" {
 		t.Errorf("OriginURI() = %q", bkp.OriginURI())
 	}
 	if bkp.RetentionDays() != 30 {
@@ -453,7 +453,7 @@ func buildStorageBackupsTestAdapter(t *testing.T, handler http.HandlerFunc) *sto
 
 const storageBackupSuccessBody = `{` +
 	`"metadata":{"id":"bkp-1","name":"my-backup","uri":"/projects/p/providers/Aruba.Storage/backups/bkp-1","project":{"id":"p"}},` +
-	`"properties":{"type":"Full","sourceVolume":{"uri":"/projects/p/providers/Aruba.Storage/blockstorages/bs-1"},"retentionDays":30,"billingPeriod":"Hour"},` +
+	`"properties":{"type":"Full","sourceVolume":{"uri":"/projects/p/providers/Aruba.Storage/blockStorages/bs-1"},"retentionDays":30,"billingPeriod":"Hour"},` +
 	`"status":{"state":"Active"}}`
 
 func TestStorageBackupsClientAdapter_Create_Success(t *testing.T) {
@@ -500,7 +500,7 @@ func TestStorageBackupsClientAdapter_Create_Success(t *testing.T) {
 }
 
 func TestStorageBackupsClientAdapter_Create_FromVolume(t *testing.T) {
-	volURI := "/projects/p/providers/Aruba.Storage/blockstorages/bs-1"
+	volURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"
 	var capturedBody types.StorageBackupRequest
 
 	bkpResp := storageBackupTestResponse("bkp-1", "my-backup", "/projects/p/providers/Aruba.Storage/backups/bkp-1", "p")
@@ -883,8 +883,8 @@ func TestStorageBackupsClientAdapter_List_TwoItems(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
-			`{"metadata":{"id":"bkp-1","name":"n1","uri":"/projects/p/providers/Aruba.Storage/backups/bkp-1","project":{"id":"p"}},"properties":{"type":"Full","sourceVolume":{"uri":"/projects/p/providers/Aruba.Storage/blockstorages/bs-1"},"retentionDays":10},"status":{}},`+
-			`{"metadata":{"id":"bkp-2","name":"n2","uri":"/projects/p/providers/Aruba.Storage/backups/bkp-2","project":{"id":"p"}},"properties":{"type":"Incremental","sourceVolume":{"uri":"/projects/p/providers/Aruba.Storage/blockstorages/bs-2"},"retentionDays":20},"status":{}}`+
+			`{"metadata":{"id":"bkp-1","name":"n1","uri":"/projects/p/providers/Aruba.Storage/backups/bkp-1","project":{"id":"p"}},"properties":{"type":"Full","sourceVolume":{"uri":"/projects/p/providers/Aruba.Storage/blockStorages/bs-1"},"retentionDays":10},"status":{}},`+
+			`{"metadata":{"id":"bkp-2","name":"n2","uri":"/projects/p/providers/Aruba.Storage/backups/bkp-2","project":{"id":"p"}},"properties":{"type":"Incremental","sourceVolume":{"uri":"/projects/p/providers/Aruba.Storage/blockStorages/bs-2"},"retentionDays":20},"status":{}}`+
 			`]}`)
 	})
 
