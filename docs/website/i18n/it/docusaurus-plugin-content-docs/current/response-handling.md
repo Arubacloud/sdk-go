@@ -25,7 +25,7 @@ Quando l'API restituisce una risposta 4xx o 5xx, l'SDK la racchiude in `*aruba.H
 ```go
 import "errors"
 
-vpc, err := arubaClient.FromNetwork().VPCs().Create(ctx, vpc)
+vpc, err := arubaClient.FromNetwork().VPCs().Get(ctx, ref)
 if err != nil {
     var httpErr *aruba.HTTPError
     if errors.As(err, &httpErr) {
@@ -77,7 +77,9 @@ proj, err := arubaClient.FromProject().Create(ctx, p)
 
 fmt.Println("Status:", proj.StatusCode())
 fmt.Println("Headers:", proj.Headers())
-fmt.Println("Raw body:", string(proj.RawHTTP()))
+rawResp, rawBody := proj.RawHTTP()
+fmt.Println("Raw body:", string(rawBody))
+fmt.Println("HTTP status:", rawResp.StatusCode)
 fmt.Println("Error body (if any):", proj.RawError())
 ```
 
@@ -92,6 +94,52 @@ if err != nil { /* … */ }
 raw := vpc.Raw()                         // struct wire sottostante
 fmt.Println(raw.Properties.IsDefault)    // campo non sul wrapper
 ```
+
+### Convenienza JSON / YAML
+
+Per flag CLI del tipo `--output json` / `--output yaml`, ogni wrapper espone byte slice pre-serializzati:
+
+```go
+fmt.Println(string(vpc.RawJSON()))   // payload codificato in JSON
+fmt.Println(string(vpc.RawYAML()))   // payload codificato in YAML
+```
+
+Restituisce `nil` se il wrapper non è ancora stato popolato (receiver con valore zero).
+
+## Risposte Lista
+
+`List[T]` espone la stessa superficie di introspezione dei wrapper a risorsa singola, senza mai dover importare `pkg/types`:
+
+```go
+vpcList, err := arubaClient.FromNetwork().VPCs().List(ctx, proj)
+if err != nil { /* … */ }
+
+// Paginazione e conteggi — accessor tipizzati sul wrapper.
+fmt.Println("server total:", vpcList.Total())
+if vpcList.HasNext() {
+    nextPage, _ := vpcList.Next(ctx)
+    _ = nextPage
+}
+
+// Envelope HTTP — stessi accessor dei wrapper a risorsa singola.
+fmt.Println("status:", vpcList.StatusCode())
+fmt.Println("trace-id:", vpcList.Headers().Get("X-Trace-Id"))
+_, body := vpcList.RawHTTP()
+fmt.Println("raw body bytes:", len(body))
+```
+
+### Convenienza JSON / YAML
+
+Anche `List[T]` espone `RawJSON()` e `RawYAML()` per il payload lista tipizzato:
+
+```go
+fmt.Println(string(vpcList.RawJSON()))   // payload codificato in JSON
+fmt.Println(string(vpcList.RawYAML()))   // payload codificato in YAML
+```
+
+Restituisce `nil` quando la lista non ha payload (`Raw() == nil`).
+
+> **Accedere ai campi wire non promossi.** Se hai bisogno di un campo non esposto dalla superficie del wrapper, consulta [Lavorare a Basso Livello](./working-at-low-level) — descrive il cast al tipo wire e le poche altre vie di uscita che richiedono l'importazione di `pkg/types`.
 
 ## Errori in Fase di Setter
 
@@ -114,7 +162,7 @@ if err := rule.Err(); err != nil {
 2. **Usa `errors.As(err, &httpErr)`** per ottenere dettagli strutturati sugli errori 4xx/5xx.
 3. **Controlla `httpErr.ErrResp.Errors`** per messaggi di validazione a livello di campo sugli errori 400.
 4. **Usa `httpErr.ErrResp.TraceID`** quando apri una richiesta di supporto.
-5. **Usa `.Raw()` con parsimonia** — preferisci gli accessori tipizzati del wrapper.
+5. **Usa `.Raw()` con parsimonia** — preferisci gli accessor tipizzati del wrapper.
 6. **Controlla `wrapper.Err()` prima di Create/Update** quando la catena di builder è lunga.
 
 ---

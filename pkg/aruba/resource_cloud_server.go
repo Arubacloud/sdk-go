@@ -177,6 +177,8 @@ func (cs *CloudServer) CloudServerID() string { return cs.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed CloudServer response.
 func (cs *CloudServer) Raw() *types.CloudServerResponse { return cs.response }
+func (cs *CloudServer) RawJSON() []byte                 { return marshalRawJSON(cs.response) }
+func (cs *CloudServer) RawYAML() []byte                 { return marshalRawYAML(cs.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (cs *CloudServer) RawRequest() types.CloudServerRequest { return cs.toRequest() }
@@ -685,29 +687,9 @@ func (a *cloudServersClientAdapter) List(ctx context.Context, project Ref, opts 
 				pageItems = append(pageItems, cs)
 			}
 		}
-		var total2 int64
-		var self2, prev2, next2, first2, last2 string
-		if pageResp != nil && pageResp.Data != nil {
-			total2 = pageResp.Data.Total
-			self2 = pageResp.Data.Self
-			prev2 = pageResp.Data.Prev
-			next2 = pageResp.Data.Next
-			first2 = pageResp.Data.First
-			last2 = pageResp.Data.Last
-		}
-		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
+		return newListFromResponse(pageItems, pageResp, opts, refetch), nil
 	}
-	var total int64
-	var self, prev, next, first, last string
-	if resp != nil && resp.Data != nil {
-		total = resp.Data.Total
-		self = resp.Data.Self
-		prev = resp.Data.Prev
-		next = resp.Data.Next
-		first = resp.Data.First
-		last = resp.Data.Last
-	}
-	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+	return newListFromResponse(items, resp, opts, refetch), nil
 }
 
 // Internal action methods — satisfy cloudServerActions; called by *CloudServer action methods.

@@ -8,6 +8,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/mock v0.6.0
 	golang.org/x/oauth2 v0.33.0
+	k8s.io/utils v0.0.0-20260507154919-ff6756f316d2
 )
 
 require (
@@ -31,7 +32,6 @@ require (
 	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/text v0.27.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
-	k8s.io/utils v0.0.0-20260507154919-ff6756f316d2 // indirect
 )
 
 require (
@@ -39,5 +39,5 @@ require (
 	github.com/hashicorp/vault/api v1.22.0
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/redis/go-redis/v9 v9.17.1
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1
 )

@@ -11,3 +11,4 @@ Detailed guidance is split across files in the `ai/` folder. Read only what is r
 | Implementing features, understanding design patterns, adding resources | [`ai/ARCHITECTURE.md`](ai/ARCHITECTURE.md) |
 | Naming, code style, type conventions, error handling rules | [`ai/CONVENTIONS.md`](ai/CONVENTIONS.md) |
 | Known bugs, risks, and refactoring backlog | [`ai/TECH_DEBT.md`](ai/TECH_DEBT.md) |
+| Single-import design / user-facing import boundaries | [`ai/ARCHITECTURE.md`](ai/ARCHITECTURE.md) |

@@ -104,6 +104,8 @@ func (u *User) CreatedBy() string {
 
 // Raw shadows responseMetadataMixin.Raw() with the typed User response.
 func (u *User) Raw() *types.UserResponse { return u.response }
+func (u *User) RawJSON() []byte          { return marshalRawJSON(u.response) }
+func (u *User) RawYAML() []byte          { return marshalRawYAML(u.response) }
 
 // RawRequest returns the wire body that would be sent on Create/Update. It
 // includes the base64-encoded password if WithPassword was called — by design,
@@ -415,27 +417,7 @@ func (a *usersClientAdapter) List(ctx context.Context, dbaas Ref, opts ...CallOp
 				pageItems = append(pageItems, item)
 			}
 		}
-		var total2 int64
-		var self2, prev2, next2, first2, last2 string
-		if pageResp != nil && pageResp.Data != nil {
-			total2 = pageResp.Data.Total
-			self2 = pageResp.Data.Self
-			prev2 = pageResp.Data.Prev
-			next2 = pageResp.Data.Next
-			first2 = pageResp.Data.First
-			last2 = pageResp.Data.Last
-		}
-		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
+		return newListFromResponse(pageItems, pageResp, opts, refetch), nil
 	}
-	var total int64
-	var self, prev, next, first, last string
-	if resp != nil && resp.Data != nil {
-		total = resp.Data.Total
-		self = resp.Data.Self
-		prev = resp.Data.Prev
-		next = resp.Data.Next
-		first = resp.Data.First
-		last = resp.Data.Last
-	}
-	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+	return newListFromResponse(items, resp, opts, refetch), nil
 }

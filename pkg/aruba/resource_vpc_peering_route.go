@@ -90,6 +90,8 @@ func (r *VPCPeeringRoute) VPCPeeringRouteID() string { return r.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed VPC peering route response.
 func (r *VPCPeeringRoute) Raw() *types.VPCPeeringRouteResponse { return r.response }
+func (r *VPCPeeringRoute) RawJSON() []byte                     { return marshalRawJSON(r.response) }
+func (r *VPCPeeringRoute) RawYAML() []byte                     { return marshalRawYAML(r.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (r *VPCPeeringRoute) RawRequest() types.VPCPeeringRouteRequest { return r.toRequest() }
@@ -437,29 +439,9 @@ func (a *vpcPeeringRoutesClientAdapter) List(ctx context.Context, peering Ref, o
 				pageItems = append(pageItems, item)
 			}
 		}
-		var total2 int64
-		var self2, prev2, next2, first2, last2 string
-		if pageResp != nil && pageResp.Data != nil {
-			total2 = pageResp.Data.Total
-			self2 = pageResp.Data.Self
-			prev2 = pageResp.Data.Prev
-			next2 = pageResp.Data.Next
-			first2 = pageResp.Data.First
-			last2 = pageResp.Data.Last
-		}
-		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
+		return newListFromResponse(pageItems, pageResp, opts, refetch), nil
 	}
-	var total int64
-	var self, prev, next, first, last string
-	if resp != nil && resp.Data != nil {
-		total = resp.Data.Total
-		self = resp.Data.Self
-		prev = resp.Data.Prev
-		next = resp.Data.Next
-		first = resp.Data.First
-		last = resp.Data.Last
-	}
-	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+	return newListFromResponse(items, resp, opts, refetch), nil
 }
 
 // vpcPeeringRouteIDsFromRef extracts (projectID, vpcID, vpcPeeringID, vpcPeeringRouteID) from a Ref.

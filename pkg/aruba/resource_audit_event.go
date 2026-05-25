@@ -46,6 +46,8 @@ func (e *AuditEvent) CreatedAt() time.Time {
 
 // Raw returns the underlying wire payload. Shadows responseMetadataMixin.Raw().
 func (e *AuditEvent) Raw() *types.AuditEvent { return e.response }
+func (e *AuditEvent) RawJSON() []byte        { return marshalRawJSON(e.response) }
+func (e *AuditEvent) RawYAML() []byte        { return marshalRawYAML(e.response) }
 
 // SeverityLevel returns the event severity level, or "" when unset.
 func (e *AuditEvent) SeverityLevel() string {
@@ -266,27 +268,7 @@ func (a *auditEventsClientAdapter) List(ctx context.Context, project Ref, opts .
 				pageItems = append(pageItems, ev)
 			}
 		}
-		var total2 int64
-		var self2, prev2, next2, first2, last2 string
-		if pageResp != nil && pageResp.Data != nil {
-			total2 = pageResp.Data.Total
-			self2 = pageResp.Data.Self
-			prev2 = pageResp.Data.Prev
-			next2 = pageResp.Data.Next
-			first2 = pageResp.Data.First
-			last2 = pageResp.Data.Last
-		}
-		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
+		return newListFromResponse(pageItems, pageResp, opts, refetch), nil
 	}
-	var total int64
-	var self, prev, next, first, last string
-	if resp != nil && resp.Data != nil {
-		total = resp.Data.Total
-		self = resp.Data.Self
-		prev = resp.Data.Prev
-		next = resp.Data.Next
-		first = resp.Data.First
-		last = resp.Data.Last
-	}
-	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+	return newListFromResponse(items, resp, opts, refetch), nil
 }

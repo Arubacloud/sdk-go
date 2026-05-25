@@ -82,6 +82,8 @@ func (r *VPNRoute) VPNRouteID() string { return r.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed VPN route response.
 func (r *VPNRoute) Raw() *types.VPNRouteResponse { return r.response }
+func (r *VPNRoute) RawJSON() []byte              { return marshalRawJSON(r.response) }
+func (r *VPNRoute) RawYAML() []byte              { return marshalRawYAML(r.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (r *VPNRoute) RawRequest() types.VPNRouteRequest { return r.toRequest() }
@@ -393,29 +395,9 @@ func (a *vpnRoutesClientAdapter) List(ctx context.Context, tunnel Ref, opts ...C
 				pageItems = append(pageItems, item)
 			}
 		}
-		var total2 int64
-		var self2, prev2, next2, first2, last2 string
-		if pageResp != nil && pageResp.Data != nil {
-			total2 = pageResp.Data.Total
-			self2 = pageResp.Data.Self
-			prev2 = pageResp.Data.Prev
-			next2 = pageResp.Data.Next
-			first2 = pageResp.Data.First
-			last2 = pageResp.Data.Last
-		}
-		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
+		return newListFromResponse(pageItems, pageResp, opts, refetch), nil
 	}
-	var total int64
-	var self, prev, next, first, last string
-	if resp != nil && resp.Data != nil {
-		total = resp.Data.Total
-		self = resp.Data.Self
-		prev = resp.Data.Prev
-		next = resp.Data.Next
-		first = resp.Data.First
-		last = resp.Data.Last
-	}
-	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+	return newListFromResponse(items, resp, opts, refetch), nil
 }
 
 // vpnRouteIDsFromRef extracts (projectID, vpnTunnelID, vpnRouteID) from a Ref.

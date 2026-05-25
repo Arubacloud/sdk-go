@@ -169,6 +169,8 @@ func (d *DBaaS) DBaaSID() string { return d.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed DBaaS response.
 func (d *DBaaS) Raw() *types.DBaaSResponse { return d.response }
+func (d *DBaaS) RawJSON() []byte           { return marshalRawJSON(d.response) }
+func (d *DBaaS) RawYAML() []byte           { return marshalRawYAML(d.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (d *DBaaS) RawRequest() types.DBaaSRequest { return d.toRequest() }
@@ -711,29 +713,9 @@ func (a *dbaasClientAdapter) List(ctx context.Context, project Ref, opts ...Call
 				pageItems = append(pageItems, d)
 			}
 		}
-		var total2 int64
-		var self2, prev2, next2, first2, last2 string
-		if pageResp != nil && pageResp.Data != nil {
-			total2 = pageResp.Data.Total
-			self2 = pageResp.Data.Self
-			prev2 = pageResp.Data.Prev
-			next2 = pageResp.Data.Next
-			first2 = pageResp.Data.First
-			last2 = pageResp.Data.Last
-		}
-		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
+		return newListFromResponse(pageItems, pageResp, opts, refetch), nil
 	}
-	var total int64
-	var self, prev, next, first, last string
-	if resp != nil && resp.Data != nil {
-		total = resp.Data.Total
-		self = resp.Data.Self
-		prev = resp.Data.Prev
-		next = resp.Data.Next
-		first = resp.Data.First
-		last = resp.Data.Last
-	}
-	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+	return newListFromResponse(items, resp, opts, refetch), nil
 }
 
 // dbaasIDsFromRef extracts (projectID, dbaasID) from a Ref.

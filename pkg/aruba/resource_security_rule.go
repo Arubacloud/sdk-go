@@ -122,6 +122,8 @@ func (r *SecurityRule) SecurityRuleID() string { return r.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the full SecurityRule response.
 func (r *SecurityRule) Raw() *types.SecurityRuleResponse { return r.response }
+func (r *SecurityRule) RawJSON() []byte                  { return marshalRawJSON(r.response) }
+func (r *SecurityRule) RawYAML() []byte                  { return marshalRawYAML(r.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (r *SecurityRule) RawRequest() types.SecurityRuleRequest { return r.toRequest() }
@@ -502,29 +504,9 @@ func (a *securityRulesClientAdapter) List(ctx context.Context, sg Ref, opts ...C
 				pageItems = append(pageItems, item)
 			}
 		}
-		var total2 int64
-		var self2, prev2, next2, first2, last2 string
-		if pageResp != nil && pageResp.Data != nil {
-			total2 = pageResp.Data.Total
-			self2 = pageResp.Data.Self
-			prev2 = pageResp.Data.Prev
-			next2 = pageResp.Data.Next
-			first2 = pageResp.Data.First
-			last2 = pageResp.Data.Last
-		}
-		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
+		return newListFromResponse(pageItems, pageResp, opts, refetch), nil
 	}
-	var total int64
-	var self, prev, next, first, last string
-	if resp != nil && resp.Data != nil {
-		total = resp.Data.Total
-		self = resp.Data.Self
-		prev = resp.Data.Prev
-		next = resp.Data.Next
-		first = resp.Data.First
-		last = resp.Data.Last
-	}
-	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+	return newListFromResponse(items, resp, opts, refetch), nil
 }
 
 // securityRuleIDsFromRef extracts (projectID, vpcID, securityGroupID, securityRuleID) from a Ref.

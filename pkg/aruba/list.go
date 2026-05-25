@@ -2,7 +2,11 @@ package aruba
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+
+	"github.com/Arubacloud/sdk-go/pkg/types"
+	"gopkg.in/yaml.v3"
 )
 
 // Wrapper is the constraint for List items: every resource wrapper satisfies it.
@@ -14,6 +18,8 @@ type Wrapper interface {
 // List is a paginated collection of resource wrappers. Per-resource clients
 // construct it after a server List call; callers use Next/Prev/All to iterate.
 type List[T Wrapper] struct {
+	httpEnvelopeMixin // StatusCode / Headers / RawHTTP / RawError — parity with single-resource wrappers
+
 	items      []T
 	total      int64
 	self       string
@@ -23,11 +29,51 @@ type List[T Wrapper] struct {
 	last       string
 	callerOpts []CallOption
 	refetch    func(ctx context.Context, url string) (*List[T], error)
-	raw        any
+	raw        any // JSON-safe payload only: *types.XxxList (resp.Data)
+}
+
+// listPayload is the type constraint satisfied by every per-resource list type
+// (e.g. types.VPCList, types.AlertsListResponse). All such types embed
+// types.ListResponse, which carries a BaseList() method that is automatically
+// promoted, so no per-type implementation is required.
+type listPayload interface {
+	BaseList() types.ListResponse
+}
+
+// newListFromResponse is the high-level constructor used by per-resource
+// adapters. It extracts pagination links from resp.Data.BaseList(), stores
+// resp.Data as the JSON-safe raw payload, and populates the HTTP envelope from
+// resp. Returns a usable empty list when resp or resp.Data is nil.
+func newListFromResponse[T Wrapper, L listPayload](
+	items []T,
+	resp *types.Response[L],
+	opts []CallOption,
+	refetch func(ctx context.Context, url string) (*List[T], error),
+) *List[T] {
+	l := &List[T]{
+		items:      items,
+		callerOpts: opts,
+		refetch:    refetch,
+	}
+	if resp == nil {
+		return l
+	}
+	populateHTTPEnvelope(&l.httpEnvelopeMixin, resp)
+	if resp.Data != nil {
+		l.raw = resp.Data
+		base := (*resp.Data).BaseList()
+		l.total = base.Total
+		l.self = base.Self
+		l.prev = base.Prev
+		l.next = base.Next
+		l.first = base.First
+		l.last = base.Last
+	}
+	return l
 }
 
 // newList constructs a List from a server reply. lr holds the pagination links,
-// raw is the full *types.Response[XxxList] stored as any for caller inspection,
+// raw is the JSON-safe wire payload (typically *types.XxxList, i.e. resp.Data),
 // and refetch is provided by the per-resource client to fetch adjacent pages.
 func newList[T Wrapper](
 	items []T,
@@ -100,9 +146,38 @@ func (l *List[T]) Cursor() (next, prev string) {
 	return l.next, l.prev
 }
 
-// Raw returns the raw server response as any. Cast to the concrete
-// *types.Response[XxxList] type to inspect response metadata.
+// Raw returns the JSON-marshal-safe wire payload, typically a *types.XxxList
+// containing pagination metadata and the typed Values slice. Cast to the
+// concrete *types.XxxList type to inspect fields not promoted to wrappers.
+// HTTP envelope (status, headers, raw body, error envelope) is exposed via
+// StatusCode(), Headers(), RawHTTP(), RawError() on the same list value.
 func (l *List[T]) Raw() any { return l.raw }
+
+// RawJSON returns the wire payload marshaled as JSON, or nil if the list has
+// no payload (Raw() == nil).
+func (l *List[T]) RawJSON() []byte {
+	if l.raw == nil {
+		return nil
+	}
+	b, err := json.Marshal(l.raw)
+	if err != nil {
+		return nil
+	}
+	return b
+}
+
+// RawYAML returns the wire payload marshaled as YAML, or nil if the list has
+// no payload (Raw() == nil).
+func (l *List[T]) RawYAML() []byte {
+	if l.raw == nil {
+		return nil
+	}
+	b, err := yaml.Marshal(l.raw)
+	if err != nil {
+		return nil
+	}
+	return b
+}
 
 // All iterates all pages, calling yield for each item. Iteration stops early
 // if yield returns false. Returns the first error encountered while fetching.

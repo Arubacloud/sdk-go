@@ -104,6 +104,8 @@ func (b *StorageBackup) BackupID() string { return b.ID() }
 
 // Raw shadows responseMetadataMixin.Raw() with the typed response.
 func (b *StorageBackup) Raw() *types.StorageBackupResponse { return b.response }
+func (b *StorageBackup) RawJSON() []byte                   { return marshalRawJSON(b.response) }
+func (b *StorageBackup) RawYAML() []byte                   { return marshalRawYAML(b.response) }
 
 // RawRequest returns what toRequest() would emit right now.
 func (b *StorageBackup) RawRequest() types.StorageBackupRequest { return b.toRequest() }
@@ -444,29 +446,9 @@ func (a *storageBackupsClientAdapter) List(ctx context.Context, project Ref, opt
 				pageItems = append(pageItems, item)
 			}
 		}
-		var total2 int64
-		var self2, prev2, next2, first2, last2 string
-		if pageResp != nil && pageResp.Data != nil {
-			total2 = pageResp.Data.Total
-			self2 = pageResp.Data.Self
-			prev2 = pageResp.Data.Prev
-			next2 = pageResp.Data.Next
-			first2 = pageResp.Data.First
-			last2 = pageResp.Data.Last
-		}
-		return newList(pageItems, total2, self2, prev2, next2, first2, last2, pageResp, opts, refetch), nil
+		return newListFromResponse(pageItems, pageResp, opts, refetch), nil
 	}
-	var total int64
-	var self, prev, next, first, last string
-	if resp != nil && resp.Data != nil {
-		total = resp.Data.Total
-		self = resp.Data.Self
-		prev = resp.Data.Prev
-		next = resp.Data.Next
-		first = resp.Data.First
-		last = resp.Data.Last
-	}
-	return newList(items, total, self, prev, next, first, last, resp, opts, refetch), nil
+	return newListFromResponse(items, resp, opts, refetch), nil
 }
 
 // backupIDsFromRef extracts (projectID, backupID) from a Ref.

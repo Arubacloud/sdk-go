@@ -95,6 +95,57 @@ raw := vpc.Raw()                         // underlying wire struct
 fmt.Println(raw.Properties.IsDefault)    // field not on the wrapper
 ```
 
+### JSON / YAML convenience
+
+For CLI-style `--output json` / `--output yaml` flags, every wrapper exposes
+pre-marshaled byte slices:
+
+```go
+fmt.Println(string(vpc.RawJSON()))   // JSON-encoded payload
+fmt.Println(string(vpc.RawYAML()))   // YAML-encoded payload
+```
+
+Returns `nil` if the wrapper has not been populated yet (zero-value receiver).
+
+## List Responses
+
+`List[T]` exposes the same introspection surface as single-resource wrappers,
+all without ever importing `pkg/types`:
+
+```go
+vpcList, err := arubaClient.FromNetwork().VPCs().List(ctx, proj)
+if err != nil { /* … */ }
+
+// Pagination + counts — typed accessors on the wrapper.
+fmt.Println("server total:", vpcList.Total())
+if vpcList.HasNext() {
+    nextPage, _ := vpcList.Next(ctx)
+    _ = nextPage
+}
+
+// HTTP envelope — same accessors as single-resource wrappers.
+fmt.Println("status:", vpcList.StatusCode())
+fmt.Println("trace-id:", vpcList.Headers().Get("X-Trace-Id"))
+_, body := vpcList.RawHTTP()
+fmt.Println("raw body bytes:", len(body))
+```
+
+### JSON / YAML convenience
+
+`List[T]` also exposes `RawJSON()` and `RawYAML()` for the typed list payload:
+
+```go
+fmt.Println(string(vpcList.RawJSON()))   // JSON-encoded payload
+fmt.Println(string(vpcList.RawYAML()))   // YAML-encoded payload
+```
+
+Returns `nil` when the list has no payload (`Raw() == nil`).
+
+> **Reaching non-promoted fields.** If you need a field that isn't exposed by
+> the wrapper surface, see [Working at Low Level](./working-at-low-level) —
+> it covers the typed wire-struct cast and the few other escape hatches that
+> require importing `pkg/types`.
+
 ## Setter-Time Errors
 
 Fluent builder setters never return errors — instead they record them internally. The error surfaces the first time you call `Create` or `Update`. You can also check eagerly:
