@@ -49,8 +49,8 @@ func NewUser() *User {
 
 // Setters — chainable, general → specific
 
-// IntoDBaaS binds this User to its parent DBaaS instance. Required before Create.
-func (u *User) IntoDBaaS(parent Ref) *User { u.intoDBaaS(parent); return u }
+// InDBaaS binds this User to its parent DBaaS instance. Required before Create.
+func (u *User) InDBaaS(parent Ref) *User { u.intoDBaaS(parent); return u }
 
 // WithUsername sets the username. Used as the path identifier; required before Create.
 func (u *User) WithUsername(name string) *User { u.username = &name; return u }
@@ -215,10 +215,10 @@ func (a *usersClientAdapter) Create(ctx context.Context, u *User, opts ...CallOp
 		return u, err
 	}
 	if u.ProjectID() == "" {
-		return u, fmt.Errorf("Create: User has no parent project — call IntoDBaaS first")
+		return u, fmt.Errorf("Create: User has no parent project — call InDBaaS first")
 	}
 	if u.DBaaSID() == "" {
-		return u, fmt.Errorf("Create: User has no parent DBaaS — call IntoDBaaS first")
+		return u, fmt.Errorf("Create: User has no parent DBaaS — call InDBaaS first")
 	}
 	if u.Username() == "" {
 		return u, fmt.Errorf("Create: User has no username — call WithUsername first")
@@ -261,10 +261,10 @@ func (a *usersClientAdapter) Update(ctx context.Context, u *User, opts ...CallOp
 		return u, fmt.Errorf("Update: User has no ID — call WithUsername first")
 	}
 	if u.DBaaSID() == "" {
-		return u, fmt.Errorf("Update: User has no parent DBaaS — call IntoDBaaS first")
+		return u, fmt.Errorf("Update: User has no parent DBaaS — call InDBaaS first")
 	}
 	if u.ProjectID() == "" {
-		return u, fmt.Errorf("Update: User has no parent project — call IntoDBaaS first")
+		return u, fmt.Errorf("Update: User has no parent project — call InDBaaS first")
 	}
 	if u.password == nil {
 		return u, fmt.Errorf("Update: password is required — call WithPassword first")

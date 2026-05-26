@@ -12,7 +12,7 @@ import (
 // ---- Wrapper ----
 
 // Key is the wrapper for a cryptographic key nested inside a KMS instance.
-// Construct with aruba.NewKey() and bind via IntoKMS(parent).
+// Construct with aruba.NewKey() and bind via InKMS(parent).
 //
 // Family B: flat request (no Metadata/Properties boxing, no metadataMixin,
 // no tags, no location).
@@ -34,7 +34,7 @@ type Key struct {
 }
 
 // NewKey returns a fresh *Key ready for fluent setters and a Create call.
-// Binds kmsScopedMixin's error sink so IntoKMS failures surface via Err().
+// Binds kmsScopedMixin's error sink so InKMS failures surface via Err().
 func NewKey() *Key {
 	k := &Key{}
 	k.kmsScopedMixin = bindKMSScoped(&k.errMixin)
@@ -43,8 +43,8 @@ func NewKey() *Key {
 
 // Setters — chainable, general → specific
 
-// IntoKMS binds this Key to its parent KMS instance. Required before Create.
-func (k *Key) IntoKMS(parent Ref) *Key { k.intoKMS(parent); return k }
+// InKMS binds this Key to its parent KMS instance. Required before Create.
+func (k *Key) InKMS(parent Ref) *Key { k.intoKMS(parent); return k }
 
 // Named sets the key name. Required by the API.
 func (k *Key) Named(n string) *Key { k.name = &n; return k }
@@ -240,10 +240,10 @@ func (a *keysClientAdapter) Create(ctx context.Context, k *Key, opts ...CallOpti
 		return k, err
 	}
 	if k.ProjectID() == "" {
-		return k, fmt.Errorf("Create: Key has no parent project — call IntoKMS first")
+		return k, fmt.Errorf("Create: Key has no parent project — call InKMS first")
 	}
 	if k.KMSID() == "" {
-		return k, fmt.Errorf("Create: Key has no parent KMS — call IntoKMS first")
+		return k, fmt.Errorf("Create: Key has no parent KMS — call InKMS first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

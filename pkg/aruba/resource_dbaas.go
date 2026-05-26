@@ -75,20 +75,30 @@ func NewDBaaS() *DBaaS {
 
 // Setters — chainable, general → specific
 
-// IntoProject binds this DBaaS to its parent project. Required before Create.
-func (d *DBaaS) IntoProject(p Ref) *DBaaS { d.intoProject(p); return d }
+// InProject binds this DBaaS to its parent project. Required before Create.
+func (d *DBaaS) InProject(p Ref) *DBaaS { d.intoProject(p); return d }
 
 // Named sets the resource name. Required by the API.
 func (d *DBaaS) Named(n string) *DBaaS { d.named(n); return d }
 
-// AddTag appends a tag for filtering and accounting.
-func (d *DBaaS) AddTag(t string) *DBaaS { d.addTag(t); return d }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (d *DBaaS) Tagged(ts ...string) *DBaaS {
+	for _, t := range ts {
+		d.addTag(t)
+	}
+	return d
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (d *DBaaS) RemoveTag(t string) *DBaaS { d.removeTag(t); return d }
+// Untagged removes each listed tag. No-op for tags not present.
+func (d *DBaaS) Untagged(ts ...string) *DBaaS {
+	for _, t := range ts {
+		d.removeTag(t)
+	}
+	return d
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (d *DBaaS) ReplaceTags(ts ...string) *DBaaS { d.replaceTags(ts...); return d }
+// RetaggedAs replaces the entire tag set with the given values.
+func (d *DBaaS) RetaggedAs(ts ...string) *DBaaS { d.replaceTags(ts...); return d }
 
 // InRegion sets the region for this resource.
 func (d *DBaaS) InRegion(region Region) *DBaaS { d.inRegion(region); return d }
@@ -102,8 +112,8 @@ func (d *DBaaS) OfEngine(engine DatabaseEngine) *DBaaS { d.engine = &engine; ret
 // OfFlavor sets the database flavor (size/performance tier). The wire request emits Flavor.Name.
 func (d *DBaaS) OfFlavor(flavor DBaaSFlavor) *DBaaS { d.flavor = &flavor; return d }
 
-// WithSizeGB sets the storage size in GB. The wire request emits Storage.SizeGB.
-func (d *DBaaS) WithSizeGB(gb int) *DBaaS { v := int32(gb); d.sizeGB = &v; return d }
+// SizedGB sets the storage size in GB. The wire request emits Storage.SizeGB.
+func (d *DBaaS) SizedGB(gb int) *DBaaS { v := int32(gb); d.sizeGB = &v; return d }
 
 // WithAutoscaling enables autoscaling and pins the available-space threshold and
 // step size in GB. Mirrors NodePool.WithAutoscaling(min, max) from resource_kaas_nodepool.go.
@@ -126,8 +136,8 @@ func (d *DBaaS) WithoutAutoscaling() *DBaaS {
 	return d
 }
 
-// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
-func (d *DBaaS) WithBillingPeriod(period BillingPeriod) *DBaaS { d.billingPeriod = &period; return d }
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (d *DBaaS) BilledBy(period BillingPeriod) *DBaaS { d.billingPeriod = &period; return d }
 
 // WithVPC sets the VPC for this DBaaS via its URI. Wire field: VPCURI.
 func (d *DBaaS) WithVPC(v Ref) *DBaaS { return d.setSingleRef("WithVPC", v, &d.vpcRef) }
@@ -525,7 +535,7 @@ func (a *dbaasClientAdapter) Create(ctx context.Context, d *DBaaS, opts ...CallO
 		return d, err
 	}
 	if d.ProjectID() == "" {
-		return d, fmt.Errorf("Create: DBaaS has no parent project — call IntoProject first")
+		return d, fmt.Errorf("Create: DBaaS has no parent project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -562,7 +572,7 @@ func (a *dbaasClientAdapter) Update(ctx context.Context, d *DBaaS, opts ...CallO
 		return d, fmt.Errorf("Update: DBaaS has no ID")
 	}
 	if d.ProjectID() == "" {
-		return d, fmt.Errorf("Update: DBaaS has no parent project — call IntoProject first")
+		return d, fmt.Errorf("Update: DBaaS has no parent project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

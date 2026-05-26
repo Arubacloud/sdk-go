@@ -27,15 +27,15 @@ func TestStorageBackup_FluentSetters(t *testing.T) {
 	proj.fromResponse(projectTestResponse("p-1", "my-proj", "/projects/p-1"))
 
 	bkp := NewStorageBackup().
-		IntoProject(proj).
+		InProject(proj).
 		Named("my-backup").
-		AddTag("backup").
-		AddTag("storage").
-		AddTag("backup"). // dedupe
+		Tagged("backup").
+		Tagged("storage").
+		Tagged("backup"). // dedupe
 		InRegion(RegionITBGBergamo).
 		OfType(StorageBackupTypeFull).
-		WithRetentionDays(30).
-		WithBillingPeriod(BillingPeriodHour)
+		RetainedForDays(30).
+		BilledBy(BillingPeriodHour)
 
 	if bkp.Name() != "my-backup" {
 		t.Errorf("Name() = %q", bkp.Name())
@@ -62,12 +62,12 @@ func TestStorageBackup_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", bkp.Err())
 	}
 
-	bkp.RemoveTag("backup")
+	bkp.Untagged("backup")
 	if tags := bkp.Tags(); len(tags) != 1 || tags[0] != "storage" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	bkp.ReplaceTags("x", "y")
+	bkp.RetaggedAs("x", "y")
 	if tags := bkp.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -80,7 +80,7 @@ func TestStorageBackup_FluentSetters(t *testing.T) {
 func TestStorageBackup_IntoProject_TypedRef(t *testing.T) {
 	proj := &Project{}
 	proj.fromResponse(projectTestResponse("p-42", "n", "/projects/p-42"))
-	bkp := NewStorageBackup().IntoProject(proj)
+	bkp := NewStorageBackup().InProject(proj)
 	if bkp.ProjectID() != "p-42" {
 		t.Errorf("ProjectID() = %q", bkp.ProjectID())
 	}
@@ -90,7 +90,7 @@ func TestStorageBackup_IntoProject_TypedRef(t *testing.T) {
 }
 
 func TestStorageBackup_IntoProject_URIRef(t *testing.T) {
-	bkp := NewStorageBackup().IntoProject(URI("/projects/p-uri"))
+	bkp := NewStorageBackup().InProject(URI("/projects/p-uri"))
 	if bkp.ProjectID() != "p-uri" {
 		t.Errorf("ProjectID() = %q", bkp.ProjectID())
 	}
@@ -100,7 +100,7 @@ func TestStorageBackup_IntoProject_URIRef(t *testing.T) {
 }
 
 func TestStorageBackup_IntoProject_BadRef(t *testing.T) {
-	bkp := NewStorageBackup().IntoProject(URI("/garbage"))
+	bkp := NewStorageBackup().InProject(URI("/garbage"))
 	if bkp.Err() == nil {
 		t.Error("expected Err() != nil for unresolvable Ref")
 	}
@@ -167,12 +167,12 @@ func TestStorageBackup_ToRequestRoundTrip(t *testing.T) {
 	volURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"
 	bkp := NewStorageBackup().Named(
 		"bkp-rt").
-		AddTag("t1").AddTag("t2").
+		Tagged("t1").Tagged("t2").
 		InRegion(RegionITBGBergamo).
 		OfType(StorageBackupTypeFull).
 		FromVolume(URI(volURI)).
-		WithRetentionDays(14).
-		WithBillingPeriod(BillingPeriodHour)
+		RetainedForDays(14).
+		BilledBy(BillingPeriodHour)
 
 	req := bkp.RawRequest()
 
@@ -471,12 +471,12 @@ func TestStorageBackupsClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	bkp := NewStorageBackup().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-backup").
 		InRegion(RegionITBGBergamo).
 		OfType(StorageBackupTypeFull).
-		WithRetentionDays(30).
-		WithBillingPeriod(BillingPeriodHour)
+		RetainedForDays(30).
+		BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), bkp)
 	if err != nil {
@@ -518,7 +518,7 @@ func TestStorageBackupsClientAdapter_Create_FromVolume(t *testing.T) {
 	adapter := &storageBackupsClientAdapter{low: fake}
 
 	bkp := NewStorageBackup().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-backup").
 		FromVolume(URI(volURI))
 
@@ -559,7 +559,7 @@ func TestStorageBackupsClientAdapter_Create_MetadataValidationError(t *testing.T
 		fmt.Fprint(w, `{"metadata":{"name":"bkp","uri":"/projects/p/providers/Aruba.Storage/backups/x"},"properties":{},"status":{}}`)
 	})
 
-	bkp := NewStorageBackup().IntoProject(URI("/projects/p")).
+	bkp := NewStorageBackup().InProject(URI("/projects/p")).
 		Named("bkp")
 	result, err := adapter.Create(context.Background(), bkp)
 	if err == nil {
@@ -581,7 +581,7 @@ func TestStorageBackupsClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "name is required", 422))
 	})
 
-	bkp := NewStorageBackup().IntoProject(URI("/projects/p"))
+	bkp := NewStorageBackup().InProject(URI("/projects/p"))
 	result, err := adapter.Create(context.Background(), bkp)
 	if err == nil {
 		t.Fatal("expected error on 422")
@@ -653,7 +653,7 @@ func TestStorageBackupsClientAdapter_Update_Success(t *testing.T) {
 
 	bkp := &StorageBackup{}
 	bkp.fromResponse(storageBackupTestResponse("bkp-1", "my-backup", "/projects/p/providers/Aruba.Storage/backups/bkp-1", "p"))
-	bkp.WithRetentionDays(30)
+	bkp.RetainedForDays(30)
 
 	result, err := adapter.Update(context.Background(), bkp)
 	if err != nil {
@@ -674,7 +674,7 @@ func TestStorageBackupsClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	bkp := NewStorageBackup().IntoProject(URI("/projects/p")).
+	bkp := NewStorageBackup().InProject(URI("/projects/p")).
 		Named("x")
 	_, err := adapter.Update(context.Background(), bkp)
 	if err == nil {
@@ -821,7 +821,7 @@ func TestStorageBackupsClientAdapter_Update_NonTwoXX(t *testing.T) {
 
 	bkp := &StorageBackup{}
 	bkp.fromResponse(storageBackupTestResponse("bkp-1", "my-backup", "/projects/p/providers/Aruba.Storage/backups/bkp-1", "p"))
-	bkp.WithRetentionDays(99999)
+	bkp.RetainedForDays(99999)
 
 	_, err := adapter.Update(context.Background(), bkp)
 	if err == nil {
@@ -939,9 +939,7 @@ func TestStorageBackup_BillingPeriod_WireTranslation(t *testing.T) {
 
 	for _, c := range cases {
 		// outbound: SDK constant → wire value
-		req := NewStorageBackup().
-			Named("x").InRegion(RegionITBGBergamo).
-			WithBillingPeriod(c.sdk).RawRequest()
+		req := NewStorageBackup().Named("x").InRegion(RegionITBGBergamo).BilledBy(c.sdk).RawRequest()
 		if got := string(*req.Properties.BillingPeriod); got != c.wire {
 			t.Errorf("toRequest(%q) wire = %q, want %q", c.sdk, got, c.wire)
 		}

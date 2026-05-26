@@ -28,15 +28,15 @@ func TestVPNTunnel_FluentSetters(t *testing.T) {
 	proj.fromResponse(projectTestResponse("p1", "my-project", "/projects/p1"))
 
 	tun := NewVPNTunnel().
-		IntoProject(proj).
+		InProject(proj).
 		Named("my-tunnel").
-		AddTag("vpn").
-		AddTag("ipsec").
-		AddTag("vpn"). // dedupe
+		Tagged("vpn").
+		Tagged("ipsec").
+		Tagged("vpn"). // dedupe
 		InRegion(RegionITBGBergamo).
 		OfType(VPNTypeSiteToSite).
 		WithVPNClientProtocol(VPNClientProtocolIKEv2).
-		WithBillingPeriod(BillingPeriodHour).
+		BilledBy(BillingPeriodHour).
 		WithPeerClientPublicIP("1.2.3.4")
 
 	if tun.Name() != "my-tunnel" {
@@ -67,12 +67,12 @@ func TestVPNTunnel_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", tun.Err())
 	}
 
-	tun.RemoveTag("vpn")
+	tun.Untagged("vpn")
 	if tags := tun.Tags(); len(tags) != 1 || tags[0] != "ipsec" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	tun.ReplaceTags("x", "y")
+	tun.RetaggedAs("x", "y")
 	if tags := tun.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -86,7 +86,7 @@ func TestVPNTunnel_IntoProject_TypedRef(t *testing.T) {
 	proj := &Project{}
 	proj.fromResponse(projectTestResponse("p1", "my-project", "/projects/p1"))
 
-	tun := NewVPNTunnel().IntoProject(proj)
+	tun := NewVPNTunnel().InProject(proj)
 
 	if tun.ProjectID() != "p1" {
 		t.Errorf("ProjectID() = %q", tun.ProjectID())
@@ -97,7 +97,7 @@ func TestVPNTunnel_IntoProject_TypedRef(t *testing.T) {
 }
 
 func TestVPNTunnel_IntoProject_URIRef(t *testing.T) {
-	tun := NewVPNTunnel().IntoProject(URI("/projects/p"))
+	tun := NewVPNTunnel().InProject(URI("/projects/p"))
 
 	if tun.ProjectID() != "p" {
 		t.Errorf("ProjectID() = %q", tun.ProjectID())
@@ -108,7 +108,7 @@ func TestVPNTunnel_IntoProject_URIRef(t *testing.T) {
 }
 
 func TestVPNTunnel_IntoProject_BadRef(t *testing.T) {
-	tun := NewVPNTunnel().IntoProject(URI("/garbage"))
+	tun := NewVPNTunnel().InProject(URI("/garbage"))
 	if tun.Err() == nil {
 		t.Error("expected Err() != nil for unresolvable Ref, got nil")
 	}
@@ -348,11 +348,11 @@ func TestVPNPSK_Build_NilReceiver(t *testing.T) {
 func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
 	tun := NewVPNTunnel().Named(
 		"my-tunnel").
-		AddTag("t1").
+		Tagged("t1").
 		InRegion(RegionITBGBergamo).
 		OfType(VPNTypeSiteToSite).
 		WithVPNClientProtocol(VPNClientProtocolIKEv2).
-		WithBillingPeriod(BillingPeriodHour).
+		BilledBy(BillingPeriodHour).
 		WithPeerClientPublicIP("1.2.3.4").
 		WithIPConfig(
 			NewVPNIPConfig().
@@ -712,7 +712,7 @@ func TestVPNTunnelsClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	tun := NewVPNTunnel().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-tunnel").
 		InRegion(RegionITBGBergamo).
 		OfType(VPNTypeSiteToSite).
@@ -771,7 +771,7 @@ func TestVPNTunnelsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"tunnel","uri":"/projects/p/providers/Aruba.Network/vpnTunnels/x"},"properties":{},"status":{}}`)
 	})
 
-	tun := NewVPNTunnel().IntoProject(URI("/projects/p")).
+	tun := NewVPNTunnel().InProject(URI("/projects/p")).
 		Named("tunnel")
 	result, err := adapter.Create(context.Background(), tun)
 	if err == nil {
@@ -793,7 +793,7 @@ func TestVPNTunnelsClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "name is required", 422))
 	})
 
-	tun := NewVPNTunnel().IntoProject(URI("/projects/p"))
+	tun := NewVPNTunnel().InProject(URI("/projects/p"))
 	result, err := adapter.Create(context.Background(), tun)
 	if err == nil {
 		t.Fatal("expected error on 422")
@@ -891,7 +891,7 @@ func TestVPNTunnelsClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	tun := NewVPNTunnel().IntoProject(URI("/projects/p")).
+	tun := NewVPNTunnel().InProject(URI("/projects/p")).
 		Named("x")
 	_, err := adapter.Update(context.Background(), tun)
 	if err == nil {
@@ -978,10 +978,10 @@ func TestVPNTunnelsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 // InRegion exercises the 0% branch.
 func TestVPNTunnel_InRegion(t *testing.T) {
 	tun := NewVPNTunnel().
-		AddTag("a").
-		AddTag("b").
-		RemoveTag("a").
-		ReplaceTags("x", "y").
+		Tagged("a").
+		Tagged("b").
+		Untagged("a").
+		RetaggedAs("x", "y").
 		InRegion("ITMI-Milano-1")
 
 	if tun.Region() != "ITMI-Milano-1" {
@@ -1120,7 +1120,7 @@ func TestVPNTunnelsClientAdapter_Create_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusCreated)
 	})
-	tun := NewVPNTunnel().IntoProject(URI("/garbage"))
+	tun := NewVPNTunnel().InProject(URI("/garbage"))
 	_, err := adapter.Create(context.Background(), tun)
 	if err == nil {
 		t.Fatal("expected error for builder error")
@@ -1173,7 +1173,7 @@ func TestVPNTunnelsClientAdapter_Update_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusOK)
 	})
-	tun := NewVPNTunnel().IntoProject(URI("/garbage"))
+	tun := NewVPNTunnel().InProject(URI("/garbage"))
 	_, err := adapter.Update(context.Background(), tun)
 	if err == nil {
 		t.Fatal("expected error for builder error")

@@ -28,16 +28,16 @@ func TestSecurityRule_FluentSetters(t *testing.T) {
 	sg.fromResponse(securityGroupTestResponse("sg-1", "my-sg", "/projects/p1/providers/Aruba.Network/vpcs/v1/securityGroups/sg-1", "p1"))
 
 	rule := NewSecurityRule().
-		IntoSecurityGroup(sg).
+		InSecurityGroup(sg).
 		Named("allow-ssh").
-		AddTag("t1").
-		AddTag("t2").
-		AddTag("t1"). // dedupe
+		Tagged("t1").
+		Tagged("t2").
+		Tagged("t1"). // dedupe
 		InRegion(RegionITBGBergamo).
 		WithDirection(RuleDirectionIngress).
 		WithProtocol(RuleProtocolTCP).
 		WithPort("22").
-		WithTargetCIDR("0.0.0.0/0")
+		TargetingCIDR("0.0.0.0/0")
 
 	if rule.Name() != "allow-ssh" {
 		t.Errorf("Name() = %q", rule.Name())
@@ -76,12 +76,12 @@ func TestSecurityRule_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", rule.Err())
 	}
 
-	rule.RemoveTag("t1")
+	rule.Untagged("t1")
 	if tags := rule.Tags(); len(tags) != 1 || tags[0] != "t2" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	rule.ReplaceTags("x", "y")
+	rule.RetaggedAs("x", "y")
 	if tags := rule.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -95,7 +95,7 @@ func TestSecurityRule_IntoSecurityGroup_TypedRef(t *testing.T) {
 	sg := &SecurityGroup{}
 	sg.fromResponse(securityGroupTestResponse("sg-1", "my-sg", "/projects/p1/providers/Aruba.Network/vpcs/v1/securityGroups/sg-1", "p1"))
 
-	rule := NewSecurityRule().IntoSecurityGroup(sg)
+	rule := NewSecurityRule().InSecurityGroup(sg)
 
 	if rule.SecurityGroupID() != "sg-1" {
 		t.Errorf("SecurityGroupID() = %q", rule.SecurityGroupID())
@@ -116,7 +116,7 @@ func TestSecurityRule_IntoSecurityGroup_TypedRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestSecurityRule_IntoSecurityGroup_URIRef(t *testing.T) {
-	rule := NewSecurityRule().IntoSecurityGroup(URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg"))
+	rule := NewSecurityRule().InSecurityGroup(URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg"))
 
 	if rule.SecurityGroupID() != "sg" {
 		t.Errorf("SecurityGroupID() = %q", rule.SecurityGroupID())
@@ -137,7 +137,7 @@ func TestSecurityRule_IntoSecurityGroup_URIRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestSecurityRule_IntoSecurityGroup_BadRef(t *testing.T) {
-	rule := NewSecurityRule().IntoSecurityGroup(URI("/garbage"))
+	rule := NewSecurityRule().InSecurityGroup(URI("/garbage"))
 	if rule.Err() == nil {
 		t.Error("expected Err() != nil for unresolvable Ref, got nil")
 	}
@@ -150,8 +150,8 @@ func TestSecurityRule_IntoSecurityGroup_BadRef(t *testing.T) {
 func TestSecurityRule_TargetMutuallyExclusive_CIDRThenSG(t *testing.T) {
 	otherSG := URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg-other")
 	rule := NewSecurityRule().
-		WithTargetCIDR("10.0.0.0/8").
-		WithTargetSecurityGroup(otherSG)
+		TargetingCIDR("10.0.0.0/8").
+		TargetingSecurityGroup(otherSG)
 
 	if rule.Err() == nil {
 		t.Fatal("expected error after setting SecurityGroup target over CIDR target")
@@ -168,8 +168,8 @@ func TestSecurityRule_TargetMutuallyExclusive_CIDRThenSG(t *testing.T) {
 func TestSecurityRule_TargetMutuallyExclusive_SGThenCIDR(t *testing.T) {
 	otherSG := URI("/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg-other")
 	rule := NewSecurityRule().
-		WithTargetSecurityGroup(otherSG).
-		WithTargetCIDR("10.0.0.0/8")
+		TargetingSecurityGroup(otherSG).
+		TargetingCIDR("10.0.0.0/8")
 
 	if rule.Err() == nil {
 		t.Fatal("expected error after setting CIDR target over SecurityGroup target")
@@ -184,7 +184,7 @@ func TestSecurityRule_TargetMutuallyExclusive_SGThenCIDR(t *testing.T) {
 }
 
 func TestSecurityRule_TargetSecurityGroup_EmptyURI(t *testing.T) {
-	rule := NewSecurityRule().WithTargetSecurityGroup(URI(""))
+	rule := NewSecurityRule().TargetingSecurityGroup(URI(""))
 	if rule.Err() == nil {
 		t.Error("expected error when target SecurityGroup Ref has empty URI")
 	}
@@ -200,13 +200,13 @@ func TestSecurityRule_TargetSecurityGroup_EmptyURI(t *testing.T) {
 func TestSecurityRule_ToRequestRoundTrip(t *testing.T) {
 	rule := NewSecurityRule().Named(
 		"allow-ssh").
-		AddTag("t1").
-		AddTag("t2").
+		Tagged("t1").
+		Tagged("t2").
 		InRegion(RegionITBGBergamo).
 		WithDirection(RuleDirectionIngress).
 		WithProtocol(RuleProtocolTCP).
 		WithPort("22").
-		WithTargetCIDR("0.0.0.0/0")
+		TargetingCIDR("0.0.0.0/0")
 
 	req := rule.RawRequest()
 
@@ -509,13 +509,13 @@ func TestSecurityGroupRulesClientAdapter_Create_Success(t *testing.T) {
 	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg", "p"))
 
 	rule := NewSecurityRule().
-		IntoSecurityGroup(sg).
+		InSecurityGroup(sg).
 		Named("allow-ssh").
 		InRegion(RegionITBGBergamo).
 		WithDirection(RuleDirectionIngress).
 		WithProtocol(RuleProtocolTCP).
 		WithPort("22").
-		WithTargetCIDR("0.0.0.0/0")
+		TargetingCIDR("0.0.0.0/0")
 
 	result, err := adapter.Create(context.Background(), rule)
 	if err != nil {
@@ -566,7 +566,7 @@ func TestSecurityGroupRulesClientAdapter_Create_MetadataValidationError(t *testi
 	sg := &SecurityGroup{}
 	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg", "p"))
 
-	rule := NewSecurityRule().IntoSecurityGroup(sg).
+	rule := NewSecurityRule().InSecurityGroup(sg).
 		Named("rule")
 	result, err := adapter.Create(context.Background(), rule)
 	if err == nil {
@@ -591,7 +591,7 @@ func TestSecurityGroupRulesClientAdapter_Create_NonTwoXX(t *testing.T) {
 	sg := &SecurityGroup{}
 	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg", "p"))
 
-	rule := NewSecurityRule().IntoSecurityGroup(sg)
+	rule := NewSecurityRule().InSecurityGroup(sg)
 	result, err := adapter.Create(context.Background(), rule)
 	if err == nil {
 		t.Fatal("expected error on 422")
@@ -709,7 +709,7 @@ func TestSecurityGroupRulesClientAdapter_Update_NoID(t *testing.T) {
 	sg := &SecurityGroup{}
 	sg.fromResponse(securityGroupTestResponse("sg", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg", "p"))
 
-	rule := NewSecurityRule().IntoSecurityGroup(sg).
+	rule := NewSecurityRule().InSecurityGroup(sg).
 		Named("x")
 	_, err := adapter.Update(context.Background(), rule)
 	if err == nil {
@@ -796,10 +796,10 @@ func TestSecurityGroupRulesClientAdapter_Delete_NonTwoXX(t *testing.T) {
 // InRegion exercises the 0% branch.
 func TestSecurityRule_InRegion(t *testing.T) {
 	rule := NewSecurityRule().
-		AddTag("a").
-		AddTag("b").
-		RemoveTag("a").
-		ReplaceTags("x", "y").
+		Tagged("a").
+		Tagged("b").
+		Untagged("a").
+		RetaggedAs("x", "y").
 		InRegion("ITMI-Milano-1")
 
 	if rule.Region() != "ITMI-Milano-1" {
@@ -917,7 +917,7 @@ func TestSecurityGroupRulesClientAdapter_Create_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusCreated)
 	})
-	rule := NewSecurityRule().IntoSecurityGroup(URI("/garbage"))
+	rule := NewSecurityRule().InSecurityGroup(URI("/garbage"))
 	_, err := adapter.Create(context.Background(), rule)
 	if err == nil {
 		t.Fatal("expected error for builder error")
@@ -969,7 +969,7 @@ func TestSecurityGroupRulesClientAdapter_Update_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusOK)
 	})
-	rule := NewSecurityRule().IntoSecurityGroup(URI("/garbage"))
+	rule := NewSecurityRule().InSecurityGroup(URI("/garbage"))
 	_, err := adapter.Update(context.Background(), rule)
 	if err == nil {
 		t.Fatal("expected error for builder error")

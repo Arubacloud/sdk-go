@@ -17,7 +17,7 @@ func VPCPeeringRouteRef(projectID, vpcID, peeringID, routeID string) Ref {
 // ---- Wrapper ----
 
 // VPCPeeringRoute is the wrapper for an Aruba Cloud VPC Peering Route (a child of a VPCPeering).
-// Construct with aruba.NewVPCPeeringRoute() and bind it via IntoVPCPeering(peering).
+// Construct with aruba.NewVPCPeeringRoute() and bind it via InVPCPeering(peering).
 //
 // Wraps types.VPCPeeringRouteResponse / types.VPCPeeringRouteRequest. The wrapper carries
 // pointer-typed private fields so unset values round-trip through
@@ -38,7 +38,7 @@ type VPCPeeringRoute struct {
 }
 
 // NewVPCPeeringRoute returns a fresh *VPCPeeringRoute ready for fluent setters and a Create call.
-// Binds vpcPeeringScopedMixin's error sink so IntoVPCPeering failures surface via Err().
+// Binds vpcPeeringScopedMixin's error sink so InVPCPeering failures surface via Err().
 func NewVPCPeeringRoute() *VPCPeeringRoute {
 	r := &VPCPeeringRoute{}
 	r.vpcPeeringScopedMixin = bindVPCPeeringScoped(&r.errMixin)
@@ -47,20 +47,33 @@ func NewVPCPeeringRoute() *VPCPeeringRoute {
 
 // Setters — chainable, general → specific
 
-// IntoVPCPeering binds this VPCPeeringRoute to its parent VPCPeering. Required before Create.
-func (r *VPCPeeringRoute) IntoVPCPeering(p Ref) *VPCPeeringRoute { r.intoVPCPeering(p); return r }
+// InVPCPeering binds this VPCPeeringRoute to its parent VPCPeering. Required before Create.
+func (r *VPCPeeringRoute) InVPCPeering(p Ref) *VPCPeeringRoute { r.intoVPCPeering(p); return r }
 
 // Named sets the resource name. Required by the API.
 func (r *VPCPeeringRoute) Named(n string) *VPCPeeringRoute { r.named(n); return r }
 
-// AddTag appends a tag for filtering and accounting.
-func (r *VPCPeeringRoute) AddTag(t string) *VPCPeeringRoute { r.addTag(t); return r }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (r *VPCPeeringRoute) Tagged(ts ...string) *VPCPeeringRoute {
+	for _, t := range ts {
+		r.addTag(t)
+	}
+	return r
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (r *VPCPeeringRoute) RemoveTag(t string) *VPCPeeringRoute { r.removeTag(t); return r }
+// Untagged removes each listed tag. No-op for tags not present.
+func (r *VPCPeeringRoute) Untagged(ts ...string) *VPCPeeringRoute {
+	for _, t := range ts {
+		r.removeTag(t)
+	}
+	return r
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (r *VPCPeeringRoute) ReplaceTags(ts ...string) *VPCPeeringRoute { r.replaceTags(ts...); return r }
+// RetaggedAs replaces the entire tag set with the given values.
+func (r *VPCPeeringRoute) RetaggedAs(ts ...string) *VPCPeeringRoute {
+	r.replaceTags(ts...)
+	return r
+}
 
 // InRegion sets the region for this resource.
 func (r *VPCPeeringRoute) InRegion(region Region) *VPCPeeringRoute { r.inRegion(region); return r }
@@ -74,9 +87,9 @@ func (r *VPCPeeringRoute) WithRemoteCIDR(cidr string) *VPCPeeringRoute {
 	return r
 }
 
-// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
-func (r *VPCPeeringRoute) WithBillingPeriod(p BillingPeriod) *VPCPeeringRoute {
-	r.billingPeriod = &p
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (r *VPCPeeringRoute) BilledBy(period BillingPeriod) *VPCPeeringRoute {
+	r.billingPeriod = &period
 	return r
 }
 
@@ -233,7 +246,7 @@ func (a *vpcPeeringRoutesClientAdapter) Create(ctx context.Context, route *VPCPe
 		return route, err
 	}
 	if route.VPCPeeringID() == "" || route.VPCID() == "" || route.ProjectID() == "" {
-		return route, fmt.Errorf("Create: VPC peering route has no parent peering — call IntoVPCPeering first")
+		return route, fmt.Errorf("Create: VPC peering route has no parent peering — call InVPCPeering first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -312,7 +325,7 @@ func (a *vpcPeeringRoutesClientAdapter) Update(ctx context.Context, route *VPCPe
 		return route, fmt.Errorf("Update: VPC peering route has no ID — call Get first or seed from response metadata")
 	}
 	if route.VPCPeeringID() == "" || route.VPCID() == "" || route.ProjectID() == "" {
-		return route, fmt.Errorf("Update: VPC peering route has no parent peering — call IntoVPCPeering first")
+		return route, fmt.Errorf("Update: VPC peering route has no parent peering — call InVPCPeering first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

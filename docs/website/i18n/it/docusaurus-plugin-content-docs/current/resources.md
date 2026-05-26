@@ -27,7 +27,7 @@ result, err := client.Create(ctx,
     aruba.NewX().
         IntoParent(parentRef).   // scope al progetto / VPC / ecc.
         Named("my-resource").
-        AddTag("env-prod").
+        Tagged("env-prod").
         WithFoo(...))
 
 // 3. Attendi che le risorse asincrone diventino pronte
@@ -64,9 +64,9 @@ proj, err := arubaClient.FromProject().Create(
     ctx,
     aruba.NewProject().
         Named("my-project").
-        WithDescription("Progetto di produzione").
-        AddTag("env-prod").
-        WithDefault(false))
+        Tagged("env-prod").
+        DescribedAs("Progetto di produzione").
+        NotDefault())
 if err != nil {
     log.Fatalf("Create project: %v", err)
 }
@@ -142,18 +142,18 @@ Un Cloud Server dipende da risorse di rete (VPC, Subnet, Security Group), un Ela
 cs, err := arubaClient.FromCompute().CloudServers().Create(
     ctx,
     aruba.NewCloudServer().
-        IntoProject(proj).
+        OfFlavor(aruba.CloudServerFlavorCSO2A4).
         Named("my-server").
-        AddTag("env-prod").
-        InRegion("ITBG-Bergamo").
-        InZone("ITBG-1").
-        WithFlavor("CSO2A4").
+        Tagged("env-prod").
+        InProject(proj).
+        InRegion(aruba.RegionITBGBergamo).
+        InZone(aruba.ZoneITBG1).
+        BootingFrom(blockStorage).
         WithVPC(vpc).
-        AddSubnet(subnet).
-        AddSecurityGroup(sg).
+        OnSubnets(subnet).
+        WithSecurityGroups(sg).
         WithElasticIP(eip).
-        WithBootVolume(blockStorage).
-        WithKeyPair(keyPair))
+        UsingKeyPair(keyPair))
 if err != nil {
     log.Fatalf("Create Cloud Server: %v", err)
 }
@@ -206,9 +206,9 @@ arubaClient.FromCompute().KeyPairs()
 kp, err := arubaClient.FromCompute().KeyPairs().Create(
     ctx,
     aruba.NewKeyPair().
-        IntoProject(proj).
         Named("my-keypair").
-        InRegion("ITBG-Bergamo").
+        InProject(proj).
+        InRegion(aruba.RegionITBGBergamo).
         WithPublicKey("ssh-rsa AAAAB3NzaC1yc2E..."))
 if err != nil {
     log.Fatalf("Create KeyPair: %v", err)
@@ -244,23 +244,23 @@ arubaClient.FromContainer().KaaS()
 k, err := arubaClient.FromContainer().KaaS().Create(
     ctx,
     aruba.NewKaaS().
-        IntoProject(proj).
         Named("my-cluster").
-        AddTag("env-prod").
-        WithLocation("ITBG-Bergamo").
+        Tagged("env-prod").
+        InProject(proj).
+        InRegion(aruba.RegionITBGBergamo).
+        WithKubernetesVersion(aruba.KubernetesVersion1323).
+        WithPodCIDR("10.200.0.0/16").
+        WithNodeCIDR("10.100.0.0/16", "node-cidr").
         WithVPC(vpc).
         WithSubnet(subnet).
-        WithSecurityGroupName("my-security-group").
-        WithNodeCIDR("10.100.0.0/16", "node-cidr").
-        WithPodCIDR("10.200.0.0/16").
-        WithKubernetesVersion("1.32.3").
-        WithHA(true).
-        WithBillingPeriod("Hour").
-        AddNodePool(aruba.NewNodePool().
+        WithSecurityGroup(sg).
+        WithNodePools(aruba.NewNodePool().
+            OfInstance(aruba.NodePoolInstanceK4A8).
             Named("default-pool").
-            WithCount(3).
-            OfInstance("K4A8").
-            InZone("ITBG-1")))
+            InZone(aruba.ZoneITBG1).
+            WithCount(3)).
+        HighlyAvailable().
+        BilledBy(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create KaaS: %v", err)
 }
@@ -318,17 +318,17 @@ arubaClient.FromContainer().ContainerRegistry()
 reg, err := arubaClient.FromContainer().ContainerRegistry().Create(
     ctx,
     aruba.NewContainerRegistry().
-        IntoProject(proj).
+        OfSize(aruba.ContainerRegistrySizeFlavorSmall).
         Named("my-registry").
-        AddTag("env-prod").
+        Tagged("env-prod").
+        InProject(proj).
+        WithAdminUsername("admin").
         WithVPC(vpc).
         WithSubnet(subnet).
         WithSecurityGroup(sg).
-        WithPublicIP(eip).
+        WithElasticIP(eip).
         WithBlockStorage(blockStorage).
-        WithAdminUsername("admin").
-        WithSize(100).
-        WithBillingPeriod("Hour"))
+        BilledBy(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create ContainerRegistry: %v", err)
 }
@@ -372,17 +372,20 @@ arubaClient.FromDatabase().DBaaS()
 db, err := arubaClient.FromDatabase().DBaaS().Create(
     ctx,
     aruba.NewDBaaS().
-        IntoProject(proj).
+        OfEngine(aruba.DatabaseEngineMySQL80).
+        OfFlavor(aruba.DBaaSFlavorDBO2A4).
         Named("my-database").
-        AddTag("env-prod").
-        InRegion("ITBG-Bergamo").
-        InZone("ITBG-1").
-        WithEngine("mysql-8.0").
-        WithFlavor("DBO2A4").
-        WithStorage(20).
-        WithBillingPeriod("Hour").
-        WithAutoscaling(true).
-        WithNetworking(vpc, subnet, sg, eip))
+        Tagged("env-prod").
+        InProject(proj).
+        InRegion(aruba.RegionITBGBergamo).
+        InZone(aruba.ZoneITBG1).
+        SizedGB(20).
+        WithAutoscaling(2, 5).
+        WithVPC(vpc).
+        WithSubnet(subnet).
+        WithSecurityGroup(sg).
+        WithElasticIP(eip).
+        BilledBy(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create DBaaS: %v", err)
 }
@@ -427,9 +430,9 @@ arubaClient.FromDatabase().Databases()
 database, err := arubaClient.FromDatabase().Databases().Create(
     ctx,
     aruba.NewDatabase().
-        IntoDBaaS(db).
         Named("my-app-db").
-        AddTag("app-backend"))
+        Tagged("app-backend").
+        InDBaaS(db))
 if err != nil {
     log.Fatalf("Create Database: %v", err)
 }
@@ -467,10 +470,9 @@ arubaClient.FromDatabase().Users()
 user, err := arubaClient.FromDatabase().Users().Create(
     ctx,
     aruba.NewUser().
-        IntoDBaaS(db).
-        Named("app_user").
-        WithPassword("Str0ngP@ssword!").
-        AddTag("app-backend"))
+        InDBaaS(db).
+        WithUsername("app_user").
+        WithPassword("Str0ngP@ssword!"))
 if err != nil {
     log.Fatalf("Create User: %v", err)
 }
@@ -508,9 +510,9 @@ arubaClient.FromDatabase().Grants()
 grant, err := arubaClient.FromDatabase().Grants().Create(
     ctx,
     aruba.NewGrant().
-        IntoDatabase(database).
-        Named("app_user-grant").
-        WithPrivileges("ALL"))
+        OfRole("liteadmin").
+        InDatabase(database).
+        ForUser("app_user"))
 if err != nil {
     log.Fatalf("Create Grant: %v", err)
 }
@@ -518,14 +520,14 @@ if err != nil {
 if err := grant.WaitUntilReady(ctx); err != nil {
     log.Fatalf("Grant did not become Active: %v", err)
 }
-fmt.Printf("✓ Grant: %s (privilegi: %s)\n", grant.Name(), grant.Privileges())
+fmt.Printf("✓ Grant: %s\n", grant.ID())
 ```
 
 **Accessor di risposta**:
-- `ID()`, `URI()`, `Name()`, `Tags()`
+- `ID()`, `URI()`
 - `GrantID()` — ID grant assegnato dal provider
 - `DatabaseID()` — ID Database genitore
-- `Privileges()` — stringa dei privilegi
+- `Role()` — ruolo assegnato (es. `"liteadmin"`)
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
@@ -549,12 +551,11 @@ arubaClient.FromDatabase().DBaaSBackups()
 backup, err := arubaClient.FromDatabase().DBaaSBackups().Create(
     ctx,
     aruba.NewDBaaSBackup().
-        IntoProject(proj).
         Named("my-db-backup").
-        WithDBaaS(db).
-        WithType("Full").
-        WithRetentionDays(30).
-        AddTag("backup"))
+        Tagged("backup").
+        InProject(proj).
+        FromDBaaS(db).
+        BilledBy(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create DBaaSBackup: %v", err)
 }
@@ -662,12 +663,12 @@ arubaClient.FromNetwork().VPCs()
 vpc, err := arubaClient.FromNetwork().VPCs().Create(
     ctx,
     aruba.NewVPC().
-        IntoProject(proj).
         Named("my-vpc").
-        AddTag("network").
-        InRegion("ITBG-Bergamo").
-        WithDefault(false).
-        WithPreset(false))
+        Tagged("network").
+        InProject(proj).
+        InRegion(aruba.RegionITBGBergamo).
+        NotDefault().
+        WithoutPreset())
 if err != nil {
     log.Fatalf("Create VPC: %v", err)
 }
@@ -702,7 +703,7 @@ arubaClient.FromNetwork().Subnets()
 **Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
 **Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
-`WithType` accetta `string(aruba.SubnetTypeBasic)` o `string(aruba.SubnetTypeAdvanced)`.
+`OfType` accetta `aruba.SubnetTypeBasic` o `aruba.SubnetTypeAdvanced` (costanti tipizzate — nessun cast a stringa necessario).
 
 `aruba.NewSubnetDHCP()` è un sub-builder per la configurazione DHCP. Si allega con `WithDHCP(...)`.
 
@@ -710,19 +711,18 @@ arubaClient.FromNetwork().Subnets()
 subnet, err := arubaClient.FromNetwork().Subnets().Create(
     ctx,
     aruba.NewSubnet().
-        IntoVPC(vpc).
+        OfType(aruba.SubnetTypeAdvanced).
         Named("my-subnet").
-        AddTag("network").
-        InRegion("ITBG-Bergamo").
-        WithType(string(aruba.SubnetTypeAdvanced)).
-        WithDefault(false).
+        Tagged("network").
+        InVPC(vpc).
+        InRegion(aruba.RegionITBGBergamo).
         WithCIDR("192.168.1.0/25").
         WithDHCP(aruba.NewSubnetDHCP().
             Enabled().
             WithRange("192.168.1.10", 50).
-            AddRoute("0.0.0.0/0", "192.168.1.1").
-            AddDNS("8.8.8.8").
-            AddDNS("8.8.4.4")))
+            WithRoutes(aruba.SubnetDHCPRoute{Address: "0.0.0.0/0", Gateway: "192.168.1.1"}).
+            WithDNSServers("8.8.8.8", "8.8.4.4")).
+        NotDefault())
 if err != nil {
     log.Fatalf("Create Subnet: %v", err)
 }
@@ -764,11 +764,11 @@ arubaClient.FromNetwork().ElasticIPs()
 eip, err := arubaClient.FromNetwork().ElasticIPs().Create(
     ctx,
     aruba.NewElasticIP().
-        IntoProject(proj).
         Named("my-eip").
-        AddTag("network").
-        InRegion("ITBG-Bergamo").
-        WithBillingPeriod("Hour"))
+        Tagged("network").
+        InProject(proj).
+        InRegion(aruba.RegionITBGBergamo).
+        BilledBy(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create ElasticIP: %v", err)
 }
@@ -808,10 +808,10 @@ arubaClient.FromNetwork().SecurityGroups()
 sg, err := arubaClient.FromNetwork().SecurityGroups().Create(
     ctx,
     aruba.NewSecurityGroup().
-        IntoVPC(vpc).
         Named("my-security-group").
-        AddTag("security").
-        WithDefault(false))
+        Tagged("security").
+        InVPC(vpc).
+        NotDefault())
 if err != nil {
     log.Fatalf("Create SecurityGroup: %v", err)
 }
@@ -845,22 +845,22 @@ arubaClient.FromNetwork().SecurityGroupRules()
 **Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
 **Asincrono**: sì — `State()` e `FailureReason()` sono disponibili.
 
-`WithDirection` accetta `string(aruba.RuleDirectionIngress)` o `string(aruba.RuleDirectionEgress)`.
+`WithDirection` accetta `aruba.RuleDirectionIngress` o `aruba.RuleDirectionEgress`.
 
-> **Avvertenza**: `WithTargetCIDR` e `WithTargetSecurityGroup` si escludono a vicenda. Impostarli entrambi registra un errore al momento del setter che emerge su `Create`.
+> **Avvertenza**: `TargetingCIDR` e `TargetingSecurityGroup` si escludono a vicenda. Impostarli entrambi registra un errore al momento del setter che emerge su `Create`.
 
 ```go
 rule, err := arubaClient.FromNetwork().SecurityGroupRules().Create(
     ctx,
     aruba.NewSecurityRule().
-        IntoSecurityGroup(sg).
         Named("allow-ssh").
-        AddTag("ssh-key").
-        InRegion("ITBG-Bergamo").
-        WithDirection(string(aruba.RuleDirectionIngress)).
-        WithProtocol("TCP").
+        Tagged("ssh-key").
+        InSecurityGroup(sg).
+        InRegion(aruba.RegionITBGBergamo).
+        WithDirection(aruba.RuleDirectionIngress).
+        WithProtocol(aruba.RuleProtocolTCP).
         WithPort("22").
-        WithTargetCIDR("0.0.0.0/0"))
+        TargetingCIDR("0.0.0.0/0"))
 if err != nil {
     log.Fatalf("Create SecurityRule: %v", err)
 }
@@ -934,10 +934,10 @@ arubaClient.FromNetwork().VPCPeerings()
 peering, err := arubaClient.FromNetwork().VPCPeerings().Create(
     ctx,
     aruba.NewVPCPeering().
-        IntoVPC(vpc).
         Named("my-peering").
-        AddTag("network").
-        InRegion("ITBG-Bergamo").
+        Tagged("network").
+        InVPC(vpc).
+        InRegion(aruba.RegionITBGBergamo).
         WithPeerVPC(aruba.URI("/projects/"+peerProjectID+"/vpcs/"+peerVPCID)))
 if err != nil {
     log.Fatalf("Create VPCPeering: %v", err)
@@ -977,10 +977,10 @@ arubaClient.FromNetwork().VPCPeeringRoutes()
 route, err := arubaClient.FromNetwork().VPCPeeringRoutes().Create(
     ctx,
     aruba.NewVPCPeeringRoute().
-        IntoVPCPeering(peering).
         Named("my-peering-route").
-        AddTag("network").
-        InRegion("ITBG-Bergamo").
+        Tagged("network").
+        InVPCPeering(peering).
+        InRegion(aruba.RegionITBGBergamo).
         WithCIDR("10.0.0.0/8").
         WithTarget(aruba.URI("/projects/"+projectID+"/vpcs/"+vpcID)))
 if err != nil {
@@ -1018,29 +1018,28 @@ arubaClient.FromNetwork().VPNTunnels()
 **Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 Sub-builder del VPN Tunnel:
-- `aruba.NewVPNIKE()` — parametri IKE fase 1
-- `aruba.NewVPNESP()` — parametri ESP fase 2
-- `aruba.NewVPNPSK()` — configurazione della pre-shared key
+- `aruba.NewVPNIKE()` — parametri IKE fase 1 (`WithEncryption(IKEEncryption)`, `WithHash(IKEHash)`, `WithDHGroup(IKEDHGroup)`, `WithDPDAction(IKEDPDAction)`)
+- `aruba.NewVPNESP()` — parametri ESP fase 2 (`WithEncryption(ESPEncryption)`, `WithHash(ESPHash)`, `WithPFS(ESPPFSGroup)`)
+- `aruba.NewVPNPSK()` — configurazione della pre-shared key (`WithKey(string)`, `WithCloudSite(string)`, `WithOnPremSite(string)`)
 
 ```go
 tunnel, err := arubaClient.FromNetwork().VPNTunnels().Create(
     ctx,
     aruba.NewVPNTunnel().
-        IntoProject(proj).
         Named("my-vpn-tunnel").
-        AddTag("vpn-net").
-        InRegion("ITBG-Bergamo").
-        WithRemoteGateway("203.0.113.1").
-        WithIKE(aruba.NewVPNIKE().
-            WithEncryption(string(aruba.VPNEncryptionAES256)).
-            WithHash(string(aruba.VPNHashSHA256)).
-            WithDHGroup(string(aruba.VPNDHGroup14))).
-        WithESP(aruba.NewVPNESP().
-            WithEncryption(string(aruba.VPNEncryptionAES256)).
-            WithHash(string(aruba.VPNHashSHA256))).
-        WithPSK(aruba.NewVPNPSK().
-            WithKey("my-pre-shared-key").
-            WithID("tunnel-id")))
+        Tagged("vpn-net").
+        InProject(proj).
+        InRegion(aruba.RegionITBGBergamo).
+        WithPeerClientPublicIP("203.0.113.1").
+        WithIKESettings(aruba.NewVPNIKE().
+            WithEncryption(aruba.IKEEncryptionAES256).
+            WithHash(aruba.IKEHashSHA256).
+            WithDHGroup(aruba.IKEDHGroup14)).
+        WithESPSettings(aruba.NewVPNESP().
+            WithEncryption(aruba.ESPEncryptionAES256).
+            WithHash(aruba.ESPHashSHA256)).
+        WithPSKSettings(aruba.NewVPNPSK().
+            WithKey("my-pre-shared-key")))
 if err != nil {
     log.Fatalf("Create VPNTunnel: %v", err)
 }
@@ -1048,13 +1047,13 @@ if err != nil {
 if err := tunnel.WaitUntilReady(ctx); err != nil {
     log.Fatalf("VPNTunnel did not become Active: %v", err)
 }
-fmt.Printf("✓ VPN Tunnel: %s (gateway: %s)\n", tunnel.Name(), tunnel.RemoteGateway())
+fmt.Printf("✓ VPN Tunnel: %s (gateway: %s)\n", tunnel.Name(), tunnel.PeerClientPublicIP())
 ```
 
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `VPNTunnelID()` — ID tunnel assegnato dal provider
-- `RemoteGateway()` — IP del gateway remoto
+- `PeerClientPublicIP()` — IP del gateway peer remoto
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
@@ -1078,10 +1077,10 @@ arubaClient.FromNetwork().VPNRoutes()
 vpnRoute, err := arubaClient.FromNetwork().VPNRoutes().Create(
     ctx,
     aruba.NewVPNRoute().
-        IntoVPNTunnel(tunnel).
         Named("my-vpn-route").
-        AddTag("vpn-net").
-        InRegion("ITBG-Bergamo").
+        Tagged("vpn-net").
+        InVPNTunnel(tunnel).
+        InRegion(aruba.RegionITBGBergamo).
         WithCIDR("10.0.0.0/8").
         WithTarget(aruba.URI("/projects/"+projectID+"/vpcs/"+vpcID)))
 if err != nil {
@@ -1120,31 +1119,42 @@ arubaClient.FromSchedule().Jobs()
 **Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
 **Asincrono**: sì — `State()` e `FailureReason()` sono disponibili.
 
-`WithType` accetta `string(aruba.JobTypeOneShot)` o `string(aruba.JobTypeRecurring)`.
-
-Per i job ricorrenti, `WithRecurrence` accetta `aruba.RecurrenceTypeHourly`, `aruba.RecurrenceTypeDaily`, `aruba.RecurrenceTypeWeekly`, `aruba.RecurrenceTypeMonthly` o `aruba.RecurrenceTypeCustom`.
+Usa `OneShotAt(t time.Time)` per pianificare un job una-tantum, o `WithCron(expr string)` per un job ricorrente su pianificazione cron. Usa `RecurringUntil(t time.Time)` per impostare una data di fine per un job ricorrente.
 
 ```go
+// Job una-tantum — si attiva una volta a un'ora specifica
 job, err := arubaClient.FromSchedule().Jobs().Create(
     ctx,
     aruba.NewJob().
-        IntoProject(proj).
-        Named("my-job").
-        AddTag("automation").
-        WithType(string(aruba.JobTypeRecurring)).
-        WithRecurrence(string(aruba.RecurrenceTypeDaily)))
+        Named("my-one-shot-job").
+        Tagged("automation").
+        InProject(proj).
+        OneShotAt(time.Now().Add(10*time.Minute)))
 if err != nil {
     log.Fatalf("Create Job: %v", err)
 }
-fmt.Printf("✓ Job: %s (tipo: %s)\n", job.Name(), job.Type())
+fmt.Printf("✓ Job: %s (tipo: %s)\n", job.Name(), job.JobType())
+
+// Job ricorrente — si attiva secondo una pianificazione cron
+cronJob, err := arubaClient.FromSchedule().Jobs().Create(
+    ctx,
+    aruba.NewJob().
+        Named("my-recurring-job").
+        Tagged("automation").
+        InProject(proj).
+        WithCron("0 * * * *"))
+if err != nil {
+    log.Fatalf("Create recurring Job: %v", err)
+}
+fmt.Printf("✓ Job ricorrente: %s (cron: %s)\n", cronJob.Name(), cronJob.Cron())
 ```
 
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `JobID()` — ID job assegnato dal provider
-- `Type()` — stringa del tipo di job
-- `Recurrence()` — stringa del tipo di ricorrenza
-- `Steps()` — step del job configurati
+- `JobType()` — tipo di job (`types.JobTypeOneShot` o `types.JobTypeRecurring`)
+- `Cron()` — espressione cron (job ricorrenti)
+- `IsEnabled()` — bool
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `Raw()` — struct wire sottostante
 
@@ -1169,11 +1179,11 @@ arubaClient.FromSecurity().KMS()
 kms, err := arubaClient.FromSecurity().KMS().Create(
     ctx,
     aruba.NewKMS().
-        IntoProject(proj).
         Named("my-kms").
-        AddTag("security").
-        InRegion("ITBG-Bergamo").
-        WithBillingPeriod("Hour"))
+        Tagged("security").
+        InProject(proj).
+        InRegion(aruba.RegionITBGBergamo).
+        BilledBy(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create KMS: %v", err)
 }
@@ -1208,16 +1218,16 @@ arubaClient.FromSecurity().Keys()
 **Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
 **Asincrono**: sì — `State()` e `FailureReason()` sono disponibili.
 
-`WithAlgorithm` accetta `string(aruba.KeyAlgorithmAes)` o `string(aruba.KeyAlgorithmRsa)`.
+`OfAlgorithm` accetta `aruba.KeyAlgorithmAes` o `aruba.KeyAlgorithmRsa`.
 
 ```go
 key, err := arubaClient.FromSecurity().Keys().Create(
     ctx,
     aruba.NewKey().
-        IntoKMS(kms).
+        OfAlgorithm(aruba.KeyAlgorithmAes).
         Named("my-encryption-key").
-        AddTag("security").
-        WithAlgorithm(string(aruba.KeyAlgorithmAes)))
+        Tagged("security").
+        InKMS(kms))
 if err != nil {
     log.Fatalf("Create Key: %v", err)
 }
@@ -1254,15 +1264,15 @@ arubaClient.FromSecurity().Kmips()
 km, err := arubaClient.FromSecurity().Kmips().Create(
     ctx,
     aruba.NewKmip().
-        IntoKMS(kms).
         Named("my-kmip").
-        AddTag("security"))
+        Tagged("security").
+        InKMS(kms))
 if err != nil {
     log.Fatalf("Create Kmip: %v", err)
 }
 
 // Attendi che il certificato sia disponibile
-if err := km.WaitUntilState(ctx, string(aruba.ServiceStatusCertificateAvailable)); err != nil {
+if err := km.WaitUntilCertificateAvailable(ctx); err != nil {
     log.Fatalf("Kmip certificate not available: %v", err)
 }
 fmt.Printf("✓ Kmip: %s\n", km.Name())
@@ -1304,22 +1314,22 @@ arubaClient.FromStorage().Volumes()
 **Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
 **Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
-`WithType` accetta `aruba.BlockStorageTypeStandard` o `aruba.BlockStorageTypePerformance`.
+`OfType` accetta `aruba.BlockStorageTypeStandard` o `aruba.BlockStorageTypePerformance`. Usa `AsBootable()` per contrassegnare un volume come avviabile; `NotBootable()` per annullare. Usa `FromImage(imageID)` per specificare un'immagine base.
 
 ```go
 bs, err := arubaClient.FromStorage().Volumes().Create(
     ctx,
     aruba.NewBlockStorage().
-        IntoProject(proj).
+        OfType(aruba.BlockStorageTypeStandard).
         Named("my-volume").
-        AddTag("storage").
-        InRegion("ITBG-Bergamo").
-        InZone("ITBG-1").
-        WithSize(20).
-        WithType(aruba.BlockStorageTypeStandard).
-        WithBillingPeriod("Hour").
-        WithBootable(true).
-        WithImage("LU22-001"))
+        Tagged("storage").
+        InProject(proj).
+        InRegion(aruba.RegionITBGBergamo).
+        InZone(aruba.ZoneITBG1).
+        SizedGB(20).
+        FromImage("LU22-001").
+        AsBootable().
+        BilledBy(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create BlockStorage: %v", err)
 }
@@ -1327,34 +1337,34 @@ if err != nil {
 if err := bs.WaitUntilReady(ctx); err != nil {
     log.Fatalf("BlockStorage did not become Active: %v", err)
 }
-fmt.Printf("✓ Volume: %s (%d GB)\n", bs.Name(), bs.Size())
+fmt.Printf("✓ Volume: %s (%d GB)\n", bs.Name(), bs.SizeGB())
 ```
 
-Per creare un volume **da uno snapshot**, usa `FromSnapshot(snapshot)` al posto di `WithImage`:
+Per creare un volume **da uno snapshot**, usa `FromSnapshot(snapshot)` al posto di `FromImage`:
 
 ```go
 bs, err := arubaClient.FromStorage().Volumes().Create(
     ctx,
     aruba.NewBlockStorage().
-        IntoProject(proj).
+        OfType(aruba.BlockStorageTypeStandard).
         Named("restored-volume").
-        InRegion("ITBG-Bergamo").
-        InZone("ITBG-1").
-        WithSize(20).
-        WithType(aruba.BlockStorageTypeStandard).
-        WithBillingPeriod("Hour").
-        WithBootable(true).
-        FromSnapshot(snapshot))
+        InProject(proj).
+        InRegion(aruba.RegionITBGBergamo).
+        InZone(aruba.ZoneITBG1).
+        SizedGB(20).
+        FromSnapshot(snapshot).
+        AsBootable().
+        BilledBy(aruba.BillingPeriodHour))
 ```
 
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `BlockStorageID()` — ID volume assegnato dal provider
-- `Size()` — dimensione in GB
+- `SizeGB()` — dimensione in GB
 - `Type()` — stringa del tipo di storage
 - `Zone()` — zona di disponibilità
 - `BillingPeriod()` — cadenza di fatturazione
-- `Bootable()` — bool
+- `IsBootable()` — bool
 - `Image()` — riferimento all'immagine
 - `SnapshotURI()` — URI dello snapshot sorgente (se creato da snapshot)
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
@@ -1380,12 +1390,12 @@ arubaClient.FromStorage().Snapshots()
 snap, err := arubaClient.FromStorage().Snapshots().Create(
     ctx,
     aruba.NewSnapshot().
-        IntoProject(proj).
         Named("my-snapshot").
-        AddTag("backup").
-        InRegion("ITBG-Bergamo").
-        WithBillingPeriod("Hour").
-        OfVolume(bs))
+        Tagged("backup").
+        InProject(proj).
+        InRegion(aruba.RegionITBGBergamo).
+        FromVolume(bs).
+        BilledBy(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create Snapshot: %v", err)
 }
@@ -1403,7 +1413,7 @@ fmt.Printf("✓ Snapshot: %s\n", snap.Name())
 - `Type()` — tipo di storage
 - `Zone()` — zona di disponibilità
 - `BillingPeriod()` — cadenza di fatturazione
-- `Bootable()` — bool
+- `IsBootable()` — bool
 - `VolumeURI()` — URI del volume sorgente
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
@@ -1424,19 +1434,19 @@ arubaClient.FromStorage().Backups()
 **Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
 **Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
-`WithType` accetta `aruba.StorageBackupTypeFull` o `aruba.StorageBackupTypeIncremental`.
+`OfType` accetta `aruba.StorageBackupTypeFull` o `aruba.StorageBackupTypeIncremental`.
 
 ```go
 backup, err := arubaClient.FromStorage().Backups().Create(
     ctx,
     aruba.NewStorageBackup().
-        IntoProject(proj).
+        OfType(aruba.StorageBackupTypeFull).
         Named("my-backup").
-        AddTag("backup").
-        WithOrigin(bs).
-        WithType(aruba.StorageBackupTypeFull).
-        WithRetentionDays(30).
-        WithBillingPeriod("Hour"))
+        Tagged("backup").
+        InProject(proj).
+        RetainedForDays(30).
+        FromVolume(bs).
+        BilledBy(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create StorageBackup: %v", err)
 }
@@ -1476,10 +1486,10 @@ arubaClient.FromStorage().Restores()
 restore, err := arubaClient.FromStorage().Restores().Create(
     ctx,
     aruba.NewStorageRestore().
-        IntoBackup(backup).
         Named("my-restore").
-        AddTag("restore").
-        WithTarget(aruba.URI(backup.OriginURI())))
+        Tagged("restore").
+        FromBackup(backup).
+        ToVolume(aruba.URI(backup.OriginURI())))
 if err != nil {
     log.Fatalf("Create StorageRestore: %v", err)
 }

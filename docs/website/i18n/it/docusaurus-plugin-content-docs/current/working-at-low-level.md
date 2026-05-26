@@ -144,8 +144,8 @@ import (
 )
 
 vpc := aruba.NewVPC().
-    IntoProject(proj).
     Named("my-vpc").
+    InProject(proj).
     InRegion(aruba.RegionITBGBergamo).
     AsDefault()
 

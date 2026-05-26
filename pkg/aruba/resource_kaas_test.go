@@ -36,11 +36,11 @@ func TestKaaS_FluentSetters(t *testing.T) {
 		Named("sg-name")
 
 	k := NewKaaS().
-		IntoProject(proj).
+		InProject(proj).
 		Named("my-cluster").
-		AddTag("env:prod").
-		AddTag("k8s").
-		AddTag("env:prod"). // dedupe
+		Tagged("env:prod").
+		Tagged("k8s").
+		Tagged("env:prod"). // dedupe
 		InRegion(RegionITBGBergamo).
 		WithVPC(vpcURI).
 		WithSubnet(subnetURI).
@@ -48,9 +48,9 @@ func TestKaaS_FluentSetters(t *testing.T) {
 		WithNodeCIDR("10.100.0.0/16", "node-cidr").
 		WithPodCIDR("10.200.0.0/16").
 		WithKubernetesVersion("1.32.3").
-		WithHA(true).
+		HighlyAvailable().
 		WithMaxStorageQuotaGB(100).
-		WithBillingPeriod(BillingPeriodHour).
+		BilledBy(BillingPeriodHour).
 		WithIdentity("cid", "csecret")
 
 	if k.Name() != "my-cluster" {
@@ -92,7 +92,7 @@ func TestKaaS_FluentSetters(t *testing.T) {
 func TestKaaS_IntoProject_TypedRef(t *testing.T) {
 	proj := &Project{}
 	proj.fromResponse(projectTestResponse("p-42", "proj", "/projects/p-42"))
-	k := NewKaaS().IntoProject(proj)
+	k := NewKaaS().InProject(proj)
 	if k.ProjectID() != "p-42" {
 		t.Errorf("ProjectID() = %q", k.ProjectID())
 	}
@@ -102,14 +102,14 @@ func TestKaaS_IntoProject_TypedRef(t *testing.T) {
 }
 
 func TestKaaS_IntoProject_URIRef(t *testing.T) {
-	k := NewKaaS().IntoProject(URI("/projects/p-uri"))
+	k := NewKaaS().InProject(URI("/projects/p-uri"))
 	if k.ProjectID() != "p-uri" {
 		t.Errorf("ProjectID() = %q", k.ProjectID())
 	}
 }
 
 func TestKaaS_IntoProject_BadRef(t *testing.T) {
-	k := NewKaaS().IntoProject(URI("not-a-project-uri"))
+	k := NewKaaS().InProject(URI("not-a-project-uri"))
 	if k.Err() == nil {
 		t.Error("expected Err() != nil for non-project URI")
 	}
@@ -229,7 +229,7 @@ func TestKaaS_WithPodCIDR(t *testing.T) {
 }
 
 func TestKaaS_WithHA(t *testing.T) {
-	k := NewKaaS().WithHA(true)
+	k := NewKaaS().HighlyAvailable()
 	req := k.RawRequest()
 	if req.Properties.HA == nil || !*req.Properties.HA {
 		t.Errorf("HA = %v", req.Properties.HA)
@@ -252,7 +252,7 @@ func TestKaaS_WithKubernetesVersion(t *testing.T) {
 }
 
 func TestKaaS_WithBillingPeriod(t *testing.T) {
-	k := NewKaaS().WithBillingPeriod(BillingPeriodHour)
+	k := NewKaaS().BilledBy(BillingPeriodHour)
 	if k.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", k.BillingPeriod())
 	}
@@ -317,16 +317,16 @@ func TestKaaS_AddNodePool_DrainErrors(t *testing.T) {
 	k := NewKaaS()
 	np := NewNodePool()
 	np.addErr(fmt.Errorf("test sub-builder error"))
-	k.AddNodePool(np)
+	k.WithNodePools(np)
 	if k.Err() == nil {
 		t.Error("expected Err() != nil after AddNodePool with errored sub-builder")
 	}
 }
 
 func TestKaaS_AddNodePool_Nil(t *testing.T) {
-	k := NewKaaS().AddNodePool(nil)
+	k := NewKaaS().WithNodePools(nil)
 	if k.Err() != nil {
-		t.Errorf("AddNodePool(nil) should not error: %v", k.Err())
+		t.Errorf("WithNodePools(nil) should not error: %v", k.Err())
 	}
 }
 
@@ -342,7 +342,7 @@ func TestKaaS_ToRequest(t *testing.T) {
 
 	k := NewKaaS().Named(
 		"my-cluster").
-		AddTag("t1").AddTag("t2").
+		Tagged("t1").Tagged("t2").
 		InRegion(RegionITBGBergamo).
 		WithVPC(URI(vpcURI)).
 		WithSubnet(URI(subnetURI)).
@@ -350,11 +350,11 @@ func TestKaaS_ToRequest(t *testing.T) {
 		WithNodeCIDR("10.100.0.0/16", "node-cidr").
 		WithPodCIDR("10.200.0.0/16").
 		WithKubernetesVersion("1.32.3").
-		WithHA(true).
+		HighlyAvailable().
 		WithMaxStorageQuotaGB(100).
-		WithBillingPeriod(BillingPeriodHour).
+		BilledBy(BillingPeriodHour).
 		WithIdentity("cid", "csecret").
-		AddNodePool(NewNodePool().
+		WithNodePools(NewNodePool().
 			Named("pool-1").OfInstance(NodePoolInstanceK4A8).InZone(ZoneITBG1).WithCount(3))
 
 	req := k.RawRequest()
@@ -423,10 +423,10 @@ func TestKaaS_ToUpdateRequest_MutableOnly(t *testing.T) {
 		InRegion(RegionITBGBergamo).
 		WithVPC(URI(vpcURI)). // set but must NOT appear in update request
 		WithKubernetesVersion("1.33.0").
-		WithHA(true).
+		HighlyAvailable().
 		WithMaxStorageQuotaGB(200).
-		WithBillingPeriod(BillingPeriodHour).
-		AddNodePool(NewNodePool().
+		BilledBy(BillingPeriodHour).
+		WithNodePools(NewNodePool().
 			Named("pool-1").WithCount(5).OfInstance(NodePoolInstanceK4A8).InZone(ZoneITBG1))
 
 	upd := k.toUpdateRequest()
@@ -735,7 +735,7 @@ func TestKaaSClientAdapter_Create_Success(t *testing.T) {
 	sgFixture := NewSecurityGroup().
 		Named("sg-name")
 	k := NewKaaS().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-cluster").
 		InRegion(RegionITBGBergamo).
 		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1")).
@@ -743,9 +743,9 @@ func TestKaaSClientAdapter_Create_Success(t *testing.T) {
 		WithSecurityGroup(sgFixture).
 		WithNodeCIDR("10.100.0.0/16", "node-cidr").
 		WithKubernetesVersion("1.32.3").
-		WithBillingPeriod(BillingPeriodHour).
-		WithHA(true).
-		AddNodePool(NewNodePool().
+		BilledBy(BillingPeriodHour).
+		HighlyAvailable().
+		WithNodePools(NewNodePool().
 			Named("pool-1").WithCount(3).OfInstance(NodePoolInstanceK4A8).InZone(ZoneITBG1))
 
 	result, err := adapter.Create(context.Background(), k)
@@ -801,7 +801,7 @@ func TestKaaSClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"cluster","uri":"/projects/p/providers/Aruba.Container/kaas/x"},"properties":{},"status":{}}`)
 	})
 
-	k := NewKaaS().IntoProject(URI("/projects/p")).
+	k := NewKaaS().InProject(URI("/projects/p")).
 		Named("cluster")
 	result, err := adapter.Create(context.Background(), k)
 	if err == nil {
@@ -823,7 +823,7 @@ func TestKaaSClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "name is required", 422))
 	})
 
-	k := NewKaaS().IntoProject(URI("/projects/p"))
+	k := NewKaaS().InProject(URI("/projects/p"))
 	result, err := adapter.Create(context.Background(), k)
 	if err == nil {
 		t.Fatal("expected error on 422")
@@ -862,7 +862,7 @@ func TestKaaSClientAdapter_Create_WithBodyRefs_ViaFake(t *testing.T) {
 	adapter := &kaasClientAdapter{low: fake}
 
 	k := NewKaaS().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		WithVPC(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1")).
 		WithSubnet(URI("/projects/p/providers/Aruba.Network/vpcs/vpc-1/subnets/sn-1"))
 
@@ -910,7 +910,7 @@ func TestKaaSClientAdapter_Update_Success(t *testing.T) {
 		},
 	})
 	k.WithKubernetesVersion("1.33.0").
-		AddNodePool(NewNodePool().
+		WithNodePools(NewNodePool().
 			Named("pool-1").WithCount(5).OfInstance(NodePoolInstanceK4A8).InZone(ZoneITBG1))
 
 	result, err := adapter.Update(context.Background(), k)
@@ -930,7 +930,7 @@ func TestKaaSClientAdapter_Update_NoID(t *testing.T) {
 	adapter := buildKaaSTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	_, err := adapter.Update(context.Background(), NewKaaS().IntoProject(URI("/projects/p")))
+	_, err := adapter.Update(context.Background(), NewKaaS().InProject(URI("/projects/p")))
 	if err == nil {
 		t.Fatal("expected error when KaaS has no ID")
 	}
@@ -1228,10 +1228,10 @@ func TestKaaSClient_HasUpdateMethod(t *testing.T) {
 
 func TestKaaS_RemoveTag_ReplaceTags_InRegion(t *testing.T) {
 	k := NewKaaS().
-		AddTag("a").
-		AddTag("b").
-		RemoveTag("a").
-		ReplaceTags("x", "y").
+		Tagged("a").
+		Tagged("b").
+		Untagged("a").
+		RetaggedAs("x", "y").
 		InRegion("ITMI-Milano-1")
 
 	tags := k.Tags()
@@ -1683,7 +1683,7 @@ func TestKaaS_ReplaceNodePools_ReplacesExisting(t *testing.T) {
 
 	k := NewKaaS().Named("c").InRegion(RegionITBGBergamo).
 		WithVPC(URI("/v")).WithSubnet(URI("/s")).
-		AddNodePool(np1).AddNodePool(np2)
+		WithNodePools(np1).WithNodePools(np2)
 
 	k.ReplaceNodePools(np3)
 
@@ -1700,9 +1700,9 @@ func TestKaaS_ClearNodePools_RemovesAll(t *testing.T) {
 	np := NewNodePool().Named("pool-1").OfInstance("inst-1").WithAutoscaling(1, 2)
 	k := NewKaaS().Named("c").InRegion(RegionITBGBergamo).
 		WithVPC(URI("/v")).WithSubnet(URI("/s")).
-		AddNodePool(np)
+		WithNodePools(np)
 
-	k.ClearNodePools()
+	k.WithoutNodePools()
 
 	req := k.toRequest()
 	if len(req.Properties.NodePools) != 0 {
@@ -1716,9 +1716,9 @@ func TestKaaS_SetNodePools_AliasForReplace(t *testing.T) {
 
 	k := NewKaaS().Named("c").InRegion(RegionITBGBergamo).
 		WithVPC(URI("/v")).WithSubnet(URI("/s")).
-		AddNodePool(np1)
+		WithNodePools(np1)
 
-	k.SetNodePools(np2)
+	k.ReplaceNodePools(np2)
 
 	req := k.toRequest()
 	if len(req.Properties.NodePools) != 1 {

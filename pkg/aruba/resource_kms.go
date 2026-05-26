@@ -46,26 +46,36 @@ func NewKMS() *KMS {
 
 // Setters — chainable, general → specific
 
-// IntoProject binds this KMS to its parent project. Required before Create.
-func (k *KMS) IntoProject(p Ref) *KMS { k.intoProject(p); return k }
+// InProject binds this KMS to its parent project. Required before Create.
+func (k *KMS) InProject(p Ref) *KMS { k.intoProject(p); return k }
 
 // Named sets the resource name. Required by the API.
 func (k *KMS) Named(n string) *KMS { k.named(n); return k }
 
-// AddTag appends a tag for filtering and accounting.
-func (k *KMS) AddTag(t string) *KMS { k.addTag(t); return k }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (k *KMS) Tagged(ts ...string) *KMS {
+	for _, t := range ts {
+		k.addTag(t)
+	}
+	return k
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (k *KMS) RemoveTag(t string) *KMS { k.removeTag(t); return k }
+// Untagged removes each listed tag. No-op for tags not present.
+func (k *KMS) Untagged(ts ...string) *KMS {
+	for _, t := range ts {
+		k.removeTag(t)
+	}
+	return k
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (k *KMS) ReplaceTags(ts ...string) *KMS { k.replaceTags(ts...); return k }
+// RetaggedAs replaces the entire tag set with the given values.
+func (k *KMS) RetaggedAs(ts ...string) *KMS { k.replaceTags(ts...); return k }
 
 // InRegion sets the region for this resource.
 func (k *KMS) InRegion(region Region) *KMS { k.inRegion(region); return k }
 
-// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
-func (k *KMS) WithBillingPeriod(p BillingPeriod) *KMS { k.billingPeriod = &p; return k }
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (k *KMS) BilledBy(period BillingPeriod) *KMS { k.billingPeriod = &period; return k }
 
 // Getters — general → specific
 
@@ -209,7 +219,7 @@ func (a *kmsClientAdapter) Create(ctx context.Context, k *KMS, opts ...CallOptio
 		return k, err
 	}
 	if k.ProjectID() == "" {
-		return k, fmt.Errorf("Create: KMS has no parent project — call IntoProject first")
+		return k, fmt.Errorf("Create: KMS has no parent project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -246,7 +256,7 @@ func (a *kmsClientAdapter) Update(ctx context.Context, k *KMS, opts ...CallOptio
 		return k, fmt.Errorf("Update: KMS has no ID")
 	}
 	if k.ProjectID() == "" {
-		return k, fmt.Errorf("Update: KMS has no parent project — call IntoProject first")
+		return k, fmt.Errorf("Update: KMS has no parent project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

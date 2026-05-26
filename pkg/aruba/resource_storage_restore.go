@@ -13,7 +13,7 @@ import (
 
 // StorageRestore is the wrapper for an Aruba Cloud Storage Restore (a direct
 // child of a StorageBackup, grandchild of a Project). Construct with
-// aruba.NewStorageRestore() and bind it via IntoBackup(backup) and ToVolume(volume).
+// aruba.NewStorageRestore() and bind it via FromBackup(backup) and ToVolume(volume).
 type StorageRestore struct {
 	errMixin
 	metadataMixin
@@ -39,20 +39,30 @@ func NewStorageRestore() *StorageRestore {
 
 // Setters — chainable, general → specific
 
-// IntoBackup binds this StorageRestore to its parent StorageBackup. Required before Create.
-func (r *StorageRestore) IntoBackup(b Ref) *StorageRestore { r.intoBackup(b); return r }
+// FromBackup binds this StorageRestore to its parent StorageBackup. Required before Create.
+func (r *StorageRestore) FromBackup(b Ref) *StorageRestore { r.intoBackup(b); return r }
 
 // Named sets the resource name. Required by the API.
 func (r *StorageRestore) Named(n string) *StorageRestore { r.named(n); return r }
 
-// AddTag appends a tag for filtering and accounting.
-func (r *StorageRestore) AddTag(t string) *StorageRestore { r.addTag(t); return r }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (r *StorageRestore) Tagged(ts ...string) *StorageRestore {
+	for _, t := range ts {
+		r.addTag(t)
+	}
+	return r
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (r *StorageRestore) RemoveTag(t string) *StorageRestore { r.removeTag(t); return r }
+// Untagged removes each listed tag. No-op for tags not present.
+func (r *StorageRestore) Untagged(ts ...string) *StorageRestore {
+	for _, t := range ts {
+		r.removeTag(t)
+	}
+	return r
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (r *StorageRestore) ReplaceTags(ts ...string) *StorageRestore { r.replaceTags(ts...); return r }
+// RetaggedAs replaces the entire tag set with the given values.
+func (r *StorageRestore) RetaggedAs(ts ...string) *StorageRestore { r.replaceTags(ts...); return r }
 
 // InRegion sets the region for this resource.
 func (r *StorageRestore) InRegion(region Region) *StorageRestore { r.inRegion(region); return r }
@@ -194,7 +204,7 @@ func (a *storageRestoresClientAdapter) Create(ctx context.Context, r *StorageRes
 		return r, err
 	}
 	if r.BackupID() == "" || r.ProjectID() == "" {
-		return r, fmt.Errorf("Create: StorageRestore has no parent backup — call IntoBackup first")
+		return r, fmt.Errorf("Create: StorageRestore has no parent backup — call FromBackup first")
 	}
 	if r.targetRef == nil {
 		return r, fmt.Errorf("Create: StorageRestore has no target — call ToVolume first")
@@ -275,7 +285,7 @@ func (a *storageRestoresClientAdapter) Update(ctx context.Context, r *StorageRes
 		return r, fmt.Errorf("Update: StorageRestore has no ID — call Get first or seed from response metadata")
 	}
 	if r.BackupID() == "" || r.ProjectID() == "" {
-		return r, fmt.Errorf("Update: StorageRestore has no parent backup — call IntoBackup first")
+		return r, fmt.Errorf("Update: StorageRestore has no parent backup — call FromBackup first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

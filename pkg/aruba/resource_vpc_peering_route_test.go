@@ -29,15 +29,15 @@ func TestVPCPeeringRoute_FluentSetters(t *testing.T) {
 		"/projects/p1/providers/Aruba.Network/vpcs/v1/vpcPeerings/peer-1", "p1"))
 
 	r := NewVPCPeeringRoute().
-		IntoVPCPeering(parent).
+		InVPCPeering(parent).
 		Named("my-route").
-		AddTag("route").
-		AddTag("billing").
-		AddTag("route"). // dedupe
+		Tagged("route").
+		Tagged("billing").
+		Tagged("route"). // dedupe
 		InRegion(RegionITBGBergamo).
 		WithLocalCIDR("10.0.0.0/24").
 		WithRemoteCIDR("192.168.0.0/24").
-		WithBillingPeriod(BillingPeriodHour)
+		BilledBy(BillingPeriodHour)
 
 	if r.Name() != "my-route" {
 		t.Errorf("Name() = %q", r.Name())
@@ -70,12 +70,12 @@ func TestVPCPeeringRoute_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", r.Err())
 	}
 
-	r.RemoveTag("route")
+	r.Untagged("route")
 	if tags := r.Tags(); len(tags) != 1 || tags[0] != "billing" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	r.ReplaceTags("x", "y")
+	r.RetaggedAs("x", "y")
 	if tags := r.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -90,7 +90,7 @@ func TestVPCPeeringRoute_IntoVPCPeering_TypedRef(t *testing.T) {
 	parent.fromResponse(vpcPeeringTestResponse("peer-1", "my-peering",
 		"/projects/p1/providers/Aruba.Network/vpcs/v1/vpcPeerings/peer-1", "p1"))
 
-	r := NewVPCPeeringRoute().IntoVPCPeering(parent)
+	r := NewVPCPeeringRoute().InVPCPeering(parent)
 
 	if r.VPCPeeringID() != "peer-1" {
 		t.Errorf("VPCPeeringID() = %q", r.VPCPeeringID())
@@ -115,7 +115,7 @@ func TestVPCPeeringRoute_IntoVPCPeering_TypedRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestVPCPeeringRoute_IntoVPCPeering_URIRef_CamelCase(t *testing.T) {
-	r := NewVPCPeeringRoute().IntoVPCPeering(
+	r := NewVPCPeeringRoute().InVPCPeering(
 		URI("/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer"))
 
 	if r.VPCPeeringID() != "peer" {
@@ -137,7 +137,7 @@ func TestVPCPeeringRoute_IntoVPCPeering_URIRef_CamelCase(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestVPCPeeringRoute_IntoVPCPeering_BadRef(t *testing.T) {
-	r := NewVPCPeeringRoute().IntoVPCPeering(URI("/garbage"))
+	r := NewVPCPeeringRoute().InVPCPeering(URI("/garbage"))
 	if r.Err() == nil {
 		t.Error("expected Err() != nil for unresolvable Ref, got nil")
 	}
@@ -150,12 +150,12 @@ func TestVPCPeeringRoute_IntoVPCPeering_BadRef(t *testing.T) {
 func TestVPCPeeringRoute_ToRequestRoundTrip(t *testing.T) {
 	r := NewVPCPeeringRoute().Named(
 		"my-route").
-		AddTag("t1").
-		AddTag("t2").
+		Tagged("t1").
+		Tagged("t2").
 		InRegion(RegionITBGBergamo).
 		WithLocalCIDR("10.0.0.0/24").
 		WithRemoteCIDR("192.168.0.0/24").
-		WithBillingPeriod(BillingPeriodHour)
+		BilledBy(BillingPeriodHour)
 
 	req := r.RawRequest()
 
@@ -464,12 +464,12 @@ func TestVPCPeeringRoutesClientAdapter_Create_Success(t *testing.T) {
 		"/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1", "p"))
 
 	route := NewVPCPeeringRoute().
-		IntoVPCPeering(peering).
+		InVPCPeering(peering).
 		Named("my-route").
 		InRegion(RegionITBGBergamo).
 		WithLocalCIDR("10.0.0.0/24").
 		WithRemoteCIDR("192.168.0.0/24").
-		WithBillingPeriod(BillingPeriodHour)
+		BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), route)
 	if err != nil {
@@ -533,7 +533,7 @@ func TestVPCPeeringRoutesClientAdapter_Create_MetadataValidationError(t *testing
 	peering.fromResponse(vpcPeeringTestResponse("peer-1", "my-peering",
 		"/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1", "p"))
 
-	route := NewVPCPeeringRoute().IntoVPCPeering(peering).
+	route := NewVPCPeeringRoute().InVPCPeering(peering).
 		Named("route")
 	result, err := adapter.Create(context.Background(), route)
 	if err == nil {
@@ -559,7 +559,7 @@ func TestVPCPeeringRoutesClientAdapter_Create_NonTwoXX(t *testing.T) {
 	peering.fromResponse(vpcPeeringTestResponse("peer-1", "my-peering",
 		"/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1", "p"))
 
-	route := NewVPCPeeringRoute().IntoVPCPeering(peering)
+	route := NewVPCPeeringRoute().InVPCPeering(peering)
 	result, err := adapter.Create(context.Background(), route)
 	if err == nil {
 		t.Fatal("expected error on 422")
@@ -664,7 +664,7 @@ func TestVPCPeeringRoutesClientAdapter_Update_NoID(t *testing.T) {
 	})
 
 	r := NewVPCPeeringRoute().
-		IntoVPCPeering(URI("/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1")).
+		InVPCPeering(URI("/projects/p/providers/Aruba.Network/vpcs/v/vpcPeerings/peer-1")).
 		Named("x")
 
 	_, err := adapter.Update(context.Background(), r)
@@ -754,10 +754,10 @@ func TestVPCPeeringRoutesClientAdapter_Delete_NonTwoXX(t *testing.T) {
 // InRegion exercises the 0% branch.
 func TestVPCPeeringRoute_InRegion(t *testing.T) {
 	r := NewVPCPeeringRoute().
-		AddTag("a").
-		AddTag("b").
-		RemoveTag("a").
-		ReplaceTags("x", "y").
+		Tagged("a").
+		Tagged("b").
+		Untagged("a").
+		RetaggedAs("x", "y").
 		InRegion("ITMI-Milano-1")
 
 	if r.Region() != "ITMI-Milano-1" {
@@ -846,7 +846,7 @@ func TestVPCPeeringRoutesClientAdapter_Create_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusCreated)
 	})
-	route := NewVPCPeeringRoute().IntoVPCPeering(URI("/garbage"))
+	route := NewVPCPeeringRoute().InVPCPeering(URI("/garbage"))
 	_, err := adapter.Create(context.Background(), route)
 	if err == nil {
 		t.Fatal("expected error for builder error")
@@ -899,7 +899,7 @@ func TestVPCPeeringRoutesClientAdapter_Update_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusOK)
 	})
-	route := NewVPCPeeringRoute().IntoVPCPeering(URI("/garbage"))
+	route := NewVPCPeeringRoute().InVPCPeering(URI("/garbage"))
 	_, err := adapter.Update(context.Background(), route)
 	if err == nil {
 		t.Fatal("expected error for builder error")

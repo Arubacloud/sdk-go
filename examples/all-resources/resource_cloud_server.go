@@ -40,21 +40,20 @@ write_files:
 	userData := base64.StdEncoding.EncodeToString([]byte(cloudInitContent))
 
 	cs := aruba.NewCloudServer().
-		IntoProject(resources.Project).
+		OfFlavor(aruba.CloudServerFlavorCSO4A8).
 		Named(resourceName(NameCloudServer)).
-		AddTag("virtualmachine").
-		AddTag("container").
+		Tagged("virtualmachine", "container").
+		InProject(resources.Project).
 		InRegion(aruba.RegionITBGBergamo).
 		InZone(aruba.ZoneITBG1).
-		OfFlavor(aruba.CloudServerFlavorCSO4A8).
 		WithUserData(userData).
+		BootingFrom(resources.CloudServerBlockStorage).
 		WithVPC(resources.VPC).
-		WithBootVolume(resources.CloudServerBlockStorage).
-		AddSubnet(resources.SubnetBasic).
-		AddSecurityGroup(resources.SecurityGroup).
+		OnSubnets(resources.SubnetBasic).
+		WithSecurityGroups(resources.SecurityGroup).
 		WithElasticIP(resources.CloudServerEIP).
-		WithKeyPair(resources.KeyPair).
-		WithBillingPeriod(aruba.BillingPeriodHour)
+		UsingKeyPair(resources.KeyPair).
+		BilledBy(aruba.BillingPeriodHour)
 
 	cs, err := arubaClient.FromCompute().CloudServers().Create(ctx, cs)
 	if err != nil {

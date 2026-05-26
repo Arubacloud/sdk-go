@@ -18,7 +18,7 @@ func createDBaaSUser(ctx context.Context, arubaClient aruba.Client, dbaas *aruba
 	}
 
 	u := aruba.NewUser().
-		IntoDBaaS(dbaas).
+		InDBaaS(dbaas).
 		WithUsername(NameDBaaSUser).
 		WithPassword("Prova123456789AC@")
 

@@ -19,13 +19,13 @@ func createStorageBackup(ctx context.Context, arubaClient aruba.Client, proj aru
 	}
 
 	b := aruba.NewStorageBackup().
-		IntoProject(proj).
-		Named(resourceName(NameStorageBackup)).
-		InRegion(aruba.RegionITBGBergamo).
 		OfType(aruba.StorageBackupTypeFull).
-		WithRetentionDays(10).
-		WithBillingPeriod(aruba.BillingPeriodHour).
-		FromVolume(bs)
+		Named(resourceName(NameStorageBackup)).
+		InProject(proj).
+		InRegion(aruba.RegionITBGBergamo).
+		RetainedForDays(10).
+		FromVolume(bs).
+		BilledBy(aruba.BillingPeriodHour)
 
 	result, err := arubaClient.FromStorage().Backups().Create(ctx, b)
 	if err != nil {

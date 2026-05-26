@@ -51,20 +51,30 @@ func NewSubnet() *Subnet {
 
 // Setters — chainable, general → specific
 
-// IntoVPC binds this Subnet to its parent VPC. Required before Create.
-func (s *Subnet) IntoVPC(v Ref) *Subnet { s.intoVPC(v); return s }
+// InVPC binds this Subnet to its parent VPC. Required before Create.
+func (s *Subnet) InVPC(v Ref) *Subnet { s.intoVPC(v); return s }
 
 // Named sets the resource name. Required by the API.
 func (s *Subnet) Named(n string) *Subnet { s.named(n); return s }
 
-// AddTag appends a tag for filtering and accounting.
-func (s *Subnet) AddTag(t string) *Subnet { s.addTag(t); return s }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (s *Subnet) Tagged(ts ...string) *Subnet {
+	for _, t := range ts {
+		s.addTag(t)
+	}
+	return s
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (s *Subnet) RemoveTag(t string) *Subnet { s.removeTag(t); return s }
+// Untagged removes each listed tag. No-op for tags not present.
+func (s *Subnet) Untagged(ts ...string) *Subnet {
+	for _, t := range ts {
+		s.removeTag(t)
+	}
+	return s
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (s *Subnet) ReplaceTags(ts ...string) *Subnet { s.replaceTags(ts...); return s }
+// RetaggedAs replaces the entire tag set with the given values.
+func (s *Subnet) RetaggedAs(ts ...string) *Subnet { s.replaceTags(ts...); return s }
 
 // InRegion sets the region for this resource.
 func (s *Subnet) InRegion(region Region) *Subnet { s.inRegion(region); return s }
@@ -249,7 +259,7 @@ func (a *subnetsClientAdapter) Create(ctx context.Context, s *Subnet, opts ...Ca
 		return s, err
 	}
 	if s.VPCID() == "" || s.ProjectID() == "" {
-		return s, fmt.Errorf("Create: subnet has no VPC — call IntoVPC first")
+		return s, fmt.Errorf("Create: subnet has no VPC — call InVPC first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -321,7 +331,7 @@ func (a *subnetsClientAdapter) Update(ctx context.Context, s *Subnet, opts ...Ca
 		return s, fmt.Errorf("Update: subnet has no ID — call Get first or seed from response metadata")
 	}
 	if s.VPCID() == "" || s.ProjectID() == "" {
-		return s, fmt.Errorf("Update: subnet has no VPC — call IntoVPC first")
+		return s, fmt.Errorf("Update: subnet has no VPC — call InVPC first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

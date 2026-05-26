@@ -27,13 +27,13 @@ func TestElasticIP_FluentSetters(t *testing.T) {
 	parent.fromResponse(projectTestResponse("proj-1", "my-proj", "/projects/proj-1"))
 
 	e := NewElasticIP().
-		IntoProject(parent).
+		InProject(parent).
 		Named("my-eip").
-		AddTag("net").
-		AddTag("public").
-		AddTag("net"). // dedupe
+		Tagged("net").
+		Tagged("public").
+		Tagged("net"). // dedupe
 		InRegion(RegionITBGBergamo).
-		WithBillingPeriod(BillingPeriodHour)
+		BilledBy(BillingPeriodHour)
 
 	if e.Name() != "my-eip" {
 		t.Errorf("Name() = %q", e.Name())
@@ -54,12 +54,12 @@ func TestElasticIP_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", e.Err())
 	}
 
-	e.RemoveTag("net")
+	e.Untagged("net")
 	if tags := e.Tags(); len(tags) != 1 || tags[0] != "public" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	e.ReplaceTags("x", "y")
+	e.RetaggedAs("x", "y")
 	if tags := e.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -70,7 +70,7 @@ func TestElasticIP_FluentSetters(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestElasticIP_IntoProject_BadRef(t *testing.T) {
-	e := NewElasticIP().IntoProject(URI("/garbage"))
+	e := NewElasticIP().InProject(URI("/garbage"))
 	if e.Err() == nil {
 		t.Error("expected Err() != nil for unresolvable Ref, got nil")
 	}
@@ -83,10 +83,10 @@ func TestElasticIP_IntoProject_BadRef(t *testing.T) {
 func TestElasticIP_ToRequestRoundTrip(t *testing.T) {
 	e := NewElasticIP().Named(
 		"eip-1").
-		AddTag("t1").
-		AddTag("t2").
+		Tagged("t1").
+		Tagged("t2").
 		InRegion(RegionITBGBergamo).
-		WithBillingPeriod(BillingPeriodHour)
+		BilledBy(BillingPeriodHour)
 
 	req := e.RawRequest()
 
@@ -117,26 +117,25 @@ func TestElasticIP_ToRequestRoundTrip(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestElasticIP_BillingPeriod_WireBillingPlan(t *testing.T) {
-	cases := []BillingPeriod{BillingPeriodHour, BillingPeriodMonth, BillingPeriodYear}
-	for _, std := range cases {
-		t.Run(string(std), func(t *testing.T) {
-			req := NewElasticIP().
-				Named("x").InRegion(RegionITBGBergamo).
-				WithBillingPeriod(std).RawRequest()
+	for _, period := range []BillingPeriod{BillingPeriodHour, BillingPeriodMonth, BillingPeriodYear} {
+		tc := period
+		t.Run(string(tc), func(t *testing.T) {
+			req := NewElasticIP().Named("x").InRegion(RegionITBGBergamo).BilledBy(tc).RawRequest()
 			if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil {
 				t.Fatal("BillingPlan or BillingPlan.BillingPeriod is nil")
 			}
-			if got := *req.Properties.BillingPlan.BillingPeriod; got != std {
-				t.Errorf("toRequest wire = %q, want %q", got, std)
+			if got := *req.Properties.BillingPlan.BillingPeriod; got != tc {
+				t.Errorf("toRequest wire = %q, want %q", got, tc)
 			}
+			std := tc
 			e := &ElasticIP{}
 			e.fromResponse(&types.ElasticIPResponse{
 				Properties: types.ElasticIPPropertiesResponse{
 					BillingPlan: &types.BillingPlan{BillingPeriod: &std},
 				},
 			})
-			if e.BillingPeriod() != std {
-				t.Errorf("fromResponse getter = %q, want %q", e.BillingPeriod(), std)
+			if e.BillingPeriod() != tc {
+				t.Errorf("fromResponse getter = %q, want %q", e.BillingPeriod(), tc)
 			}
 		})
 	}
@@ -325,10 +324,10 @@ func TestElasticIPsClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	eip := NewElasticIP().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-eip").
 		InRegion(RegionITBGBergamo).
-		WithBillingPeriod(BillingPeriodHour)
+		BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), eip)
 	if err != nil {
@@ -376,7 +375,7 @@ func TestElasticIPsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"eip","uri":"/projects/p/providers/Aruba.Network/elasticIps/x"},"properties":{},"status":{}}`)
 	})
 
-	eip := NewElasticIP().IntoProject(URI("/projects/p")).
+	eip := NewElasticIP().InProject(URI("/projects/p")).
 		Named("eip")
 	result, err := adapter.Create(context.Background(), eip)
 	if err == nil {
@@ -398,7 +397,7 @@ func TestElasticIPsClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "name is required", 422))
 	})
 
-	eip := NewElasticIP().IntoProject(URI("/projects/p"))
+	eip := NewElasticIP().InProject(URI("/projects/p"))
 	result, err := adapter.Create(context.Background(), eip)
 	if err == nil {
 		t.Fatal("expected error on 422")
@@ -471,7 +470,7 @@ func TestElasticIPsClientAdapter_Update_Success(t *testing.T) {
 
 	e := &ElasticIP{}
 	e.fromResponse(elasticIPTestResponse("eid", "orig", "/projects/p/providers/Aruba.Network/elasticIps/eid", "p"))
-	e.Named("renamed").WithBillingPeriod(BillingPeriodHour)
+	e.Named("renamed").BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Update(context.Background(), e)
 	if err != nil {
@@ -492,7 +491,7 @@ func TestElasticIPsClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	e := NewElasticIP().IntoProject(URI("/projects/p")).
+	e := NewElasticIP().InProject(URI("/projects/p")).
 		Named("x")
 	_, err := adapter.Update(context.Background(), e)
 	if err == nil {
@@ -691,7 +690,7 @@ func TestElasticIPsClientAdapter_Create_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusCreated)
 	})
-	e := NewElasticIP().IntoProject(URI("/garbage"))
+	e := NewElasticIP().InProject(URI("/garbage"))
 	_, err := adapter.Create(context.Background(), e)
 	if err == nil {
 		t.Fatal("expected error for builder error")
@@ -725,7 +724,7 @@ func TestElasticIPsClientAdapter_Update_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusOK)
 	})
-	e := NewElasticIP().IntoProject(URI("/garbage"))
+	e := NewElasticIP().InProject(URI("/garbage"))
 	_, err := adapter.Update(context.Background(), e)
 	if err == nil {
 		t.Fatal("expected error for builder error")

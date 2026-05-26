@@ -36,15 +36,15 @@ func TestDBaaSBackup_FluentSetters(t *testing.T) {
 	dbURI := URI("/projects/p-1/providers/Aruba.Database/dbaas/d-1/databases/mydb")
 
 	bkp := NewDBaaSBackup().
-		IntoProject(proj).
+		InProject(proj).
 		Named("my-dbaas-backup").
-		AddTag("backup").
-		AddTag("dbaas").
-		AddTag("backup"). // dedupe
+		Tagged("backup").
+		Tagged("dbaas").
+		Tagged("backup"). // dedupe
 		InRegion(RegionITBGBergamo).
 		FromDBaaS(dbaasURI).
 		FromDatabase(dbURI).
-		WithBillingPeriod(BillingPeriodHour)
+		BilledBy(BillingPeriodHour)
 
 	if bkp.Name() != "my-dbaas-backup" {
 		t.Errorf("Name() = %q", bkp.Name())
@@ -71,12 +71,12 @@ func TestDBaaSBackup_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", bkp.Err())
 	}
 
-	bkp.RemoveTag("backup")
+	bkp.Untagged("backup")
 	if tags := bkp.Tags(); len(tags) != 1 || tags[0] != "dbaas" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	bkp.ReplaceTags("x", "y")
+	bkp.RetaggedAs("x", "y")
 	if tags := bkp.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -89,7 +89,7 @@ func TestDBaaSBackup_FluentSetters(t *testing.T) {
 func TestDBaaSBackup_IntoProject_TypedRef(t *testing.T) {
 	proj := &Project{}
 	proj.fromResponse(projectTestResponse("p-42", "n", "/projects/p-42"))
-	bkp := NewDBaaSBackup().IntoProject(proj)
+	bkp := NewDBaaSBackup().InProject(proj)
 	if bkp.ProjectID() != "p-42" {
 		t.Errorf("ProjectID() = %q", bkp.ProjectID())
 	}
@@ -99,7 +99,7 @@ func TestDBaaSBackup_IntoProject_TypedRef(t *testing.T) {
 }
 
 func TestDBaaSBackup_IntoProject_URIRef(t *testing.T) {
-	bkp := NewDBaaSBackup().IntoProject(URI("/projects/p-uri"))
+	bkp := NewDBaaSBackup().InProject(URI("/projects/p-uri"))
 	if bkp.ProjectID() != "p-uri" {
 		t.Errorf("ProjectID() = %q", bkp.ProjectID())
 	}
@@ -109,7 +109,7 @@ func TestDBaaSBackup_IntoProject_URIRef(t *testing.T) {
 }
 
 func TestDBaaSBackup_IntoProject_BadRef(t *testing.T) {
-	bkp := NewDBaaSBackup().IntoProject(URI("/garbage"))
+	bkp := NewDBaaSBackup().InProject(URI("/garbage"))
 	if bkp.Err() == nil {
 		t.Error("expected Err() != nil for unresolvable Ref")
 	}
@@ -201,11 +201,11 @@ func TestDBaaSBackup_ToRequest(t *testing.T) {
 
 	bkp := NewDBaaSBackup().Named(
 		"bkp-rt").
-		AddTag("t1").AddTag("t2").
+		Tagged("t1").Tagged("t2").
 		InRegion(RegionITBGBergamo).
 		FromDBaaS(URI(dbaasURI)).
 		FromDatabase(URI(dbURI)).
-		WithBillingPeriod(BillingPeriodHour)
+		BilledBy(BillingPeriodHour)
 
 	req := bkp.RawRequest()
 
@@ -471,12 +471,12 @@ func TestDBaaSBackupsClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	bkp := NewDBaaSBackup().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-backup").
 		InRegion(RegionITBGBergamo).
 		FromDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		FromDatabase(URI("/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb")).
-		WithBillingPeriod(BillingPeriodHour)
+		BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), bkp)
 	if err != nil {
@@ -537,7 +537,7 @@ func TestDBaaSBackupsClientAdapter_Create_MetadataValidationError(t *testing.T) 
 		fmt.Fprint(w, `{"metadata":{"name":"bkp","uri":"/projects/p/providers/Aruba.Database/backups/x"},"properties":{},"status":{}}`)
 	})
 
-	bkp := NewDBaaSBackup().IntoProject(URI("/projects/p")).
+	bkp := NewDBaaSBackup().InProject(URI("/projects/p")).
 		Named("bkp")
 	result, err := adapter.Create(context.Background(), bkp)
 	if err == nil {
@@ -559,7 +559,7 @@ func TestDBaaSBackupsClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "name is required", 422))
 	})
 
-	bkp := NewDBaaSBackup().IntoProject(URI("/projects/p"))
+	bkp := NewDBaaSBackup().InProject(URI("/projects/p"))
 	result, err := adapter.Create(context.Background(), bkp)
 	if err == nil {
 		t.Fatal("expected error on 422")
@@ -594,11 +594,11 @@ func TestDBaaSBackupsClientAdapter_Create_WithBodyRefs_ViaFake(t *testing.T) {
 	adapter := &dbaasBackupsClientAdapter{low: fake}
 
 	bkp := NewDBaaSBackup().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		InRegion(RegionITBGBergamo).
 		FromDBaaS(URI(dbaasURI)).
 		FromDatabase(URI(dbURI)).
-		WithBillingPeriod(BillingPeriodHour)
+		BilledBy(BillingPeriodHour)
 
 	_, err := adapter.Create(context.Background(), bkp)
 	if err != nil {

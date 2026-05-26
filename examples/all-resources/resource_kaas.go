@@ -24,25 +24,24 @@ func createKaaS(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, v
 		Named(resourceName(NameKaaSSecurityGroup))
 
 	k := aruba.NewKaaS().
-		IntoProject(proj).
 		Named(resourceName(NameKaaS)).
-		AddTag("kubernetes").
-		AddTag("container").
+		Tagged("kubernetes", "container").
+		InProject(proj).
 		InRegion(aruba.RegionITBGBergamo).
 		WithKubernetesVersion(aruba.KubernetesVersion1341).
 		WithPodCIDR("10.0.3.0/24").
 		WithNodeCIDR("172.16.0.0/16", resourceName(NameKaaSNodeCIDR)).
-		WithHA(true).
-		WithBillingPeriod(aruba.BillingPeriodHour).
 		WithVPC(vpc).
 		WithSubnet(subnet).
 		WithSecurityGroup(kaasSG).
-		AddNodePool(aruba.NewNodePool().
-			Named(resourceName(NameNodePool)).
-			WithCount(2).
-			WithAutoscaling(1, 5).
+		WithNodePools(aruba.NewNodePool().
 			OfInstance(aruba.NodePoolInstanceK2A4).
-			InZone(aruba.ZoneITBG1))
+			Named(resourceName(NameNodePool)).
+			InZone(aruba.ZoneITBG1).
+			WithCount(2).
+			WithAutoscaling(1, 5)).
+		HighlyAvailable().
+		BilledBy(aruba.BillingPeriodHour)
 
 	result, err := arubaClient.FromContainer().KaaS().Create(ctx, k)
 	if err != nil {
@@ -63,16 +62,16 @@ func updateKaaS(ctx context.Context, arubaClient aruba.Client, k *aruba.KaaS) {
 	// Mutate only the fields exposed by KaaSUpdateRequest.
 	// Networking URIs and CIDRs are immutable after creation.
 	k.Named(updatedName(k.Name())).
-		ReplaceTags("kubernetes", "container", "updated").
+		RetaggedAs("kubernetes", "container", "updated").
 		WithMaxStorageQuotaGB(100).
-		WithBillingPeriod(aruba.BillingPeriodHour).
-		WithHA(true).
-		AddNodePool(aruba.NewNodePool().
-			Named(resourceName(NameNodePool)).
-			WithCount(5).
-			WithAutoscaling(1, 5).
+		WithNodePools(aruba.NewNodePool().
 			OfInstance(aruba.NodePoolInstanceK2A4).
-			InZone(aruba.ZoneITBG1))
+			Named(resourceName(NameNodePool)).
+			InZone(aruba.ZoneITBG1).
+			WithCount(5).
+			WithAutoscaling(1, 5)).
+		HighlyAvailable().
+		BilledBy(aruba.BillingPeriodHour)
 
 	result, err := arubaClient.FromContainer().KaaS().Update(ctx, k)
 	if err != nil {

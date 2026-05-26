@@ -12,19 +12,18 @@ func createRecurringJob(ctx context.Context, arubaClient aruba.Client, proj arub
 	printBanner("Recurring Job", "")
 
 	j := aruba.NewJob().
-		IntoProject(proj).
 		Named(resourceName(NameJobRecurring)).
-		AddTag("schedule").
-		AddTag("recurring").
+		Tagged("schedule", "recurring").
+		InProject(proj).
 		InRegion(aruba.RegionITBGBergamo).
-		WithEnabled(true).
 		WithCron("0 10 * * *").
 		RecurringUntil(time.Now().AddDate(0, 2, 0)).
-		AddStep(aruba.NewJobStep().
+		WithSteps(aruba.NewJobStep().
 			Named("poweroff-step").
-			OfResource(target).
+			Targeting(target).
 			WithAction("poweroff").
-			WithVerb(aruba.HTTPVerbPOST))
+			WithVerb(aruba.HTTPVerbPOST)).
+		Enabled()
 
 	res, err := arubaClient.FromSchedule().Jobs().Create(ctx, j)
 	if err != nil {
@@ -40,18 +39,17 @@ func createOneShotJob(ctx context.Context, arubaClient aruba.Client, proj aruba.
 	printBanner("One-Shot Job", "")
 
 	j := aruba.NewJob().
-		IntoProject(proj).
 		Named(resourceName(NameJobOneShot)).
-		AddTag("schedule").
-		AddTag("oneshot").
+		Tagged("schedule", "oneshot").
+		InProject(proj).
 		InRegion(aruba.RegionITBGBergamo).
-		WithEnabled(true).
 		OneShotAt(time.Now().Add(24 * time.Hour)).
-		AddStep(aruba.NewJobStep().
+		WithSteps(aruba.NewJobStep().
 			Named("poweroff-step").
-			OfResource(target).
+			Targeting(target).
 			WithAction("poweroff").
-			WithVerb(aruba.HTTPVerbPOST))
+			WithVerb(aruba.HTTPVerbPOST)).
+		Enabled()
 
 	res, err := arubaClient.FromSchedule().Jobs().Create(ctx, j)
 	if err != nil {

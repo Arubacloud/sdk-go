@@ -26,6 +26,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed (Breaking)
+
+- **Fluent setter vocabulary redesigned** (`pkg/aruba`) — all wrapper setters now follow a
+  natural-language taxonomy. Every call site in tests and examples has been updated in the
+  same commit; the SDK is Alpha/unstable so breaking changes are expected.
+
+  Key renames (full list in `ai/CONVENTIONS.md`):
+
+  | Old name | New name |
+  |---|---|
+  | `IntoProject` / `IntoVPC` / `IntoKMS` / … | `InProject` / `InVPC` / `InKMS` / … |
+  | `AddTag(s)` / `RemoveTag(s)` / `ReplaceTags(…)` | `Tagged(…)` / `Untagged(…)` / `RetaggedAs(…)` — variadic |
+  | `WithBillingPeriod(BillingPeriod)` | `BilledBy(BillingPeriod)` |
+  | `WithSizeGB(n)` | `SizedGB(n)` |
+  | `SetBootable()` / `UnsetBootable()` | `AsBootable()` / `NotBootable()` |
+  | `Bootable()` getter | `IsBootable()` |
+  | `WithBootVolume(v)` | `BootingFrom(v)` |
+  | `WithKeyPair(kp)` | `UsingKeyPair(kp)` |
+  | `AddSubnet(s)` | `OnSubnets(s …)` — variadic, plural |
+  | `AddSecurityGroup(sg)` | `WithSecurityGroups(sg …)` — variadic, plural |
+  | `WithVPCPreset(bool)` | `WithVPCPreset()` / `WithoutVPCPreset()` |
+  | `WithHA(bool)` | `HighlyAvailable()` |
+  | `AddNodePool(np)` | `WithNodePools(np …)` — variadic, plural |
+  | `ClearNodePools()` | `WithoutNodePools()` |
+  | `SetNodePools(…)` | removed (use `ReplaceNodePools`) |
+  | `WithEnabled(bool)` | `Enabled()` / `Disabled()` |
+  | `Enabled()` getter (Job) | `IsEnabled()` |
+  | `AddStep(s)` | `WithSteps(s …)` — variadic, plural |
+  | `OfResource(r)` (JobStep) | `Targeting(r)` |
+  | `WithUsername(u)` (Grant) | `ForUser(u)` |
+  | `WithRoleName(r)` (Grant) | `OfRole(r)` |
+  | `WithPreset(bool)` (VPC) | `WithPreset()` / `WithoutPreset()` |
+  | `WithRemoteVPC(v)` | `PeeredWith(v)` |
+  | `WithTargetCIDR(c)` | `TargetingCIDR(c)` |
+  | `WithTargetSecurityGroup(sg)` | `TargetingSecurityGroup(sg)` |
+  | `WithRetentionDays(n)` | `RetainedForDays(n)` |
+  | `IntoBackup(b)` (StorageRestore) | `FromBackup(b)` |
+  | `WithDescription(s)` (Project) | `DescribedAs(s)` |
+  | `AddRoute(addr,gw)` (SubnetDHCP) | `WithRoutes(…SubnetDHCPRoute)` — variadic, plural |
+  | `AddDNS(ip)` (SubnetDHCP) | `WithDNSServers(…string)` — variadic, plural |
+
 ### Added
 
 - `List[T]` now embeds `httpEnvelopeMixin`, exposing the same HTTP-envelope

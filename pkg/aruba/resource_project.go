@@ -33,17 +33,27 @@ func NewProject() *Project { return &Project{} }
 // Named sets the project name.
 func (p *Project) Named(n string) *Project { p.named(n); return p }
 
-// AddTag adds a tag (deduped).
-func (p *Project) AddTag(t string) *Project { p.addTag(t); return p }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (p *Project) Tagged(ts ...string) *Project {
+	for _, t := range ts {
+		p.addTag(t)
+	}
+	return p
+}
 
-// RemoveTag removes a tag.
-func (p *Project) RemoveTag(t string) *Project { p.removeTag(t); return p }
+// Untagged removes each listed tag. No-op for tags not present.
+func (p *Project) Untagged(ts ...string) *Project {
+	for _, t := range ts {
+		p.removeTag(t)
+	}
+	return p
+}
 
-// ReplaceTags overwrites the tag list.
-func (p *Project) ReplaceTags(ts ...string) *Project { p.replaceTags(ts...); return p }
+// RetaggedAs overwrites the tag list.
+func (p *Project) RetaggedAs(ts ...string) *Project { p.replaceTags(ts...); return p }
 
-// WithDescription sets the project description.
-func (p *Project) WithDescription(d string) *Project { p.description = &d; return p }
+// DescribedAs sets the project description.
+func (p *Project) DescribedAs(d string) *Project { p.description = &d; return p }
 
 // AsDefault marks the project as the account default.
 func (p *Project) AsDefault() *Project { p.defaultProj = true; return p }

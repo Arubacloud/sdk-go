@@ -312,7 +312,7 @@ if err := X.Err(); err != nil { return X, err }
 
 Followed by per-adapter friendly validation. Family B resources with deep parent chains do the most validation (Database, Key, Kmip, User, Grant check ProjectID, parent-scope ID, and name individually). Family A adapters mostly only check `ProjectID() != ""`.
 
-Sub-builder errors are drained into the parent's `errMixin` at attachment time (e.g. `WithIKESettings(*VPNIKE)` in `resource_vpn_tunnel.go`), so `job.AddStep(step)` propagates any accumulated step errors into the job.
+Sub-builder errors are drained into the parent's `errMixin` at attachment time (e.g. `WithIKESettings(*VPNIKE)` in `resource_vpn_tunnel.go`), so `job.WithSteps(step)` propagates any accumulated step errors into the job.
 
 ### Client integration
 
@@ -333,14 +333,14 @@ Call chain: `arubaClient.FromCompute().CloudServers().Create(ctx, cs)` → `clou
 - SecurityRule → SecurityGroup → VPC → Project.
 - VPCPeeringRoute → VPCPeering → VPC → Project.
 
-**Body-side parent refs (vs. path-side):** Snapshot, StorageBackup, StorageRestore, DBaaSBackup are `IntoProject(...)` but reference their source resource in the wire body via `FromVolume(Ref)` / `FromDBaaS(Ref)` / `FromDatabase(Ref)`. An empty URI from the `Ref` goes onto the error sink, not the wire.
+**Body-side parent refs (vs. path-side):** Snapshot, StorageBackup, StorageRestore, DBaaSBackup are `InProject(...)` but reference their source resource in the wire body via `FromVolume(Ref)` / `FromDBaaS(Ref)` / `FromDatabase(Ref)`. An empty URI from the `Ref` goes onto the error sink, not the wire.
 
 **Job lifecycle quirk:** Jobs embed `statusMixin` (Family A) and support the standard `WaitUntilActive` / `WaitUntilReady` / `WaitUntilStates`. The quirk: jobs persist as historical records after `Delete` — the API does not return 404; the job record transitions to a terminal state (`StateError` or `StateFailed`). `WaitUntilStates(ctx, []types.State{types.StateDeleted})` will exhaust the wait budget if `Deleted` is not a state the API actually emits. See `examples/all-resources/resource_job.go` for the canonical usage pattern.
 
 **Shape-collapsing setters** — one wrapper method sets multiple wire fields:
 - `*Job.OneShotAt(t)` sets `JobType=OneShot` + `ScheduleAt`; `*Job.WithCron(expr)` + `RecurringUntil(t)` set `JobType=Recurring` + `Cron` + `ExecuteUntil`. All three are mode-locked via `requireMode` in `resource_job.go`.
 - `*VPNTunnel.WithIKESettings/ESPSettings/PSKSettings/IPConfig` each attach a sub-builder and drain its `errMixin` into the tunnel (see `resource_vpn_tunnel.go`).
-- `*SecurityRule.WithTargetCIDR` / `WithTargetSecurityGroup` set the same wire `target` field but stamp different `Kind` values; calling both records an error (see `resource_security_rule.go`).
+- `*SecurityRule.TargetingCIDR` / `TargetingSecurityGroup` set the same wire `target` field but stamp different `Kind` values; calling both records an error (see `resource_security_rule.go`).
 - `*NodePool.WithAutoscaling(min, max)` sets `autoscaling=true` + `minCount` + `maxCount` in one call (see `resource_kaas_nodepool.go`).
 
-**Sub-builders without an adapter** — used only inside a parent, no CRUD: `JobStep` (inside `Job.AddStep`), `NodePool` (inside `KaaS.AddNodePool`), `VPNIKE` / `VPNESP` / `VPNPSK` / `VPNIPConfig` (inside `VPNTunnel`), `SubnetDHCP` (inside `Subnet`). Each has its own `errMixin` drained into the parent at attachment time.
+**Sub-builders without an adapter** — used only inside a parent, no CRUD: `JobStep` (inside `Job.WithSteps`), `NodePool` (inside `KaaS.WithNodePools`), `VPNIKE` / `VPNESP` / `VPNPSK` / `VPNIPConfig` (inside `VPNTunnel`), `SubnetDHCP` (inside `Subnet`). Each has its own `errMixin` drained into the parent at attachment time.

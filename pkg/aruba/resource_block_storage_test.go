@@ -27,17 +27,17 @@ func TestBlockStorage_FluentSetters(t *testing.T) {
 	proj.fromResponse(projectTestResponse("p-1", "my-proj", "/projects/p-1"))
 
 	bs := NewBlockStorage().
-		IntoProject(proj).
+		InProject(proj).
 		Named("my-bs").
-		AddTag("storage").
-		AddTag("data").
-		AddTag("storage"). // dedupe
+		Tagged("storage").
+		Tagged("data").
+		Tagged("storage"). // dedupe
 		InRegion(RegionITBGBergamo).
-		WithSizeGB(50).
+		SizedGB(50).
 		OfType(BlockStorageTypeStandard).
-		WithBillingPeriod(BillingPeriodHour).
+		BilledBy(BillingPeriodHour).
 		FromImage(VolumeImageLU22001).
-		SetBootable()
+		AsBootable()
 
 	if bs.Name() != "my-bs" {
 		t.Errorf("Name() = %q", bs.Name())
@@ -60,8 +60,8 @@ func TestBlockStorage_FluentSetters(t *testing.T) {
 	if bs.Image() != VolumeImageLU22001 {
 		t.Errorf("Image() = %q", bs.Image())
 	}
-	if !bs.Bootable() {
-		t.Error("Bootable() should be true")
+	if !bs.IsBootable() {
+		t.Error("IsBootable() should be true")
 	}
 	if bs.ProjectID() != "p-1" {
 		t.Errorf("ProjectID() = %q", bs.ProjectID())
@@ -70,12 +70,12 @@ func TestBlockStorage_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", bs.Err())
 	}
 
-	bs.RemoveTag("storage")
+	bs.Untagged("storage")
 	if tags := bs.Tags(); len(tags) != 1 || tags[0] != "data" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	bs.ReplaceTags("x", "y")
+	bs.RetaggedAs("x", "y")
 	if tags := bs.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -88,7 +88,7 @@ func TestBlockStorage_FluentSetters(t *testing.T) {
 func TestBlockStorage_IntoProject_TypedRef(t *testing.T) {
 	proj := &Project{}
 	proj.fromResponse(projectTestResponse("p-42", "n", "/projects/p-42"))
-	bs := NewBlockStorage().IntoProject(proj)
+	bs := NewBlockStorage().InProject(proj)
 	if bs.ProjectID() != "p-42" {
 		t.Errorf("ProjectID() = %q", bs.ProjectID())
 	}
@@ -98,7 +98,7 @@ func TestBlockStorage_IntoProject_TypedRef(t *testing.T) {
 }
 
 func TestBlockStorage_IntoProject_URIRef(t *testing.T) {
-	bs := NewBlockStorage().IntoProject(URI("/projects/p-uri"))
+	bs := NewBlockStorage().InProject(URI("/projects/p-uri"))
 	if bs.ProjectID() != "p-uri" {
 		t.Errorf("ProjectID() = %q", bs.ProjectID())
 	}
@@ -108,7 +108,7 @@ func TestBlockStorage_IntoProject_URIRef(t *testing.T) {
 }
 
 func TestBlockStorage_IntoProject_BadRef(t *testing.T) {
-	bs := NewBlockStorage().IntoProject(URI("/garbage"))
+	bs := NewBlockStorage().InProject(URI("/garbage"))
 	if bs.Err() == nil {
 		t.Error("expected Err() != nil for unresolvable Ref")
 	}
@@ -159,13 +159,13 @@ func TestBlockStorage_ToRequestRoundTrip(t *testing.T) {
 	snapURI := "/projects/p/providers/Aruba.Storage/snapshots/s1"
 	bs := NewBlockStorage().Named(
 		"bs-rt").
-		AddTag("t1").AddTag("t2").
+		Tagged("t1").Tagged("t2").
 		InRegion(RegionITBGBergamo).
-		WithSizeGB(30).
+		SizedGB(30).
 		OfType(BlockStorageTypePerformance).
 		InZone(ZoneITBG1).
-		WithBillingPeriod(BillingPeriodHour).
-		SetBootable().
+		BilledBy(BillingPeriodHour).
+		AsBootable().
 		FromImage(VolumeImageLU22001).
 		FromSnapshot(URI(snapURI))
 
@@ -205,7 +205,7 @@ func TestBlockStorage_ToRequestRoundTrip(t *testing.T) {
 
 func TestBlockStorage_ToRequest_UnsetOptionals_AreNilOrZero(t *testing.T) {
 	bs := NewBlockStorage().
-		Named("bare").WithSizeGB(10).OfType(BlockStorageTypeStandard)
+		Named("bare").SizedGB(10).OfType(BlockStorageTypeStandard)
 	req := bs.RawRequest()
 
 	// RawRequest delegates to toCreateRequest where bootable defaults to false.
@@ -338,8 +338,8 @@ func TestBlockStorage_FromResponseHydration(t *testing.T) {
 	if bs.Image() != VolumeImageLU22001 {
 		t.Errorf("Image() = %q", bs.Image())
 	}
-	if !bs.Bootable() {
-		t.Error("Bootable() should be true")
+	if !bs.IsBootable() {
+		t.Error("IsBootable() should be true")
 	}
 	if bs.SnapshotURI() != "/projects/p/providers/Aruba.Storage/snapshots/s1" {
 		t.Errorf("SnapshotURI() = %q", bs.SnapshotURI())
@@ -491,12 +491,12 @@ func TestVolumesClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	bs := NewBlockStorage().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-bs").
 		InRegion(RegionITBGBergamo).
-		WithSizeGB(20).
+		SizedGB(20).
 		OfType(BlockStorageTypeStandard).
-		WithBillingPeriod(BillingPeriodHour)
+		BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), bs)
 	if err != nil {
@@ -544,7 +544,7 @@ func TestVolumesClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"bs","uri":"/projects/p/providers/Aruba.Storage/blockStorages/x"},"properties":{},"status":{}}`)
 	})
 
-	bs := NewBlockStorage().IntoProject(URI("/projects/p")).
+	bs := NewBlockStorage().InProject(URI("/projects/p")).
 		Named("bs")
 	result, err := adapter.Create(context.Background(), bs)
 	if err == nil {
@@ -566,7 +566,7 @@ func TestVolumesClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "name is required", 422))
 	})
 
-	bs := NewBlockStorage().IntoProject(URI("/projects/p"))
+	bs := NewBlockStorage().InProject(URI("/projects/p"))
 	result, err := adapter.Create(context.Background(), bs)
 	if err == nil {
 		t.Fatal("expected error on 422")
@@ -638,7 +638,7 @@ func TestVolumesClientAdapter_Update_Success(t *testing.T) {
 
 	bs := &BlockStorage{}
 	bs.fromResponse(blockStorageTestResponse("bs-1", "my-bs", "/projects/p/providers/Aruba.Storage/blockStorages/bs-1", "p"))
-	bs.WithSizeGB(40)
+	bs.SizedGB(40)
 
 	result, err := adapter.Update(context.Background(), bs)
 	if err != nil {
@@ -659,7 +659,7 @@ func TestVolumesClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	bs := NewBlockStorage().IntoProject(URI("/projects/p")).
+	bs := NewBlockStorage().InProject(URI("/projects/p")).
 		Named("x")
 	_, err := adapter.Update(context.Background(), bs)
 	if err == nil {
@@ -772,8 +772,8 @@ func TestBlockStorage_Accessors_ZeroValue(t *testing.T) {
 	if bs.Type() != "" {
 		t.Errorf("Type() zero value = %q, want \"\"", bs.Type())
 	}
-	if bs.Bootable() != false {
-		t.Error("Bootable() zero value should be false")
+	if bs.IsBootable() != false {
+		t.Error("IsBootable() zero value should be false")
 	}
 }
 
@@ -844,7 +844,7 @@ func TestVolumesClientAdapter_Update_NonTwoXX(t *testing.T) {
 
 	bs := &BlockStorage{}
 	bs.fromResponse(blockStorageTestResponse("bs-1", "my-bs", "/projects/p/providers/Aruba.Storage/blockStorages/bs-1", "p"))
-	bs.WithSizeGB(99999)
+	bs.SizedGB(99999)
 
 	_, err := adapter.Update(context.Background(), bs)
 	if err == nil {
@@ -1007,7 +1007,7 @@ func TestBlockStorage_UpdateRequest_OmitsUnsetBootable(t *testing.T) {
 }
 
 func TestBlockStorage_UpdateRequest_ExplicitBootable(t *testing.T) {
-	bs := NewBlockStorage().Named("vol").WithSizeGB(10).UnsetBootable()
+	bs := NewBlockStorage().Named("vol").SizedGB(10).NotBootable()
 	req := bs.toUpdateRequest()
 	if req.Properties.Bootable == nil || *req.Properties.Bootable != false {
 		t.Errorf("Update request bootable should be false when UnsetBootable was called, got %v", req.Properties.Bootable)

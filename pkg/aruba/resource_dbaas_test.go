@@ -28,16 +28,16 @@ func TestDBaaS_FluentSetters(t *testing.T) {
 	proj.fromResponse(projectTestResponse("p-1", "my-project", "/projects/p-1"))
 
 	d := NewDBaaS().
-		IntoProject(proj).
+		InProject(proj).
 		Named("my-dbaas").
-		AddTag("db").
-		AddTag("prod").
+		Tagged("db").
+		Tagged("prod").
 		InRegion(RegionITBGBergamo).
 		InZone(ZoneITBG1).
 		OfEngine(DatabaseEngineMySQL80).
 		OfFlavor(DBaaSFlavorDBO2A4).
-		WithSizeGB(20).
-		WithBillingPeriod(BillingPeriodHour).
+		SizedGB(20).
+		BilledBy(BillingPeriodHour).
 		WithAutoscaling(50, 10)
 
 	if d.Name() != "my-dbaas" {
@@ -80,12 +80,12 @@ func TestDBaaS_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", d.Err())
 	}
 
-	d.RemoveTag("db")
+	d.Untagged("db")
 	if tags := d.Tags(); len(tags) != 1 || tags[0] != "prod" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	d.ReplaceTags("x", "y")
+	d.RetaggedAs("x", "y")
 	if tags := d.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -98,7 +98,7 @@ func TestDBaaS_FluentSetters(t *testing.T) {
 func TestDBaaS_IntoProject_TypedRef(t *testing.T) {
 	proj := &Project{}
 	proj.fromResponse(projectTestResponse("p-42", "n", "/projects/p-42"))
-	d := NewDBaaS().IntoProject(proj)
+	d := NewDBaaS().InProject(proj)
 	if d.ProjectID() != "p-42" {
 		t.Errorf("ProjectID() = %q", d.ProjectID())
 	}
@@ -108,7 +108,7 @@ func TestDBaaS_IntoProject_TypedRef(t *testing.T) {
 }
 
 func TestDBaaS_IntoProject_URIRef(t *testing.T) {
-	d := NewDBaaS().IntoProject(URI("/projects/p-uri"))
+	d := NewDBaaS().InProject(URI("/projects/p-uri"))
 	if d.ProjectID() != "p-uri" {
 		t.Errorf("ProjectID() = %q", d.ProjectID())
 	}
@@ -118,7 +118,7 @@ func TestDBaaS_IntoProject_URIRef(t *testing.T) {
 }
 
 func TestDBaaS_IntoProject_BadRef(t *testing.T) {
-	d := NewDBaaS().IntoProject(URI("/something/else"))
+	d := NewDBaaS().InProject(URI("/something/else"))
 	if d.Err() == nil {
 		t.Error("expected Err() to be set for unresolvable parent")
 	}
@@ -206,7 +206,7 @@ func TestDBaaS_OfFlavor(t *testing.T) {
 }
 
 func TestDBaaS_WithSizeGB(t *testing.T) {
-	d := NewDBaaS().WithSizeGB(50)
+	d := NewDBaaS().SizedGB(50)
 	if d.SizeGB() != 50 {
 		t.Errorf("Storage() = %d", d.SizeGB())
 	}
@@ -258,9 +258,9 @@ func TestDBaaS_WithoutAutoscaling(t *testing.T) {
 	}
 }
 
-func TestDBaaS_WithBillingPeriod(t *testing.T) {
-	d := NewDBaaS().WithBillingPeriod("Month")
-	if d.BillingPeriod() != "Month" {
+func TestDBaaS_BilledMonthly(t *testing.T) {
+	d := NewDBaaS().BilledBy(BillingPeriodMonth)
+	if d.BillingPeriod() != BillingPeriodMonth {
 		t.Errorf("BillingPeriod() = %q", d.BillingPeriod())
 	}
 }
@@ -271,15 +271,15 @@ func TestDBaaS_WithBillingPeriod(t *testing.T) {
 
 func TestDBaaS_ToRequestRoundTrip(t *testing.T) {
 	d := NewDBaaS().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-dbaas").
-		AddTag("tag1").
+		Tagged("tag1").
 		InRegion(RegionITBGBergamo).
 		InZone(ZoneITBG1).
 		OfEngine(DatabaseEngineMySQL80).
 		OfFlavor(DBaaSFlavorDBO2A4).
-		WithSizeGB(20).
-		WithBillingPeriod(BillingPeriodHour).
+		SizedGB(20).
+		BilledBy(BillingPeriodHour).
 		WithAutoscaling(50, 10).
 		WithVPC(URI("/vpcs/v")).
 		WithSubnet(URI("/subnets/s")).
@@ -542,7 +542,7 @@ func TestDBaaS_RoundTripUpdateFlow(t *testing.T) {
 	d.fromResponse(resp)
 
 	// Mutate storage; networking URIs should still come from the hydrated response.
-	d.WithSizeGB(40)
+	d.SizedGB(40)
 
 	req := d.RawRequest()
 	if req.Properties.Storage == nil || req.Properties.Storage.SizeGB == nil || *req.Properties.Storage.SizeGB != 40 {
@@ -662,13 +662,13 @@ func TestDBaaSClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	d := NewDBaaS().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-dbaas").
 		InZone(ZoneITBG1).
 		OfEngine(DatabaseEngineMySQL80).
 		OfFlavor(DBaaSFlavorDBO2A4).
-		WithSizeGB(20).
-		WithBillingPeriod(BillingPeriodHour).
+		SizedGB(20).
+		BilledBy(BillingPeriodHour).
 		WithAutoscaling(50, 10).
 		WithVPC(URI("/vpcs/v")).
 		WithSubnet(URI("/subnets/s")).
@@ -728,7 +728,7 @@ func TestDBaaSClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"db","uri":"/projects/p/providers/Aruba.Database/dbaas/x"},"properties":{}}`)
 	})
 
-	d := NewDBaaS().IntoProject(URI("/projects/p")).
+	d := NewDBaaS().InProject(URI("/projects/p")).
 		Named("db").OfEngine(DatabaseEngineMySQL80)
 	result, err := adapter.Create(context.Background(), d)
 	if err == nil {
@@ -750,7 +750,7 @@ func TestDBaaSClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "engine is required", 422))
 	})
 
-	d := NewDBaaS().IntoProject(URI("/projects/p")).
+	d := NewDBaaS().InProject(URI("/projects/p")).
 		Named("db")
 	result, err := adapter.Create(context.Background(), d)
 	if err == nil {
@@ -803,7 +803,7 @@ func TestDBaaSClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	d := NewDBaaS().IntoProject(URI("/projects/p")).
+	d := NewDBaaS().InProject(URI("/projects/p")).
 		Named("x")
 	_, err := adapter.Update(context.Background(), d)
 	if err == nil {
@@ -1094,7 +1094,7 @@ func TestDBaaSClientAdapter_Update_ErrMixin(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusOK)
 	})
-	d := NewDBaaS().IntoProject(URI("/garbage/project")) // triggers errMixin on intoProject
+	d := NewDBaaS().InProject(URI("/garbage/project")) // triggers errMixin on intoProject
 	_, err := adapter.Update(context.Background(), d)
 	if err == nil {
 		t.Fatal("expected error from errMixin")

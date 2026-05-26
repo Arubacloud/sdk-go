@@ -27,13 +27,13 @@ func TestSnapshot_FluentSetters(t *testing.T) {
 	proj.fromResponse(projectTestResponse("p-1", "my-proj", "/projects/p-1"))
 
 	snap := NewSnapshot().
-		IntoProject(proj).
+		InProject(proj).
 		Named("my-snap").
-		AddTag("backup").
-		AddTag("storage").
-		AddTag("backup"). // dedupe
+		Tagged("backup").
+		Tagged("storage").
+		Tagged("backup"). // dedupe
 		InRegion(RegionITBGBergamo).
-		WithBillingPeriod(BillingPeriodHour)
+		BilledBy(BillingPeriodHour)
 
 	if snap.Name() != "my-snap" {
 		t.Errorf("Name() = %q", snap.Name())
@@ -54,12 +54,12 @@ func TestSnapshot_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", snap.Err())
 	}
 
-	snap.RemoveTag("backup")
+	snap.Untagged("backup")
 	if tags := snap.Tags(); len(tags) != 1 || tags[0] != "storage" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	snap.ReplaceTags("x", "y")
+	snap.RetaggedAs("x", "y")
 	if tags := snap.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -72,7 +72,7 @@ func TestSnapshot_FluentSetters(t *testing.T) {
 func TestSnapshot_IntoProject_TypedRef(t *testing.T) {
 	proj := &Project{}
 	proj.fromResponse(projectTestResponse("p-42", "n", "/projects/p-42"))
-	snap := NewSnapshot().IntoProject(proj)
+	snap := NewSnapshot().InProject(proj)
 	if snap.ProjectID() != "p-42" {
 		t.Errorf("ProjectID() = %q", snap.ProjectID())
 	}
@@ -82,7 +82,7 @@ func TestSnapshot_IntoProject_TypedRef(t *testing.T) {
 }
 
 func TestSnapshot_IntoProject_URIRef(t *testing.T) {
-	snap := NewSnapshot().IntoProject(URI("/projects/p-uri"))
+	snap := NewSnapshot().InProject(URI("/projects/p-uri"))
 	if snap.ProjectID() != "p-uri" {
 		t.Errorf("ProjectID() = %q", snap.ProjectID())
 	}
@@ -92,7 +92,7 @@ func TestSnapshot_IntoProject_URIRef(t *testing.T) {
 }
 
 func TestSnapshot_IntoProject_BadRef(t *testing.T) {
-	snap := NewSnapshot().IntoProject(URI("/garbage"))
+	snap := NewSnapshot().InProject(URI("/garbage"))
 	if snap.Err() == nil {
 		t.Error("expected Err() != nil for unresolvable Ref")
 	}
@@ -145,9 +145,9 @@ func TestSnapshot_ToRequestRoundTrip(t *testing.T) {
 	volURI := "/projects/p/providers/Aruba.Storage/blockStorages/bs-1"
 	snap := NewSnapshot().Named(
 		"snap-rt").
-		AddTag("t1").AddTag("t2").
+		Tagged("t1").Tagged("t2").
 		InRegion(RegionITBGBergamo).
-		WithBillingPeriod(BillingPeriodHour).
+		BilledBy(BillingPeriodHour).
 		FromVolume(URI(volURI))
 
 	req := snap.RawRequest()
@@ -265,8 +265,8 @@ func TestSnapshot_FromResponseHydration(t *testing.T) {
 	if snap.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", snap.BillingPeriod())
 	}
-	if !snap.Bootable() {
-		t.Error("Bootable() should be true")
+	if !snap.IsBootable() {
+		t.Error("IsBootable() should be true")
 	}
 	if snap.VolumeURI() != "/projects/p/providers/Aruba.Storage/blockStorages/bs-1" {
 		t.Errorf("VolumeURI() = %q", snap.VolumeURI())
@@ -472,10 +472,10 @@ func TestSnapshotsClientAdapter_Create_Success(t *testing.T) {
 
 	// No OfVolume → Volume.URI == "" → no BlockStorage dependency.
 	snap := NewSnapshot().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-snap").
 		InRegion(RegionITBGBergamo).
-		WithBillingPeriod(BillingPeriodHour)
+		BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Create(context.Background(), snap)
 	if err != nil {
@@ -523,7 +523,7 @@ func TestSnapshotsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 		fmt.Fprint(w, `{"metadata":{"name":"snap","uri":"/projects/p/providers/Aruba.Storage/snapshots/x"},"properties":{},"status":{}}`)
 	})
 
-	snap := NewSnapshot().IntoProject(URI("/projects/p")).
+	snap := NewSnapshot().InProject(URI("/projects/p")).
 		Named("snap")
 	result, err := adapter.Create(context.Background(), snap)
 	if err == nil {
@@ -545,7 +545,7 @@ func TestSnapshotsClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "name is required", 422))
 	})
 
-	snap := NewSnapshot().IntoProject(URI("/projects/p"))
+	snap := NewSnapshot().InProject(URI("/projects/p"))
 	result, err := adapter.Create(context.Background(), snap)
 	if err == nil {
 		t.Fatal("expected error on 422")
@@ -583,7 +583,7 @@ func TestSnapshotsClientAdapter_Create_WithVolume(t *testing.T) {
 	adapter := &snapshotsClientAdapter{low: fake}
 
 	snap := NewSnapshot().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-snap").
 		FromVolume(URI(volURI))
 
@@ -654,7 +654,7 @@ func TestSnapshotsClientAdapter_Update_Success(t *testing.T) {
 
 	snap := &Snapshot{}
 	snap.fromResponse(snapshotTestResponse("snap-1", "my-snap", "/projects/p/providers/Aruba.Storage/snapshots/snap-1", "p"))
-	snap.WithBillingPeriod(BillingPeriodHour)
+	snap.BilledBy(BillingPeriodHour)
 
 	result, err := adapter.Update(context.Background(), snap)
 	if err != nil {
@@ -675,7 +675,7 @@ func TestSnapshotsClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	snap := NewSnapshot().IntoProject(URI("/projects/p")).
+	snap := NewSnapshot().InProject(URI("/projects/p")).
 		Named("x")
 	_, err := adapter.Update(context.Background(), snap)
 	if err == nil {
@@ -756,8 +756,8 @@ func TestSnapshot_Accessors_ZeroValue(t *testing.T) {
 	if snap.Type() != "" {
 		t.Errorf("Type() zero value = %q, want \"\"", snap.Type())
 	}
-	if snap.Bootable() != false {
-		t.Error("Bootable() zero value should be false")
+	if snap.IsBootable() != false {
+		t.Error("IsBootable() zero value should be false")
 	}
 }
 
@@ -825,7 +825,7 @@ func TestSnapshotsClientAdapter_Update_NonTwoXX(t *testing.T) {
 
 	snap := &Snapshot{}
 	snap.fromResponse(snapshotTestResponse("snap-1", "my-snap", "/projects/p/providers/Aruba.Storage/snapshots/snap-1", "p"))
-	snap.WithBillingPeriod("Invalid")
+	snap.BilledBy(BillingPeriodHour)
 
 	_, err := adapter.Update(context.Background(), snap)
 	if err == nil {

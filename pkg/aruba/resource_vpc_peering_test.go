@@ -28,13 +28,13 @@ func TestVPCPeering_FluentSetters(t *testing.T) {
 	parent.fromResponse(vpcTestResponse("v1", "my-vpc", "/projects/p1/providers/Aruba.Network/vpcs/v1", "p1"))
 
 	p := NewVPCPeering().
-		IntoVPC(parent).
+		InVPC(parent).
 		Named("my-peering").
-		AddTag("peering").
-		AddTag("cross-vpc").
-		AddTag("peering"). // dedupe
+		Tagged("peering").
+		Tagged("cross-vpc").
+		Tagged("peering"). // dedupe
 		InRegion(RegionITBGBergamo).
-		WithRemoteVPC(URI("/projects/p2/network/vpcs/v2"))
+		PeeredWith(URI("/projects/p2/network/vpcs/v2"))
 
 	if p.Name() != "my-peering" {
 		t.Errorf("Name() = %q", p.Name())
@@ -58,12 +58,12 @@ func TestVPCPeering_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", p.Err())
 	}
 
-	p.RemoveTag("peering")
+	p.Untagged("peering")
 	if tags := p.Tags(); len(tags) != 1 || tags[0] != "cross-vpc" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	p.ReplaceTags("x", "y")
+	p.RetaggedAs("x", "y")
 	if tags := p.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -77,7 +77,7 @@ func TestVPCPeering_IntoVPC_TypedRef(t *testing.T) {
 	parent := &VPC{}
 	parent.fromResponse(vpcTestResponse("v1", "my-vpc", "/projects/p1/providers/Aruba.Network/vpcs/v1", "p1"))
 
-	p := NewVPCPeering().IntoVPC(parent)
+	p := NewVPCPeering().InVPC(parent)
 
 	if p.VPCID() != "v1" {
 		t.Errorf("VPCID() = %q", p.VPCID())
@@ -95,7 +95,7 @@ func TestVPCPeering_IntoVPC_TypedRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestVPCPeering_IntoVPC_URIRef(t *testing.T) {
-	p := NewVPCPeering().IntoVPC(URI("/projects/p/network/vpcs/v"))
+	p := NewVPCPeering().InVPC(URI("/projects/p/network/vpcs/v"))
 
 	if p.VPCID() != "v" {
 		t.Errorf("VPCID() = %q", p.VPCID())
@@ -113,7 +113,7 @@ func TestVPCPeering_IntoVPC_URIRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestVPCPeering_IntoVPC_BadRef(t *testing.T) {
-	p := NewVPCPeering().IntoVPC(URI("/garbage"))
+	p := NewVPCPeering().InVPC(URI("/garbage"))
 	if p.Err() == nil {
 		t.Error("expected Err() != nil for unresolvable Ref, got nil")
 	}
@@ -127,7 +127,7 @@ func TestVPCPeering_WithRemoteVPC_TypedRef(t *testing.T) {
 	remote := &VPC{}
 	remote.fromResponse(vpcTestResponse("v2", "remote-vpc", "/projects/p2/providers/Aruba.Network/vpcs/v2", "p2"))
 
-	p := NewVPCPeering().WithRemoteVPC(remote)
+	p := NewVPCPeering().PeeredWith(remote)
 
 	if p.RemoteVPCURI() != "/projects/p2/providers/Aruba.Network/vpcs/v2" {
 		t.Errorf("RemoteVPCURI() = %q", p.RemoteVPCURI())
@@ -138,7 +138,7 @@ func TestVPCPeering_WithRemoteVPC_TypedRef(t *testing.T) {
 }
 
 func TestVPCPeering_WithRemoteVPC_URIRef(t *testing.T) {
-	p := NewVPCPeering().WithRemoteVPC(URI("/projects/p2/network/vpcs/v2"))
+	p := NewVPCPeering().PeeredWith(URI("/projects/p2/network/vpcs/v2"))
 
 	if p.RemoteVPCURI() != "/projects/p2/network/vpcs/v2" {
 		t.Errorf("RemoteVPCURI() = %q", p.RemoteVPCURI())
@@ -149,7 +149,7 @@ func TestVPCPeering_WithRemoteVPC_URIRef(t *testing.T) {
 }
 
 func TestVPCPeering_WithRemoteVPC_EmptyURI(t *testing.T) {
-	p := NewVPCPeering().WithRemoteVPC(URI(""))
+	p := NewVPCPeering().PeeredWith(URI(""))
 
 	if p.Err() == nil {
 		t.Fatal("expected Err() != nil for empty URI remote VPC")
@@ -169,10 +169,10 @@ func TestVPCPeering_WithRemoteVPC_EmptyURI(t *testing.T) {
 func TestVPCPeering_ToRequestRoundTrip(t *testing.T) {
 	p := NewVPCPeering().Named(
 		"my-peering").
-		AddTag("t1").
-		AddTag("t2").
+		Tagged("t1").
+		Tagged("t2").
 		InRegion(RegionITBGBergamo).
-		WithRemoteVPC(URI("/projects/p2/network/vpcs/v2"))
+		PeeredWith(URI("/projects/p2/network/vpcs/v2"))
 
 	req := p.RawRequest()
 
@@ -427,10 +427,10 @@ func TestVPCPeeringsClientAdapter_Create_Success(t *testing.T) {
 	vpc.fromResponse(vpcTestResponse("v", "my-vpc", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
 
 	p := NewVPCPeering().
-		IntoVPC(vpc).
+		InVPC(vpc).
 		Named("my-peering").
 		InRegion(RegionITBGBergamo).
-		WithRemoteVPC(URI("/projects/p2/network/vpcs/v2"))
+		PeeredWith(URI("/projects/p2/network/vpcs/v2"))
 
 	result, err := adapter.Create(context.Background(), p)
 	if err != nil {
@@ -484,7 +484,7 @@ func TestVPCPeeringsClientAdapter_Create_MetadataValidationError(t *testing.T) {
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "my-vpc", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
 
-	p := NewVPCPeering().IntoVPC(vpc).
+	p := NewVPCPeering().InVPC(vpc).
 		Named("peering")
 	result, err := adapter.Create(context.Background(), p)
 	if err == nil {
@@ -509,7 +509,7 @@ func TestVPCPeeringsClientAdapter_Create_NonTwoXX(t *testing.T) {
 	vpc := &VPC{}
 	vpc.fromResponse(vpcTestResponse("v", "my-vpc", "/projects/p/providers/Aruba.Network/vpcs/v", "p"))
 
-	p := NewVPCPeering().IntoVPC(vpc)
+	p := NewVPCPeering().InVPC(vpc)
 	result, err := adapter.Create(context.Background(), p)
 	if err == nil {
 		t.Fatal("expected error on 422")
@@ -610,7 +610,7 @@ func TestVPCPeeringsClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	p := NewVPCPeering().IntoVPC(URI("/projects/p/network/vpcs/v")).
+	p := NewVPCPeering().InVPC(URI("/projects/p/network/vpcs/v")).
 		Named("x")
 	_, err := adapter.Update(context.Background(), p)
 	if err == nil {
@@ -697,10 +697,10 @@ func TestVPCPeeringsClientAdapter_Delete_NonTwoXX(t *testing.T) {
 // InRegion exercises the 0% branch.
 func TestVPCPeering_InRegion(t *testing.T) {
 	p := NewVPCPeering().
-		AddTag("a").
-		AddTag("b").
-		RemoveTag("a").
-		ReplaceTags("x", "y").
+		Tagged("a").
+		Tagged("b").
+		Untagged("a").
+		RetaggedAs("x", "y").
 		InRegion("ITMI-Milano-1")
 
 	if p.Region() != "ITMI-Milano-1" {
@@ -788,7 +788,7 @@ func TestVPCPeeringsClientAdapter_Create_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusCreated)
 	})
-	peering := NewVPCPeering().IntoVPC(URI("/garbage"))
+	peering := NewVPCPeering().InVPC(URI("/garbage"))
 	_, err := adapter.Create(context.Background(), peering)
 	if err == nil {
 		t.Fatal("expected error for builder error")
@@ -840,7 +840,7 @@ func TestVPCPeeringsClientAdapter_Update_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusOK)
 	})
-	peering := NewVPCPeering().IntoVPC(URI("/garbage"))
+	peering := NewVPCPeering().InVPC(URI("/garbage"))
 	_, err := adapter.Update(context.Background(), peering)
 	if err == nil {
 		t.Fatal("expected error for builder error")

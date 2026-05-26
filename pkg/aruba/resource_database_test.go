@@ -29,7 +29,7 @@ var (
 
 func TestDatabase_FluentSetters(t *testing.T) {
 	db := NewDatabase().
-		IntoDBaaS(URI("/projects/p-1/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p-1/providers/Aruba.Database/dbaas/d-1")).
 		Named("mydb")
 
 	if db.Name() != "mydb" {
@@ -60,7 +60,7 @@ func TestDatabase_IntoDBaaS_TypedRef(t *testing.T) {
 	dbaas := &DBaaS{}
 	dbaas.fromResponse(dbaasTestResponse("d-1", "my-dbaas", "/projects/p-1/providers/Aruba.Database/dbaas/d-1"))
 
-	db := NewDatabase().IntoDBaaS(dbaas)
+	db := NewDatabase().InDBaaS(dbaas)
 	if db.DBaaSID() != "d-1" {
 		t.Errorf("DBaaSID() = %q", db.DBaaSID())
 	}
@@ -73,7 +73,7 @@ func TestDatabase_IntoDBaaS_TypedRef(t *testing.T) {
 }
 
 func TestDatabase_IntoDBaaS_URIRef(t *testing.T) {
-	db := NewDatabase().IntoDBaaS(URI("/projects/p-uri/providers/Aruba.Database/dbaas/d-uri"))
+	db := NewDatabase().InDBaaS(URI("/projects/p-uri/providers/Aruba.Database/dbaas/d-uri"))
 	if db.DBaaSID() != "d-uri" {
 		t.Errorf("DBaaSID() = %q", db.DBaaSID())
 	}
@@ -86,7 +86,7 @@ func TestDatabase_IntoDBaaS_URIRef(t *testing.T) {
 }
 
 func TestDatabase_IntoDBaaS_BadRef(t *testing.T) {
-	db := NewDatabase().IntoDBaaS(URI("/something/garbage"))
+	db := NewDatabase().InDBaaS(URI("/something/garbage"))
 	if db.Err() == nil {
 		t.Error("expected Err() to be set for unresolvable parent")
 	}
@@ -98,7 +98,7 @@ func TestDatabase_IntoDBaaS_BadRef(t *testing.T) {
 
 func TestDatabase_URI_Constructed(t *testing.T) {
 	db := NewDatabase().
-		IntoDBaaS(URI("/projects/p-1/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p-1/providers/Aruba.Database/dbaas/d-1")).
 		Named("mydb")
 
 	want := "/projects/p-1/providers/Aruba.Database/dbaas/d-1/databases/mydb"
@@ -216,7 +216,7 @@ func TestDatabase_FromResponse_NilSafe(t *testing.T) {
 
 func TestDatabaseIDsFromRef_TypedRef(t *testing.T) {
 	db := NewDatabase().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		Named("mydb")
 
 	pid, did, name, err := databaseIDsFromRef(db)
@@ -292,7 +292,7 @@ func TestDatabasesClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	db := NewDatabase().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		Named("my-db")
 
 	result, err := adapter.Create(context.Background(), db)
@@ -333,7 +333,7 @@ func TestDatabasesClientAdapter_Create_NoName(t *testing.T) {
 	adapter := buildDatabaseTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		callCount++
 	})
-	db := NewDatabase().IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")) // no Named
+	db := NewDatabase().InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")) // no Named
 	_, err := adapter.Create(context.Background(), db)
 	if err == nil {
 		t.Error("expected error when name is missing")
@@ -351,7 +351,7 @@ func TestDatabasesClientAdapter_Create_NonTwoXX(t *testing.T) {
 	})
 
 	db := NewDatabase().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		Named("my-db")
 
 	_, err := adapter.Create(context.Background(), db)
@@ -379,7 +379,7 @@ func TestDatabasesClientAdapter_Update_Success(t *testing.T) {
 	})
 
 	db := NewDatabase().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		Named("my-db")
 
 	result, err := adapter.Update(context.Background(), db)
@@ -443,7 +443,7 @@ func TestDatabasesClientAdapter_Get_TypedRef(t *testing.T) {
 	})
 
 	db := NewDatabase().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		Named("my-db")
 
 	result, err := adapter.Get(context.Background(), db)
@@ -568,7 +568,7 @@ func TestDatabasesClientAdapter_Update_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, `{"title":"Conflict","detail":"concurrent update"}`)
 	})
 	db := NewDatabase().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		Named("my-db")
 
 	_, err := adapter.Update(context.Background(), db)
@@ -663,7 +663,7 @@ func TestDatabasesClientAdapter_Create_ErrMixin(t *testing.T) {
 		callCount++
 	})
 	// IntoDBaaS with bad URI sets errMixin
-	db := NewDatabase().IntoDBaaS(URI("/garbage")).
+	db := NewDatabase().InDBaaS(URI("/garbage")).
 		Named("mydb")
 	_, err := adapter.Create(context.Background(), db)
 	if err == nil {
@@ -681,7 +681,7 @@ func TestDatabasesClientAdapter_Create_ErrMixin(t *testing.T) {
 func TestDatabasesClientAdapter_Update_BrokenClient(t *testing.T) {
 	adapter := &databasesClientAdapter{low: database.NewDatabasesClientImpl(testutil.NewBrokenClient(t, "http://localhost:9"))}
 	db := NewDatabase().
-		IntoDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
+		InDBaaS(URI("/projects/p/providers/Aruba.Database/dbaas/d-1")).
 		Named("my-db")
 
 	_, err := adapter.Update(context.Background(), db)

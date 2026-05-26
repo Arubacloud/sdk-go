@@ -39,11 +39,11 @@ func (s *JobStep) WithVerb(verb HTTPVerb) *JobStep { s.httpVerb = &verb; return 
 // WithBody sets the JSON request body for this step.
 func (s *JobStep) WithBody(body string) *JobStep { s.body = &body; return s }
 
-// OfResource sets the resource URI for this step. Errors if the ref's URI is empty.
-func (s *JobStep) OfResource(res Ref) *JobStep {
+// Targeting sets the resource URI for this step. Errors if the ref's URI is empty.
+func (s *JobStep) Targeting(res Ref) *JobStep {
 	uri := res.URI()
 	if uri == "" {
-		s.addErr(fmt.Errorf("OfResource: empty URI"))
+		s.addErr(fmt.Errorf("Targeting: empty URI"))
 		return s
 	}
 	s.resourceURI = &uri

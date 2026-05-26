@@ -13,7 +13,7 @@ import (
 // ---- Wrapper ----
 
 // Database is the wrapper for an Aruba Cloud database (a child of a DBaaS
-// instance). Construct with aruba.NewDatabase() and bind via IntoDBaaS(parent).
+// instance). Construct with aruba.NewDatabase() and bind via InDBaaS(parent).
 //
 // Family B: flat request (no Metadata/Properties boxing, no metadataMixin,
 // no tags, no location).
@@ -33,7 +33,7 @@ type Database struct {
 }
 
 // NewDatabase returns a fresh *Database ready for fluent setters and a Create call.
-// Binds dbaasScopedMixin's error sink so IntoDBaaS failures surface via Err().
+// Binds dbaasScopedMixin's error sink so InDBaaS failures surface via Err().
 func NewDatabase() *Database {
 	d := &Database{}
 	d.dbaasScopedMixin = bindDBaaSScoped(&d.errMixin)
@@ -42,8 +42,8 @@ func NewDatabase() *Database {
 
 // Setters — chainable, general → specific
 
-// IntoDBaaS binds this Database to its parent DBaaS instance. Required before Create.
-func (d *Database) IntoDBaaS(parent Ref) *Database { d.intoDBaaS(parent); return d }
+// InDBaaS binds this Database to its parent DBaaS instance. Required before Create.
+func (d *Database) InDBaaS(parent Ref) *Database { d.intoDBaaS(parent); return d }
 
 // Named sets the resource name. Required by the API.
 func (d *Database) Named(name string) *Database { d.name = &name; return d }
@@ -167,10 +167,10 @@ func (a *databasesClientAdapter) Create(ctx context.Context, db *Database, opts 
 		return db, err
 	}
 	if db.ProjectID() == "" {
-		return db, fmt.Errorf("Create: Database has no parent project — call IntoDBaaS first")
+		return db, fmt.Errorf("Create: Database has no parent project — call InDBaaS first")
 	}
 	if db.DBaaSID() == "" {
-		return db, fmt.Errorf("Create: Database has no parent DBaaS — call IntoDBaaS first")
+		return db, fmt.Errorf("Create: Database has no parent DBaaS — call InDBaaS first")
 	}
 	if db.Name() == "" {
 		return db, fmt.Errorf("Create: Database has no name — call Named first")
@@ -210,10 +210,10 @@ func (a *databasesClientAdapter) Update(ctx context.Context, db *Database, opts 
 		return db, fmt.Errorf("Update: Database has no ID — call Named first")
 	}
 	if db.DBaaSID() == "" {
-		return db, fmt.Errorf("Update: Database has no parent DBaaS — call IntoDBaaS first")
+		return db, fmt.Errorf("Update: Database has no parent DBaaS — call InDBaaS first")
 	}
 	if db.ProjectID() == "" {
-		return db, fmt.Errorf("Update: Database has no parent project — call IntoDBaaS first")
+		return db, fmt.Errorf("Update: Database has no parent project — call InDBaaS first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

@@ -15,9 +15,8 @@ func createProject(ctx context.Context, arubaClient aruba.Client) *aruba.Project
 
 	proj := aruba.NewProject().
 		Named(resourceName(NameProject)).
-		AddTag("production").
-		AddTag("arubacloud-sdk").
-		WithDescription("My production project")
+		Tagged("production", "arubacloud-sdk").
+		DescribedAs("My production project")
 
 	created, err := arubaClient.FromProject().Create(ctx, proj)
 	if err != nil {
@@ -34,8 +33,8 @@ func updateProject(ctx context.Context, arubaClient aruba.Client, proj *aruba.Pr
 
 	proj.Named(
 		updatedName(proj.Name())).
-		ReplaceTags("production", "arubacloud-sdk", "updated").
-		WithDescription("My production project - UPDATED")
+		RetaggedAs("production", "arubacloud-sdk", "updated").
+		DescribedAs("My production project - UPDATED")
 
 	updated, err := arubaClient.FromProject().Update(ctx, proj)
 	if err != nil {

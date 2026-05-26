@@ -12,8 +12,8 @@ import (
 // ---- Wrapper ----
 
 // CloudServer is the wrapper for an Aruba Cloud Compute server (a direct child of a Project).
-// Construct with aruba.NewCloudServer() and bind it via IntoProject(project), WithVPC(vpc),
-// WithBootVolume(volume), etc.
+// Construct with aruba.NewCloudServer() and bind it via InProject(project), WithVPC(vpc),
+// BootingFrom(volume), etc.
 //
 // Schema asymmetry: the request side uses FlavorName *string under the "flavorName" wire
 // field; the response side returns a full Flavor struct under the "flavor" wire field.
@@ -70,20 +70,30 @@ func NewCloudServer() *CloudServer {
 
 // Setters — chainable, general → specific
 
-// IntoProject binds this CloudServer to its parent project. Required before Create.
-func (cs *CloudServer) IntoProject(p Ref) *CloudServer { cs.intoProject(p); return cs }
+// InProject binds this CloudServer to its parent project. Required before Create.
+func (cs *CloudServer) InProject(p Ref) *CloudServer { cs.intoProject(p); return cs }
 
 // Named sets the resource name. Required by the API.
 func (cs *CloudServer) Named(n string) *CloudServer { cs.named(n); return cs }
 
-// AddTag appends a tag for filtering and accounting.
-func (cs *CloudServer) AddTag(t string) *CloudServer { cs.addTag(t); return cs }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (cs *CloudServer) Tagged(ts ...string) *CloudServer {
+	for _, t := range ts {
+		cs.addTag(t)
+	}
+	return cs
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (cs *CloudServer) RemoveTag(t string) *CloudServer { cs.removeTag(t); return cs }
+// Untagged removes each listed tag. No-op for tags not present.
+func (cs *CloudServer) Untagged(ts ...string) *CloudServer {
+	for _, t := range ts {
+		cs.removeTag(t)
+	}
+	return cs
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (cs *CloudServer) ReplaceTags(ts ...string) *CloudServer { cs.replaceTags(ts...); return cs }
+// RetaggedAs replaces the entire tag set with the given values.
+func (cs *CloudServer) RetaggedAs(ts ...string) *CloudServer { cs.replaceTags(ts...); return cs }
 
 // InRegion sets the region for this resource.
 func (cs *CloudServer) InRegion(region Region) *CloudServer { cs.inRegion(region); return cs }
@@ -101,10 +111,13 @@ func (cs *CloudServer) OfFlavor(flavor CloudServerFlavor) *CloudServer {
 func (cs *CloudServer) WithUserData(b64 string) *CloudServer { cs.userData = &b64; return cs }
 
 // WithVPCPreset marks the server to use VPC preset networking.
-func (cs *CloudServer) WithVPCPreset(b bool) *CloudServer { cs.vpcPreset = &b; return cs }
+func (cs *CloudServer) WithVPCPreset() *CloudServer { v := true; cs.vpcPreset = &v; return cs }
 
-// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
-func (cs *CloudServer) WithBillingPeriod(period BillingPeriod) *CloudServer {
+// WithoutVPCPreset disables VPC preset networking.
+func (cs *CloudServer) WithoutVPCPreset() *CloudServer { v := false; cs.vpcPreset = &v; return cs }
+
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (cs *CloudServer) BilledBy(period BillingPeriod) *CloudServer {
 	cs.billingPeriod = &period
 	return cs
 }
@@ -114,14 +127,14 @@ func (cs *CloudServer) WithBillingPeriod(period BillingPeriod) *CloudServer {
 // WithVPC attaches the server to the given VPC by URI reference.
 func (cs *CloudServer) WithVPC(v Ref) *CloudServer { return cs.setSingleRef("WithVPC", v, &cs.vpcRef) }
 
-// WithBootVolume sets the boot volume by URI reference.
-func (cs *CloudServer) WithBootVolume(vol Ref) *CloudServer {
-	return cs.setSingleRef("WithBootVolume", vol, &cs.bootVolumeRef)
+// BootingFrom sets the boot volume by URI reference.
+func (cs *CloudServer) BootingFrom(vol Ref) *CloudServer {
+	return cs.setSingleRef("BootingFrom", vol, &cs.bootVolumeRef)
 }
 
-// WithKeyPair attaches an SSH key pair by URI reference.
-func (cs *CloudServer) WithKeyPair(kp Ref) *CloudServer {
-	return cs.setSingleRef("WithKeyPair", kp, &cs.keyPairRef)
+// UsingKeyPair attaches an SSH key pair by URI reference.
+func (cs *CloudServer) UsingKeyPair(kp Ref) *CloudServer {
+	return cs.setSingleRef("UsingKeyPair", kp, &cs.keyPairRef)
 }
 
 // WithElasticIP attaches an elastic IP by URI reference.
@@ -131,14 +144,20 @@ func (cs *CloudServer) WithElasticIP(eip Ref) *CloudServer {
 
 // Multi-ref slice setters.
 
-// AddSubnet appends a subnet by URI reference.
-func (cs *CloudServer) AddSubnet(s Ref) *CloudServer {
-	return cs.appendRef("AddSubnet", s, &cs.subnetRefs)
+// OnSubnets appends subnets by URI reference. Repeated calls append.
+func (cs *CloudServer) OnSubnets(s ...Ref) *CloudServer {
+	for _, ref := range s {
+		cs.appendRef("OnSubnets", ref, &cs.subnetRefs)
+	}
+	return cs
 }
 
-// AddSecurityGroup appends a security group by URI reference.
-func (cs *CloudServer) AddSecurityGroup(sg Ref) *CloudServer {
-	return cs.appendRef("AddSecurityGroup", sg, &cs.securityGroupRefs)
+// WithSecurityGroups appends security groups by URI reference. Repeated calls append.
+func (cs *CloudServer) WithSecurityGroups(sg ...Ref) *CloudServer {
+	for _, ref := range sg {
+		cs.appendRef("WithSecurityGroups", ref, &cs.securityGroupRefs)
+	}
+	return cs
 }
 
 // Internal ref helpers.
@@ -153,14 +172,13 @@ func (cs *CloudServer) setSingleRef(label string, r Ref, dst **string) *CloudSer
 	return cs
 }
 
-func (cs *CloudServer) appendRef(label string, r Ref, dst *[]string) *CloudServer {
+func (cs *CloudServer) appendRef(label string, r Ref, dst *[]string) {
 	uri := r.URI()
 	if uri == "" {
 		cs.addErr(fmt.Errorf("%s: empty URI", label))
-		return cs
+		return
 	}
 	*dst = append(*dst, uri)
-	return cs
 }
 
 // Getters — general → specific
@@ -494,7 +512,7 @@ func (a *cloudServersClientAdapter) Create(ctx context.Context, cs *CloudServer,
 		return cs, err
 	}
 	if cs.ProjectID() == "" {
-		return cs, fmt.Errorf("Create: CloudServer has no parent project — call IntoProject first")
+		return cs, fmt.Errorf("Create: CloudServer has no parent project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -532,7 +550,7 @@ func (a *cloudServersClientAdapter) Update(ctx context.Context, cs *CloudServer,
 		return cs, fmt.Errorf("Update: CloudServer has no ID")
 	}
 	if cs.ProjectID() == "" {
-		return cs, fmt.Errorf("Update: CloudServer has no parent project — call IntoProject first")
+		return cs, fmt.Errorf("Update: CloudServer has no parent project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

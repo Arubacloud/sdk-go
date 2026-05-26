@@ -106,25 +106,56 @@ A per-resource `<resource>IDsFromRef(ref Ref)` helper lives at the bottom and is
 
 All chainable setters follow `func (rcv *T) Verb(...) *T` and return the receiver. Verbs cluster into a fixed vocabulary:
 
-| Verb prefix | Use | Example |
+| Connector | Role | Example |
 |---|---|---|
-| `Named(...)` | set the resource name | `*Database.Named("mydb")` |
-| `With<Prop>(...)` | generic scalar property setter | `*KaaS.WithKubernetesVersion(v)` |
-| `Into<Parent>(...)` | bind to parent via `Ref` | `*Database.IntoDBaaS(d)` |
-| `In<Region\|Zone>(...)` | geographical placement | `*VPC.InRegion(aruba.RegionITBGBergamo)` |
-| `Of<Type\|Flavor\|...>(...)` | typing / sizing / affinity | `*CloudServer.OfFlavor(aruba.CloudServerFlavorCSO2A4)` |
-| `From<Source>(...)` | source / origin `Ref` | `*Snapshot.FromVolume(bs)` |
-| `Add<X>(...)` / `Replace<X>s(...)` / `Remove<X>(...)` | collection mutation | `*VPNTunnel.AddTag("env=prod")` |
-| `Set<X>()` / `Unset<X>()` | explicit boolean toggle (builder) | `*BlockStorage.SetBootable()` |
-| `Is<X>()` (read) / `As<X>()`, `Not<X>()` (write) | paired-bool idiom for `*bool` fields | `*SecurityGroup.AsDefault()`, `*VPC.NotDefault()` |
+| `New<Resource>()` + `.Named(name)` | construct, then name | `NewCloudServer().Named("web-01")` |
+| `In<Parent>` / `In<Geo>` | containment & placement | `InProject`, `InVPC`, `InRegion`, `InZone` |
+| `Of<Classifier>` | type / sizing class / role | `OfFlavor`, `OfType`, `OfEngine`, `OfSize`, `OfAlgorithm`, `OfInstance`, `OfRole` |
+| `From<Source>` | source / origin | `FromImage`, `FromSnapshot`, `FromVolume`, `FromBackup`, `FromDBaaS`, `FromDatabase` |
+| `With<Noun>` | accompaniment / attached typed config | `WithVPC`, `WithElasticIP`, `WithCIDR`, `WithKubernetesVersion` |
+| participial (`<Verb>ing…`) | active relationship | `BootingFrom`, `UsingKeyPair`, `Targeting`, `PeeredWith` |
+| `On<Noun>` | network placement | `OnSubnets` |
+| `Tagged` / `Untagged` / `RetaggedAs` | tag-set mutation — variadic, append / remove / replace | `Tagged("prod","sdk")` |
+| `SizedGB(int)` / `RetainedForDays(int)` / `DescribedAs(string)` / `BilledBy(BillingPeriod)` | descriptive value phrases | `SizedGB(20)`, `BilledBy(BillingPeriodHour)` |
+| no-arg adjective/participle | boolean state | `Enabled()`, `Disabled()`, `HighlyAvailable()` |
+| `As<Adj>()` / `Not<Adj>()` + `Is<Adj>()` getter | tri-state `*bool` idiom | `AsDefault`/`NotDefault`/`IsDefault`, `AsBootable`/`NotBootable`/`IsBootable` |
+| `With<X>()` / `Without<X>()` | no-arg boolean pair | `WithPreset`/`WithoutPreset`, `WithoutAutoscaling`, `WithoutNodePools` |
 
-**Important:** `Set*` on its own (not `Unset*`) is reserved for non-chainable, side-effecting action methods (`*CloudServer.SetPassword(ctx, pw, opts...)` in `resource_cloud_server.go`) — never use it for a builder setter.
+**Collection setters** (`OnSubnets`, `WithSecurityGroups`, `WithNodePools`, `WithSteps`, `WithRoutes`, `WithDNSServers`) are variadic and plural-named — a single call can carry one or many items, and repeated calls append. `Replace<Plural>` does wholesale replacement; `Without<Plural>()` clears.
+
+**Important:** bare `Set*` is reserved for non-chainable, side-effecting action methods (`*CloudServer.SetPassword(ctx, pw, opts...)` in `resource_cloud_server.go`) — never use it for a builder setter.
+
+### Canonical chain order
+
+Every builder chain should read like a natural English sentence — imagine an *Eloquent Old Grandma* at a cloud booking office placing an order: "I'd like a CloudServer of flavor Ubuntu 24.04, named 'my-server-01', tagged 'prod', in project Foo, in region Italy, booting from volume V, with VPC X, billed hourly."
+
+Setters cluster into 13 ordered buckets. Within a chain, appear top-to-bottom in this order; skip buckets that don't apply.
+
+| # | Bucket | Setters |
+|---|---|---|
+| 1 | **noun** | `New<X>()` |
+| 2 | **classifier** | `OfFlavor`, `OfType`, `OfEngine`, `OfSize`, `OfAlgorithm`, `OfInstance`, `OfRole` |
+| 3 | **name** | `Named` |
+| 4 | **labels** | `Tagged(…)` — variadic, **single call** |
+| 5 | **containment** | `InProject`, `InVPC`, `InSecurityGroup`, `InDBaaS`, `InDatabase`, `InKMS`, `InVPNTunnel`, `InVPCPeering` |
+| 6 | **geography** | `InRegion`, `InZone` |
+| 7 | **descriptive scalars** | `SizedGB`, `WithCIDR`, `WithKubernetesVersion`, `WithPodCIDR`, `WithNodeCIDR`, `WithPublicKey`, `WithAdminUsername`, `WithUsername`, `WithPassword`, `WithUserData`, `DescribedAs`, `RetainedForDays`, `WithMaxStorageQuotaGB`, `WithAutoscaling`, `WithCron`, `RecurringUntil`, `OneShotAt`, `WithAction`, `WithVerb`, `WithPort`, `WithProtocol`, `WithDirection`, `WithPeerClientPublicIP` |
+| 8 | **origin** | `FromImage`, `FromVolume`, `FromBackup`, `FromSnapshot`, `FromDBaaS`, `FromDatabase`, `BootingFrom` |
+| 9 | **attached config** | `WithVPC`, `WithSubnet`, `WithSecurityGroup`, `WithSecurityGroups`, `WithElasticIP`, `WithBlockStorage`, `WithDHCP`, `WithNodePools`, `WithSteps`, `WithIKESettings`, `WithESPSettings`, `WithPSKSettings`, `WithPeerVPC`, `WithTarget` |
+| 10 | **network placement** | `OnSubnets` |
+| 11 | **active relationship** | `UsingKeyPair`, `Targeting`, `TargetingCIDR`, `ForUser`, `ToVolume` |
+| 12 | **boolean / policy state** | `Enabled`/`Disabled`, `HighlyAvailable`, `AsBootable`/`NotBootable`, `AsDefault`/`NotDefault`, `WithPreset`/`WithoutPreset`, `WithoutAutoscaling` |
+| 13 | **billing** | `BilledBy(period)` |
+
+**Variadic-collapse rule:** when the same variadic setter would be called twice on the same builder, collapse to a single call — `Tagged("a").Tagged("b")` → `Tagged("a", "b")`. Applies to `Tagged`, `WithDNSServers`, and any other plural-named collection setter.
+
+Per-resource canonical chains are exercised in `examples/all-resources/` — treat those files as the executable specification of the correct ordering.
 
 ### Wire-level translation rules
 
 The wrapper API never echoes a wire field name verbatim if a clearer Go-idiomatic name exists:
 
-- **Units explicit in the method name:** `WithSizeGB(int)` (wire field `size` / JSON `sizeGb`) on `*BlockStorage` and `*DBaaS`.
+- **Units explicit in the method name:** `SizedGB(int)` (wire field `size` / JSON `sizeGb`) on `*BlockStorage` and `*DBaaS`.
 - **Paired-bool idiom for tri-state `*bool` flags:** `IsDefault()` read + `AsDefault()` / `NotDefault()` write on SecurityGroup, VPC, Subnet, Project — preserves the `nil` / `false` / `true` distinction across the wire.
 - **`Ref`-accepting setters hide URI assembly:** `FromVolume(Ref)`, `FromSnapshot(Ref)`, `FromDBaaS(Ref)`, `FromDatabase(Ref)` — an empty URI from the `Ref` goes on the error sink, not on the wire.
 - **Sub-builder errors propagate:** `WithIKESettings(*VPNIKE)` drains the sub-builder's `errMixin` into the tunnel's accumulator (`resource_vpn_tunnel.go`).
@@ -137,7 +168,7 @@ Public callers never pass raw strings. Every domain that accepts an enum has typ
 | Domain | Alias prefix | Typical setter |
 |---|---|---|
 | Geography | `aruba.Region*`, `aruba.Zone*` | `InRegion(...)`, `InZone(...)` |
-| Billing | `aruba.BillingPeriod*` | `WithBillingPeriod(...)` |
+| Billing | `aruba.BillingPeriod*` | `BilledBy(BillingPeriod)` |
 | Compute | `aruba.CloudServerFlavor*`, `aruba.VolumeImage*` | `OfFlavor(...)`, `FromImage(...)` |
 | Storage | `aruba.BlockStorageType*`, `aruba.StorageBackupType*` | `OfType(...)` |
 | Database | `aruba.DatabaseEngine*`, `aruba.DBaaSFlavor*` | `OfEngine(...)`, `OfFlavor(...)` |

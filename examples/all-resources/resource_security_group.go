@@ -19,10 +19,9 @@ func createSecurityGroup(ctx context.Context, arubaClient aruba.Client, vpc *aru
 	}
 
 	sg := aruba.NewSecurityGroup().
-		IntoVPC(vpc).
 		Named(resourceName(NameSecurityGroup)).
-		AddTag("security").
-		AddTag("network")
+		Tagged("security", "network").
+		InVPC(vpc)
 
 	created, err := arubaClient.FromNetwork().SecurityGroups().Create(ctx, sg)
 	if err != nil {
@@ -48,15 +47,14 @@ func createSecurityGroupIngressRule(ctx context.Context, arubaClient aruba.Clien
 	}
 
 	rule := aruba.NewSecurityRule().
-		IntoSecurityGroup(sg).
 		Named(name).
-		AddTag(tag).
-		AddTag("ingress").
+		Tagged(tag, "ingress").
+		InSecurityGroup(sg).
 		InRegion(aruba.RegionITBGBergamo).
 		WithDirection(aruba.RuleDirectionIngress).
 		WithProtocol(protocol).
 		WithPort(port).
-		WithTargetCIDR("0.0.0.0/0")
+		TargetingCIDR("0.0.0.0/0")
 
 	created, err := arubaClient.FromNetwork().SecurityGroupRules().Create(ctx, rule)
 	if err != nil {
@@ -83,13 +81,13 @@ func createSecurityGroupEgressRule(ctx context.Context, arubaClient aruba.Client
 	}
 
 	rule := aruba.NewSecurityRule().
-		IntoSecurityGroup(sg).
 		Named(resourceName(NameSGRuleEgress)).
-		AddTag("egress").
+		Tagged("egress").
+		InSecurityGroup(sg).
 		InRegion(aruba.RegionITBGBergamo).
 		WithDirection(aruba.RuleDirectionEgress).
 		WithProtocol(aruba.RuleProtocolANY).
-		WithTargetCIDR("0.0.0.0/0")
+		TargetingCIDR("0.0.0.0/0")
 
 	created, err := arubaClient.FromNetwork().SecurityGroupRules().Create(ctx, rule)
 	if err != nil {

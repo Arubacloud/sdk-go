@@ -27,15 +27,15 @@ func TestCloudServer_FluentSetters(t *testing.T) {
 	proj.fromResponse(projectTestResponse("p-1", "my-project", "/projects/p-1"))
 
 	cs := NewCloudServer().
-		IntoProject(proj).
+		InProject(proj).
 		Named("my-server").
-		AddTag("compute").
-		AddTag("prod").
+		Tagged("compute").
+		Tagged("prod").
 		InRegion(RegionITBGBergamo).
 		InZone(ZoneITBG1).
 		OfFlavor(CloudServerFlavorCSO2A4).
 		WithUserData("dGVzdA==").
-		WithVPCPreset(true)
+		WithVPCPreset()
 
 	if cs.Name() != "my-server" {
 		t.Errorf("Name() = %q", cs.Name())
@@ -59,12 +59,12 @@ func TestCloudServer_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", cs.Err())
 	}
 
-	cs.RemoveTag("compute")
+	cs.Untagged("compute")
 	if tags := cs.Tags(); len(tags) != 1 || tags[0] != "prod" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	cs.ReplaceTags("x", "y")
+	cs.RetaggedAs("x", "y")
 	if tags := cs.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -78,7 +78,7 @@ func TestCloudServer_IntoProject_TypedRef(t *testing.T) {
 	proj := &Project{}
 	proj.fromResponse(projectTestResponse("p-42", "n", "/projects/p-42"))
 
-	cs := NewCloudServer().IntoProject(proj)
+	cs := NewCloudServer().InProject(proj)
 	if cs.ProjectID() != "p-42" {
 		t.Errorf("ProjectID() = %q", cs.ProjectID())
 	}
@@ -88,7 +88,7 @@ func TestCloudServer_IntoProject_TypedRef(t *testing.T) {
 }
 
 func TestCloudServer_IntoProject_URIRef(t *testing.T) {
-	cs := NewCloudServer().IntoProject(URI("/projects/p-uri"))
+	cs := NewCloudServer().InProject(URI("/projects/p-uri"))
 	if cs.ProjectID() != "p-uri" {
 		t.Errorf("ProjectID() = %q", cs.ProjectID())
 	}
@@ -98,7 +98,7 @@ func TestCloudServer_IntoProject_URIRef(t *testing.T) {
 }
 
 func TestCloudServer_IntoProject_BadRef(t *testing.T) {
-	cs := NewCloudServer().IntoProject(URI("/something/else"))
+	cs := NewCloudServer().InProject(URI("/something/else"))
 	if cs.Err() == nil {
 		t.Error("expected Err() to be set for unresolvable parent")
 	}
@@ -129,7 +129,7 @@ func TestCloudServer_WithVPC_EmptyURI(t *testing.T) {
 }
 
 func TestCloudServer_WithBootVolume_URIRef(t *testing.T) {
-	cs := NewCloudServer().WithBootVolume(URI("/projects/p/storage/volumes/vol-1"))
+	cs := NewCloudServer().BootingFrom(URI("/projects/p/storage/volumes/vol-1"))
 	if cs.BootVolume() != "/projects/p/storage/volumes/vol-1" {
 		t.Errorf("BootVolume() = %q", cs.BootVolume())
 	}
@@ -139,14 +139,14 @@ func TestCloudServer_WithBootVolume_URIRef(t *testing.T) {
 }
 
 func TestCloudServer_WithBootVolume_EmptyURI(t *testing.T) {
-	cs := NewCloudServer().WithBootVolume(URI(""))
+	cs := NewCloudServer().BootingFrom(URI(""))
 	if cs.Err() == nil {
 		t.Error("expected Err() for empty BootVolume URI")
 	}
 }
 
 func TestCloudServer_WithKeyPair_URIRef(t *testing.T) {
-	cs := NewCloudServer().WithKeyPair(URI("/projects/p/providers/Aruba.Compute/keyPairs/kp-1"))
+	cs := NewCloudServer().UsingKeyPair(URI("/projects/p/providers/Aruba.Compute/keyPairs/kp-1"))
 	if cs.KeyPair() != "/projects/p/providers/Aruba.Compute/keyPairs/kp-1" {
 		t.Errorf("KeyPair() = %q", cs.KeyPair())
 	}
@@ -156,7 +156,7 @@ func TestCloudServer_WithKeyPair_URIRef(t *testing.T) {
 }
 
 func TestCloudServer_WithKeyPair_EmptyURI(t *testing.T) {
-	cs := NewCloudServer().WithKeyPair(URI(""))
+	cs := NewCloudServer().UsingKeyPair(URI(""))
 	if cs.Err() == nil {
 		t.Error("expected Err() for empty KeyPair URI")
 	}
@@ -182,8 +182,8 @@ func TestCloudServer_WithElasticIP_EmptyURI(t *testing.T) {
 
 func TestCloudServer_AddSubnet_AppendsTwo(t *testing.T) {
 	cs := NewCloudServer().
-		AddSubnet(URI("/subnets/s-1")).
-		AddSubnet(URI("/subnets/s-2"))
+		OnSubnets(URI("/subnets/s-1")).
+		OnSubnets(URI("/subnets/s-2"))
 	if cs.Err() != nil {
 		t.Errorf("Err() = %v", cs.Err())
 	}
@@ -200,7 +200,7 @@ func TestCloudServer_AddSubnet_AppendsTwo(t *testing.T) {
 }
 
 func TestCloudServer_AddSubnet_EmptyURI(t *testing.T) {
-	cs := NewCloudServer().AddSubnet(URI(""))
+	cs := NewCloudServer().OnSubnets(URI(""))
 	if cs.Err() == nil {
 		t.Error("expected Err() for empty Subnet URI")
 	}
@@ -211,8 +211,8 @@ func TestCloudServer_AddSubnet_EmptyURI(t *testing.T) {
 
 func TestCloudServer_AddSecurityGroup_AppendsTwo(t *testing.T) {
 	cs := NewCloudServer().
-		AddSecurityGroup(URI("/sgs/sg-1")).
-		AddSecurityGroup(URI("/sgs/sg-2"))
+		WithSecurityGroups(URI("/sgs/sg-1")).
+		WithSecurityGroups(URI("/sgs/sg-2"))
 	if cs.Err() != nil {
 		t.Errorf("Err() = %v", cs.Err())
 	}
@@ -223,7 +223,7 @@ func TestCloudServer_AddSecurityGroup_AppendsTwo(t *testing.T) {
 }
 
 func TestCloudServer_AddSecurityGroup_EmptyURI(t *testing.T) {
-	cs := NewCloudServer().AddSecurityGroup(URI(""))
+	cs := NewCloudServer().WithSecurityGroups(URI(""))
 	if cs.Err() == nil {
 		t.Error("expected Err() for empty SecurityGroup URI")
 	}
@@ -252,7 +252,7 @@ func TestCloudServer_WithUserData(t *testing.T) {
 }
 
 func TestCloudServer_WithVPCPreset(t *testing.T) {
-	cs := NewCloudServer().WithVPCPreset(true)
+	cs := NewCloudServer().WithVPCPreset()
 	req := cs.toRequest()
 	if !req.Properties.VPCPreset {
 		t.Error("VPCPreset not emitted correctly")
@@ -276,18 +276,18 @@ func TestCloudServer_InZone(t *testing.T) {
 
 func TestCloudServer_ToRequestRoundTrip(t *testing.T) {
 	cs := NewCloudServer().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("srv").
-		AddTag("tag1").
+		Tagged("tag1").
 		InRegion(RegionITBGBergamo).
 		InZone(ZoneITBG1).
 		OfFlavor(CloudServerFlavorCSO2A4).
 		WithVPC(URI("/vpcs/v")).
-		WithBootVolume(URI("/vols/bv")).
-		WithKeyPair(URI("/kps/kp")).
+		BootingFrom(URI("/vols/bv")).
+		UsingKeyPair(URI("/kps/kp")).
 		WithElasticIP(URI("/eips/eip")).
-		AddSubnet(URI("/subnets/s")).
-		AddSecurityGroup(URI("/sgs/sg")).
+		OnSubnets(URI("/subnets/s")).
+		WithSecurityGroups(URI("/sgs/sg")).
 		WithUserData("dA==")
 
 	req := cs.RawRequest()
@@ -583,14 +583,14 @@ func TestCloudServersClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	cs := NewCloudServer().
-		IntoProject(URI("/projects/p")).
+		InProject(URI("/projects/p")).
 		Named("my-server").
 		InZone(ZoneITBG1).
 		OfFlavor(CloudServerFlavorCSO2A4).
 		WithVPC(URI("/vpcs/v")).
-		WithBootVolume(URI("/vols/bv")).
-		WithKeyPair(URI("/kps/kp")).
-		AddSubnet(URI("/subnets/s"))
+		BootingFrom(URI("/vols/bv")).
+		UsingKeyPair(URI("/kps/kp")).
+		OnSubnets(URI("/subnets/s"))
 
 	result, err := adapter.Create(context.Background(), cs)
 	if err != nil {
@@ -651,7 +651,7 @@ func TestCloudServersClientAdapter_Create_MetadataValidationError(t *testing.T) 
 		fmt.Fprint(w, `{"metadata":{"name":"srv","uri":"/projects/p/providers/Aruba.Compute/cloudServers/x"},"properties":{}}`)
 	})
 
-	cs := NewCloudServer().IntoProject(URI("/projects/p")).
+	cs := NewCloudServer().InProject(URI("/projects/p")).
 		Named("srv").OfFlavor(CloudServerFlavorCSO2A4)
 	result, err := adapter.Create(context.Background(), cs)
 	if err == nil {
@@ -673,7 +673,7 @@ func TestCloudServersClientAdapter_Create_NonTwoXX(t *testing.T) {
 		fmt.Fprint(w, testutil.ErrorBodyJSON("Validation Failed", "zone is required", 422))
 	})
 
-	cs := NewCloudServer().IntoProject(URI("/projects/p")).
+	cs := NewCloudServer().InProject(URI("/projects/p")).
 		Named("srv")
 	result, err := adapter.Create(context.Background(), cs)
 	if err == nil {
@@ -729,7 +729,7 @@ func TestCloudServersClientAdapter_Update_NoID(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	cs := NewCloudServer().IntoProject(URI("/projects/p")).
+	cs := NewCloudServer().InProject(URI("/projects/p")).
 		Named("x")
 	_, err := adapter.Update(context.Background(), cs)
 	if err == nil {
@@ -1350,14 +1350,14 @@ func TestCloudServersClientAdapter_Get_InjectsRefresh(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestCloudServer_WithBillingPeriod_SetsField(t *testing.T) {
-	cs := NewCloudServer().WithBillingPeriod(BillingPeriodHour)
+	cs := NewCloudServer().BilledBy(BillingPeriodHour)
 	if cs.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q, want %q", cs.BillingPeriod(), BillingPeriodHour)
 	}
 }
 
 func TestCloudServer_WithBillingPeriod_InRequest(t *testing.T) {
-	cs := NewCloudServer().WithBillingPeriod(BillingPeriodMonth)
+	cs := NewCloudServer().BilledBy(BillingPeriodMonth)
 	req := cs.RawRequest()
 	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodMonth {
 		t.Errorf("request BillingPlan.BillingPeriod = %v, want %q", req.Properties.BillingPlan, BillingPeriodMonth)

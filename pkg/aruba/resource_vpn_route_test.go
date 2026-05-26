@@ -29,11 +29,11 @@ func TestVPNRoute_FluentSetters(t *testing.T) {
 		"/projects/p/providers/Aruba.Network/vpnTunnels/t-1", "p"))
 
 	r := NewVPNRoute().
-		IntoVPNTunnel(tun).
+		InVPNTunnel(tun).
 		Named("my-route").
-		AddTag("cloud").
-		AddTag("vpn").
-		AddTag("cloud"). // dedupe
+		Tagged("cloud").
+		Tagged("vpn").
+		Tagged("cloud"). // dedupe
 		InRegion(RegionITBGBergamo).
 		WithCloudSubnet("10.0.0.0/24").
 		WithOnPremSubnet("192.168.0.0/24")
@@ -63,12 +63,12 @@ func TestVPNRoute_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", r.Err())
 	}
 
-	r.RemoveTag("cloud")
+	r.Untagged("cloud")
 	if tags := r.Tags(); len(tags) != 1 || tags[0] != "vpn" {
 		t.Errorf("after RemoveTag Tags() = %v", tags)
 	}
 
-	r.ReplaceTags("x", "y")
+	r.RetaggedAs("x", "y")
 	if tags := r.Tags(); len(tags) != 2 || tags[0] != "x" || tags[1] != "y" {
 		t.Errorf("after ReplaceTags Tags() = %v", tags)
 	}
@@ -83,7 +83,7 @@ func TestVPNRoute_IntoVPNTunnel_TypedRef(t *testing.T) {
 	tun.fromResponse(vpnTunnelTestResponse("t-1", "n",
 		"/projects/p/providers/Aruba.Network/vpnTunnels/t-1", "p"))
 
-	r := NewVPNRoute().IntoVPNTunnel(tun)
+	r := NewVPNRoute().InVPNTunnel(tun)
 
 	if r.VPNTunnelID() != "t-1" {
 		t.Errorf("VPNTunnelID() = %q", r.VPNTunnelID())
@@ -101,7 +101,7 @@ func TestVPNRoute_IntoVPNTunnel_TypedRef(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestVPNRoute_IntoVPNTunnel_URIRef_CamelCase(t *testing.T) {
-	r := NewVPNRoute().IntoVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1"))
+	r := NewVPNRoute().InVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1"))
 
 	if r.Err() != nil {
 		t.Fatalf("unexpected Err() = %v", r.Err())
@@ -123,7 +123,7 @@ func TestVPNRoute_IntoVPNTunnel_URIRef_CamelCase(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestVPNRoute_IntoVPNTunnel_BadRef(t *testing.T) {
-	r := NewVPNRoute().IntoVPNTunnel(URI("/garbage"))
+	r := NewVPNRoute().InVPNTunnel(URI("/garbage"))
 	if r.Err() == nil {
 		t.Error("expected Err() != nil for unresolvable Ref")
 	}
@@ -136,7 +136,7 @@ func TestVPNRoute_IntoVPNTunnel_BadRef(t *testing.T) {
 func TestVPNRoute_ToRequestRoundTrip(t *testing.T) {
 	r := NewVPNRoute().Named(
 		"my-route").
-		AddTag("t1").
+		Tagged("t1").
 		InRegion(RegionITBGBergamo).
 		WithCloudSubnet("10.1.0.0/16").
 		WithOnPremSubnet("172.16.0.0/12")
@@ -419,7 +419,7 @@ func TestVPNRoutesClientAdapter_Create_Success(t *testing.T) {
 	})
 
 	route := NewVPNRoute().
-		IntoVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")).
+		InVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")).
 		Named("my-route").
 		InRegion(RegionITBGBergamo).
 		WithCloudSubnet("10.0.0.0/24").
@@ -478,7 +478,7 @@ func TestVPNRoutesClientAdapter_Create_MetadataValidationError(t *testing.T) {
 	})
 
 	route := NewVPNRoute().
-		IntoVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")).
+		InVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")).
 		Named("route")
 
 	result, err := adapter.Create(context.Background(), route)
@@ -502,7 +502,7 @@ func TestVPNRoutesClientAdapter_Create_NonTwoXX(t *testing.T) {
 	})
 
 	route := NewVPNRoute().
-		IntoVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1"))
+		InVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1"))
 	result, err := adapter.Create(context.Background(), route)
 	if err == nil {
 		t.Fatal("expected error on 422")
@@ -603,7 +603,7 @@ func TestVPNRoutesClientAdapter_Update_NoID(t *testing.T) {
 	})
 
 	r := NewVPNRoute().
-		IntoVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")).
+		InVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")).
 		Named("x")
 
 	_, err := adapter.Update(context.Background(), r)
@@ -685,10 +685,10 @@ func TestVPNRoutesClientAdapter_Delete_NonTwoXX(t *testing.T) {
 // InRegion exercises the 0% branch.
 func TestVPNRoute_InRegion(t *testing.T) {
 	r := NewVPNRoute().
-		AddTag("a").
-		AddTag("b").
-		RemoveTag("a").
-		ReplaceTags("x", "y").
+		Tagged("a").
+		Tagged("b").
+		Untagged("a").
+		RetaggedAs("x", "y").
 		InRegion("ITMI-Milano-1")
 
 	if r.Region() != "ITMI-Milano-1" {
@@ -777,7 +777,7 @@ func TestVPNRoutesClientAdapter_Create_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusCreated)
 	})
-	r := NewVPNRoute().IntoVPNTunnel(URI("/garbage"))
+	r := NewVPNRoute().InVPNTunnel(URI("/garbage"))
 	_, err := adapter.Create(context.Background(), r)
 	if err == nil {
 		t.Fatal("expected error for builder error")
@@ -830,7 +830,7 @@ func TestVPNRoutesClientAdapter_Update_WithBuilderError(t *testing.T) {
 		callCount++
 		w.WriteHeader(http.StatusOK)
 	})
-	r := NewVPNRoute().IntoVPNTunnel(URI("/garbage"))
+	r := NewVPNRoute().InVPNTunnel(URI("/garbage"))
 	_, err := adapter.Update(context.Background(), r)
 	if err == nil {
 		t.Fatal("expected error for builder error")
@@ -1025,7 +1025,7 @@ func TestVPNRoutesClientAdapter_Create_CloudSubnetAsObject(t *testing.T) {
 	})
 
 	route := NewVPNRoute().
-		IntoVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")).
+		InVPNTunnel(URI("/projects/p/providers/Aruba.Network/vpnTunnels/t-1")).
 		Named("my-route").
 		InRegion(RegionITBGBergamo).
 		WithCloudSubnet("10.1.0.0/24").

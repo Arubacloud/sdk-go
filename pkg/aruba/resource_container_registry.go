@@ -13,7 +13,7 @@ import (
 
 // ContainerRegistry is the wrapper for an Aruba Cloud Container Registry
 // (a direct child of a Project). Construct with aruba.NewContainerRegistry()
-// and bind it via IntoProject(project), WithVPC(vpc), etc.
+// and bind it via InProject(project), WithVPC(vpc), etc.
 //
 // Family A: regional, Metadata/Properties envelope, location-aware.
 // Supports full CRUD including Update (same request shape as Create).
@@ -45,7 +45,7 @@ type ContainerRegistry struct {
 }
 
 // NewContainerRegistry returns a fresh *ContainerRegistry ready for fluent setters and a Create call.
-// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+// Binds projectScopedMixin's error sink so InProject failures surface via Err().
 func NewContainerRegistry() *ContainerRegistry {
 	r := &ContainerRegistry{}
 	r.projectScopedMixin = bindProjectScoped(&r.errMixin)
@@ -56,20 +56,30 @@ func NewContainerRegistry() *ContainerRegistry {
 
 // Standard setters.
 
-// IntoProject binds this ContainerRegistry to its parent project. Required before Create.
-func (r *ContainerRegistry) IntoProject(p Ref) *ContainerRegistry { r.intoProject(p); return r }
+// InProject binds this ContainerRegistry to its parent project. Required before Create.
+func (r *ContainerRegistry) InProject(p Ref) *ContainerRegistry { r.intoProject(p); return r }
 
 // Named sets the resource name. Required by the API.
 func (r *ContainerRegistry) Named(n string) *ContainerRegistry { r.named(n); return r }
 
-// AddTag appends a tag for filtering and accounting.
-func (r *ContainerRegistry) AddTag(t string) *ContainerRegistry { r.addTag(t); return r }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (r *ContainerRegistry) Tagged(ts ...string) *ContainerRegistry {
+	for _, t := range ts {
+		r.addTag(t)
+	}
+	return r
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (r *ContainerRegistry) RemoveTag(t string) *ContainerRegistry { r.removeTag(t); return r }
+// Untagged removes each listed tag. No-op for tags not present.
+func (r *ContainerRegistry) Untagged(ts ...string) *ContainerRegistry {
+	for _, t := range ts {
+		r.removeTag(t)
+	}
+	return r
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (r *ContainerRegistry) ReplaceTags(ts ...string) *ContainerRegistry {
+// RetaggedAs replaces the entire tag set with the given values.
+func (r *ContainerRegistry) RetaggedAs(ts ...string) *ContainerRegistry {
 	r.replaceTags(ts...)
 	return r
 }
@@ -135,9 +145,9 @@ func (r *ContainerRegistry) OfSize(flavor types.ContainerRegistrySizeFlavor) *Co
 	return r
 }
 
-// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
-func (r *ContainerRegistry) WithBillingPeriod(p BillingPeriod) *ContainerRegistry {
-	r.billingPeriod = &p
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (r *ContainerRegistry) BilledBy(period BillingPeriod) *ContainerRegistry {
+	r.billingPeriod = &period
 	return r
 }
 
@@ -387,7 +397,7 @@ func (a *containerRegistriesClientAdapter) Create(ctx context.Context, r *Contai
 		return r, err
 	}
 	if r.ProjectID() == "" {
-		return r, fmt.Errorf("Create: ContainerRegistry has no parent project — call IntoProject first")
+		return r, fmt.Errorf("Create: ContainerRegistry has no parent project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -424,7 +434,7 @@ func (a *containerRegistriesClientAdapter) Update(ctx context.Context, r *Contai
 		return r, fmt.Errorf("Update: ContainerRegistry has no ID")
 	}
 	if r.ProjectID() == "" {
-		return r, fmt.Errorf("Update: ContainerRegistry has no parent project — call IntoProject first")
+		return r, fmt.Errorf("Update: ContainerRegistry has no parent project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

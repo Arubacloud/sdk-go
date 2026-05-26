@@ -46,20 +46,30 @@ func NewSecurityGroup() *SecurityGroup {
 
 // Setters — chainable, general → specific
 
-// IntoVPC binds this SecurityGroup to its parent VPC. Required before Create.
-func (sg *SecurityGroup) IntoVPC(v Ref) *SecurityGroup { sg.intoVPC(v); return sg }
+// InVPC binds this SecurityGroup to its parent VPC. Required before Create.
+func (sg *SecurityGroup) InVPC(v Ref) *SecurityGroup { sg.intoVPC(v); return sg }
 
 // Named sets the resource name. Required by the API.
 func (sg *SecurityGroup) Named(n string) *SecurityGroup { sg.named(n); return sg }
 
-// AddTag appends a tag for filtering and accounting.
-func (sg *SecurityGroup) AddTag(t string) *SecurityGroup { sg.addTag(t); return sg }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (sg *SecurityGroup) Tagged(ts ...string) *SecurityGroup {
+	for _, t := range ts {
+		sg.addTag(t)
+	}
+	return sg
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (sg *SecurityGroup) RemoveTag(t string) *SecurityGroup { sg.removeTag(t); return sg }
+// Untagged removes each listed tag. No-op for tags not present.
+func (sg *SecurityGroup) Untagged(ts ...string) *SecurityGroup {
+	for _, t := range ts {
+		sg.removeTag(t)
+	}
+	return sg
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (sg *SecurityGroup) ReplaceTags(ts ...string) *SecurityGroup { sg.replaceTags(ts...); return sg }
+// RetaggedAs replaces the entire tag set with the given values.
+func (sg *SecurityGroup) RetaggedAs(ts ...string) *SecurityGroup { sg.replaceTags(ts...); return sg }
 
 // AsDefault marks this security group as the VPC default.
 func (sg *SecurityGroup) AsDefault() *SecurityGroup { t := true; sg.defaultSG = &t; return sg }
@@ -187,7 +197,7 @@ func (a *securityGroupsClientAdapter) Create(ctx context.Context, sg *SecurityGr
 		return sg, err
 	}
 	if sg.VPCID() == "" || sg.ProjectID() == "" {
-		return sg, fmt.Errorf("Create: security group has no VPC — call IntoVPC first")
+		return sg, fmt.Errorf("Create: security group has no VPC — call InVPC first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -259,7 +269,7 @@ func (a *securityGroupsClientAdapter) Update(ctx context.Context, sg *SecurityGr
 		return sg, fmt.Errorf("Update: security group has no ID — call Get first or seed from response metadata")
 	}
 	if sg.VPCID() == "" || sg.ProjectID() == "" {
-		return sg, fmt.Errorf("Update: security group has no VPC — call IntoVPC first")
+		return sg, fmt.Errorf("Update: security group has no VPC — call InVPC first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()

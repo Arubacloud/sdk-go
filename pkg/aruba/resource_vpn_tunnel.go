@@ -17,7 +17,7 @@ func VPNTunnelRef(projectID, tunnelID string) Ref {
 // ---- Wrapper ----
 
 // VPNTunnel is the wrapper for an Aruba Cloud VPN Tunnel (a child of a Project).
-// Construct with aruba.NewVPNTunnel() and bind it via IntoProject(project).
+// Construct with aruba.NewVPNTunnel() and bind it via InProject(project).
 //
 // Wraps types.VPNTunnelResponse / types.VPNTunnelRequest. The wrapper carries
 // pointer-typed private fields so unset values round-trip through
@@ -46,7 +46,7 @@ type VPNTunnel struct {
 }
 
 // NewVPNTunnel returns a fresh *VPNTunnel ready for fluent setters and a Create call.
-// Binds projectScopedMixin's error sink so IntoProject failures surface via Err().
+// Binds projectScopedMixin's error sink so InProject failures surface via Err().
 func NewVPNTunnel() *VPNTunnel {
 	t := &VPNTunnel{}
 	t.projectScopedMixin = bindProjectScoped(&t.errMixin)
@@ -55,20 +55,30 @@ func NewVPNTunnel() *VPNTunnel {
 
 // Setters — chainable, general → specific
 
-// IntoProject binds this VPNTunnel to its parent project. Required before Create.
-func (t *VPNTunnel) IntoProject(p Ref) *VPNTunnel { t.intoProject(p); return t }
+// InProject binds this VPNTunnel to its parent project. Required before Create.
+func (t *VPNTunnel) InProject(p Ref) *VPNTunnel { t.intoProject(p); return t }
 
 // Named sets the resource name. Required by the API.
 func (t *VPNTunnel) Named(n string) *VPNTunnel { t.named(n); return t }
 
-// AddTag appends a tag for filtering and accounting.
-func (t *VPNTunnel) AddTag(tag string) *VPNTunnel { t.addTag(tag); return t }
+// Tagged appends tags for filtering and accounting. Repeated calls append.
+func (t *VPNTunnel) Tagged(ts ...string) *VPNTunnel {
+	for _, tag := range ts {
+		t.addTag(tag)
+	}
+	return t
+}
 
-// RemoveTag removes a previously-added tag. No-op if absent.
-func (t *VPNTunnel) RemoveTag(tag string) *VPNTunnel { t.removeTag(tag); return t }
+// Untagged removes each listed tag. No-op for tags not present.
+func (t *VPNTunnel) Untagged(ts ...string) *VPNTunnel {
+	for _, tag := range ts {
+		t.removeTag(tag)
+	}
+	return t
+}
 
-// ReplaceTags replaces the entire tag set with the given values.
-func (t *VPNTunnel) ReplaceTags(tags ...string) *VPNTunnel { t.replaceTags(tags...); return t }
+// RetaggedAs replaces the entire tag set with the given values.
+func (t *VPNTunnel) RetaggedAs(tags ...string) *VPNTunnel { t.replaceTags(tags...); return t }
 
 // InRegion sets the region for this resource.
 func (t *VPNTunnel) InRegion(r Region) *VPNTunnel { t.inRegion(r); return t }
@@ -82,8 +92,8 @@ func (t *VPNTunnel) WithVPNClientProtocol(s VPNClientProtocol) *VPNTunnel {
 	return t
 }
 
-// WithBillingPeriod sets the billing period. Defaults to hourly when unset.
-func (t *VPNTunnel) WithBillingPeriod(s BillingPeriod) *VPNTunnel { t.billingPeriod = &s; return t }
+// BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
+func (t *VPNTunnel) BilledBy(period BillingPeriod) *VPNTunnel { t.billingPeriod = &period; return t }
 
 // WithPeerClientPublicIP sets the public IP of the remote VPN peer.
 func (t *VPNTunnel) WithPeerClientPublicIP(s string) *VPNTunnel {
@@ -314,7 +324,7 @@ func (a *vpnTunnelsClientAdapter) Create(ctx context.Context, t *VPNTunnel, opts
 		return t, err
 	}
 	if t.ProjectID() == "" {
-		return t, fmt.Errorf("Create: VPN tunnel has no project — call IntoProject first")
+		return t, fmt.Errorf("Create: VPN tunnel has no project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
@@ -387,7 +397,7 @@ func (a *vpnTunnelsClientAdapter) Update(ctx context.Context, t *VPNTunnel, opts
 		return t, fmt.Errorf("Update: VPN tunnel has no ID — call Get first or seed from response metadata")
 	}
 	if t.ProjectID() == "" {
-		return t, fmt.Errorf("Update: VPN tunnel has no project — call IntoProject first")
+		return t, fmt.Errorf("Update: VPN tunnel has no project — call InProject first")
 	}
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
