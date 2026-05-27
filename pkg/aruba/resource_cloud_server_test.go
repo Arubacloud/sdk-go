@@ -453,6 +453,87 @@ func TestCloudServer_FromResponse_NilSafe(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
+// New getters: ElasticIP, Subnets, SecurityGroups, UserData
+// --------------------------------------------------------------------------
+
+func TestCloudServer_ElasticIP_Getter(t *testing.T) {
+	cs := NewCloudServer().WithElasticIP(URI("/eips/eip-1"))
+	if cs.ElasticIP() != "/eips/eip-1" {
+		t.Errorf("ElasticIP() = %q", cs.ElasticIP())
+	}
+	// not set
+	cs2 := NewCloudServer()
+	if cs2.ElasticIP() != "" {
+		t.Errorf("ElasticIP() unset = %q", cs2.ElasticIP())
+	}
+}
+
+func TestCloudServer_UserData_Getter(t *testing.T) {
+	cs := NewCloudServer().WithUserData("dGVzdA==")
+	if cs.UserData() != "dGVzdA==" {
+		t.Errorf("UserData() = %q", cs.UserData())
+	}
+	cs2 := NewCloudServer()
+	if cs2.UserData() != "" {
+		t.Errorf("UserData() unset = %q", cs2.UserData())
+	}
+}
+
+func TestCloudServer_SecurityGroups_Getter(t *testing.T) {
+	cs := NewCloudServer().
+		WithSecurityGroups(URI("/sgs/sg-1")).
+		WithSecurityGroups(URI("/sgs/sg-2"))
+	sgs := cs.SecurityGroups()
+	if len(sgs) != 2 || sgs[0] != "/sgs/sg-1" || sgs[1] != "/sgs/sg-2" {
+		t.Errorf("SecurityGroups() = %v", sgs)
+	}
+	cs2 := NewCloudServer()
+	if cs2.SecurityGroups() != nil {
+		t.Errorf("SecurityGroups() unset = %v", cs2.SecurityGroups())
+	}
+}
+
+func TestCloudServer_FromResponse_RehydratesSubnetRefs(t *testing.T) {
+	sub1 := "/subnets/s-1"
+	sub2 := "/subnets/s-2"
+	resp := &types.CloudServerResponse{
+		Properties: types.CloudServerPropertiesResult{
+			NetworkInterfaces: []types.CloudServerNetworkInterfaceDetails{
+				{Subnet: &sub1},
+				{Subnet: &sub2},
+			},
+		},
+	}
+	cs := &CloudServer{}
+	cs.fromResponse(resp)
+
+	subnets := cs.Subnets()
+	if len(subnets) != 2 {
+		t.Fatalf("Subnets() after fromResponse = %v (want 2)", subnets)
+	}
+	if subnets[0] != sub1 || subnets[1] != sub2 {
+		t.Errorf("Subnets() = %v", subnets)
+	}
+
+	// toRequest should include the rehydrated subnets
+	req := cs.toRequest()
+	if len(req.Properties.Subnets) != 2 {
+		t.Fatalf("toRequest().Subnets len = %d (want 2)", len(req.Properties.Subnets))
+	}
+	if req.Properties.Subnets[0].URI != sub1 || req.Properties.Subnets[1].URI != sub2 {
+		t.Errorf("toRequest().Subnets = %v", req.Properties.Subnets)
+	}
+}
+
+func TestCloudServer_Subnets_FallbackToLocal(t *testing.T) {
+	cs := NewCloudServer().OnSubnets(URI("/subnets/local"))
+	subnets := cs.Subnets()
+	if len(subnets) != 1 || subnets[0] != "/subnets/local" {
+		t.Errorf("Subnets() fallback = %v", subnets)
+	}
+}
+
+// --------------------------------------------------------------------------
 // Flavor asymmetry (request vs response)
 // --------------------------------------------------------------------------
 
