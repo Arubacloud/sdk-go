@@ -914,3 +914,33 @@ func TestElasticIPRef(t *testing.T) {
 		t.Errorf("parseURIIDs = %v", ids)
 	}
 }
+
+// --------------------------------------------------------------------------
+// AssociatedResourceURI getter
+// --------------------------------------------------------------------------
+
+func TestElasticIP_AssociatedResourceURI_NoLinked(t *testing.T) {
+	e := &ElasticIP{}
+	if got := e.AssociatedResourceURI(); got != "" {
+		t.Errorf("AssociatedResourceURI() with no linked = %q, want \"\"", got)
+	}
+}
+
+func TestElasticIP_AssociatedResourceURI_WithLinked(t *testing.T) {
+	e := &ElasticIP{}
+	linkedURI := "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"
+	e.setLinked([]types.LinkedResource{{URI: linkedURI}})
+	if got := e.AssociatedResourceURI(); got != linkedURI {
+		t.Errorf("AssociatedResourceURI() = %q, want %q", got, linkedURI)
+	}
+}
+
+func TestElasticIP_AssociatedResourceURI_FirstLinked(t *testing.T) {
+	e := &ElasticIP{}
+	first := "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"
+	second := "/projects/p/providers/Aruba.Network/loadBalancers/lb-1"
+	e.setLinked([]types.LinkedResource{{URI: first}, {URI: second}})
+	if got := e.AssociatedResourceURI(); got != first {
+		t.Errorf("AssociatedResourceURI() = %q, want first = %q", got, first)
+	}
+}
