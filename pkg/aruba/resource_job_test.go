@@ -1061,3 +1061,140 @@ func TestJobsClientAdapter_Get_InjectsRefresh(t *testing.T) {
 		t.Error("Get should inject a refresh callback into the returned Job")
 	}
 }
+
+// --------------------------------------------------------------------------
+// ScheduleAt getter
+// --------------------------------------------------------------------------
+
+func TestJob_ScheduleAt_NilResponse(t *testing.T) {
+	j := &Job{}
+	if got := j.ScheduleAt(); !got.IsZero() {
+		t.Errorf("ScheduleAt() = %v, want zero", got)
+	}
+}
+
+func TestJob_ScheduleAt_NoScheduleAt(t *testing.T) {
+	j := &Job{}
+	j.fromResponse(&types.JobResponse{})
+	if got := j.ScheduleAt(); !got.IsZero() {
+		t.Errorf("ScheduleAt() = %v, want zero", got)
+	}
+}
+
+func TestJob_ScheduleAt_FromResponse(t *testing.T) {
+	ts := "2025-06-01T10:00:00Z"
+	j := &Job{}
+	j.fromResponse(&types.JobResponse{
+		Properties: types.JobPropertiesResponse{ScheduleAt: &ts},
+	})
+	want := time.Date(2025, 6, 1, 10, 0, 0, 0, time.UTC)
+	if got := j.ScheduleAt(); !got.Equal(want) {
+		t.Errorf("ScheduleAt() = %v, want %v", got, want)
+	}
+}
+
+func TestJob_ScheduleAt_LocalSetter(t *testing.T) {
+	want := time.Date(2025, 6, 1, 10, 0, 0, 0, time.UTC)
+	j := NewJob().OneShotAt(want)
+	if got := j.ScheduleAt(); !got.Equal(want) {
+		t.Errorf("ScheduleAt() = %v, want %v", got, want)
+	}
+}
+
+// --------------------------------------------------------------------------
+// ExecuteUntil getter
+// --------------------------------------------------------------------------
+
+func TestJob_ExecuteUntil_NilResponse(t *testing.T) {
+	j := &Job{}
+	if got := j.ExecuteUntil(); !got.IsZero() {
+		t.Errorf("ExecuteUntil() = %v, want zero", got)
+	}
+}
+
+func TestJob_ExecuteUntil_FromResponse(t *testing.T) {
+	ts := "2025-12-31T23:59:59Z"
+	j := &Job{}
+	j.fromResponse(&types.JobResponse{
+		Properties: types.JobPropertiesResponse{ExecuteUntil: &ts},
+	})
+	want := time.Date(2025, 12, 31, 23, 59, 59, 0, time.UTC)
+	if got := j.ExecuteUntil(); !got.Equal(want) {
+		t.Errorf("ExecuteUntil() = %v, want %v", got, want)
+	}
+}
+
+func TestJob_ExecuteUntil_LocalSetter(t *testing.T) {
+	want := time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC)
+	j := NewJob().WithCron("0 * * * *").RecurringUntil(want)
+	if got := j.ExecuteUntil(); !got.Equal(want) {
+		t.Errorf("ExecuteUntil() = %v, want %v", got, want)
+	}
+}
+
+// --------------------------------------------------------------------------
+// NextExecutionAt getter
+// --------------------------------------------------------------------------
+
+func TestJob_NextExecutionAt_NilResponse(t *testing.T) {
+	j := &Job{}
+	if got := j.NextExecutionAt(); !got.IsZero() {
+		t.Errorf("NextExecutionAt() = %v, want zero", got)
+	}
+}
+
+func TestJob_NextExecutionAt_NoNextExecution(t *testing.T) {
+	j := &Job{}
+	j.fromResponse(&types.JobResponse{})
+	if got := j.NextExecutionAt(); !got.IsZero() {
+		t.Errorf("NextExecutionAt() = %v, want zero", got)
+	}
+}
+
+func TestJob_NextExecutionAt_FromResponse(t *testing.T) {
+	ts := "2025-06-15T08:00:00Z"
+	j := &Job{}
+	j.fromResponse(&types.JobResponse{
+		Properties: types.JobPropertiesResponse{NextExecution: &ts},
+	})
+	want := time.Date(2025, 6, 15, 8, 0, 0, 0, time.UTC)
+	if got := j.NextExecutionAt(); !got.Equal(want) {
+		t.Errorf("NextExecutionAt() = %v, want %v", got, want)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Steps getter
+// --------------------------------------------------------------------------
+
+func TestJob_Steps_NilWhenEmpty(t *testing.T) {
+	j := &Job{}
+	if steps := j.Steps(); steps != nil {
+		t.Errorf("Steps() = %v, want nil", steps)
+	}
+}
+
+func TestJob_Steps_ReturnsConfigured(t *testing.T) {
+	step := NewJobStep().Named("step-1").WithAction("/actions/start").WithVerb(HTTPVerbPOST)
+	j := NewJob().WithSteps(step)
+	steps := j.Steps()
+	if len(steps) != 1 {
+		t.Fatalf("Steps() len = %d, want 1", len(steps))
+	}
+}
+
+func TestJob_Steps_FromResponse(t *testing.T) {
+	stepName := "step-from-resp"
+	j := &Job{}
+	j.fromResponse(&types.JobResponse{
+		Properties: types.JobPropertiesResponse{
+			Steps: []types.JobStepResponse{
+				{Name: &stepName},
+			},
+		},
+	})
+	steps := j.Steps()
+	if len(steps) != 1 {
+		t.Fatalf("Steps() len = %d, want 1", len(steps))
+	}
+}
