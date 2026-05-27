@@ -28,6 +28,18 @@ func TestSubnetCIDROrRef_UnmarshalJSON_FullObject(t *testing.T) {
 	}
 }
 
+func TestSubnetCIDROrRef_UnmarshalJSON_FlatNetworkObject(t *testing.T) {
+	// GET response shape: {network:{address:"..."}} without properties wrapper
+	raw := `{"name":"my-subnet","network":{"address":"10.2.0.0/24"}}`
+	var s types.SubnetCIDROrRef
+	if err := json.Unmarshal([]byte(raw), &s); err != nil {
+		t.Fatalf("UnmarshalJSON error: %v", err)
+	}
+	if s.CIDR != "10.2.0.0/24" {
+		t.Errorf("CIDR = %q, want %q", s.CIDR, "10.2.0.0/24")
+	}
+}
+
 func TestSubnetCIDROrRef_UnmarshalJSON_EmptyString(t *testing.T) {
 	var s types.SubnetCIDROrRef
 	if err := json.Unmarshal([]byte(`""`), &s); err != nil {
