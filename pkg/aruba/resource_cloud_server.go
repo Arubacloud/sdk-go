@@ -253,6 +253,51 @@ func (cs *CloudServer) KeyPair() string {
 	return cloudServerDerefString(cs.keyPairRef)
 }
 
+// ElasticIP returns the elastic IP URI set via WithElasticIP, or "" if unset.
+// The API does not return the elastic IP in the response body; this getter
+// returns the locally-cached setter value only.
+func (cs *CloudServer) ElasticIP() string { return cloudServerDerefString(cs.elasticIPRef) }
+
+// Subnets returns the subnet URIs. After a Get/Create/Update the values come from
+// the server response (NetworkInterfaces[].Subnet); before hydration they reflect
+// what was passed to OnSubnets.
+func (cs *CloudServer) Subnets() []string {
+	if cs.response != nil && len(cs.response.Properties.NetworkInterfaces) > 0 {
+		out := make([]string, 0, len(cs.response.Properties.NetworkInterfaces))
+		for _, ni := range cs.response.Properties.NetworkInterfaces {
+			if ni.Subnet != nil && *ni.Subnet != "" {
+				out = append(out, *ni.Subnet)
+			}
+		}
+		if len(out) > 0 {
+			return out
+		}
+	}
+	if len(cs.subnetRefs) == 0 {
+		return nil
+	}
+	out := make([]string, len(cs.subnetRefs))
+	copy(out, cs.subnetRefs)
+	return out
+}
+
+// SecurityGroups returns the security group URIs set via WithSecurityGroups.
+// The API does not return security groups in a distinguishable form in the
+// response body; this getter returns the locally-cached setter values only.
+func (cs *CloudServer) SecurityGroups() []string {
+	if len(cs.securityGroupRefs) == 0 {
+		return nil
+	}
+	out := make([]string, len(cs.securityGroupRefs))
+	copy(out, cs.securityGroupRefs)
+	return out
+}
+
+// UserData returns the base64-encoded cloud-init user data set via WithUserData.
+// The API does not return user data in the response body; this getter returns
+// the locally-cached setter value only.
+func (cs *CloudServer) UserData() string { return cloudServerDerefString(cs.userData) }
+
 // NetworkInterfaces returns the list of network interface details from the last response, or nil.
 func (cs *CloudServer) NetworkInterfaces() []types.CloudServerNetworkInterfaceDetails {
 	if cs.response == nil {
@@ -442,6 +487,14 @@ func (cs *CloudServer) fromResponse(resp *types.CloudServerResponse) {
 	}
 	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
 		cs.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
+	}
+	if len(resp.Properties.NetworkInterfaces) > 0 {
+		cs.subnetRefs = cs.subnetRefs[:0]
+		for _, ni := range resp.Properties.NetworkInterfaces {
+			if ni.Subnet != nil && *ni.Subnet != "" {
+				cs.subnetRefs = append(cs.subnetRefs, *ni.Subnet)
+			}
+		}
 	}
 
 	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
