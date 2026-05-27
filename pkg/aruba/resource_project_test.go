@@ -203,6 +203,57 @@ func TestProjectIDFromRef_BadURI(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
+// Raw / RawJSON / RawYAML / RawRequest
+// --------------------------------------------------------------------------
+
+func TestProject_Raw_AfterHydrate(t *testing.T) {
+	p := &Project{}
+	resp := projectTestResponse("id-1", "n1", "/projects/id-1")
+	p.fromResponse(resp)
+
+	if p.Raw() == nil {
+		t.Fatal("Raw() should be non-nil after fromResponse")
+	}
+	if p.Raw() != resp {
+		t.Error("Raw() should return the stored response pointer")
+	}
+	if p.Raw().Metadata.ID == nil || *p.Raw().Metadata.ID != "id-1" {
+		t.Errorf("Raw().Metadata.ID = %v", p.Raw().Metadata.ID)
+	}
+}
+
+func TestProject_RawJSON_NilSafe(t *testing.T) {
+	p := NewProject()
+	if p.RawJSON() != nil {
+		t.Error("RawJSON() before hydration should be nil")
+	}
+
+	p2 := &Project{}
+	p2.fromResponse(projectTestResponse("id-2", "n2", "/projects/id-2"))
+	b := p2.RawJSON()
+	if len(b) == 0 {
+		t.Error("RawJSON() after hydration should be non-empty")
+	}
+	if string(b[:1]) != "{" {
+		t.Errorf("RawJSON() does not look like JSON: %s", string(b[:10]))
+	}
+}
+
+func TestProject_RawRequest(t *testing.T) {
+	p := NewProject().Named("myproj").DescribedAs("desc").AsDefault()
+	req := p.RawRequest()
+	if req.Metadata.Name != "myproj" {
+		t.Errorf("RawRequest().Metadata.Name = %q", req.Metadata.Name)
+	}
+	if req.Properties.Description == nil || *req.Properties.Description != "desc" {
+		t.Errorf("RawRequest().Properties.Description = %v", req.Properties.Description)
+	}
+	if !req.Properties.Default {
+		t.Error("RawRequest().Properties.Default should be true")
+	}
+}
+
+// --------------------------------------------------------------------------
 // projectClientAdapter — CRUD integration tests (httptest-based)
 // --------------------------------------------------------------------------
 
