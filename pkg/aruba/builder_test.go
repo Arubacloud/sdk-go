@@ -1,6 +1,9 @@
 package aruba
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
 )
@@ -110,6 +113,67 @@ func TestNewClient_RejectsInvalidOptions(t *testing.T) {
 				t.Errorf("expected nil client on error for %q", tc.name)
 			}
 		})
+	}
+}
+
+// --------------------------------------------------------------------------
+// User-Agent injection (#310)
+// --------------------------------------------------------------------------
+
+// captureUserAgent spins up an httptest.Server that records the User-Agent
+// of the first request it receives, returns 200, and closes.
+func captureUserAgent(t *testing.T) (serverURL string, getUA func() string) {
+	t.Helper()
+	var captured string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		captured = r.Header.Get("User-Agent")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"total":0,"values":[]}`))
+	}))
+	t.Cleanup(srv.Close)
+	return srv.URL, func() string { return captured }
+}
+
+func TestClient_SendsDefaultUserAgent(t *testing.T) {
+	srvURL, getUA := captureUserAgent(t)
+
+	cli, err := NewClient(NewOptions().
+		WithBaseURL(srvURL).
+		WithToken("test-token").
+		WithNoLogs())
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	_, _ = cli.FromProject().List(context.Background())
+
+	want := defaultUserAgent
+	if got := getUA(); got != want {
+		t.Errorf("User-Agent = %q, want %q", got, want)
+	}
+}
+
+func TestOptions_WithUserAgent_Override(t *testing.T) {
+	// WithUserAgent + DeepCopy round-trip
+	o := NewOptions().WithUserAgent("acloud-cli@1.0.0")
+	cp := o.DeepCopy()
+	if cp.userAgent != "acloud-cli@1.0.0" {
+		t.Errorf("DeepCopy().userAgent = %q, want %q", cp.userAgent, "acloud-cli@1.0.0")
+	}
+}
+
+func TestOptions_WithUserAgent_DefaultWhenEmpty(t *testing.T) {
+	o := NewOptions()
+	if o.userAgent != "" {
+		t.Errorf("default userAgent = %q, want empty", o.userAgent)
+	}
+	// resolved UA should equal defaultUserAgent
+	ua := o.userAgent
+	if ua == "" {
+		ua = defaultUserAgent
+	}
+	if ua != defaultUserAgent {
+		t.Errorf("resolved UA = %q, want %q", ua, defaultUserAgent)
 	}
 }
 

@@ -23,6 +23,7 @@ import (
 	"github.com/Arubacloud/sdk-go/internal/ports/interceptor"
 	"github.com/Arubacloud/sdk-go/internal/ports/logger"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
+	middleware_util "github.com/Arubacloud/sdk-go/pkg/util/middleware"
 )
 
 // Client
@@ -154,16 +155,31 @@ func buildMiddleware(options *Options) (interceptor.Interceptor, error) {
 		return nil, err // TODO: better error handling
 	}
 
+	ua := options.userAgent
+	if ua == "" {
+		ua = defaultUserAgent
+	}
+
 	if options.userDefinedDependencies.middleware != nil {
+		// Bind UA first so user middleware (and the token manager last) can still override it.
+		interceptable, ok := options.userDefinedDependencies.middleware.(interceptor.Interceptable)
+		if !ok {
+			return nil, errors.New("failed to bind the token manager to the user-defined middleware")
+		}
+		if err := interceptable.Bind(middleware_util.WithUserAgent(ua)); err != nil {
+			return nil, err
+		}
 		middleware, err := buildUserDefinedMiddleware(options.userDefinedDependencies.middleware, tokenManager)
 		if err != nil {
 			return nil, err // TODO: better error handling
 		}
-
 		return middleware, nil
 	}
 
 	middleware := std_interceptor.NewInterceptor()
+	if err := middleware.Bind(middleware_util.WithUserAgent(ua)); err != nil {
+		return nil, err
+	}
 	err = tokenManager.BindTo(middleware)
 	if err != nil {
 		return nil, err // TODO: better error handling
