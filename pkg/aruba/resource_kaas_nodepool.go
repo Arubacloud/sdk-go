@@ -28,6 +28,14 @@ func NewNodePool() *NodePool { return &NodePool{} }
 // Named sets the node pool name.
 func (n *NodePool) Named(name string) *NodePool { n.name = &name; return n }
 
+// Name returns the node pool name, or "" if unset.
+func (n *NodePool) Name() string {
+	if n.name == nil {
+		return ""
+	}
+	return *n.name
+}
+
 // OfInstance sets the machine instance type for this node pool.
 func (n *NodePool) OfInstance(instance NodePoolInstance) *NodePool {
 	n.instance = &instance

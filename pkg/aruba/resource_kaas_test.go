@@ -1728,3 +1728,119 @@ func TestKaaS_SetNodePools_AliasForReplace(t *testing.T) {
 		t.Errorf("expected pool-2, got %q", req.Properties.NodePools[0].Name)
 	}
 }
+
+// --------------------------------------------------------------------------
+// PodCIDR getter
+// --------------------------------------------------------------------------
+
+func TestKaaS_PodCIDR_Unset(t *testing.T) {
+	k := &KaaS{}
+	if got := k.PodCIDR(); got != "" {
+		t.Errorf("PodCIDR() = %q, want empty", got)
+	}
+}
+
+func TestKaaS_PodCIDR_WithPodCIDR(t *testing.T) {
+	k := NewKaaS().WithPodCIDR("10.200.0.0/16")
+	if got := k.PodCIDR(); got != "10.200.0.0/16" {
+		t.Errorf("PodCIDR() = %q, want 10.200.0.0/16", got)
+	}
+}
+
+func TestKaaS_PodCIDR_FromResponse(t *testing.T) {
+	k := &KaaS{}
+	k.fromResponse(kaasTestResponse("cluster"))
+	if got := k.PodCIDR(); got != "10.200.0.0/16" {
+		t.Errorf("PodCIDR() = %q, want 10.200.0.0/16", got)
+	}
+}
+
+// --------------------------------------------------------------------------
+// NodeCIDR getter
+// --------------------------------------------------------------------------
+
+func TestKaaS_NodeCIDR_Unset(t *testing.T) {
+	k := &KaaS{}
+	if got := k.NodeCIDR(); got != "" {
+		t.Errorf("NodeCIDR() = %q, want empty", got)
+	}
+}
+
+func TestKaaS_NodeCIDR_WithNodeCIDR(t *testing.T) {
+	k := NewKaaS().WithNodeCIDR("10.100.0.0/16", "node-cidr")
+	if got := k.NodeCIDR(); got != "10.100.0.0/16" {
+		t.Errorf("NodeCIDR() = %q, want 10.100.0.0/16", got)
+	}
+}
+
+func TestKaaS_NodeCIDR_FromResponse(t *testing.T) {
+	k := &KaaS{}
+	k.fromResponse(kaasTestResponse("cluster"))
+	if got := k.NodeCIDR(); got != "10.100.0.0/16" {
+		t.Errorf("NodeCIDR() = %q, want 10.100.0.0/16", got)
+	}
+}
+
+// --------------------------------------------------------------------------
+// IdentityClientID getter
+// --------------------------------------------------------------------------
+
+func TestKaaS_IdentityClientID_Unset(t *testing.T) {
+	k := &KaaS{}
+	if got := k.IdentityClientID(); got != "" {
+		t.Errorf("IdentityClientID() = %q, want empty", got)
+	}
+}
+
+func TestKaaS_IdentityClientID_WithIdentity(t *testing.T) {
+	k := NewKaaS().WithIdentity("client-abc", "secret-xyz")
+	if got := k.IdentityClientID(); got != "client-abc" {
+		t.Errorf("IdentityClientID() = %q, want client-abc", got)
+	}
+}
+
+func TestKaaS_IdentityClientID_FromResponse(t *testing.T) {
+	clientID := "resp-client-id"
+	resp := kaasTestResponse("cluster")
+	resp.Properties.Identity = &types.IdentityPropertiesResponse{ClientID: &clientID}
+	k := &KaaS{}
+	k.fromResponse(resp)
+	if got := k.IdentityClientID(); got != "resp-client-id" {
+		t.Errorf("IdentityClientID() = %q, want resp-client-id", got)
+	}
+}
+
+// --------------------------------------------------------------------------
+// NodePools getter
+// --------------------------------------------------------------------------
+
+func TestKaaS_NodePools_NilWhenEmpty(t *testing.T) {
+	k := &KaaS{}
+	if pools := k.NodePools(); pools != nil {
+		t.Errorf("NodePools() = %v, want nil", pools)
+	}
+}
+
+func TestKaaS_NodePools_ReturnsConfigured(t *testing.T) {
+	np := NewNodePool().Named("pool-1").OfInstance("inst-1").WithAutoscaling(1, 3)
+	k := NewKaaS().WithNodePools(np)
+	pools := k.NodePools()
+	if len(pools) != 1 {
+		t.Fatalf("NodePools() len = %d, want 1", len(pools))
+	}
+	if pools[0].Name() != "pool-1" {
+		t.Errorf("NodePools()[0].Name() = %q, want pool-1", pools[0].Name())
+	}
+}
+
+func TestKaaS_NodePools_FromResponse(t *testing.T) {
+	k := &KaaS{}
+	k.fromResponse(kaasTestResponse("cluster"))
+	pools := k.NodePools()
+	if len(pools) != 1 {
+		t.Fatalf("NodePools() len = %d, want 1", len(pools))
+	}
+	if pools[0].Name() != "pool-1" {
+		t.Errorf("NodePools()[0].Name() = %q, want pool-1", pools[0].Name())
+	}
+}

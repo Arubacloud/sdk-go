@@ -340,6 +340,30 @@ func (k *KaaS) MaxStorageQuotaGB() int {
 	return int(*k.storageMaxCumulative)
 }
 
+// PodCIDR returns the pod CIDR block for the cluster, or "" if unset.
+// On a hydrated response the value comes from the response; otherwise returns what was passed to WithPodCIDR.
+func (k *KaaS) PodCIDR() string {
+	return kaasDeref(k.podCIDR)
+}
+
+// NodeCIDR returns the node CIDR block address for the cluster, or "" if unset.
+// On a hydrated response the value comes from the response; otherwise returns what was passed to WithNodeCIDR.
+func (k *KaaS) NodeCIDR() string {
+	return kaasDeref(k.nodeCIDRAddress)
+}
+
+// IdentityClientID returns the managed identity client ID, or "" if unset.
+// On a hydrated response the value comes from the response; otherwise returns what was passed to WithIdentity.
+func (k *KaaS) IdentityClientID() string {
+	return kaasDeref(k.identityClientID)
+}
+
+// NodePools returns the node pools attached to this cluster.
+// Returns nil if no node pools have been configured.
+func (k *KaaS) NodePools() []*NodePool {
+	return k.nodePools
+}
+
 // Wire converters
 
 // toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
