@@ -110,6 +110,16 @@ func (e *ElasticIP) Address() string {
 	return *e.address
 }
 
+// AssociatedResourceURI returns the URI of the first linked resource ("" if none).
+// This is the resource the elastic IP is currently attached to (e.g. a cloud server).
+func (e *ElasticIP) AssociatedResourceURI() string {
+	linked := e.LinkedResources()
+	if len(linked) == 0 {
+		return ""
+	}
+	return linked[0].URI
+}
+
 // Wire converters
 
 // toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
