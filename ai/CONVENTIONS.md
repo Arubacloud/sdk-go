@@ -187,6 +187,30 @@ Setter signatures take the alias type, not `string`.
 - `Get` / `Delete` / `List` accept `Ref` (not a typed wrapper) so callers can pass `aruba.URI("/...")` or any `Ref`-satisfying value.
 - Family B adapters (Database, Key, Kmip, User, Grant) do the most pre-flight validation because their deep parent chains aren't caught by the API until late; Family A adapters mostly only check `ProjectID() != ""`.
 
+### Getter taxonomy
+
+Every Family-A wrapper exposes a standard set of read accessors. Callers should always use these instead of reaching into `wrapper.Raw().Properties.X`.
+
+**Naming rules:**
+- Simple scalar field from `Properties`: use the field name directly — `Name()`, `State()`, `Region()`.
+- URI of a linked resource: `<LinkedResource>URI()` (e.g. `VPNTunnelURI()`, `AssociatedResourceURI()`).
+- Convenience alias for a commonly-read nested field: keep the same name as the logical concept — `CloudSubnetCIDR()` is an alias for `CloudSubnet()` on `VPNRoute`.
+- Collection of linked URIs: plural noun — `Subnets() []string`, `SecurityGroups() []string`.
+
+**Response-preferring fallback rule:** when a field can be set by the caller (via a chainable setter) *and* returned by the server, the getter must read the response field first and fall back to the local pointer. This ensures `Get → display` works without the caller having to re-set anything. Boilerplate:
+```go
+func (r *Resource) SomeField() string {
+    if r.response != nil && r.response.Properties.SomeField != "" {
+        return r.response.Properties.SomeField
+    }
+    return derefString(r.someField)
+}
+```
+
+**When to expose vs. defer to `Raw()`:** expose a getter whenever the field is needed for display, filtering, or round-trip `Get → Update` flows. Fields that are rarely read, deeply nested, or opaque blobs are fine behind `Raw()`. A getter that just wraps `Raw().Properties.X` with no fallback logic adds no value — skip it and document the field location in the type's doc comment instead.
+
+**`fromResponse` round-trip invariant:** after `fromResponse(resp)`, calling `toRequest()` must reproduce every caller-settable field that the server returned. Rehydrate local pointers / slices inside `fromResponse` when the API echoes them in GET responses. If the API does not echo a field (e.g. password, user-data), the getter must document the limitation.
+
 ### Wait conventions
 
 - Resources that embed `statusMixin` (`pkg/aruba/mixin_status.go`) get `WaitUntilActive`, `WaitUntilReady`, and `WaitUntilStates(ctx, targets, opts...)` for free.

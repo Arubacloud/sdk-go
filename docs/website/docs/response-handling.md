@@ -161,6 +161,62 @@ if err := rule.Err(); err != nil {
 }
 ```
 
+## Reading Wrapper State
+
+Every Family-A wrapper promotes the most-used response fields to flat accessors. You should always prefer these over reaching into `wrapper.Raw().Properties.X`:
+
+```go
+cs, err := arubaClient.FromCompute().CloudServers().Get(ctx, ref)
+if err != nil { /* … */ }
+
+// Prefer flat getters
+fmt.Println(cs.Name())          // resource name
+fmt.Println(cs.State())         // lifecycle state (Active, Creating, …)
+fmt.Println(cs.ID())            // UUID
+fmt.Println(cs.Region())        // region slug
+fmt.Println(cs.Subnets())       // []string of subnet URIs
+fmt.Println(cs.ElasticIP())     // elastic IP URI, if set at creation time
+fmt.Println(cs.UserData())      // cloud-init / user-data, if set at creation time
+
+// Fall back to Raw() only for fields not yet promoted
+raw := cs.Raw()
+fmt.Println(raw.Properties.SomeUnpromotedField)
+```
+
+### Standard getter layers
+
+| Category | Example getters |
+|---|---|
+| Identity | `ID()`, `URI()`, `CloudServerID()` |
+| Naming | `Name()`, `Tags()` |
+| Geography | `Region()`, `Zone()` |
+| Lineage | `Project()`, `CreatedAt()`, `UpdatedAt()`, `Version()` |
+| Lifecycle | `State()`, `IsDisabled()`, `DisableReasons()`, `FailureReason()` |
+| Linked resources | `LinkedResources()` |
+| Raw envelope | `Raw()`, `RawJSON()`, `RawYAML()`, `RawRequest()`, `StatusCode()`, `Headers()`, `RawError()` |
+| Resource-specific | e.g. `cs.Subnets()`, `vpnRoute.CloudSubnetCIDR()`, `kaas.PodCIDR()` |
+
+### `RawJSON()` / `RawYAML()` for CLI output
+
+The `RawJSON()` and `RawYAML()` methods are designed for CLI-style `--output json` / `--output yaml` flags. They marshal the underlying wire struct, not just the promoted fields:
+
+```go
+cs, _ := arubaClient.FromCompute().CloudServers().Get(ctx, ref)
+fmt.Println(string(cs.RawJSON()))   // full JSON wire payload
+fmt.Println(string(cs.RawYAML()))   // full YAML wire payload
+```
+
+### `RawRequest()` for round-trip updates
+
+`RawRequest()` produces a `types.<X>Request` value representing the full current state of the wrapper — useful for `Get → mutate → Update` flows:
+
+```go
+cs, _ := arubaClient.FromCompute().CloudServers().Get(ctx, ref)
+// The wrapper already contains all server-side fields; just override what changed.
+cs.Named("new-name")
+_, err = arubaClient.FromCompute().CloudServers().Update(ctx, cs)
+```
+
 ## Best Practices
 
 1. **Always check `err` first** — it covers both network failures and API errors.
