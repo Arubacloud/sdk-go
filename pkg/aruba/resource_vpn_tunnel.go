@@ -202,6 +202,15 @@ func (t *VPNTunnel) BillingPeriod() BillingPeriod {
 // PeerClientPublicIP returns the peer client public IP address, or "" if unset.
 func (t *VPNTunnel) PeerClientPublicIP() string { return vpnTunnelDerefString(t.peerClientPublicIP) }
 
+// RoutesNumber returns the number of valid VPN routes associated with this tunnel,
+// as reported by the last server response. Returns 0 before any response.
+func (t *VPNTunnel) RoutesNumber() int32 {
+	if t.response == nil {
+		return 0
+	}
+	return t.response.Properties.RoutesNumber
+}
+
 // Wire converters
 
 // toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
@@ -263,9 +272,49 @@ func (t *VPNTunnel) fromResponse(resp *types.VPNTunnelResponse) {
 	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
 		t.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
 	}
-	if cs := resp.Properties.VPNClientSettings; cs != nil && cs.PeerClientPublicIP != nil {
-		v := *cs.PeerClientPublicIP
-		t.peerClientPublicIP = &v
+	if cs := resp.Properties.VPNClientSettings; cs != nil {
+		if cs.PeerClientPublicIP != nil {
+			v := *cs.PeerClientPublicIP
+			t.peerClientPublicIP = &v
+		}
+		if cs.IKE != nil {
+			k := &VPNIKE{
+				lifetime:    cs.IKE.Lifetime,
+				encryption:  cs.IKE.Encryption,
+				hash:        cs.IKE.Hash,
+				dhGroup:     cs.IKE.DHGroup,
+				dpdAction:   cs.IKE.DPDAction,
+				dpdInterval: cs.IKE.DPDInterval,
+				dpdTimeout:  cs.IKE.DPDTimeout,
+			}
+			t.ike = k
+		}
+		if cs.ESP != nil {
+			e := &VPNESP{
+				lifetime:   cs.ESP.Lifetime,
+				encryption: cs.ESP.Encryption,
+				hash:       cs.ESP.Hash,
+				pfs:        cs.ESP.PFS,
+			}
+			t.esp = e
+		}
+		if cs.PSK != nil {
+			p := &VPNPSK{
+				cloudSite:  cs.PSK.CloudSite,
+				onPremSite: cs.PSK.OnPremSite,
+				secret:     cs.PSK.Secret,
+			}
+			t.psk = p
+		}
+	}
+	if ipc := resp.Properties.IPConfigurations; ipc != nil {
+		c := &VPNIPConfig{vpc: ipc.VPC, publicIP: ipc.PublicIP}
+		if ipc.Subnet != nil {
+			c.subnetName = ipc.Subnet.Name
+			c.subnetCIDR = ipc.Subnet.CIDR
+			c.hasSubnet = true
+		}
+		t.ipConfig = c
 	}
 
 	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
