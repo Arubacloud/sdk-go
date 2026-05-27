@@ -134,6 +134,10 @@ func (s *Subnet) CIDR() string {
 	return *s.cidr
 }
 
+// Network returns the subnet network address in CIDR notation.
+// It is an alias for CIDR() and returns "" if the address is unset.
+func (s *Subnet) Network() string { return s.CIDR() }
+
 // DHCP returns the attached DHCP configuration sub-builder, or nil if not set.
 func (s *Subnet) DHCP() *SubnetDHCP { return s.dhcp }
 

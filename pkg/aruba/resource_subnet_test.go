@@ -1040,3 +1040,39 @@ func TestSubnetRef(t *testing.T) {
 		t.Errorf("parseURIIDs = %v", ids)
 	}
 }
+
+// --------------------------------------------------------------------------
+// Network getter
+// --------------------------------------------------------------------------
+
+func TestSubnet_Network_Unset(t *testing.T) {
+	s := &Subnet{}
+	if got := s.Network(); got != "" {
+		t.Errorf("Network() = %q, want empty", got)
+	}
+}
+
+func TestSubnet_Network_WithCIDR(t *testing.T) {
+	s := NewSubnet().WithCIDR("192.168.1.0/24")
+	if got := s.Network(); got != "192.168.1.0/24" {
+		t.Errorf("Network() = %q, want 192.168.1.0/24", got)
+	}
+}
+
+func TestSubnet_Network_AliasForCIDR(t *testing.T) {
+	uri := "/projects/p/providers/Aruba.Network/vpcs/v/subnets/s-1"
+	s := &Subnet{}
+	s.fromResponse(subnetTestResponse("s-1", "my-subnet", uri, "p"))
+	if got, want := s.Network(), s.CIDR(); got != want {
+		t.Errorf("Network() = %q, CIDR() = %q — should be equal", got, want)
+	}
+}
+
+func TestSubnet_Network_FromResponse(t *testing.T) {
+	uri := "/projects/p/providers/Aruba.Network/vpcs/v/subnets/s-1"
+	s := &Subnet{}
+	s.fromResponse(subnetTestResponse("s-1", "my-subnet", uri, "p"))
+	if got := s.Network(); got != "10.0.0.0/24" {
+		t.Errorf("Network() = %q, want 10.0.0.0/24", got)
+	}
+}
