@@ -25,6 +25,10 @@ type Options struct {
 
 	// userDefinedDependencies contains injected components.
 	userDefinedDependencies userDefinedDependenciesOptions
+
+	// userAgent overrides the default User-Agent header value.
+	// When empty, defaultUserAgent is used.
+	userAgent string
 }
 
 func (o *Options) validate() error {
@@ -364,6 +368,7 @@ func (o *Options) DeepCopy() *Options {
 	cp := &Options{
 		baseURL:    o.baseURL,
 		loggerType: o.loggerType,
+		userAgent:  o.userAgent,
 		userDefinedDependencies: userDefinedDependenciesOptions{
 			httpClient: o.userDefinedDependencies.httpClient,
 			logger:     o.userDefinedDependencies.logger,
@@ -695,6 +700,14 @@ func (o *Options) WithCustomLogger(logger logger.Logger) *Options {
 // WithCustomMiddleware allows injecting a custom interceptor.Interceptor.
 func (o *Options) WithCustomMiddleware(middleware interceptor.Interceptor) *Options {
 	o.userDefinedDependencies.middleware = middleware
+	return o
+}
+
+// WithUserAgent overrides the default User-Agent header sent with every request.
+// The default is "sdk-go@<version>" (see pkg/aruba.Version). Pass an empty string
+// to restore the default.
+func (o *Options) WithUserAgent(ua string) *Options {
+	o.userAgent = ua
 	return o
 }
 
