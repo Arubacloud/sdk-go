@@ -1054,3 +1054,49 @@ func TestVPNRouteRef(t *testing.T) {
 		t.Errorf("parseURIIDs = %v", ids)
 	}
 }
+
+// --------------------------------------------------------------------------
+// VPNTunnelURI and CloudSubnetCIDR getters
+// --------------------------------------------------------------------------
+
+func TestVPNRoute_VPNTunnelURI_NilResponse(t *testing.T) {
+	r := &VPNRoute{}
+	if got := r.VPNTunnelURI(); got != "" {
+		t.Errorf("VPNTunnelURI() on nil response = %q, want \"\"", got)
+	}
+}
+
+func TestVPNRoute_VPNTunnelURI_NilTunnel(t *testing.T) {
+	r := &VPNRoute{}
+	r.response = &types.VPNRouteResponse{}
+	if got := r.VPNTunnelURI(); got != "" {
+		t.Errorf("VPNTunnelURI() with nil VPNTunnel = %q, want \"\"", got)
+	}
+}
+
+func TestVPNRoute_VPNTunnelURI_Populated(t *testing.T) {
+	tunnelURI := "/projects/p/providers/Aruba.Network/vpnTunnels/t-1"
+	r := &VPNRoute{}
+	r.response = &types.VPNRouteResponse{
+		Properties: types.VPNRoutePropertiesResponse{
+			VPNTunnel: &types.ReferenceResource{URI: tunnelURI},
+		},
+	}
+	if got := r.VPNTunnelURI(); got != tunnelURI {
+		t.Errorf("VPNTunnelURI() = %q, want %q", got, tunnelURI)
+	}
+}
+
+func TestVPNRoute_CloudSubnetCIDR_Alias(t *testing.T) {
+	r := NewVPNRoute().WithCloudSubnet("10.1.2.0/24")
+	if got := r.CloudSubnetCIDR(); got != "10.1.2.0/24" {
+		t.Errorf("CloudSubnetCIDR() = %q, want %q", got, "10.1.2.0/24")
+	}
+}
+
+func TestVPNRoute_CloudSubnetCIDR_NilResponse(t *testing.T) {
+	r := &VPNRoute{}
+	if got := r.CloudSubnetCIDR(); got != "" {
+		t.Errorf("CloudSubnetCIDR() on nil = %q, want \"\"", got)
+	}
+}
