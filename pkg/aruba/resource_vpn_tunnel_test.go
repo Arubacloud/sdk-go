@@ -1346,3 +1346,119 @@ func TestVPNTunnelRef(t *testing.T) {
 		t.Errorf("parseURIIDs = %v", ids)
 	}
 }
+
+// --------------------------------------------------------------------------
+// fromResponse — rehydration of IKE/ESP/PSK/IPConfig sub-builders + RoutesNumber
+// --------------------------------------------------------------------------
+
+func TestVPNTunnel_FromResponse_RehydratesSubBuilders(t *testing.T) {
+	enc := IKEEncryption("AES256")
+	hash := IKEHash("SHA256")
+	dhGrp := IKEDHGroup("MODP2048")
+	dpdAct := IKEDPDAction("restart")
+	espEnc := ESPEncryption("AES256")
+	espHash := ESPHash("SHA256")
+	espPFS := ESPPFSGroup("MODP2048")
+	cloudSite := "cloud-site"
+	onPremSite := "on-prem"
+	secret := "s3cr3t"
+	peerIP := "1.2.3.4"
+	vpcURI := "/vpcs/v-1"
+	pubIPURI := "/eips/eip-1"
+
+	resp := &types.VPNTunnelResponse{
+		Properties: types.VPNTunnelPropertiesResponse{
+			RoutesNumber: 3,
+			VPNClientSettings: &types.VPNClientSettings{
+				PeerClientPublicIP: &peerIP,
+				IKE: &types.IKESettings{
+					Lifetime:    3600,
+					Encryption:  &enc,
+					Hash:        &hash,
+					DHGroup:     &dhGrp,
+					DPDAction:   &dpdAct,
+					DPDInterval: 30,
+					DPDTimeout:  120,
+				},
+				ESP: &types.ESPSettings{
+					Lifetime:   1800,
+					Encryption: &espEnc,
+					Hash:       &espHash,
+					PFS:        &espPFS,
+				},
+				PSK: &types.PSKSettings{
+					CloudSite:  &cloudSite,
+					OnPremSite: &onPremSite,
+					Secret:     &secret,
+				},
+			},
+			IPConfigurations: &types.IPConfigurations{
+				VPC:      &types.ReferenceResource{URI: vpcURI},
+				PublicIP: &types.ReferenceResource{URI: pubIPURI},
+				Subnet:   &types.SubnetInfo{Name: "sn-1", CIDR: "10.0.0.0/24"},
+			},
+		},
+	}
+
+	tun := &VPNTunnel{}
+	tun.fromResponse(resp)
+
+	if tun.RoutesNumber() != 3 {
+		t.Errorf("RoutesNumber() = %d, want 3", tun.RoutesNumber())
+	}
+	if tun.PeerClientPublicIP() != peerIP {
+		t.Errorf("PeerClientPublicIP() = %q", tun.PeerClientPublicIP())
+	}
+	if tun.IKE() == nil {
+		t.Fatal("IKE() is nil after rehydration")
+	}
+	if tun.IKE().lifetime != 3600 {
+		t.Errorf("IKE.lifetime = %d", tun.IKE().lifetime)
+	}
+	if tun.ESP() == nil {
+		t.Fatal("ESP() is nil after rehydration")
+	}
+	if tun.ESP().lifetime != 1800 {
+		t.Errorf("ESP.lifetime = %d", tun.ESP().lifetime)
+	}
+	if tun.PSK() == nil {
+		t.Fatal("PSK() is nil after rehydration")
+	}
+	if tun.PSK().cloudSite == nil || *tun.PSK().cloudSite != cloudSite {
+		t.Errorf("PSK.cloudSite = %v", tun.PSK().cloudSite)
+	}
+	if tun.IPConfig() == nil {
+		t.Fatal("IPConfig() is nil after rehydration")
+	}
+	if tun.IPConfig().vpc == nil || tun.IPConfig().vpc.URI != vpcURI {
+		t.Errorf("IPConfig.vpc = %v", tun.IPConfig().vpc)
+	}
+	if tun.IPConfig().subnetCIDR != "10.0.0.0/24" {
+		t.Errorf("IPConfig.subnetCIDR = %q", tun.IPConfig().subnetCIDR)
+	}
+
+	// Round-trip: toRequest must emit the same VPNClientSettings shape.
+	req := tun.toRequest()
+	if req.Properties.VPNClientSettings == nil {
+		t.Fatal("toRequest().Properties.VPNClientSettings is nil after rehydration")
+	}
+	if req.Properties.VPNClientSettings.IKE == nil || req.Properties.VPNClientSettings.IKE.Lifetime != 3600 {
+		t.Errorf("round-trip IKE = %+v", req.Properties.VPNClientSettings.IKE)
+	}
+	if req.Properties.VPNClientSettings.ESP == nil || req.Properties.VPNClientSettings.ESP.Lifetime != 1800 {
+		t.Errorf("round-trip ESP = %+v", req.Properties.VPNClientSettings.ESP)
+	}
+	if req.Properties.VPNClientSettings.PSK == nil || req.Properties.VPNClientSettings.PSK.Secret == nil {
+		t.Errorf("round-trip PSK = %+v", req.Properties.VPNClientSettings.PSK)
+	}
+	if req.Properties.IPConfigurations == nil || req.Properties.IPConfigurations.Subnet == nil {
+		t.Errorf("round-trip IPConfigurations = %+v", req.Properties.IPConfigurations)
+	}
+}
+
+func TestVPNTunnel_RoutesNumber_BeforeHydration(t *testing.T) {
+	tun := NewVPNTunnel()
+	if tun.RoutesNumber() != 0 {
+		t.Errorf("RoutesNumber() before hydration = %d, want 0", tun.RoutesNumber())
+	}
+}
