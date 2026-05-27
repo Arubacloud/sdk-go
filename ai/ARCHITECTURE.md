@@ -344,3 +344,23 @@ Call chain: `arubaClient.FromCompute().CloudServers().Create(ctx, cs)` → `clou
 - `*NodePool.WithAutoscaling(min, max)` sets `autoscaling=true` + `minCount` + `maxCount` in one call (see `resource_kaas_nodepool.go`).
 
 **Sub-builders without an adapter** — used only inside a parent, no CRUD: `JobStep` (inside `Job.WithSteps`), `NodePool` (inside `KaaS.WithNodePools`), `VPNIKE` / `VPNESP` / `VPNPSK` / `VPNIPConfig` (inside `VPNTunnel`), `SubnetDHCP` (inside `Subnet`). Each has its own `errMixin` drained into the parent at attachment time.
+
+### Flattened-getter taxonomy
+
+Every Family-A wrapper exposes a standard set of read accessors so callers never need to reach into `wrapper.Raw().Properties.X`. The layers, in order:
+
+| Layer | Getters | Source mixin / field |
+|---|---|---|
+| **Identity** | `ID()`, `URI()`, `<Resource>ID()` | `responseMetadataMixin` + wrapper |
+| **Naming** | `Name()`, `Tags()` | `metadataMixin` |
+| **Geography** | `Region()`, `Zone()` (zonal only) | `regionalMixin` / `zonalMixin` |
+| **Lineage** | `Project()`, `CreatedAt()`, `UpdatedAt()`, `Version()` | `responseMetadataMixin` |
+| **Lifecycle** | `State()`, `IsDisabled()`, `DisableReasons()`, `FailureReason()`, `PreviousState()` | `statusMixin` |
+| **Linked** | `LinkedResources()` | `linkedMixin` |
+| **Raw envelope** | `Raw()`, `RawJSON()`, `RawYAML()`, `RawRequest()`, `RawHTTP()`, `StatusCode()`, `Headers()`, `RawError()` | wrapper + `httpEnvelopeMixin` |
+| **Wait** | `WaitUntilActive`, `WaitUntilReady`, `WaitUntilStates`, `WaitUntilGone` | `statusMixin` |
+| **Resource-specific scalars** | flat getters for every useful `Properties.*` field | wrapper |
+
+**Response-preferring pattern:** getters that overlap with a request-side cache read `response.Properties.X` first, fall back to the locally-cached pointer, and return `""` / zero only when both are unset. Use this pattern whenever the same field can be set by the caller (e.g. `OnSubnets`) and returned by the server (e.g. `NetworkInterfaces`).
+
+**`fromResponse` round-trip invariant:** after `fromResponse(resp)`, calling `toRequest()` must produce a valid PUT body that preserves every server-side field. Concretely: if a field appears in the response (subnet refs, VPN sub-builder settings, etc.) it must be rehydrated into the wrapper's corresponding local pointer / slice so that `toRequest()` re-emits it. Getters that return locally-cached-only values (because the API does not echo them in GET responses) must document this limitation with a short comment.

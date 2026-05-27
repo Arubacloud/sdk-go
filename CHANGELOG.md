@@ -24,6 +24,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.3.1] — 2026-05-27
+
+### Added
+
+- **Flattened getter taxonomy** (`pkg/aruba`) — every Family-A wrapper now exposes a
+  consistent set of response-side scalar getters so callers no longer need `.Raw().Properties.X`
+  for common values. New getters per wrapper:
+  - `Project`: `Raw()`, `RawJSON()`, `RawYAML()`, `RawRequest()` (closes #304)
+  - `CloudServer`: `ElasticIP()`, `Subnets() []string`, `SecurityGroups() []string`, `UserData()`
+  - `VPNTunnel`: `RoutesNumber()`
+  - `VPNRoute`: `VPNTunnelURI()`, `CloudSubnetCIDR()`
+  - `ElasticIP`: `AssociatedResourceURI()`
+  - `SecurityGroup`: `Rules() []types.LinkedResource`
+  - `Subnet`: `Network() string`
+  - `DBaaS`: `EngineVersion()`, `EngineType()`, `PrivateIPAddress()`, `FlavorCPU()`, `FlavorRAMMB()`, `EndpointURL()`
+  - `KaaS`: `PodCIDR()`, `NodeCIDR()`, `IdentityClientID()`, `NodePools() []*NodePool`
+  - `NodePool`: `Name()`
+  - `Job`: `ScheduleAt()`, `ExecuteUntil()`, `NextExecutionAt()`, `Steps() []*JobStep`
+  - `AuditEvent`: `EventTypeName()`, `IdentityName()`, `OperationName()`
+
+- **`pkg/aruba.Version` constant** (`pkg/aruba/version.go`) — single source of truth for the
+  SDK version string. Updated on each release.
+
+- **Automatic User-Agent injection** (`Options.WithUserAgent`) — every outbound request now
+  carries `User-Agent: sdk-go@<version>` by default. Override with
+  `options.WithUserAgent("my-app@1.2.3")` (closes #310).
+
+### Fixed
+
+- **`VPNTunnel` round-trip rehydration** — `fromResponse` now reconstructs `IKE`, `ESP`, `PSK`,
+  and `IPConfig` sub-builders from the server response, so `Get → Update` no longer strips VPN
+  client settings (closes #306).
+
+- **`CloudServer` round-trip rehydration** — `fromResponse` now rehydrates `subnetRefs` from
+  `NetworkInterfaces[].Subnet`, so `Get → Update` preserves subnet attachments (closes #307).
+
+- **`VPNRoute.CloudSubnetCIDR()` empty on GET** — `SubnetCIDROrRef.UnmarshalJSON` now handles
+  the flat `{network:{address:"…"}}` shape returned by the GET endpoint in addition to the
+  existing plain-string and `properties.network.address` forms (closes #308).
+
+- **`Project` Raw parity** — `*aruba.Project` now stores the server response and exposes
+  `Raw()`, `RawJSON()`, `RawYAML()`, and `RawRequest()`, matching every other Family-A wrapper
+  (closes #304).
+
+- **`Job` step API verified** — existing `NewJobStep` + `Job.WithSteps(…)` surface already
+  satisfies the issue intent; no API changes required (closes #305 by verification).
+
+---
+
 ## [0.3.0] — 2026-05-26
 
 ### Changed (Breaking)

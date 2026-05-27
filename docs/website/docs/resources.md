@@ -47,6 +47,21 @@ fmt.Println(result.ID(), result.Name(), result.State())
 The Aruba API validates tag values against `^[A-Za-z0-9-]{4,30}$`: **alphanumerics and hyphens only, length 4 to 30**. Colons, dots, underscores, spaces, and other punctuation are rejected with `400 — One or more validation error occurred`. The SDK does not validate tag values client-side, so an invalid tag only fails when the request reaches the server.
 :::
 
+### Reading wrapper state
+
+Every wrapper promotes the most-used response fields to flat accessors. Prefer these over `wrapper.Raw().Properties.X`:
+
+```go
+fmt.Println(result.ID())        // UUID
+fmt.Println(result.Name())      // resource name
+fmt.Println(result.State())     // lifecycle state
+fmt.Println(result.Region())    // region slug
+fmt.Println(result.RawJSON())   // full JSON wire payload (for --output json)
+fmt.Println(result.RawYAML())   // full YAML wire payload (for --output yaml)
+```
+
+Resource-specific scalars (e.g. `cs.Subnets()`, `vpnRoute.CloudSubnetCIDR()`, `kaas.PodCIDR()`) are documented in each resource's **Response accessors** section below. See [Response Handling](./response-handling#reading-wrapper-state) for the complete accessor taxonomy.
+
 ---
 
 ## Project
@@ -81,6 +96,9 @@ fmt.Printf("✓ Project: %s (ID: %s)\n", proj.Name(), proj.ID())
 - `IsDefault()` — whether this is the default project
 - `Tags()` — `[]string` tag list
 - `CreatedAt()`, `UpdatedAt()` — timestamps
+- `Raw()` — underlying `*types.ProjectResponse` wire struct
+- `RawJSON()` / `RawYAML()` — serialized payload for `--output json/yaml` flags
+- `RawRequest()` — `types.ProjectRequest` for round-trip `Get → Update` flows
 
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_project.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_project.go)
