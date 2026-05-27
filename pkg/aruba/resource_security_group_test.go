@@ -930,3 +930,41 @@ func TestSecurityGroupIDsFromRef_URIRef_DocsForm(t *testing.T) {
 		t.Fatalf("SecurityGroupRef → securityGroupIDsFromRef round-trip failed: (%q, %q, %q, %v)", pid, vid, sgid, err)
 	}
 }
+
+// --------------------------------------------------------------------------
+// Rules getter
+// --------------------------------------------------------------------------
+
+func TestSecurityGroup_Rules_NilWhenEmpty(t *testing.T) {
+	sg := &SecurityGroup{}
+	if rules := sg.Rules(); rules != nil {
+		t.Errorf("Rules() = %v, want nil", rules)
+	}
+}
+
+func TestSecurityGroup_Rules_AliasForLinkedResources(t *testing.T) {
+	sg := &SecurityGroup{}
+	sg.fromResponse(securityGroupTestResponse("sg-1", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg-1", "p"))
+	rules := sg.Rules()
+	linked := sg.LinkedResources()
+	if len(rules) != len(linked) {
+		t.Fatalf("Rules() len = %d, LinkedResources() len = %d — should be equal", len(rules), len(linked))
+	}
+	for i := range rules {
+		if rules[i].URI != linked[i].URI {
+			t.Errorf("Rules()[%d].URI = %q, LinkedResources()[%d].URI = %q", i, rules[i].URI, i, linked[i].URI)
+		}
+	}
+}
+
+func TestSecurityGroup_Rules_ReturnsRulesFromResponse(t *testing.T) {
+	sg := &SecurityGroup{}
+	sg.fromResponse(securityGroupTestResponse("sg-1", "my-sg", "/projects/p/providers/Aruba.Network/vpcs/v/securityGroups/sg-1", "p"))
+	rules := sg.Rules()
+	if len(rules) != 1 {
+		t.Fatalf("Rules() len = %d, want 1", len(rules))
+	}
+	if rules[0].URI != "/projects/p/providers/Aruba.Compute/cloudservers/cs1" {
+		t.Errorf("Rules()[0].URI = %q", rules[0].URI)
+	}
+}

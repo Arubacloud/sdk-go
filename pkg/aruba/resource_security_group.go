@@ -102,6 +102,13 @@ func (sg *SecurityGroup) IsDefault() bool {
 	return *sg.defaultSG
 }
 
+// Rules returns the linked security group rules as a slice of LinkedResource.
+// This is an alias for LinkedResources(), exposing the rules under a domain-specific name.
+// Returns nil when no rules are linked.
+func (sg *SecurityGroup) Rules() []types.LinkedResource {
+	return sg.LinkedResources()
+}
+
 // Wire converters
 
 // toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
