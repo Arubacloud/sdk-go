@@ -314,6 +314,44 @@ func (d *DBaaS) AutoscalingRaw() *types.DBaaSAutoscalingResponse {
 	return d.response.Properties.Autoscaling
 }
 
+// EngineVersion returns the database engine version string from the response, or "" before hydration.
+func (d *DBaaS) EngineVersion() string {
+	if d.response != nil && d.response.Properties.Engine != nil && d.response.Properties.Engine.Version != nil {
+		return *d.response.Properties.Engine.Version
+	}
+	return ""
+}
+
+// EngineType returns the database engine type string from the response.
+// On a hydrated response it reads Engine.Type; before hydration it returns what was passed to OfEngine.
+func (d *DBaaS) EngineType() string {
+	return string(d.Engine())
+}
+
+// PrivateIPAddress returns the private IP address from the engine response, or "" before hydration.
+func (d *DBaaS) PrivateIPAddress() string {
+	if d.response != nil && d.response.Properties.Engine != nil && d.response.Properties.Engine.PrivateIPAddress != nil {
+		return *d.response.Properties.Engine.PrivateIPAddress
+	}
+	return ""
+}
+
+// FlavorCPU returns the number of CPUs from the flavor response, or 0 before hydration.
+func (d *DBaaS) FlavorCPU() int32 {
+	if d.response != nil && d.response.Properties.Flavor != nil && d.response.Properties.Flavor.CPU != nil {
+		return *d.response.Properties.Flavor.CPU
+	}
+	return 0
+}
+
+// FlavorRAMMB returns the amount of RAM in MB from the flavor response, or 0 before hydration.
+func (d *DBaaS) FlavorRAMMB() int32 {
+	if d.response != nil && d.response.Properties.Flavor != nil && d.response.Properties.Flavor.RAM != nil {
+		return *d.response.Properties.Flavor.RAM
+	}
+	return 0
+}
+
 // VPC returns the VPC URI for this DBaaS instance, or "" if unset.
 func (d *DBaaS) VPC() string {
 	return dbaasNetworkingURI(d.response, func(n *types.DBaaSNetworkingResponse) *types.ReferenceResource { return n.VPC }, d.vpcRef)

@@ -1245,3 +1245,107 @@ func TestDBaaS_FromResponse_AutoscalingDisabledStatus(t *testing.T) {
 		t.Error("AutoscalingEnabled() should be false when Status=Disabled")
 	}
 }
+
+// --------------------------------------------------------------------------
+// EngineVersion / EngineType / PrivateIPAddress / FlavorCPU / FlavorRAMMB getters
+// --------------------------------------------------------------------------
+
+func TestDBaaS_EngineVersion_NilResponse(t *testing.T) {
+	d := &DBaaS{}
+	if got := d.EngineVersion(); got != "" {
+		t.Errorf("EngineVersion() on nil response = %q, want \"\"", got)
+	}
+}
+
+func TestDBaaS_EngineVersion_Populated(t *testing.T) {
+	ver := "8.0"
+	d := &DBaaS{}
+	d.fromResponse(&types.DBaaSResponse{
+		Properties: types.DBaaSPropertiesResponse{
+			Engine: &types.DBaaSEngineResponse{Version: &ver},
+		},
+	})
+	if got := d.EngineVersion(); got != "8.0" {
+		t.Errorf("EngineVersion() = %q, want %q", got, "8.0")
+	}
+}
+
+func TestDBaaS_EngineType_FromResponse(t *testing.T) {
+	eng := "mysql-8.0"
+	d := &DBaaS{}
+	d.fromResponse(&types.DBaaSResponse{
+		Properties: types.DBaaSPropertiesResponse{
+			Engine: &types.DBaaSEngineResponse{Type: &eng},
+		},
+	})
+	if got := d.EngineType(); got != "mysql-8.0" {
+		t.Errorf("EngineType() = %q, want %q", got, "mysql-8.0")
+	}
+}
+
+func TestDBaaS_EngineType_FromLocalField(t *testing.T) {
+	d := NewDBaaS().OfEngine(types.DatabaseEngineMySQL80)
+	if got := d.EngineType(); got != "mysql-8.0" {
+		t.Errorf("EngineType() from local field = %q, want %q", got, "mysql-8.0")
+	}
+}
+
+func TestDBaaS_PrivateIPAddress_NilResponse(t *testing.T) {
+	d := &DBaaS{}
+	if got := d.PrivateIPAddress(); got != "" {
+		t.Errorf("PrivateIPAddress() on nil response = %q, want \"\"", got)
+	}
+}
+
+func TestDBaaS_PrivateIPAddress_Populated(t *testing.T) {
+	ip := "10.0.0.5"
+	d := &DBaaS{}
+	d.fromResponse(&types.DBaaSResponse{
+		Properties: types.DBaaSPropertiesResponse{
+			Engine: &types.DBaaSEngineResponse{PrivateIPAddress: &ip},
+		},
+	})
+	if got := d.PrivateIPAddress(); got != ip {
+		t.Errorf("PrivateIPAddress() = %q, want %q", got, ip)
+	}
+}
+
+func TestDBaaS_FlavorCPU_NilResponse(t *testing.T) {
+	d := &DBaaS{}
+	if got := d.FlavorCPU(); got != 0 {
+		t.Errorf("FlavorCPU() on nil response = %d, want 0", got)
+	}
+}
+
+func TestDBaaS_FlavorCPU_Populated(t *testing.T) {
+	cpu := int32(4)
+	d := &DBaaS{}
+	d.fromResponse(&types.DBaaSResponse{
+		Properties: types.DBaaSPropertiesResponse{
+			Flavor: &types.DBaaSFlavorResponse{CPU: &cpu},
+		},
+	})
+	if got := d.FlavorCPU(); got != 4 {
+		t.Errorf("FlavorCPU() = %d, want 4", got)
+	}
+}
+
+func TestDBaaS_FlavorRAMMB_NilResponse(t *testing.T) {
+	d := &DBaaS{}
+	if got := d.FlavorRAMMB(); got != 0 {
+		t.Errorf("FlavorRAMMB() on nil response = %d, want 0", got)
+	}
+}
+
+func TestDBaaS_FlavorRAMMB_Populated(t *testing.T) {
+	ram := int32(8192)
+	d := &DBaaS{}
+	d.fromResponse(&types.DBaaSResponse{
+		Properties: types.DBaaSPropertiesResponse{
+			Flavor: &types.DBaaSFlavorResponse{RAM: &ram},
+		},
+	})
+	if got := d.FlavorRAMMB(); got != 8192 {
+		t.Errorf("FlavorRAMMB() = %d, want 8192", got)
+	}
+}
