@@ -197,6 +197,61 @@ func (j *Job) Cron() string {
 	return ""
 }
 
+// ScheduleAt returns the one-shot execution time parsed from the response or local state.
+// Returns zero time.Time if absent or not parseable.
+func (j *Job) ScheduleAt() time.Time {
+	var raw *string
+	if j.response != nil {
+		raw = j.response.Properties.ScheduleAt
+	} else {
+		raw = j.scheduleAt
+	}
+	if raw == nil {
+		return time.Time{}
+	}
+	t, err := time.Parse(time.RFC3339, *raw)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
+}
+
+// ExecuteUntil returns the recurring-job end time parsed from the response or local state.
+// Returns zero time.Time if absent or not parseable.
+func (j *Job) ExecuteUntil() time.Time {
+	var raw *string
+	if j.response != nil {
+		raw = j.response.Properties.ExecuteUntil
+	} else {
+		raw = j.executeUntil
+	}
+	if raw == nil {
+		return time.Time{}
+	}
+	t, err := time.Parse(time.RFC3339, *raw)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
+}
+
+// NextExecutionAt returns the next scheduled execution time from the response, or zero if absent.
+func (j *Job) NextExecutionAt() time.Time {
+	if j.response == nil || j.response.Properties.NextExecution == nil {
+		return time.Time{}
+	}
+	t, err := time.Parse(time.RFC3339, *j.response.Properties.NextExecution)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
+}
+
+// Steps returns the job step sub-builders, or nil if none have been configured.
+func (j *Job) Steps() []*JobStep {
+	return j.steps
+}
+
 // Wire converters
 
 // toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
