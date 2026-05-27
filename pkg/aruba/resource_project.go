@@ -23,6 +23,7 @@ type Project struct {
 
 	description *string
 	defaultProj bool // ProjectPropertiesRequest.Default is plain bool — no tri-state needed
+	response    *types.ProjectResponse
 }
 
 // NewProject returns a fresh *Project ready for fluent setters and a Create call.
@@ -78,6 +79,18 @@ func (p *Project) Description() string {
 // IsDefault returns true if this project is marked as the account default.
 func (p *Project) IsDefault() bool { return p.defaultProj }
 
+// Raw returns the raw server response, or nil before the first reply.
+func (p *Project) Raw() *types.ProjectResponse { return p.response }
+
+// RawJSON returns the raw server response as JSON, or nil.
+func (p *Project) RawJSON() []byte { return marshalRawJSON(p.response) }
+
+// RawYAML returns the raw server response as YAML, or nil.
+func (p *Project) RawYAML() []byte { return marshalRawYAML(p.response) }
+
+// RawRequest returns the current setter state as a wire request body.
+func (p *Project) RawRequest() types.ProjectRequest { return p.toRequest() }
+
 // Wire converters
 
 // toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
@@ -96,6 +109,7 @@ func (p *Project) fromResponse(resp *types.ProjectResponse) {
 	if resp == nil {
 		return
 	}
+	p.response = resp
 	p.setMeta(&resp.Metadata)
 	p.named(projectDerefString(resp.Metadata.Name))
 	if len(resp.Metadata.Tags) > 0 {
