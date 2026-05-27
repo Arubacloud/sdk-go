@@ -24,18 +24,26 @@ func (s *SubnetCIDROrRef) UnmarshalJSON(data []byte) error {
 		s.CIDR = str
 		return nil
 	}
-	// Full subnet object — extract properties.network.address
+	// Full subnet object shape — try both the nested form
+	// (properties.network.address) and the flat form (network.address).
 	var obj struct {
 		Properties struct {
 			Network struct {
 				Address string `json:"address"`
 			} `json:"network"`
 		} `json:"properties"`
+		Network struct {
+			Address string `json:"address"`
+		} `json:"network"`
 	}
 	if err := json.Unmarshal(data, &obj); err != nil {
 		return err
 	}
-	s.CIDR = obj.Properties.Network.Address
+	if obj.Properties.Network.Address != "" {
+		s.CIDR = obj.Properties.Network.Address
+	} else {
+		s.CIDR = obj.Network.Address
+	}
 	return nil
 }
 
