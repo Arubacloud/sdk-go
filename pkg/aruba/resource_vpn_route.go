@@ -101,6 +101,20 @@ func (r *VPNRoute) RawRequest() types.VPNRouteRequest { return r.toRequest() }
 // CloudSubnet returns the configured cloud subnet CIDR ("" if unset).
 func (r *VPNRoute) CloudSubnet() string { return vpnRouteDerefString(r.cloudSubnet) }
 
+// CloudSubnetCIDR is an alias for CloudSubnet — returns the cloud-side subnet CIDR ("" if unset).
+func (r *VPNRoute) CloudSubnetCIDR() string { return r.CloudSubnet() }
+
+// VPNTunnelURI returns the URI of the parent VPN tunnel from the response, or "" if absent.
+func (r *VPNRoute) VPNTunnelURI() string {
+	if r.response == nil {
+		return ""
+	}
+	if r.response.Properties.VPNTunnel == nil {
+		return ""
+	}
+	return r.response.Properties.VPNTunnel.URI
+}
+
 // OnPremSubnet returns the configured on-premises subnet CIDR ("" if unset).
 func (r *VPNRoute) OnPremSubnet() string { return vpnRouteDerefString(r.onPremSubnet) }
 
