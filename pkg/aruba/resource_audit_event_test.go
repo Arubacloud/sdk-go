@@ -449,6 +449,84 @@ func TestEventsClient_OnlyHasList(t *testing.T) {
 // Refetch placeholder coverage
 // --------------------------------------------------------------------------
 
+// --------------------------------------------------------------------------
+// EventTypeName getter
+// --------------------------------------------------------------------------
+
+func TestAuditEvent_EventTypeName_NilResponse(t *testing.T) {
+	e := &AuditEvent{}
+	if got := e.EventTypeName(); got != "" {
+		t.Errorf("EventTypeName() = %q, want empty", got)
+	}
+}
+
+func TestAuditEvent_EventTypeName_FromResponse(t *testing.T) {
+	ev := auditMakeFullEvent()
+	e := &AuditEvent{}
+	e.fromResponse(&ev)
+	if got := e.EventTypeName(); got != "write" {
+		t.Errorf("EventTypeName() = %q, want write", got)
+	}
+}
+
+// --------------------------------------------------------------------------
+// IdentityName getter
+// --------------------------------------------------------------------------
+
+func TestAuditEvent_IdentityName_NilResponse(t *testing.T) {
+	e := &AuditEvent{}
+	if got := e.IdentityName(); got != "" {
+		t.Errorf("IdentityName() = %q, want empty", got)
+	}
+}
+
+func TestAuditEvent_IdentityName_NoUsername(t *testing.T) {
+	ev := types.AuditEvent{Identity: types.Identity{Caller: types.Caller{Subject: "sub"}}}
+	e := &AuditEvent{}
+	e.fromResponse(&ev)
+	if got := e.IdentityName(); got != "" {
+		t.Errorf("IdentityName() = %q, want empty when username nil", got)
+	}
+}
+
+func TestAuditEvent_IdentityName_FromResponse(t *testing.T) {
+	ev := auditMakeFullEvent()
+	e := &AuditEvent{}
+	e.fromResponse(&ev)
+	if got := e.IdentityName(); got != "alice" {
+		t.Errorf("IdentityName() = %q, want alice", got)
+	}
+}
+
+// --------------------------------------------------------------------------
+// OperationName getter
+// --------------------------------------------------------------------------
+
+func TestAuditEvent_OperationName_NilResponse(t *testing.T) {
+	e := &AuditEvent{}
+	if got := e.OperationName(); got != "" {
+		t.Errorf("OperationName() = %q, want empty", got)
+	}
+}
+
+func TestAuditEvent_OperationName_NoValue(t *testing.T) {
+	ev := types.AuditEvent{Operation: types.Operation{ID: "op-1"}}
+	e := &AuditEvent{}
+	e.fromResponse(&ev)
+	if got := e.OperationName(); got != "" {
+		t.Errorf("OperationName() = %q, want empty when Value nil", got)
+	}
+}
+
+func TestAuditEvent_OperationName_FromResponse(t *testing.T) {
+	ev := auditMakeFullEvent()
+	e := &AuditEvent{}
+	e.fromResponse(&ev)
+	if got := e.OperationName(); got != "Create" {
+		t.Errorf("OperationName() = %q, want Create", got)
+	}
+}
+
 func TestAuditEventsClientAdapter_List_RefetchReturnsError(t *testing.T) {
 	adapter := buildAuditEventTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

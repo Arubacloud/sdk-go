@@ -185,6 +185,30 @@ func (e *AuditEvent) Title() string {
 	return *e.response.Title
 }
 
+// EventTypeName returns the event type string from Event.Type, or "" when absent.
+func (e *AuditEvent) EventTypeName() string {
+	if e.response == nil {
+		return ""
+	}
+	return e.response.Event.Type
+}
+
+// IdentityName returns the caller username, or "" when absent.
+func (e *AuditEvent) IdentityName() string {
+	if e.response == nil || e.response.Identity.Caller.Username == nil {
+		return ""
+	}
+	return *e.response.Identity.Caller.Username
+}
+
+// OperationName returns the operation value string, or "" when absent.
+func (e *AuditEvent) OperationName() string {
+	if e.response == nil || e.response.Operation.Value == nil {
+		return ""
+	}
+	return *e.response.Operation.Value
+}
+
 func (e *AuditEvent) fromResponse(resp *types.AuditEvent) {
 	if resp == nil {
 		return
