@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -227,6 +228,36 @@ func TestJobStep_Build_Basic(t *testing.T) {
 	}
 }
 
+func TestJobStep_Build_IncludesTypology(t *testing.T) {
+	s := NewJobStep().
+		Targeting(URI("/projects/p/providers/Aruba.Compute/cloudServers/srv-1")).
+		OfTypology(JobStepTypologyCloudServer).
+		WithAction("poweroff").
+		WithVerb(HTTPVerbPOST)
+
+	out := s.build()
+	if out.Typology == nil || *out.Typology != JobStepTypologyCloudServer {
+		t.Errorf("Typology = %v, want %q", out.Typology, JobStepTypologyCloudServer)
+	}
+}
+
+func TestJobStep_Build_OmitsTypologyWhenUnset(t *testing.T) {
+	s := NewJobStep().
+		Targeting(URI("/projects/p/providers/Aruba.Compute/cloudServers/srv-1")).
+		WithAction("poweroff").
+		WithVerb(HTTPVerbPOST)
+
+	out := s.build()
+	if out.Typology != nil {
+		t.Errorf("Typology should be nil when OfTypology not called, got %q", *out.Typology)
+	}
+
+	b, _ := json.Marshal(out)
+	if strings.Contains(string(b), `"typology"`) {
+		t.Errorf("marshalled step should not contain typology key: %s", b)
+	}
+}
+
 func TestJobStep_OfResource_EmptyURI_Errors(t *testing.T) {
 	s := NewJobStep().Targeting(URI(""))
 	if s.Err() == nil {
@@ -288,6 +319,32 @@ func TestJob_ToRequest_OneShot(t *testing.T) {
 	}
 }
 
+func TestJob_ToRequest_OneShot_WithTypology(t *testing.T) {
+	ts := time.Date(2026, 5, 1, 12, 0, 0, 0, time.UTC)
+	j := NewJob().
+		InProject(URI("/projects/p")).
+		Named("typed-step-job").
+		OneShotAt(ts).
+		WithSteps(NewJobStep().
+			OfTypology(JobStepTypologyCloudServer).
+			Targeting(URI("/projects/p/providers/Aruba.Compute/cloudServers/s-1")).
+			WithAction("poweroff").
+			WithVerb(HTTPVerbPOST))
+
+	req := j.RawRequest()
+	if len(req.Properties.Steps) != 1 {
+		t.Fatalf("Steps len = %d", len(req.Properties.Steps))
+	}
+	step := req.Properties.Steps[0]
+	if step.Typology == nil || *step.Typology != JobStepTypologyCloudServer {
+		t.Errorf("Typology = %v, want %q", step.Typology, JobStepTypologyCloudServer)
+	}
+	b, _ := json.Marshal(req.Properties)
+	if !strings.Contains(string(b), `"typology":"cloudServer"`) {
+		t.Errorf("marshalled properties missing typology: %s", b)
+	}
+}
+
 func TestJob_ToRequest_Recurring(t *testing.T) {
 	until := time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)
 	j := NewJob().
@@ -324,6 +381,7 @@ func jobTestResponse(name string) *types.JobResponse {
 	actionURI := "/projects/p/providers/Aruba.Compute/cloudServers/s-1/actions/start"
 	verb := string(HTTPVerbPOST)
 	stepName := "step-1"
+	typology := JobStepTypologyCloudServer
 	return &types.JobResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:               &id,
@@ -344,6 +402,7 @@ func jobTestResponse(name string) *types.JobResponse {
 			Steps: []types.JobStepResponse{
 				{
 					Name:        &stepName,
+					Typology:    &typology,
 					ResourceURI: &resURI,
 					ActionURI:   &actionURI,
 					HttpVerb:    &verb,
@@ -391,6 +450,9 @@ func TestJob_FromResponseHydration(t *testing.T) {
 	step := j.steps[0]
 	if step.name == nil || *step.name != "step-1" {
 		t.Errorf("steps[0].name = %v", step.name)
+	}
+	if step.typology == nil || *step.typology != JobStepTypologyCloudServer {
+		t.Errorf("steps[0].typology = %v, want %q", step.typology, JobStepTypologyCloudServer)
 	}
 	if step.resourceURI == nil || *step.resourceURI != "/projects/p/providers/Aruba.Compute/cloudServers/s-1" {
 		t.Errorf("steps[0].resourceURI = %v", step.resourceURI)

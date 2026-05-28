@@ -266,7 +266,7 @@ func (j *Job) toRequest() types.JobRequest {
 		props.JobType = *j.jobType
 	}
 	if len(j.steps) > 0 {
-		props.Steps = make([]types.JobStep, 0, len(j.steps))
+		props.Steps = make([]types.JobStepRequest, 0, len(j.steps))
 		for _, s := range j.steps {
 			props.Steps = append(props.Steps, s.build())
 		}
@@ -327,8 +327,8 @@ func (j *Job) fromResponse(resp *types.JobResponse) {
 	}
 }
 
-// jobRebuildSteps converts response-side steps (all *string) back to sub-builders,
-// dropping response-only enrichments (ActionName, Typology, TypologyName).
+// jobRebuildSteps converts response-side steps back to sub-builders, round-tripping
+// Typology so that a Get → Update flow preserves the field.
 func jobRebuildSteps(steps []types.JobStepResponse) []*JobStep {
 	if steps == nil {
 		return nil
@@ -339,6 +339,10 @@ func jobRebuildSteps(steps []types.JobStepResponse) []*JobStep {
 		if rs.Name != nil {
 			v := *rs.Name
 			s.name = &v
+		}
+		if rs.Typology != nil {
+			v := *rs.Typology
+			s.typology = &v
 		}
 		if rs.ResourceURI != nil {
 			v := *rs.ResourceURI

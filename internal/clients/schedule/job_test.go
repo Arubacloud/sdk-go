@@ -267,7 +267,7 @@ func TestCreateScheduleJob(t *testing.T) {
 				JobType:      types.JobTypeRecurring,
 				Cron:         ptr.To("0 3 * * 0"),
 				ExecuteUntil: ptr.To("2026-01-01T00:00:00Z"),
-				Steps: []types.JobStep{
+				Steps: []types.JobStepRequest{
 					{
 						Name:        ptr.To("cleanup-old-snapshots"),
 						ResourceURI: "/projects/test-project/providers/Aruba.Storage/snapshots",
@@ -312,7 +312,7 @@ func TestCreateScheduleJob(t *testing.T) {
 				Enabled:    ptr.To(true),
 				JobType:    types.JobTypeOneShot,
 				ScheduleAt: ptr.To("2025-11-20T22:00:00Z"),
-				Steps: []types.JobStep{
+				Steps: []types.JobStepRequest{
 					{
 						Name:        ptr.To("stop-servers"),
 						ResourceURI: "/projects/test-project/providers/Aruba.Compute/cloudservers/vm-123",
@@ -493,7 +493,7 @@ func TestUpdateScheduleJob(t *testing.T) {
 				JobType:      types.JobTypeRecurring,
 				Cron:         ptr.To("0 4 * * *"),
 				ExecuteUntil: ptr.To("2025-12-31T23:59:59Z"),
-				Steps: []types.JobStep{
+				Steps: []types.JobStepRequest{
 					{
 						Name:        ptr.To("updated-backup-step"),
 						ResourceURI: "/projects/test-project/providers/Aruba.Storage/block-storages/vol-456",
