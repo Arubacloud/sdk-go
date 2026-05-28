@@ -242,19 +242,15 @@ SDK types without a `typology` field and the example at
 whose `URI()` returns `""`, e.g. a CloudServer that was queried before `metadata.uri` is
 populated), the server cannot determine the typology and returns the `" "` (empty-typology) error.
 
-**v0.3.1 mitigation applied:** `Typology *string \`json:"typology,omitempty"\`` added to
-`JobStepRequest`; `OfTypology(string)` setter and `JobStepTypology*` constants added to
-`pkg/aruba/resource_job_step.go`; the example now calls `.OfTypology(aruba.JobStepTypologyCloudServer)`.
-Providing explicit `typology` gives the server a fallback when it cannot parse the URI, and it is
-consistent with the field the server returns in GET responses. The change is wire-neutral for
-callers that do not call `OfTypology` (pointer + omitempty → field omitted).
+**v0.3.1 change:** `JobStep` renamed to `JobStepRequest` for symmetry with `JobStepResponse`.
+`Typology` was added to `JobStepRequest` and then removed after confirmation that the Terraform
+provider example works without it. The request DTO contains no `typology` field.
 
-**Next step:** a live `-mode=create` run will confirm whether this is sufficient. If Jobs still
-fail, investigate whether `resources.CloudServer.URI()` is empty at job-creation time (after
+**Next step:** a live `-mode=create` run is needed to identify the true root cause. If Jobs fail
+again, investigate whether `resources.CloudServer.URI()` is empty at job-creation time (after
 `WaitUntilReady` the URI should be populated from the GET response, but verify in the run log).
-
-`typologyName` was deliberately **not** added in v0.3.1. Re-evaluate only if a live run surfaces
-a new error naming `typologyName` explicitly.
+The Terraform provider confirms that a non-empty `resourceUri` + bare `action_uri` + HTTP verb
+is the complete and sufficient request shape.
 
 **Effort:** XS per new typology constant.
 

@@ -327,8 +327,7 @@ func (j *Job) fromResponse(resp *types.JobResponse) {
 	}
 }
 
-// jobRebuildSteps converts response-side steps back to sub-builders, round-tripping
-// Typology so that a Get → Update flow preserves the field.
+// jobRebuildSteps converts response-side steps back to sub-builders.
 func jobRebuildSteps(steps []types.JobStepResponse) []*JobStep {
 	if steps == nil {
 		return nil
@@ -339,10 +338,6 @@ func jobRebuildSteps(steps []types.JobStepResponse) []*JobStep {
 		if rs.Name != nil {
 			v := *rs.Name
 			s.name = &v
-		}
-		if rs.Typology != nil {
-			v := *rs.Typology
-			s.typology = &v
 		}
 		if rs.ResourceURI != nil {
 			v := *rs.ResourceURI

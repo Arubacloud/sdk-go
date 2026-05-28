@@ -20,7 +20,6 @@ func createRecurringJob(ctx context.Context, arubaClient aruba.Client, proj arub
 		RecurringUntil(time.Now().AddDate(0, 2, 0)).
 		WithSteps(aruba.NewJobStep().
 			Named("poweroff-step").
-			OfTypology(aruba.JobStepTypologyCloudServer).
 			Targeting(target).
 			WithAction("poweroff").
 			WithVerb(aruba.HTTPVerbPOST)).
@@ -47,7 +46,6 @@ func createOneShotJob(ctx context.Context, arubaClient aruba.Client, proj aruba.
 		OneShotAt(time.Now().Add(24 * time.Hour)).
 		WithSteps(aruba.NewJobStep().
 			Named("poweroff-step").
-			OfTypology(aruba.JobStepTypologyCloudServer).
 			Targeting(target).
 			WithAction("poweroff").
 			WithVerb(aruba.HTTPVerbPOST)).
