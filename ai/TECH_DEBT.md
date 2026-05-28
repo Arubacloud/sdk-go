@@ -228,6 +228,28 @@ All `*.Create` methods returned success even when the API response omitted requi
 
 ---
 
+### TD-022 · Schedule Job `typology` is required on each Step but absent from public docs
+
+The server rejects a `Create Job` request with `Steps: Not found configuration for typology " "`
+when `typology` is missing from any Step in the request body, even though the field does not
+appear in the public Create-Job request schema at `https://api.arubacloud.com/docs/documents/schedule/create-job/`.
+
+The values come from `category.typology.id` in any `GET /jobs/:id` response (e.g. `"cloudServer"`,
+`"keyPair"`, `"elasticIp"`, `"containerRegistry"`). Typed constants `JobStepTypology*` were added
+in `pkg/aruba/resource_job_step.go` (v0.3.1). If a new target typology is exercised that does not
+yet have a constant, add one — the server's typology vocabulary can be discovered from any GET
+response for a job targeting that resource type.
+
+`typologyName` (the display string, e.g. `"Cloud Server"`) was deliberately **not** added as a
+request-side field in v0.3.1. Re-evaluate only if a future live run surfaces an error naming
+`typologyName` explicitly.
+
+**Effort:** XS per new typology constant.
+
+**Impact:** Medium — missing typology causes an unconditional HTTP 400 on job creation.
+
+---
+
 ### TD-020 · Test coverage limited to happy path and empty-ID validation — [#130](https://github.com/Arubacloud/sdk-go/issues/130)
 All `internal/clients/*/_test.go` files — existing tests cover successful responses and empty project/resource IDs. Missing: HTTP 4xx/5xx error responses, malformed JSON bodies, network-level errors, `nil` params handling, and request body marshaling failures.
 

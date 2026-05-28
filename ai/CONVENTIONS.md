@@ -219,7 +219,27 @@ func (r *Resource) SomeField() string {
 
 ### URI segment casing
 
-- URI segments use the **exact casing published at <https://api.arubacloud.com/docs/>**. Examples: `securityGroups`, `securityRules`, `loadBalancers`, `keyPairs`, `blockStorages`, `vpnTunnels`, `vpcPeerings`.
-- Each resource has **one canonical segment**. `*IDsFromRef` helpers and scoped-mixin lookups use that single form — no fallbacks, no alternative spellings.
+- URI segments follow the server-canonical **lowerCamelCase** rule:
+  - Single-word / acronym collections stay **lowercase**: `vpcs`, `subnets`, `kaas`, `kms`,
+    `dbaas`, `backups`, `restores`, `snapshots`, `registries`, `jobs`.
+  - Compound collections use **lowerCamelCase**: `cloudServers`, `keyPairs`, `elasticIps`,
+    `securityGroups`, `securityRules`, `blockStorages`, `loadBalancers`, `vpnTunnels`,
+    `vpcPeerings`, `vpcPeeringRoutes`, `vpnRoutes`.
+  - This was verified against the server's `metadata.uri` echoes in a live end-to-end run
+    (2026-05-28). Commit `f548a4f` aligned all `internal/clients/*/path.go` constants to this
+    convention.
+- **Do not revert to all-lowercase.** Downstream provisioners store and re-emit request URIs
+  verbatim — a casing change causes silent provisioning failures. The header comment at the top
+  of every `internal/clients/*/path.go` repeats this warning.
+- Each resource has **one canonical segment**. `*IDsFromRef` helpers and scoped-mixin lookups use
+  that single form — no fallbacks, no alternative spellings.
 - `parseURIIDs` in `pkg/aruba/ref.go` preserves case; never normalise segment keys to lowercase.
-- Ref helper templates (`<Resource>Ref(...)`) and `internal/clients/<domain>/path.go` constants must use the same canonical segment so outgoing requests and incoming `Metadata.URI` values remain self-consistent.
+- Ref helper templates (`<Resource>Ref(...)`) and `internal/clients/<domain>/path.go` constants
+  must use the same canonical segment so outgoing requests and incoming `Metadata.URI` values
+  remain self-consistent.
+
+### Tag format constraint
+
+The server enforces a minimum tag length of **4 characters** per tag (see `pkg/types/error.go`).
+Tags shorter than 4 characters return HTTP 400. In `examples/all-resources/` and any test that
+supplies inline tag literals, ensure every string in `Tagged(...)` is ≥4 chars.

@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [0.3.1] — 2026-05-27
+## [0.3.1] — 2026-05-28
 
 ### Added
 
@@ -68,8 +68,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `Raw()`, `RawJSON()`, `RawYAML()`, and `RawRequest()`, matching every other Family-A wrapper
   (closes #304).
 
-- **`Job` step API verified** — existing `NewJobStep` + `Job.WithSteps(…)` surface already
-  satisfies the issue intent; no API changes required (closes #305 by verification).
+- **`Job` step `typology` field added** — the server requires a `typology` value on each
+  `Step` for dispatch, even though the field is absent from the public Create-Job request schema.
+  `JobStep` (request DTO) renamed to `JobStepRequest` for symmetry with `JobStepResponse`;
+  `Typology *string` added (pointer + `omitempty` so existing callers are wire-neutral).
+  `OfTypology(string)` setter exposed on the wrapper builder together with typed constants
+  (`JobStepTypologyCloudServer`, `JobStepTypologyKeyPair`, `JobStepTypologyElasticIP`,
+  `JobStepTypologyContainerRegistry`). The response-side `Typology` field is now round-tripped
+  through `fromResponse` / `toRequest` so `Get → Update` flows preserve it (closes #305).
+
+- **`ContainerRegistry` admin-password** — `UserCredential.Password` field added to the wire DTO
+  and `WithAdminPassword(string)` setter added to the wrapper. Omitting a password while supplying
+  a username caused the provisioner to fail silently (~30 min after creation) with `state:Failed`
+  and no error reason.
+
+- **`examples/all-resources` VPN tunnel** — `ipConfigurations` (VPC + Subnet + ElasticIP) was
+  never wired in the example; also `"vpn"` tag violated the server's ≥4-char minimum. Fixed by
+  wiring `NewVPNIPConfig()` and renaming tags to `"vpn-tunnel"` / `"vpn-route"`.
+
+- **`examples/all-resources` resource summary** — unified `summaryRow` helper; every
+  `ResourceCollection` field is now printed (four entries were previously omitted);
+  nil/failed entries show `<not created>` instead of being silently skipped.
 
 ---
 

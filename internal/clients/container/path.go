@@ -1,5 +1,11 @@
 package container
 
+// Path constants follow the server-canonical lowerCamelCase rule:
+//   - Single-word / acronym collections stay lowercase: kaas, registries.
+//
+// Do not flatten these to all-lowercase. Downstream provisioners store and re-emit
+// request URIs verbatim, so a casing change causes silent provisioning failures.
+// Verified via examples/all-resources/ create.log (2026-05-28, commit f548a4f alignment).
 const (
 	// KaaSPath is the base path for KaaS operations
 	KaaSPath = "/projects/%s/providers/Aruba.Container/kaas"

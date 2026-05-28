@@ -1,6 +1,12 @@
 package storage
 
-// API path constants for storage resources
+// Path constants follow the server-canonical lowerCamelCase rule:
+//   - Single-word collections stay lowercase: snapshots, backups, restores.
+//   - Compound collections use lowerCamelCase: blockStorages.
+//
+// Do not flatten these to all-lowercase. Downstream provisioners store and re-emit
+// request URIs verbatim, so a casing change causes silent provisioning failures.
+// Verified via examples/all-resources/ create.log (2026-05-28, commit f548a4f alignment).
 const (
 
 	// Storage Bucket paths

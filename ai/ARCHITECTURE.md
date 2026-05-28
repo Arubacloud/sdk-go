@@ -185,7 +185,10 @@ Every resource method in `internal/clients/<service>/` follows this sequence:
 ## Adding a new resource
 
 1. Define request/response types in `pkg/types/<domain>.<resource>.go`.
-2. Add API path constants to `internal/clients/<service>/path.go`.
+2. Add API path constants to `internal/clients/<service>/path.go`. Path segment names must follow
+   the server-canonical **lowerCamelCase** rule documented in the header comment of each `path.go`
+   and in `ai/CONVENTIONS.md` § "URI segment casing". Using the wrong case causes silent
+   provisioning failures because downstream provisioners store and re-emit request URIs verbatim.
 3. Add per-operation API version constants to `internal/clients/<service>/version.go`.
 4. Create the resource file `internal/clients/<service>/<resource>.go` — define the interface and `*Impl` struct, implement all methods following the standard flow above.
 5. Expose the resource from the service group file `internal/clients/<service>/<group>.go`.
