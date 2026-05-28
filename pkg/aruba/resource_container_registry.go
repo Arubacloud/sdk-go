@@ -38,6 +38,7 @@ type ContainerRegistry struct {
 
 	// Registry-specific scalars.
 	adminUsername   *string
+	adminPassword   *string
 	concurrentUsers *string // wire "size" — flavor enum string ("Small", "Medium", "HighPerf")
 	billingPeriod   *BillingPeriod
 
@@ -133,6 +134,13 @@ func (r *ContainerRegistry) setSingleRef(label string, ref Ref, dst **string) *C
 // WithAdminUsername sets the admin username for the registry.
 func (r *ContainerRegistry) WithAdminUsername(u string) *ContainerRegistry {
 	r.adminUsername = &u
+	return r
+}
+
+// WithAdminPassword sets the admin password for the registry.
+// The provisioner requires a password when a username is supplied.
+func (r *ContainerRegistry) WithAdminPassword(p string) *ContainerRegistry {
+	r.adminPassword = &p
 	return r
 }
 
@@ -257,8 +265,15 @@ func (r *ContainerRegistry) toRequest() types.ContainerRegistryRequest {
 	if r.blockStorageRef != nil {
 		props.BlockStorage = types.ReferenceResource{URI: *r.blockStorageRef}
 	}
-	if r.adminUsername != nil {
-		props.AdminUser = &types.UserCredential{Username: *r.adminUsername}
+	if r.adminUsername != nil || r.adminPassword != nil {
+		cred := &types.UserCredential{}
+		if r.adminUsername != nil {
+			cred.Username = *r.adminUsername
+		}
+		if r.adminPassword != nil {
+			cred.Password = r.adminPassword
+		}
+		props.AdminUser = cred
 	}
 	if r.concurrentUsers != nil {
 		props.ConcurrentUsers = r.concurrentUsers

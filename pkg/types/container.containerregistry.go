@@ -15,6 +15,11 @@ type UserCredential struct {
 
 	// Username is the administrator username for the container registry
 	Username string `json:"username"`
+
+	// Password is the administrator password for the container registry.
+	// Required by the provisioner when Username is supplied; omitted from
+	// GET responses (the server never echoes credentials back).
+	Password *string `json:"password,omitempty"`
 }
 
 type ContainerRegistryPropertiesRequest struct {

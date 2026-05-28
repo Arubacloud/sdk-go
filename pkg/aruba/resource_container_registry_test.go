@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
@@ -414,6 +415,41 @@ func TestContainerRegistry_ToRequest_Empty(t *testing.T) {
 	// Body-ref ReferenceResource fields should have empty URIs.
 	if req.Properties.VPC.URI != "" {
 		t.Errorf("VPC.URI should be empty, got %q", req.Properties.VPC.URI)
+	}
+}
+
+func TestContainerRegistry_ToRequest_IncludesAdminPassword(t *testing.T) {
+	cr := NewContainerRegistry().
+		WithAdminUsername("admin").
+		WithAdminPassword("s3cr3t")
+
+	req := cr.RawRequest()
+	if req.Properties.AdminUser == nil {
+		t.Fatal("AdminUser should not be nil")
+	}
+	if req.Properties.AdminUser.Username != "admin" {
+		t.Errorf("Username = %q", req.Properties.AdminUser.Username)
+	}
+	if req.Properties.AdminUser.Password == nil || *req.Properties.AdminUser.Password != "s3cr3t" {
+		t.Errorf("Password = %v", req.Properties.AdminUser.Password)
+	}
+
+	// JSON must carry "password" key.
+	b, _ := json.Marshal(req.Properties.AdminUser)
+	if !strings.Contains(string(b), `"password"`) {
+		t.Errorf("marshalled AdminUser does not contain password field: %s", b)
+	}
+}
+
+func TestContainerRegistry_ToRequest_OmitsAdminUserWhenNeither(t *testing.T) {
+	cr := NewContainerRegistry()
+	req := cr.RawRequest()
+	if req.Properties.AdminUser != nil {
+		t.Errorf("AdminUser should be nil when neither username nor password is set, got %+v", req.Properties.AdminUser)
+	}
+	b, _ := json.Marshal(req.Properties)
+	if strings.Contains(string(b), `"adminUser"`) {
+		t.Errorf("marshalled properties should not contain adminUser key: %s", b)
 	}
 }
 
