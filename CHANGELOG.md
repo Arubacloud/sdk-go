@@ -68,14 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `Raw()`, `RawJSON()`, `RawYAML()`, and `RawRequest()`, matching every other Family-A wrapper
   (closes #304).
 
-- **`Job` step `typology` field added** — the server requires a `typology` value on each
-  `Step` for dispatch, even though the field is absent from the public Create-Job request schema.
-  `JobStep` (request DTO) renamed to `JobStepRequest` for symmetry with `JobStepResponse`;
-  `Typology *string` added (pointer + `omitempty` so existing callers are wire-neutral).
-  `OfTypology(string)` setter exposed on the wrapper builder together with typed constants
-  (`JobStepTypologyCloudServer`, `JobStepTypologyKeyPair`, `JobStepTypologyElasticIP`,
-  `JobStepTypologyContainerRegistry`). The response-side `Typology` field is now round-tripped
-  through `fromResponse` / `toRequest` so `Get → Update` flows preserve it (closes #305).
+- **`JobStep` request DTO renamed** — `JobStep` renamed to `JobStepRequest` for symmetry
+  with `JobStepResponse` (closes #305).
 
 - **`ContainerRegistry` admin-password** — `UserCredential.Password` field added to the wire DTO
   and `WithAdminPassword(string)` setter added to the wrapper. Omitting a password while supplying

@@ -43,17 +43,10 @@ const (
 )
 
 // JobStepRequest represents a step that will be executed as part of the job.
-// Typology must match the server-side catalog ID of the target resource
-// (e.g. "cloudServer"). Use the JobStepTypology* constants in pkg/aruba.
 type JobStepRequest struct {
 	// Name Descriptive name of the step (nullable)
 	// For more information, check the documentation.
 	Name *string `json:"name,omitempty"`
-
-	// Typology identifies the resource category for this step (e.g. "cloudServer").
-	// Required by the API for step dispatch; values come from category.typology.id
-	// on any GET response for the target resource type.
-	Typology *string `json:"typology,omitempty"`
 
 	// ResourceURI URI of the resource on which the action will be performed
 	ResourceURI string `json:"resourceUri"`
