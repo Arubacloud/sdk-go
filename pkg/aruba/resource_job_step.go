@@ -9,15 +9,15 @@ import (
 // ---- Sub-builder ----
 
 // JobStep is a fluent builder for a single step within a Job.
-// Construct with NewJobStep() and attach via Job.AddStep.
+// Construct with NewJobStep() and attach via Job.WithSteps.
 //
-// Schema note: ResourceURI and ActionURI are required plain strings in the wire
-// request (types.JobStep); the response side uses *string for all fields plus
-// additional read-only enrichments (ActionName, Typology, TypologyName) that
-// are not round-tripped on Update.
+// Typology is required by the API for step dispatch. Use OfTypology with one of
+// the JobStepTypology* constants (e.g. JobStepTypologyCloudServer). The value
+// must match category.typology.id on any GET response for the target resource.
 type JobStep struct {
 	errMixin
 	name        *string
+	typology    *string
 	resourceURI *string
 	actionURI   *string
 	httpVerb    *HTTPVerb
@@ -29,6 +29,9 @@ func NewJobStep() *JobStep { return &JobStep{} }
 
 // Named sets the step name.
 func (s *JobStep) Named(name string) *JobStep { s.name = &name; return s }
+
+// OfTypology sets the typology for this step. Use JobStepTypology* constants.
+func (s *JobStep) OfTypology(t string) *JobStep { s.typology = &t; return s }
 
 // WithAction sets the action URI to invoke for this step.
 func (s *JobStep) WithAction(action string) *JobStep { s.actionURI = &action; return s }
@@ -50,10 +53,22 @@ func (s *JobStep) Targeting(res Ref) *JobStep {
 	return s
 }
 
-func (s *JobStep) build() types.JobStep {
-	out := types.JobStep{}
+// JobStepTypology* constants map to the server-side category.typology.id vocabulary.
+// Extend this list as new resource types are exercised in steps.
+const (
+	JobStepTypologyCloudServer       = "cloudServer"
+	JobStepTypologyKeyPair           = "keyPair"
+	JobStepTypologyElasticIP         = "elasticIp"
+	JobStepTypologyContainerRegistry = "containerRegistry"
+)
+
+func (s *JobStep) build() types.JobStepRequest {
+	out := types.JobStepRequest{}
 	if s.name != nil {
 		out.Name = s.name
+	}
+	if s.typology != nil {
+		out.Typology = s.typology
 	}
 	if s.resourceURI != nil {
 		out.ResourceURI = *s.resourceURI
