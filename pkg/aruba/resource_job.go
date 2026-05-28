@@ -23,6 +23,7 @@ import (
 //   - One-shot:  OneShotAt(t)                → JobType=OneShot, ScheduleAt=RFC3339
 //   - Recurring: WithCron(expr) [+ RecurringUntil(t)] → JobType=Recurring
 //
+// OfType(JobType) is also available when the mode must be stated explicitly.
 // Setter-time error if you mix the two modes.
 //
 // Path: /projects/{projectID}/providers/Aruba.Schedule/jobs[/{jobID}]
@@ -91,6 +92,17 @@ func (j *Job) Enabled() *Job { v := true; j.enabled = &v; return j }
 
 // Disabled deactivates the job.
 func (j *Job) Disabled() *Job { v := false; j.enabled = &v; return j }
+
+// OfType explicitly sets the job's schedule type. Useful when the type is
+// chosen at runtime or when callers want to make the mode self-documenting at
+// the call site. When omitted, the mode is implied by which schedule setter
+// you call: OneShotAt → JobTypeOneShot, WithCron / RecurringUntil → JobTypeRecurring.
+// Returns the receiver with an accumulated error if the requested type
+// conflicts with a previously-set mode.
+func (j *Job) OfType(t types.JobType) *Job {
+	j.requireMode(t, "OfType")
+	return j
+}
 
 // OneShotAt schedules a one-time execution at t (UTC, RFC3339).
 // Returns an error if a Recurring schedule has already been configured.

@@ -200,6 +200,56 @@ func TestJob_WithCron_Then_OneShotAt_Errors(t *testing.T) {
 	}
 }
 
+func TestJob_OfType_PopulatesScheduleJobType(t *testing.T) {
+	j := NewJob().OfType(JobTypeOneShot)
+	if j.Err() != nil {
+		t.Fatalf("unexpected error: %v", j.Err())
+	}
+	if j.JobType() != JobTypeOneShot {
+		t.Errorf("JobType() = %q; want %q", j.JobType(), JobTypeOneShot)
+	}
+	if got := j.RawRequest().Properties.JobType; got != JobTypeOneShot {
+		t.Errorf("wire JobType = %q; want %q", got, JobTypeOneShot)
+	}
+}
+
+func TestJob_OfType_CompatibleWithMatchingOneShotAt(t *testing.T) {
+	ts := time.Date(2026, 5, 1, 12, 0, 0, 0, time.UTC)
+	j := NewJob().OfType(JobTypeOneShot).OneShotAt(ts)
+	if j.Err() != nil {
+		t.Fatalf("unexpected error: %v", j.Err())
+	}
+	req := j.RawRequest()
+	if req.Properties.JobType != JobTypeOneShot {
+		t.Errorf("JobType = %q; want %q", req.Properties.JobType, JobTypeOneShot)
+	}
+	if req.Properties.ScheduleAt == nil {
+		t.Error("ScheduleAt should be set")
+	}
+}
+
+func TestJob_OfType_CompatibleWithMatchingWithCron(t *testing.T) {
+	j := NewJob().OfType(JobTypeRecurring).WithCron("0 10 * * *")
+	if j.Err() != nil {
+		t.Fatalf("unexpected error: %v", j.Err())
+	}
+	if j.JobType() != JobTypeRecurring {
+		t.Errorf("JobType() = %q; want %q", j.JobType(), JobTypeRecurring)
+	}
+}
+
+func TestJob_OfType_ConflictsWithOppositeMode(t *testing.T) {
+	ts := time.Date(2026, 5, 1, 12, 0, 0, 0, time.UTC)
+	j := NewJob().OfType(JobTypeRecurring).OneShotAt(ts)
+	if j.Err() == nil {
+		t.Error("expected error mixing Recurring (OfType) and OneShot (OneShotAt)")
+	}
+	j2 := NewJob().OfType(JobTypeOneShot).WithCron("0 8 * * 1-5")
+	if j2.Err() == nil {
+		t.Error("expected error mixing OneShot (OfType) and Recurring (WithCron)")
+	}
+}
+
 // --------------------------------------------------------------------------
 // JobStep sub-builder
 // --------------------------------------------------------------------------
