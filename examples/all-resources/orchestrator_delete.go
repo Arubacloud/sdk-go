@@ -253,6 +253,27 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, proj *arub
 		}
 	}
 
+	// VPN tunnel + first route (the delete orchestrator deletes the route then the tunnel).
+	vpnTunnelList, err := arubaClient.FromNetwork().VPNTunnels().List(ctx, proj)
+	if err == nil && vpnTunnelList.Total() > 0 {
+		tunnelRef := vpnTunnelList.Items()[0]
+		tunnelResp, err := arubaClient.FromNetwork().VPNTunnels().Get(ctx, tunnelRef)
+		if err == nil {
+			resources.VPNTunnel = tunnelResp
+			fmt.Printf("✓ Found VPN Tunnel: %s\n", tunnelResp.Name())
+
+			routeList, err := arubaClient.FromNetwork().VPNRoutes().List(ctx, tunnelResp)
+			if err == nil && routeList.Total() > 0 {
+				routeResp, err := arubaClient.FromNetwork().VPNRoutes().Get(ctx, routeList.Items()[0])
+				if err == nil {
+					resources.VPNRoute = routeResp
+					fmt.Printf("✓ Found VPN Route: %s (cloudSubnet=%s)\n",
+						routeResp.Name(), routeResp.CloudSubnetCIDR())
+				}
+			}
+		}
+	}
+
 	return resources
 }
 
@@ -302,6 +323,9 @@ func printDeletionInventory(r *ResourceCollection) {
 
 	fmt.Printf("  Block Storages: %d  Elastic IPs: %d\n",
 		len(r.BlockStorages), len(r.ElasticIPs))
+
+	fmt.Printf("  VPN Tunnel: %d  VPN Route: %d\n",
+		count(r.VPNTunnel != nil), count(r.VPNRoute != nil))
 }
 
 // deleteAllResources deletes all resources in strict inverse of the creation order
@@ -311,8 +335,18 @@ func printDeletionInventory(r *ResourceCollection) {
 func deleteAllResources(ctx context.Context, arubaClient aruba.Client, resources *ResourceCollection) {
 	fmt.Println("\n=== Deleting Resources ===")
 
-	// Phase 1/7: KMS stack (inverse of create Phase 7: KMS → KMSKey → KMIP).
-	printPhase(1, 7, "KMS stack")
+	// Phase 1/8: VPN stack (inverse of create Phase 7: VPNRoute → VPNTunnel).
+	printPhase(1, 8, "VPN stack")
+
+	if resources.VPNRoute != nil && resources.VPNRoute.VPNRouteID() != "" {
+		withDeleteDeadline(ctx, func(c context.Context) { deleteVPNRoute(c, arubaClient, resources.VPNRoute) })
+	}
+	if resources.VPNTunnel != nil && resources.VPNTunnel.VPNTunnelID() != "" {
+		withDeleteDeadline(ctx, func(c context.Context) { deleteVPNTunnel(c, arubaClient, resources.VPNTunnel) })
+	}
+
+	// Phase 2/8: KMS stack (inverse of create Phase 8: KMS → KMSKey → KMIP).
+	printPhase(2, 8, "KMS stack")
 
 	if resources.Kmip != nil && resources.Kmip.KmipID() != "" {
 		withDeleteDeadline(ctx, func(c context.Context) { deleteKmip(c, arubaClient, resources.Kmip) })
@@ -324,9 +358,9 @@ func deleteAllResources(ctx context.Context, arubaClient aruba.Client, resources
 		withDeleteDeadline(ctx, func(c context.Context) { deleteKMS(c, arubaClient, resources.KMS) })
 	}
 
-	// Phase 2/7: Backup & restore (inverse of create Phase 6: Restore → Backup).
-	// RestoreTargetStorage is a BlockStorage; it falls into Phase 6 with all other volumes.
-	printPhase(2, 7, "Backup & restore")
+	// Phase 3/8: Backup & restore (inverse of create Phase 6: Restore → Backup).
+	// RestoreTargetStorage is a BlockStorage; it falls into Phase 7 with all other volumes.
+	printPhase(3, 8, "Backup & restore")
 
 	if resources.Restore != nil && resources.Restore.RestoreID() != "" {
 		withDeleteDeadline(ctx, func(c context.Context) { deleteRestore(c, arubaClient, resources.Restore) })
@@ -335,9 +369,9 @@ func deleteAllResources(ctx context.Context, arubaClient aruba.Client, resources
 		withDeleteDeadline(ctx, func(c context.Context) { deleteStorageBackup(c, arubaClient, resources.Backup) })
 	}
 
-	// Phase 3/7: Compute & container platforms (inverse of create Phase 5:
+	// Phase 4/8: Compute & container platforms (inverse of create Phase 5:
 	// ContainerRegistry → Jobs → CloudServer → KaaS).
-	printPhase(3, 7, "Compute & container platforms")
+	printPhase(4, 8, "Compute & container platforms")
 
 	if resources.ContainerRegistry != nil && resources.ContainerRegistry.ContainerRegistryID() != "" {
 		withDeleteDeadline(ctx, func(c context.Context) {
@@ -357,9 +391,9 @@ func deleteAllResources(ctx context.Context, arubaClient aruba.Client, resources
 		withDeleteDeadline(ctx, func(c context.Context) { deleteKaaS(c, arubaClient, resources.KaaS) })
 	}
 
-	// Phase 4/7: Database stack (inverse of create Phase 4:
+	// Phase 5/8: Database stack (inverse of create Phase 4:
 	// Grant → DBaaSUser → Database → DBaaS).
-	printPhase(4, 7, "Database stack")
+	printPhase(5, 8, "Database stack")
 
 	if resources.Grant != nil && resources.Grant.ID() != "" {
 		withDeleteDeadline(ctx, func(c context.Context) { deleteGrant(c, arubaClient, resources.Grant) })
@@ -374,9 +408,9 @@ func deleteAllResources(ctx context.Context, arubaClient aruba.Client, resources
 		withDeleteDeadline(ctx, func(c context.Context) { deleteDBaaS(c, arubaClient, resources.DBaaS) })
 	}
 
-	// Phase 5/7: VPC-scoped network (inverse of create Phase 3:
+	// Phase 6/8: VPC-scoped network (inverse of create Phase 3:
 	// KeyPair → Rules (egress, ingress) → SecurityGroup → Subnets (Basic, Advanced)).
-	printPhase(5, 7, "VPC-scoped network")
+	printPhase(6, 8, "VPC-scoped network")
 
 	if resources.KeyPair != nil && resources.KeyPair.KeyPairID() != "" {
 		withDeleteDeadline(ctx, func(c context.Context) { deleteKeyPair(c, arubaClient, resources.KeyPair) })
@@ -402,9 +436,9 @@ func deleteAllResources(ctx context.Context, arubaClient aruba.Client, resources
 		withDeleteDeadline(ctx, func(c context.Context) { deleteAdvancedSubnet(c, arubaClient, resources.SubnetAdvanced) })
 	}
 
-	// Phase 6/7: Independent network & storage primitives (inverse of create Phase 2:
+	// Phase 7/8: Independent network & storage primitives (inverse of create Phase 2:
 	// VPC → Snapshot → BlockStorages → ElasticIPs).
-	printPhase(6, 7, "Independent network & storage primitives")
+	printPhase(7, 8, "Independent network & storage primitives")
 
 	if resources.VPC != nil {
 		withDeleteDeadline(ctx, func(c context.Context) { deleteVPC(c, arubaClient, resources.VPC) })
@@ -421,8 +455,8 @@ func deleteAllResources(ctx context.Context, arubaClient aruba.Client, resources
 		withDeleteDeadline(ctx, func(c context.Context) { deleteElasticIP(c, arubaClient, eip) })
 	}
 
-	// Phase 7/7: Account & isolation (inverse of create Phase 1).
-	printPhase(7, 7, "Account & isolation")
+	// Phase 8/8: Account & isolation (inverse of create Phase 1).
+	printPhase(8, 8, "Account & isolation")
 
 	if resources.Project != nil {
 		withDeleteDeadline(ctx, func(c context.Context) { deleteProject(c, arubaClient, resources.Project) })
