@@ -16,7 +16,9 @@ func createRecurringJob(ctx context.Context, arubaClient aruba.Client, proj arub
 		Tagged("schedule", "recurring").
 		InProject(proj).
 		InRegion(aruba.RegionITBGBergamo).
+		OfType(aruba.JobTypeRecurring).
 		WithCron("0 10 * * *").
+		StartingAt(time.Now()).
 		RecurringUntil(time.Now().AddDate(0, 2, 0)).
 		WithSteps(aruba.NewJobStep().
 			Named("poweroff-step").
@@ -43,7 +45,8 @@ func createOneShotJob(ctx context.Context, arubaClient aruba.Client, proj aruba.
 		Tagged("schedule", "oneshot").
 		InProject(proj).
 		InRegion(aruba.RegionITBGBergamo).
-		OneShotAt(time.Now().Add(24 * time.Hour)).
+		OfType(aruba.JobTypeOneShot).
+		StartingAt(time.Now().Add(24 * time.Hour)).
 		WithSteps(aruba.NewJobStep().
 			Named("poweroff-step").
 			Targeting(target).

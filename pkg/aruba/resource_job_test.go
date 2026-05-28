@@ -200,6 +200,54 @@ func TestJob_WithCron_Then_OneShotAt_Errors(t *testing.T) {
 	}
 }
 
+func TestJob_StartingAt_NeutralOnEmpty(t *testing.T) {
+	ts := time.Date(2026, 5, 1, 12, 0, 0, 0, time.UTC)
+	j := NewJob().StartingAt(ts)
+	if j.Err() != nil {
+		t.Fatalf("unexpected error: %v", j.Err())
+	}
+	if j.JobType() != "" {
+		t.Errorf("JobType() = %q; want empty (mode-neutral)", j.JobType())
+	}
+	req := j.RawRequest()
+	if req.Properties.ScheduleAt == nil {
+		t.Fatal("ScheduleAt should be set")
+	}
+	if got, want := *req.Properties.ScheduleAt, "2026-05-01T12:00:00Z"; got != want {
+		t.Errorf("ScheduleAt = %q; want %q", got, want)
+	}
+}
+
+func TestJob_StartingAt_CompatibleWithRecurring(t *testing.T) {
+	start := time.Date(2026, 5, 1, 10, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 7, 1, 10, 0, 0, 0, time.UTC)
+	j := NewJob().WithCron("0 10 * * *").StartingAt(start).RecurringUntil(end)
+	if j.Err() != nil {
+		t.Fatalf("unexpected error: %v", j.Err())
+	}
+	if j.JobType() != JobTypeRecurring {
+		t.Errorf("JobType() = %q; want %q", j.JobType(), JobTypeRecurring)
+	}
+	req := j.RawRequest()
+	if req.Properties.Cron == nil || *req.Properties.Cron != "0 10 * * *" {
+		t.Errorf("Cron = %v; want %q", req.Properties.Cron, "0 10 * * *")
+	}
+	if req.Properties.ScheduleAt == nil {
+		t.Error("ScheduleAt should be set")
+	}
+	if req.Properties.ExecuteUntil == nil {
+		t.Error("ExecuteUntil should be set")
+	}
+}
+
+func TestJob_OneShotAt_StillForcesOneShotMode(t *testing.T) {
+	ts := time.Date(2026, 5, 1, 12, 0, 0, 0, time.UTC)
+	j := NewJob().OneShotAt(ts).WithCron("0 8 * * 1-5")
+	if j.Err() == nil {
+		t.Error("expected error mixing OneShot (OneShotAt) and Recurring (WithCron)")
+	}
+}
+
 func TestJob_OfType_PopulatesScheduleJobType(t *testing.T) {
 	j := NewJob().OfType(JobTypeOneShot)
 	if j.Err() != nil {
