@@ -456,112 +456,200 @@ func printDeleteError(pretty string, err error) {
 	log.Printf("✗ Failed to delete %s: %s", pretty, formatErr(err))
 }
 
+// summaryRow formats a single resource summary line.
+// When name and id are both empty the resource was not created.
+func summaryRow(label, name, id string, extras ...string) string {
+	if name == "" && id == "" {
+		return fmt.Sprintf("- %s: <not created>", label)
+	}
+	tail := id
+	if len(extras) > 0 {
+		tail = id + ", " + strings.Join(extras, ", ")
+	}
+	return fmt.Sprintf("- %s: %s (ID: %s)", label, name, tail)
+}
+
+// eipRow returns a summary line for an ElasticIP (which may be nil).
+func eipRow(label string, eip *aruba.ElasticIP) string {
+	if eip != nil {
+		return summaryRow(label, eip.Name(), eip.ID())
+	}
+	return summaryRow(label, "", "")
+}
+
+// bsRow returns a summary line for a BlockStorage (which may be nil).
+func bsRow(label string, bs *aruba.BlockStorage) string {
+	if bs != nil {
+		return summaryRow(label, bs.Name(), bs.ID())
+	}
+	return summaryRow(label, "", "")
+}
+
 // printResourceSummary prints a summary of all created resources.
 func printResourceSummary(resources *ResourceCollection) {
 	fmt.Println("\n=== SDK Example Complete ===")
-	fmt.Println("Successfully created resources:")
+	fmt.Println("Resources created:")
+
+	// Project
 	if resources.Project != nil {
-		fmt.Println("- Project ID:", resources.Project.ID())
+		fmt.Println(summaryRow("Project", resources.Project.Name(), resources.Project.ID()))
+	} else {
+		fmt.Println(summaryRow("Project", "", ""))
 	}
 
-	if resources.CloudServerEIP != nil && resources.CloudServerEIP.ID() != "" {
-		fmt.Println("- Cloud Server ElasticIP ID:", resources.CloudServerEIP.ID())
+	// Elastic IPs
+	fmt.Println(eipRow("ElasticIP (Cloud Server)", resources.CloudServerEIP))
+	fmt.Println(eipRow("ElasticIP (DBaaS)", resources.DBaaSEIP))
+	fmt.Println(eipRow("ElasticIP (Container Registry)", resources.ContainerRegistryEIP))
+	fmt.Println(eipRow("ElasticIP (VPN Tunnel)", resources.VPNTunnelEIP))
+
+	// Block Storages
+	fmt.Println(bsRow("BlockStorage (Cloud Server)", resources.CloudServerBlockStorage))
+	fmt.Println(bsRow("BlockStorage (Container Registry)", resources.ContainerRegistryStorage))
+	fmt.Println(bsRow("BlockStorage (Restore Target)", resources.RestoreTargetStorage))
+
+	// Snapshot / Backup / Restore
+	if resources.Snapshot != nil {
+		fmt.Println(summaryRow("Snapshot", resources.Snapshot.Name(), resources.Snapshot.ID()))
+	} else {
+		fmt.Println(summaryRow("Snapshot", "", ""))
 	}
-	if resources.DBaaSEIP != nil && resources.DBaaSEIP.ID() != "" {
-		fmt.Println("- DBaaS ElasticIP ID:", resources.DBaaSEIP.ID())
+	if resources.Backup != nil {
+		fmt.Println(summaryRow("Storage Backup", resources.Backup.Name(), resources.Backup.BackupID()))
+	} else {
+		fmt.Println(summaryRow("Storage Backup", "", ""))
 	}
-	if resources.ContainerRegistryEIP != nil && resources.ContainerRegistryEIP.ID() != "" {
-		fmt.Println("- CR ElasticIP ID:", resources.ContainerRegistryEIP.ID())
+	if resources.Restore != nil {
+		fmt.Println(summaryRow("Storage Restore", resources.Restore.Name(), resources.Restore.RestoreID()))
+	} else {
+		fmt.Println(summaryRow("Storage Restore", "", ""))
 	}
 
-	if resources.CloudServerBlockStorage != nil && resources.CloudServerBlockStorage.ID() != "" {
-		fmt.Println("- Cloud Server Block Storage ID:", resources.CloudServerBlockStorage.ID())
+	// Network
+	if resources.VPC != nil {
+		fmt.Println(summaryRow("VPC", resources.VPC.Name(), resources.VPC.ID()))
+	} else {
+		fmt.Println(summaryRow("VPC", "", ""))
 	}
-	if resources.ContainerRegistryStorage != nil && resources.ContainerRegistryStorage.ID() != "" {
-		fmt.Println("- CR Block Storage ID:", resources.ContainerRegistryStorage.ID())
+	if resources.SubnetAdvanced != nil {
+		fmt.Println(summaryRow("Subnet (Advanced)", resources.SubnetAdvanced.Name(), resources.SubnetAdvanced.ID()))
+	} else {
+		fmt.Println(summaryRow("Subnet (Advanced)", "", ""))
 	}
-
-	if resources.Snapshot != nil && resources.Snapshot.ID() != "" {
-		fmt.Printf("- Snapshot: %s (ID: %s)\n", resources.Snapshot.Name(), resources.Snapshot.ID())
-	}
-
-	if resources.VPC != nil && resources.VPC.ID() != "" {
-		fmt.Println("- VPC ID:", resources.VPC.ID())
-	}
-
-	if resources.SubnetAdvanced != nil && resources.SubnetAdvanced.ID() != "" {
-		fmt.Println("- Advanced Subnet ID:", resources.SubnetAdvanced.ID())
-	}
-	if resources.SubnetBasic != nil && resources.SubnetBasic.ID() != "" {
-		fmt.Println("- Basic Subnet ID:", resources.SubnetBasic.ID())
+	if resources.SubnetBasic != nil {
+		fmt.Println(summaryRow("Subnet (Basic)", resources.SubnetBasic.Name(), resources.SubnetBasic.ID()))
+	} else {
+		fmt.Println(summaryRow("Subnet (Basic)", "", ""))
 	}
 
-	if resources.SecurityGroup != nil && resources.SecurityGroup.ID() != "" {
-		fmt.Println("- Security Group ID:", resources.SecurityGroup.ID())
+	// Security
+	if resources.SecurityGroup != nil {
+		fmt.Println(summaryRow("Security Group", resources.SecurityGroup.Name(), resources.SecurityGroup.ID()))
+	} else {
+		fmt.Println(summaryRow("Security Group", "", ""))
 	}
-
 	for _, r := range resources.SecurityRulesIngress {
-		if r != nil && r.ID() != "" {
-			fmt.Printf("- Security Rule (Ingress/%s) ID: %s\n", r.Name(), r.ID())
+		if r != nil {
+			fmt.Println(summaryRow("Security Rule (Ingress/"+r.Name()+")", r.Name(), r.ID()))
 		}
 	}
-	if resources.SecurityRuleEgress != nil && resources.SecurityRuleEgress.ID() != "" {
-		fmt.Println("- Security Rule (Egress) ID:", resources.SecurityRuleEgress.ID())
+	if resources.SecurityRuleEgress != nil {
+		fmt.Println(summaryRow("Security Rule (Egress)", resources.SecurityRuleEgress.Name(), resources.SecurityRuleEgress.ID()))
+	} else {
+		fmt.Println(summaryRow("Security Rule (Egress)", "", ""))
 	}
 
-	if resources.KeyPair != nil && resources.KeyPair.KeyPairID() != "" {
-		fmt.Printf("- SSH Key Pair: %s (ID: %s)\n", resources.KeyPair.Name(), resources.KeyPair.KeyPairID())
+	// SSH Key Pair
+	if resources.KeyPair != nil {
+		fmt.Println(summaryRow("SSH Key Pair", resources.KeyPair.Name(), resources.KeyPair.KeyPairID()))
+	} else {
+		fmt.Println(summaryRow("SSH Key Pair", "", ""))
 	}
 
-	if resources.DBaaS != nil && resources.DBaaS.DBaaSID() != "" {
-		fmt.Printf("- DBaaS: %s (ID: %s)\n", resources.DBaaS.Name(), resources.DBaaS.DBaaSID())
+	// Database stack
+	if resources.DBaaS != nil {
+		fmt.Println(summaryRow("DBaaS", resources.DBaaS.Name(), resources.DBaaS.DBaaSID()))
+	} else {
+		fmt.Println(summaryRow("DBaaS", "", ""))
 	}
-
-	if resources.KaaS != nil && resources.KaaS.KaaSID() != "" {
-		fmt.Println("- KaaS Cluster ID:", resources.KaaS.KaaSID())
-	}
-
-	if resources.CloudServer != nil && resources.CloudServer.CloudServerID() != "" {
-		fmt.Printf("- Cloud Server: %s (ID: %s)\n", resources.CloudServer.Name(), resources.CloudServer.CloudServerID())
-	}
-
-	if resources.KMS != nil && resources.KMS.KMSID() != "" {
-		fmt.Println("- KMS Instance ID:", resources.KMS.KMSID())
-	}
-
-	if resources.KMSKey != nil && resources.KMSKey.KeyID() != "" {
-		fmt.Println("- KMS Key ID:", resources.KMSKey.KeyID())
-	}
-
-	if resources.Kmip != nil && resources.Kmip.KmipID() != "" {
-		fmt.Println("- KMIP Service ID:", resources.Kmip.KmipID())
-	}
-
-	if resources.KmipCert != nil {
-		fmt.Println("- KMIP Certificate: Downloaded successfully")
-	}
-
 	if resources.Database != nil && resources.Database.ID() != "" {
 		fmt.Printf("- DBaaS Database: %s\n", resources.Database.Name())
+	} else {
+		fmt.Println("- DBaaS Database: <not created>")
 	}
 	if resources.DBaaSUser != nil && resources.DBaaSUser.ID() != "" {
 		fmt.Printf("- DBaaS User: %s\n", resources.DBaaSUser.Username())
+	} else {
+		fmt.Println("- DBaaS User: <not created>")
 	}
 	if resources.Grant != nil && resources.Grant.ID() != "" {
 		fmt.Printf("- DBaaS Grant: %s on %s (%s)\n",
 			resources.Grant.Username(), resources.Grant.DatabaseName(), resources.Grant.RoleName())
+	} else {
+		fmt.Println("- DBaaS Grant: <not created>")
 	}
-	if resources.JobRecurring != nil && resources.JobRecurring.JobID() != "" {
-		fmt.Println("- Recurring Job ID:", resources.JobRecurring.JobID())
+
+	// Compute & container platforms
+	if resources.KaaS != nil {
+		fmt.Println(summaryRow("KaaS Cluster", resources.KaaS.Name(), resources.KaaS.KaaSID()))
+	} else {
+		fmt.Println(summaryRow("KaaS Cluster", "", ""))
 	}
-	if resources.JobOneShot != nil && resources.JobOneShot.JobID() != "" {
-		fmt.Println("- OneShot Job ID:", resources.JobOneShot.JobID())
+	if resources.CloudServer != nil {
+		fmt.Println(summaryRow("Cloud Server", resources.CloudServer.Name(), resources.CloudServer.CloudServerID()))
+	} else {
+		fmt.Println(summaryRow("Cloud Server", "", ""))
 	}
-	if resources.VPNTunnel != nil && resources.VPNTunnel.VPNTunnelID() != "" {
-		fmt.Printf("- VPN Tunnel: %s (ID: %s)\n", resources.VPNTunnel.Name(), resources.VPNTunnel.VPNTunnelID())
+	if resources.ContainerRegistry != nil {
+		fmt.Println(summaryRow("Container Registry", resources.ContainerRegistry.Name(), resources.ContainerRegistry.ContainerRegistryID()))
+	} else {
+		fmt.Println(summaryRow("Container Registry", "", ""))
 	}
-	if resources.VPNRoute != nil && resources.VPNRoute.VPNRouteID() != "" {
-		fmt.Printf("- VPN Route: %s (ID: %s, cloudSubnet: %s)\n",
-			resources.VPNRoute.Name(), resources.VPNRoute.VPNRouteID(), resources.VPNRoute.CloudSubnetCIDR())
+
+	// Schedule jobs
+	if resources.JobRecurring != nil {
+		fmt.Println(summaryRow("Job (Recurring)", resources.JobRecurring.Name(), resources.JobRecurring.JobID()))
+	} else {
+		fmt.Println(summaryRow("Job (Recurring)", "", ""))
+	}
+	if resources.JobOneShot != nil {
+		fmt.Println(summaryRow("Job (One-Shot)", resources.JobOneShot.Name(), resources.JobOneShot.JobID()))
+	} else {
+		fmt.Println(summaryRow("Job (One-Shot)", "", ""))
+	}
+
+	// VPN stack
+	if resources.VPNTunnel != nil {
+		fmt.Println(summaryRow("VPN Tunnel", resources.VPNTunnel.Name(), resources.VPNTunnel.VPNTunnelID()))
+	} else {
+		fmt.Println(summaryRow("VPN Tunnel", "", ""))
+	}
+	if resources.VPNRoute != nil {
+		fmt.Println(summaryRow("VPN Route", resources.VPNRoute.Name(), resources.VPNRoute.VPNRouteID(),
+			"cloudSubnet="+resources.VPNRoute.CloudSubnetCIDR()))
+	} else {
+		fmt.Println(summaryRow("VPN Route", "", ""))
+	}
+
+	// KMS stack
+	if resources.KMS != nil {
+		fmt.Println(summaryRow("KMS Instance", resources.KMS.Name(), resources.KMS.KMSID()))
+	} else {
+		fmt.Println(summaryRow("KMS Instance", "", ""))
+	}
+	if resources.KMSKey != nil {
+		fmt.Println(summaryRow("KMS Key", resources.KMSKey.Name(), resources.KMSKey.KeyID()))
+	} else {
+		fmt.Println(summaryRow("KMS Key", "", ""))
+	}
+	if resources.Kmip != nil {
+		fmt.Println(summaryRow("KMIP Service", resources.Kmip.Name(), resources.Kmip.KmipID()))
+	} else {
+		fmt.Println(summaryRow("KMIP Service", "", ""))
+	}
+	if resources.KmipCert != nil {
+		fmt.Println("- KMIP Certificate: downloaded")
+	} else {
+		fmt.Println("- KMIP Certificate: <not created>")
 	}
 }
