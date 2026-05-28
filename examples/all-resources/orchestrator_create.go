@@ -41,6 +41,7 @@ func createAllResources(ctx context.Context, arubaClient aruba.Client) *Resource
 	resources.CloudServerEIP = createElasticIP(ctx, arubaClient, resources.Project, resourceName(NameElasticIPCS))
 	resources.DBaaSEIP = createElasticIP(ctx, arubaClient, resources.Project, resourceName(NameElasticIPDBaaS))
 	resources.ContainerRegistryEIP = createElasticIP(ctx, arubaClient, resources.Project, resourceName(NameElasticIPCR))
+	resources.VPNTunnelEIP = createElasticIP(ctx, arubaClient, resources.Project, resourceName(NameElasticIPVPN))
 
 	// 3. Create Block Storage volumes — one per consumer.
 	resources.CloudServerBlockStorage = createBlockStorage(ctx, arubaClient, resources.Project, resourceName(NameBlockStorageCS))
@@ -131,7 +132,7 @@ func createAllResources(ctx context.Context, arubaClient aruba.Client) *Resource
 	printPhase(7, 8, "VPN stack")
 
 	// 19. Create VPN Tunnel (self-wait included).
-	resources.VPNTunnel = createVPNTunnel(ctx, arubaClient, resources.Project)
+	resources.VPNTunnel = createVPNTunnel(ctx, arubaClient, resources.Project, resources.VPC, resources.SubnetBasic, resources.VPNTunnelEIP)
 
 	if resources.VPNTunnel != nil {
 		// 20. Create VPN Route under the tunnel (self-wait + GET inspection for #308 included).

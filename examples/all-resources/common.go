@@ -25,6 +25,7 @@ const (
 	NameElasticIPCS               = "cs-eip"
 	NameElasticIPDBaaS            = "dbaas-eip"
 	NameElasticIPCR               = "cr-eip"
+	NameElasticIPVPN              = "vpn-eip"
 	NameBlockStorageCS            = "cs-bs"
 	NameBlockStorageCR            = "cr-bs"
 	NameBlockStorageRestoreTarget = "restore-target-bs"
@@ -120,6 +121,7 @@ type ResourceCollection struct {
 	CloudServerEIP           *aruba.ElasticIP    // used exclusively by CloudServer
 	DBaaSEIP                 *aruba.ElasticIP    // used exclusively by DBaaS
 	ContainerRegistryEIP     *aruba.ElasticIP    // used exclusively by ContainerRegistry
+	VPNTunnelEIP             *aruba.ElasticIP    // used exclusively by VPN Tunnel ipConfigurations
 	CloudServerBlockStorage  *aruba.BlockStorage // boot volume for CloudServer
 	ContainerRegistryStorage *aruba.BlockStorage // storage for ContainerRegistry
 	RestoreTargetStorage     *aruba.BlockStorage // dedicated unattached volume used as Restore destination
