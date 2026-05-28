@@ -228,25 +228,38 @@ All `*.Create` methods returned success even when the API response omitted requi
 
 ---
 
-### TD-022 · Schedule Job `typology` is required on each Step but absent from public docs
+### TD-022 · Schedule Job creation failure `"Not found configuration for typology ' '"` — root cause under investigation
 
-The server rejects a `Create Job` request with `Steps: Not found configuration for typology " "`
-when `typology` is missing from any Step in the request body, even though the field does not
-appear in the public Create-Job request schema at `https://api.arubacloud.com/docs/documents/schedule/create-job/`.
+In the v0.3.1 live run (`examples/all-resources/ create.log`), `Create Job` returned HTTP 400 with
+`Steps: Not found configuration for typology " "` (empty/space typology). The initial diagnosis
+was that `typology` is a required request field absent from the public schema. **This hypothesis
+is incorrect.** The Terraform provider `Arubacloud/terraform-provider-arubacloud` uses the same
+SDK types without a `typology` field and the example at
+`examples/test/schedule/03-schedule.tf` was confirmed live-tested and works (2026-05-28).
 
-The values come from `category.typology.id` in any `GET /jobs/:id` response (e.g. `"cloudServer"`,
-`"keyPair"`, `"elasticIp"`, `"containerRegistry"`). Typed constants `JobStepTypology*` were added
-in `pkg/aruba/resource_job_step.go` (v0.3.1). If a new target typology is exercised that does not
-yet have a constant, add one — the server's typology vocabulary can be discovered from any GET
-response for a job targeting that resource type.
+**True root cause (hypothesis):** the server derives the step typology from `resourceUri`. If
+`resourceUri` arrives as empty string (which happens when `Targeting(ref)` is called on a `Ref`
+whose `URI()` returns `""`, e.g. a CloudServer that was queried before `metadata.uri` is
+populated), the server cannot determine the typology and returns the `" "` (empty-typology) error.
 
-`typologyName` (the display string, e.g. `"Cloud Server"`) was deliberately **not** added as a
-request-side field in v0.3.1. Re-evaluate only if a future live run surfaces an error naming
-`typologyName` explicitly.
+**v0.3.1 mitigation applied:** `Typology *string \`json:"typology,omitempty"\`` added to
+`JobStepRequest`; `OfTypology(string)` setter and `JobStepTypology*` constants added to
+`pkg/aruba/resource_job_step.go`; the example now calls `.OfTypology(aruba.JobStepTypologyCloudServer)`.
+Providing explicit `typology` gives the server a fallback when it cannot parse the URI, and it is
+consistent with the field the server returns in GET responses. The change is wire-neutral for
+callers that do not call `OfTypology` (pointer + omitempty → field omitted).
+
+**Next step:** a live `-mode=create` run will confirm whether this is sufficient. If Jobs still
+fail, investigate whether `resources.CloudServer.URI()` is empty at job-creation time (after
+`WaitUntilReady` the URI should be populated from the GET response, but verify in the run log).
+
+`typologyName` was deliberately **not** added in v0.3.1. Re-evaluate only if a live run surfaces
+a new error naming `typologyName` explicitly.
 
 **Effort:** XS per new typology constant.
 
-**Impact:** Medium — missing typology causes an unconditional HTTP 400 on job creation.
+**Impact:** Medium — empty resourceUri (or a server bug in typology derivation) causes an
+unconditional HTTP 400 on job creation.
 
 ---
 
