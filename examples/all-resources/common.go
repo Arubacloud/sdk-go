@@ -56,6 +56,8 @@ const (
 	NameGrant                     = "grant"
 	NameJobRecurring              = "job-recurring"
 	NameJobOneShot                = "job-oneshot"
+	NameVPNTunnel                 = "vpn-tunnel"
+	NameVPNRoute                  = "vpn-route"
 )
 
 // namePrefix and nameSuffix are set once in main() before any create/update
@@ -144,6 +146,8 @@ type ResourceCollection struct {
 	Grant                    *aruba.Grant
 	JobRecurring             *aruba.Job
 	JobOneShot               *aruba.Job
+	VPNTunnel                *aruba.VPNTunnel
+	VPNRoute                 *aruba.VPNRoute
 
 	// Populated by fetchAllResources for the delete flow. Contains every
 	// BlockStorage and ElasticIP in the project so the pre-delete inventory
@@ -550,5 +554,12 @@ func printResourceSummary(resources *ResourceCollection) {
 	}
 	if resources.JobOneShot != nil && resources.JobOneShot.JobID() != "" {
 		fmt.Println("- OneShot Job ID:", resources.JobOneShot.JobID())
+	}
+	if resources.VPNTunnel != nil && resources.VPNTunnel.VPNTunnelID() != "" {
+		fmt.Printf("- VPN Tunnel: %s (ID: %s)\n", resources.VPNTunnel.Name(), resources.VPNTunnel.VPNTunnelID())
+	}
+	if resources.VPNRoute != nil && resources.VPNRoute.VPNRouteID() != "" {
+		fmt.Printf("- VPN Route: %s (ID: %s, cloudSubnet: %s)\n",
+			resources.VPNRoute.Name(), resources.VPNRoute.VPNRouteID(), resources.VPNRoute.CloudSubnetCIDR())
 	}
 }
