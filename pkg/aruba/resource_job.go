@@ -20,10 +20,11 @@ import (
 // there is no narrower JobUpdateRequest.
 //
 // Schedule modes:
-//   - One-shot:  OneShotAt(t)                → JobType=OneShot, ScheduleAt=RFC3339
-//   - Recurring: WithCron(expr) [+ RecurringUntil(t)] → JobType=Recurring
+//   - One-shot:  OneShotAt(t)                                         → JobType=OneShot, ScheduleAt=t
+//   - Recurring: WithCron(expr) [+ StartingAt(t)] [+ RecurringUntil(t)] → JobType=Recurring
 //
-// OfType(JobType) is also available when the mode must be stated explicitly.
+// StartingAt(t) is mode-neutral: usable on either mode. OfType(JobType) is
+// also available when the mode must be stated explicitly.
 // Setter-time error if you mix the two modes.
 //
 // Path: /projects/{projectID}/providers/Aruba.Schedule/jobs[/{jobID}]
@@ -104,15 +105,25 @@ func (j *Job) OfType(t types.JobType) *Job {
 	return j
 }
 
+// StartingAt sets the job's start time (wire field "scheduleAt"). For OneShot
+// jobs this is the fire time; for Recurring jobs it is the start of the
+// recurrence window. Unlike OneShotAt(t), this setter is mode-neutral — it
+// can be combined with WithCron / RecurringUntil to build a Recurring job
+// that carries scheduleAt as the window start (mirroring the Aruba Terraform
+// reference HCL).
+func (j *Job) StartingAt(t time.Time) *Job {
+	s := t.UTC().Format(time.RFC3339)
+	j.scheduleAt = &s
+	return j
+}
+
 // OneShotAt schedules a one-time execution at t (UTC, RFC3339).
 // Returns an error if a Recurring schedule has already been configured.
 func (j *Job) OneShotAt(t time.Time) *Job {
 	if !j.requireMode(types.JobTypeOneShot, "OneShotAt") {
 		return j
 	}
-	s := t.UTC().Format(time.RFC3339)
-	j.scheduleAt = &s
-	return j
+	return j.StartingAt(t)
 }
 
 // WithCron sets the cron expression for a recurring job.
