@@ -15,7 +15,7 @@ func createVPNRoute(ctx context.Context, arubaClient aruba.Client, tunnel *aruba
 
 	route := aruba.NewVPNRoute().
 		Named(name).
-		Tagged("vpn", "route").
+		Tagged("vpn-route", "route").
 		InVPNTunnel(tunnel).
 		InRegion(aruba.RegionITBGBergamo).
 		WithCloudSubnet("10.0.0.0/24").
