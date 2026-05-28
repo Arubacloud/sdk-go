@@ -1,6 +1,13 @@
 package network
 
-// API path constants for network resources
+// Path constants follow the server-canonical lowerCamelCase rule:
+//   - Single-word / acronym collections stay lowercase: vpcs, subnets.
+//   - Compound collections use lowerCamelCase: securityGroups, securityRules,
+//     elasticIps, loadBalancers, vpcPeerings, vpcPeeringRoutes, vpnTunnels, vpnRoutes.
+//
+// Do not flatten these to all-lowercase. Downstream provisioners store and re-emit
+// request URIs verbatim, so a casing change causes silent provisioning failures.
+// Verified via examples/all-resources/ create.log (2026-05-28, commit f548a4f alignment).
 const (
 	// VPC Network paths
 	VPCNetworksPath = "/projects/%s/providers/Aruba.Network/vpcs"

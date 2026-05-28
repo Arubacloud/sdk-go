@@ -1,6 +1,11 @@
 package compute
 
-// API path constants for compute resources
+// Path constants follow the server-canonical lowerCamelCase rule:
+//   - Compound collections use lowerCamelCase: cloudServers, keyPairs.
+//
+// Do not flatten these to all-lowercase. Downstream provisioners store and re-emit
+// request URIs verbatim, so a casing change causes silent provisioning failures.
+// Verified via examples/all-resources/ create.log (2026-05-28, commit f548a4f alignment).
 const (
 	// CloudServer paths
 	CloudServersPath        = "/projects/%s/providers/Aruba.Compute/cloudServers"
