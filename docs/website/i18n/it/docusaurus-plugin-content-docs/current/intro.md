@@ -4,8 +4,6 @@ sidebar_position: 1
 
 # Guida Rapida
 
-> **Nota**: Questo SDK è attualmente nella fase **Alpha**. L'API non è ancora stabile e potrebbero essere introdotte modifiche incompatibili nelle versioni future senza preavviso. Si prega di utilizzarlo con cautela e di essere pronti agli aggiornamenti.
-
 Benvenuto nell'SDK ufficiale Go per l'API Aruba Cloud. Questo SDK fornisce un modo comodo e potente per gli sviluppatori Go di interagire con l'API Aruba Cloud. L'obiettivo principale è semplificare la gestione delle risorse cloud, permettendoti di creare, leggere, aggiornare ed eliminare programmaticamente risorse come istanze di calcolo, virtual private cloud (VPC), storage a blocchi e altro ancora.
 
 ## Installazione
