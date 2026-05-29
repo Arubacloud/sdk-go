@@ -356,7 +356,7 @@ func cloudServerTestResponse(id, name, uri string) *types.CloudServerResponse {
 			Tags:             []string{"tag1"},
 			LocationResponse: loc,
 		},
-		Properties: types.CloudServerPropertiesResult{
+		Properties: types.CloudServerPropertiesResponse{
 			Zone:       ZoneITBG1,
 			Flavor:     types.CloudServerFlavorResponse{Name: CloudServerFlavorCSO2A4, CPU: 2, RAM: 4096},
 			VPC:        types.ReferenceResource{URI: "/vpcs/v"},
@@ -497,8 +497,8 @@ func TestCloudServer_FromResponse_RehydratesSubnetRefs(t *testing.T) {
 	sub1 := "/subnets/s-1"
 	sub2 := "/subnets/s-2"
 	resp := &types.CloudServerResponse{
-		Properties: types.CloudServerPropertiesResult{
-			NetworkInterfaces: []types.CloudServerNetworkInterfaceDetails{
+		Properties: types.CloudServerPropertiesResponse{
+			NetworkInterfaces: []types.CloudServerNetworkInterfaceResponse{
 				{Subnet: &sub1},
 				{Subnet: &sub2},
 			},
@@ -549,7 +549,7 @@ func TestCloudServer_Flavor_Asymmetry(t *testing.T) {
 
 	// After fromResponse: Flavor() returns the response Flavor.Name (response wins).
 	cs.fromResponse(&types.CloudServerResponse{
-		Properties: types.CloudServerPropertiesResult{
+		Properties: types.CloudServerPropertiesResponse{
 			Flavor: types.CloudServerFlavorResponse{Name: CloudServerFlavorCSO4A8, CPU: 4, RAM: 8192},
 		},
 	})
@@ -1137,13 +1137,13 @@ func TestCloudServer_Template_AndNetworkInterfaces_AfterHydration(t *testing.T) 
 	// Hydrate with a response that carries template and network-interface data.
 	templateURI := "/templates/tmpl-1"
 	mac := "aa:bb:cc:dd:ee:ff"
-	iface := types.CloudServerNetworkInterfaceDetails{
+	iface := types.CloudServerNetworkInterfaceResponse{
 		MacAddress: &mac,
 		IPs:        []string{"10.0.0.1"},
 	}
 	resp := cloudServerTestResponse("cs-1", "srv", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1")
 	resp.Properties.Template = types.ReferenceResource{URI: templateURI}
-	resp.Properties.NetworkInterfaces = []types.CloudServerNetworkInterfaceDetails{iface}
+	resp.Properties.NetworkInterfaces = []types.CloudServerNetworkInterfaceResponse{iface}
 	cs.fromResponse(resp)
 
 	if cs.Template() != templateURI {
