@@ -228,5 +228,5 @@ All `internal/clients/*/_test.go` files — existing tests cover successful resp
 | TD-013 | `SaveToken` increments ticket before confirming persistent write | v0.2.x |
 | TD-018 | Injected concrete dependencies not nil-checked in constructors | v0.3.0 |
 | TD-019 | Missing compile-time interface satisfaction checks | v0.3.0 |
-| TD-021 | Create responses do not validate metadata ID/URI/Name | v0.3.1 |
-| TD-022 | Schedule Job `typology` field root cause — `typology` field removed; Terraform confirms shape is correct | v0.3.1 |
+| TD-021 | Create responses do not validate metadata ID/URI/Name | v1.0.0 |
+| TD-022 | Schedule Job `typology` field root cause — `typology` field removed; Terraform confirms shape is correct | v1.0.0 |
