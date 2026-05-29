@@ -33,7 +33,7 @@ type List[T Wrapper] struct {
 }
 
 // listPayload is the type constraint satisfied by every per-resource list type
-// (e.g. types.VPCList, types.AlertsListResponse). All such types embed
+// (e.g. types.VPCListResponse, types.AlertsListResponse). All such types embed
 // types.ListResponse, which carries a BaseList() method that is automatically
 // promoted, so no per-type implementation is required.
 type listPayload interface {

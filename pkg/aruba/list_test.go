@@ -170,20 +170,20 @@ func TestList_Raw(t *testing.T) {
 // is a non-serialisable func, breaking json.Marshal. Raw() now returns only
 // the JSON-safe wire payload (*types.XxxList).
 func TestList_Raw_JSONMarshalable(t *testing.T) {
-	resp := &types.Response[types.VPCList]{
-		Data: &types.VPCList{
+	resp := &types.Response[types.VPCListResponse]{
+		Data: &types.VPCListResponse{
 			ListResponse: types.ListResponse{Total: 2, Self: "/self", Next: "/next"},
 			Values:       []types.VPCResponse{},
 		},
 		StatusCode: 200,
 	}
-	l := newListFromResponse[testItem, types.VPCList](nil, resp, nil, nil)
+	l := newListFromResponse[testItem, types.VPCListResponse](nil, resp, nil, nil)
 
 	b, err := json.Marshal(l.Raw())
 	if err != nil {
 		t.Fatalf("json.Marshal(list.Raw()): %v", err)
 	}
-	var back types.VPCList
+	var back types.VPCListResponse
 	if err := json.Unmarshal(b, &back); err != nil {
 		t.Fatalf("json.Unmarshal: %v", err)
 	}
@@ -195,13 +195,13 @@ func TestList_Raw_JSONMarshalable(t *testing.T) {
 // TestList_HTTPEnvelopeAccessors verifies the accessors promoted from the
 // embedded httpEnvelopeMixin (parity with single-resource wrappers).
 func TestList_HTTPEnvelopeAccessors(t *testing.T) {
-	resp := &types.Response[types.VPCList]{
-		Data:       &types.VPCList{ListResponse: types.ListResponse{Total: 0}},
+	resp := &types.Response[types.VPCListResponse]{
+		Data:       &types.VPCListResponse{ListResponse: types.ListResponse{Total: 0}},
 		StatusCode: 200,
 		Headers:    http.Header{"X-Trace-Id": []string{"abc-123"}},
 		RawBody:    []byte(`{"total":0,"values":[]}`),
 	}
-	l := newListFromResponse[testItem, types.VPCList](nil, resp, nil, nil)
+	l := newListFromResponse[testItem, types.VPCListResponse](nil, resp, nil, nil)
 
 	if l.StatusCode() != 200 {
 		t.Errorf("StatusCode() = %d, want 200", l.StatusCode())
@@ -220,13 +220,13 @@ func TestList_HTTPEnvelopeAccessors(t *testing.T) {
 // TestList_NewListFromResponse_NilSafe ensures the helper tolerates a nil
 // response and a nil resp.Data.
 func TestList_NewListFromResponse_NilSafe(t *testing.T) {
-	l1 := newListFromResponse[testItem, types.VPCList](nil, nil, nil, nil)
+	l1 := newListFromResponse[testItem, types.VPCListResponse](nil, nil, nil, nil)
 	if l1 == nil || l1.Total() != 0 || l1.HasNext() || l1.HasPrev() {
 		t.Errorf("nil resp produced bad list: %+v", l1)
 	}
-	l2 := newListFromResponse[testItem, types.VPCList](
+	l2 := newListFromResponse[testItem, types.VPCListResponse](
 		nil,
-		&types.Response[types.VPCList]{StatusCode: 200},
+		&types.Response[types.VPCListResponse]{StatusCode: 200},
 		nil, nil,
 	)
 	if l2.Raw() != nil {
@@ -238,18 +238,18 @@ func TestList_NewListFromResponse_NilSafe(t *testing.T) {
 }
 
 func TestList_RawJSON_RoundTrip(t *testing.T) {
-	resp := &types.Response[types.VPCList]{
-		Data: &types.VPCList{
+	resp := &types.Response[types.VPCListResponse]{
+		Data: &types.VPCListResponse{
 			ListResponse: types.ListResponse{Total: 3, Self: "/self", Next: "/next"},
 			Values:       []types.VPCResponse{},
 		},
 	}
-	l := newListFromResponse[testItem, types.VPCList](nil, resp, nil, nil)
+	l := newListFromResponse[testItem, types.VPCListResponse](nil, resp, nil, nil)
 	b := l.RawJSON()
 	if len(b) == 0 {
 		t.Fatal("RawJSON() returned empty")
 	}
-	var back types.VPCList
+	var back types.VPCListResponse
 	if err := json.Unmarshal(b, &back); err != nil {
 		t.Fatalf("json.Unmarshal: %v", err)
 	}
@@ -259,18 +259,18 @@ func TestList_RawJSON_RoundTrip(t *testing.T) {
 }
 
 func TestList_RawYAML_RoundTrip(t *testing.T) {
-	resp := &types.Response[types.VPCList]{
-		Data: &types.VPCList{
+	resp := &types.Response[types.VPCListResponse]{
+		Data: &types.VPCListResponse{
 			ListResponse: types.ListResponse{Total: 5, Self: "/s", Next: "/n"},
 			Values:       []types.VPCResponse{},
 		},
 	}
-	l := newListFromResponse[testItem, types.VPCList](nil, resp, nil, nil)
+	l := newListFromResponse[testItem, types.VPCListResponse](nil, resp, nil, nil)
 	b := l.RawYAML()
 	if len(b) == 0 {
 		t.Fatal("RawYAML() returned empty")
 	}
-	var back types.VPCList
+	var back types.VPCListResponse
 	if err := yaml.Unmarshal(b, &back); err != nil {
 		t.Fatalf("yaml.Unmarshal: %v", err)
 	}
@@ -280,14 +280,14 @@ func TestList_RawYAML_RoundTrip(t *testing.T) {
 }
 
 func TestList_RawJSON_NilSafe(t *testing.T) {
-	l := newListFromResponse[testItem, types.VPCList](nil, nil, nil, nil)
+	l := newListFromResponse[testItem, types.VPCListResponse](nil, nil, nil, nil)
 	if b := l.RawJSON(); b != nil {
 		t.Errorf("RawJSON() = %q, want nil", b)
 	}
 }
 
 func TestList_RawYAML_NilSafe(t *testing.T) {
-	l := newListFromResponse[testItem, types.VPCList](nil, nil, nil, nil)
+	l := newListFromResponse[testItem, types.VPCListResponse](nil, nil, nil, nil)
 	if b := l.RawYAML(); b != nil {
 		t.Errorf("RawYAML() = %q, want nil", b)
 	}
