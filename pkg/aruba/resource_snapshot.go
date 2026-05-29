@@ -236,7 +236,7 @@ func snapshotDerefZone(p *Zone) Zone {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type snapshotLowLevelClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.SnapshotList], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.SnapshotListResponse], error)
 	Get(ctx context.Context, projectID, snapshotID string, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error)
 	Create(ctx context.Context, projectID string, body types.SnapshotRequest, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error)
 	Update(ctx context.Context, projectID, snapshotID string, body types.SnapshotRequest, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error)
@@ -430,7 +430,7 @@ func (a *snapshotsClientAdapter) List(ctx context.Context, project Ref, opts ...
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*Snapshot], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*Snapshot], error) {
-		fetch := listPageFetch[types.SnapshotList](a.rest, opts)
+		fetch := listPageFetch[types.SnapshotListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr
