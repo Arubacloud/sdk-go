@@ -80,7 +80,7 @@ type VPNRouteResponse struct {
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type VPNRouteList struct {
+type VPNRouteListResponse struct {
 	ListResponse
 	Values []VPNRouteResponse `json:"values"`
 }
