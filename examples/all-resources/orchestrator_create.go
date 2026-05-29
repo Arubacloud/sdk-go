@@ -136,7 +136,7 @@ func createAllResources(ctx context.Context, arubaClient aruba.Client) *Resource
 
 	if resources.VPNTunnel != nil {
 		// 20. Create VPN Route under the tunnel (self-wait + GET inspection for #308 included).
-		resources.VPNRoute = createVPNRoute(ctx, arubaClient, resources.VPNTunnel)
+		resources.VPNRoute = createVPNRoute(ctx, arubaClient, resources.VPNTunnel, resources.SubnetBasic)
 	}
 
 	printPhase(8, 8, "KMS stack")
