@@ -28,11 +28,11 @@ func metricMakeFullResponse() types.MetricResponse {
 		ReferenceID:   "metric-ref-1",
 		Name:          "cpu_usage",
 		ReferenceName: "CPU Usage",
-		Metadata: []types.MetricMetadata{
+		Metadata: []types.MetricMetadataResponse{
 			{Field: "unit", Value: "%"},
 			{Field: "aggregation", Value: "avg"},
 		},
-		Data: []types.MetricData{
+		Data: []types.MetricDataResponse{
 			{Time: "2025-03-10T08:00:00Z", Measure: "72.5"},
 			{Time: "2025-03-10T08:05:00Z", Measure: "68.1"},
 		},
@@ -144,7 +144,7 @@ func TestMetric_URI_AlwaysEmpty(t *testing.T) {
 }
 
 func TestMetric_Metadata_PreservesOrderAndContent(t *testing.T) {
-	entries := []types.MetricMetadata{
+	entries := []types.MetricMetadataResponse{
 		{Field: "unit", Value: "%"},
 		{Field: "aggregation", Value: "avg"},
 		{Field: "type", Value: "gauge"},
@@ -158,7 +158,7 @@ func TestMetric_Metadata_PreservesOrderAndContent(t *testing.T) {
 }
 
 func TestMetric_Data_PreservesOrderAndContent(t *testing.T) {
-	datapoints := []types.MetricData{
+	datapoints := []types.MetricDataResponse{
 		{Time: "2025-01-01T00:00:00Z", Measure: "10.0"},
 		{Time: "2025-01-01T00:05:00Z", Measure: "20.0"},
 		{Time: "2025-01-01T00:10:00Z", Measure: "15.5"},

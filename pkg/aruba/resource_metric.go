@@ -65,7 +65,7 @@ func (m *Metric) ReferenceName() string {
 
 // Metadata returns the metric metadata entries, or nil when absent.
 // Each entry contains a Field and Value string.
-func (m *Metric) Metadata() []types.MetricMetadata {
+func (m *Metric) Metadata() []types.MetricMetadataResponse {
 	if m.response == nil {
 		return nil
 	}
@@ -74,7 +74,7 @@ func (m *Metric) Metadata() []types.MetricMetadata {
 
 // Data returns the metric datapoints, or nil when absent.
 // Each datapoint contains a Time and Measure string.
-func (m *Metric) Data() []types.MetricData {
+func (m *Metric) Data() []types.MetricDataResponse {
 	if m.response == nil {
 		return nil
 	}
