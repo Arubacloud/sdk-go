@@ -24,7 +24,7 @@ func NewJobsClientImpl(client *restclient.Client) *jobsClientImpl {
 }
 
 // List retrieves all schedule jobs for a project
-func (c *jobsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.JobList], error) {
+func (c *jobsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.JobListResponse], error) {
 	c.client.Logger().Debugf("Listing schedule jobs for project: %s", projectID)
 
 	if err := types.ValidateProject(projectID); err != nil {
@@ -50,7 +50,7 @@ func (c *jobsClientImpl) List(ctx context.Context, projectID string, params *typ
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.JobList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.JobListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific schedule job by ID

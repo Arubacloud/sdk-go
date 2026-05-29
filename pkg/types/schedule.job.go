@@ -175,8 +175,8 @@ type JobResponse struct {
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-// JobList represents a list of jobs
-type JobList struct {
+// JobListResponse represents a list of jobs
+type JobListResponse struct {
 	ListResponse
 	Values []JobResponse `json:"values"`
 }
