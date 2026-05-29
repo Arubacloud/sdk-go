@@ -379,17 +379,17 @@ func (d *DBaaS) toRequest() types.DBaaSRequest {
 	props := types.DBaaSPropertiesRequest{}
 	props.Zone = d.zonePtr()
 	if d.engine != nil {
-		props.Engine = &types.DBaaSEngine{ID: d.engine}
+		props.Engine = &types.DBaaSEngineRequest{ID: d.engine}
 	}
 	if d.flavor != nil {
-		props.Flavor = &types.DBaaSFlavorSpec{Name: d.flavor}
+		props.Flavor = &types.DBaaSFlavorRequest{Name: d.flavor}
 	}
 	if d.sizeGB != nil {
 		v := *d.sizeGB
-		props.Storage = &types.DBaaSStorage{SizeGB: &v}
+		props.Storage = &types.DBaaSStorageRequest{SizeGB: &v}
 	}
 	if d.autoscalingEnabled != nil || d.autoscalingAvailableSpace != nil || d.autoscalingStepSize != nil {
-		a := &types.DBaaSAutoscaling{}
+		a := &types.DBaaSAutoscalingRequest{}
 		if d.autoscalingEnabled != nil {
 			v := *d.autoscalingEnabled
 			a.Enabled = &v
@@ -406,7 +406,7 @@ func (d *DBaaS) toRequest() types.DBaaSRequest {
 	}
 	props.BillingPlan = &types.BillingPlan{BillingPeriod: defaultBillingPeriod(d.billingPeriod)}
 	if d.vpcRef != nil || d.subnetRef != nil || d.securityGroupRef != nil || d.elasticIPRef != nil {
-		net := &types.DBaaSNetworking{}
+		net := &types.DBaaSNetworkingRequest{}
 		if d.vpcRef != nil {
 			net.VPCURI = d.vpcRef
 		}
@@ -540,7 +540,7 @@ func dbaasNetworkingURI(resp *types.DBaaSResponse, pick func(*types.DBaaSNetwork
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type dbaasLowLevelClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.DBaaSList], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.DBaaSListResponse], error)
 	Get(ctx context.Context, projectID, dbaasID string, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error)
 	Create(ctx context.Context, projectID string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error)
 	Update(ctx context.Context, projectID, dbaasID string, body types.DBaaSRequest, params *types.RequestParameters) (*types.Response[types.DBaaSResponse], error)
@@ -731,7 +731,7 @@ func (a *dbaasClientAdapter) List(ctx context.Context, project Ref, opts ...Call
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*DBaaS], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*DBaaS], error) {
-		fetch := listPageFetch[types.DBaaSList](a.rest, opts)
+		fetch := listPageFetch[types.DBaaSListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr

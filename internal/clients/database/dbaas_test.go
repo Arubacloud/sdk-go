@@ -20,7 +20,7 @@ func TestListDBaaS(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Database/dbaas" {
 				w.WriteHeader(http.StatusOK)
-				resp := types.DBaaSList{
+				resp := types.DBaaSListResponse{
 					ListResponse: types.ListResponse{Total: 1},
 					Values: []types.DBaaSResponse{
 						{
