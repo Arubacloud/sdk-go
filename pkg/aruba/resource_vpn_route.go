@@ -189,7 +189,7 @@ func vpnRouteDerefString(p *string) string {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type vpnRouteLowLevelClient interface {
-	List(ctx context.Context, projectID, vpnTunnelID string, params *types.RequestParameters) (*types.Response[types.VPNRouteList], error)
+	List(ctx context.Context, projectID, vpnTunnelID string, params *types.RequestParameters) (*types.Response[types.VPNRouteListResponse], error)
 	Get(ctx context.Context, projectID, vpnTunnelID, vpnRouteID string, params *types.RequestParameters) (*types.Response[types.VPNRouteResponse], error)
 	Create(ctx context.Context, projectID, vpnTunnelID string, body types.VPNRouteRequest, params *types.RequestParameters) (*types.Response[types.VPNRouteResponse], error)
 	Update(ctx context.Context, projectID, vpnTunnelID, vpnRouteID string, body types.VPNRouteRequest, params *types.RequestParameters) (*types.Response[types.VPNRouteResponse], error)
@@ -386,7 +386,7 @@ func (a *vpnRoutesClientAdapter) List(ctx context.Context, tunnel Ref, opts ...C
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*VPNRoute], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*VPNRoute], error) {
-		fetch := listPageFetch[types.VPNRouteList](a.rest, opts)
+		fetch := listPageFetch[types.VPNRouteListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr

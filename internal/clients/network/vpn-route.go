@@ -24,7 +24,7 @@ func NewVPNRoutesClientImpl(client *restclient.Client) *vpnRoutesClientImpl {
 }
 
 // List retrieves all VPN routes for a VPN tunnel
-func (c *vpnRoutesClientImpl) List(ctx context.Context, projectID string, vpnTunnelID string, params *types.RequestParameters) (*types.Response[types.VPNRouteList], error) {
+func (c *vpnRoutesClientImpl) List(ctx context.Context, projectID string, vpnTunnelID string, params *types.RequestParameters) (*types.Response[types.VPNRouteListResponse], error) {
 	c.client.Logger().Debugf("Listing VPN routes for VPN tunnel: %s in project: %s", vpnTunnelID, projectID)
 
 	if err := types.ValidateProjectAndResource(projectID, vpnTunnelID, "VPN tunnel ID"); err != nil {
@@ -50,7 +50,7 @@ func (c *vpnRoutesClientImpl) List(ctx context.Context, projectID string, vpnTun
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.VPNRouteList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.VPNRouteListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific VPN route by ID
