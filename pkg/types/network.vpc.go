@@ -1,7 +1,7 @@
 package types
 
-// VPCProperties contains the properties of a VPC
-type VPCProperties struct {
+// VPCPropertiesInnerRequest contains the properties of a VPC
+type VPCPropertiesInnerRequest struct {
 	// Default indicates if the vpc must be a default vpc. Only one default vpc for region is admissible.
 	// Default value: true
 	Default *bool `json:"default,omitempty"`
@@ -14,7 +14,7 @@ type VPCProperties struct {
 // VPCPropertiesRequest contains the specification for creating a VPC
 type VPCPropertiesRequest struct {
 	// Properties of the vpc (nullable object)
-	Properties *VPCProperties `json:"properties,omitempty"`
+	Properties *VPCPropertiesInnerRequest `json:"properties,omitempty"`
 }
 
 // VPCPropertiesResponse contains the specification returned for a VPC
@@ -43,7 +43,7 @@ type VPCResponse struct {
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type VPCList struct {
+type VPCListResponse struct {
 	ListResponse
 	Values []VPCResponse `json:"values"`
 }

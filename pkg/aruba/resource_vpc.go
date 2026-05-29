@@ -125,9 +125,9 @@ func (v *VPC) IsPreset() bool {
 
 // toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (v *VPC) toRequest() types.VPCRequest {
-	var props *types.VPCProperties
+	var props *types.VPCPropertiesInnerRequest
 	if v.defaultVPC != nil || v.preset != nil {
-		props = &types.VPCProperties{Default: v.defaultVPC, Preset: v.preset}
+		props = &types.VPCPropertiesInnerRequest{Default: v.defaultVPC, Preset: v.preset}
 	}
 	return types.VPCRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
@@ -175,7 +175,7 @@ func vpcDerefString(s *string) string {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type vpcLowLevelClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.VPCList], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.VPCListResponse], error)
 	Get(ctx context.Context, projectID, vpcID string, params *types.RequestParameters) (*types.Response[types.VPCResponse], error)
 	Create(ctx context.Context, projectID string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error)
 	Update(ctx context.Context, projectID, vpcID string, body types.VPCRequest, params *types.RequestParameters) (*types.Response[types.VPCResponse], error)
@@ -362,7 +362,7 @@ func (a *vpcsClientAdapter) List(ctx context.Context, project Ref, opts ...CallO
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*VPC], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*VPC], error) {
-		fetch := listPageFetch[types.VPCList](a.rest, opts)
+		fetch := listPageFetch[types.VPCListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr

@@ -24,7 +24,7 @@ func NewVPCsClientImpl(client *restclient.Client) *vpcsClientImpl {
 }
 
 // List retrieves all VPCs for a project
-func (c *vpcsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.VPCList], error) {
+func (c *vpcsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.VPCListResponse], error) {
 	c.client.Logger().Debugf("Listing VPCs for project: %s", projectID)
 
 	if err := types.ValidateProject(projectID); err != nil {
@@ -50,7 +50,7 @@ func (c *vpcsClientImpl) List(ctx context.Context, projectID string, params *typ
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.VPCList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.VPCListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific VPC by ID
