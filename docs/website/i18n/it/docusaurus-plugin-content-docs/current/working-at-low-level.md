@@ -102,7 +102,7 @@ if err != nil {
 
 ## Iterare `LinkedResources()`
 
-Ogni wrapper di risorsa espone `LinkedResources()` che restituisce `[]types.LinkedResource`. Ogni elemento ha un `URI string` e un `StrictCorrelation bool`:
+Ogni wrapper di risorsa espone `LinkedResources()` che restituisce `[]types.LinkedResourceCommon`. Ogni elemento ha un `URI string` e un `StrictCorrelation bool`:
 
 ```go
 import (
@@ -121,7 +121,7 @@ for _, lr := range vpc.LinkedResources() {
 }
 ```
 
-> Se hai bisogno solo delle stringhe URI — ad esempio per passarle a un'altra chiamata SDK come `aruba.URI(lr.URI)` — non hai bisogno di `types.LinkedResource`:
+> Se hai bisogno solo delle stringhe URI — ad esempio per passarle a un'altra chiamata SDK come `aruba.URI(lr.URI)` — non hai bisogno di `types.LinkedResourceCommon`:
 >
 > ```go
 > for _, lr := range vpc.LinkedResources() {
