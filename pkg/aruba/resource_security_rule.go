@@ -35,7 +35,7 @@ type SecurityRule struct {
 	direction *types.RuleDirection
 	protocol  *RuleProtocol
 	port      *string
-	target    *types.RuleTarget
+	target    *types.RuleTargetCommon
 	response  *types.SecurityRuleResponse
 }
 
@@ -102,7 +102,7 @@ func (r *SecurityRule) TargetingCIDR(cidr string) *SecurityRule {
 		r.addErr(fmt.Errorf("TargetingCIDR: target already set to SecurityGroup; pick one"))
 		return r
 	}
-	r.target = &types.RuleTarget{Kind: types.EndpointTypeIP, Value: cidr}
+	r.target = &types.RuleTargetCommon{Kind: types.EndpointTypeIP, Value: cidr}
 	return r
 }
 
@@ -118,7 +118,7 @@ func (r *SecurityRule) TargetingSecurityGroup(sg Ref) *SecurityRule {
 		r.addErr(fmt.Errorf("TargetingSecurityGroup: target SecurityGroup Ref has empty URI"))
 		return r
 	}
-	r.target = &types.RuleTarget{Kind: types.EndpointTypeSecurityGroup, Value: uri}
+	r.target = &types.RuleTargetCommon{Kind: types.EndpointTypeSecurityGroup, Value: uri}
 	return r
 }
 
@@ -269,7 +269,7 @@ func securityRuleDerefString(p *string) string {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type securityRuleLowLevelClient interface {
-	List(ctx context.Context, projectID, vpcID, securityGroupID string, params *types.RequestParameters) (*types.Response[types.SecurityRuleList], error)
+	List(ctx context.Context, projectID, vpcID, securityGroupID string, params *types.RequestParameters) (*types.Response[types.SecurityRuleListResponse], error)
 	Get(ctx context.Context, projectID, vpcID, securityGroupID, securityRuleID string, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error)
 	Create(ctx context.Context, projectID, vpcID, securityGroupID string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error)
 	Update(ctx context.Context, projectID, vpcID, securityGroupID, securityRuleID string, body types.SecurityRuleRequest, params *types.RequestParameters) (*types.Response[types.SecurityRuleResponse], error)
@@ -478,7 +478,7 @@ func (a *securityRulesClientAdapter) List(ctx context.Context, sg Ref, opts ...C
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*SecurityRule], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*SecurityRule], error) {
-		fetch := listPageFetch[types.SecurityRuleList](a.rest, opts)
+		fetch := listPageFetch[types.SecurityRuleListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr

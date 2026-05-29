@@ -28,8 +28,8 @@ const (
 	EndpointTypeSecurityGroup EndpointTypeDto = "SecurityGroup"
 )
 
-// RuleTarget represents the target of the rule (source or destination according to the direction)
-type RuleTarget struct {
+// RuleTargetCommon represents the target of the rule (source or destination according to the direction)
+type RuleTargetCommon struct {
 	// Kind Type of the target. Admissible values: Ip, SecurityGroup
 	Kind EndpointTypeDto `json:"kind,omitempty"`
 
@@ -56,7 +56,7 @@ type SecurityRulePropertiesRequest struct {
 	Port string `json:"port,omitempty"`
 
 	// Target The target of the rule (source or destination according to the direction)
-	Target *RuleTarget `json:"target,omitempty"`
+	Target *RuleTargetCommon `json:"target,omitempty"`
 }
 
 type SecurityRulePropertiesResponse struct {
@@ -77,7 +77,7 @@ type SecurityRulePropertiesResponse struct {
 	Port string `json:"port,omitempty"`
 
 	// Target The target of the rule (source or destination according to the direction)
-	Target *RuleTarget `json:"target,omitempty"`
+	Target *RuleTargetCommon `json:"target,omitempty"`
 }
 
 type SecurityRuleRequest struct {
@@ -92,7 +92,7 @@ type SecurityRuleResponse struct {
 	Properties SecurityRulePropertiesResponse `json:"properties"`
 }
 
-type SecurityRuleList struct {
+type SecurityRuleListResponse struct {
 	ListResponse
 	Values []SecurityRuleResponse `json:"values"`
 }

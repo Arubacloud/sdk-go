@@ -29,7 +29,7 @@ func NewSecurityGroupRulesClientImpl(client *restclient.Client, securityGroupsCl
 }
 
 // List retrieves all security group rules for a security group
-func (c *securityGroupRulesClientImpl) List(ctx context.Context, projectID string, vpcID string, securityGroupID string, params *types.RequestParameters) (*types.Response[types.SecurityRuleList], error) {
+func (c *securityGroupRulesClientImpl) List(ctx context.Context, projectID string, vpcID string, securityGroupID string, params *types.RequestParameters) (*types.Response[types.SecurityRuleListResponse], error) {
 	c.client.Logger().Debugf("Listing security group rules for security group: %s in VPC: %s in project: %s", securityGroupID, vpcID, projectID)
 
 	if err := types.ValidateVPCResource(projectID, vpcID, securityGroupID, "security group ID"); err != nil {
@@ -55,7 +55,7 @@ func (c *securityGroupRulesClientImpl) List(ctx context.Context, projectID strin
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.SecurityRuleList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.SecurityRuleListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific security group rule by ID
