@@ -18,7 +18,7 @@ func TestListKaaS(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Container/kaas" {
 				w.WriteHeader(http.StatusOK)
-				resp := types.KaaSList{
+				resp := types.KaaSListResponse{
 					ListResponse: types.ListResponse{Total: 1},
 					Values: []types.KaaSResponse{
 						{
@@ -158,8 +158,8 @@ func TestGetKaaS(t *testing.T) {
 								{
 									Name:        ptr.To("default-pool"),
 									Nodes:       ptr.To(int32(3)),
-									Instance:    &types.InstanceResponse{Name: ptr.To("small")},
-									DataCenter:  &types.DataCenterResponse{Code: ptr.To("dc-01")},
+									Instance:    &types.KaaSNodePoolInstanceResponse{Name: ptr.To("small")},
+									DataCenter:  &types.KaaSNodePoolDataCenterResponse{Code: ptr.To("dc-01")},
 									Autoscaling: false,
 								},
 							}
@@ -318,7 +318,7 @@ func TestCreateKaaS(t *testing.T) {
 			Properties: types.KaaSPropertiesRequest{
 				Preset: ptr.To(false),
 				HA:     ptr.To(true),
-				KubernetesVersion: types.KubernetesVersionInfo{
+				KubernetesVersion: types.KubernetesVersionInfoRequest{
 					Value: "1.28.0",
 				},
 			},
@@ -509,10 +509,10 @@ func TestUpdateKaaS(t *testing.T) {
 				},
 			},
 			Properties: types.KaaSPropertiesUpdateRequest{
-				KubernetesVersion: types.KubernetesVersionInfoUpdate{
+				KubernetesVersion: types.KubernetesVersionInfoUpdateRequest{
 					Value: "1.29.0",
 				},
-				NodePools: []types.NodePoolProperties{
+				NodePools: []types.NodePoolPropertiesRequest{
 					{
 						Name:     "default-pool",
 						Nodes:    3,

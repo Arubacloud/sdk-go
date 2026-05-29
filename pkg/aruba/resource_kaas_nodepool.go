@@ -9,7 +9,7 @@ import "github.com/Arubacloud/sdk-go/pkg/types"
 //
 // Schema note: Instance and Zone are plain strings in the Create/Update request
 // (wire fields "instance" and "dataCenter"); the response side uses object types
-// (InstanceResponse, DataCenterResponse). AddNodePool flattens the response
+// (KaaSNodePoolInstanceResponse, KaaSNodePoolDataCenterResponse). AddNodePool flattens the response
 // representation back to strings so Update round-trips correctly.
 type NodePool struct {
 	errMixin
@@ -58,8 +58,8 @@ func (n *NodePool) WithAutoscaling(min, max int) *NodePool {
 	return n
 }
 
-func (n *NodePool) build() types.NodePoolProperties {
-	out := types.NodePoolProperties{}
+func (n *NodePool) build() types.NodePoolPropertiesRequest {
+	out := types.NodePoolPropertiesRequest{}
 	if n.name != nil {
 		out.Name = *n.name
 	}

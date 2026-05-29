@@ -514,7 +514,7 @@ func kaasTestResponse(name string) *types.KaaSResponse {
 				Value: &k8sVersion,
 			},
 			HA: &haTrue,
-			Storage: &types.StorageKubernetes{
+			Storage: &types.StorageKubernetesCommon{
 				MaxCumulativeVolumeSize: &maxVol,
 			},
 			BillingPlan: &types.BillingPlan{BillingPeriod: &billingPeriod},
@@ -522,8 +522,8 @@ func kaasTestResponse(name string) *types.KaaSResponse {
 				{
 					Name:        &poolName,
 					Nodes:       &poolNodes,
-					Instance:    &types.InstanceResponse{Name: &instanceName},
-					DataCenter:  &types.DataCenterResponse{Code: &dcCode},
+					Instance:    &types.KaaSNodePoolInstanceResponse{Name: &instanceName},
+					DataCenter:  &types.KaaSNodePoolDataCenterResponse{Code: &dcCode},
 					Autoscaling: autoFalse,
 				},
 			},
@@ -668,7 +668,7 @@ type fakeKaaSLowLevel struct {
 	updateFunc             func(ctx context.Context, projectID, kaasID string, body types.KaaSUpdateRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
 	getFunc                func(ctx context.Context, projectID, kaasID string, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
 	deleteFunc             func(ctx context.Context, projectID, kaasID string, params *types.RequestParameters) (*types.Response[any], error)
-	listFunc               func(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KaaSList], error)
+	listFunc               func(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KaaSListResponse], error)
 	downloadKubeconfigFunc func(ctx context.Context, projectID, kaasID string, params *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error)
 }
 
@@ -684,7 +684,7 @@ func (f *fakeKaaSLowLevel) Get(ctx context.Context, projectID, kaasID string, pa
 func (f *fakeKaaSLowLevel) Delete(ctx context.Context, projectID, kaasID string, params *types.RequestParameters) (*types.Response[any], error) {
 	return f.deleteFunc(ctx, projectID, kaasID, params)
 }
-func (f *fakeKaaSLowLevel) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KaaSList], error) {
+func (f *fakeKaaSLowLevel) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KaaSListResponse], error) {
 	return f.listFunc(ctx, projectID, params)
 }
 func (f *fakeKaaSLowLevel) DownloadKubeconfig(ctx context.Context, projectID, kaasID string, params *types.RequestParameters) (*types.Response[types.KaaSKubeconfigResponse], error) {
@@ -920,7 +920,7 @@ func TestKaaSClientAdapter_Update_Success(t *testing.T) {
 	if result.ID() != "kaas-1" {
 		t.Errorf("ID() = %q", result.ID())
 	}
-	// The update request should use KubernetesVersionInfoUpdate
+	// The update request should use KubernetesVersionInfoUpdateRequest
 	if gotBody.Properties.KubernetesVersion.Value != "1.33.0" {
 		t.Errorf("update KubernetesVersion.Value = %q", gotBody.Properties.KubernetesVersion.Value)
 	}
@@ -1269,7 +1269,7 @@ func TestKaaS_Raw_AfterFromResponse(t *testing.T) {
 
 func TestKaaS_WithAPIServerAccessProfile_RoundTrip(t *testing.T) {
 	ranges := []string{"10.0.0.0/8", "192.168.0.0/16"}
-	profile := &types.APIServerAccessProfileProperties{
+	profile := &types.KaaSAPIServerAccessProfilePropertiesRequest{
 		AuthorizedIPRanges:   &ranges,
 		EnablePrivateCluster: true,
 	}
