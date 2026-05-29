@@ -25,7 +25,7 @@ func NewBackupClientImpl(client *restclient.Client) *backupClientImpl {
 }
 
 // List retrieves all Storage Backups for a project
-func (c *backupClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.StorageBackupList], error) {
+func (c *backupClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.StorageBackupListResponse], error) {
 	c.client.Logger().Debugf("Listing Storage Backups for project: %s", projectID)
 
 	if err := types.ValidateProject(projectID); err != nil {
@@ -51,7 +51,7 @@ func (c *backupClientImpl) List(ctx context.Context, projectID string, params *t
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.StorageBackupList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.StorageBackupListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific Storage Backup by ID
