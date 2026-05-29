@@ -24,7 +24,7 @@ func NewGrantsClientImpl(client *restclient.Client) *grantsClientImpl {
 }
 
 // List retrieves all grants for a database
-func (c *grantsClientImpl) List(ctx context.Context, projectID string, dbaasID string, databaseID string, params *types.RequestParameters) (*types.Response[types.GrantList], error) {
+func (c *grantsClientImpl) List(ctx context.Context, projectID string, dbaasID string, databaseID string, params *types.RequestParameters) (*types.Response[types.GrantListResponse], error) {
 	c.client.Logger().Debugf("Listing grants for database: %s in DBaaS: %s in project: %s", databaseID, dbaasID, projectID)
 
 	if err := types.ValidateDBaaSResource(projectID, dbaasID, databaseID, "database ID"); err != nil {
@@ -50,7 +50,7 @@ func (c *grantsClientImpl) List(ctx context.Context, projectID string, dbaasID s
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.GrantList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.GrantListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific grant by ID

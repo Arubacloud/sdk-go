@@ -16,12 +16,12 @@ func TestListGrants(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-123/databases/db-456/grants" {
 				w.WriteHeader(http.StatusOK)
-				resp := types.GrantList{
+				resp := types.GrantListResponse{
 					ListResponse: types.ListResponse{Total: 1},
 					Values: []types.GrantResponse{
 						{
-							User:     types.GrantUser{Username: "alice"},
-							Role:     types.GrantRole{Name: "read"},
+							User:     types.GrantUserCommon{Username: "alice"},
+							Role:     types.GrantRoleCommon{Name: "read"},
 							Database: types.GrantDatabaseResponse{Name: "my-db"},
 						},
 					},
@@ -154,8 +154,8 @@ func TestGetGrant(t *testing.T) {
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-123/databases/db-456/grants/grant-789" {
 				w.WriteHeader(http.StatusOK)
 				resp := types.GrantResponse{
-					User:     types.GrantUser{Username: "alice"},
-					Role:     types.GrantRole{Name: "read"},
+					User:     types.GrantUserCommon{Username: "alice"},
+					Role:     types.GrantRoleCommon{Name: "read"},
 					Database: types.GrantDatabaseResponse{Name: "my-db"},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -295,8 +295,8 @@ func TestCreateGrant(t *testing.T) {
 			if r.Method == "POST" && r.URL.Path == "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-123/databases/db-456/grants" {
 				w.WriteHeader(http.StatusCreated)
 				resp := types.GrantResponse{
-					User:     types.GrantUser{Username: "alice"},
-					Role:     types.GrantRole{Name: "read"},
+					User:     types.GrantUserCommon{Username: "alice"},
+					Role:     types.GrantRoleCommon{Name: "read"},
 					Database: types.GrantDatabaseResponse{Name: "my-db"},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -308,8 +308,8 @@ func TestCreateGrant(t *testing.T) {
 		svc := NewGrantsClientImpl(c)
 
 		body := types.GrantRequest{
-			User: types.GrantUser{Username: "alice"},
-			Role: types.GrantRole{Name: "read"},
+			User: types.GrantUserCommon{Username: "alice"},
+			Role: types.GrantRoleCommon{Name: "read"},
 		}
 
 		resp, err := svc.Create(context.Background(), "test-project", "dbaas-123", "db-456", body, nil)
@@ -434,8 +434,8 @@ func TestUpdateGrant(t *testing.T) {
 			if r.Method == "PUT" && r.URL.Path == "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-123/databases/db-456/grants/grant-789" {
 				w.WriteHeader(http.StatusOK)
 				resp := types.GrantResponse{
-					User:     types.GrantUser{Username: "alice"},
-					Role:     types.GrantRole{Name: "write"},
+					User:     types.GrantUserCommon{Username: "alice"},
+					Role:     types.GrantRoleCommon{Name: "write"},
 					Database: types.GrantDatabaseResponse{Name: "my-db"},
 				}
 				json.NewEncoder(w).Encode(resp)
@@ -447,8 +447,8 @@ func TestUpdateGrant(t *testing.T) {
 		svc := NewGrantsClientImpl(c)
 
 		body := types.GrantRequest{
-			User: types.GrantUser{Username: "alice"},
-			Role: types.GrantRole{Name: "write"},
+			User: types.GrantUserCommon{Username: "alice"},
+			Role: types.GrantRoleCommon{Name: "write"},
 		}
 
 		resp, err := svc.Update(context.Background(), "test-project", "dbaas-123", "db-456", "grant-789", body, nil)

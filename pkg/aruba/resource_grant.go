@@ -137,8 +137,8 @@ func (g *Grant) RawRequest() types.GrantRequest { return g.toRequest() }
 // toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (g *Grant) toRequest() types.GrantRequest {
 	return types.GrantRequest{
-		User: types.GrantUser{Username: grantDerefString(g.username)},
-		Role: types.GrantRole{Name: grantDerefString(g.roleName)},
+		User: types.GrantUserCommon{Username: grantDerefString(g.username)},
+		Role: types.GrantRoleCommon{Name: grantDerefString(g.roleName)},
 	}
 }
 
@@ -211,7 +211,7 @@ func grantIDsFromRef(ref Ref) (projectID, dbaasID, databaseID, grantID string, e
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type grantsLowLevelClient interface {
-	List(ctx context.Context, projectID, dbaasID, databaseID string, params *types.RequestParameters) (*types.Response[types.GrantList], error)
+	List(ctx context.Context, projectID, dbaasID, databaseID string, params *types.RequestParameters) (*types.Response[types.GrantListResponse], error)
 	Get(ctx context.Context, projectID, dbaasID, databaseID, grantID string, params *types.RequestParameters) (*types.Response[types.GrantResponse], error)
 	Create(ctx context.Context, projectID, dbaasID, databaseID string, body types.GrantRequest, params *types.RequestParameters) (*types.Response[types.GrantResponse], error)
 	Update(ctx context.Context, projectID, dbaasID, databaseID, grantID string, body types.GrantRequest, params *types.RequestParameters) (*types.Response[types.GrantResponse], error)
@@ -427,7 +427,7 @@ func (a *grantsClientAdapter) List(ctx context.Context, parent Ref, opts ...Call
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*Grant], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*Grant], error) {
-		fetch := listPageFetch[types.GrantList](a.rest, opts)
+		fetch := listPageFetch[types.GrantListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr
