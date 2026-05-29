@@ -22,7 +22,7 @@ type StorageBackupPropertiesRequest struct {
 	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 }
 
-type StorageBackupPropertiesResult struct {
+type StorageBackupPropertiesResponse struct {
 
 	// StorageBackupType indicates whether the StorageBackup is full or incremental
 	Type StorageBackupType `json:"type"`
@@ -46,12 +46,12 @@ type StorageBackupRequest struct {
 type StorageBackupResponse struct {
 	Metadata ResourceMetadataResponse `json:"metadata"`
 
-	Properties StorageBackupPropertiesResult `json:"properties"`
+	Properties StorageBackupPropertiesResponse `json:"properties"`
 
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type StorageBackupList struct {
+type StorageBackupListResponse struct {
 	ListResponse
 	Values []StorageBackupResponse `json:"values"`
 }

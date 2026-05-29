@@ -239,7 +239,7 @@ func storageBackupTestResponse(id, name, uri, projectID string) *types.StorageBa
 				ID: projectID,
 			},
 		},
-		Properties: types.StorageBackupPropertiesResult{
+		Properties: types.StorageBackupPropertiesResponse{
 			Type:          StorageBackupTypeFull,
 			Origin:        types.ReferenceResource{URI: originURI},
 			RetentionDays: &retentionDays,
@@ -422,7 +422,7 @@ type fakeStorageBackupLowLevel struct {
 	getFunc    func(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[types.StorageBackupResponse], error)
 	updateFunc func(ctx context.Context, projectID, backupID string, body types.StorageBackupRequest, params *types.RequestParameters) (*types.Response[types.StorageBackupResponse], error)
 	deleteFunc func(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[any], error)
-	listFunc   func(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.StorageBackupList], error)
+	listFunc   func(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.StorageBackupListResponse], error)
 }
 
 func (f *fakeStorageBackupLowLevel) Create(ctx context.Context, projectID string, body types.StorageBackupRequest, params *types.RequestParameters) (*types.Response[types.StorageBackupResponse], error) {
@@ -437,7 +437,7 @@ func (f *fakeStorageBackupLowLevel) Update(ctx context.Context, projectID, backu
 func (f *fakeStorageBackupLowLevel) Delete(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[any], error) {
 	return f.deleteFunc(ctx, projectID, backupID, params)
 }
-func (f *fakeStorageBackupLowLevel) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.StorageBackupList], error) {
+func (f *fakeStorageBackupLowLevel) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.StorageBackupListResponse], error) {
 	return f.listFunc(ctx, projectID, params)
 }
 
@@ -948,7 +948,7 @@ func TestStorageBackup_BillingPeriod_WireTranslation(t *testing.T) {
 		wireVal := BillingPeriod(c.wire)
 		b := &StorageBackup{}
 		b.fromResponse(&types.StorageBackupResponse{
-			Properties: types.StorageBackupPropertiesResult{BillingPeriod: &wireVal},
+			Properties: types.StorageBackupPropertiesResponse{BillingPeriod: &wireVal},
 		})
 		if b.BillingPeriod() != c.sdk {
 			t.Errorf("fromResponse(%q) = %q, want %q", c.wire, b.BillingPeriod(), c.sdk)

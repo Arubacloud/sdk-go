@@ -235,7 +235,7 @@ func storageBackupBillingPeriodWire() *billingPeriodTranslator {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type storageBackupLowLevelClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.StorageBackupList], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.StorageBackupListResponse], error)
 	Get(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[types.StorageBackupResponse], error)
 	Create(ctx context.Context, projectID string, body types.StorageBackupRequest, params *types.RequestParameters) (*types.Response[types.StorageBackupResponse], error)
 	Update(ctx context.Context, projectID, backupID string, body types.StorageBackupRequest, params *types.RequestParameters) (*types.Response[types.StorageBackupResponse], error)
@@ -426,7 +426,7 @@ func (a *storageBackupsClientAdapter) List(ctx context.Context, project Ref, opt
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*StorageBackup], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*StorageBackup], error) {
-		fetch := listPageFetch[types.StorageBackupList](a.rest, opts)
+		fetch := listPageFetch[types.StorageBackupListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr
