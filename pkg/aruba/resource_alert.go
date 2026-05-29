@@ -235,7 +235,7 @@ func (a *Alert) Hidden() bool {
 }
 
 // ExecutedAlertActions returns the list of executed alert actions, or nil when absent.
-func (a *Alert) ExecutedAlertActions() []types.ExecutedAlertAction {
+func (a *Alert) ExecutedAlertActions() []types.ExecutedAlertActionResponse {
 	if a.response == nil {
 		return nil
 	}
@@ -243,7 +243,7 @@ func (a *Alert) ExecutedAlertActions() []types.ExecutedAlertAction {
 }
 
 // Actions returns the list of available alert actions, or nil when absent.
-func (a *Alert) Actions() []types.AlertAction {
+func (a *Alert) Actions() []types.AlertActionResponse {
 	if a.response == nil {
 		return nil
 	}
