@@ -25,7 +25,7 @@ func NewProjectsClientImpl(client *restclient.Client) *projectsClientImpl {
 }
 
 // List retrieves all projects
-func (c *projectsClientImpl) List(ctx context.Context, params *types.RequestParameters) (*types.Response[types.ProjectList], error) {
+func (c *projectsClientImpl) List(ctx context.Context, params *types.RequestParameters) (*types.Response[types.ProjectListResponse], error) {
 	c.client.Logger().Debugf("Listing projects")
 
 	path := ProjectsPath
@@ -47,7 +47,7 @@ func (c *projectsClientImpl) List(ctx context.Context, params *types.RequestPara
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.ProjectList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.ProjectListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific project by ID

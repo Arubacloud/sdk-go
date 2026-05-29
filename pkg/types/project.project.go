@@ -37,7 +37,7 @@ type ProjectResponse struct {
 	//Status ResourceStatus `json:"status,omitempty"`
 }
 
-type ProjectList struct {
+type ProjectListResponse struct {
 	ListResponse
 	Values []ProjectResponse `json:"values"`
 }

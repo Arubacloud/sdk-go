@@ -137,7 +137,7 @@ func projectDerefString(s *string) string {
 // Satisfied by *project.projectsClientImpl. Defined here so tests can substitute
 // a fake without depending on internal/clients/project test code.
 type projectLowLevelClient interface {
-	List(ctx context.Context, params *types.RequestParameters) (*types.Response[types.ProjectList], error)
+	List(ctx context.Context, params *types.RequestParameters) (*types.Response[types.ProjectListResponse], error)
 	Get(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ProjectResponse], error)
 	Create(ctx context.Context, body types.ProjectRequest, params *types.RequestParameters) (*types.Response[types.ProjectResponse], error)
 	Update(ctx context.Context, projectID string, body types.ProjectRequest, params *types.RequestParameters) (*types.Response[types.ProjectResponse], error)
@@ -272,7 +272,7 @@ func (a *projectClientAdapter) List(ctx context.Context, opts ...CallOption) (*L
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*Project], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*Project], error) {
-		fetch := listPageFetch[types.ProjectList](a.rest, opts)
+		fetch := listPageFetch[types.ProjectListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr
