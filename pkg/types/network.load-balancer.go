@@ -16,7 +16,7 @@ type LoadBalancerResponse struct {
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type LoadBalancerList struct {
+type LoadBalancerListResponse struct {
 	ListResponse
 	Values []LoadBalancerResponse `json:"values"`
 }

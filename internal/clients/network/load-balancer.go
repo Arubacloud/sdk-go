@@ -21,7 +21,7 @@ func NewLoadBalancersClientImpl(client *restclient.Client) *loadBalancersClientI
 }
 
 // List retrieves all load balancers for a project
-func (c *loadBalancersClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.LoadBalancerList], error) {
+func (c *loadBalancersClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.LoadBalancerListResponse], error) {
 	if err := types.ValidateProject(projectID); err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (c *loadBalancersClientImpl) List(ctx context.Context, projectID string, pa
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.LoadBalancerList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.LoadBalancerListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific load balancer by ID
