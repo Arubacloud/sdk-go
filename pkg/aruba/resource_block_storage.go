@@ -323,7 +323,7 @@ func (b *BlockStorage) WaitUntilUsed(ctx context.Context, opts ...WaitOption) er
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type volumeLowLevelClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.BlockStorageList], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.BlockStorageListResponse], error)
 	Get(ctx context.Context, projectID, volumeID string, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error)
 	Create(ctx context.Context, projectID string, body types.BlockStorageRequest, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error)
 	Update(ctx context.Context, projectID, volumeID string, body types.BlockStorageRequest, params *types.RequestParameters) (*types.Response[types.BlockStorageResponse], error)
@@ -514,7 +514,7 @@ func (a *volumesClientAdapter) List(ctx context.Context, project Ref, opts ...Ca
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*BlockStorage], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*BlockStorage], error) {
-		fetch := listPageFetch[types.BlockStorageList](a.rest, opts)
+		fetch := listPageFetch[types.BlockStorageListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr

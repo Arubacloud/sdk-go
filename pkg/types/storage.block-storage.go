@@ -102,7 +102,7 @@ type BlockStorageResponse struct {
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type BlockStorageList struct {
+type BlockStorageListResponse struct {
 	ListResponse
 	Values []BlockStorageResponse `json:"values"`
 }
