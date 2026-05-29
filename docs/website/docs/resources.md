@@ -62,6 +62,8 @@ fmt.Println(result.RawYAML())   // full YAML wire payload (for --output yaml)
 
 Resource-specific scalars (e.g. `cs.Subnets()`, `vpnRoute.CloudSubnetCIDR()`, `kaas.PodCIDR()`) are documented in each resource's **Response accessors** section below. See [Response Handling](./response-handling#reading-wrapper-state) for the complete accessor taxonomy.
 
+Each resource section also lists its **Setters** (chainable builder methods grouped by the canonical chain order from `ai/CONVENTIONS.md`) and a link to the runnable example in `examples/all-resources/`.
+
 ---
 
 ## Project
@@ -99,6 +101,12 @@ fmt.Printf("✓ Project: %s (ID: %s)\n", proj.Name(), proj.ID())
 - `Raw()` — underlying `*types.ProjectResponse` wire struct
 - `RawJSON()` / `RawYAML()` — serialized payload for `--output json/yaml` flags
 - `RawRequest()` — `types.ProjectRequest` for round-trip `Get → Update` flows
+
+**Setters**:
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Descriptive scalars*: `DescribedAs(string)`
+- *Boolean state*: `AsDefault()`, `NotDefault()`
 
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_project.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_project.go)
@@ -205,6 +213,20 @@ if err := cs.SetPassword(ctx, "NewStr0ngP@ss!"); err != nil { log.Fatalf("SetPas
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
 
+**Setters**:
+- *Classifier*: `OfFlavor(CloudServerFlavor)`
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InProject(Ref)`
+- *Geography*: `InRegion(Region)`, `InZone(Zone)`
+- *Descriptive scalars*: `WithUserData(string)`
+- *Origin*: `BootingFrom(Ref)`
+- *Attached config*: `WithVPC(Ref)`, `WithSecurityGroups(...Ref)`, `WithElasticIP(Ref)`
+- *Network placement*: `OnSubnets(...Ref)`
+- *Active relationship*: `UsingKeyPair(Ref)`
+- *Boolean state*: `WithVPCPreset()`, `WithoutVPCPreset()`
+- *Billing*: `BilledBy(BillingPeriod)`
+
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_cloud_server.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_cloud_server.go)
 :::
@@ -240,6 +262,13 @@ fmt.Printf("✓ KeyPair: %s (ID: %s)\n", kp.Name(), kp.ID())
 - `PublicKey()` — public key string
 - `Region()` — region slug
 - `Raw()` — underlying wire struct
+
+**Setters**:
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InProject(Ref)`
+- *Geography*: `InRegion(Region)`
+- *Descriptive scalars*: `WithPublicKey(string)`
 
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_key_pair.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_key_pair.go)
@@ -317,6 +346,16 @@ if err != nil {
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
 
+**Setters**:
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InProject(Ref)`
+- *Geography*: `InRegion(Region)`
+- *Descriptive scalars*: `WithKubernetesVersion(KubernetesVersion)`, `WithPodCIDR(string)`, `WithMaxStorageQuotaGB(int)`, `WithIdentity(string, string)`
+- *Attached config*: `WithVPC(Ref)`, `WithSubnet(Ref)`, `WithSecurityGroup(Ref)`, `WithNodeCIDR(string, string)`, `WithNodePools(...*NodePool)`, `WithoutNodePools()`, `ReplaceNodePools(...*NodePool)`
+- *Boolean state*: `HighlyAvailable()`
+- *Billing*: `BilledBy(BillingPeriod)`
+
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_kaas.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kaas.go)
 :::
@@ -367,6 +406,16 @@ fmt.Printf("✓ Registry: %s (public IP: %s)\n", reg.Name(), reg.PublicIP())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
+
+**Setters**:
+- *Classifier*: `OfSize(ContainerRegistrySizeFlavor)`
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InProject(Ref)`
+- *Geography*: `InRegion(Region)`
+- *Descriptive scalars*: `WithAdminUsername(string)`
+- *Attached config*: `WithElasticIP(Ref)`, `WithVPC(Ref)`, `WithSubnet(Ref)`, `WithSecurityGroup(Ref)`, `WithBlockStorage(Ref)`
+- *Billing*: `BilledBy(BillingPeriod)`
 
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_container_registry.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_container_registry.go)
@@ -427,6 +476,16 @@ fmt.Printf("✓ DBaaS: %s (engine: %s)\n", db.Name(), db.Engine())
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
 
+**Setters**:
+- *Classifier*: `OfEngine(DatabaseEngine)`, `OfFlavor(DBaaSFlavor)`
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InProject(Ref)`
+- *Geography*: `InRegion(Region)`, `InZone(Zone)`
+- *Descriptive scalars*: `SizedGB(int)`, `WithAutoscaling(min, max int)`, `WithoutAutoscaling()`
+- *Attached config*: `WithVPC(Ref)`, `WithSubnet(Ref)`, `WithSecurityGroup(Ref)`, `WithElasticIP(Ref)`
+- *Billing*: `BilledBy(BillingPeriod)`
+
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_dbaas.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_dbaas.go)
 :::
@@ -466,6 +525,10 @@ fmt.Printf("✓ Database: %s\n", database.Name())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
+
+**Setters**:
+- *Name*: `Named(string)`
+- *Containment*: `InDBaaS(Ref)`
 
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_database.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_database.go)
@@ -509,6 +572,11 @@ fmt.Printf("✓ User: %s\n", user.Name())
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
 
+**Setters**:
+- *Name*: `WithUsername(string)`
+- *Containment*: `InDBaaS(Ref)`
+- *Descriptive scalars*: `WithPassword(string)`
+
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_dbaas_user.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_dbaas_user.go)
 :::
@@ -549,6 +617,10 @@ fmt.Printf("✓ Grant: %s (privileges: %s)\n", grant.Name(), grant.Privileges())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
+
+**Setters**:
+- *Containment*: `InDatabase(Ref)`
+- *Active relationship*: `ForUser(string)`, `OfRole(string)`
 
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_grant.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_grant.go)
@@ -595,6 +667,13 @@ fmt.Printf("✓ DBaaS Backup: %s\n", backup.Name())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
+
+**Setters**:
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InProject(Ref)`, `FromDBaaS(Ref)`, `FromDatabase(Ref)`
+- *Geography*: `InRegion(Region)`, `InZone(Zone)`
+- *Billing*: `BilledBy(BillingPeriod)`
 
 :::tip Runnable example
 DBaaS Backup operations are covered in the DBaaS example: [`examples/all-resources/resource_dbaas.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_dbaas.go)
@@ -708,6 +787,13 @@ fmt.Printf("✓ VPC: %s\n", vpc.Name())
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
 
+**Setters**:
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InProject(Ref)`
+- *Geography*: `InRegion(Region)`
+- *Boolean state*: `AsDefault()`, `NotDefault()`, `WithPreset()`, `WithoutPreset()`
+
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_vpc.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_vpc.go)
 :::
@@ -740,7 +826,7 @@ subnet, err := arubaClient.FromNetwork().Subnets().Create(
         WithDHCP(aruba.NewSubnetDHCP().
             Enabled().
             WithRange("192.168.1.10", 50).
-            WithRoutes(aruba.SubnetDHCPRoute{Address: "0.0.0.0/0", Gateway: "192.168.1.1"}).
+            WithRoutes(aruba.SubnetDHCPRouteCommon{Address: "0.0.0.0/0", Gateway: "192.168.1.1"}).
             WithDNSServers("8.8.8.8", "8.8.4.4")).
         NotDefault())
 if err != nil {
@@ -764,6 +850,16 @@ fmt.Printf("✓ Subnet: %s (CIDR: %s)\n", subnet.Name(), subnet.CIDR())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
+
+**Setters**:
+- *Classifier*: `OfType(SubnetType)`
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InVPC(Ref)`
+- *Geography*: `InRegion(Region)`
+- *Descriptive scalars*: `WithCIDR(string)`
+- *Attached config*: `WithDHCP(*SubnetDHCPCommon)`
+- *Boolean state*: `AsDefault()`, `NotDefault()`
 
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_subnet.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_subnet.go)
@@ -809,6 +905,13 @@ fmt.Printf("✓ Elastic IP: %s (%s)\n", eip.Name(), eip.Address())
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilNotUsed(ctx, opts...)`, `WaitUntilUsed(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
 
+**Setters**:
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InProject(Ref)`
+- *Geography*: `InRegion(Region)`
+- *Billing*: `BilledBy(BillingPeriod)`
+
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_elastic_ip.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_elastic_ip.go)
 :::
@@ -849,6 +952,12 @@ fmt.Printf("✓ Security Group: %s (ID: %s)\n", sg.Name(), sg.ID())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
+
+**Setters**:
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InVPC(Ref)`
+- *Boolean state*: `AsDefault()`, `NotDefault()`
 
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_security_group.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_security_group.go)
@@ -899,6 +1008,14 @@ fmt.Printf("✓ Security Rule: %s\n", rule.Name())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
+
+**Setters**:
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InSecurityGroup(Ref)`
+- *Geography*: `InRegion(Region)`
+- *Descriptive scalars*: `WithDirection(RuleDirection)`, `WithProtocol(RuleProtocol)`, `WithPort(string)`
+- *Active relationship*: `TargetingCIDR(string)`, `TargetingSecurityGroup(Ref)`
 
 :::tip Runnable example
 Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
@@ -978,6 +1095,13 @@ fmt.Printf("✓ VPC Peering: %s\n", peering.Name())
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
 
+**Setters**:
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InVPC(Ref)`
+- *Geography*: `InRegion(Region)`
+- *Active relationship*: `PeeredWith(Ref)`
+
 :::tip Runnable example
 Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
 :::
@@ -1021,6 +1145,14 @@ fmt.Printf("✓ Peering Route: %s (CIDR: %s)\n", route.Name(), route.CIDR())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
+
+**Setters**:
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InVPCPeering(Ref)`
+- *Geography*: `InRegion(Region)`
+- *Descriptive scalars*: `WithLocalCIDR(string)`, `WithRemoteCIDR(string)`
+- *Billing*: `BilledBy(BillingPeriod)`
 
 :::tip Runnable example
 Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
@@ -1081,6 +1213,16 @@ fmt.Printf("✓ VPN Tunnel: %s (gateway: %s)\n", tunnel.Name(), tunnel.PeerClien
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
 
+**Setters**:
+- *Classifier*: `OfType(VPNType)`
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InProject(Ref)`
+- *Geography*: `InRegion(Region)`
+- *Descriptive scalars*: `WithVPNClientProtocol(VPNClientProtocol)`, `WithPeerClientPublicIP(string)`
+- *Attached config*: `WithIPConfig(*VPNIPConfig)`, `WithIKESettings(*VPNIKE)`, `WithESPSettings(*VPNESP)`, `WithPSKSettings(*VPNPSK)`
+- *Billing*: `BilledBy(BillingPeriod)`
+
 :::tip Runnable example
 Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
 :::
@@ -1124,6 +1266,13 @@ fmt.Printf("✓ VPN Route: %s (CIDR: %s)\n", vpnRoute.Name(), vpnRoute.CIDR())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
+
+**Setters**:
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InVPNTunnel(Ref)`
+- *Geography*: `InRegion(Region)`
+- *Descriptive scalars*: `WithCloudSubnet(string)`, `WithOnPremSubnet(string)`
 
 :::tip Runnable example
 Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
@@ -1181,6 +1330,15 @@ fmt.Printf("✓ Recurring Job: %s (cron: %s)\n", cronJob.Name(), cronJob.Cron())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `Raw()` — underlying wire struct
 
+**Setters**:
+- *Classifier*: `OfType(JobType)`
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InProject(Ref)`
+- *Geography*: `InRegion(Region)`
+- *Descriptive scalars*: `OneShotAt(time.Time)`, `StartingAt(time.Time)`, `WithCron(string)`, `RecurringUntil(time.Time)`, `WithSteps(...*JobStep)`
+- *Boolean state*: `Enabled()`, `Disabled()`
+
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_job.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_job.go)
 :::
@@ -1225,6 +1383,13 @@ fmt.Printf("✓ KMS: %s (ID: %s)\n", kms.Name(), kms.ID())
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
 
+**Setters**:
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InProject(Ref)`
+- *Geography*: `InRegion(Region)`
+- *Billing*: `BilledBy(BillingPeriod)`
+
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_kms.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kms.go)
 :::
@@ -1266,6 +1431,11 @@ fmt.Printf("✓ Key: %s (algorithm: %s)\n", key.Name(), key.Algorithm())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
+
+**Setters**:
+- *Classifier*: `OfAlgorithm(KeyAlgorithm)`
+- *Name*: `Named(string)`
+- *Containment*: `InKMS(Ref)`
 
 :::tip Runnable example
 Key operations are covered in the KMS example: [`examples/all-resources/resource_kms.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kms.go)
@@ -1317,6 +1487,10 @@ fmt.Println("Key:",  cert.Key())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilCertificateAvailable(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
+
+**Setters**:
+- *Name*: `Named(string)`
+- *Containment*: `InKMS(Ref)`
 
 :::tip Runnable example
 KMIP operations are covered in the KMS example: [`examples/all-resources/resource_kms.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kms.go)
@@ -1392,6 +1566,17 @@ bs, err := arubaClient.FromStorage().Volumes().Create(
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilNotUsed(ctx, opts...)`, `WaitUntilUsed(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
 
+**Setters**:
+- *Classifier*: `OfType(BlockStorageType)`
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InProject(Ref)`
+- *Geography*: `InRegion(Region)`, `InZone(Zone)`
+- *Descriptive scalars*: `SizedGB(int)`
+- *Origin*: `FromImage(string)`, `FromSnapshot(Ref)`
+- *Boolean state*: `AsBootable()`, `NotBootable()`
+- *Billing*: `BilledBy(BillingPeriod)`
+
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_block_storage.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_block_storage.go)
 :::
@@ -1439,6 +1624,14 @@ fmt.Printf("✓ Snapshot: %s\n", snap.Name())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
+
+**Setters**:
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InProject(Ref)`
+- *Geography*: `InRegion(Region)`
+- *Origin*: `FromVolume(Ref)`
+- *Billing*: `BilledBy(BillingPeriod)`
 
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_snapshot.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_snapshot.go)
@@ -1489,6 +1682,16 @@ fmt.Printf("✓ Storage Backup: %s\n", backup.Name())
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
 
+**Setters**:
+- *Classifier*: `OfType(StorageBackupType)`
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `InProject(Ref)`
+- *Geography*: `InRegion(Region)`
+- *Descriptive scalars*: `RetainedForDays(int)`
+- *Origin*: `FromVolume(Ref)`
+- *Billing*: `BilledBy(BillingPeriod)`
+
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_storage_backup.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_storage_backup.go)
 :::
@@ -1529,6 +1732,13 @@ fmt.Printf("✓ Storage Restore: %s\n", restore.Name())
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
+
+**Setters**:
+- *Name*: `Named(string)`
+- *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
+- *Containment*: `FromBackup(Ref)`
+- *Geography*: `InRegion(Region)`
+- *Origin*: `ToVolume(Ref)`
 
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_storage_restore.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_storage_restore.go)
