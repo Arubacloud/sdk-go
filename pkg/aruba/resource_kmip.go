@@ -248,7 +248,7 @@ func kmipIDsFromRef(ref Ref) (projectID, kmsID, kmipID string, err error) {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type kmipsLowLevelClient interface {
-	List(ctx context.Context, projectID, kmsID string, params *types.RequestParameters) (*types.Response[types.KmipList], error)
+	List(ctx context.Context, projectID, kmsID string, params *types.RequestParameters) (*types.Response[types.KmipListResponse], error)
 	Get(ctx context.Context, projectID, kmsID, kmipID string, params *types.RequestParameters) (*types.Response[types.KmipResponse], error)
 	Create(ctx context.Context, projectID, kmsID string, body types.KmipRequest, params *types.RequestParameters) (*types.Response[types.KmipResponse], error)
 	Delete(ctx context.Context, projectID, kmsID, kmipID string, params *types.RequestParameters) (*types.Response[any], error)
@@ -401,7 +401,7 @@ func (a *kmipsClientAdapter) List(ctx context.Context, parent Ref, opts ...CallO
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*Kmip], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*Kmip], error) {
-		fetch := listPageFetch[types.KmipList](a.rest, opts)
+		fetch := listPageFetch[types.KmipListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr

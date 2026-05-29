@@ -25,7 +25,7 @@ func NewKMSClientImpl(client *restclient.Client) *kmsClientImpl {
 }
 
 // List retrieves all KMS instances for a project
-func (c *kmsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KmsList], error) {
+func (c *kmsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KmsListResponse], error) {
 	c.client.Logger().Debugf("Listing KMS instances for project: %s", projectID)
 
 	if err := types.ValidateProject(projectID); err != nil {
@@ -51,7 +51,7 @@ func (c *kmsClientImpl) List(ctx context.Context, projectID string, params *type
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.KmsList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.KmsListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific KMS instance by ID

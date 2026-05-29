@@ -21,7 +21,7 @@ type KmsResponse struct {
 	Status     ResourceStatus           `json:"status,omitempty"`
 }
 
-type KmsList struct {
+type KmsListResponse struct {
 	ListResponse
 	Values []KmsResponse `json:"values"`
 }
@@ -77,7 +77,7 @@ type KeyResponse struct {
 	Status         *KeyStatus         `json:"status,omitempty"`
 }
 
-type KeyList struct {
+type KeyListResponse struct {
 	ListResponse
 	Values []KeyResponse `json:"values"`
 }
@@ -109,7 +109,7 @@ type KmipResponse struct {
 	DeletionDate *string        `json:"deletionDate,omitempty"` // date-time format, nullable
 }
 
-type KmipList struct {
+type KmipListResponse struct {
 	ListResponse
 	Values []KmipResponse `json:"values"`
 }

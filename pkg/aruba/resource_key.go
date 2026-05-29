@@ -208,7 +208,7 @@ func keyIDsFromRef(ref Ref) (projectID, kmsID, keyID string, err error) {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type keysLowLevelClient interface {
-	List(ctx context.Context, projectID, kmsID string, params *types.RequestParameters) (*types.Response[types.KeyList], error)
+	List(ctx context.Context, projectID, kmsID string, params *types.RequestParameters) (*types.Response[types.KeyListResponse], error)
 	Get(ctx context.Context, projectID, kmsID, keyID string, params *types.RequestParameters) (*types.Response[types.KeyResponse], error)
 	Create(ctx context.Context, projectID, kmsID string, body types.KeyRequest, params *types.RequestParameters) (*types.Response[types.KeyResponse], error)
 	Delete(ctx context.Context, projectID, kmsID, keyID string, params *types.RequestParameters) (*types.Response[any], error)
@@ -362,7 +362,7 @@ func (a *keysClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOp
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*Key], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*Key], error) {
-		fetch := listPageFetch[types.KeyList](a.rest, opts)
+		fetch := listPageFetch[types.KeyListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr
