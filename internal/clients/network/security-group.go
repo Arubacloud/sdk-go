@@ -29,7 +29,7 @@ func NewSecurityGroupsClientImpl(client *restclient.Client, vpcClient *vpcsClien
 }
 
 // List retrieves all security groups for a VPC
-func (c *securityGroupsClientImpl) List(ctx context.Context, projectID string, vpcID string, params *types.RequestParameters) (*types.Response[types.SecurityGroupList], error) {
+func (c *securityGroupsClientImpl) List(ctx context.Context, projectID string, vpcID string, params *types.RequestParameters) (*types.Response[types.SecurityGroupListResponse], error) {
 	c.client.Logger().Debugf("Listing security groups for VPC: %s in project: %s", vpcID, projectID)
 
 	if err := types.ValidateProjectAndResource(projectID, vpcID, "VPC ID"); err != nil {
@@ -55,7 +55,7 @@ func (c *securityGroupsClientImpl) List(ctx context.Context, projectID string, v
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.SecurityGroupList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.SecurityGroupListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific security group by ID
