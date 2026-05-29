@@ -24,7 +24,7 @@ func NewVPCPeeringsClientImpl(client *restclient.Client) *vpcPeeringsClientImpl 
 }
 
 // List retrieves all VPC peerings for a VPC
-func (c *vpcPeeringsClientImpl) List(ctx context.Context, projectID string, vpcID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringList], error) {
+func (c *vpcPeeringsClientImpl) List(ctx context.Context, projectID string, vpcID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringListResponse], error) {
 	c.client.Logger().Debugf("Listing VPC peerings for VPC: %s in project: %s", vpcID, projectID)
 
 	if err := types.ValidateProjectAndResource(projectID, vpcID, "VPC ID"); err != nil {
@@ -50,7 +50,7 @@ func (c *vpcPeeringsClientImpl) List(ctx context.Context, projectID string, vpcI
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.VPCPeeringList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.VPCPeeringListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific VPC peering by ID
