@@ -24,7 +24,7 @@ func NewVPCPeeringRoutesClientImpl(client *restclient.Client) *vpcPeeringRoutesC
 }
 
 // List retrieves all VPC peering routes for a VPC peering connection
-func (c *vpcPeeringRoutesClientImpl) List(ctx context.Context, projectID string, vpcID string, vpcPeeringID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteList], error) {
+func (c *vpcPeeringRoutesClientImpl) List(ctx context.Context, projectID string, vpcID string, vpcPeeringID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteListResponse], error) {
 	c.client.Logger().Debugf("Listing VPC peering routes for VPC peering: %s in VPC: %s in project: %s", vpcPeeringID, vpcID, projectID)
 
 	if err := types.ValidateVPCResource(projectID, vpcID, vpcPeeringID, "VPC peering ID"); err != nil {
@@ -50,7 +50,7 @@ func (c *vpcPeeringRoutesClientImpl) List(ctx context.Context, projectID string,
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.VPCPeeringRouteList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.VPCPeeringRouteListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific VPC peering route by ID

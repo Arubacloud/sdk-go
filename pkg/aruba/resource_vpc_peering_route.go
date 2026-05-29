@@ -213,7 +213,7 @@ func vpcPeeringRouteDerefString(p *string) string {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type vpcPeeringRouteLowLevelClient interface {
-	List(ctx context.Context, projectID, vpcID, vpcPeeringID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteList], error)
+	List(ctx context.Context, projectID, vpcID, vpcPeeringID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteListResponse], error)
 	Get(ctx context.Context, projectID, vpcID, vpcPeeringID, vpcPeeringRouteID string, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error)
 	Create(ctx context.Context, projectID, vpcID, vpcPeeringID string, body types.VPCPeeringRouteRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error)
 	Update(ctx context.Context, projectID, vpcID, vpcPeeringID, vpcPeeringRouteID string, body types.VPCPeeringRouteRequest, params *types.RequestParameters) (*types.Response[types.VPCPeeringRouteResponse], error)
@@ -416,7 +416,7 @@ func (a *vpcPeeringRoutesClientAdapter) List(ctx context.Context, peering Ref, o
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*VPCPeeringRoute], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*VPCPeeringRoute], error) {
-		fetch := listPageFetch[types.VPCPeeringRouteList](a.rest, opts)
+		fetch := listPageFetch[types.VPCPeeringRouteListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr
