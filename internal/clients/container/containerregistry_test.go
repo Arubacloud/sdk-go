@@ -25,7 +25,7 @@ func TestListContainerRegistry(t *testing.T) {
 							Metadata: types.ResourceMetadataResponse{
 								Name: ptr.To("test-registry"),
 							},
-							Properties: types.ContainerRegistryPropertiesResult{
+							Properties: types.ContainerRegistryPropertiesResponse{
 								VPC: types.ReferenceResource{
 									URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"),
 								},
@@ -193,7 +193,7 @@ func TestGetContainerRegistry(t *testing.T) {
 						Name: ptr.To("test-registry"),
 						ID:   ptr.To("registry-123"),
 					},
-					Properties: types.ContainerRegistryPropertiesResult{
+					Properties: types.ContainerRegistryPropertiesResponse{
 						VPC: types.ReferenceResource{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"),
 						},
@@ -352,7 +352,7 @@ func TestCreateContainerRegistry(t *testing.T) {
 						ID:   ptr.To("registry-456"),
 						URI:  ptr.To("/projects/test-project/providers/Aruba.Container/registries/registry-456"),
 					},
-					Properties: types.ContainerRegistryPropertiesResult{
+					Properties: types.ContainerRegistryPropertiesResponse{
 						VPC: types.ReferenceResource{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"),
 						},
@@ -593,7 +593,7 @@ func TestUpdateContainerRegistry(t *testing.T) {
 						Name: ptr.To("updated-registry"),
 						ID:   ptr.To("registry-123"),
 					},
-					Properties: types.ContainerRegistryPropertiesResult{
+					Properties: types.ContainerRegistryPropertiesResponse{
 						VPC: types.ReferenceResource{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"),
 						},

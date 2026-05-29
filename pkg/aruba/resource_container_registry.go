@@ -3,6 +3,7 @@ package aruba
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/Arubacloud/sdk-go/internal/clients/container"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
@@ -38,7 +39,6 @@ type ContainerRegistry struct {
 
 	// Registry-specific scalars.
 	adminUsername   *string
-	adminPassword   *string
 	concurrentUsers *string // wire "size" — flavor enum string ("Small", "Medium", "HighPerf")
 	billingPeriod   *BillingPeriod
 
@@ -137,13 +137,6 @@ func (r *ContainerRegistry) WithAdminUsername(u string) *ContainerRegistry {
 	return r
 }
 
-// WithAdminPassword sets the admin password for the registry.
-// The provisioner requires a password when a username is supplied.
-func (r *ContainerRegistry) WithAdminPassword(p string) *ContainerRegistry {
-	r.adminPassword = &p
-	return r
-}
-
 // OfSize sets the concurrent-users tier for the registry.
 // Accepted values per the platform: "Small", "Medium", "HighPerf".
 // Use the ContainerRegistrySizeFlavor* constants.
@@ -222,6 +215,56 @@ func (r *ContainerRegistry) AdminUsername() string {
 	return containerRegistryDeref(r.adminUsername)
 }
 
+// IsPasswordSet reports whether the Aruba provisioner has generated the admin
+// password for the registry. The password itself is never returned over the wire.
+func (r *ContainerRegistry) IsPasswordSet() bool {
+	if r.response != nil && r.response.Data != nil && r.response.Data.Private != nil && r.response.Data.Private.PasswordSet != nil {
+		return *r.response.Data.Private.PasswordSet
+	}
+	return false
+}
+
+// AdminPasswordLastSetAt returns when the Aruba provisioner last generated the
+// admin password, or the zero time if that information is unavailable.
+func (r *ContainerRegistry) AdminPasswordLastSetAt() time.Time {
+	if r.response != nil && r.response.Data != nil && r.response.Data.Private != nil && r.response.Data.Private.PasswordLastSetAt != nil {
+		return *r.response.Data.Private.PasswordLastSetAt
+	}
+	return time.Time{}
+}
+
+// FQDN returns the fully-qualified domain name for the registry, or "" if unset.
+func (r *ContainerRegistry) FQDN() string {
+	if r.response != nil && r.response.Data != nil && r.response.Data.Info != nil {
+		return containerRegistryDeref(r.response.Data.Info.FQDN)
+	}
+	return ""
+}
+
+// PublicBaseURL returns the public base URL for the registry, or "" if unset.
+func (r *ContainerRegistry) PublicBaseURL() string {
+	if r.response != nil && r.response.Data != nil && r.response.Data.Info != nil {
+		return containerRegistryDeref(r.response.Data.Info.PublicBaseURL)
+	}
+	return ""
+}
+
+// PrivateBaseURL returns the private (VPC-internal) base URL for the registry, or "" if unset.
+func (r *ContainerRegistry) PrivateBaseURL() string {
+	if r.response != nil && r.response.Data != nil && r.response.Data.Info != nil {
+		return containerRegistryDeref(r.response.Data.Info.PrivateBaseURL)
+	}
+	return ""
+}
+
+// Version returns the registry software version, or "" if unset.
+func (r *ContainerRegistry) Version() string {
+	if r.response != nil && r.response.Data != nil && r.response.Data.Info != nil {
+		return containerRegistryDeref(r.response.Data.Info.Version)
+	}
+	return ""
+}
+
 // SizeFlavor returns the registry's concurrent-users tier as the typed enum.
 // Returns "" if the wire field has not been populated.
 func (r *ContainerRegistry) SizeFlavor() types.ContainerRegistrySizeFlavor {
@@ -265,15 +308,8 @@ func (r *ContainerRegistry) toRequest() types.ContainerRegistryRequest {
 	if r.blockStorageRef != nil {
 		props.BlockStorage = types.ReferenceResource{URI: *r.blockStorageRef}
 	}
-	if r.adminUsername != nil || r.adminPassword != nil {
-		cred := &types.UserCredential{}
-		if r.adminUsername != nil {
-			cred.Username = *r.adminUsername
-		}
-		if r.adminPassword != nil {
-			cred.Password = r.adminPassword
-		}
-		props.AdminUser = cred
+	if r.adminUsername != nil {
+		props.AdminUser = &types.UserCredential{Username: *r.adminUsername}
 	}
 	if r.concurrentUsers != nil {
 		props.ConcurrentUsers = r.concurrentUsers

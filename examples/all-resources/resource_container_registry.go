@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
@@ -23,21 +22,12 @@ func createContainerRegistry(ctx context.Context, arubaClient aruba.Client, reso
 		return nil
 	}
 
-	// SDK_EXAMPLE_REGISTRY_PASSWORD sets the admin password for the container registry.
-	// The provisioner requires a password alongside the username; without it the resource
-	// is accepted (HTTP 201) but silently transitions to Failed during async provisioning.
-	registryPassword := os.Getenv("SDK_EXAMPLE_REGISTRY_PASSWORD")
-	if registryPassword == "" {
-		registryPassword = "Adm1n@Registry!" // fallback for local convenience only — override via env var
-	}
-
 	r := aruba.NewContainerRegistry().
 		OfSize(aruba.ContainerRegistrySizeFlavorSmall).
 		Named(resourceName(NameContainerRegistry)).
 		InProject(resources.Project).
 		InRegion(aruba.RegionITBGBergamo).
 		WithAdminUsername("adminuser").
-		WithAdminPassword(registryPassword).
 		WithVPC(resources.VPC).
 		WithSubnet(resources.SubnetBasic).
 		WithSecurityGroup(resources.SecurityGroup).

@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Arubacloud/sdk-go/internal/testutil"
 	"github.com/Arubacloud/sdk-go/pkg/types"
@@ -418,11 +419,8 @@ func TestContainerRegistry_ToRequest_Empty(t *testing.T) {
 	}
 }
 
-func TestContainerRegistry_ToRequest_IncludesAdminPassword(t *testing.T) {
-	cr := NewContainerRegistry().
-		WithAdminUsername("admin").
-		WithAdminPassword("s3cr3t")
-
+func TestContainerRegistry_ToRequest_OmitsPassword(t *testing.T) {
+	cr := NewContainerRegistry().WithAdminUsername("admin")
 	req := cr.RawRequest()
 	if req.Properties.AdminUser == nil {
 		t.Fatal("AdminUser should not be nil")
@@ -430,14 +428,9 @@ func TestContainerRegistry_ToRequest_IncludesAdminPassword(t *testing.T) {
 	if req.Properties.AdminUser.Username != "admin" {
 		t.Errorf("Username = %q", req.Properties.AdminUser.Username)
 	}
-	if req.Properties.AdminUser.Password == nil || *req.Properties.AdminUser.Password != "s3cr3t" {
-		t.Errorf("Password = %v", req.Properties.AdminUser.Password)
-	}
-
-	// JSON must carry "password" key.
 	b, _ := json.Marshal(req.Properties.AdminUser)
-	if !strings.Contains(string(b), `"password"`) {
-		t.Errorf("marshalled AdminUser does not contain password field: %s", b)
+	if strings.Contains(string(b), `"password"`) {
+		t.Errorf("marshalled AdminUser must not contain password field: %s", b)
 	}
 }
 
@@ -478,7 +471,7 @@ func containerRegistryTestResponse(name string) *types.ContainerRegistryResponse
 				ID: "p",
 			},
 		},
-		Properties: types.ContainerRegistryPropertiesResult{
+		Properties: types.ContainerRegistryPropertiesResponse{
 			VPC:             types.ReferenceResource{URI: vpcURI},
 			Subnet:          types.ReferenceResource{URI: subnetURI},
 			SecurityGroup:   types.ReferenceResource{URI: sgURI},
@@ -1108,7 +1101,7 @@ func TestContainerRegistry_SizeFlavor_UnknownResponseString(t *testing.T) {
 	cr := &ContainerRegistry{}
 	unknown := "not-a-flavor"
 	cr.response = &types.ContainerRegistryResponse{
-		Properties: types.ContainerRegistryPropertiesResult{
+		Properties: types.ContainerRegistryPropertiesResponse{
 			ConcurrentUsers: &unknown,
 		},
 	}
@@ -1385,5 +1378,87 @@ func TestContainerRegistriesClientAdapter_Get_InjectsRefresh(t *testing.T) {
 	}
 	if !refreshIsSet(&cr.statusMixin) {
 		t.Error("Get should inject a refresh callback into the returned ContainerRegistry")
+	}
+}
+
+// --------------------------------------------------------------------------
+// Data block — getters
+// --------------------------------------------------------------------------
+
+func TestContainerRegistry_FromResponse_HydratesData(t *testing.T) {
+	passwordSet := true
+	lastSet := time.Date(2026, 5, 29, 10, 0, 0, 0, time.UTC)
+	fqdn := "registry.example.com"
+	pub := "https://registry.example.com"
+	priv := "https://private.registry.example.com"
+	ver := "2.8"
+
+	cr := &ContainerRegistry{}
+	cr.fromResponse(&types.ContainerRegistryResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:  func() *string { s := "cr-1"; return &s }(),
+			URI: func() *string { s := "/projects/p/providers/Aruba.Container/registries/cr-1"; return &s }(),
+		},
+		Data: &types.ContainerRegistryData{
+			Private: &types.ContainerRegistryDataPrivate{
+				PasswordSet:       &passwordSet,
+				PasswordLastSetAt: &lastSet,
+			},
+			Info: &types.ContainerRegistryDataInfo{
+				FQDN:           &fqdn,
+				PublicBaseURL:  &pub,
+				PrivateBaseURL: &priv,
+				Version:        &ver,
+			},
+		},
+	})
+
+	if !cr.IsPasswordSet() {
+		t.Error("IsPasswordSet() = false, want true")
+	}
+	if cr.AdminPasswordLastSetAt() != lastSet {
+		t.Errorf("AdminPasswordLastSetAt() = %v, want %v", cr.AdminPasswordLastSetAt(), lastSet)
+	}
+	if cr.FQDN() != fqdn {
+		t.Errorf("FQDN() = %q, want %q", cr.FQDN(), fqdn)
+	}
+	if cr.PublicBaseURL() != pub {
+		t.Errorf("PublicBaseURL() = %q, want %q", cr.PublicBaseURL(), pub)
+	}
+	if cr.PrivateBaseURL() != priv {
+		t.Errorf("PrivateBaseURL() = %q, want %q", cr.PrivateBaseURL(), priv)
+	}
+	if cr.Version() != ver {
+		t.Errorf("Version() = %q, want %q", cr.Version(), ver)
+	}
+}
+
+func TestContainerRegistry_DataGetters_NilSafe(t *testing.T) {
+	cr := &ContainerRegistry{}
+	cr.fromResponse(&types.ContainerRegistryResponse{
+		Metadata: types.ResourceMetadataResponse{
+			ID:  func() *string { s := "cr-1"; return &s }(),
+			URI: func() *string { s := "/projects/p/providers/Aruba.Container/registries/cr-1"; return &s }(),
+		},
+		// Data intentionally nil
+	})
+
+	if cr.IsPasswordSet() {
+		t.Error("IsPasswordSet() = true, want false for nil Data")
+	}
+	if !cr.AdminPasswordLastSetAt().IsZero() {
+		t.Errorf("AdminPasswordLastSetAt() = %v, want zero", cr.AdminPasswordLastSetAt())
+	}
+	if cr.FQDN() != "" {
+		t.Errorf("FQDN() = %q, want empty", cr.FQDN())
+	}
+	if cr.PublicBaseURL() != "" {
+		t.Errorf("PublicBaseURL() = %q, want empty", cr.PublicBaseURL())
+	}
+	if cr.PrivateBaseURL() != "" {
+		t.Errorf("PrivateBaseURL() = %q, want empty", cr.PrivateBaseURL())
+	}
+	if cr.Version() != "" {
+		t.Errorf("Version() = %q, want empty", cr.Version())
 	}
 }

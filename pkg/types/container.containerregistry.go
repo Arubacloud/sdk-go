@@ -1,5 +1,7 @@
 package types
 
+import "time"
+
 // ContainerRegistrySizeFlavor is the concurrent-users tier for a container
 // registry. Wire-encoded into the "size" JSON field of the request.
 // Accepted values per the platform: "Small", "Medium", "HighPerf".
@@ -12,14 +14,8 @@ const (
 )
 
 type UserCredential struct {
-
-	// Username is the administrator username for the container registry
+	// Username is the administrator username for the container registry.
 	Username string `json:"username"`
-
-	// Password is the administrator password for the container registry.
-	// Required by the provisioner when Username is supplied; omitted from
-	// GET responses (the server never echoes credentials back).
-	Password *string `json:"password,omitempty"`
 }
 
 type ContainerRegistryPropertiesRequest struct {
@@ -48,7 +44,7 @@ type ContainerRegistryPropertiesRequest struct {
 	ConcurrentUsers *string `json:"size,omitempty"`
 }
 
-type ContainerRegistryPropertiesResult struct {
+type ContainerRegistryPropertiesResponse struct {
 
 	// PublicIp is the public IP associated with the container registry
 	PublicIp ReferenceResource `json:"publicIp"`
@@ -75,6 +71,31 @@ type ContainerRegistryPropertiesResult struct {
 	ConcurrentUsers *string `json:"size,omitempty"`
 }
 
+// ContainerRegistryDataPrivate holds credential-state information returned by
+// the platform after the Aruba provisioner has processed the registry. The
+// admin password itself is never returned over the wire; only its readiness
+// state is exposed here.
+type ContainerRegistryDataPrivate struct {
+	// PasswordSet reports whether the provisioner has generated the admin password.
+	PasswordSet       *bool      `json:"passwordSet,omitempty"`
+	PasswordLastSetAt *time.Time `json:"passwordLastSetAt,omitempty"`
+}
+
+// ContainerRegistryDataInfo holds operational endpoint information for the registry.
+type ContainerRegistryDataInfo struct {
+	FQDN           *string `json:"fqdn,omitempty"`
+	PublicBaseURL  *string `json:"publicBaseUrl,omitempty"`
+	PrivateBaseURL *string `json:"privateBaseUrl,omitempty"`
+	Version        *string `json:"version,omitempty"`
+}
+
+// ContainerRegistryData is the top-level data block returned alongside
+// metadata/properties/status on Create and Get responses.
+type ContainerRegistryData struct {
+	Private *ContainerRegistryDataPrivate `json:"private,omitempty"`
+	Info    *ContainerRegistryDataInfo    `json:"info,omitempty"`
+}
+
 type ContainerRegistryRequest struct {
 	Metadata RegionalResourceMetadataRequest `json:"metadata"`
 
@@ -82,14 +103,10 @@ type ContainerRegistryRequest struct {
 }
 
 type ContainerRegistryResponse struct {
-	Metadata   ResourceMetadataResponse          `json:"metadata"`
-	Properties ContainerRegistryPropertiesResult `json:"properties"`
-	Status     ResourceStatus                    `json:"status,omitempty"`
-}
-
-type ContainerRegistryPropertiesResponse struct {
-	Metadata   ResourceMetadataResponse          `json:"metadata"`
-	Properties ContainerRegistryPropertiesResult `json:"properties"`
+	Metadata   ResourceMetadataResponse            `json:"metadata"`
+	Properties ContainerRegistryPropertiesResponse `json:"properties"`
+	Data       *ContainerRegistryData              `json:"data,omitempty"`
+	Status     ResourceStatus                      `json:"status,omitempty"`
 }
 
 type ContainerRegistryList struct {

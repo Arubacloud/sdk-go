@@ -71,10 +71,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **`JobStep` request DTO renamed** — `JobStep` renamed to `JobStepRequest` for symmetry
   with `JobStepResponse` (closes #305).
 
-- **`ContainerRegistry` admin-password** — `UserCredential.Password` field added to the wire DTO
-  and `WithAdminPassword(string)` setter added to the wrapper. Omitting a password while supplying
-  a username caused the provisioner to fail silently (~30 min after creation) with `state:Failed`
-  and no error reason.
+- **`ContainerRegistry` `data` block** — `ContainerRegistryResponse` now includes a `Data *ContainerRegistryData`
+  field (JSON: `"data"`) with `Private` (credential readiness) and `Info` (endpoints/version) sub-objects,
+  matching the API spec. New response-side getters: `IsPasswordSet()`, `AdminPasswordLastSetAt()`,
+  `FQDN()`, `PublicBaseURL()`, `PrivateBaseURL()`, `Version()`.
+
+### Removed
+
+- **`ContainerRegistry` admin-password** — `UserCredential.Password` and `WithAdminPassword(string)` removed.
+  The admin password is generated internally by the Aruba provisioner and is never settable on Create; the
+  field has no corresponding parameter in the API spec. The credential readiness state is now exposed via
+  `IsPasswordSet()` / `AdminPasswordLastSetAt()` from the response `data.private` block.
+
+### Changed
+
+- **`ContainerRegistryPropertiesResult` renamed** to `ContainerRegistryPropertiesResponse` in `pkg/types`
+  for consistency with the request/response naming convention used by every other resource family.
 
 - **`examples/all-resources` VPN tunnel** — `ipConfigurations` (VPC + Subnet + ElasticIP) was
   never wired in the example; also `"vpn"` tag violated the server's ≥4-char minimum. Fixed by
