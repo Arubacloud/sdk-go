@@ -21,7 +21,7 @@ pkg/aruba/call_options.go   — CallOption and per-call option types
 pkg/aruba/errors.go      — *HTTPError wrapper
 pkg/aruba/client_root.go    — Root Client interface (exposes FromCompute(), FromNetwork(), etc.)
 pkg/aruba/client_<domain>.go — Per-domain service-group interfaces (client_compute.go, client_network.go, …)
-pkg/types/           — All request/response data models; includes typed State with predicate methods
+pkg/types/           — All request/response/common data models (Request/Response/Common naming rule); includes typed State with predicate methods
 pkg/async/           — Polling utilities for long-running operations
 pkg/multitenant/     — Multi-tenant client management
 internal/clients/    — Service-specific HTTP client implementations (one dir per service)
