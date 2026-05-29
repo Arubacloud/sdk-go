@@ -106,7 +106,7 @@ subnet, err := arubaClient.FromNetwork().Subnets().Create(
         WithDHCP(aruba.NewSubnetDHCP().
             Enabled().
             WithRange("192.168.1.10", 50).
-            WithRoutes(aruba.SubnetDHCPRoute{Address: "10.0.0.0/8", Gateway: "192.168.1.1"}).
+            WithRoutes(aruba.SubnetDHCPRouteCommon{Address: "10.0.0.0/8", Gateway: "192.168.1.1"}).
             WithDNSServers("8.8.8.8", "8.8.4.4")).
         NotDefault())
 if err != nil {
