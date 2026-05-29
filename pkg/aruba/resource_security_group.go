@@ -168,7 +168,7 @@ func securityGroupDerefString(p *string) string {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type securityGroupLowLevelClient interface {
-	List(ctx context.Context, projectID, vpcID string, params *types.RequestParameters) (*types.Response[types.SecurityGroupList], error)
+	List(ctx context.Context, projectID, vpcID string, params *types.RequestParameters) (*types.Response[types.SecurityGroupListResponse], error)
 	Get(ctx context.Context, projectID, vpcID, securityGroupID string, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error)
 	Create(ctx context.Context, projectID, vpcID string, body types.SecurityGroupRequest, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error)
 	Update(ctx context.Context, projectID, vpcID, securityGroupID string, body types.SecurityGroupRequest, params *types.RequestParameters) (*types.Response[types.SecurityGroupResponse], error)
@@ -364,7 +364,7 @@ func (a *securityGroupsClientAdapter) List(ctx context.Context, vpc Ref, opts ..
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*SecurityGroup], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*SecurityGroup], error) {
-		fetch := listPageFetch[types.SecurityGroupList](a.rest, opts)
+		fetch := listPageFetch[types.SecurityGroupListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr

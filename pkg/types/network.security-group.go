@@ -27,7 +27,7 @@ type SecurityGroupResponse struct {
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type SecurityGroupList struct {
+type SecurityGroupListResponse struct {
 	ListResponse
 	Values []SecurityGroupResponse `json:"values"`
 }
