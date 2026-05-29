@@ -216,9 +216,9 @@ func (r *Resource) SomeField() string {
 
 ### Wait conventions
 
-- Resources that embed `statusMixin` (`pkg/aruba/mixin_status.go`) get `WaitUntilActive`, `WaitUntilReady`, and `WaitUntilStates(ctx, targets, opts...)` for free.
-- Adapters install a `refresh` closure after `Create` / `Get` / `List` — without it, `WaitUntilStates` returns an immediate error.
-- Family B resources without `statusMixin` define their own `WaitUntil*` that drive `pkg/async.WaitFor` directly (e.g. `*Kmip.WaitUntilCertificateAvailable` in `resource_kmip.go`).
+- `refreshMixin` (`pkg/aruba/mixin_refresh.go`) owns the `refresh` callback and `WaitUntilGone`. Adapters install the closure after `Create` / `Get` / `List` — without it, any `WaitUntil*` call returns an immediate error.
+- `statusMixin` (`pkg/aruba/mixin_status.go`) embeds `refreshMixin` and adds `WaitUntilActive`, `WaitUntilReady`, and `WaitUntilStates(ctx, targets, opts...)`. All Family-A resources embed `statusMixin`.
+- Family B resources embed `refreshMixin` directly (no `statusMixin`) and gain `WaitUntilGone` only. Those that need custom polling define their own `WaitUntil*` driving `pkg/async.WaitFor` (e.g. `*Kmip.WaitUntilCertificateAvailable` in `resource_kmip.go`).
 
 ### URI segment casing
 
