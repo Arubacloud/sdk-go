@@ -418,7 +418,7 @@ func jobIDsFromRef(ref Ref) (projectID, jobID string, err error) {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type jobsLowLevelClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.JobList], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.JobListResponse], error)
 	Get(ctx context.Context, projectID, jobID string, params *types.RequestParameters) (*types.Response[types.JobResponse], error)
 	Create(ctx context.Context, projectID string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error)
 	Update(ctx context.Context, projectID, jobID string, body types.JobRequest, params *types.RequestParameters) (*types.Response[types.JobResponse], error)
@@ -611,7 +611,7 @@ func (a *jobsClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOp
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*Job], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*Job], error) {
-		fetch := listPageFetch[types.JobList](a.rest, opts)
+		fetch := listPageFetch[types.JobListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr
