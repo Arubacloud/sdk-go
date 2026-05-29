@@ -4,7 +4,7 @@ import "github.com/Arubacloud/sdk-go/pkg/types"
 
 // ---- Sub-builder ----
 
-// VPNPSK is a fluent builder for the PSKSettings block of a VPNTunnel.
+// VPNPSK is a fluent builder for the PSKSettingsCommon block of a VPNTunnel.
 // Construct with NewVPNPSK() and attach via VPNTunnel.WithPSKSettings.
 type VPNPSK struct {
 	errMixin
@@ -25,11 +25,11 @@ func (p *VPNPSK) WithOnPremSite(v string) *VPNPSK { p.onPremSite = &v; return p 
 // WithKey sets the pre-shared secret key.
 func (p *VPNPSK) WithKey(v string) *VPNPSK { p.secret = &v; return p }
 
-func (p *VPNPSK) build() *types.PSKSettings {
+func (p *VPNPSK) build() *types.PSKSettingsCommon {
 	if p == nil {
 		return nil
 	}
-	return &types.PSKSettings{
+	return &types.PSKSettingsCommon{
 		CloudSite:  p.cloudSite,
 		OnPremSite: p.onPremSite,
 		Secret:     p.secret,

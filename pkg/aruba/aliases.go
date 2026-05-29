@@ -416,7 +416,7 @@ type AcceptHeader = types.AcceptHeader
 // VPN IKE crypto
 // ---------------------------------------------------------------------------
 
-// IKEEncryption is the encryption algorithm for IKESettings.Encryption.
+// IKEEncryption is the encryption algorithm for IKESettingsCommon.Encryption.
 // Values are StrongSwan wire identifiers. The authoritative list is at:
 //
 //	GET /providers/Aruba.Network/vpnTunnels
@@ -479,7 +479,7 @@ const (
 	IKEEncryptionChaCha20Poly1305  = types.IKEEncryptionChaCha20Poly1305  // ChaCha20-Poly1305 AEAD
 )
 
-// IKEHash is the hash/PRF algorithm for IKESettings.Hash.
+// IKEHash is the hash/PRF algorithm for IKESettingsCommon.Hash.
 type IKEHash = types.IKEHash
 
 const (
@@ -498,7 +498,7 @@ const (
 	IKEHashAES256GMAC = types.IKEHashAES256GMAC // AES-256-GMAC
 )
 
-// IKEDHGroup is the Diffie-Hellman group for IKESettings.DHGroup.
+// IKEDHGroup is the Diffie-Hellman group for IKESettingsCommon.DHGroup.
 // Groups 3, 4, and 6–13 are not exposed by the platform.
 type IKEDHGroup = types.IKEDHGroup
 
@@ -527,7 +527,7 @@ const (
 	IKEDHGroup32 = types.IKEDHGroup32 // Curve448 (X448)
 )
 
-// IKEDPDAction is the Dead Peer Detection action for IKESettings.DPDAction.
+// IKEDPDAction is the Dead Peer Detection action for IKESettingsCommon.DPDAction.
 type IKEDPDAction = types.IKEDPDAction
 
 const (
@@ -540,7 +540,7 @@ const (
 // VPN ESP crypto
 // ---------------------------------------------------------------------------
 
-// ESPEncryption is the encryption algorithm for ESPSettings.Encryption.
+// ESPEncryption is the encryption algorithm for ESPSettingsCommon.Encryption.
 // Values are StrongSwan wire identifiers. The authoritative list is at:
 //
 //	GET /providers/Aruba.Network/vpnTunnels
@@ -603,7 +603,7 @@ const (
 	ESPEncryptionChaCha20Poly1305  = types.ESPEncryptionChaCha20Poly1305  // ChaCha20-Poly1305 AEAD
 )
 
-// ESPHash is the integrity/authentication algorithm for ESPSettings.Hash.
+// ESPHash is the integrity/authentication algorithm for ESPSettingsCommon.Hash.
 type ESPHash = types.ESPHash
 
 const (
@@ -622,7 +622,7 @@ const (
 	ESPHashAES256GMAC = types.ESPHashAES256GMAC // AES-256-GMAC
 )
 
-// ESPPFSGroup is the Perfect Forward Secrecy DH group for ESPSettings.PFS.
+// ESPPFSGroup is the Perfect Forward Secrecy DH group for ESPSettingsCommon.PFS.
 // Wire values use a "dh-group<N>" prefix (e.g., "dh-group14"), unlike the
 // bare numeric IDs used by IKEDHGroup. Groups 3, 4, and 6–13 are not exposed.
 type ESPPFSGroup = types.ESPPFSGroup

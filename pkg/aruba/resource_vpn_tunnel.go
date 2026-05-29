@@ -220,10 +220,10 @@ func (t *VPNTunnel) toRequest() types.VPNTunnelRequest {
 		VPNClientProtocol: t.vpnClientProtocol,
 	}
 	if t.ipConfig != nil {
-		props.IPConfigurations = t.ipConfig.build()
+		props.IPConfigurationsCommon = t.ipConfig.build()
 	}
 	if t.ike != nil || t.esp != nil || t.psk != nil || t.peerClientPublicIP != nil {
-		cs := &types.VPNClientSettings{PeerClientPublicIP: t.peerClientPublicIP}
+		cs := &types.VPNClientSettingsCommon{PeerClientPublicIP: t.peerClientPublicIP}
 		if t.ike != nil {
 			cs.IKE = t.ike.build()
 		}
@@ -233,7 +233,7 @@ func (t *VPNTunnel) toRequest() types.VPNTunnelRequest {
 		if t.psk != nil {
 			cs.PSK = t.psk.build()
 		}
-		props.VPNClientSettings = cs
+		props.VPNClientSettingsCommon = cs
 	}
 	props.BillingPlan = &types.BillingPlan{BillingPeriod: defaultBillingPeriod(t.billingPeriod)}
 	return types.VPNTunnelRequest{
@@ -272,7 +272,7 @@ func (t *VPNTunnel) fromResponse(resp *types.VPNTunnelResponse) {
 	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
 		t.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
 	}
-	if cs := resp.Properties.VPNClientSettings; cs != nil {
+	if cs := resp.Properties.VPNClientSettingsCommon; cs != nil {
 		if cs.PeerClientPublicIP != nil {
 			v := *cs.PeerClientPublicIP
 			t.peerClientPublicIP = &v
@@ -307,7 +307,7 @@ func (t *VPNTunnel) fromResponse(resp *types.VPNTunnelResponse) {
 			t.psk = p
 		}
 	}
-	if ipc := resp.Properties.IPConfigurations; ipc != nil {
+	if ipc := resp.Properties.IPConfigurationsCommon; ipc != nil {
 		c := &VPNIPConfig{vpc: ipc.VPC, publicIP: ipc.PublicIP}
 		if ipc.Subnet != nil {
 			c.subnetName = ipc.Subnet.Name
@@ -340,7 +340,7 @@ func vpnTunnelDerefString(p *string) string {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type vpnTunnelLowLevelClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.VPNTunnelList], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.VPNTunnelListResponse], error)
 	Get(ctx context.Context, projectID, vpnTunnelID string, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error)
 	Create(ctx context.Context, projectID string, body types.VPNTunnelRequest, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error)
 	Update(ctx context.Context, projectID, vpnTunnelID string, body types.VPNTunnelRequest, params *types.RequestParameters) (*types.Response[types.VPNTunnelResponse], error)
@@ -531,7 +531,7 @@ func (a *vpnTunnelsClientAdapter) List(ctx context.Context, project Ref, opts ..
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*VPNTunnel], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*VPNTunnel], error) {
-		fetch := listPageFetch[types.VPNTunnelList](a.rest, opts)
+		fetch := listPageFetch[types.VPNTunnelListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr

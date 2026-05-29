@@ -4,7 +4,7 @@ import "github.com/Arubacloud/sdk-go/pkg/types"
 
 // ---- Sub-builder ----
 
-// VPNIKE is a fluent builder for the IKESettings block of a VPNTunnel.
+// VPNIKE is a fluent builder for the IKESettingsCommon block of a VPNTunnel.
 // Construct with NewVPNIKE() and attach via VPNTunnel.WithIKESettings.
 type VPNIKE struct {
 	errMixin
@@ -41,11 +41,11 @@ func (k *VPNIKE) WithDPDIntervalSeconds(s int) *VPNIKE { k.dpdInterval = int32(s
 // WithDPDTimeoutSeconds sets the DPD timeout in seconds.
 func (k *VPNIKE) WithDPDTimeoutSeconds(s int) *VPNIKE { k.dpdTimeout = int32(s); return k }
 
-func (k *VPNIKE) build() *types.IKESettings {
+func (k *VPNIKE) build() *types.IKESettingsCommon {
 	if k == nil {
 		return nil
 	}
-	return &types.IKESettings{
+	return &types.IKESettingsCommon{
 		Lifetime:    k.lifetime,
 		Encryption:  k.encryption,
 		Hash:        k.hash,

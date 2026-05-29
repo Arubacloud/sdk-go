@@ -397,8 +397,8 @@ func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
 	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
 		t.Errorf("BillingPlan.BillingPeriod = %v", req.Properties.BillingPlan)
 	}
-	if cs := req.Properties.VPNClientSettings; cs == nil {
-		t.Fatal("VPNClientSettings must be set")
+	if cs := req.Properties.VPNClientSettingsCommon; cs == nil {
+		t.Fatal("VPNClientSettingsCommon must be set")
 	} else {
 		if cs.PeerClientPublicIP == nil || *cs.PeerClientPublicIP != "1.2.3.4" {
 			t.Errorf("PeerClientPublicIP = %v", cs.PeerClientPublicIP)
@@ -416,8 +416,8 @@ func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
 			t.Fatal("PSK must be set")
 		}
 	}
-	if ip := req.Properties.IPConfigurations; ip == nil {
-		t.Fatal("IPConfigurations must be set")
+	if ip := req.Properties.IPConfigurationsCommon; ip == nil {
+		t.Fatal("IPConfigurationsCommon must be set")
 	} else {
 		if ip.VPC == nil || ip.VPC.URI != "/projects/p/providers/Aruba.Network/vpcs/v" {
 			t.Errorf("IPConfig.VPC.URI = %q", func() string {
@@ -446,24 +446,24 @@ func TestVPNTunnel_ToRequest_NoVPNClientSettings_OmitsObject(t *testing.T) {
 	tun := NewVPNTunnel().
 		Named("bare")
 	req := tun.RawRequest()
-	if req.Properties.VPNClientSettings != nil {
-		t.Errorf("VPNClientSettings should be nil when IKE/ESP/PSK/PeerIP all unset")
+	if req.Properties.VPNClientSettingsCommon != nil {
+		t.Errorf("VPNClientSettingsCommon should be nil when IKE/ESP/PSK/PeerIP all unset")
 	}
 }
 
 func TestVPNTunnel_ToRequest_PeerClientPublicIPOnly_EmitsClientSettings(t *testing.T) {
 	tun := NewVPNTunnel().WithPeerClientPublicIP("5.6.7.8")
 	req := tun.RawRequest()
-	if req.Properties.VPNClientSettings == nil {
-		t.Fatal("VPNClientSettings must be non-nil when PeerClientPublicIP is set")
+	if req.Properties.VPNClientSettingsCommon == nil {
+		t.Fatal("VPNClientSettingsCommon must be non-nil when PeerClientPublicIP is set")
 	}
-	if req.Properties.VPNClientSettings.IKE != nil {
+	if req.Properties.VPNClientSettingsCommon.IKE != nil {
 		t.Error("IKE should be nil")
 	}
-	if req.Properties.VPNClientSettings.ESP != nil {
+	if req.Properties.VPNClientSettingsCommon.ESP != nil {
 		t.Error("ESP should be nil")
 	}
-	if req.Properties.VPNClientSettings.PSK != nil {
+	if req.Properties.VPNClientSettingsCommon.PSK != nil {
 		t.Error("PSK should be nil")
 	}
 }
@@ -507,7 +507,7 @@ func vpnTunnelTestResponse(id, name, uri, projectID string) *types.VPNTunnelResp
 			VPNType:           &vpnType,
 			VPNClientProtocol: &proto,
 			BillingPlan:       &types.BillingPlan{BillingPeriod: &bp},
-			VPNClientSettings: &types.VPNClientSettings{
+			VPNClientSettingsCommon: &types.VPNClientSettingsCommon{
 				PeerClientPublicIP: &peerIP,
 			},
 		},
@@ -741,7 +741,7 @@ func TestVPNTunnelsClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Properties.VPNType == nil || *gotBody.Properties.VPNType != VPNTypeSiteToSite {
 		t.Errorf("request VPNType = %v", gotBody.Properties.VPNType)
 	}
-	if gotBody.Properties.VPNClientSettings == nil || gotBody.Properties.VPNClientSettings.IKE == nil {
+	if gotBody.Properties.VPNClientSettingsCommon == nil || gotBody.Properties.VPNClientSettingsCommon.IKE == nil {
 		t.Error("request IKE must be present")
 	}
 }
@@ -1369,9 +1369,9 @@ func TestVPNTunnel_FromResponse_RehydratesSubBuilders(t *testing.T) {
 	resp := &types.VPNTunnelResponse{
 		Properties: types.VPNTunnelPropertiesResponse{
 			RoutesNumber: 3,
-			VPNClientSettings: &types.VPNClientSettings{
+			VPNClientSettingsCommon: &types.VPNClientSettingsCommon{
 				PeerClientPublicIP: &peerIP,
-				IKE: &types.IKESettings{
+				IKE: &types.IKESettingsCommon{
 					Lifetime:    3600,
 					Encryption:  &enc,
 					Hash:        &hash,
@@ -1380,22 +1380,22 @@ func TestVPNTunnel_FromResponse_RehydratesSubBuilders(t *testing.T) {
 					DPDInterval: 30,
 					DPDTimeout:  120,
 				},
-				ESP: &types.ESPSettings{
+				ESP: &types.ESPSettingsCommon{
 					Lifetime:   1800,
 					Encryption: &espEnc,
 					Hash:       &espHash,
 					PFS:        &espPFS,
 				},
-				PSK: &types.PSKSettings{
+				PSK: &types.PSKSettingsCommon{
 					CloudSite:  &cloudSite,
 					OnPremSite: &onPremSite,
 					Secret:     &secret,
 				},
 			},
-			IPConfigurations: &types.IPConfigurations{
+			IPConfigurationsCommon: &types.IPConfigurationsCommon{
 				VPC:      &types.ReferenceResource{URI: vpcURI},
 				PublicIP: &types.ReferenceResource{URI: pubIPURI},
-				Subnet:   &types.SubnetInfo{Name: "sn-1", CIDR: "10.0.0.0/24"},
+				Subnet:   &types.SubnetInfoCommon{Name: "sn-1", CIDR: "10.0.0.0/24"},
 			},
 		},
 	}
@@ -1437,22 +1437,22 @@ func TestVPNTunnel_FromResponse_RehydratesSubBuilders(t *testing.T) {
 		t.Errorf("IPConfig.subnetCIDR = %q", tun.IPConfig().subnetCIDR)
 	}
 
-	// Round-trip: toRequest must emit the same VPNClientSettings shape.
+	// Round-trip: toRequest must emit the same VPNClientSettingsCommon shape.
 	req := tun.toRequest()
-	if req.Properties.VPNClientSettings == nil {
-		t.Fatal("toRequest().Properties.VPNClientSettings is nil after rehydration")
+	if req.Properties.VPNClientSettingsCommon == nil {
+		t.Fatal("toRequest().Properties.VPNClientSettingsCommon is nil after rehydration")
 	}
-	if req.Properties.VPNClientSettings.IKE == nil || req.Properties.VPNClientSettings.IKE.Lifetime != 3600 {
-		t.Errorf("round-trip IKE = %+v", req.Properties.VPNClientSettings.IKE)
+	if req.Properties.VPNClientSettingsCommon.IKE == nil || req.Properties.VPNClientSettingsCommon.IKE.Lifetime != 3600 {
+		t.Errorf("round-trip IKE = %+v", req.Properties.VPNClientSettingsCommon.IKE)
 	}
-	if req.Properties.VPNClientSettings.ESP == nil || req.Properties.VPNClientSettings.ESP.Lifetime != 1800 {
-		t.Errorf("round-trip ESP = %+v", req.Properties.VPNClientSettings.ESP)
+	if req.Properties.VPNClientSettingsCommon.ESP == nil || req.Properties.VPNClientSettingsCommon.ESP.Lifetime != 1800 {
+		t.Errorf("round-trip ESP = %+v", req.Properties.VPNClientSettingsCommon.ESP)
 	}
-	if req.Properties.VPNClientSettings.PSK == nil || req.Properties.VPNClientSettings.PSK.Secret == nil {
-		t.Errorf("round-trip PSK = %+v", req.Properties.VPNClientSettings.PSK)
+	if req.Properties.VPNClientSettingsCommon.PSK == nil || req.Properties.VPNClientSettingsCommon.PSK.Secret == nil {
+		t.Errorf("round-trip PSK = %+v", req.Properties.VPNClientSettingsCommon.PSK)
 	}
-	if req.Properties.IPConfigurations == nil || req.Properties.IPConfigurations.Subnet == nil {
-		t.Errorf("round-trip IPConfigurations = %+v", req.Properties.IPConfigurations)
+	if req.Properties.IPConfigurationsCommon == nil || req.Properties.IPConfigurationsCommon.Subnet == nil {
+		t.Errorf("round-trip IPConfigurationsCommon = %+v", req.Properties.IPConfigurationsCommon)
 	}
 }
 
