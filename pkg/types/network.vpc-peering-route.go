@@ -38,7 +38,7 @@ type VPCPeeringRouteResponse struct {
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type VPCPeeringRouteList struct {
+type VPCPeeringRouteListResponse struct {
 	ListResponse
 	Values []VPCPeeringRouteResponse `json:"values"`
 }
