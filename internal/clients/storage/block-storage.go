@@ -59,7 +59,7 @@ func NewVolumesClientImpl(client *restclient.Client) *volumesClientImpl {
 }
 
 // List retrieves all block storage volumes for a project
-func (c *volumesClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.BlockStorageList], error) {
+func (c *volumesClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.BlockStorageListResponse], error) {
 	c.client.Logger().Debugf("Listing block storage volumes for project: %s", projectID)
 
 	if err := types.ValidateProject(projectID); err != nil {
@@ -85,7 +85,7 @@ func (c *volumesClientImpl) List(ctx context.Context, projectID string, params *
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.BlockStorageList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.BlockStorageListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific block storage volume by ID
