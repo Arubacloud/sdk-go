@@ -16,7 +16,7 @@ func TestListUsers(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-123/users" {
 				w.WriteHeader(http.StatusOK)
-				resp := types.UserList{
+				resp := types.DatabaseUserListResponse{
 					ListResponse: types.ListResponse{Total: 1},
 					Values:       []types.UserResponse{{Username: "alice"}},
 				}

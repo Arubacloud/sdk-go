@@ -13,7 +13,7 @@ type UserResponse struct {
 	CreatedBy    *string    `json:"createdBy,omitempty"`
 }
 
-type UserList struct {
+type DatabaseUserListResponse struct {
 	ListResponse
 	Values []UserResponse `json:"values"`
 }
