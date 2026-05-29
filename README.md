@@ -6,9 +6,7 @@
 [![Codecov](https://codecov.io/gh/Arubacloud/sdk-go/branch/main/graph/badge.svg)](https://codecov.io/gh/Arubacloud/sdk-go)
 [![License](https://img.shields.io/github/license/Arubacloud/sdk-go)](LICENSE)
 
-See [`CHANGELOG.md`](CHANGELOG.md) for the full release history and the v0.1.x → v0.2.x branch policy.
-
-> **Note**: This SDK is currently in its **Alpha** stage. The API is not yet stable, and breaking changes may be introduced in future releases without prior notice.
+See [`CHANGELOG.md`](CHANGELOG.md) for the full release history and branch policy.
 
 Official Go SDK for the Aruba Cloud API. Manage cloud resources — compute instances, VPCs, storage, databases, and more — from Go code.
 
@@ -58,12 +56,12 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	proj := aruba.NewProject().
-		Named("my-first-project").
-		Tagged("go-sdk").
-		DescribedAs("Created from the Go SDK Quick Start")
-
-	if _, err := arubaClient.FromProject().Create(ctx, proj); err != nil {
+	proj, err := arubaClient.FromProject().Create(ctx,
+		aruba.NewProject().
+			Named("my-first-project").
+			Tagged("go-sdk").
+			DescribedAs("Created from the Go SDK Quick Start"))
+	if err != nil {
 		log.Fatalf("create project: %v", err)
 	}
 
@@ -139,7 +137,7 @@ vpc, err := arubaClient.FromNetwork().VPCs().Get(ctx, vpcRef)
 if err != nil {
     var httpErr *aruba.HTTPError
     if errors.As(err, &httpErr) {
-        log.Fatalf("API error %d: %s", httpErr.StatusCode, httpErr.Message)
+        log.Fatalf("API error %d: %s", httpErr.StatusCode, httpErr.Error())
     }
     log.Fatalf("transport error: %v", err)
 }
@@ -171,9 +169,9 @@ For per-resource builders (`aruba.NewVPC()`, `aruba.NewKaaS()`, …) and the ful
 
 Most cloud resources reach their terminal state asynchronously. Every wrapper that has a status mixin exposes:
 
-- `WaitUntilReady(ctx, opts...)` — accepts `Active`, `NotUsed`, `InUse`, `Used`. The 95% answer.
+- `WaitUntilReady(ctx, opts...)` — accepts `Active`, `Running`, `Stopped`, `NotUsed`, `Reserved`, `InUse`, `Used`. The 95% answer.
 - `WaitUntilActive(ctx, opts...)` — strictly `Active`.
-- `WaitUntilStates(ctx, []string{"Foo", "Bar"}, opts...)` — arbitrary target list.
+- `WaitUntilStates(ctx, []types.State{types.StateStopped}, opts...)` — arbitrary target list.
 - Specialized: `BlockStorage`/`ElasticIP` add `WaitUntilNotUsed`/`WaitUntilUsed`; `Kmip` adds `WaitUntilCertificateAvailable`.
 
 ```go
