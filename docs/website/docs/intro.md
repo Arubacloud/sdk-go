@@ -75,3 +75,4 @@ func main() {
 - Understand [Response Handling](./response-handling) for robust error handling
 - Learn about [Filtering](./filters) to query resources efficiently
 - Read about [Multitenancy](./multitenancy) to manage tenant-specific clients
+- See [Working at Low Level](./working-at-low-level) for advanced escape hatches (`pkg/types`, `pkg/async`)

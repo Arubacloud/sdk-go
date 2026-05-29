@@ -75,3 +75,4 @@ func main() {
 - Comprendi la [Gestione delle Risposte](./response-handling) per una gestione robusta degli errori
 - Scopri il [Filtraggio](./filters) per interrogare le risorse in modo efficiente
 - Leggi [Multitenancy](./multitenancy) per gestire client specifici per tenant
+- Vedi [Utilizzo a Basso Livello](./working-at-low-level) per funzionalità avanzate (`pkg/types`, `pkg/async`)
