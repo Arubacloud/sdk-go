@@ -477,7 +477,7 @@ func containerRegistryTestResponse(name string) *types.ContainerRegistryResponse
 			SecurityGroup:   types.ReferenceResource{URI: sgURI},
 			PublicIp:        types.ReferenceResource{URI: eipURI},
 			BlockStorage:    types.ReferenceResource{URI: bsURI},
-			AdminUser:       &types.UserCredential{Username: "admin"},
+			AdminUser:       &types.UserCredentialCommon{Username: "admin"},
 			ConcurrentUsers: &size,
 			BillingPlan: func() *types.BillingPlan {
 				v := BillingPeriodHour
@@ -621,7 +621,7 @@ type fakeContainerRegistryLowLevel struct {
 	updateFunc func(ctx context.Context, projectID, registryID string, body types.ContainerRegistryRequest, params *types.RequestParameters) (*types.Response[types.ContainerRegistryResponse], error)
 	getFunc    func(ctx context.Context, projectID, registryID string, params *types.RequestParameters) (*types.Response[types.ContainerRegistryResponse], error)
 	deleteFunc func(ctx context.Context, projectID, registryID string, params *types.RequestParameters) (*types.Response[any], error)
-	listFunc   func(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ContainerRegistryList], error)
+	listFunc   func(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ContainerRegistryListResponse], error)
 }
 
 func (f *fakeContainerRegistryLowLevel) Create(ctx context.Context, projectID string, body types.ContainerRegistryRequest, params *types.RequestParameters) (*types.Response[types.ContainerRegistryResponse], error) {
@@ -636,7 +636,7 @@ func (f *fakeContainerRegistryLowLevel) Get(ctx context.Context, projectID, regi
 func (f *fakeContainerRegistryLowLevel) Delete(ctx context.Context, projectID, registryID string, params *types.RequestParameters) (*types.Response[any], error) {
 	return f.deleteFunc(ctx, projectID, registryID, params)
 }
-func (f *fakeContainerRegistryLowLevel) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ContainerRegistryList], error) {
+func (f *fakeContainerRegistryLowLevel) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ContainerRegistryListResponse], error) {
 	return f.listFunc(ctx, projectID, params)
 }
 
@@ -1339,7 +1339,7 @@ func TestContainerRegistriesClientAdapter_Delete_LowLevelError(t *testing.T) {
 // List_LowLevelError: low-level List returns error → propagate.
 func TestContainerRegistriesClientAdapter_List_LowLevelError(t *testing.T) {
 	fake := &fakeContainerRegistryLowLevel{
-		listFunc: func(_ context.Context, _ string, _ *types.RequestParameters) (*types.Response[types.ContainerRegistryList], error) {
+		listFunc: func(_ context.Context, _ string, _ *types.RequestParameters) (*types.Response[types.ContainerRegistryListResponse], error) {
 			return nil, fmt.Errorf("upstream unavailable")
 		},
 	}
@@ -1399,12 +1399,12 @@ func TestContainerRegistry_FromResponse_HydratesData(t *testing.T) {
 			ID:  func() *string { s := "cr-1"; return &s }(),
 			URI: func() *string { s := "/projects/p/providers/Aruba.Container/registries/cr-1"; return &s }(),
 		},
-		Data: &types.ContainerRegistryData{
-			Private: &types.ContainerRegistryDataPrivate{
+		Data: &types.ContainerRegistryDataResponse{
+			Private: &types.ContainerRegistryDataPrivateResponse{
 				PasswordSet:       &passwordSet,
 				PasswordLastSetAt: &lastSet,
 			},
-			Info: &types.ContainerRegistryDataInfo{
+			Info: &types.ContainerRegistryDataInfoResponse{
 				FQDN:           &fqdn,
 				PublicBaseURL:  &pub,
 				PrivateBaseURL: &priv,

@@ -25,7 +25,7 @@ func NewContainerRegistryClientImpl(client *restclient.Client) *containerRegistr
 }
 
 // List retrieves all Container Registries for a project
-func (c *containerRegistryClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ContainerRegistryList], error) {
+func (c *containerRegistryClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ContainerRegistryListResponse], error) {
 	c.client.Logger().Debugf("Listing Container Registries for project: %s", projectID)
 
 	if err := types.ValidateProject(projectID); err != nil {
@@ -51,7 +51,7 @@ func (c *containerRegistryClientImpl) List(ctx context.Context, projectID string
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.ContainerRegistryList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.ContainerRegistryListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific Container Registry by ID
