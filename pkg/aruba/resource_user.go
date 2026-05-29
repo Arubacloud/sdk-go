@@ -182,7 +182,7 @@ func userIDsFromRef(ref Ref) (projectID, dbaasID, userID string, err error) {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type usersLowLevelClient interface {
-	List(ctx context.Context, projectID, dbaasID string, params *types.RequestParameters) (*types.Response[types.UserList], error)
+	List(ctx context.Context, projectID, dbaasID string, params *types.RequestParameters) (*types.Response[types.DatabaseUserListResponse], error)
 	Get(ctx context.Context, projectID, dbaasID, userID string, params *types.RequestParameters) (*types.Response[types.UserResponse], error)
 	Create(ctx context.Context, projectID, dbaasID string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error)
 	Update(ctx context.Context, projectID, dbaasID, userID string, body types.UserRequest, params *types.RequestParameters) (*types.Response[types.UserResponse], error)
@@ -388,7 +388,7 @@ func (a *usersClientAdapter) List(ctx context.Context, dbaas Ref, opts ...CallOp
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*User], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*User], error) {
-		fetch := listPageFetch[types.UserList](a.rest, opts)
+		fetch := listPageFetch[types.DatabaseUserListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr

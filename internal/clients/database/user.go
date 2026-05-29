@@ -24,7 +24,7 @@ func NewUsersClientImpl(client *restclient.Client) *usersClientImpl {
 }
 
 // List retrieves all users for a DBaaS instance
-func (c *usersClientImpl) List(ctx context.Context, projectID string, dbaasID string, params *types.RequestParameters) (*types.Response[types.UserList], error) {
+func (c *usersClientImpl) List(ctx context.Context, projectID string, dbaasID string, params *types.RequestParameters) (*types.Response[types.DatabaseUserListResponse], error) {
 	c.client.Logger().Debugf("Listing users for DBaaS: %s in project: %s", dbaasID, projectID)
 
 	if err := types.ValidateProjectAndResource(projectID, dbaasID, "DBaaS ID"); err != nil {
@@ -50,7 +50,7 @@ func (c *usersClientImpl) List(ctx context.Context, projectID string, dbaasID st
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.UserList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.DatabaseUserListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific user by ID
