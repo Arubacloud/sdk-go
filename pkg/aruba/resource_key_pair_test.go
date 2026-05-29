@@ -163,7 +163,7 @@ func keyPairTestResponse(id, name, uri string) *types.KeyPairResponse {
 			Tags:             []string{"tag1"},
 			LocationResponse: loc,
 		},
-		Properties: types.KeyPairPropertiesResult{
+		Properties: types.KeyPairPropertiesResponse{
 			Value: "ssh-rsa AAAA...",
 		},
 	}
