@@ -19,7 +19,7 @@ type AuditEvent struct {
 	responseMetadataMixin // shadowed: ID(), URI(), CreatedAt(), Raw()
 	httpEnvelopeMixin     // RawHTTP(), StatusCode(), Headers(), RawError()
 
-	response *types.AuditEvent // backs Raw() and all field accessors
+	response *types.AuditEventResponse // backs Raw() and all field accessors
 }
 
 // Getters — general → specific
@@ -45,9 +45,9 @@ func (e *AuditEvent) CreatedAt() time.Time {
 }
 
 // Raw returns the underlying wire payload. Shadows responseMetadataMixin.Raw().
-func (e *AuditEvent) Raw() *types.AuditEvent { return e.response }
-func (e *AuditEvent) RawJSON() []byte        { return marshalRawJSON(e.response) }
-func (e *AuditEvent) RawYAML() []byte        { return marshalRawYAML(e.response) }
+func (e *AuditEvent) Raw() *types.AuditEventResponse { return e.response }
+func (e *AuditEvent) RawJSON() []byte                { return marshalRawJSON(e.response) }
+func (e *AuditEvent) RawYAML() []byte                { return marshalRawYAML(e.response) }
 
 // SeverityLevel returns the event severity level, or "" when unset.
 func (e *AuditEvent) SeverityLevel() string {
@@ -74,33 +74,33 @@ func (e *AuditEvent) Channel() string {
 }
 
 // LogFormat returns the log format version.
-func (e *AuditEvent) LogFormat() types.LogFormatVersion {
+func (e *AuditEvent) LogFormat() types.EventLogFormatVersionResponse {
 	if e.response == nil {
-		return types.LogFormatVersion{}
+		return types.EventLogFormatVersionResponse{}
 	}
 	return e.response.LogFormat
 }
 
 // Operation returns the operation associated with this event.
-func (e *AuditEvent) Operation() types.Operation {
+func (e *AuditEvent) Operation() types.EventOperationResponse {
 	if e.response == nil {
-		return types.Operation{}
+		return types.EventOperationResponse{}
 	}
 	return e.response.Operation
 }
 
 // Event returns the event information (ID, type, value).
-func (e *AuditEvent) Event() types.EventInfo {
+func (e *AuditEvent) Event() types.EventInfoResponse {
 	if e.response == nil {
-		return types.EventInfo{}
+		return types.EventInfoResponse{}
 	}
 	return e.response.Event
 }
 
 // Category returns the event category.
-func (e *AuditEvent) Category() types.EventCategory {
+func (e *AuditEvent) Category() types.EventCategoryResponse {
 	if e.response == nil {
-		return types.EventCategory{}
+		return types.EventCategoryResponse{}
 	}
 	return e.response.Category
 }
@@ -122,15 +122,15 @@ func (e *AuditEvent) Zone() Zone {
 }
 
 // Status returns the event status.
-func (e *AuditEvent) Status() types.Status {
+func (e *AuditEvent) Status() types.EventStatusResponse {
 	if e.response == nil {
-		return types.Status{}
+		return types.EventStatusResponse{}
 	}
 	return e.response.Status
 }
 
 // SubStatus returns the optional sub-status, or nil when absent.
-func (e *AuditEvent) SubStatus() *types.SubStatus {
+func (e *AuditEvent) SubStatus() *types.EventSubStatusResponse {
 	if e.response == nil {
 		return nil
 	}
@@ -138,9 +138,9 @@ func (e *AuditEvent) SubStatus() *types.SubStatus {
 }
 
 // Identity returns the caller identity for this event.
-func (e *AuditEvent) Identity() types.Identity {
+func (e *AuditEvent) Identity() types.EventIdentityResponse {
 	if e.response == nil {
-		return types.Identity{}
+		return types.EventIdentityResponse{}
 	}
 	return e.response.Identity
 }
@@ -154,7 +154,7 @@ func (e *AuditEvent) Properties() map[string]interface{} {
 }
 
 // Actions returns the available actions for this event, or nil when absent.
-func (e *AuditEvent) Actions() []types.Action {
+func (e *AuditEvent) Actions() []types.EventActionResponse {
 	if e.response == nil {
 		return nil
 	}
@@ -209,7 +209,7 @@ func (e *AuditEvent) OperationName() string {
 	return *e.response.Operation.Value
 }
 
-func (e *AuditEvent) fromResponse(resp *types.AuditEvent) {
+func (e *AuditEvent) fromResponse(resp *types.AuditEventResponse) {
 	if resp == nil {
 		return
 	}

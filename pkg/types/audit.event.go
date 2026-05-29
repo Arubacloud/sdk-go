@@ -2,95 +2,95 @@ package types
 
 import "time"
 
-// Operation represents an operation in the audit log
-type Operation struct {
+// EventOperationResponse represents an operation in the audit log
+type EventOperationResponse struct {
 	ID    string  `json:"id"`
 	Value *string `json:"value,omitempty"`
 }
 
-// EventInfo represents event information
-type EventInfo struct {
+// EventInfoResponse represents event information
+type EventInfoResponse struct {
 	ID    string  `json:"id"`
 	Value *string `json:"value,omitempty"`
 	Type  string  `json:"type"`
 }
 
-// EventCategory represents the event category
-type EventCategory struct {
+// EventCategoryResponse represents the event category
+type EventCategoryResponse struct {
 	Value       string  `json:"value"`
 	Description *string `json:"description,omitempty"`
 }
 
-// RegionInfo represents the region information in an audit log event.
-type RegionInfo struct {
+// EventRegionInfoResponse represents the region information in an audit log event.
+type EventRegionInfoResponse struct {
 	Name             *string `json:"name,omitempty"`
 	AvailabilityZone *string `json:"availabilityZone,omitempty"`
 }
 
-// Status represents the status of the event
-type Status struct {
+// EventStatusResponse represents the status of the event
+type EventStatusResponse struct {
 	Value       string                 `json:"value"`
 	Description *string                `json:"description,omitempty"`
 	Code        *int32                 `json:"code,omitempty"`
 	Properties  map[string]interface{} `json:"properties,omitempty"`
 }
 
-// SubStatus represents the sub-status of the event
-type SubStatus struct {
+// EventSubStatusResponse represents the sub-status of the event
+type EventSubStatusResponse struct {
 	Value       *string                `json:"value,omitempty"`
 	Description *string                `json:"description,omitempty"`
 	Properties  map[string]interface{} `json:"properties,omitempty"`
 }
 
-// Caller represents the caller identity
-type Caller struct {
+// EventCallerResponse represents the caller identity
+type EventCallerResponse struct {
 	Subject  string  `json:"subject"`
 	Username *string `json:"username,omitempty"`
 	Company  *string `json:"company,omitempty"`
 	TenantID *string `json:"tenantId,omitempty"`
 }
 
-// Identity represents the identity information
-type Identity struct {
-	Caller     Caller                 `json:"caller"`
+// EventIdentityResponse represents the identity information
+type EventIdentityResponse struct {
+	Caller     EventCallerResponse    `json:"caller"`
 	Properties map[string]interface{} `json:"properties,omitempty"`
 }
 
-// Action represents an available action
-type Action struct {
+// EventActionResponse represents an available action
+type EventActionResponse struct {
 	Key        *string `json:"key,omitempty"`
 	Disabled   *bool   `json:"disabled,omitempty"`
 	Executable *bool   `json:"executable,omitempty"`
 }
 
-// LogFormatVersion represents the log format version
-type LogFormatVersion struct {
+// EventLogFormatVersionResponse represents the log format version
+type EventLogFormatVersionResponse struct {
 	Version string `json:"version"`
 }
 
-// AuditEvent represents the complete audit event response
-type AuditEvent struct {
-	SeverityLevel string                 `json:"severityLevel"`
-	LogFormat     LogFormatVersion       `json:"logFormat"`
-	Timestamp     time.Time              `json:"@timestamp"`
-	Operation     Operation              `json:"operation"`
-	Event         EventInfo              `json:"event"`
-	Category      EventCategory          `json:"category"`
-	Region        *RegionInfo            `json:"region,omitempty"`
-	Origin        string                 `json:"origin"`
-	Channel       string                 `json:"channel"`
-	Status        Status                 `json:"status"`
-	SubStatus     *SubStatus             `json:"subStatus,omitempty"`
-	Identity      Identity               `json:"identity"`
-	Properties    map[string]interface{} `json:"properties,omitempty"`
-	Actions       []Action               `json:"actions,omitempty"`
-	CategoryID    *string                `json:"categoryId,omitempty"`
-	TypologyID    *string                `json:"typologyId,omitempty"`
-	Title         *string                `json:"title,omitempty"`
+// AuditEventResponse represents the complete audit event response
+type AuditEventResponse struct {
+	SeverityLevel string                        `json:"severityLevel"`
+	LogFormat     EventLogFormatVersionResponse `json:"logFormat"`
+	Timestamp     time.Time                     `json:"@timestamp"`
+	Operation     EventOperationResponse        `json:"operation"`
+	Event         EventInfoResponse             `json:"event"`
+	Category      EventCategoryResponse         `json:"category"`
+	Region        *EventRegionInfoResponse      `json:"region,omitempty"`
+	Origin        string                        `json:"origin"`
+	Channel       string                        `json:"channel"`
+	Status        EventStatusResponse           `json:"status"`
+	SubStatus     *EventSubStatusResponse       `json:"subStatus,omitempty"`
+	Identity      EventIdentityResponse         `json:"identity"`
+	Properties    map[string]interface{}        `json:"properties,omitempty"`
+	Actions       []EventActionResponse         `json:"actions,omitempty"`
+	CategoryID    *string                       `json:"categoryId,omitempty"`
+	TypologyID    *string                       `json:"typologyId,omitempty"`
+	Title         *string                       `json:"title,omitempty"`
 }
 
 // AuditEventListResponse represents a paginated list of audit events
 type AuditEventListResponse struct {
 	ListResponse
-	Values []AuditEvent `json:"values"`
+	Values []AuditEventResponse `json:"values"`
 }

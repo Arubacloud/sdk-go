@@ -20,35 +20,35 @@ func TestListEvents(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				resp := types.AuditEventListResponse{
 					ListResponse: types.ListResponse{Total: 1},
-					Values: []types.AuditEvent{
+					Values: []types.AuditEventResponse{
 						{
 							SeverityLevel: "Information",
-							LogFormat: types.LogFormatVersion{
+							LogFormat: types.EventLogFormatVersionResponse{
 								Version: "1.0",
 							},
 							Timestamp: time.Now(),
-							Operation: types.Operation{
+							Operation: types.EventOperationResponse{
 								ID:    "Microsoft.Compute/virtualMachines/start/action",
 								Value: ptr.To("Start Virtual Machine"),
 							},
-							Event: types.EventInfo{
+							Event: types.EventInfoResponse{
 								ID:    "event-123",
 								Value: ptr.To("Virtual Machine Started"),
 								Type:  "operational",
 							},
-							Category: types.EventCategory{
+							Category: types.EventCategoryResponse{
 								Value:       "Administrative",
 								Description: ptr.To("Administrative operations"),
 							},
 							Origin:  "user",
 							Channel: "Operation",
-							Status: types.Status{
+							Status: types.EventStatusResponse{
 								Value:       "Succeeded",
 								Description: ptr.To("Operation completed successfully"),
 								Code:        ptr.To(int32(200)),
 							},
-							Identity: types.Identity{
-								Caller: types.Caller{
+							Identity: types.EventIdentityResponse{
+								Caller: types.EventCallerResponse{
 									Subject:  "user@example.com",
 									Username: ptr.To("testuser"),
 									Company:  ptr.To("TestCompany"),
@@ -87,7 +87,7 @@ func TestListEvents(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				resp := types.AuditEventListResponse{
 					ListResponse: types.ListResponse{Total: 0},
-					Values:       []types.AuditEvent{},
+					Values:       []types.AuditEventResponse{},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return
@@ -117,18 +117,18 @@ func TestListEvents(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				resp := types.AuditEventListResponse{
 					ListResponse: types.ListResponse{Total: 100},
-					Values: []types.AuditEvent{
+					Values: []types.AuditEventResponse{
 						{
 							SeverityLevel: "Warning",
-							LogFormat:     types.LogFormatVersion{Version: "1.0"},
+							LogFormat:     types.EventLogFormatVersionResponse{Version: "1.0"},
 							Timestamp:     time.Now(),
-							Operation:     types.Operation{ID: "test-operation"},
-							Event:         types.EventInfo{ID: "event-456", Type: "operational"},
-							Category:      types.EventCategory{Value: "Security"},
+							Operation:     types.EventOperationResponse{ID: "test-operation"},
+							Event:         types.EventInfoResponse{ID: "event-456", Type: "operational"},
+							Category:      types.EventCategoryResponse{Value: "Security"},
 							Origin:        "system",
 							Channel:       "Security",
-							Status:        types.Status{Value: "Failed", Code: ptr.To(int32(403))},
-							Identity:      types.Identity{Caller: types.Caller{Subject: "system"}},
+							Status:        types.EventStatusResponse{Value: "Failed", Code: ptr.To(int32(403))},
+							Identity:      types.EventIdentityResponse{Caller: types.EventCallerResponse{Subject: "system"}},
 						},
 					},
 				}
