@@ -33,7 +33,7 @@ Per le liste, `Raw()` restituisce `any` e devi fare il type assert al tipo lista
 vpcList, err := arubaClient.FromNetwork().VPCs().List(ctx, proj)
 if err != nil { /* … */ }
 
-raw := vpcList.Raw().(*types.VPCList)     // richiede l'import di pkg/types
+raw := vpcList.Raw().(*types.VPCListResponse)     // richiede l'import di pkg/types
 fmt.Println("server total:", raw.Total)   // equivalente a vpcList.Total() — mostrato per illustrazione
 fmt.Println("self link:", raw.Self)
 ```
