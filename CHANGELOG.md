@@ -24,6 +24,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Changed (Breaking)
+
+All exported structs in `pkg/types/` now carry a strict three-way suffix declaring their wire role:
+`*Request` (sent to the API), `*Response` (received from the API), or `*Common` (appears on both sides).
+Scalar enums, the generic transport envelope `Response[T]`, and utility/error types are exempt.
+This is a compile-time breaking change for any code that references `pkg/types` directly;
+code that uses only the `pkg/aruba` wrappers is unaffected.
+
+**`*PropertiesResult` → `*PropertiesResponse`** (finishes the v0.3.1 cleanup started with `ContainerRegistryPropertiesResult`):
+- `CloudServerPropertiesResult` → `CloudServerPropertiesResponse`
+- `KeyPairPropertiesResult` → `KeyPairPropertiesResponse`
+- `StorageBackupPropertiesResult` → `StorageBackupPropertiesResponse`
+- `StorageRestorePropertiesResult` → `StorageRestorePropertiesResponse`
+
+**`*List` → `*ListResponse`** (27 collection envelopes; the base `ListResponse` is unchanged):
+`ProjectListResponse`, `VPCListResponse`, `SubnetListResponse`, `SecurityGroupListResponse`,
+`SecurityRuleListResponse`, `ElasticIPListResponse` (previously `ElasticList`),
+`LoadBalancerListResponse`, `VPCPeeringListResponse`, `VPCPeeringRouteListResponse`,
+`VPNTunnelListResponse`, `VPNRouteListResponse`, `CloudServerListResponse`, `KaaSListResponse`,
+`ContainerRegistryListResponse`, `DBaaSListResponse`, `DBaaSBackupListResponse` (previously `BackupList`),
+`DatabaseListResponse`, `DatabaseUserListResponse` (previously `UserList`), `GrantListResponse`,
+`BlockStorageListResponse`, `SnapshotListResponse`, `StorageBackupListResponse`, `StorageRestoreListResponse`,
+`KmsListResponse`, `KeyListResponse`, `KmipListResponse`, `JobListResponse`.
+
+**New `*Common` suffix for cross-side shared shapes** (used on both request and response side):
+`LinkedResourceCommon`, `ReferenceResourceCommon`, `BillingPlanCommon`, `UserCredentialCommon`,
+`GrantUserCommon`, `GrantRoleCommon`, `RuleTargetCommon`,
+`SubnetNetworkCommon`, `SubnetDHCPCommon`, `SubnetDHCPRangeCommon`, `SubnetDHCPRouteCommon`,
+`IPConfigurationsCommon`, `SubnetInfoCommon`, `VPNClientSettingsCommon`,
+`IKESettingsCommon`, `ESPSettingsCommon`, `PSKSettingsCommon`, `StorageKubernetesCommon`.
+
+**Bare nested types renamed with role suffix** (response-only shapes without a suffix):
+- `VolumeInfo` → `VolumeInfoResponse`
+- `MetricMetadata` → `MetricMetadataResponse`
+- `MetricData` → `MetricDataResponse`
+- `ExecutedAlertAction` → `ExecutedAlertActionResponse`
+- `AlertAction` → `AlertActionResponse`
+- `CloudServerNetworkInterfaceDetails` → `CloudServerNetworkInterfaceResponse`
+- `ContainerRegistryData` / `…DataPrivate` / `…DataInfo` → `…DataResponse` / `…DataPrivateResponse` / `…DataInfoResponse`
+
+**Audit types renamed with domain prefix** (bare names collided with unrelated types):
+`AuditEvent` → `AuditEventResponse`, `Operation` → `EventOperationResponse`,
+`EventInfo` → `EventInfoResponse`, `EventCategory` → `EventCategoryResponse`,
+`RegionInfo` → `EventRegionInfoResponse`, `Status` → `EventStatusResponse`,
+`SubStatus` → `EventSubStatusResponse`, `Caller` → `EventCallerResponse`,
+`Identity` → `EventIdentityResponse`, `Action` → `EventActionResponse`,
+`LogFormatVersion` → `EventLogFormatVersionResponse`.
+
+**KaaS nested types renamed** (request-only shapes without a suffix, plus disambiguation):
+`NodeCIDRProperties` → `NodeCIDRPropertiesRequest`, `KubernetesVersionInfo` → `KubernetesVersionInfoRequest`,
+`KubernetesVersionInfoUpdate` → `KubernetesVersionInfoUpdateRequest`, `NodePoolProperties` → `NodePoolPropertiesRequest`,
+`SecurityGroupProperties` → `KaaSSecurityGroupPropertiesRequest`, `IdentityProperties` → `KaaSIdentityPropertiesRequest`,
+`APIServerAccessProfileProperties` → `KaaSAPIServerAccessProfilePropertiesRequest`,
+`InstanceResponse` → `KaaSNodePoolInstanceResponse`, `DataCenterResponse` → `KaaSNodePoolDataCenterResponse`.
+
+**DBaaS nested types renamed** (request-only shapes without a suffix):
+`DBaaSEngine` → `DBaaSEngineRequest`, `DBaaSFlavorSpec` → `DBaaSFlavorRequest`,
+`DBaaSStorage` → `DBaaSStorageRequest`, `DBaaSNetworking` → `DBaaSNetworkingRequest`,
+`DBaaSAutoscaling` → `DBaaSAutoscalingRequest`.
+
+**`resource.go` name-order stragglers corrected**:
+`ProjectResponseMetadata` → `ProjectMetadataResponse`, `TypologyResponseMetadata` → `TypologyMetadataResponse`,
+`CategoryResponseMetadata` → `CategoryMetadataResponse`, `ResourceStatus` → `ResourceStatusResponse`,
+`PreviousStatus` → `PreviousStatusResponse`, `DisableStatusInfo` → `DisableStatusInfoResponse`.
+
+**Other**:
+- `VPCProperties` (inner nested struct in `VPCPropertiesRequest`) → `VPCPropertiesInnerRequest`.
+- Added `pkg/types/doc.go` with the canonical in-source statement of the naming rule.
+
+---
+
 ## [0.3.1] — 2026-05-28
 
 ### Added
