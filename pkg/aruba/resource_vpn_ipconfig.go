@@ -8,7 +8,7 @@ import (
 
 // ---- Sub-builder ----
 
-// VPNIPConfig is a fluent builder for the IPConfigurations block of a VPNTunnel.
+// VPNIPConfig is a fluent builder for the IPConfigurationsCommon block of a VPNTunnel.
 // Construct with NewVPNIPConfig() and attach via VPNTunnel.WithIPConfig.
 type VPNIPConfig struct {
 	errMixin
@@ -48,13 +48,13 @@ func (c *VPNIPConfig) WithSubnet(name, cidr string) *VPNIPConfig {
 	return c
 }
 
-func (c *VPNIPConfig) build() *types.IPConfigurations {
+func (c *VPNIPConfig) build() *types.IPConfigurationsCommon {
 	if c == nil {
 		return nil
 	}
-	out := &types.IPConfigurations{VPC: c.vpc, PublicIP: c.publicIP}
+	out := &types.IPConfigurationsCommon{VPC: c.vpc, PublicIP: c.publicIP}
 	if c.hasSubnet {
-		out.Subnet = &types.SubnetInfo{Name: c.subnetName, CIDR: c.subnetCIDR}
+		out.Subnet = &types.SubnetInfoCommon{Name: c.subnetName, CIDR: c.subnetCIDR}
 	}
 	return out
 }

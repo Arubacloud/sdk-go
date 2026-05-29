@@ -1,6 +1,6 @@
 package types
 
-// IKEEncryption is the encryption algorithm for IKESettings.Encryption.
+// IKEEncryption is the encryption algorithm for IKESettingsCommon.Encryption.
 //
 // GET /providers/Aruba.Network/vpn-tunnels for the live catalog.
 type IKEEncryption string
@@ -62,7 +62,7 @@ const (
 	IKEEncryptionChaCha20Poly1305  IKEEncryption = "chacha20poly1305"
 )
 
-// IKEHash is the hash algorithm for IKESettings.Hash.
+// IKEHash is the hash algorithm for IKESettingsCommon.Hash.
 type IKEHash string
 
 const (
@@ -81,7 +81,7 @@ const (
 	IKEHashAES256GMAC IKEHash = "aes256gmac"
 )
 
-// IKEDHGroup is the Diffie-Hellman group for IKESettings.DHGroup.
+// IKEDHGroup is the Diffie-Hellman group for IKESettingsCommon.DHGroup.
 type IKEDHGroup string
 
 const (
@@ -109,7 +109,7 @@ const (
 	IKEDHGroup32 IKEDHGroup = "32"
 )
 
-// IKEDPDAction is the Dead Peer Detection action for IKESettings.DPDAction.
+// IKEDPDAction is the Dead Peer Detection action for IKESettingsCommon.DPDAction.
 type IKEDPDAction string
 
 const (
@@ -118,7 +118,7 @@ const (
 	IKEDPDActionRestart IKEDPDAction = "restart"
 )
 
-// ESPEncryption is the encryption algorithm for ESPSettings.Encryption.
+// ESPEncryption is the encryption algorithm for ESPSettingsCommon.Encryption.
 //
 // GET /providers/Aruba.Network/vpn-tunnels for the live catalog.
 type ESPEncryption string
@@ -180,7 +180,7 @@ const (
 	ESPEncryptionChaCha20Poly1305  ESPEncryption = "chacha20poly1305"
 )
 
-// ESPHash is the hash algorithm for ESPSettings.Hash.
+// ESPHash is the hash algorithm for ESPSettingsCommon.Hash.
 type ESPHash string
 
 const (
@@ -199,7 +199,7 @@ const (
 	ESPHashAES256GMAC ESPHash = "aes256gmac"
 )
 
-// ESPPFSGroup is the Perfect Forward Secrecy group for ESPSettings.PFS.
+// ESPPFSGroup is the Perfect Forward Secrecy group for ESPSettingsCommon.PFS.
 type ESPPFSGroup string
 
 const (
@@ -243,26 +243,26 @@ const (
 	VPNClientProtocolIKEv2 VPNClientProtocol = "ikev2"
 )
 
-// SubnetInfo contains subnet CIDR and name for VPN tunnel IP configuration
-type SubnetInfo struct {
+// SubnetInfoCommon contains subnet CIDR and name for VPN tunnel IP configuration
+type SubnetInfoCommon struct {
 	CIDR string `json:"cidr,omitempty"`
 	Name string `json:"name,omitempty"`
 }
 
-// IPConfigurations contains network configuration of the VPN tunnel
-type IPConfigurations struct {
+// IPConfigurationsCommon contains network configuration of the VPN tunnel
+type IPConfigurationsCommon struct {
 	// VPC reference to the VPC (nullable)
 	VPC *ReferenceResource `json:"vpc,omitempty"`
 
 	// Subnet info (nullable)
-	Subnet *SubnetInfo `json:"subnet,omitempty"`
+	Subnet *SubnetInfoCommon `json:"subnet,omitempty"`
 
 	// PublicIP reference to the public IP (nullable)
 	PublicIP *ReferenceResource `json:"publicIp,omitempty"`
 }
 
-// IKESettings contains IKE settings
-type IKESettings struct {
+// IKESettingsCommon contains IKE settings
+type IKESettingsCommon struct {
 	// Lifetime Lifetime value
 	Lifetime int32 `json:"lifetime,omitempty"`
 
@@ -285,8 +285,8 @@ type IKESettings struct {
 	DPDTimeout int32 `json:"dpdTimeout,omitempty"`
 }
 
-// ESPSettings contains ESP settings
-type ESPSettings struct {
+// ESPSettingsCommon contains ESP settings
+type ESPSettingsCommon struct {
 	// Lifetime Lifetime value
 	Lifetime int32 `json:"lifetime,omitempty"`
 
@@ -300,8 +300,8 @@ type ESPSettings struct {
 	PFS *ESPPFSGroup `json:"pfs,omitempty"`
 }
 
-// PSKSettings contains Pre-Shared Key settings
-type PSKSettings struct {
+// PSKSettingsCommon contains Pre-Shared Key settings
+type PSKSettingsCommon struct {
 	// CloudSite Cloud site identifier (nullable)
 	CloudSite *string `json:"cloudSite,omitempty"`
 
@@ -312,16 +312,16 @@ type PSKSettings struct {
 	Secret *string `json:"secret,omitempty"`
 }
 
-// VPNClientSettings contains client settings of the VPN tunnel
-type VPNClientSettings struct {
+// VPNClientSettingsCommon contains client settings of the VPN tunnel
+type VPNClientSettingsCommon struct {
 	// IKE settings (nullable)
-	IKE *IKESettings `json:"ike,omitempty"`
+	IKE *IKESettingsCommon `json:"ike,omitempty"`
 
 	// ESP settings (nullable)
-	ESP *ESPSettings `json:"esp,omitempty"`
+	ESP *ESPSettingsCommon `json:"esp,omitempty"`
 
 	// PSK Pre-Shared Key settings (nullable)
-	PSK *PSKSettings `json:"psk,omitempty"`
+	PSK *PSKSettingsCommon `json:"psk,omitempty"`
 
 	// PeerClientPublicIP Peer client public IP address (nullable)
 	PeerClientPublicIP *string `json:"peerClientPublicIp,omitempty"`
@@ -335,11 +335,11 @@ type VPNTunnelPropertiesRequest struct {
 	// VPNClientProtocol Protocol of the VPN tunnel. Admissible values: ikev2 (nullable)
 	VPNClientProtocol *VPNClientProtocol `json:"vpnClientProtocol,omitempty"`
 
-	// IPConfigurations Network configuration of the VPN tunnel (nullable)
-	IPConfigurations *IPConfigurations `json:"ipConfigurations,omitempty"`
+	// IPConfigurationsCommon Network configuration of the VPN tunnel (nullable)
+	IPConfigurationsCommon *IPConfigurationsCommon `json:"ipConfigurations,omitempty"`
 
-	// VPNClientSettings Client settings of the VPN tunnel (nullable)
-	VPNClientSettings *VPNClientSettings `json:"vpnClientSettings,omitempty"`
+	// VPNClientSettingsCommon Client settings of the VPN tunnel (nullable)
+	VPNClientSettingsCommon *VPNClientSettingsCommon `json:"vpnClientSettings,omitempty"`
 
 	// BillingPlan Billing plan
 	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
@@ -353,11 +353,11 @@ type VPNTunnelPropertiesResponse struct {
 	// VPNClientProtocol Protocol of the VPN tunnel (nullable)
 	VPNClientProtocol *VPNClientProtocol `json:"vpnClientProtocol,omitempty"`
 
-	// IPConfigurations Network configuration of the VPN tunnel (nullable)
-	IPConfigurations *IPConfigurations `json:"ipConfigurations,omitempty"`
+	// IPConfigurationsCommon Network configuration of the VPN tunnel (nullable)
+	IPConfigurationsCommon *IPConfigurationsCommon `json:"ipConfigurations,omitempty"`
 
-	// VPNClientSettings Client settings of the VPN tunnel (nullable)
-	VPNClientSettings *VPNClientSettings `json:"vpnClientSettings,omitempty"`
+	// VPNClientSettingsCommon Client settings of the VPN tunnel (nullable)
+	VPNClientSettingsCommon *VPNClientSettingsCommon `json:"vpnClientSettings,omitempty"`
 
 	// RoutesNumber Number of valid VPN routes of the VPN tunnel
 	RoutesNumber int32 `json:"routesNumber,omitempty"`
@@ -383,7 +383,7 @@ type VPNTunnelResponse struct {
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type VPNTunnelList struct {
+type VPNTunnelListResponse struct {
 	ListResponse
 	Values []VPNTunnelResponse `json:"values"`
 }

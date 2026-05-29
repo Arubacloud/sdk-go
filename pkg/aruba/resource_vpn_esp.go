@@ -4,7 +4,7 @@ import "github.com/Arubacloud/sdk-go/pkg/types"
 
 // ---- Sub-builder ----
 
-// VPNESP is a fluent builder for the ESPSettings block of a VPNTunnel.
+// VPNESP is a fluent builder for the ESPSettingsCommon block of a VPNTunnel.
 // Construct with NewVPNESP() and attach via VPNTunnel.WithESPSettings.
 type VPNESP struct {
 	errMixin
@@ -29,11 +29,11 @@ func (e *VPNESP) WithHash(v ESPHash) *VPNESP { e.hash = &v; return e }
 // WithPFS sets the Perfect Forward Secrecy group for ESP.
 func (e *VPNESP) WithPFS(v ESPPFSGroup) *VPNESP { e.pfs = &v; return e }
 
-func (e *VPNESP) build() *types.ESPSettings {
+func (e *VPNESP) build() *types.ESPSettingsCommon {
 	if e == nil {
 		return nil
 	}
-	return &types.ESPSettings{
+	return &types.ESPSettingsCommon{
 		Lifetime:   e.lifetime,
 		Encryption: e.encryption,
 		Hash:       e.hash,
