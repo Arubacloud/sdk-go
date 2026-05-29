@@ -2,12 +2,12 @@ package types
 
 // VPCPeeringRoutePropertiesRequest contains properties of a VPC peering route to create
 type VPCPeeringPropertiesRequest struct {
-	RemoteVPC *ReferenceResource `json:"remoteVpc,omitempty"`
+	RemoteVPC *ReferenceResourceCommon `json:"remoteVpc,omitempty"`
 }
 
 type VPCPeeringPropertiesResponse struct {
-	LinkedResources []LinkedResource   `json:"linkedResources,omitempty"`
-	RemoteVPC       *ReferenceResource `json:"remoteVpc,omitempty"`
+	LinkedResources []LinkedResourceCommon   `json:"linkedResources,omitempty"`
+	RemoteVPC       *ReferenceResourceCommon `json:"remoteVpc,omitempty"`
 }
 
 type VPCPeeringRequest struct {
@@ -24,7 +24,7 @@ type VPCPeeringResponse struct {
 	// Spec contains the VPC Peering specification
 	Properties VPCPeeringPropertiesResponse `json:"properties"`
 
-	Status ResourceStatus `json:"status,omitempty"`
+	Status ResourceStatusResponse `json:"status,omitempty"`
 }
 
 type VPCPeeringListResponse struct {

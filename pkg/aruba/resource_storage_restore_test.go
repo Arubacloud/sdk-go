@@ -200,9 +200,9 @@ func storageRestoreTestResponse(id, name, uri, targetURI string) *types.StorageR
 			LocationResponse: loc,
 		},
 		Properties: types.StorageRestorePropertiesResponse{
-			Destination: types.ReferenceResource{URI: targetURI},
+			Destination: types.ReferenceResourceCommon{URI: targetURI},
 		},
-		Status: types.ResourceStatus{
+		Status: types.ResourceStatusResponse{
 			State: &state,
 		},
 	}
@@ -253,12 +253,12 @@ func TestStorageRestore_FromResponseURIBackfill(t *testing.T) {
 			ID:  &id,
 			URI: &uri,
 		},
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	}
 	r := &StorageRestore{}
 	r.fromResponse(resp)
 
-	// Neither ProjectResponseMetadata nor pre-set IDs → backfill from URI.
+	// Neither ProjectMetadataResponse nor pre-set IDs → backfill from URI.
 	if r.ProjectID() != "p-uri" {
 		t.Errorf("ProjectID() via URI backfill = %q", r.ProjectID())
 	}
@@ -667,7 +667,7 @@ func TestStorageRestoresClientAdapter_Update_NoBackup(t *testing.T) {
 	id := "r-1"
 	r.fromResponse(&types.StorageRestoreResponse{
 		Metadata: types.ResourceMetadataResponse{ID: &id},
-		Status:   types.ResourceStatus{},
+		Status:   types.ResourceStatusResponse{},
 	})
 
 	_, err := adapter.Update(context.Background(), r)
@@ -907,7 +907,7 @@ func TestStorageRestore_FromResponse_SetsStatus(t *testing.T) {
 	r := &StorageRestore{}
 	state := types.State("Active")
 	r.fromResponse(&types.StorageRestoreResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if r.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", r.State())

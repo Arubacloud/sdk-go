@@ -20,7 +20,7 @@ import (
 // This wrapper exposes OfFlavor(flavor) for the request leg and Flavor() / FlavorRaw()
 // for the response leg.
 //
-// The response also carries Template ReferenceResource (no request equivalent); this
+// The response also carries Template ReferenceResourceCommon (no request equivalent); this
 // wrapper exposes Template() as a read-only getter.
 type CloudServer struct {
 	errMixin
@@ -415,30 +415,30 @@ func (cs *CloudServer) toRequest() types.CloudServerRequest {
 		props.UserData = &v
 	}
 	if cs.vpcRef != nil {
-		props.VPC = types.ReferenceResource{URI: *cs.vpcRef}
+		props.VPC = types.ReferenceResourceCommon{URI: *cs.vpcRef}
 	}
 	if cs.bootVolumeRef != nil {
-		props.BootVolume = types.ReferenceResource{URI: *cs.bootVolumeRef}
+		props.BootVolume = types.ReferenceResourceCommon{URI: *cs.bootVolumeRef}
 	}
 	if cs.keyPairRef != nil {
-		props.KeyPair = &types.ReferenceResource{URI: *cs.keyPairRef}
+		props.KeyPair = &types.ReferenceResourceCommon{URI: *cs.keyPairRef}
 	}
 	if cs.elasticIPRef != nil {
-		props.ElasticIP = &types.ReferenceResource{URI: *cs.elasticIPRef}
+		props.ElasticIP = &types.ReferenceResourceCommon{URI: *cs.elasticIPRef}
 	}
 	if len(cs.subnetRefs) > 0 {
-		props.Subnets = make([]types.ReferenceResource, 0, len(cs.subnetRefs))
+		props.Subnets = make([]types.ReferenceResourceCommon, 0, len(cs.subnetRefs))
 		for _, u := range cs.subnetRefs {
-			props.Subnets = append(props.Subnets, types.ReferenceResource{URI: u})
+			props.Subnets = append(props.Subnets, types.ReferenceResourceCommon{URI: u})
 		}
 	}
 	if len(cs.securityGroupRefs) > 0 {
-		props.SecurityGroups = make([]types.ReferenceResource, 0, len(cs.securityGroupRefs))
+		props.SecurityGroups = make([]types.ReferenceResourceCommon, 0, len(cs.securityGroupRefs))
 		for _, u := range cs.securityGroupRefs {
-			props.SecurityGroups = append(props.SecurityGroups, types.ReferenceResource{URI: u})
+			props.SecurityGroups = append(props.SecurityGroups, types.ReferenceResourceCommon{URI: u})
 		}
 	}
-	props.BillingPlan = &types.BillingPlan{BillingPeriod: defaultBillingPeriod(cs.billingPeriod)}
+	props.BillingPlanCommon = &types.BillingPlanCommon{BillingPeriod: defaultBillingPeriod(cs.billingPeriod)}
 	return types.CloudServerRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: cs.toMetadata(),
@@ -485,8 +485,8 @@ func (cs *CloudServer) fromResponse(resp *types.CloudServerResponse) {
 		v := resp.Properties.KeyPair.URI
 		cs.keyPairRef = &v
 	}
-	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
-		cs.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
+	if resp.Properties.BillingPlanCommon != nil && resp.Properties.BillingPlanCommon.BillingPeriod != nil {
+		cs.billingPeriod = resp.Properties.BillingPlanCommon.BillingPeriod
 	}
 	if len(resp.Properties.NetworkInterfaces) > 0 {
 		cs.subnetRefs = cs.subnetRefs[:0]
@@ -497,8 +497,8 @@ func (cs *CloudServer) fromResponse(resp *types.CloudServerResponse) {
 		}
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		cs.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		cs.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if cs.projectID == "" && cs.RespURI() != "" {
 		ids := parseURIIDs(cs.RespURI())

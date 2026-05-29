@@ -4,7 +4,7 @@ type SnapshotPropertiesRequest struct {
 	// BillingPeriod The billing period for blockStorage. Only Hour is a valid value (nullable)
 	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 
-	Volume ReferenceResource `json:"volume,omitempty"`
+	Volume ReferenceResourceCommon `json:"volume,omitempty"`
 }
 
 // VolumeInfoResponse contains information about the original volume
@@ -15,7 +15,7 @@ type VolumeInfoResponse struct {
 	// Type of the original volume from which the snapshot was created (nullable)
 	Name *string `json:"name,omitempty"`
 
-	CompoundResource *ReferenceResource `json:"compoundResource,omitempty"`
+	CompoundResource *ReferenceResourceCommon `json:"compoundResource,omitempty"`
 }
 
 type SnapshotPropertiesResponse struct {
@@ -52,7 +52,7 @@ type SnapshotResponse struct {
 	// Spec contains the Snapshot specification
 	Properties SnapshotPropertiesResponse `json:"properties"`
 
-	Status ResourceStatus `json:"status,omitempty"`
+	Status ResourceStatusResponse `json:"status,omitempty"`
 }
 
 type SnapshotListResponse struct {

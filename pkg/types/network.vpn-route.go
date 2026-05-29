@@ -52,7 +52,7 @@ func (s SubnetCIDROrRef) MarshalJSON() ([]byte, error) {
 }
 
 type VPNRoutePropertiesResponse struct {
-	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
+	LinkedResources []LinkedResourceCommon `json:"linkedResources,omitempty"`
 
 	// CloudSubnet CIDR of the cloud subnet (plain string or full subnet object on Create)
 	CloudSubnet SubnetCIDROrRef `json:"cloudSubnet"`
@@ -60,7 +60,7 @@ type VPNRoutePropertiesResponse struct {
 	// OnPremSubnet CIDR of the onPrem subnet
 	OnPremSubnet string `json:"onPremSubnet"`
 
-	VPNTunnel *ReferenceResource `json:"vpnTunnel,omitempty"`
+	VPNTunnel *ReferenceResourceCommon `json:"vpnTunnel,omitempty"`
 }
 
 type VPNRouteRequest struct {
@@ -77,7 +77,7 @@ type VPNRouteResponse struct {
 	// Spec contains the VPC Route specification
 	Properties VPNRoutePropertiesResponse `json:"properties"`
 
-	Status ResourceStatus `json:"status,omitempty"`
+	Status ResourceStatusResponse `json:"status,omitempty"`
 }
 
 type VPNRouteListResponse struct {

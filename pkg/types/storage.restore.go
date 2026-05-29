@@ -1,11 +1,11 @@
 package types
 
 type StorageRestorePropertiesRequest struct {
-	Target ReferenceResource `json:"destinationVolume"`
+	Target ReferenceResourceCommon `json:"destinationVolume"`
 }
 
 type StorageRestorePropertiesResponse struct {
-	Destination ReferenceResource `json:"destinationVolume"`
+	Destination ReferenceResourceCommon `json:"destinationVolume"`
 }
 
 type StorageRestoreRequest struct {
@@ -19,7 +19,7 @@ type StorageRestoreResponse struct {
 
 	Properties StorageRestorePropertiesResponse `json:"properties"`
 
-	Status ResourceStatus `json:"status,omitempty"`
+	Status ResourceStatusResponse `json:"status,omitempty"`
 }
 
 type StorageRestoreListResponse struct {

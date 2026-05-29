@@ -13,7 +13,7 @@ type StorageBackupPropertiesRequest struct {
 	StorageBackupType StorageBackupType `json:"type"`
 
 	// Origin indicates the source volume
-	Origin ReferenceResource `json:"sourceVolume"`
+	Origin ReferenceResourceCommon `json:"sourceVolume"`
 
 	// RetentionDays indicates the number of days to retain the backup
 	RetentionDays *int `json:"retentionDays,omitempty"`
@@ -28,7 +28,7 @@ type StorageBackupPropertiesResponse struct {
 	Type StorageBackupType `json:"type"`
 
 	// Origin indicates the source volume
-	Origin ReferenceResource `json:"sourceVolume"`
+	Origin ReferenceResourceCommon `json:"sourceVolume"`
 
 	// RetentionDays indicates the number of days to retain the backup
 	RetentionDays *int `json:"retentionDays,omitempty"`
@@ -48,7 +48,7 @@ type StorageBackupResponse struct {
 
 	Properties StorageBackupPropertiesResponse `json:"properties"`
 
-	Status ResourceStatus `json:"status,omitempty"`
+	Status ResourceStatusResponse `json:"status,omitempty"`
 }
 
 type StorageBackupListResponse struct {

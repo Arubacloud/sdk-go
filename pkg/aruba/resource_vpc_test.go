@@ -142,19 +142,19 @@ func vpcTestResponse(id, name, uri, projectID string) *types.VPCResponse {
 			Name:             &name,
 			Tags:             []string{"tag1"},
 			LocationResponse: loc,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: projectID,
 			},
 		},
 		Properties: types.VPCPropertiesResponse{
 			Default: true,
-			LinkedResources: []types.LinkedResource{
+			LinkedResources: []types.LinkedResourceCommon{
 				{URI: "/projects/p/network/vpcs/v/subnets/s1", StrictCorrelation: true},
 			},
 		},
-		Status: types.ResourceStatus{
+		Status: types.ResourceStatusResponse{
 			State: &state,
-			DisableStatusInfo: &types.DisableStatusInfo{
+			DisableStatusInfoResponse: &types.DisableStatusInfoResponse{
 				IsDisabled: false,
 			},
 		},
@@ -835,7 +835,7 @@ func TestVPC_FromResponse_SetsStatus(t *testing.T) {
 	v := &VPC{}
 	state := types.State("Active")
 	v.fromResponse(&types.VPCResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if v.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", v.State())

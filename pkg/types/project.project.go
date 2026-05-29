@@ -34,7 +34,7 @@ type ProjectResponse struct {
 	// Spec contains the Project specification
 	Properties ProjectPropertiesResponse `json:"properties"`
 
-	//Status ResourceStatus `json:"status,omitempty"`
+	//Status ResourceStatusResponse `json:"status,omitempty"`
 }
 
 type ProjectListResponse struct {

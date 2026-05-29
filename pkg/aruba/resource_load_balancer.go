@@ -29,9 +29,9 @@ type LoadBalancer struct {
 	linkedMixin           // LinkedResources()
 	httpEnvelopeMixin     // RawHTTP(), StatusCode(), Headers(), RawError()
 
-	address  *string                     // Properties.Address (read-only from response)
-	vpc      *types.ReferenceResource    // Properties.VPC (linked VPC reference)
-	response *types.LoadBalancerResponse // backs Raw()
+	address  *string                        // Properties.Address (read-only from response)
+	vpc      *types.ReferenceResourceCommon // Properties.VPC (linked VPC reference)
+	response *types.LoadBalancerResponse    // backs Raw()
 }
 
 // Getters — general → specific
@@ -89,8 +89,8 @@ func (l *LoadBalancer) fromResponse(resp *types.LoadBalancerResponse) {
 		l.vpc = &v
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		l.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		l.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if l.projectID == "" && l.RespURI() != "" {
 		if pid := parseURIIDs(l.RespURI())["projects"]; pid != "" {

@@ -5,7 +5,7 @@ type SecurityGroupPropertiesRequest struct {
 	Default *bool `json:"default,omitempty"`
 }
 type SecurityGroupPropertiesResponse struct {
-	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
+	LinkedResources []LinkedResourceCommon `json:"linkedResources,omitempty"`
 
 	Default bool `json:"default,omitempty"`
 }
@@ -24,7 +24,7 @@ type SecurityGroupResponse struct {
 	// Spec contains the Security Group specification
 	Properties SecurityGroupPropertiesResponse `json:"properties"`
 
-	Status ResourceStatus `json:"status,omitempty"`
+	Status ResourceStatusResponse `json:"status,omitempty"`
 }
 
 type SecurityGroupListResponse struct {

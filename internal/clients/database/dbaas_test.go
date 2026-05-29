@@ -34,7 +34,7 @@ func TestListDBaaS(t *testing.T) {
 									Version: ptr.To("8.0"),
 								},
 							},
-							Status: types.ResourceStatus{State: statePtr(types.State("active"))},
+							Status: types.ResourceStatusResponse{State: statePtr(types.State("active"))},
 						},
 					},
 				}
@@ -158,7 +158,7 @@ func TestGetDBaaS(t *testing.T) {
 							Name: ptr.To("M4-8"),
 						},
 					},
-					Status: types.ResourceStatus{State: statePtr(types.State("active"))},
+					Status: types.ResourceStatusResponse{State: statePtr(types.State("active"))},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return
@@ -288,7 +288,7 @@ func TestCreateDBaaS(t *testing.T) {
 					Properties: types.DBaaSPropertiesResponse{
 						Engine: &types.DBaaSEngineResponse{Type: ptr.To("MySQL")},
 					},
-					Status: types.ResourceStatus{State: statePtr(types.State("creating"))},
+					Status: types.ResourceStatusResponse{State: statePtr(types.State("creating"))},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return
@@ -470,7 +470,7 @@ func TestUpdateDBaaS(t *testing.T) {
 					Properties: types.DBaaSPropertiesResponse{
 						Engine: &types.DBaaSEngineResponse{Type: ptr.To("MySQL")},
 					},
-					Status: types.ResourceStatus{State: statePtr(types.State("updating"))},
+					Status: types.ResourceStatusResponse{State: statePtr(types.State("updating"))},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return

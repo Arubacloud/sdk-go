@@ -60,7 +60,7 @@ type SecurityRulePropertiesRequest struct {
 }
 
 type SecurityRulePropertiesResponse struct {
-	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
+	LinkedResources []LinkedResourceCommon `json:"linkedResources,omitempty"`
 
 	// Direction of the rule. Admissible values: Ingress, Egress
 	Direction RuleDirection `json:"direction,omitempty"`
@@ -88,7 +88,7 @@ type SecurityRuleRequest struct {
 
 type SecurityRuleResponse struct {
 	Metadata   ResourceMetadataResponse       `json:"metadata"`
-	Status     ResourceStatus                 `json:"status"`
+	Status     ResourceStatusResponse         `json:"status"`
 	Properties SecurityRulePropertiesResponse `json:"properties"`
 }
 

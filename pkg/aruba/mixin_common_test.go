@@ -163,7 +163,7 @@ func TestResponseMetadataMixin_Populated(t *testing.T) {
 			ID:      &id,
 			URI:     &uri,
 			Version: &ver,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: proj,
 			},
 			CreationDate: &now,
@@ -197,7 +197,7 @@ func TestResponseMetadataMixin_Populated(t *testing.T) {
 
 func TestLinkedMixin(t *testing.T) {
 	var m linkedMixin
-	m.setLinked([]types.LinkedResource{{URI: "/foo", StrictCorrelation: true}})
+	m.setLinked([]types.LinkedResourceCommon{{URI: "/foo", StrictCorrelation: true}})
 	got := m.LinkedResources()
 	if len(got) != 1 || got[0].URI != "/foo" {
 		t.Errorf("LinkedResources() = %v", got)

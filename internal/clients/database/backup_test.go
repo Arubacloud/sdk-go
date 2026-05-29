@@ -28,15 +28,15 @@ func TestListBackups(t *testing.T) {
 							},
 							Properties: types.BackupPropertiesResponse{
 								Zone:     "ITBG-1",
-								DBaaS:    types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
-								Database: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
-								BillingPlan: func() *types.BillingPlan {
+								DBaaS:    types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
+								Database: types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
+								BillingPlanCommon: func() *types.BillingPlanCommon {
 									v := types.BillingPeriod("Hour")
-									return &types.BillingPlan{BillingPeriod: &v}
+									return &types.BillingPlanCommon{BillingPeriod: &v}
 								}(),
 								Storage: types.BackupStorageResponse{Size: 10},
 							},
-							Status: types.ResourceStatus{State: statePtr(types.State("active"))},
+							Status: types.ResourceStatusResponse{State: statePtr(types.State("active"))},
 						},
 					},
 				}
@@ -156,15 +156,15 @@ func TestGetBackup(t *testing.T) {
 					},
 					Properties: types.BackupPropertiesResponse{
 						Zone:     "ITBG-1",
-						DBaaS:    types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
-						Database: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
-						BillingPlan: func() *types.BillingPlan {
+						DBaaS:    types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
+						Database: types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
+						BillingPlanCommon: func() *types.BillingPlanCommon {
 							v := types.BillingPeriod("Hour")
-							return &types.BillingPlan{BillingPeriod: &v}
+							return &types.BillingPlanCommon{BillingPeriod: &v}
 						}(),
 						Storage: types.BackupStorageResponse{Size: 10},
 					},
-					Status: types.ResourceStatus{State: statePtr(types.State("active"))},
+					Status: types.ResourceStatusResponse{State: statePtr(types.State("active"))},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return
@@ -293,14 +293,14 @@ func TestCreateBackup(t *testing.T) {
 					},
 					Properties: types.BackupPropertiesResponse{
 						Zone:     "ITBG-1",
-						DBaaS:    types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
-						Database: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
-						BillingPlan: func() *types.BillingPlan {
+						DBaaS:    types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
+						Database: types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
+						BillingPlanCommon: func() *types.BillingPlanCommon {
 							v := types.BillingPeriod("Hour")
-							return &types.BillingPlan{BillingPeriod: &v}
+							return &types.BillingPlanCommon{BillingPeriod: &v}
 						}(),
 					},
-					Status: types.ResourceStatus{State: statePtr(types.State("creating"))},
+					Status: types.ResourceStatusResponse{State: statePtr(types.State("creating"))},
 				}
 				json.NewEncoder(w).Encode(resp)
 				return
@@ -316,11 +316,11 @@ func TestCreateBackup(t *testing.T) {
 			},
 			Properties: types.BackupPropertiesRequest{
 				Zone:     "ITBG-1",
-				DBaaS:    types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
-				Database: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
-				BillingPlan: func() *types.BillingPlan {
+				DBaaS:    types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
+				Database: types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
+				BillingPlanCommon: func() *types.BillingPlanCommon {
 					v := types.BillingPeriod("Hour")
-					return &types.BillingPlan{BillingPeriod: &v}
+					return &types.BillingPlanCommon{BillingPeriod: &v}
 				}(),
 			},
 		}

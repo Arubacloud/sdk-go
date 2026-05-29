@@ -234,8 +234,8 @@ func TestCloudServerRequestOmitsOptionalFields(t *testing.T) {
 			},
 			Properties: types.CloudServerPropertiesRequest{
 				Zone: "ITBG-1",
-				VPC:  types.ReferenceResource{URI: "/vpcs/123"},
-				BootVolume: types.ReferenceResource{
+				VPC:  types.ReferenceResourceCommon{URI: "/vpcs/123"},
+				BootVolume: types.ReferenceResourceCommon{
 					URI: "/blockStorages/456",
 				},
 			},
@@ -532,7 +532,7 @@ func TestPowerOnCloudServer(t *testing.T) {
 			resp := types.CloudServerResponse{
 				Metadata:   types.ResourceMetadataResponse{Name: ptr.To("my-server")},
 				Properties: types.CloudServerPropertiesResponse{Zone: "ITBG-1"},
-				Status:     types.ResourceStatus{State: statePtr(types.State("active"))},
+				Status:     types.ResourceStatusResponse{State: statePtr(types.State("active"))},
 			}
 			json.NewEncoder(w).Encode(resp)
 		})
@@ -637,7 +637,7 @@ func TestPowerOffCloudServer(t *testing.T) {
 			resp := types.CloudServerResponse{
 				Metadata:   types.ResourceMetadataResponse{Name: ptr.To("my-server")},
 				Properties: types.CloudServerPropertiesResponse{Zone: "ITBG-1"},
-				Status:     types.ResourceStatus{State: statePtr(types.State("stopped"))},
+				Status:     types.ResourceStatusResponse{State: statePtr(types.State("stopped"))},
 			}
 			json.NewEncoder(w).Encode(resp)
 		})

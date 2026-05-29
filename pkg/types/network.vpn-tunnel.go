@@ -252,13 +252,13 @@ type SubnetInfoCommon struct {
 // IPConfigurationsCommon contains network configuration of the VPN tunnel
 type IPConfigurationsCommon struct {
 	// VPC reference to the VPC (nullable)
-	VPC *ReferenceResource `json:"vpc,omitempty"`
+	VPC *ReferenceResourceCommon `json:"vpc,omitempty"`
 
 	// Subnet info (nullable)
 	Subnet *SubnetInfoCommon `json:"subnet,omitempty"`
 
 	// PublicIP reference to the public IP (nullable)
-	PublicIP *ReferenceResource `json:"publicIp,omitempty"`
+	PublicIP *ReferenceResourceCommon `json:"publicIp,omitempty"`
 }
 
 // IKESettingsCommon contains IKE settings
@@ -341,8 +341,8 @@ type VPNTunnelPropertiesRequest struct {
 	// VPNClientSettingsCommon Client settings of the VPN tunnel (nullable)
 	VPNClientSettingsCommon *VPNClientSettingsCommon `json:"vpnClientSettings,omitempty"`
 
-	// BillingPlan Billing plan
-	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
+	// BillingPlanCommon Billing plan
+	BillingPlanCommon *BillingPlanCommon `json:"billingPlan,omitempty"`
 }
 
 // VPNTunnelPropertiesResponse contains the response properties of a VPN tunnel
@@ -362,8 +362,8 @@ type VPNTunnelPropertiesResponse struct {
 	// RoutesNumber Number of valid VPN routes of the VPN tunnel
 	RoutesNumber int32 `json:"routesNumber,omitempty"`
 
-	// BillingPlan Billing plan (nullable)
-	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
+	// BillingPlanCommon Billing plan (nullable)
+	BillingPlanCommon *BillingPlanCommon `json:"billingPlan,omitempty"`
 }
 
 type VPNTunnelRequest struct {
@@ -380,7 +380,7 @@ type VPNTunnelResponse struct {
 	// Spec contains the VPN Tunnel specification
 	Properties VPNTunnelPropertiesResponse `json:"properties"`
 
-	Status ResourceStatus `json:"status,omitempty"`
+	Status ResourceStatusResponse `json:"status,omitempty"`
 }
 
 type VPNTunnelListResponse struct {

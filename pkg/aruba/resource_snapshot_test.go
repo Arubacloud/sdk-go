@@ -201,7 +201,7 @@ func snapshotTestResponse(id, name, uri, projectID string) *types.SnapshotRespon
 			Name:             &name,
 			Tags:             []string{"tag1"},
 			LocationResponse: loc,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: projectID,
 			},
 		},
@@ -215,9 +215,9 @@ func snapshotTestResponse(id, name, uri, projectID string) *types.SnapshotRespon
 				URI: &volURI,
 			},
 		},
-		Status: types.ResourceStatus{
+		Status: types.ResourceStatusResponse{
 			State: &state,
-			DisableStatusInfo: &types.DisableStatusInfo{
+			DisableStatusInfoResponse: &types.DisableStatusInfoResponse{
 				IsDisabled: false,
 			},
 		},
@@ -304,12 +304,12 @@ func TestSnapshot_FromResponseURIBackfill(t *testing.T) {
 			ID:  &id,
 			URI: &uri,
 		},
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	}
 	snap := &Snapshot{}
 	snap.fromResponse(resp)
 
-	// ProjectResponseMetadata is nil → should backfill from URI.
+	// ProjectMetadataResponse is nil → should backfill from URI.
 	if snap.ProjectID() != "p-uri" {
 		t.Errorf("ProjectID() via URI backfill = %q", snap.ProjectID())
 	}
@@ -329,7 +329,7 @@ func TestSnapshot_FromResponse_VolumeInfo_NilURI(t *testing.T) {
 				URI: nil, // URI is nil
 			},
 		},
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	}
 	snap := &Snapshot{}
 	snap.fromResponse(resp)
@@ -698,7 +698,7 @@ func TestSnapshotsClientAdapter_Update_NoProject(t *testing.T) {
 		Metadata: types.ResourceMetadataResponse{
 			ID: strPtr("snap-1"),
 		},
-		Status: types.ResourceStatus{},
+		Status: types.ResourceStatusResponse{},
 	})
 
 	_, err := adapter.Update(context.Background(), snap)
@@ -921,7 +921,7 @@ func TestSnapshot_FromResponse_SetsStatus(t *testing.T) {
 	s := &Snapshot{}
 	state := types.State("Active")
 	s.fromResponse(&types.SnapshotResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if s.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", s.State())

@@ -232,18 +232,18 @@ func vpnRouteTestResponse(id, name, uri, projectID string) *types.VPNRouteRespon
 			Name:             &name,
 			Tags:             []string{"route-tag"},
 			LocationResponse: loc,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: projectID,
 			},
 		},
 		Properties: types.VPNRoutePropertiesResponse{
 			CloudSubnet:  types.SubnetCIDROrRef{CIDR: cloud},
 			OnPremSubnet: onPrem,
-			LinkedResources: []types.LinkedResource{
+			LinkedResources: []types.LinkedResourceCommon{
 				{URI: "/projects/p/providers/Aruba.Network/vpnTunnels/t-1"},
 			},
 		},
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	}
 }
 
@@ -320,7 +320,7 @@ func TestVPNRoute_FromResponseURIBackfill_CamelCase(t *testing.T) {
 			ID:   &id,
 			URI:  &uri,
 			Name: &name,
-			// ProjectResponseMetadata intentionally nil
+			// ProjectMetadataResponse intentionally nil
 		},
 	}
 	r := &VPNRoute{}
@@ -977,7 +977,7 @@ func TestVPNRoute_FromResponse_SetsStatus(t *testing.T) {
 	r := &VPNRoute{}
 	state := types.State("Active")
 	r.fromResponse(&types.VPNRouteResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if r.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", r.State())
@@ -1079,7 +1079,7 @@ func TestVPNRoute_VPNTunnelURI_Populated(t *testing.T) {
 	r := &VPNRoute{}
 	r.response = &types.VPNRouteResponse{
 		Properties: types.VPNRoutePropertiesResponse{
-			VPNTunnel: &types.ReferenceResource{URI: tunnelURI},
+			VPNTunnel: &types.ReferenceResourceCommon{URI: tunnelURI},
 		},
 	}
 	if got := r.VPNTunnelURI(); got != tunnelURI {

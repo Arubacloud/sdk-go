@@ -106,7 +106,7 @@ func (r *StorageRestore) TargetURI() string { return storageRestoreDerefString(r
 func (r *StorageRestore) toRequest() types.StorageRestoreRequest {
 	props := types.StorageRestorePropertiesRequest{}
 	if r.targetRef != nil {
-		props.Target = types.ReferenceResource{URI: *r.targetRef}
+		props.Target = types.ReferenceResourceCommon{URI: *r.targetRef}
 	}
 	return types.StorageRestoreRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
@@ -139,8 +139,8 @@ func (r *StorageRestore) fromResponse(resp *types.StorageRestoreResponse) {
 		r.targetRef = &v
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		r.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		r.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if (r.projectID == "" || r.backupID == "") && r.RespURI() != "" {
 		ids := parseURIIDs(r.RespURI())

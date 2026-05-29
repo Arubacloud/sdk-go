@@ -157,8 +157,8 @@ func (v *VPC) fromResponse(resp *types.VPCResponse) {
 	v.setLinked(resp.Properties.LinkedResources)
 	d := resp.Properties.Default
 	v.defaultVPC = &d
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		v.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		v.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 }
 

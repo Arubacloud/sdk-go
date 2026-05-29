@@ -27,25 +27,25 @@ const (
 type CloudServerPropertiesRequest struct {
 	Zone Zone `json:"dataCenter"`
 
-	VPC ReferenceResource `json:"vpc"`
+	VPC ReferenceResourceCommon `json:"vpc"`
 
 	VPCPreset bool `json:"vpcPreset,omitempty"`
 
 	FlavorName *CloudServerFlavor `json:"flavorName,omitempty"`
 
-	ElasticIP *ReferenceResource `json:"elasticIp,omitempty"`
+	ElasticIP *ReferenceResourceCommon `json:"elasticIp,omitempty"`
 
-	BootVolume ReferenceResource `json:"bootVolume"`
+	BootVolume ReferenceResourceCommon `json:"bootVolume"`
 
-	KeyPair *ReferenceResource `json:"keyPair,omitempty"`
+	KeyPair *ReferenceResourceCommon `json:"keyPair,omitempty"`
 
-	Subnets []ReferenceResource `json:"subnets,omitempty"`
+	Subnets []ReferenceResourceCommon `json:"subnets,omitempty"`
 
-	SecurityGroups []ReferenceResource `json:"securityGroups,omitempty"`
+	SecurityGroups []ReferenceResourceCommon `json:"securityGroups,omitempty"`
 
 	UserData *string `json:"userData,omitempty"`
 
-	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
+	BillingPlanCommon *BillingPlanCommon `json:"billingPlan,omitempty"`
 }
 
 type CloudServerFlavorResponse struct {
@@ -71,23 +71,23 @@ type CloudServerNetworkInterfaceResponse struct {
 }
 
 type CloudServerPropertiesResponse struct {
-	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
+	LinkedResources []LinkedResourceCommon `json:"linkedResources,omitempty"`
 
 	Zone Zone `json:"dataCenter"`
 
-	VPC ReferenceResource `json:"vpc"`
+	VPC ReferenceResourceCommon `json:"vpc"`
 
 	Flavor CloudServerFlavorResponse `json:"flavor,omitempty"`
 
-	Template ReferenceResource `json:"template"`
+	Template ReferenceResourceCommon `json:"template"`
 
-	BootVolume ReferenceResource `json:"bootVolume"`
+	BootVolume ReferenceResourceCommon `json:"bootVolume"`
 
-	KeyPair ReferenceResource `json:"keyPair"`
+	KeyPair ReferenceResourceCommon `json:"keyPair"`
 
 	NetworkInterfaces []CloudServerNetworkInterfaceResponse `json:"networkInterfaces,omitempty"`
 
-	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
+	BillingPlanCommon *BillingPlanCommon `json:"billingPlan,omitempty"`
 }
 
 type CloudServerRequest struct {
@@ -100,7 +100,7 @@ type CloudServerResponse struct {
 	Metadata   ResourceMetadataResponse      `json:"metadata"`
 	Properties CloudServerPropertiesResponse `json:"properties"`
 
-	Status ResourceStatus `json:"status,omitempty"`
+	Status ResourceStatusResponse `json:"status,omitempty"`
 }
 
 type CloudServerListResponse struct {

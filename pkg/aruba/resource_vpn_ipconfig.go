@@ -12,8 +12,8 @@ import (
 // Construct with NewVPNIPConfig() and attach via VPNTunnel.WithIPConfig.
 type VPNIPConfig struct {
 	errMixin
-	vpc        *types.ReferenceResource
-	publicIP   *types.ReferenceResource
+	vpc        *types.ReferenceResourceCommon
+	publicIP   *types.ReferenceResourceCommon
 	subnetName string
 	subnetCIDR string
 	hasSubnet  bool
@@ -28,7 +28,7 @@ func (c *VPNIPConfig) WithVPC(v Ref) *VPNIPConfig {
 		c.addErr(fmt.Errorf("WithVPC: VPC Ref has empty URI"))
 		return c
 	}
-	c.vpc = &types.ReferenceResource{URI: v.URI()}
+	c.vpc = &types.ReferenceResourceCommon{URI: v.URI()}
 	return c
 }
 
@@ -38,7 +38,7 @@ func (c *VPNIPConfig) WithElasticIP(v Ref) *VPNIPConfig {
 		c.addErr(fmt.Errorf("WithElasticIP: PublicIP Ref has empty URI"))
 		return c
 	}
-	c.publicIP = &types.ReferenceResource{URI: v.URI()}
+	c.publicIP = &types.ReferenceResourceCommon{URI: v.URI()}
 	return c
 }
 

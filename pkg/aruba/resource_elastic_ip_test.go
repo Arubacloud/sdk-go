@@ -99,21 +99,21 @@ func TestElasticIP_ToRequestRoundTrip(t *testing.T) {
 	if req.Metadata.Location.Value != RegionITBGBergamo {
 		t.Errorf("Location.Value = %q", req.Metadata.Location.Value)
 	}
-	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("BillingPlan.BillingPeriod (wire) = %v", req.Properties.BillingPlan)
+	if req.Properties.BillingPlanCommon == nil || req.Properties.BillingPlanCommon.BillingPeriod == nil || *req.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPlanCommon.BillingPeriod (wire) = %v", req.Properties.BillingPlanCommon)
 	}
 
 	// No billing period set → defaults to Hour on the wire.
 	e2 := NewElasticIP().
 		Named("bare")
 	req2 := e2.RawRequest()
-	if req2.Properties.BillingPlan == nil || req2.Properties.BillingPlan.BillingPeriod == nil || *req2.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("unset BillingPeriod should default to Hour in billingPlan on wire, got %v", req2.Properties.BillingPlan)
+	if req2.Properties.BillingPlanCommon == nil || req2.Properties.BillingPlanCommon.BillingPeriod == nil || *req2.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("unset BillingPeriod should default to Hour in billingPlan on wire, got %v", req2.Properties.BillingPlanCommon)
 	}
 }
 
 // --------------------------------------------------------------------------
-// BillingPlan wire round-trip
+// BillingPlanCommon wire round-trip
 // --------------------------------------------------------------------------
 
 func TestElasticIP_BillingPeriod_WireBillingPlan(t *testing.T) {
@@ -121,17 +121,17 @@ func TestElasticIP_BillingPeriod_WireBillingPlan(t *testing.T) {
 		tc := period
 		t.Run(string(tc), func(t *testing.T) {
 			req := NewElasticIP().Named("x").InRegion(RegionITBGBergamo).BilledBy(tc).RawRequest()
-			if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil {
-				t.Fatal("BillingPlan or BillingPlan.BillingPeriod is nil")
+			if req.Properties.BillingPlanCommon == nil || req.Properties.BillingPlanCommon.BillingPeriod == nil {
+				t.Fatal("BillingPlanCommon or BillingPlanCommon.BillingPeriod is nil")
 			}
-			if got := *req.Properties.BillingPlan.BillingPeriod; got != tc {
+			if got := *req.Properties.BillingPlanCommon.BillingPeriod; got != tc {
 				t.Errorf("toRequest wire = %q, want %q", got, tc)
 			}
 			std := tc
 			e := &ElasticIP{}
 			e.fromResponse(&types.ElasticIPResponse{
 				Properties: types.ElasticIPPropertiesResponse{
-					BillingPlan: &types.BillingPlan{BillingPeriod: &std},
+					BillingPlanCommon: &types.BillingPlanCommon{BillingPeriod: &std},
 				},
 			})
 			if e.BillingPeriod() != tc {
@@ -156,20 +156,20 @@ func elasticIPTestResponse(id, name, uri, projectID string) *types.ElasticIPResp
 			Name:             &name,
 			Tags:             []string{"tag1"},
 			LocationResponse: loc,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: projectID,
 			},
 		},
 		Properties: types.ElasticIPPropertiesResponse{
-			BillingPlan: &types.BillingPlan{BillingPeriod: func() *BillingPeriod { v := BillingPeriodHour; return &v }()},
-			Address:     &addr,
-			LinkedResources: []types.LinkedResource{
+			BillingPlanCommon: &types.BillingPlanCommon{BillingPeriod: func() *BillingPeriod { v := BillingPeriodHour; return &v }()},
+			Address:           &addr,
+			LinkedResources: []types.LinkedResourceCommon{
 				{URI: "/projects/p/providers/Aruba.Compute/cloudservers/cs1", StrictCorrelation: true},
 			},
 		},
-		Status: types.ResourceStatus{
+		Status: types.ResourceStatusResponse{
 			State: &state,
-			DisableStatusInfo: &types.DisableStatusInfo{
+			DisableStatusInfoResponse: &types.DisableStatusInfoResponse{
 				IsDisabled: false,
 			},
 		},
@@ -345,8 +345,8 @@ func TestElasticIPsClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Metadata.Name != "my-eip" {
 		t.Errorf("request Name = %q", gotBody.Metadata.Name)
 	}
-	if gotBody.Properties.BillingPlan == nil || gotBody.Properties.BillingPlan.BillingPeriod == nil || *gotBody.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("request BillingPlan.BillingPeriod (wire) = %v", gotBody.Properties.BillingPlan)
+	if gotBody.Properties.BillingPlanCommon == nil || gotBody.Properties.BillingPlanCommon.BillingPeriod == nil || *gotBody.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("request BillingPlanCommon.BillingPeriod (wire) = %v", gotBody.Properties.BillingPlanCommon)
 	}
 }
 
@@ -820,7 +820,7 @@ func TestElasticIP_FromResponse_URIBackfillProjectID(t *testing.T) {
 			ID:   &id,
 			URI:  &uri,
 			Name: &name,
-			// ProjectResponseMetadata intentionally nil
+			// ProjectMetadataResponse intentionally nil
 		},
 	}
 	e := &ElasticIP{}
@@ -834,7 +834,7 @@ func TestElasticIP_FromResponse_SetsStatus(t *testing.T) {
 	e := &ElasticIP{}
 	state := types.State("NotUsed")
 	e.fromResponse(&types.ElasticIPResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if e.State() != types.StateNotUsed {
 		t.Errorf("State() = %q after fromResponse, want NotUsed", e.State())
@@ -851,7 +851,7 @@ func TestElasticIP_WaitUntilNotUsed_HappyPath(t *testing.T) {
 			state = "NotUsed"
 		}
 		s := state
-		e.setStatus(&types.ResourceStatus{State: &s})
+		e.setStatus(&types.ResourceStatusResponse{State: &s})
 		return nil
 	})
 	if err := e.WaitUntilNotUsed(context.Background(), fastOpts()...); err != nil {
@@ -874,7 +874,7 @@ func TestElasticIP_WaitUntilUsed_HappyPath(t *testing.T) {
 					state = attachedState
 				}
 				s := state
-				e.setStatus(&types.ResourceStatus{State: &s})
+				e.setStatus(&types.ResourceStatusResponse{State: &s})
 				return nil
 			})
 			if err := e.WaitUntilUsed(context.Background(), fastOpts()...); err != nil {
@@ -929,7 +929,7 @@ func TestElasticIP_AssociatedResourceURI_NoLinked(t *testing.T) {
 func TestElasticIP_AssociatedResourceURI_WithLinked(t *testing.T) {
 	e := &ElasticIP{}
 	linkedURI := "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"
-	e.setLinked([]types.LinkedResource{{URI: linkedURI}})
+	e.setLinked([]types.LinkedResourceCommon{{URI: linkedURI}})
 	if got := e.AssociatedResourceURI(); got != linkedURI {
 		t.Errorf("AssociatedResourceURI() = %q, want %q", got, linkedURI)
 	}
@@ -939,7 +939,7 @@ func TestElasticIP_AssociatedResourceURI_FirstLinked(t *testing.T) {
 	e := &ElasticIP{}
 	first := "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"
 	second := "/projects/p/providers/Aruba.Network/loadBalancers/lb-1"
-	e.setLinked([]types.LinkedResource{{URI: first}, {URI: second}})
+	e.setLinked([]types.LinkedResourceCommon{{URI: first}, {URI: second}})
 	if got := e.AssociatedResourceURI(); got != first {
 		t.Errorf("AssociatedResourceURI() = %q, want first = %q", got, first)
 	}

@@ -258,7 +258,7 @@ func blockStorageTestResponse(id, name, uri, projectID string) *types.BlockStora
 	img := VolumeImageLU22001
 	boot := true
 	zone := ZoneITBG1
-	snap := &types.ReferenceResource{URI: "/projects/p/providers/Aruba.Storage/snapshots/s1"}
+	snap := &types.ReferenceResourceCommon{URI: "/projects/p/providers/Aruba.Storage/snapshots/s1"}
 	return &types.BlockStorageResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:               &id,
@@ -266,7 +266,7 @@ func blockStorageTestResponse(id, name, uri, projectID string) *types.BlockStora
 			Name:             &name,
 			Tags:             []string{"tag1"},
 			LocationResponse: loc,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: projectID,
 			},
 		},
@@ -278,13 +278,13 @@ func blockStorageTestResponse(id, name, uri, projectID string) *types.BlockStora
 			Image:         &img,
 			Bootable:      &boot,
 			Snapshot:      snap,
-			LinkedResources: []types.LinkedResource{
+			LinkedResources: []types.LinkedResourceCommon{
 				{URI: "/projects/p/providers/Aruba.Compute/cloudservers/cs1", StrictCorrelation: true},
 			},
 		},
-		Status: types.ResourceStatus{
+		Status: types.ResourceStatusResponse{
 			State: &state,
-			DisableStatusInfo: &types.DisableStatusInfo{
+			DisableStatusInfoResponse: &types.DisableStatusInfoResponse{
 				IsDisabled: false,
 			},
 		},
@@ -377,12 +377,12 @@ func TestBlockStorage_FromResponseURIBackfill(t *testing.T) {
 			ID:  &id,
 			URI: &uri,
 		},
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	}
 	bs := &BlockStorage{}
 	bs.fromResponse(resp)
 
-	// ProjectResponseMetadata is nil → should backfill from URI.
+	// ProjectMetadataResponse is nil → should backfill from URI.
 	if bs.ProjectID() != "p-uri" {
 		t.Errorf("ProjectID() via URI backfill = %q", bs.ProjectID())
 	}
@@ -682,7 +682,7 @@ func TestVolumesClientAdapter_Update_NoProject(t *testing.T) {
 		Metadata: types.ResourceMetadataResponse{
 			ID: strPtr("bs-1"),
 		},
-		Status: types.ResourceStatus{},
+		Status: types.ResourceStatusResponse{},
 	})
 
 	_, err := adapter.Update(context.Background(), bs)
@@ -919,7 +919,7 @@ func TestBlockStorage_FromResponse_SetsStatus(t *testing.T) {
 	b := &BlockStorage{}
 	state := types.State("NotUsed")
 	b.fromResponse(&types.BlockStorageResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if b.State() != types.StateNotUsed {
 		t.Errorf("State() = %q after fromResponse, want NotUsed", b.State())
@@ -936,7 +936,7 @@ func TestBlockStorage_WaitUntilNotUsed_HappyPath(t *testing.T) {
 			state = "NotUsed"
 		}
 		s := state
-		b.setStatus(&types.ResourceStatus{State: &s})
+		b.setStatus(&types.ResourceStatusResponse{State: &s})
 		return nil
 	})
 	if err := b.WaitUntilNotUsed(context.Background(), fastOpts()...); err != nil {
@@ -959,7 +959,7 @@ func TestBlockStorage_WaitUntilUsed_HappyPath(t *testing.T) {
 					state = attachedState
 				}
 				s := state
-				b.setStatus(&types.ResourceStatus{State: &s})
+				b.setStatus(&types.ResourceStatusResponse{State: &s})
 				return nil
 			})
 			if err := b.WaitUntilUsed(context.Background(), fastOpts()...); err != nil {

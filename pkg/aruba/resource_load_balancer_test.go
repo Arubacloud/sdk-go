@@ -33,20 +33,20 @@ func loadBalancerTestResponse(id, name, uri, projectID string) *types.LoadBalanc
 			Name:             &name,
 			Tags:             []string{"lb-tag"},
 			LocationResponse: loc,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: projectID,
 			},
 		},
 		Properties: types.LoadBalancerPropertiesResponse{
 			Address: &addr,
-			VPC:     &types.ReferenceResource{URI: vpcURI},
-			LinkedResources: []types.LinkedResource{
+			VPC:     &types.ReferenceResourceCommon{URI: vpcURI},
+			LinkedResources: []types.LinkedResourceCommon{
 				{URI: "/projects/p/providers/Aruba.Compute/cloudservers/cs1", StrictCorrelation: true},
 			},
 		},
-		Status: types.ResourceStatus{
+		Status: types.ResourceStatusResponse{
 			State: &state,
-			DisableStatusInfo: &types.DisableStatusInfo{
+			DisableStatusInfoResponse: &types.DisableStatusInfoResponse{
 				IsDisabled: false,
 			},
 		},
@@ -127,7 +127,7 @@ func TestLoadBalancer_FromResponseProjectIDFromURI(t *testing.T) {
 			ID:   &id,
 			URI:  &uri,
 			Name: &name,
-			// ProjectResponseMetadata intentionally nil
+			// ProjectMetadataResponse intentionally nil
 		},
 	}
 	lb := &LoadBalancer{}
@@ -484,7 +484,7 @@ func TestLoadBalancer_FromResponse_SetsStatus(t *testing.T) {
 	l := &LoadBalancer{}
 	state := types.State("Active")
 	l.fromResponse(&types.LoadBalancerResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if l.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", l.State())

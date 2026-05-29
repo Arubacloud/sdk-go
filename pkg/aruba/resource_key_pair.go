@@ -132,8 +132,8 @@ func (k *KeyPair) fromResponse(resp *types.KeyPairResponse) {
 		k.publicKey = &v
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		k.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		k.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if k.projectID == "" && k.RespURI() != "" {
 		ids := parseURIIDs(k.RespURI())

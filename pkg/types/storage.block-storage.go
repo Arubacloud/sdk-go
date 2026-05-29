@@ -54,7 +54,7 @@ type BlockStoragePropertiesRequest struct {
 	// Type of block storage. Admissible values: Standard, Performance
 	Type BlockStorageType `json:"type"`
 
-	Snapshot *ReferenceResource `json:"snapshot,omitempty"`
+	Snapshot *ReferenceResourceCommon `json:"snapshot,omitempty"`
 
 	Bootable *bool `json:"bootable,omitempty"`
 
@@ -62,7 +62,7 @@ type BlockStoragePropertiesRequest struct {
 }
 
 type BlockStoragePropertiesResponse struct {
-	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
+	LinkedResources []LinkedResourceCommon `json:"linkedResources,omitempty"`
 
 	// SizeGB Size of the block storage in GB
 	SizeGB int `json:"sizeGb"`
@@ -76,7 +76,7 @@ type BlockStoragePropertiesResponse struct {
 	// Type of block storage. Admissible values: Standard, Performance
 	Type BlockStorageType `json:"type"`
 
-	Snapshot *ReferenceResource `json:"snapshot,omitempty"`
+	Snapshot *ReferenceResourceCommon `json:"snapshot,omitempty"`
 
 	Bootable *bool `json:"bootable,omitempty"`
 
@@ -99,7 +99,7 @@ type BlockStorageResponse struct {
 	// Spec contains the Block Storage specification
 	Properties BlockStoragePropertiesResponse `json:"properties"`
 
-	Status ResourceStatus `json:"status,omitempty"`
+	Status ResourceStatusResponse `json:"status,omitempty"`
 }
 
 type BlockStorageListResponse struct {

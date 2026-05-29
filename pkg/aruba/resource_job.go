@@ -340,8 +340,8 @@ func (j *Job) fromResponse(resp *types.JobResponse) {
 	}
 	j.steps = jobRebuildSteps(resp.Properties.Steps)
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		j.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		j.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if j.projectID == "" && j.RespURI() != "" {
 		if pid := parseURIIDs(j.RespURI())["projects"]; pid != "" {

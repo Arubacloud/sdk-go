@@ -168,12 +168,12 @@ func (b *DBaaSBackup) toRequest() types.BackupRequest {
 		Zone: zone,
 	}
 	if b.dbaasRef != nil {
-		props.DBaaS = types.ReferenceResource{URI: *b.dbaasRef}
+		props.DBaaS = types.ReferenceResourceCommon{URI: *b.dbaasRef}
 	}
 	if b.databaseRef != nil {
-		props.Database = types.ReferenceResource{URI: *b.databaseRef}
+		props.Database = types.ReferenceResourceCommon{URI: *b.databaseRef}
 	}
-	props.BillingPlan = &types.BillingPlan{BillingPeriod: defaultBillingPeriod(b.billingPeriod)}
+	props.BillingPlanCommon = &types.BillingPlanCommon{BillingPeriod: defaultBillingPeriod(b.billingPeriod)}
 	return types.BackupRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: b.toMetadata(),
@@ -207,12 +207,12 @@ func (b *DBaaSBackup) fromResponse(resp *types.BackupResponse) {
 		v := resp.Properties.Database.URI
 		b.databaseRef = &v
 	}
-	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
-		b.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
+	if resp.Properties.BillingPlanCommon != nil && resp.Properties.BillingPlanCommon.BillingPeriod != nil {
+		b.billingPeriod = resp.Properties.BillingPlanCommon.BillingPeriod
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		b.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		b.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if b.projectID == "" && b.RespURI() != "" {
 		if pid := parseURIIDs(b.RespURI())["projects"]; pid != "" {

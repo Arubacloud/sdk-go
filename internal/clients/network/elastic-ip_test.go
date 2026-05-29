@@ -233,7 +233,10 @@ func TestCreateElasticIP(t *testing.T) {
 				Location:                types.LocationRequest{Value: "ITBG-Bergamo"},
 			},
 			Properties: types.ElasticIPPropertiesRequest{
-				BillingPlan: func() *types.BillingPlan { v := types.BillingPeriodMonth; return &types.BillingPlan{BillingPeriod: &v} }(),
+				BillingPlanCommon: func() *types.BillingPlanCommon {
+					v := types.BillingPeriodMonth
+					return &types.BillingPlanCommon{BillingPeriod: &v}
+				}(),
 			},
 		}
 		resp, err := svc.Create(context.Background(), "test-project", req, nil)

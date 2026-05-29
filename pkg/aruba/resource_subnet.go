@@ -199,8 +199,8 @@ func (s *Subnet) fromResponse(resp *types.SubnetResponse) {
 		s.dhcp = dhcpFromType(resp.Properties.DHCP)
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		s.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		s.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	// Backfill ancestor IDs from response URI if not already set.
 	if (s.vpcID == "" || s.projectID == "") && s.RespURI() != "" {

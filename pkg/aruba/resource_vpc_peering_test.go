@@ -213,17 +213,17 @@ func vpcPeeringTestResponse(id, name, uri, projectID string) *types.VPCPeeringRe
 			Name:             &name,
 			Tags:             []string{"peer-tag"},
 			LocationResponse: loc,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: projectID,
 			},
 		},
 		Properties: types.VPCPeeringPropertiesResponse{
-			LinkedResources: []types.LinkedResource{
+			LinkedResources: []types.LinkedResourceCommon{
 				{URI: "/projects/p/providers/Aruba.Compute/cloudservers/cs1"},
 			},
-			RemoteVPC: &types.ReferenceResource{URI: remoteURI},
+			RemoteVPC: &types.ReferenceResourceCommon{URI: remoteURI},
 		},
-		Status: types.ResourceStatus{
+		Status: types.ResourceStatusResponse{
 			State: &state,
 		},
 	}
@@ -304,7 +304,7 @@ func TestVPCPeering_FromResponseURIBackfill(t *testing.T) {
 			ID:   &id,
 			URI:  &uri,
 			Name: &name,
-			// ProjectResponseMetadata intentionally nil
+			// ProjectMetadataResponse intentionally nil
 		},
 	}
 	p := &VPCPeering{}
@@ -983,7 +983,7 @@ func TestVPCPeering_FromResponse_SetsStatus(t *testing.T) {
 	p := &VPCPeering{}
 	state := types.State("Active")
 	p.fromResponse(&types.VPCPeeringResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if p.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", p.State())

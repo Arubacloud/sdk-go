@@ -359,11 +359,11 @@ func cloudServerTestResponse(id, name, uri string) *types.CloudServerResponse {
 		Properties: types.CloudServerPropertiesResponse{
 			Zone:       ZoneITBG1,
 			Flavor:     types.CloudServerFlavorResponse{Name: CloudServerFlavorCSO2A4, CPU: 2, RAM: 4096},
-			VPC:        types.ReferenceResource{URI: "/vpcs/v"},
-			BootVolume: types.ReferenceResource{URI: "/vols/bv"},
-			KeyPair:    types.ReferenceResource{URI: "/kps/kp"},
+			VPC:        types.ReferenceResourceCommon{URI: "/vpcs/v"},
+			BootVolume: types.ReferenceResourceCommon{URI: "/vols/bv"},
+			KeyPair:    types.ReferenceResourceCommon{URI: "/kps/kp"},
 		},
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	}
 }
 
@@ -415,7 +415,7 @@ func TestCloudServer_FromResponseHydration(t *testing.T) {
 	if cs.Raw() != resp {
 		t.Error("Raw() should return the hydrated response pointer")
 	}
-	// ProjectID backfilled from URI when ProjectResponseMetadata is nil
+	// ProjectID backfilled from URI when ProjectMetadataResponse is nil
 	if cs.ProjectID() != "p" {
 		t.Errorf("ProjectID() = %q", cs.ProjectID())
 	}
@@ -1142,7 +1142,7 @@ func TestCloudServer_Template_AndNetworkInterfaces_AfterHydration(t *testing.T) 
 		IPs:        []string{"10.0.0.1"},
 	}
 	resp := cloudServerTestResponse("cs-1", "srv", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1")
-	resp.Properties.Template = types.ReferenceResource{URI: templateURI}
+	resp.Properties.Template = types.ReferenceResourceCommon{URI: templateURI}
 	resp.Properties.NetworkInterfaces = []types.CloudServerNetworkInterfaceResponse{iface}
 	cs.fromResponse(resp)
 
@@ -1403,7 +1403,7 @@ func TestCloudServer_FromResponse_SetsStatus(t *testing.T) {
 	cs := &CloudServer{}
 	state := types.State("Active")
 	cs.fromResponse(&types.CloudServerResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if cs.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", cs.State())
@@ -1440,15 +1440,15 @@ func TestCloudServer_WithBillingPeriod_SetsField(t *testing.T) {
 func TestCloudServer_WithBillingPeriod_InRequest(t *testing.T) {
 	cs := NewCloudServer().BilledBy(BillingPeriodMonth)
 	req := cs.RawRequest()
-	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodMonth {
-		t.Errorf("request BillingPlan.BillingPeriod = %v, want %q", req.Properties.BillingPlan, BillingPeriodMonth)
+	if req.Properties.BillingPlanCommon == nil || req.Properties.BillingPlanCommon.BillingPeriod == nil || *req.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodMonth {
+		t.Errorf("request BillingPlanCommon.BillingPeriod = %v, want %q", req.Properties.BillingPlanCommon, BillingPeriodMonth)
 	}
 }
 
 func TestCloudServer_BillingPeriod_DefaultHour(t *testing.T) {
 	cs := NewCloudServer()
 	req := cs.RawRequest()
-	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("default BillingPlan.BillingPeriod = %v, want %q", req.Properties.BillingPlan, BillingPeriodHour)
+	if req.Properties.BillingPlanCommon == nil || req.Properties.BillingPlanCommon.BillingPeriod == nil || *req.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("default BillingPlanCommon.BillingPeriod = %v, want %q", req.Properties.BillingPlanCommon, BillingPeriodHour)
 	}
 }

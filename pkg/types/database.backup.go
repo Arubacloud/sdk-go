@@ -3,11 +3,11 @@ package types
 type BackupPropertiesRequest struct {
 	Zone Zone `json:"datacenter"`
 
-	DBaaS ReferenceResource `json:"dbaas"`
+	DBaaS ReferenceResourceCommon `json:"dbaas"`
 
-	Database ReferenceResource `json:"database"`
+	Database ReferenceResourceCommon `json:"database"`
 
-	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
+	BillingPlanCommon *BillingPlanCommon `json:"billingPlan,omitempty"`
 }
 
 type BackupStorageResponse struct {
@@ -15,15 +15,15 @@ type BackupStorageResponse struct {
 }
 
 type BackupPropertiesResponse struct {
-	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
+	LinkedResources []LinkedResourceCommon `json:"linkedResources,omitempty"`
 
 	Zone Zone `json:"datacenter"`
 
-	DBaaS ReferenceResource `json:"dbaas"`
+	DBaaS ReferenceResourceCommon `json:"dbaas"`
 
-	Database ReferenceResource `json:"database"`
+	Database ReferenceResourceCommon `json:"database"`
 
-	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
+	BillingPlanCommon *BillingPlanCommon `json:"billingPlan,omitempty"`
 
 	Storage BackupStorageResponse `json:"storage"`
 }
@@ -36,7 +36,7 @@ type BackupRequest struct {
 type BackupResponse struct {
 	Metadata   ResourceMetadataResponse `json:"metadata"`
 	Properties BackupPropertiesResponse `json:"properties"`
-	Status     ResourceStatus           `json:"status,omitempty"`
+	Status     ResourceStatusResponse   `json:"status,omitempty"`
 }
 
 type DBaaSBackupListResponse struct {

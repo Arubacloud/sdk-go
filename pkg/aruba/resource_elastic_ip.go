@@ -32,7 +32,7 @@ type ElasticIP struct {
 	linkedMixin
 	httpEnvelopeMixin
 
-	billingPeriod *BillingPeriod           // Properties.BillingPlan.BillingPeriod
+	billingPeriod *BillingPeriod           // Properties.BillingPlanCommon.BillingPeriod
 	address       *string                  // Properties.Address (read-only from response)
 	response      *types.ElasticIPResponse // backs Raw()
 }
@@ -130,7 +130,7 @@ func (e *ElasticIP) toRequest() types.ElasticIPRequest {
 			Location:                e.toLocation(),
 		},
 		Properties: types.ElasticIPPropertiesRequest{
-			BillingPlan: &types.BillingPlan{BillingPeriod: defaultBillingPeriod(e.billingPeriod)},
+			BillingPlanCommon: &types.BillingPlanCommon{BillingPeriod: defaultBillingPeriod(e.billingPeriod)},
 		},
 	}
 }
@@ -153,16 +153,16 @@ func (e *ElasticIP) fromResponse(resp *types.ElasticIPResponse) {
 
 	e.setLinked(resp.Properties.LinkedResources)
 
-	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
-		e.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
+	if resp.Properties.BillingPlanCommon != nil && resp.Properties.BillingPlanCommon.BillingPeriod != nil {
+		e.billingPeriod = resp.Properties.BillingPlanCommon.BillingPeriod
 	}
 	if resp.Properties.Address != nil && *resp.Properties.Address != "" {
 		addr := *resp.Properties.Address
 		e.address = &addr
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		e.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		e.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if e.projectID == "" && e.RespURI() != "" {
 		if pid := parseURIIDs(e.RespURI())["projects"]; pid != "" {

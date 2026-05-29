@@ -120,19 +120,19 @@ func securityGroupTestResponse(id, name, uri, projectID string) *types.SecurityG
 			URI:  &uri,
 			Name: &name,
 			Tags: []string{"sg-tag"},
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: projectID,
 			},
 		},
 		Properties: types.SecurityGroupPropertiesResponse{
 			Default: true,
-			LinkedResources: []types.LinkedResource{
+			LinkedResources: []types.LinkedResourceCommon{
 				{URI: "/projects/p/providers/Aruba.Compute/cloudservers/cs1", StrictCorrelation: true},
 			},
 		},
-		Status: types.ResourceStatus{
+		Status: types.ResourceStatusResponse{
 			State: &state,
-			DisableStatusInfo: &types.DisableStatusInfo{
+			DisableStatusInfoResponse: &types.DisableStatusInfoResponse{
 				IsDisabled: false,
 			},
 		},
@@ -214,7 +214,7 @@ func TestSecurityGroup_FromResponseURIBackfill(t *testing.T) {
 			ID:   &id,
 			URI:  &uri,
 			Name: &name,
-			// ProjectResponseMetadata intentionally nil
+			// ProjectMetadataResponse intentionally nil
 		},
 	}
 	sg := &SecurityGroup{}
@@ -886,7 +886,7 @@ func TestSecurityGroup_FromResponse_SetsStatus(t *testing.T) {
 	sg := &SecurityGroup{}
 	state := types.State("Active")
 	sg.fromResponse(&types.SecurityGroupResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if sg.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", sg.State())

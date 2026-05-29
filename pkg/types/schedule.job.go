@@ -172,7 +172,7 @@ type JobResponse struct {
 	Properties JobPropertiesResponse `json:"properties"`
 
 	// Status of the job
-	Status ResourceStatus `json:"status,omitempty"`
+	Status ResourceStatusResponse `json:"status,omitempty"`
 }
 
 // JobListResponse represents a list of jobs
