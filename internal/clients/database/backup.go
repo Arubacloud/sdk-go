@@ -23,7 +23,7 @@ func NewBackupsClientImpl(client *restclient.Client) *backupsClientImpl {
 }
 
 // List retrieves all backups for a project
-func (c *backupsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.BackupList], error) {
+func (c *backupsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.DBaaSBackupListResponse], error) {
 	c.client.Logger().Debugf("Listing backups for project: %s", projectID)
 
 	if err := types.ValidateProject(projectID); err != nil {
@@ -49,7 +49,7 @@ func (c *backupsClientImpl) List(ctx context.Context, projectID string, params *
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.BackupList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.DBaaSBackupListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific backup by ID

@@ -261,7 +261,7 @@ func dbaasBackupIDsFromRef(ref Ref) (projectID, backupID string, err error) {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type dbaasBackupsLowLevelClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.BackupList], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.DBaaSBackupListResponse], error)
 	Get(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[types.BackupResponse], error)
 	Create(ctx context.Context, projectID string, body types.BackupRequest, params *types.RequestParameters) (*types.Response[types.BackupResponse], error)
 	Delete(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[any], error)
@@ -416,7 +416,7 @@ func (a *dbaasBackupsClientAdapter) List(ctx context.Context, parent Ref, opts .
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*DBaaSBackup], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*DBaaSBackup], error) {
-		fetch := listPageFetch[types.BackupList](a.rest, opts)
+		fetch := listPageFetch[types.DBaaSBackupListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr
