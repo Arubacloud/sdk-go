@@ -37,7 +37,7 @@ type Subnet struct {
 	subnetType    *SubnetType           // Properties.Type ("Basic" / "Advanced")
 	defaultSubnet *bool                 // Properties.Default
 	cidr          *string               // Properties.Network.Address
-	dhcp          *SubnetDHCP           // Properties.DHCP (sub-builder)
+	dhcp          *SubnetDHCPCommon     // Properties.DHCP (sub-builder)
 	response      *types.SubnetResponse // backs Raw()
 }
 
@@ -92,7 +92,7 @@ func (s *Subnet) NotDefault() *Subnet { f := false; s.defaultSubnet = &f; return
 func (s *Subnet) WithCIDR(cidr string) *Subnet { s.cidr = &cidr; return s }
 
 // WithDHCP attaches a DHCP configuration sub-builder to the subnet.
-func (s *Subnet) WithDHCP(d *SubnetDHCP) *Subnet { s.dhcp = d; return s }
+func (s *Subnet) WithDHCP(d *SubnetDHCPCommon) *Subnet { s.dhcp = d; return s }
 
 // Getters — general → specific
 
@@ -139,7 +139,7 @@ func (s *Subnet) CIDR() string {
 func (s *Subnet) Network() string { return s.CIDR() }
 
 // DHCP returns the attached DHCP configuration sub-builder, or nil if not set.
-func (s *Subnet) DHCP() *SubnetDHCP { return s.dhcp }
+func (s *Subnet) DHCP() *SubnetDHCPCommon { return s.dhcp }
 
 // Wire converters
 
@@ -153,7 +153,7 @@ func (s *Subnet) toRequest() types.SubnetRequest {
 		props.Default = s.defaultSubnet
 	}
 	if s.cidr != nil {
-		props.Network = &types.SubnetNetwork{Address: *s.cidr}
+		props.Network = &types.SubnetNetworkCommon{Address: *s.cidr}
 	}
 	if s.dhcp != nil {
 		props.DHCP = s.dhcp.build()
@@ -227,7 +227,7 @@ func subnetDerefString(p *string) string {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type subnetLowLevelClient interface {
-	List(ctx context.Context, projectID, vpcID string, params *types.RequestParameters) (*types.Response[types.SubnetList], error)
+	List(ctx context.Context, projectID, vpcID string, params *types.RequestParameters) (*types.Response[types.SubnetListResponse], error)
 	Get(ctx context.Context, projectID, vpcID, subnetID string, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error)
 	Create(ctx context.Context, projectID, vpcID string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error)
 	Update(ctx context.Context, projectID, vpcID, subnetID string, body types.SubnetRequest, params *types.RequestParameters) (*types.Response[types.SubnetResponse], error)
@@ -421,7 +421,7 @@ func (a *subnetsClientAdapter) List(ctx context.Context, vpc Ref, opts ...CallOp
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*Subnet], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*Subnet], error) {
-		fetch := listPageFetch[types.SubnetList](a.rest, opts)
+		fetch := listPageFetch[types.SubnetListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr

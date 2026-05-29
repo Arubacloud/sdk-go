@@ -4,44 +4,44 @@ import "github.com/Arubacloud/sdk-go/pkg/types"
 
 // ---- Sub-builder ----
 
-// SubnetDHCP is the fluent sub-builder for Properties.DHCP on a Subnet.
+// SubnetDHCPCommon is the fluent sub-builder for Properties.DHCP on a Subnet.
 // Construct with aruba.NewSubnetDHCP() and attach via (*Subnet).WithDHCP.
-type SubnetDHCP struct {
+type SubnetDHCPCommon struct {
 	errMixin
-	inner types.SubnetDHCP
+	inner types.SubnetDHCPCommon
 }
 
 // NewSubnetDHCP returns an empty (disabled) DHCP block.
-func NewSubnetDHCP() *SubnetDHCP { return &SubnetDHCP{} }
+func NewSubnetDHCP() *SubnetDHCPCommon { return &SubnetDHCPCommon{} }
 
 // Enabled marks DHCP as enabled.
-func (d *SubnetDHCP) Enabled() *SubnetDHCP { d.inner.Enabled = true; return d }
+func (d *SubnetDHCPCommon) Enabled() *SubnetDHCPCommon { d.inner.Enabled = true; return d }
 
 // WithRange sets a single DHCP allocation range.
-func (d *SubnetDHCP) WithRange(start string, count int) *SubnetDHCP {
-	d.inner.Range = &types.SubnetDHCPRange{Start: start, Count: count}
+func (d *SubnetDHCPCommon) WithRange(start string, count int) *SubnetDHCPCommon {
+	d.inner.Range = &types.SubnetDHCPRangeCommon{Start: start, Count: count}
 	return d
 }
 
 // WithRoutes appends static routes advertised via DHCP. Repeated calls append.
-func (d *SubnetDHCP) WithRoutes(routes ...SubnetDHCPRoute) *SubnetDHCP {
+func (d *SubnetDHCPCommon) WithRoutes(routes ...SubnetDHCPRouteCommon) *SubnetDHCPCommon {
 	for _, r := range routes {
-		d.inner.Routes = append(d.inner.Routes, types.SubnetDHCPRoute{Address: r.Address, Gateway: r.Gateway})
+		d.inner.Routes = append(d.inner.Routes, types.SubnetDHCPRouteCommon{Address: r.Address, Gateway: r.Gateway})
 	}
 	return d
 }
 
 // WithDNSServers appends DNS servers advertised via DHCP. Repeated calls append.
-func (d *SubnetDHCP) WithDNSServers(ips ...string) *SubnetDHCP {
+func (d *SubnetDHCPCommon) WithDNSServers(ips ...string) *SubnetDHCPCommon {
 	d.inner.DNS = append(d.inner.DNS, ips...)
 	return d
 }
 
 // IsEnabled reports whether DHCP is enabled on this subnet.
-func (d *SubnetDHCP) IsEnabled() bool { return d.inner.Enabled }
+func (d *SubnetDHCPCommon) IsEnabled() bool { return d.inner.Enabled }
 
 // RangeStart returns the start address of the DHCP allocation range, or "" if unset.
-func (d *SubnetDHCP) RangeStart() string {
+func (d *SubnetDHCPCommon) RangeStart() string {
 	if d.inner.Range == nil {
 		return ""
 	}
@@ -49,7 +49,7 @@ func (d *SubnetDHCP) RangeStart() string {
 }
 
 // RangeCount returns the number of addresses in the DHCP allocation range, or 0 if unset.
-func (d *SubnetDHCP) RangeCount() int {
+func (d *SubnetDHCPCommon) RangeCount() int {
 	if d.inner.Range == nil {
 		return 0
 	}
@@ -57,38 +57,38 @@ func (d *SubnetDHCP) RangeCount() int {
 }
 
 // Routes returns a copy of the static routes advertised via DHCP, or nil if none.
-func (d *SubnetDHCP) Routes() []SubnetDHCPRoute {
+func (d *SubnetDHCPCommon) Routes() []SubnetDHCPRouteCommon {
 	if len(d.inner.Routes) == 0 {
 		return nil
 	}
-	out := make([]SubnetDHCPRoute, len(d.inner.Routes))
+	out := make([]SubnetDHCPRouteCommon, len(d.inner.Routes))
 	for i, r := range d.inner.Routes {
-		out[i] = SubnetDHCPRoute{Address: r.Address, Gateway: r.Gateway}
+		out[i] = SubnetDHCPRouteCommon{Address: r.Address, Gateway: r.Gateway}
 	}
 	return out
 }
 
 // DNS returns a copy of the DNS server list advertised via DHCP, or nil if none.
-func (d *SubnetDHCP) DNS() []string {
+func (d *SubnetDHCPCommon) DNS() []string {
 	if len(d.inner.DNS) == 0 {
 		return nil
 	}
 	return append([]string(nil), d.inner.DNS...)
 }
 
-// SubnetDHCPRoute mirrors types.SubnetDHCPRoute at the wrapper boundary.
-type SubnetDHCPRoute struct {
+// SubnetDHCPRouteCommon mirrors types.SubnetDHCPRouteCommon at the wrapper boundary.
+type SubnetDHCPRouteCommon struct {
 	Address string
 	Gateway string
 }
 
-func (d *SubnetDHCP) build() *types.SubnetDHCP {
+func (d *SubnetDHCPCommon) build() *types.SubnetDHCPCommon {
 	if d == nil {
 		return nil
 	}
 	cp := d.inner
 	if len(d.inner.Routes) > 0 {
-		cp.Routes = append([]types.SubnetDHCPRoute(nil), d.inner.Routes...)
+		cp.Routes = append([]types.SubnetDHCPRouteCommon(nil), d.inner.Routes...)
 	}
 	if len(d.inner.DNS) > 0 {
 		cp.DNS = append([]string(nil), d.inner.DNS...)
@@ -100,17 +100,17 @@ func (d *SubnetDHCP) build() *types.SubnetDHCP {
 	return &cp
 }
 
-func dhcpFromType(t *types.SubnetDHCP) *SubnetDHCP {
+func dhcpFromType(t *types.SubnetDHCPCommon) *SubnetDHCPCommon {
 	if t == nil {
 		return nil
 	}
-	d := &SubnetDHCP{inner: types.SubnetDHCP{Enabled: t.Enabled}}
+	d := &SubnetDHCPCommon{inner: types.SubnetDHCPCommon{Enabled: t.Enabled}}
 	if t.Range != nil {
 		r := *t.Range
 		d.inner.Range = &r
 	}
 	if len(t.Routes) > 0 {
-		d.inner.Routes = append([]types.SubnetDHCPRoute(nil), t.Routes...)
+		d.inner.Routes = append([]types.SubnetDHCPRouteCommon(nil), t.Routes...)
 	}
 	if len(t.DNS) > 0 {
 		d.inner.DNS = append([]string(nil), t.DNS...)

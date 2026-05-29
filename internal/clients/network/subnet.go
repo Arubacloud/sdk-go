@@ -29,7 +29,7 @@ func NewSubnetsClientImpl(client *restclient.Client, vpcClient *vpcsClientImpl) 
 }
 
 // List retrieves all subnets for a VPC
-func (c *subnetsClientImpl) List(ctx context.Context, projectID string, vpcID string, params *types.RequestParameters) (*types.Response[types.SubnetList], error) {
+func (c *subnetsClientImpl) List(ctx context.Context, projectID string, vpcID string, params *types.RequestParameters) (*types.Response[types.SubnetListResponse], error) {
 	c.client.Logger().Debugf("Listing subnets for VPC: %s in project: %s", vpcID, projectID)
 
 	if err := types.ValidateProjectAndResource(projectID, vpcID, "VPC ID"); err != nil {
@@ -55,7 +55,7 @@ func (c *subnetsClientImpl) List(ctx context.Context, projectID string, vpcID st
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.SubnetList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.SubnetListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific subnet by ID

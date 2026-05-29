@@ -88,15 +88,15 @@ func TestSubnet_IntoVPC_BadRef(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// SubnetDHCP sub-builder
+// SubnetDHCPCommon sub-builder
 // --------------------------------------------------------------------------
 
 func TestSubnet_DHCPSubBuilder(t *testing.T) {
 	d := NewSubnetDHCP().
 		Enabled().
 		WithRange("10.0.0.10", 50).
-		WithRoutes(SubnetDHCPRoute{Address: "0.0.0.0/0", Gateway: "10.0.0.1"}).
-		WithRoutes(SubnetDHCPRoute{Address: "192.168.0.0/16", Gateway: "10.0.0.2"}).
+		WithRoutes(SubnetDHCPRouteCommon{Address: "0.0.0.0/0", Gateway: "10.0.0.1"}).
+		WithRoutes(SubnetDHCPRouteCommon{Address: "192.168.0.0/16", Gateway: "10.0.0.2"}).
 		WithDNSServers("1.1.1.1").
 		WithDNSServers("8.8.8.8")
 
@@ -133,7 +133,7 @@ func TestSubnet_DHCPSubBuilder(t *testing.T) {
 	}
 
 	// Nil DHCP toType must return nil.
-	var nilDHCP *SubnetDHCP
+	var nilDHCP *SubnetDHCPCommon
 	if nilDHCP.build() != nil {
 		t.Error("nil.build() should return nil")
 	}
@@ -168,7 +168,7 @@ func TestSubnet_ToRequestRoundTrip(t *testing.T) {
 		WithDHCP(NewSubnetDHCP().
 			Enabled().
 			WithRange("10.1.2.10", 20).
-			WithRoutes(SubnetDHCPRoute{Address: "0.0.0.0/0", Gateway: "10.1.2.1"}).
+			WithRoutes(SubnetDHCPRouteCommon{Address: "0.0.0.0/0", Gateway: "10.1.2.1"}).
 			WithDNSServers("9.9.9.9"))
 
 	req := s.RawRequest()
@@ -230,10 +230,10 @@ func subnetTestResponse(id, name, uri, projectID string) *types.SubnetResponse {
 		Properties: types.SubnetPropertiesResponse{
 			Type:    SubnetTypeAdvanced,
 			Default: true,
-			Network: &types.SubnetNetwork{Address: addr},
-			DHCP: &types.SubnetDHCP{
+			Network: &types.SubnetNetworkCommon{Address: addr},
+			DHCP: &types.SubnetDHCPCommon{
 				Enabled: true,
-				Range:   &types.SubnetDHCPRange{Start: "10.0.0.10", Count: 50},
+				Range:   &types.SubnetDHCPRangeCommon{Start: "10.0.0.10", Count: 50},
 				DNS:     []string{"8.8.8.8"},
 			},
 			LinkedResources: []types.LinkedResource{
@@ -720,9 +720,9 @@ func TestDHCPFromType_Nil(t *testing.T) {
 
 func TestDHCPFromType_WithRoutes(t *testing.T) {
 	// Covers the t.Routes > 0 branch in dhcpFromType.
-	dhcp := &types.SubnetDHCP{
+	dhcp := &types.SubnetDHCPCommon{
 		Enabled: true,
-		Routes:  []types.SubnetDHCPRoute{{Address: "10.0.0.0/8", Gateway: "10.0.0.1"}},
+		Routes:  []types.SubnetDHCPRouteCommon{{Address: "10.0.0.0/8", Gateway: "10.0.0.1"}},
 	}
 	got := dhcpFromType(dhcp)
 	if got == nil {
