@@ -7,8 +7,8 @@ type SnapshotPropertiesRequest struct {
 	Volume ReferenceResource `json:"volume,omitempty"`
 }
 
-// VolumeInfo contains information about the original volume
-type VolumeInfo struct {
+// VolumeInfoResponse contains information about the original volume
+type VolumeInfoResponse struct {
 	// URI of the volume
 	URI *string `json:"uri,omitempty"`
 
@@ -26,7 +26,7 @@ type SnapshotPropertiesResponse struct {
 	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 
 	// Volume information about the original volume
-	Volume *VolumeInfo `json:"volume,omitempty"`
+	Volume *VolumeInfoResponse `json:"volume,omitempty"`
 
 	// Type of block storage. Admissible values: Standard, Performance
 	Type BlockStorageType `json:"type"`
@@ -55,7 +55,7 @@ type SnapshotResponse struct {
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type SnapshotList struct {
+type SnapshotListResponse struct {
 	ListResponse
 	Values []SnapshotResponse `json:"values"`
 }

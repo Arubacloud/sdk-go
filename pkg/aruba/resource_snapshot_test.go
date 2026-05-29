@@ -211,7 +211,7 @@ func snapshotTestResponse(id, name, uri, projectID string) *types.SnapshotRespon
 			Type:          BlockStorageTypeStandard,
 			Zone:          zone,
 			Bootable:      &boot,
-			Volume: &types.VolumeInfo{
+			Volume: &types.VolumeInfoResponse{
 				URI: &volURI,
 			},
 		},
@@ -325,7 +325,7 @@ func TestSnapshot_FromResponse_VolumeInfo_NilURI(t *testing.T) {
 			URI: &uri,
 		},
 		Properties: types.SnapshotPropertiesResponse{
-			Volume: &types.VolumeInfo{
+			Volume: &types.VolumeInfoResponse{
 				URI: nil, // URI is nil
 			},
 		},
@@ -422,7 +422,7 @@ type fakeSnapshotLowLevel struct {
 	getFunc    func(ctx context.Context, projectID, snapshotID string, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error)
 	updateFunc func(ctx context.Context, projectID, snapshotID string, body types.SnapshotRequest, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error)
 	deleteFunc func(ctx context.Context, projectID, snapshotID string, params *types.RequestParameters) (*types.Response[any], error)
-	listFunc   func(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.SnapshotList], error)
+	listFunc   func(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.SnapshotListResponse], error)
 }
 
 func (f *fakeSnapshotLowLevel) Create(ctx context.Context, projectID string, body types.SnapshotRequest, params *types.RequestParameters) (*types.Response[types.SnapshotResponse], error) {
@@ -437,7 +437,7 @@ func (f *fakeSnapshotLowLevel) Update(ctx context.Context, projectID, snapshotID
 func (f *fakeSnapshotLowLevel) Delete(ctx context.Context, projectID, snapshotID string, params *types.RequestParameters) (*types.Response[any], error) {
 	return f.deleteFunc(ctx, projectID, snapshotID, params)
 }
-func (f *fakeSnapshotLowLevel) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.SnapshotList], error) {
+func (f *fakeSnapshotLowLevel) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.SnapshotListResponse], error) {
 	return f.listFunc(ctx, projectID, params)
 }
 

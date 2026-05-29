@@ -64,7 +64,7 @@ func NewSnapshotsClientImpl(client *restclient.Client, volumesClient *volumesCli
 }
 
 // List retrieves all snapshots for a project
-func (c *snapshotsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.SnapshotList], error) {
+func (c *snapshotsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.SnapshotListResponse], error) {
 	c.client.Logger().Debugf("Listing snapshots for project: %s", projectID)
 
 	if err := types.ValidateProject(projectID); err != nil {
@@ -90,7 +90,7 @@ func (c *snapshotsClientImpl) List(ctx context.Context, projectID string, params
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.SnapshotList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.SnapshotListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific snapshot by ID
