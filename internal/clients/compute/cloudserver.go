@@ -23,7 +23,7 @@ func NewCloudServersClientImpl(client *restclient.Client) *cloudServersClientImp
 }
 
 // List retrieves all cloud servers for a project
-func (c *cloudServersClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.CloudServerList], error) {
+func (c *cloudServersClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.CloudServerListResponse], error) {
 	c.client.Logger().Debugf("Listing cloud servers for project: %s", projectID)
 
 	if err := types.ValidateProject(projectID); err != nil {
@@ -49,7 +49,7 @@ func (c *cloudServersClientImpl) List(ctx context.Context, projectID string, par
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.CloudServerList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.CloudServerListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific cloud server by ID

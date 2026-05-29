@@ -22,7 +22,7 @@ func TestListCloudServers(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			apiCalled = true
 			w.WriteHeader(http.StatusOK)
-			resp := types.CloudServerList{
+			resp := types.CloudServerListResponse{
 				ListResponse: types.ListResponse{Total: 2},
 				Values: []types.CloudServerResponse{
 					{Metadata: types.ResourceMetadataResponse{Name: ptr.To("server-1")}},
@@ -130,7 +130,7 @@ func TestGetCloudServer(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			resp := types.CloudServerResponse{
 				Metadata:   types.ResourceMetadataResponse{Name: ptr.To("my-server")},
-				Properties: types.CloudServerPropertiesResult{Zone: "ITBG-1"},
+				Properties: types.CloudServerPropertiesResponse{Zone: "ITBG-1"},
 			}
 			json.NewEncoder(w).Encode(resp)
 		})
@@ -531,7 +531,7 @@ func TestPowerOnCloudServer(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			resp := types.CloudServerResponse{
 				Metadata:   types.ResourceMetadataResponse{Name: ptr.To("my-server")},
-				Properties: types.CloudServerPropertiesResult{Zone: "ITBG-1"},
+				Properties: types.CloudServerPropertiesResponse{Zone: "ITBG-1"},
 				Status:     types.ResourceStatus{State: statePtr(types.State("active"))},
 			}
 			json.NewEncoder(w).Encode(resp)
@@ -636,7 +636,7 @@ func TestPowerOffCloudServer(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			resp := types.CloudServerResponse{
 				Metadata:   types.ResourceMetadataResponse{Name: ptr.To("my-server")},
-				Properties: types.CloudServerPropertiesResult{Zone: "ITBG-1"},
+				Properties: types.CloudServerPropertiesResponse{Zone: "ITBG-1"},
 				Status:     types.ResourceStatus{State: statePtr(types.State("stopped"))},
 			}
 			json.NewEncoder(w).Encode(resp)

@@ -299,7 +299,7 @@ func (cs *CloudServer) SecurityGroups() []string {
 func (cs *CloudServer) UserData() string { return cloudServerDerefString(cs.userData) }
 
 // NetworkInterfaces returns the list of network interface details from the last response, or nil.
-func (cs *CloudServer) NetworkInterfaces() []types.CloudServerNetworkInterfaceDetails {
+func (cs *CloudServer) NetworkInterfaces() []types.CloudServerNetworkInterfaceResponse {
 	if cs.response == nil {
 		return nil
 	}
@@ -528,7 +528,7 @@ type cloudServerActions interface {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type cloudServerLowLevelClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.CloudServerList], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.CloudServerListResponse], error)
 	Get(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
 	Create(ctx context.Context, projectID string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
 	Update(ctx context.Context, projectID, cloudServerID string, body types.CloudServerRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
@@ -727,7 +727,7 @@ func (a *cloudServersClientAdapter) List(ctx context.Context, project Ref, opts 
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*CloudServer], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*CloudServer], error) {
-		fetch := listPageFetch[types.CloudServerList](a.rest, opts)
+		fetch := listPageFetch[types.CloudServerListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr

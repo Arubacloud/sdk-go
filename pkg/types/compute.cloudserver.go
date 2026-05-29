@@ -62,7 +62,7 @@ type CloudServerFlavorResponse struct {
 	HD int32 `json:"hd"`
 }
 
-type CloudServerNetworkInterfaceDetails struct {
+type CloudServerNetworkInterfaceResponse struct {
 	Subnet *string `json:"subnet,omitempty"`
 
 	MacAddress *string `json:"macAddress,omitempty"`
@@ -70,7 +70,7 @@ type CloudServerNetworkInterfaceDetails struct {
 	IPs []string `json:"ips,omitempty"`
 }
 
-type CloudServerPropertiesResult struct {
+type CloudServerPropertiesResponse struct {
 	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
 
 	Zone Zone `json:"dataCenter"`
@@ -85,7 +85,7 @@ type CloudServerPropertiesResult struct {
 
 	KeyPair ReferenceResource `json:"keyPair"`
 
-	NetworkInterfaces []CloudServerNetworkInterfaceDetails `json:"networkInterfaces,omitempty"`
+	NetworkInterfaces []CloudServerNetworkInterfaceResponse `json:"networkInterfaces,omitempty"`
 
 	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
 }
@@ -97,13 +97,13 @@ type CloudServerRequest struct {
 }
 
 type CloudServerResponse struct {
-	Metadata   ResourceMetadataResponse    `json:"metadata"`
-	Properties CloudServerPropertiesResult `json:"properties"`
+	Metadata   ResourceMetadataResponse      `json:"metadata"`
+	Properties CloudServerPropertiesResponse `json:"properties"`
 
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type CloudServerList struct {
+type CloudServerListResponse struct {
 	ListResponse
 	Values []CloudServerResponse `json:"values"`
 }
