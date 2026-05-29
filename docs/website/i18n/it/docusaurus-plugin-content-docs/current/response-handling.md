@@ -2,7 +2,7 @@
 
 ## Panoramica
 
-Il layer wrapper dell'SDK gestisce automaticamente il parsing delle risposte e la segnalazione degli errori. Ogni metodo CRUD restituisce o un wrapper popolato (in caso di successo) o un errore. Raramente è necessario ispezionare direttamente l'envelope HTTP grezzo — ma gli strumenti per farlo sono sempre disponibili.
+Il layer wrapper dell'SDK gestisce automaticamente il parsing delle risposte e la segnalazione degli errori. Ogni metodo CRUD restituisce o un wrapper popolato (in caso di successo) o un errore. Raramente è necessario ispezionare direttamente l'envelope HTTP grezzo — ma gli strumenti per farlo sono sempre disponibili quando servono.
 
 ## Pattern Base
 
@@ -66,9 +66,9 @@ if err != nil {
 fmt.Printf("Project: %s (tags: %v)\n", proj.Name(), proj.Tags())
 ```
 
-## Accessori dell'Envelope HTTP
+## Accessor dell'Envelope HTTP
 
-Ogni wrapper prodotto da una chiamata Create / Get / Update / List espone il suo envelope HTTP grezzo:
+Ogni wrapper prodotto da una chiamata Create / Get / Update / List espone il proprio envelope HTTP grezzo:
 
 ```go
 // Dopo qualsiasi chiamata CRUD:
@@ -85,19 +85,19 @@ fmt.Println("Error body (if any):", proj.RawError())
 
 ## Accesso alla Risposta Wire Grezza
 
-Ogni wrapper ha un metodo `Raw()` che restituisce lo struct di risposta tipizzato sottostante da `pkg/types`. È utile per i campi non ancora promossi alla superficie del wrapper:
+Ogni wrapper dispone di un metodo `Raw()` che restituisce la struct di risposta tipizzata sottostante da `pkg/types`. È utile per accedere ai campi non ancora promossi alla superficie del wrapper:
 
 ```go
 vpc, err := arubaClient.FromNetwork().VPCs().Get(ctx, ref)
 if err != nil { /* … */ }
 
 raw := vpc.Raw()                         // struct wire sottostante
-fmt.Println(raw.Properties.IsDefault)    // campo non sul wrapper
+fmt.Println(raw.Properties.IsDefault)    // campo non presente sul wrapper
 ```
 
-### Convenienza JSON / YAML
+### Comodità JSON / YAML
 
-Per flag CLI del tipo `--output json` / `--output yaml`, ogni wrapper espone byte slice pre-serializzati:
+Per i flag CLI-style `--output json` / `--output yaml`, ogni wrapper espone slice di byte pre-serializzate:
 
 ```go
 fmt.Println(string(vpc.RawJSON()))   // payload codificato in JSON
@@ -106,9 +106,9 @@ fmt.Println(string(vpc.RawYAML()))   // payload codificato in YAML
 
 Restituisce `nil` se il wrapper non è ancora stato popolato (receiver con valore zero).
 
-## Risposte Lista
+## Risposte di Lista
 
-`List[T]` espone la stessa superficie di introspezione dei wrapper a risorsa singola, senza mai dover importare `pkg/types`:
+`List[T]` espone la stessa superficie di introspezione dei wrapper a singola risorsa, il tutto senza dover importare `pkg/types`:
 
 ```go
 vpcList, err := arubaClient.FromNetwork().VPCs().List(ctx, proj)
@@ -121,16 +121,16 @@ if vpcList.HasNext() {
     _ = nextPage
 }
 
-// Envelope HTTP — stessi accessor dei wrapper a risorsa singola.
+// Envelope HTTP — stessi accessor dei wrapper a singola risorsa.
 fmt.Println("status:", vpcList.StatusCode())
 fmt.Println("trace-id:", vpcList.Headers().Get("X-Trace-Id"))
 _, body := vpcList.RawHTTP()
 fmt.Println("raw body bytes:", len(body))
 ```
 
-### Convenienza JSON / YAML
+### Comodità JSON / YAML
 
-Anche `List[T]` espone `RawJSON()` e `RawYAML()` per il payload lista tipizzato:
+`List[T]` espone anch'esso `RawJSON()` e `RawYAML()` per il payload della lista tipizzata:
 
 ```go
 fmt.Println(string(vpcList.RawJSON()))   // payload codificato in JSON
@@ -139,11 +139,12 @@ fmt.Println(string(vpcList.RawYAML()))   // payload codificato in YAML
 
 Restituisce `nil` quando la lista non ha payload (`Raw() == nil`).
 
-> **Accedere ai campi wire non promossi.** Se hai bisogno di un campo non esposto dalla superficie del wrapper, consulta [Lavorare a Basso Livello](./working-at-low-level) — descrive il cast al tipo wire e le poche altre vie di uscita che richiedono l'importazione di `pkg/types`.
+> **Accedere ai campi non promossi.** Se hai bisogno di un campo non esposto dalla superficie del wrapper, vedi [Lavorare a Basso Livello](./working-at-low-level) —
+> illustra il cast alla struct wire tipizzata e le poche altre vie d'uscita che richiedono l'import di `pkg/types`.
 
 ## Errori in Fase di Setter
 
-I setter del builder fluente non restituiscono mai errori — li registrano internamente. L'errore emerge alla prima chiamata `Create` o `Update`. Puoi anche controllarlo in anticipo:
+I setter del builder fluente non restituiscono mai errori — li registrano internamente. L'errore emerge alla prima chiamata `Create` o `Update`. È anche possibile verificare in anticipo:
 
 ```go
 rule := aruba.NewSecurityRule().
@@ -154,6 +155,62 @@ rule := aruba.NewSecurityRule().
 if err := rule.Err(); err != nil {
     log.Fatalf("Bad rule configuration: %v", err)
 }
+```
+
+## Lettura dello Stato del Wrapper
+
+Ogni wrapper di tipo Family-A promuove i campi di risposta più utilizzati a getter piatti. È sempre preferibile utilizzare questi getter invece di accedere direttamente a `wrapper.Raw().Properties.X`:
+
+```go
+cs, err := arubaClient.FromCompute().CloudServers().Get(ctx, ref)
+if err != nil { /* … */ }
+
+// Preferisci i getter piatti
+fmt.Println(cs.Name())          // nome della risorsa
+fmt.Println(cs.State())         // stato del ciclo di vita (Active, Creating, …)
+fmt.Println(cs.ID())            // UUID
+fmt.Println(cs.Region())        // slug della regione
+fmt.Println(cs.Subnets())       // []string degli URI delle subnet
+fmt.Println(cs.ElasticIP())     // URI dell'Elastic IP, se impostato al momento della creazione
+fmt.Println(cs.UserData())      // cloud-init / user-data, se impostato al momento della creazione
+
+// Ricorri a Raw() solo per i campi non ancora promossi
+raw := cs.Raw()
+fmt.Println(raw.Properties.SomeUnpromotedField)
+```
+
+### Livelli standard dei getter
+
+| Categoria | Getter di esempio |
+|---|---|
+| Identità | `ID()`, `URI()`, `CloudServerID()` |
+| Denominazione | `Name()`, `Tags()` |
+| Geografia | `Region()`, `Zone()` |
+| Derivazione | `Project()`, `CreatedAt()`, `UpdatedAt()`, `Version()` |
+| Ciclo di vita | `State()`, `IsDisabled()`, `DisableReasons()`, `FailureReason()` |
+| Risorse collegate | `LinkedResources()` |
+| Envelope grezzo | `Raw()`, `RawJSON()`, `RawYAML()`, `RawRequest()`, `StatusCode()`, `Headers()`, `RawError()` |
+| Specifici della risorsa | es. `cs.Subnets()`, `vpnRoute.CloudSubnetCIDR()`, `kaas.PodCIDR()` |
+
+### `RawJSON()` / `RawYAML()` per l'output CLI
+
+I metodi `RawJSON()` e `RawYAML()` sono pensati per i flag CLI-style `--output json` / `--output yaml`. Serializzano la struct wire sottostante, non solo i campi promossi:
+
+```go
+cs, _ := arubaClient.FromCompute().CloudServers().Get(ctx, ref)
+fmt.Println(string(cs.RawJSON()))   // payload JSON completo
+fmt.Println(string(cs.RawYAML()))   // payload YAML completo
+```
+
+### `RawRequest()` per aggiornamenti round-trip
+
+`RawRequest()` produce un valore `types.<X>Request` che rappresenta lo stato corrente completo del wrapper — utile nei flussi `Get → modifica → Update`:
+
+```go
+cs, _ := arubaClient.FromCompute().CloudServers().Get(ctx, ref)
+// Il wrapper contiene già tutti i campi lato server; basta sovrascrivere ciò che è cambiato.
+cs.Named("new-name")
+_, err = arubaClient.FromCompute().CloudServers().Update(ctx, cs)
 ```
 
 ## Best Practice

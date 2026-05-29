@@ -47,6 +47,21 @@ fmt.Println(result.ID(), result.Name(), result.State())
 L'API di Aruba valida i valori dei tag contro `^[A-Za-z0-9-]{4,30}$`: **solo caratteri alfanumerici e trattini, lunghezza da 4 a 30**. Due punti, punti, underscore, spazi e altra punteggiatura vengono rifiutati con `400 — One or more validation error occurred`. L'SDK non valida i tag lato client, quindi un tag non valido fallisce solo quando la richiesta raggiunge il server.
 :::
 
+### Lettura dello stato del wrapper
+
+Ogni wrapper promuove i campi di risposta più usati a accessor piatti. Preferiscili rispetto a `wrapper.Raw().Properties.X`:
+
+```go
+fmt.Println(result.ID())        // UUID
+fmt.Println(result.Name())      // nome della risorsa
+fmt.Println(result.State())     // stato del ciclo di vita
+fmt.Println(result.Region())    // slug della regione
+fmt.Println(result.RawJSON())   // payload JSON wire completo (per --output json)
+fmt.Println(result.RawYAML())   // payload YAML wire completo (per --output yaml)
+```
+
+Gli scalari specifici della risorsa (es. `cs.Subnets()`, `vpnRoute.CloudSubnetCIDR()`, `kaas.PodCIDR()`) sono documentati nella sezione **Accessor di risposta** di ogni risorsa qui sotto. Vedi [Gestione delle risposte](./response-handling#lettura-dello-stato-del-wrapper) per la tassonomia completa degli accessor.
+
 Ogni sezione di risorsa elenca anche i suoi **Setter** (metodi builder concatenabili raggruppati per l'ordine canonico della catena da `ai/CONVENTIONS.md`) e un collegamento all'esempio eseguibile in `examples/all-resources/`.
 
 ---
@@ -83,6 +98,9 @@ fmt.Printf("✓ Progetto: %s (ID: %s)\n", proj.Name(), proj.ID())
 - `IsDefault()` — se questo è il progetto predefinito
 - `Tags()` — lista di tag `[]string`
 - `CreatedAt()`, `UpdatedAt()` — timestamp
+- `Raw()` — struct wire sottostante `*types.ProjectResponse`
+- `RawJSON()` / `RawYAML()` — payload serializzato per i flag `--output json/yaml`
+- `RawRequest()` — `types.ProjectRequest` per i flussi round-trip `Get → Update`
 
 **Setter**:
 - *Name*: `Named(string)`
@@ -167,7 +185,7 @@ if err != nil {
 }
 
 if err := cs.WaitUntilReady(ctx); err != nil {
-    log.Fatalf("Cloud Server did not become Active: %v", err)
+    log.Fatalf("Cloud Server did not become Ready: %v", err)
 }
 fmt.Printf("✓ Cloud Server: %s (zona: %s, flavor: %s)\n", cs.Name(), cs.Zone(), cs.Flavor())
 ```
@@ -295,7 +313,7 @@ if err != nil {
 }
 
 if err := k.WaitUntilReady(ctx); err != nil {
-    log.Fatalf("KaaS did not become Active: %v", err)
+    log.Fatalf("KaaS did not become Ready: %v", err)
 }
 fmt.Printf("✓ Cluster KaaS: %s (k8s: %s)\n", k.Name(), k.KubernetesVersion())
 ```
@@ -351,7 +369,7 @@ arubaClient.FromContainer().ContainerRegistry()
 ```
 
 **Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`. Questa risorsa può impiegare 20–40 minuti per convergere — utilizza un budget di attesa generoso.
 
 ```go
 reg, err := arubaClient.FromContainer().ContainerRegistry().Create(
@@ -373,7 +391,7 @@ if err != nil {
 }
 
 if err := reg.WaitUntilReady(ctx); err != nil {
-    log.Fatalf("ContainerRegistry did not become Active: %v", err)
+    log.Fatalf("ContainerRegistry did not become Ready: %v", err)
 }
 fmt.Printf("✓ Registry: %s (IP pubblico: %s)\n", reg.Name(), reg.PublicIP())
 ```
@@ -381,10 +399,9 @@ fmt.Printf("✓ Registry: %s (IP pubblico: %s)\n", reg.Name(), reg.PublicIP())
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `ContainerRegistryID()` — ID registry assegnato dal provider
-- `PublicIP()` — IP dell'endpoint pubblico
+- `ElasticIP()` — URI dell'endpoint pubblico
 - `VPC()`, `Subnet()`, `SecurityGroup()`, `BlockStorage()` — `aruba.Ref` alle risorse collegate
 - `AdminUsername()` — utente amministratore del registry
-- `ConcurrentUsers()` — limite di utenti concorrenti configurato
 - `BillingPeriod()` — cadenza di fatturazione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
@@ -429,7 +446,6 @@ db, err := arubaClient.FromDatabase().DBaaS().Create(
         InRegion(aruba.RegionITBGBergamo).
         InZone(aruba.ZoneITBG1).
         SizedGB(20).
-        WithAutoscaling(2, 5).
         WithVPC(vpc).
         WithSubnet(subnet).
         WithSecurityGroup(sg).
@@ -440,7 +456,7 @@ if err != nil {
 }
 
 if err := db.WaitUntilReady(ctx); err != nil {
-    log.Fatalf("DBaaS did not become Active: %v", err)
+    log.Fatalf("DBaaS did not become Ready: %v", err)
 }
 fmt.Printf("✓ DBaaS: %s (engine: %s)\n", db.Name(), db.Engine())
 ```
@@ -448,12 +464,12 @@ fmt.Printf("✓ DBaaS: %s (engine: %s)\n", db.Name(), db.Engine())
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `DBaaSID()` — ID istanza assegnato dal provider
-- `Engine()` — slug dell'engine (es. `"mysql-8.0"`)
+- `Engine()` — identificatore dell'engine (costante `DatabaseEngine`)
 - `EngineRaw()` — struct engine completa
-- `Flavor()` — slug del flavor
+- `Flavor()` — identificatore del flavor (costante `DBaaSFlavor`)
 - `FlavorRaw()` — struct flavor completa
-- `Storage()` — dimensione storage in GB
-- `Autoscaling()` — bool
+- `SizeGB()` — dimensione dello storage in GB
+- `AutoscalingEnabled()` — bool
 - `VPC()`, `Subnet()`, `SecurityGroup()`, `ElasticIP()` — `aruba.Ref` alle risorse di rete
 - `BillingPeriod()` — cadenza di fatturazione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
@@ -497,7 +513,7 @@ if err != nil {
 }
 
 if err := database.WaitUntilReady(ctx); err != nil {
-    log.Fatalf("Database did not become Active: %v", err)
+    log.Fatalf("Database did not become Ready: %v", err)
 }
 fmt.Printf("✓ Database: %s\n", database.Name())
 ```
@@ -505,7 +521,7 @@ fmt.Printf("✓ Database: %s\n", database.Name())
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `DatabaseID()` — ID database assegnato dal provider
-- `DBaaSID()` — ID DBaaS genitore
+- `DBaaSID()` — ID DBaaS padre
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
@@ -520,7 +536,7 @@ Esempio end-to-end completo: [`examples/all-resources/resource_database.go`](htt
 
 ---
 
-### Utente
+### User
 
 ```go
 arubaClient.FromDatabase().Users()
@@ -533,6 +549,7 @@ arubaClient.FromDatabase().Users()
 user, err := arubaClient.FromDatabase().Users().Create(
     ctx,
     aruba.NewUser().
+        Tagged("app-backend").
         InDBaaS(db).
         WithUsername("app_user").
         WithPassword("Str0ngP@ssword!"))
@@ -541,7 +558,7 @@ if err != nil {
 }
 
 if err := user.WaitUntilReady(ctx); err != nil {
-    log.Fatalf("User did not become Active: %v", err)
+    log.Fatalf("User did not become Ready: %v", err)
 }
 fmt.Printf("✓ Utente: %s\n", user.Name())
 ```
@@ -549,7 +566,8 @@ fmt.Printf("✓ Utente: %s\n", user.Name())
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `UserID()` — ID utente assegnato dal provider
-- `DBaaSID()` — ID DBaaS genitore
+- `Username()` — nome utente del database
+- `DBaaSID()` — ID DBaaS padre
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
@@ -586,16 +604,16 @@ if err != nil {
 }
 
 if err := grant.WaitUntilReady(ctx); err != nil {
-    log.Fatalf("Grant did not become Active: %v", err)
+    log.Fatalf("Grant did not become Ready: %v", err)
 }
-fmt.Printf("✓ Grant: %s\n", grant.ID())
+fmt.Printf("✓ Grant: %s (privilegi: %s)\n", grant.Name(), grant.Privileges())
 ```
 
 **Accessor di risposta**:
-- `ID()`, `URI()`
+- `ID()`, `URI()`, `Name()`, `Tags()`
 - `GrantID()` — ID grant assegnato dal provider
-- `DatabaseID()` — ID Database genitore
-- `Role()` — ruolo assegnato (es. `"liteadmin"`)
+- `DatabaseID()` — ID Database padre
+- `Privileges()` — stringa dei privilegi
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
@@ -633,17 +651,19 @@ if err != nil {
 }
 
 if err := backup.WaitUntilReady(ctx); err != nil {
-    log.Fatalf("DBaaS Backup did not become Active: %v", err)
+    log.Fatalf("DBaaS Backup did not become Ready: %v", err)
 }
 fmt.Printf("✓ DBaaS Backup: %s\n", backup.Name())
 ```
 
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `BackupID()` — ID backup assegnato dal provider
-- `DBaaSID()` — ID DBaaS sorgente
-- `Type()` — stringa del tipo di backup
-- `RetentionDays()` — periodo di conservazione
+- `DBaaSBackupID()` — ID backup assegnato dal provider
+- `DBaaSURI()` — URI del DBaaS sorgente
+- `DatabaseURI()` — URI del Database sorgente (se applicabile)
+- `SizeGB()` — dimensione del backup in GB
+- `Zone()` — zona di disponibilità
+- `BillingPeriod()` — cadenza di fatturazione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
@@ -656,7 +676,7 @@ fmt.Printf("✓ DBaaS Backup: %s\n", backup.Name())
 - *Billing*: `BilledBy(BillingPeriod)`
 
 :::tip Esempio eseguibile
-Le operazioni DBaaS Backup sono coperte nell'esempio DBaaS: [`examples/all-resources/resource_dbaas.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_dbaas.go)
+Le operazioni di DBaaS Backup sono trattate nell'esempio DBaaS: [`examples/all-resources/resource_dbaas.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_dbaas.go)
 :::
 
 ---
@@ -686,7 +706,7 @@ for _, a := range list.Items() {
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`
 - `Threshold()` — valore soglia dell'alert
-- `Action()` — azione scatenata dall'alert
+- `Action()` — azione scatenata all'alert
 - `IsActive()` — bool
 - `Raw()` — struct wire sottostante
 
@@ -704,7 +724,7 @@ arubaClient.FromMetric().Metrics()
 
 **Operazioni supportate**: `List`
 
-Le metriche sono risultati di query di serie temporali in sola lettura.
+Le Metric sono risultati di query di serie temporali in sola lettura.
 
 ```go
 list, err := arubaClient.FromMetric().Metrics().List(ctx, proj,
@@ -753,7 +773,7 @@ if err != nil {
 }
 
 if err := vpc.WaitUntilReady(ctx); err != nil {
-    log.Fatalf("VPC did not become Active: %v", err)
+    log.Fatalf("VPC did not become Ready: %v", err)
 }
 fmt.Printf("✓ VPC: %s\n", vpc.Name())
 ```
@@ -791,7 +811,7 @@ arubaClient.FromNetwork().Subnets()
 
 `OfType` accetta `aruba.SubnetTypeBasic` o `aruba.SubnetTypeAdvanced` (costanti tipizzate — nessun cast a stringa necessario).
 
-`aruba.NewSubnetDHCP()` è un sub-builder per la configurazione DHCP. Si allega con `WithDHCP(...)`.
+`aruba.NewSubnetDHCP()` è un sub-builder per la configurazione DHCP. Collegalo con `WithDHCP(...)`.
 
 ```go
 subnet, err := arubaClient.FromNetwork().Subnets().Create(
@@ -806,7 +826,7 @@ subnet, err := arubaClient.FromNetwork().Subnets().Create(
         WithDHCP(aruba.NewSubnetDHCP().
             Enabled().
             WithRange("192.168.1.10", 50).
-            WithRoutes(aruba.SubnetDHCPRoute{Address: "0.0.0.0/0", Gateway: "192.168.1.1"}).
+            WithRoutes(aruba.SubnetDHCPRouteCommon{Address: "0.0.0.0/0", Gateway: "192.168.1.1"}).
             WithDNSServers("8.8.8.8", "8.8.4.4")).
         NotDefault())
 if err != nil {
@@ -814,7 +834,7 @@ if err != nil {
 }
 
 if err := subnet.WaitUntilReady(ctx); err != nil {
-    log.Fatalf("Subnet did not become Active: %v", err)
+    log.Fatalf("Subnet did not become Ready: %v", err)
 }
 fmt.Printf("✓ Subnet: %s (CIDR: %s)\n", subnet.Name(), subnet.CIDR())
 ```
@@ -822,7 +842,7 @@ fmt.Printf("✓ Subnet: %s (CIDR: %s)\n", subnet.Name(), subnet.CIDR())
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `SubnetID()` — ID subnet assegnato dal provider
-- `Type()` — stringa del tipo di subnet
+- `Type()` — tipo di subnet (costante `SubnetType`)
 - `CIDR()` — blocco CIDR
 - `DHCP()` — configurazione DHCP
 - `IsDefault()` — bool
@@ -870,7 +890,7 @@ if err != nil {
 }
 
 if err := eip.WaitUntilReady(ctx); err != nil {
-    log.Fatalf("ElasticIP did not become Active: %v", err)
+    log.Fatalf("ElasticIP did not become Ready: %v", err)
 }
 fmt.Printf("✓ Elastic IP: %s (%s)\n", eip.Name(), eip.Address())
 ```
@@ -878,11 +898,11 @@ fmt.Printf("✓ Elastic IP: %s (%s)\n", eip.Name(), eip.Address())
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `ElasticIPID()` — ID IP assegnato dal provider
-- `Address()` — l'indirizzo IP pubblico allocato
+- `Address()` — indirizzo IP pubblico allocato
 - `BillingPeriod()` — cadenza di fatturazione
 - `Region()` — slug della regione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilNotUsed(ctx, opts...)`, `WaitUntilUsed(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
 
 **Setter**:
@@ -928,7 +948,7 @@ fmt.Printf("✓ Security Group: %s (ID: %s)\n", sg.Name(), sg.ID())
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `SecurityGroupID()` — ID gruppo assegnato dal provider
-- `Default()` — bool
+- `IsDefault()` — bool
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
@@ -954,9 +974,9 @@ arubaClient.FromNetwork().SecurityGroupRules()
 **Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
 **Asincrono**: sì — `State()` e `FailureReason()` sono disponibili.
 
-`WithDirection` accetta `aruba.RuleDirectionIngress` o `aruba.RuleDirectionEgress`.
+`WithDirection` accetta `aruba.RuleDirectionIngress` o `aruba.RuleDirectionEgress`. `WithProtocol` accetta `aruba.RuleProtocolTCP`, `aruba.RuleProtocolUDP`, `aruba.RuleProtocolICMP` o `aruba.RuleProtocolANY`.
 
-> **Avvertenza**: `TargetingCIDR` e `TargetingSecurityGroup` si escludono a vicenda. Impostarli entrambi registra un errore al momento del setter che emerge su `Create`.
+> **Avvertenza**: `TargetingCIDR` e `TargetingSecurityGroup` sono mutuamente esclusivi. Impostare entrambi registra un errore al momento del setter, che emerge al momento di `Create`.
 
 ```go
 rule, err := arubaClient.FromNetwork().SecurityGroupRules().Create(
@@ -981,7 +1001,7 @@ fmt.Printf("✓ Security Rule: %s\n", rule.Name())
 - `SecurityRuleID()` — ID regola assegnato dal provider
 - `Direction()` — `"Ingress"` o `"Egress"`
 - `Protocol()` — es. `"TCP"`, `"UDP"`, `"ICMP"`
-- `Port()` — numero o intervallo di porte
+- `Port()` — numero di porta o intervallo
 - `TargetKind()` — `"Ip"` o `"SecurityGroup"`
 - `TargetValue()` — stringa CIDR o URI del Security Group
 - `Region()` — slug della regione
@@ -1121,7 +1141,7 @@ fmt.Printf("✓ Peering Route: %s (CIDR: %s)\n", route.Name(), route.CIDR())
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `CIDR()` — blocco CIDR della route
 - `Target()` — `aruba.Ref` al target della route
-- `VPCPeeringID()` — ID peering genitore
+- `VPCPeeringID()` — ID peering padre
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
@@ -1150,9 +1170,9 @@ arubaClient.FromNetwork().VPNTunnels()
 **Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 Sub-builder del VPN Tunnel:
-- `aruba.NewVPNIKE()` — parametri IKE fase 1 (`WithEncryption(IKEEncryption)`, `WithHash(IKEHash)`, `WithDHGroup(IKEDHGroup)`, `WithDPDAction(IKEDPDAction)`)
-- `aruba.NewVPNESP()` — parametri ESP fase 2 (`WithEncryption(ESPEncryption)`, `WithHash(ESPHash)`, `WithPFS(ESPPFSGroup)`)
-- `aruba.NewVPNPSK()` — configurazione della pre-shared key (`WithKey(string)`, `WithCloudSite(string)`, `WithOnPremSite(string)`)
+- `aruba.NewVPNIKE()` — parametri fase 1 IKE (`WithEncryption(IKEEncryption)`, `WithHash(IKEHash)`, `WithDHGroup(IKEDHGroup)`, `WithDPDAction(IKEDPDAction)`)
+- `aruba.NewVPNESP()` — parametri fase 2 ESP (`WithEncryption(ESPEncryption)`, `WithHash(ESPHash)`, `WithPFS(ESPPFSGroup)`)
+- `aruba.NewVPNPSK()` — configurazione pre-shared key (`WithKey(string)`, `WithCloudSite(string)`, `WithOnPremSite(string)`)
 
 ```go
 tunnel, err := arubaClient.FromNetwork().VPNTunnels().Create(
@@ -1185,7 +1205,10 @@ fmt.Printf("✓ VPN Tunnel: %s (gateway: %s)\n", tunnel.Name(), tunnel.PeerClien
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `VPNTunnelID()` — ID tunnel assegnato dal provider
-- `PeerClientPublicIP()` — IP del gateway peer remoto
+- `PeerClientPublicIP()` — IP gateway del peer remoto
+- `IKE()` — impostazioni IKE `*aruba.VPNIKE`
+- `ESP()` — impostazioni ESP `*aruba.VPNESP`
+- `PSK()` — impostazioni PSK `*aruba.VPNPSK`
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
@@ -1239,7 +1262,7 @@ fmt.Printf("✓ VPN Route: %s (CIDR: %s)\n", vpnRoute.Name(), vpnRoute.CIDR())
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `CIDR()` — blocco CIDR della route
 - `Target()` — `aruba.Ref` al target della route
-- `VPNTunnelID()` — ID VPN Tunnel genitore
+- `VPNTunnelID()` — ID VPN Tunnel padre
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
@@ -1268,10 +1291,10 @@ arubaClient.FromSchedule().Jobs()
 **Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
 **Asincrono**: sì — `State()` e `FailureReason()` sono disponibili.
 
-Usa `OneShotAt(t time.Time)` per pianificare un job una-tantum, o `WithCron(expr string)` per un job ricorrente su pianificazione cron. Usa `RecurringUntil(t time.Time)` per impostare una data di fine per un job ricorrente.
+Usa `OneShotAt(t time.Time)` per pianificare un job one-shot, oppure `WithCron(expr string)` per un job ricorrente con una pianificazione cron. Usa `RecurringUntil(t time.Time)` per impostare una data di fine per un job ricorrente.
 
 ```go
-// Job una-tantum — si attiva una volta a un'ora specifica
+// Job one-shot — eseguito una sola volta a un orario specifico
 job, err := arubaClient.FromSchedule().Jobs().Create(
     ctx,
     aruba.NewJob().
@@ -1284,7 +1307,7 @@ if err != nil {
 }
 fmt.Printf("✓ Job: %s (tipo: %s)\n", job.Name(), job.JobType())
 
-// Job ricorrente — si attiva secondo una pianificazione cron
+// Job ricorrente — eseguito secondo una pianificazione cron
 cronJob, err := arubaClient.FromSchedule().Jobs().Create(
     ctx,
     aruba.NewJob().
@@ -1356,7 +1379,6 @@ fmt.Printf("✓ KMS: %s (ID: %s)\n", kms.Name(), kms.ID())
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `KMSID()` — ID istanza KMS assegnato dal provider
 - `BillingPeriod()` — cadenza di fatturazione
-- `Region()` — slug della regione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
@@ -1374,7 +1396,7 @@ Esempio end-to-end completo: [`examples/all-resources/resource_kms.go`](https://
 
 ---
 
-### Key (Chiave)
+### Key
 
 ```go
 arubaClient.FromSecurity().Keys()
@@ -1383,7 +1405,7 @@ arubaClient.FromSecurity().Keys()
 **Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
 **Asincrono**: sì — `State()` e `FailureReason()` sono disponibili.
 
-`OfAlgorithm` accetta `aruba.KeyAlgorithmAes` o `aruba.KeyAlgorithmRsa`.
+`OfAlgorithm` accetta `aruba.KeyAlgorithmAes` o `aruba.KeyAlgorithmRsa` (costanti tipizzate — nessun cast a stringa necessario).
 
 ```go
 key, err := arubaClient.FromSecurity().Keys().Create(
@@ -1416,7 +1438,7 @@ fmt.Printf("✓ Chiave: %s (algoritmo: %s)\n", key.Name(), key.Algorithm())
 - *Containment*: `InKMS(Ref)`
 
 :::tip Esempio eseguibile
-Le operazioni Key sono coperte nell'esempio KMS: [`examples/all-resources/resource_kms.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kms.go)
+Le operazioni sulle chiavi sono trattate nell'esempio KMS: [`examples/all-resources/resource_kms.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kms.go)
 :::
 
 ---
@@ -1428,7 +1450,7 @@ arubaClient.FromSecurity().Kmips()
 ```
 
 **Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
-**Asincrono**: sì — chiama `WaitUntilActive(ctx)` (o attendi `"CertificateAvailable"`) dopo `Create`.
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`. `WaitUntilReady` del KMIP ha successo su `"CertificateAvailable"` o `"Active"`. `WaitUntilCertificateAvailable` è un alias per `WaitUntilReady`.
 
 ```go
 km, err := arubaClient.FromSecurity().Kmips().Create(
@@ -1441,9 +1463,8 @@ if err != nil {
     log.Fatalf("Create Kmip: %v", err)
 }
 
-// Attendi che il certificato sia disponibile
-if err := km.WaitUntilCertificateAvailable(ctx); err != nil {
-    log.Fatalf("Kmip certificate not available: %v", err)
+if err := km.WaitUntilReady(ctx); err != nil {
+    log.Fatalf("Kmip did not become ready: %v", err)
 }
 fmt.Printf("✓ Kmip: %s\n", km.Name())
 ```
@@ -1462,9 +1483,9 @@ fmt.Println("Key:",  cert.Key())
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `KmipID()` — ID KMIP assegnato dal provider
-- `KmipStatus()` — stato specifico KMIP
+- `KmipStatus()` — stato specifico del KMIP
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilCertificateAvailable(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
 
 **Setter**:
@@ -1472,7 +1493,7 @@ fmt.Println("Key:",  cert.Key())
 - *Containment*: `InKMS(Ref)`
 
 :::tip Esempio eseguibile
-Le operazioni KMIP sono coperte nell'esempio KMS: [`examples/all-resources/resource_kms.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kms.go)
+Le operazioni KMIP sono trattate nell'esempio KMS: [`examples/all-resources/resource_kms.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kms.go)
 :::
 
 ---
@@ -1488,7 +1509,7 @@ arubaClient.FromStorage().Volumes()
 **Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
 **Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
-`OfType` accetta `aruba.BlockStorageTypeStandard` o `aruba.BlockStorageTypePerformance`. Usa `AsBootable()` per contrassegnare un volume come avviabile; `NotBootable()` per annullare. Usa `FromImage(imageID)` per specificare un'immagine base.
+`OfType` accetta `aruba.BlockStorageTypeStandard` o `aruba.BlockStorageTypePerformance`. Usa `AsBootable()` per contrassegnare un volume come avviabile; `NotBootable()` per annullare l'impostazione. Usa `FromImage(imageID)` per specificare un'immagine di base.
 
 ```go
 bs, err := arubaClient.FromStorage().Volumes().Create(
@@ -1514,7 +1535,7 @@ if err := bs.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ Volume: %s (%d GB)\n", bs.Name(), bs.SizeGB())
 ```
 
-Per creare un volume **da uno snapshot**, usa `FromSnapshot(snapshot)` al posto di `FromImage`:
+Per creare un volume **da uno snapshot**, usa `FromSnapshot(snapshot)` invece di `FromImage`:
 
 ```go
 bs, err := arubaClient.FromStorage().Volumes().Create(
@@ -1535,14 +1556,14 @@ bs, err := arubaClient.FromStorage().Volumes().Create(
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `BlockStorageID()` — ID volume assegnato dal provider
 - `SizeGB()` — dimensione in GB
-- `Type()` — stringa del tipo di storage
+- `Type()` — tipo di storage
 - `Zone()` — zona di disponibilità
 - `BillingPeriod()` — cadenza di fatturazione
 - `IsBootable()` — bool
 - `Image()` — riferimento all'immagine
 - `SnapshotURI()` — URI dello snapshot sorgente (se creato da snapshot)
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
+- `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilNotUsed(ctx, opts...)`, `WaitUntilUsed(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
 
 **Setter**:
@@ -1594,11 +1615,11 @@ fmt.Printf("✓ Snapshot: %s\n", snap.Name())
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `SnapshotID()` — ID snapshot assegnato dal provider
-- `Size()` — dimensione snapshot in GB
+- `SizeGB()` — dimensione dello snapshot in GB
 - `Type()` — tipo di storage
 - `Zone()` — zona di disponibilità
 - `BillingPeriod()` — cadenza di fatturazione
-- `IsBootable()` — bool
+- `Bootable()` — bool
 - `VolumeURI()` — URI del volume sorgente
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
@@ -1627,7 +1648,7 @@ arubaClient.FromStorage().Backups()
 **Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
 **Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
-`OfType` accetta `aruba.StorageBackupTypeFull` o `aruba.StorageBackupTypeIncremental`.
+`OfType` accetta `aruba.StorageBackupTypeFull` o `aruba.StorageBackupTypeIncremental`. Usa `FromVolume(vol)` per specificare il volume sorgente.
 
 ```go
 backup, err := arubaClient.FromStorage().Backups().Create(
@@ -1653,9 +1674,10 @@ fmt.Printf("✓ Storage Backup: %s\n", backup.Name())
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `BackupID()` — ID backup assegnato dal provider
-- `Type()` — stringa del tipo di backup
-- `RetentionDays()` — periodo di conservazione
+- `Type()` — tipo di backup
+- `RetentionDays()` — periodo di conservazione in giorni
 - `OriginURI()` — URI del volume sorgente
+- `BillingPeriod()` — cadenza di fatturazione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
@@ -1692,7 +1714,7 @@ restore, err := arubaClient.FromStorage().Restores().Create(
         Named("my-restore").
         Tagged("restore").
         FromBackup(backup).
-        ToVolume(aruba.URI(backup.OriginURI())))
+        WithTarget(aruba.URI(backup.OriginURI())))
 if err != nil {
     log.Fatalf("Create StorageRestore: %v", err)
 }
@@ -1706,7 +1728,7 @@ fmt.Printf("✓ Storage Restore: %s\n", restore.Name())
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `RestoreID()` — ID restore assegnato dal provider
-- `TargetURI()` — URI del volume target
+- `TargetURI()` — URI del volume di destinazione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
@@ -1724,42 +1746,98 @@ Esempio end-to-end completo: [`examples/all-resources/resource_storage_restore.g
 
 ---
 
-## Opzioni di Chiamata
+## Opzioni di chiamata
 
 Passa le opzioni di chiamata come argomenti variadic a qualsiasi chiamata `List`, `Get`, `Create`, `Update` o `Delete`:
 
 | Opzione | Scopo |
-|---------|-------|
-| `aruba.WithFilter(expr)` | Espressione di filtro lato server |
+|--------|---------|
+| `aruba.WithFilter(expr)` | Espressione filtro lato server |
 | `aruba.WithSort(expr)` | Espressione di ordinamento |
 | `aruba.WithLimit(n)` | Dimensione della pagina |
 | `aruba.WithOffset(n)` | Offset di paginazione |
 | `aruba.WithProjection(expr)` | Proiezione dei campi |
 | `aruba.WithAPIVersion(v)` | Sovrascrive la versione API per questa chiamata |
 
-Vedi [Filtri](./filters) per la sintassi di filtro e ordinamento.
+Vedi [Filtri](./filters) per la sintassi dei filtri e degli ordinamenti.
 
 ---
 
-## Costanti Enum
+## Costanti enum
 
-Tutti i tipi enum sono ri-esportati da `pkg/aruba` — non è necessario alcun import aggiuntivo.
+Tutti i tipi enum sono ri-esportati da `pkg/aruba` — nessun import aggiuntivo necessario. L'elenco canonico si trova in `pkg/aruba/aliases.go`.
+
+### Regione e Zona
+
+| Costante | Descrizione |
+|----------|-------------|
+| `aruba.RegionITBGBergamo` | Datacenter di Bergamo (Italia) |
+| `aruba.ZoneITBG1` | Zona di disponibilità Bergamo 1 |
+| `aruba.ZoneITBG2` | Zona di disponibilità Bergamo 2 |
+| `aruba.ZoneITBG3` | Zona di disponibilità Bergamo 3 |
+
+### Fatturazione
+
+| Costante | Descrizione |
+|----------|-------------|
+| `aruba.BillingPeriodHour` | Fatturazione oraria |
+| `aruba.BillingPeriodMonth` | Fatturazione mensile |
 
 ### Network
 
 | Costante | Valore |
-|----------|--------|
+|----------|-------|
 | `aruba.RuleDirectionIngress` | `"Ingress"` |
 | `aruba.RuleDirectionEgress` | `"Egress"` |
-| `aruba.EndpointTypeIP` | `"Ip"` |
-| `aruba.EndpointTypeSecurityGroup` | `"SecurityGroup"` |
+| `aruba.RuleProtocolTCP` | `"TCP"` |
+| `aruba.RuleProtocolUDP` | `"UDP"` |
+| `aruba.RuleProtocolICMP` | `"ICMP"` |
+| `aruba.RuleProtocolANY` | (wildcard — qualsiasi protocollo) |
 | `aruba.SubnetTypeBasic` | `"Basic"` |
 | `aruba.SubnetTypeAdvanced` | `"Advanced"` |
+
+### Compute
+
+| Costante | Descrizione |
+|----------|-------------|
+| `aruba.CloudServerFlavorCSO1A2` | 1 vCPU, 2 GB RAM |
+| `aruba.CloudServerFlavorCSO2A4` | 2 vCPU, 4 GB RAM |
+| `aruba.CloudServerFlavorCSO4A8` | 4 vCPU, 8 GB RAM |
+| `aruba.CloudServerFlavorCSO8A16` | 8 vCPU, 16 GB RAM |
+| … (vedi `aliases.go` per l'elenco completo) | |
+
+### Container
+
+| Costante | Descrizione |
+|----------|-------------|
+| `aruba.KubernetesVersion1323` | Kubernetes 1.32.3 |
+| `aruba.KubernetesVersion1332` | Kubernetes 1.33.2 |
+| `aruba.KubernetesVersion1341` | Kubernetes 1.34.1 |
+| `aruba.NodePoolInstanceK2A4` | 2 vCPU, 4 GB RAM |
+| `aruba.NodePoolInstanceK4A8` | 4 vCPU, 8 GB RAM |
+| `aruba.NodePoolInstanceK8A16` | 8 vCPU, 16 GB RAM |
+| … (vedi `aliases.go` per l'elenco completo) | |
+| `aruba.ContainerRegistrySizeFlavorSmall` | Livello small di utenti concorrenti |
+| `aruba.ContainerRegistrySizeFlavorMedium` | Livello medium di utenti concorrenti |
+| `aruba.ContainerRegistrySizeFlavorHighPerf` | Livello ad alte prestazioni |
+
+### Database
+
+| Costante | Descrizione |
+|----------|-------------|
+| `aruba.DatabaseEngineMySQL80` | MySQL 8.0 |
+| `aruba.DatabaseEngineMSSQL2022Web` | SQL Server 2022 Web |
+| `aruba.DatabaseEngineMSSQL2022Standard` | SQL Server 2022 Standard |
+| `aruba.DatabaseEngineMSSQL2022Enterprise` | SQL Server 2022 Enterprise |
+| `aruba.DBaaSFlavorDBO1A2` | 1 vCPU, 2 GB RAM |
+| `aruba.DBaaSFlavorDBO2A4` | 2 vCPU, 4 GB RAM |
+| `aruba.DBaaSFlavorDBO4A8` | 4 vCPU, 8 GB RAM |
+| … (vedi `aliases.go` per l'elenco completo) | |
 
 ### Storage
 
 | Costante | Valore |
-|----------|--------|
+|----------|-------|
 | `aruba.BlockStorageTypeStandard` | `"Standard"` |
 | `aruba.BlockStorageTypePerformance` | `"Performance"` |
 | `aruba.StorageBackupTypeFull` | `"Full"` |
@@ -1768,35 +1846,41 @@ Tutti i tipi enum sono ri-esportati da `pkg/aruba` — non è necessario alcun i
 ### Security
 
 | Costante | Valore |
-|----------|--------|
+|----------|-------|
 | `aruba.KeyAlgorithmAes` | `"Aes"` |
 | `aruba.KeyAlgorithmRsa` | `"Rsa"` |
 | `aruba.KeyTypeSymmetric` | `"Symmetric"` |
 | `aruba.KeyTypeAsymmetric` | `"Asymmetric"` |
-| `aruba.KeyStatusActive` | `"Active"` |
-| `aruba.KeyStatusInCreation` | `"InCreation"` |
-| `aruba.ServiceStatusActive` | `"Active"` |
 | `aruba.ServiceStatusCertificateAvailable` | `"CertificateAvailable"` |
+
+### Crittografia VPN
+
+| Costante | Descrizione |
+|----------|-------------|
+| `aruba.IKEEncryptionAES256` | AES-256 CBC (IKE fase 1) |
+| `aruba.IKEHashSHA256` | HMAC-SHA-256 (IKE fase 1) |
+| `aruba.IKEDHGroup14` | Gruppo Diffie-Hellman MODP-2048 |
+| `aruba.ESPEncryptionAES256` | AES-256 CBC (ESP fase 2) |
+| `aruba.ESPHashSHA256` | HMAC-SHA-256 (ESP fase 2) |
+| `aruba.ESPPFSGroupEnable` | PFS abilitato (gruppo DH negoziato) |
+| `aruba.ESPPFSGroupDisable` | PFS disabilitato |
+| … (vedi `aliases.go` per gli elenchi completi) | |
 
 ### Schedule
 
 | Costante | Valore |
-|----------|--------|
+|----------|-------|
 | `aruba.JobTypeOneShot` | `"OneShot"` |
 | `aruba.JobTypeRecurring` | `"Recurring"` |
-| `aruba.RecurrenceTypeHourly` | `"Hourly"` |
-| `aruba.RecurrenceTypeDaily` | `"Daily"` |
-| `aruba.RecurrenceTypeWeekly` | `"Weekly"` |
-| `aruba.RecurrenceTypeMonthly` | `"Monthly"` |
 
 ---
 
-## Appendice: Tipi Wire Grezzi (`pkg/types`)
+## Appendice: Tipi wire grezzi (`pkg/types`)
 
-I seguenti tipi sono le struct wire di basso livello. Normalmente vi si accede solo tramite `.Raw()` o `.RawRequest()` su un wrapper, o quando si costruiscono integrazioni avanzate con `pkg/async`. Sono anche ri-esportati come alias di tipo `aruba.XxxRequest` / `aruba.XxxResponse` così da poterli referenziare senza un import aggiuntivo.
+I seguenti tipi sono le struct wire di basso livello sottostanti. Normalmente vi si accede solo tramite `.Raw()` o `.RawRequest()` su un wrapper, oppure quando si costruiscono integrazioni avanzate con `pkg/async`. Sono anche ri-esportati come alias di tipo `aruba.XxxRequest` / `aruba.XxxResponse` in modo da poterli referenziare senza un import aggiuntivo.
 
 | Tipo | File | Note |
-|------|------|------|
+|------|------|-------|
 | `Response[T]` | `resource.go` | Envelope HTTP generico restituito dagli adapter di basso livello |
 | `ErrorResponse` | `error.go` | Errore strutturato RFC 7807 |
 | `ListResponse` | `resource.go` | Link di paginazione e conteggio totale |
@@ -1804,8 +1888,8 @@ I seguenti tipi sono le struct wire di basso livello. Normalmente vi si accede s
 | `RegionalResourceMetadataRequest` | `resource.go` | Estende i metadati con Location |
 | `ResourceMetadataResponse` | `resource.go` | ID, URI, Name, timestamp |
 | `ResourceStatusResponse` | `resource.go` | Campo State |
-| `ReferenceResourceCommon` | `resource.go` | Link `{uri: "…"}` a un'altra risorsa |
-| `RequestParameters` | `parameters.go` | Struct filter/sort/limit/offset di basso livello (preferire gli helper `CallOption`) |
+| `ReferenceResourceCommon` | `resource.go` | `{uri: "…"}` link a un'altra risorsa |
+| `RequestParameters` | `parameters.go` | Struct filtro/ordinamento/limit/offset di basso livello (preferire gli helper `CallOption`) |
 | `ProjectRequest` / `ProjectResponse` / `ProjectListResponse` | `project.project.go` | |
 | `VPCRequest` / `VPCResponse` / `VPCListResponse` | `network.vpc.go` | |
 | `SubnetRequest` / `SubnetResponse` / `SubnetListResponse` | `network.subnet.go` | |
