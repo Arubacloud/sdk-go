@@ -1593,12 +1593,12 @@ I seguenti tipi sono le struct wire di basso livello. Normalmente vi si accede s
 | `ResourceMetadataRequest` | `resource.go` | Nome + tag per Create |
 | `RegionalResourceMetadataRequest` | `resource.go` | Estende i metadati con Location |
 | `ResourceMetadataResponse` | `resource.go` | ID, URI, Name, timestamp |
-| `ResourceStatus` | `resource.go` | Campo State |
-| `ReferenceResource` | `resource.go` | Link `{uri: "…"}` a un'altra risorsa |
+| `ResourceStatusResponse` | `resource.go` | Campo State |
+| `ReferenceResourceCommon` | `resource.go` | Link `{uri: "…"}` a un'altra risorsa |
 | `RequestParameters` | `parameters.go` | Struct filter/sort/limit/offset di basso livello (preferire gli helper `CallOption`) |
-| `ProjectRequest` / `ProjectResponse` / `ProjectList` | `project.project.go` | |
-| `VPCRequest` / `VPCResponse` / `VPCList` | `network.vpc.go` | |
-| `SubnetRequest` / `SubnetResponse` / `SubnetList` | `network.subnet.go` | |
+| `ProjectRequest` / `ProjectResponse` / `ProjectListResponse` | `project.project.go` | |
+| `VPCRequest` / `VPCResponse` / `VPCListResponse` | `network.vpc.go` | |
+| `SubnetRequest` / `SubnetResponse` / `SubnetListResponse` | `network.subnet.go` | |
 | `SecurityGroupRequest` / `SecurityGroupResponse` | `network.security-group.go` | |
 | `SecurityRuleRequest` / `SecurityRuleResponse` | `network.security-rule.go` | |
 | `ElasticIPRequest` / `ElasticIPResponse` | `network.elastic-ip.go` | |
@@ -1613,7 +1613,7 @@ I seguenti tipi sono le struct wire di basso livello. Normalmente vi si accede s
 | `BlockStorageRequest` / `BlockStorageResponse` | `storage.block-storage.go` | |
 | `SnapshotRequest` / `SnapshotResponse` | `storage.snapshot.go` | |
 | `StorageBackupRequest` / `StorageBackupResponse` | `storage.backup.go` | |
-| `JobRequest` / `JobResponse` / `JobList` | `schedule.job.go` | |
+| `JobRequest` / `JobResponse` / `JobListResponse` | `schedule.job.go` | |
 | `AlertResponse` / `AlertsListResponse` | `metrics.alert.go` | |
 | `MetricResponse` / `MetricListResponse` | `metrics.metric.go` | |
 | `AuditEvent` / `AuditEventListResponse` | `audit.event.go` | |
