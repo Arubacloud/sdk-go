@@ -8,35 +8,35 @@ const (
 	SubnetTypeAdvanced SubnetType = "Advanced"
 )
 
-// SubnetNetwork contains the network configuration
-type SubnetNetwork struct {
+// SubnetNetworkCommon contains the network configuration
+type SubnetNetworkCommon struct {
 	Address string `json:"address"`
 }
 
-// SubnetDHCPRange contains the DHCP range configuration
-type SubnetDHCPRange struct {
+// SubnetDHCPRangeCommon contains the DHCP range configuration
+type SubnetDHCPRangeCommon struct {
 	// Start is the starting IP address of the DHCP range
 	Start string `json:"start"`
 	// Count is the number of IP addresses in the DHCP range
 	Count int `json:"count"`
 }
 
-// SubnetDHCPRoute contains the DHCP route configuration
-type SubnetDHCPRoute struct {
+// SubnetDHCPRouteCommon contains the DHCP route configuration
+type SubnetDHCPRouteCommon struct {
 	// Address is the destination network address
 	Address string `json:"address"`
 	// Gateway is the gateway IP address for the route
 	Gateway string `json:"gateway"`
 }
 
-// SubnetDHCP contains the DHCP configuration
-type SubnetDHCP struct {
+// SubnetDHCPCommon contains the DHCP configuration
+type SubnetDHCPCommon struct {
 	// Enabled indicates if DHCP is enabled
 	Enabled bool `json:"enabled"`
 	// Range contains the DHCP IP address range
-	Range *SubnetDHCPRange `json:"range,omitempty"`
+	Range *SubnetDHCPRangeCommon `json:"range,omitempty"`
 	// Routes contains the DHCP routes configuration
-	Routes []SubnetDHCPRoute `json:"routes,omitempty"`
+	Routes []SubnetDHCPRouteCommon `json:"routes,omitempty"`
 	// DNS contains the DNS server addresses
 	DNS []string `json:"dns,omitempty"`
 }
@@ -50,10 +50,10 @@ type SubnetPropertiesRequest struct {
 	Default *bool `json:"default,omitempty"`
 
 	// Network configuration
-	Network *SubnetNetwork `json:"network,omitempty"`
+	Network *SubnetNetworkCommon `json:"network,omitempty"`
 
 	// DHCP configuration
-	DHCP *SubnetDHCP `json:"dhcp,omitempty"`
+	DHCP *SubnetDHCPCommon `json:"dhcp,omitempty"`
 }
 
 // SubnetPropertiesResponse contains the specification returned for a Subnet
@@ -68,10 +68,10 @@ type SubnetPropertiesResponse struct {
 	Default bool `json:"default,omitempty"`
 
 	// Network configuration
-	Network *SubnetNetwork `json:"network,omitempty"`
+	Network *SubnetNetworkCommon `json:"network,omitempty"`
 
 	// DHCP configuration
-	DHCP *SubnetDHCP `json:"dhcp,omitempty"`
+	DHCP *SubnetDHCPCommon `json:"dhcp,omitempty"`
 }
 
 type SubnetRequest struct {
@@ -91,7 +91,7 @@ type SubnetResponse struct {
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type SubnetList struct {
+type SubnetListResponse struct {
 	ListResponse
 	Values []SubnetResponse `json:"values"`
 }
