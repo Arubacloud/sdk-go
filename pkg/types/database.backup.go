@@ -39,7 +39,7 @@ type BackupResponse struct {
 	Status     ResourceStatus           `json:"status,omitempty"`
 }
 
-type BackupList struct {
+type DBaaSBackupListResponse struct {
 	ListResponse
 	Values []BackupResponse `json:"values"`
 }

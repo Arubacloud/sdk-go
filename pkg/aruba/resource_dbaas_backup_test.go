@@ -421,7 +421,7 @@ type fakeDBaaSBackupLowLevel struct {
 	createFunc func(ctx context.Context, projectID string, body types.BackupRequest, params *types.RequestParameters) (*types.Response[types.BackupResponse], error)
 	getFunc    func(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[types.BackupResponse], error)
 	deleteFunc func(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[any], error)
-	listFunc   func(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.BackupList], error)
+	listFunc   func(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.DBaaSBackupListResponse], error)
 }
 
 func (f *fakeDBaaSBackupLowLevel) Create(ctx context.Context, projectID string, body types.BackupRequest, params *types.RequestParameters) (*types.Response[types.BackupResponse], error) {
@@ -433,7 +433,7 @@ func (f *fakeDBaaSBackupLowLevel) Get(ctx context.Context, projectID, backupID s
 func (f *fakeDBaaSBackupLowLevel) Delete(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[any], error) {
 	return f.deleteFunc(ctx, projectID, backupID, params)
 }
-func (f *fakeDBaaSBackupLowLevel) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.BackupList], error) {
+func (f *fakeDBaaSBackupLowLevel) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.DBaaSBackupListResponse], error) {
 	return f.listFunc(ctx, projectID, params)
 }
 
