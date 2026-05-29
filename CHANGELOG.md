@@ -9,14 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 | Branch | Version series | Status |
 |--------|----------------|--------|
-| `main` | **v0.3.x** | Active development — new features, ongoing releases |
+| `main` | **v1.x** | Active development — GA release line |
 | `legacy` | **v0.1.x** | Maintenance — bug fixes and security patches only |
 
-- **`main` — v0.3.x (current)**: Builds on the `pkg/aruba/` wrapper
-  layer introduced in v0.2.0. v0.3.0 formalised the getter/setter taxonomy;
-  v0.3.1 added async polling helpers, User-Agent injection, and a series of
-  round-trip and example fixes. See [v0.3.0](#030--2026-05-21) and
-  [v0.3.1](#031--2026-05-28) below for migration details.
+- **`main` — v1.x (current)**: GA release line. v1.0.0 stabilises the
+  `pkg/aruba/` wrapper layer introduced in v0.2.0: flattened getter taxonomy,
+  async polling helpers, automatic User-Agent injection, and the final
+  `*Request` / `*Response` / `*Common` naming convention across `pkg/types`.
+  See [v1.0.0](#100--2026-05-29) below for migration details.
 - **`legacy` — v0.1.x (maintenance)**: Supported for **6 months** after
   the v0.2.0 release date with bug-fix and security-patch releases only.
   No new features will be backported. Once the support window closes the
@@ -26,15 +26,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Documentation
+---
 
-- Alpha-stage warning banners removed from `docs/website/docs/intro.md`, `docs/website/i18n/it/…/intro.md`, and `README.md`.
-- `ai/CONVENTIONS.md`, `ai/ARCHITECTURE.md`, `ai/REPO.md`, `ai/DEVEX.md` aligned with post-naming-refactor implementation.
-- `ai/TECH_DEBT.md` reset: resolved items archived, new debt items (TD-023 through TD-027) catalogued.
-- `pkg/aruba/doc.go`, `pkg/async/doc.go`, `pkg/multitenant/doc.go`, `pkg/util/middleware/doc.go` added — package-level in-source documentation for every major public package.
-- `docs/website/docs/resources.md` (EN) and Italian mirror: every resource section now lists its setter vocabulary grouped by canonical chain order and links to the corresponding `examples/all-resources/resource_<name>.go` file.
-- `docs/website/docs/working-at-low-level.md` (EN + IT): stale `types.LinkedResource` → `types.LinkedResourceCommon` after the naming refactor.
-- `README.md`: fixed stale `httpErr.Message` field reference (→ `httpErr.Error()`), corrected `WaitUntilReady` settled-state list (7 states, not 4), fixed `WaitUntilStates` signature to use `[]types.State`, and corrected the quick-start snippet to capture the `Create` return value.
+## [1.0.0] — 2026-05-29
+
+### Added
+
+- **Flattened getter taxonomy** (`pkg/aruba`) — every Family-A wrapper now exposes a
+  consistent set of response-side scalar getters so callers no longer need `.Raw().Properties.X`
+  for common values. New getters per wrapper:
+  - `Project`: `Raw()`, `RawJSON()`, `RawYAML()`, `RawRequest()` (closes #304)
+  - `CloudServer`: `ElasticIP()`, `Subnets() []string`, `SecurityGroups() []string`, `UserData()`
+  - `VPNTunnel`: `RoutesNumber()`
+  - `VPNRoute`: `VPNTunnelURI()`, `CloudSubnetCIDR()`
+  - `ElasticIP`: `AssociatedResourceURI()`
+  - `SecurityGroup`: `Rules() []types.LinkedResource`
+  - `Subnet`: `Network() string`
+  - `DBaaS`: `EngineVersion()`, `EngineType()`, `PrivateIPAddress()`, `FlavorCPU()`, `FlavorRAMMB()`, `EndpointURL()`
+  - `KaaS`: `PodCIDR()`, `NodeCIDR()`, `IdentityClientID()`, `NodePools() []*NodePool`
+  - `NodePool`: `Name()`
+  - `Job`: `ScheduleAt()`, `ExecuteUntil()`, `NextExecutionAt()`, `Steps() []*JobStep`
+  - `AuditEvent`: `EventTypeName()`, `IdentityName()`, `OperationName()`
+
+- **`pkg/aruba.Version` constant** (`pkg/aruba/version.go`) — single source of truth for the
+  SDK version string. Updated on each release.
+
+- **Automatic User-Agent injection** (`Options.WithUserAgent`) — every outbound request now
+  carries `User-Agent: sdk-go@<version>` by default. Override with
+  `options.WithUserAgent("my-app@1.2.3")` (closes #310).
 
 ### Changed (Breaking)
 
@@ -44,7 +63,7 @@ Scalar enums, the generic transport envelope `Response[T]`, and utility/error ty
 This is a compile-time breaking change for any code that references `pkg/types` directly;
 code that uses only the `pkg/aruba` wrappers is unaffected.
 
-**`*PropertiesResult` → `*PropertiesResponse`** (finishes the v0.3.1 cleanup started with `ContainerRegistryPropertiesResult`):
+**`*PropertiesResult` → `*PropertiesResponse`** (completes the rename started for `ContainerRegistryPropertiesResult`):
 - `CloudServerPropertiesResult` → `CloudServerPropertiesResponse`
 - `KeyPairPropertiesResult` → `KeyPairPropertiesResponse`
 - `StorageBackupPropertiesResult` → `StorageBackupPropertiesResponse`
@@ -105,34 +124,32 @@ code that uses only the `pkg/aruba` wrappers is unaffected.
 - `VPCProperties` (inner nested struct in `VPCPropertiesRequest`) → `VPCPropertiesInnerRequest`.
 - Added `pkg/types/doc.go` with the canonical in-source statement of the naming rule.
 
----
+### Changed
 
-## [0.3.1] — 2026-05-28
+- **`ContainerRegistryPropertiesResult` renamed** to `ContainerRegistryPropertiesResponse` in `pkg/types`
+  for consistency with the request/response naming convention used by every other resource family.
 
-### Added
+- **`examples/all-resources` VPN tunnel** — `ipConfigurations` (VPC + Subnet + ElasticIP) was
+  never wired in the example; also `"vpn"` tag violated the server's ≥4-char minimum. Fixed by
+  wiring `NewVPNIPConfig()` and renaming tags to `"vpn-tunnel"` / `"vpn-route"`.
 
-- **Flattened getter taxonomy** (`pkg/aruba`) — every Family-A wrapper now exposes a
-  consistent set of response-side scalar getters so callers no longer need `.Raw().Properties.X`
-  for common values. New getters per wrapper:
-  - `Project`: `Raw()`, `RawJSON()`, `RawYAML()`, `RawRequest()` (closes #304)
-  - `CloudServer`: `ElasticIP()`, `Subnets() []string`, `SecurityGroups() []string`, `UserData()`
-  - `VPNTunnel`: `RoutesNumber()`
-  - `VPNRoute`: `VPNTunnelURI()`, `CloudSubnetCIDR()`
-  - `ElasticIP`: `AssociatedResourceURI()`
-  - `SecurityGroup`: `Rules() []types.LinkedResource`
-  - `Subnet`: `Network() string`
-  - `DBaaS`: `EngineVersion()`, `EngineType()`, `PrivateIPAddress()`, `FlavorCPU()`, `FlavorRAMMB()`, `EndpointURL()`
-  - `KaaS`: `PodCIDR()`, `NodeCIDR()`, `IdentityClientID()`, `NodePools() []*NodePool`
-  - `NodePool`: `Name()`
-  - `Job`: `ScheduleAt()`, `ExecuteUntil()`, `NextExecutionAt()`, `Steps() []*JobStep`
-  - `AuditEvent`: `EventTypeName()`, `IdentityName()`, `OperationName()`
+- **`examples/all-resources` VPN tunnel CIDR** — VPN tunnel `ipConfigurations.subnet.cidr` was
+  reusing the basic subnet's `192.168.0.0/24`, causing the platform to reject the Create with
+  `subnet.cidr overlaps with an existing subnet`. Tunnel now uses `192.168.10.0/24`.
 
-- **`pkg/aruba.Version` constant** (`pkg/aruba/version.go`) — single source of truth for the
-  SDK version string. Updated on each release.
+- **`examples/all-resources` DBaaS Grant reporting** — create banner and final summary both gated
+  on `Grant.ID() != ""`, but grants are composite-keyed and `ID()` is intentionally empty after
+  Create. Both helpers now print/check the composite `{user, database, role}` identifier so
+  successful grants are no longer reported as `<not created>`.
 
-- **Automatic User-Agent injection** (`Options.WithUserAgent`) — every outbound request now
-  carries `User-Agent: sdk-go@<version>` by default. Override with
-  `options.WithUserAgent("my-app@1.2.3")` (closes #310).
+- **`examples/all-resources` VPN Route `cloudSubnet`** — the route was hardcoded to `10.0.0.0/24`,
+  which did not match the example's actual VPC topology and was rejected by the API. The example now
+  reads the CIDR from the Basic Subnet (`subnet.CIDR()`) and waits for that subnet to reach `Active`
+  before creating the route.
+
+- **`examples/all-resources` resource summary** — unified `summaryRow` helper; every
+  `ResourceCollection` field is now printed (four entries were previously omitted);
+  nil/failed entries show `<not created>` instead of being silently skipped.
 
 ### Fixed
 
@@ -166,32 +183,15 @@ code that uses only the `pkg/aruba` wrappers is unaffected.
   field has no corresponding parameter in the API spec. The credential readiness state is now exposed via
   `IsPasswordSet()` / `AdminPasswordLastSetAt()` from the response `data.private` block.
 
-### Changed
+### Documentation
 
-- **`ContainerRegistryPropertiesResult` renamed** to `ContainerRegistryPropertiesResponse` in `pkg/types`
-  for consistency with the request/response naming convention used by every other resource family.
-
-- **`examples/all-resources` VPN tunnel** — `ipConfigurations` (VPC + Subnet + ElasticIP) was
-  never wired in the example; also `"vpn"` tag violated the server's ≥4-char minimum. Fixed by
-  wiring `NewVPNIPConfig()` and renaming tags to `"vpn-tunnel"` / `"vpn-route"`.
-
-- **`examples/all-resources` VPN tunnel CIDR** — VPN tunnel `ipConfigurations.subnet.cidr` was
-  reusing the basic subnet's `192.168.0.0/24`, causing the platform to reject the Create with
-  `subnet.cidr overlaps with an existing subnet`. Tunnel now uses `192.168.10.0/24`.
-
-- **`examples/all-resources` DBaaS Grant reporting** — create banner and final summary both gated
-  on `Grant.ID() != ""`, but grants are composite-keyed and `ID()` is intentionally empty after
-  Create. Both helpers now print/check the composite `{user, database, role}` identifier so
-  successful grants are no longer reported as `<not created>`.
-
-- **`examples/all-resources` VPN Route `cloudSubnet`** — the route was hardcoded to `10.0.0.0/24`,
-  which did not match the example's actual VPC topology and was rejected by the API. The example now
-  reads the CIDR from the Basic Subnet (`subnet.CIDR()`) and waits for that subnet to reach `Active`
-  before creating the route.
-
-- **`examples/all-resources` resource summary** — unified `summaryRow` helper; every
-  `ResourceCollection` field is now printed (four entries were previously omitted);
-  nil/failed entries show `<not created>` instead of being silently skipped.
+- Alpha-stage warning banners removed from `docs/website/docs/intro.md`, `docs/website/i18n/it/…/intro.md`, and `README.md`.
+- `ai/CONVENTIONS.md`, `ai/ARCHITECTURE.md`, `ai/REPO.md`, `ai/DEVEX.md` aligned with post-naming-refactor implementation.
+- `ai/TECH_DEBT.md` reset: resolved items archived, new debt items (TD-023 through TD-027) catalogued.
+- `pkg/aruba/doc.go`, `pkg/async/doc.go`, `pkg/multitenant/doc.go`, `pkg/util/middleware/doc.go` added — package-level in-source documentation for every major public package.
+- `docs/website/docs/resources.md` (EN) and Italian mirror: every resource section now lists its setter vocabulary grouped by canonical chain order and links to the corresponding `examples/all-resources/resource_<name>.go` file.
+- `docs/website/docs/working-at-low-level.md` (EN + IT): stale `types.LinkedResource` → `types.LinkedResourceCommon` after the naming refactor.
+- `README.md`: fixed stale `httpErr.Message` field reference (→ `httpErr.Error()`), corrected `WaitUntilReady` settled-state list (7 states, not 4), fixed `WaitUntilStates` signature to use `[]types.State`, and corrected the quick-start snippet to capture the `Create` return value.
 
 ---
 
@@ -893,7 +893,9 @@ Initial Alpha release of the Aruba Cloud SDK for Go.
 ---
 
 <!-- compare links -->
-[Unreleased]: https://github.com/Arubacloud/sdk-go/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/Arubacloud/sdk-go/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Arubacloud/sdk-go/compare/v0.3.0...v1.0.0
+[0.3.0]: https://github.com/Arubacloud/sdk-go/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/Arubacloud/sdk-go/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/Arubacloud/sdk-go/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/Arubacloud/sdk-go/compare/v0.2.0...v0.2.1

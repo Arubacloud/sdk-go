@@ -230,7 +230,7 @@ recommended for production applications to avoid fetching a new token on every s
 
 <p>The SDK automatically sets a <code>User-Agent</code> header on every outbound request so that API access logs
 can be attributed to the SDK version. By default the header value is <code>sdk-go@&lt;version&gt;</code>
-(e.g. <code>sdk-go@0.3.1</code>), derived from the <code>aruba.Version</code> constant defined in
+(e.g. <code>sdk-go@1.0.0</code>), derived from the <code>aruba.Version</code> constant defined in
 <code>pkg/aruba/version.go</code>.</p>
 
 <table>
