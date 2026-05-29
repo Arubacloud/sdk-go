@@ -27,8 +27,8 @@ func buildAuditEventTestAdapter(t *testing.T, handler http.HandlerFunc) *auditEv
 // auditTestTimestamp is a fixed time used across hydration tests.
 var auditTestTimestamp = time.Date(2025, 1, 15, 12, 0, 0, 0, time.UTC)
 
-// auditMakeFullEvent returns a fully-populated types.AuditEvent for hydration tests.
-func auditMakeFullEvent() types.AuditEvent {
+// auditMakeFullEvent returns a fully-populated types.AuditEventResponse for hydration tests.
+func auditMakeFullEvent() types.AuditEventResponse {
 	catID := "cat-42"
 	typID := "typ-99"
 	title := "Resource Created"
@@ -36,20 +36,20 @@ func auditMakeFullEvent() types.AuditEvent {
 	az := "az1"
 	subStatusVal := "sub-ok"
 	subStatusDesc := "sub-description"
-	return types.AuditEvent{
+	return types.AuditEventResponse{
 		SeverityLevel: "Info",
-		LogFormat:     types.LogFormatVersion{Version: "1.0"},
+		LogFormat:     types.EventLogFormatVersionResponse{Version: "1.0"},
 		Timestamp:     auditTestTimestamp,
-		Operation:     types.Operation{ID: "op-1", Value: strPtr("Create")},
-		Event:         types.EventInfo{ID: "evt-1", Value: strPtr("evt-value"), Type: "write"},
-		Category:      types.EventCategory{Value: "resource", Description: strPtr("Resource category")},
-		Region:        &types.RegionInfo{Name: &regionName, AvailabilityZone: &az},
+		Operation:     types.EventOperationResponse{ID: "op-1", Value: strPtr("Create")},
+		Event:         types.EventInfoResponse{ID: "evt-1", Value: strPtr("evt-value"), Type: "write"},
+		Category:      types.EventCategoryResponse{Value: "resource", Description: strPtr("Resource category")},
+		Region:        &types.EventRegionInfoResponse{Name: &regionName, AvailabilityZone: &az},
 		Origin:        "portal",
 		Channel:       "web",
-		Status:        types.Status{Value: "Success", Description: strPtr("ok"), Code: int32Ptr(200)},
-		SubStatus:     &types.SubStatus{Value: &subStatusVal, Description: &subStatusDesc},
-		Identity: types.Identity{
-			Caller: types.Caller{
+		Status:        types.EventStatusResponse{Value: "Success", Description: strPtr("ok"), Code: int32Ptr(200)},
+		SubStatus:     &types.EventSubStatusResponse{Value: &subStatusVal, Description: &subStatusDesc},
+		Identity: types.EventIdentityResponse{
+			Caller: types.EventCallerResponse{
 				Subject:  "user-sub",
 				Username: strPtr("alice"),
 				Company:  strPtr("ArubaCloud"),
@@ -57,7 +57,7 @@ func auditMakeFullEvent() types.AuditEvent {
 			},
 		},
 		Properties: map[string]interface{}{"key": "val"},
-		Actions:    []types.Action{{Key: strPtr("action-1")}},
+		Actions:    []types.EventActionResponse{{Key: strPtr("action-1")}},
 		CategoryID: &catID,
 		TypologyID: &typID,
 		Title:      &title,
@@ -171,16 +171,16 @@ func TestAuditEvent_Accessors_ZeroValue(t *testing.T) {
 	if ev.Channel() != "" {
 		t.Error("Channel() on zero should be empty")
 	}
-	if ev.LogFormat() != (types.LogFormatVersion{}) {
+	if ev.LogFormat() != (types.EventLogFormatVersionResponse{}) {
 		t.Error("LogFormat() on zero should be zero value")
 	}
-	if ev.Operation() != (types.Operation{}) {
+	if ev.Operation() != (types.EventOperationResponse{}) {
 		t.Error("Operation() on zero should be zero value")
 	}
-	if ev.Event() != (types.EventInfo{}) {
+	if ev.Event() != (types.EventInfoResponse{}) {
 		t.Error("Event() on zero should be zero value")
 	}
-	if ev.Category() != (types.EventCategory{}) {
+	if ev.Category() != (types.EventCategoryResponse{}) {
 		t.Error("Category() on zero should be zero value")
 	}
 	if ev.Region() != "" {
@@ -223,13 +223,13 @@ func TestAuditEvent_Accessors_ZeroValue(t *testing.T) {
 
 func TestAuditEvent_ID_FromEvent(t *testing.T) {
 	ev := &AuditEvent{}
-	ev.fromResponse(&types.AuditEvent{Event: types.EventInfo{ID: "evt-123"}})
+	ev.fromResponse(&types.AuditEventResponse{Event: types.EventInfoResponse{ID: "evt-123"}})
 	if ev.ID() != "evt-123" {
 		t.Errorf("ID() = %q, want evt-123", ev.ID())
 	}
 
 	ev2 := &AuditEvent{}
-	ev2.fromResponse(&types.AuditEvent{}) // Event.ID is ""
+	ev2.fromResponse(&types.AuditEventResponse{}) // Event.ID is ""
 	if ev2.ID() != "" {
 		t.Errorf("ID() = %q, want empty", ev2.ID())
 	}
@@ -248,7 +248,7 @@ func TestAuditEvent_URI_AlwaysEmpty(t *testing.T) {
 func TestAuditEvent_CreatedAt_FromTimestamp(t *testing.T) {
 	ts := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
 	ev := &AuditEvent{}
-	ev.fromResponse(&types.AuditEvent{Timestamp: ts})
+	ev.fromResponse(&types.AuditEventResponse{Timestamp: ts})
 	if !ev.CreatedAt().Equal(ts) {
 		t.Errorf("CreatedAt() = %v, want %v", ev.CreatedAt(), ts)
 	}
@@ -256,7 +256,7 @@ func TestAuditEvent_CreatedAt_FromTimestamp(t *testing.T) {
 
 func TestAuditEvent_OptionalStringPointers_NilAndPresent(t *testing.T) {
 	ev := &AuditEvent{}
-	ev.fromResponse(&types.AuditEvent{})
+	ev.fromResponse(&types.AuditEventResponse{})
 
 	if ev.CategoryID() != "" {
 		t.Errorf("CategoryID() nil ptr = %q", ev.CategoryID())
@@ -272,7 +272,7 @@ func TestAuditEvent_OptionalStringPointers_NilAndPresent(t *testing.T) {
 	typID := "typ-2"
 	title := "My Title"
 	ev2 := &AuditEvent{}
-	ev2.fromResponse(&types.AuditEvent{CategoryID: &catID, TypologyID: &typID, Title: &title})
+	ev2.fromResponse(&types.AuditEventResponse{CategoryID: &catID, TypologyID: &typID, Title: &title})
 
 	if ev2.CategoryID() != "cat-1" {
 		t.Errorf("CategoryID() = %q", ev2.CategoryID())
@@ -481,7 +481,7 @@ func TestAuditEvent_IdentityName_NilResponse(t *testing.T) {
 }
 
 func TestAuditEvent_IdentityName_NoUsername(t *testing.T) {
-	ev := types.AuditEvent{Identity: types.Identity{Caller: types.Caller{Subject: "sub"}}}
+	ev := types.AuditEventResponse{Identity: types.EventIdentityResponse{Caller: types.EventCallerResponse{Subject: "sub"}}}
 	e := &AuditEvent{}
 	e.fromResponse(&ev)
 	if got := e.IdentityName(); got != "" {
@@ -510,7 +510,7 @@ func TestAuditEvent_OperationName_NilResponse(t *testing.T) {
 }
 
 func TestAuditEvent_OperationName_NoValue(t *testing.T) {
-	ev := types.AuditEvent{Operation: types.Operation{ID: "op-1"}}
+	ev := types.AuditEventResponse{Operation: types.EventOperationResponse{ID: "op-1"}}
 	e := &AuditEvent{}
 	e.fromResponse(&ev)
 	if got := e.OperationName(); got != "" {
