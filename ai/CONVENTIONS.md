@@ -15,10 +15,13 @@
 |---|---|---|
 | Input/request struct | `Request` | `CloudServerRequest` |
 | Single output struct | `Response` | `CloudServerResponse` |
-| Collection output struct | `List` (embeds `ListResponse`) | `CloudServerList` |
+| Collection output struct | `ListResponse` (embeds `ListResponse`) | `CloudServerListResponse` |
+| Struct used on both request AND response sides | `Common` | `LinkedResourceCommon`, `BillingPlanCommon` |
 | Service client interface | none (domain name) | `CloudServersClient` |
 | Service client implementation | `Impl` (unexported) | `cloudServersClientImpl` |
 | Constructor | `New<TypeName>` | `NewCloudServersClientImpl` |
+
+The `*Result` suffix is **not** used — it was a legacy straggler and has been removed. Enum/scalar types (`State`, `Region`, `BillingPeriod`, `RuleProtocol`, …) carry no Request/Response/Common suffix because their wire role is determined by the parent field. See `pkg/types/doc.go` for the canonical in-source statement of this rule.
 
 ### Files
 
