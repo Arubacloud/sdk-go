@@ -198,7 +198,7 @@ func (e *ElasticIP) WaitUntilUsed(ctx context.Context, opts ...WaitOption) error
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type elasticIPLowLevelClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ElasticList], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ElasticIPListResponse], error)
 	Get(ctx context.Context, projectID, elasticIPID string, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error)
 	Create(ctx context.Context, projectID string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error)
 	Update(ctx context.Context, projectID, elasticIPID string, body types.ElasticIPRequest, params *types.RequestParameters) (*types.Response[types.ElasticIPResponse], error)
@@ -387,7 +387,7 @@ func (a *elasticIPsClientAdapter) List(ctx context.Context, project Ref, opts ..
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*ElasticIP], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*ElasticIP], error) {
-		fetch := listPageFetch[types.ElasticList](a.rest, opts)
+		fetch := listPageFetch[types.ElasticIPListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr

@@ -23,7 +23,7 @@ type ElasticIPResponse struct {
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type ElasticList struct {
+type ElasticIPListResponse struct {
 	ListResponse
 	Values []ElasticIPResponse `json:"values"`
 }

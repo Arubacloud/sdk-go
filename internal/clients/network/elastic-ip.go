@@ -23,7 +23,7 @@ func NewElasticIPsClientImpl(client *restclient.Client) *elasticIPsClientImpl {
 }
 
 // List retrieves all elastic IPs for a project
-func (c *elasticIPsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ElasticList], error) {
+func (c *elasticIPsClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ElasticIPListResponse], error) {
 	c.client.Logger().Debugf("Listing elastic IPs for project: %s", projectID)
 
 	if err := types.ValidateProject(projectID); err != nil {
@@ -49,7 +49,7 @@ func (c *elasticIPsClientImpl) List(ctx context.Context, projectID string, param
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.ElasticList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.ElasticIPListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific elastic IP by ID
