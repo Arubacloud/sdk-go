@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Arubacloud/sdk-go/pkg/aruba"
 )
@@ -20,7 +21,7 @@ func createGrant(ctx context.Context, arubaClient aruba.Client, db *aruba.Databa
 		printCreateError("DBaaS Grant", err)
 		return nil
 	}
-	printCreated("DBaaS Grant", res.Username(), res.ID())
+	fmt.Printf("✓ Created DBaaS Grant: %s on %s (%s)\n", res.Username(), res.DatabaseName(), res.RoleName())
 	return res
 }
 

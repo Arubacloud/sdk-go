@@ -10,13 +10,13 @@ import (
 // createVPNTunnel creates a Site-to-Site VPN tunnel with IKEv2/AES-256/SHA-256 settings.
 // The peer IP and PSK use placeholder values suitable for a dry-run; replace them with
 // real values when running against a live peer.
-func createVPNTunnel(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, vpc *aruba.VPC, subnet *aruba.Subnet, eip *aruba.ElasticIP) *aruba.VPNTunnel {
+func createVPNTunnel(ctx context.Context, arubaClient aruba.Client, proj aruba.Ref, vpc *aruba.VPC, eip *aruba.ElasticIP) *aruba.VPNTunnel {
 	name := resourceName(NameVPNTunnel)
 	fmt.Printf("--- VPN Tunnel (%s) ---\n", name)
 
 	ipcfg := aruba.NewVPNIPConfig().
 		WithVPC(vpc).
-		WithSubnet(subnet.Name(), subnet.CIDR()).
+		WithSubnet(resourceName(NameVPNTunnel+"-subnet"), "192.168.10.0/24").
 		WithElasticIP(eip)
 
 	tunnel := aruba.NewVPNTunnel().
