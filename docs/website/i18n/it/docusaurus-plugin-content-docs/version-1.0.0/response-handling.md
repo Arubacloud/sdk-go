@@ -1,0 +1,235 @@
+# Guida alla Gestione delle Risposte
+
+## Panoramica
+
+Il layer wrapper dell'SDK gestisce automaticamente il parsing delle risposte e la segnalazione degli errori. Ogni metodo CRUD restituisce o un wrapper popolato (in caso di successo) o un errore. Raramente è necessario ispezionare direttamente l'envelope HTTP grezzo — ma gli strumenti per farlo sono sempre disponibili quando servono.
+
+## Pattern Base
+
+Ogni metodo wrapper restituisce `(wrapper, error)`. L'errore è non-nil sia per errori di rete che per errori a livello API (4xx / 5xx).
+
+```go
+vpc, err := arubaClient.FromNetwork().VPCs().Get(ctx,
+    aruba.URI("/projects/<projectID>/providers/Aruba.Network/vpcs/<vpcID>"),
+)
+if err != nil {
+    log.Fatalf("Get VPC failed: %v", err)
+}
+fmt.Printf("VPC: %s (state: %s)\n", vpc.Name(), vpc.State())
+```
+
+## Errori HTTP Tipizzati
+
+Quando l'API restituisce una risposta 4xx o 5xx, l'SDK la racchiude in `*aruba.HTTPError`. Usa `errors.As` per ispezionare il codice di stato e il corpo dell'errore strutturato:
+
+```go
+import "errors"
+
+vpc, err := arubaClient.FromNetwork().VPCs().Get(ctx, ref)
+if err != nil {
+    var httpErr *aruba.HTTPError
+    if errors.As(err, &httpErr) {
+        fmt.Printf("API error %d: %s\n", httpErr.StatusCode, httpErr.Error())
+        if httpErr.ErrResp != nil {
+            fmt.Printf("  title:  %s\n", derefStr(httpErr.ErrResp.Title))
+            fmt.Printf("  detail: %s\n", derefStr(httpErr.ErrResp.Detail))
+            for _, ve := range httpErr.ErrResp.Errors {
+                fmt.Printf("  field %s: %s\n", ve.Field, ve.Message)
+            }
+        }
+    } else {
+        // Errore di rete, timeout del contesto, ecc.
+        log.Fatalf("Request failed: %v", err)
+    }
+}
+```
+
+## Pattern Completo di Gestione degli Errori
+
+```go
+proj, err := arubaClient.FromProject().Get(ctx, ref)
+if err != nil {
+    var httpErr *aruba.HTTPError
+    if errors.As(err, &httpErr) {
+        switch httpErr.StatusCode {
+        case 404:
+            return fmt.Errorf("project not found")
+        case 400:
+            return fmt.Errorf("bad request: %s", derefStr(httpErr.ErrResp.Detail))
+        default:
+            return fmt.Errorf("API error (%d): %s", httpErr.StatusCode, httpErr.Error())
+        }
+    }
+    return fmt.Errorf("request failed: %w", err)
+}
+// proj è popolato — usalo direttamente
+fmt.Printf("Project: %s (tags: %v)\n", proj.Name(), proj.Tags())
+```
+
+## Accessor dell'Envelope HTTP
+
+Ogni wrapper prodotto da una chiamata Create / Get / Update / List espone il proprio envelope HTTP grezzo:
+
+```go
+// Dopo qualsiasi chiamata CRUD:
+proj, err := arubaClient.FromProject().Create(ctx, p)
+// …
+
+fmt.Println("Status:", proj.StatusCode())
+fmt.Println("Headers:", proj.Headers())
+rawResp, rawBody := proj.RawHTTP()
+fmt.Println("Raw body:", string(rawBody))
+fmt.Println("HTTP status:", rawResp.StatusCode)
+fmt.Println("Error body (if any):", proj.RawError())
+```
+
+## Accesso alla Risposta Wire Grezza
+
+Ogni wrapper dispone di un metodo `Raw()` che restituisce la struct di risposta tipizzata sottostante da `pkg/types`. È utile per accedere ai campi non ancora promossi alla superficie del wrapper:
+
+```go
+vpc, err := arubaClient.FromNetwork().VPCs().Get(ctx, ref)
+if err != nil { /* … */ }
+
+raw := vpc.Raw()                         // struct wire sottostante
+fmt.Println(raw.Properties.IsDefault)    // campo non presente sul wrapper
+```
+
+### Comodità JSON / YAML
+
+Per i flag CLI-style `--output json` / `--output yaml`, ogni wrapper espone slice di byte pre-serializzate:
+
+```go
+fmt.Println(string(vpc.RawJSON()))   // payload codificato in JSON
+fmt.Println(string(vpc.RawYAML()))   // payload codificato in YAML
+```
+
+Restituisce `nil` se il wrapper non è ancora stato popolato (receiver con valore zero).
+
+## Risposte di Lista
+
+`List[T]` espone la stessa superficie di introspezione dei wrapper a singola risorsa, il tutto senza dover importare `pkg/types`:
+
+```go
+vpcList, err := arubaClient.FromNetwork().VPCs().List(ctx, proj)
+if err != nil { /* … */ }
+
+// Paginazione e conteggi — accessor tipizzati sul wrapper.
+fmt.Println("server total:", vpcList.Total())
+if vpcList.HasNext() {
+    nextPage, _ := vpcList.Next(ctx)
+    _ = nextPage
+}
+
+// Envelope HTTP — stessi accessor dei wrapper a singola risorsa.
+fmt.Println("status:", vpcList.StatusCode())
+fmt.Println("trace-id:", vpcList.Headers().Get("X-Trace-Id"))
+_, body := vpcList.RawHTTP()
+fmt.Println("raw body bytes:", len(body))
+```
+
+### Comodità JSON / YAML
+
+`List[T]` espone anch'esso `RawJSON()` e `RawYAML()` per il payload della lista tipizzata:
+
+```go
+fmt.Println(string(vpcList.RawJSON()))   // payload codificato in JSON
+fmt.Println(string(vpcList.RawYAML()))   // payload codificato in YAML
+```
+
+Restituisce `nil` quando la lista non ha payload (`Raw() == nil`).
+
+> **Accedere ai campi non promossi.** Se hai bisogno di un campo non esposto dalla superficie del wrapper, vedi [Lavorare a Basso Livello](./working-at-low-level) —
+> illustra il cast alla struct wire tipizzata e le poche altre vie d'uscita che richiedono l'import di `pkg/types`.
+
+## Errori in Fase di Setter
+
+I setter del builder fluente non restituiscono mai errori — li registrano internamente. L'errore emerge alla prima chiamata `Create` o `Update`. È anche possibile verificare in anticipo:
+
+```go
+rule := aruba.NewSecurityRule().
+    InSecurityGroup(sg).
+    TargetingCIDR("0.0.0.0/0").
+    TargetingSecurityGroup(otherSG) // setter in conflitto — registra un errore
+
+if err := rule.Err(); err != nil {
+    log.Fatalf("Bad rule configuration: %v", err)
+}
+```
+
+## Lettura dello Stato del Wrapper
+
+Ogni wrapper di tipo Family-A promuove i campi di risposta più utilizzati a getter piatti. È sempre preferibile utilizzare questi getter invece di accedere direttamente a `wrapper.Raw().Properties.X`:
+
+```go
+cs, err := arubaClient.FromCompute().CloudServers().Get(ctx, ref)
+if err != nil { /* … */ }
+
+// Preferisci i getter piatti
+fmt.Println(cs.Name())          // nome della risorsa
+fmt.Println(cs.State())         // stato del ciclo di vita (Active, Creating, …)
+fmt.Println(cs.ID())            // UUID
+fmt.Println(cs.Region())        // slug della regione
+fmt.Println(cs.Subnets())       // []string degli URI delle subnet
+fmt.Println(cs.ElasticIP())     // URI dell'Elastic IP, se impostato al momento della creazione
+fmt.Println(cs.UserData())      // cloud-init / user-data, se impostato al momento della creazione
+
+// Ricorri a Raw() solo per i campi non ancora promossi
+raw := cs.Raw()
+fmt.Println(raw.Properties.SomeUnpromotedField)
+```
+
+### Livelli standard dei getter
+
+| Categoria | Getter di esempio |
+|---|---|
+| Identità | `ID()`, `URI()`, `CloudServerID()` |
+| Denominazione | `Name()`, `Tags()` |
+| Geografia | `Region()`, `Zone()` |
+| Derivazione | `Project()`, `CreatedAt()`, `UpdatedAt()`, `Version()` |
+| Ciclo di vita | `State()`, `IsDisabled()`, `DisableReasons()`, `FailureReason()` |
+| Risorse collegate | `LinkedResources()` |
+| Envelope grezzo | `Raw()`, `RawJSON()`, `RawYAML()`, `RawRequest()`, `StatusCode()`, `Headers()`, `RawError()` |
+| Specifici della risorsa | es. `cs.Subnets()`, `vpnRoute.CloudSubnetCIDR()`, `kaas.PodCIDR()` |
+
+### `RawJSON()` / `RawYAML()` per l'output CLI
+
+I metodi `RawJSON()` e `RawYAML()` sono pensati per i flag CLI-style `--output json` / `--output yaml`. Serializzano la struct wire sottostante, non solo i campi promossi:
+
+```go
+cs, _ := arubaClient.FromCompute().CloudServers().Get(ctx, ref)
+fmt.Println(string(cs.RawJSON()))   // payload JSON completo
+fmt.Println(string(cs.RawYAML()))   // payload YAML completo
+```
+
+### `RawRequest()` per aggiornamenti round-trip
+
+`RawRequest()` produce un valore `types.<X>Request` che rappresenta lo stato corrente completo del wrapper — utile nei flussi `Get → modifica → Update`:
+
+```go
+cs, _ := arubaClient.FromCompute().CloudServers().Get(ctx, ref)
+// Il wrapper contiene già tutti i campi lato server; basta sovrascrivere ciò che è cambiato.
+cs.Named("new-name")
+_, err = arubaClient.FromCompute().CloudServers().Update(ctx, cs)
+```
+
+## Best Practice
+
+1. **Controlla sempre `err` prima** — copre sia gli errori di rete che quelli API.
+2. **Usa `errors.As(err, &httpErr)`** per ottenere dettagli strutturati sugli errori 4xx/5xx.
+3. **Controlla `httpErr.ErrResp.Errors`** per messaggi di validazione a livello di campo sugli errori 400.
+4. **Usa `httpErr.ErrResp.TraceID`** quando apri una richiesta di supporto.
+5. **Usa `.Raw()` con parsimonia** — preferisci gli accessor tipizzati del wrapper.
+6. **Controlla `wrapper.Err()` prima di Create/Update** quando la catena di builder è lunga.
+
+---
+
+```go
+// Helper usato negli esempi sopra
+func derefStr(s *string) string {
+    if s == nil {
+        return ""
+    }
+    return *s
+}
+```
