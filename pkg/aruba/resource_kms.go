@@ -185,7 +185,7 @@ func kmsIDsFromRef(ref Ref) (projectID, kmsID string, err error) {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type kmsLowLevelClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KmsList], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KmsListResponse], error)
 	Get(ctx context.Context, projectID, kmsID string, params *types.RequestParameters) (*types.Response[types.KmsResponse], error)
 	Create(ctx context.Context, projectID string, body types.KmsRequest, params *types.RequestParameters) (*types.Response[types.KmsResponse], error)
 	Update(ctx context.Context, projectID, kmsID string, body types.KmsRequest, params *types.RequestParameters) (*types.Response[types.KmsResponse], error)
@@ -379,7 +379,7 @@ func (a *kmsClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOpt
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*KMS], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*KMS], error) {
-		fetch := listPageFetch[types.KmsList](a.rest, opts)
+		fetch := listPageFetch[types.KmsListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr

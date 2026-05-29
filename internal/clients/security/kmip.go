@@ -25,7 +25,7 @@ func NewKmipClientImpl(client *restclient.Client) *KmipClientImpl {
 }
 
 // List retrieves all KMIP services for a specific KMS instance
-func (c *KmipClientImpl) List(ctx context.Context, projectID string, kmsID string, params *types.RequestParameters) (*types.Response[types.KmipList], error) {
+func (c *KmipClientImpl) List(ctx context.Context, projectID string, kmsID string, params *types.RequestParameters) (*types.Response[types.KmipListResponse], error) {
 	c.client.Logger().Debugf("Listing KMIP services for KMS: %s in project: %s", kmsID, projectID)
 
 	if err := types.ValidateProjectAndResource(projectID, kmsID, "KMS ID"); err != nil {
@@ -51,7 +51,7 @@ func (c *KmipClientImpl) List(ctx context.Context, projectID string, kmsID strin
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.KmipList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.KmipListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific KMIP service by ID

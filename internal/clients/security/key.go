@@ -25,7 +25,7 @@ func NewKeyClientImpl(client *restclient.Client) *KeyClientImpl {
 }
 
 // List retrieves all Keys for a specific KMS instance
-func (c *KeyClientImpl) List(ctx context.Context, projectID string, kmsID string, params *types.RequestParameters) (*types.Response[types.KeyList], error) {
+func (c *KeyClientImpl) List(ctx context.Context, projectID string, kmsID string, params *types.RequestParameters) (*types.Response[types.KeyListResponse], error) {
 	c.client.Logger().Debugf("Listing Keys for KMS: %s in project: %s", kmsID, projectID)
 
 	if err := types.ValidateProjectAndResource(projectID, kmsID, "KMS ID"); err != nil {
@@ -51,7 +51,7 @@ func (c *KeyClientImpl) List(ctx context.Context, projectID string, kmsID string
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.KeyList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.KeyListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific Key by ID
