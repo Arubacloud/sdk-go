@@ -30,7 +30,7 @@ func NewRestoreClientImpl(client *restclient.Client, backupClient *backupClientI
 }
 
 // List retrieves all Restores for a backup in a project
-func (c *restoreClientImpl) List(ctx context.Context, projectID string, backupID string, params *types.RequestParameters) (*types.Response[types.StorageRestoreList], error) {
+func (c *restoreClientImpl) List(ctx context.Context, projectID string, backupID string, params *types.RequestParameters) (*types.Response[types.StorageRestoreListResponse], error) {
 	c.client.Logger().Debugf("Listing Restores for project: %s, backup: %s", projectID, backupID)
 
 	if err := types.ValidateProjectAndResource(projectID, backupID, "Backup ID"); err != nil {
@@ -55,7 +55,7 @@ func (c *restoreClientImpl) List(ctx context.Context, projectID string, backupID
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.StorageRestoreList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.StorageRestoreListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific Restore by ID

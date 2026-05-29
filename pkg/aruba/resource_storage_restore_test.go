@@ -199,7 +199,7 @@ func storageRestoreTestResponse(id, name, uri, targetURI string) *types.StorageR
 			Tags:             []string{"tag1"},
 			LocationResponse: loc,
 		},
-		Properties: types.StorageRestorePropertiesResult{
+		Properties: types.StorageRestorePropertiesResponse{
 			Destination: types.ReferenceResource{URI: targetURI},
 		},
 		Status: types.ResourceStatus{
@@ -381,7 +381,7 @@ type fakeStorageRestoreLowLevel struct {
 	getFunc    func(ctx context.Context, projectID, backupID, restoreID string, params *types.RequestParameters) (*types.Response[types.StorageRestoreResponse], error)
 	updateFunc func(ctx context.Context, projectID, backupID, restoreID string, body types.StorageRestoreRequest, params *types.RequestParameters) (*types.Response[types.StorageRestoreResponse], error)
 	deleteFunc func(ctx context.Context, projectID, backupID, restoreID string, params *types.RequestParameters) (*types.Response[any], error)
-	listFunc   func(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[types.StorageRestoreList], error)
+	listFunc   func(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[types.StorageRestoreListResponse], error)
 }
 
 func (f *fakeStorageRestoreLowLevel) Create(ctx context.Context, projectID, backupID string, body types.StorageRestoreRequest, params *types.RequestParameters) (*types.Response[types.StorageRestoreResponse], error) {
@@ -396,7 +396,7 @@ func (f *fakeStorageRestoreLowLevel) Update(ctx context.Context, projectID, back
 func (f *fakeStorageRestoreLowLevel) Delete(ctx context.Context, projectID, backupID, restoreID string, params *types.RequestParameters) (*types.Response[any], error) {
 	return f.deleteFunc(ctx, projectID, backupID, restoreID, params)
 }
-func (f *fakeStorageRestoreLowLevel) List(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[types.StorageRestoreList], error) {
+func (f *fakeStorageRestoreLowLevel) List(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[types.StorageRestoreListResponse], error) {
 	return f.listFunc(ctx, projectID, backupID, params)
 }
 
@@ -847,7 +847,7 @@ func TestStorageRestoresClientAdapter_List_BadRef(t *testing.T) {
 func TestStorageRestoresClientAdapter_List_LowLevelError(t *testing.T) {
 	// Exercises the err != nil branch of a.low.List.
 	fake := &fakeStorageRestoreLowLevel{
-		listFunc: func(_ context.Context, _, _ string, _ *types.RequestParameters) (*types.Response[types.StorageRestoreList], error) {
+		listFunc: func(_ context.Context, _, _ string, _ *types.RequestParameters) (*types.Response[types.StorageRestoreListResponse], error) {
 			return nil, fmt.Errorf("network error")
 		},
 	}
