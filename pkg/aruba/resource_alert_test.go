@@ -53,8 +53,8 @@ func alertMakeFullResponse() types.AlertResponse {
 		Email:                true,
 		Panel:                false,
 		Hidden:               false,
-		ExecutedAlertActions: []types.ExecutedAlertAction{{ActionType: "email", Success: true}},
-		Actions:              []types.AlertAction{{Key: "retry"}},
+		ExecutedAlertActions: []types.ExecutedAlertActionResponse{{ActionType: "email", Success: true}},
+		Actions:              []types.AlertActionResponse{{Key: "retry"}},
 	}
 }
 
