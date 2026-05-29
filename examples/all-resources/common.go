@@ -582,7 +582,7 @@ func printResourceSummary(resources *ResourceCollection) {
 	} else {
 		fmt.Println("- DBaaS User: <not created>")
 	}
-	if resources.Grant != nil && resources.Grant.ID() != "" {
+	if resources.Grant != nil && resources.Grant.Username() != "" {
 		fmt.Printf("- DBaaS Grant: %s on %s (%s)\n",
 			resources.Grant.Username(), resources.Grant.DatabaseName(), resources.Grant.RoleName())
 	} else {

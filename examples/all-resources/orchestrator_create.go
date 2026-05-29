@@ -132,7 +132,7 @@ func createAllResources(ctx context.Context, arubaClient aruba.Client) *Resource
 	printPhase(7, 8, "VPN stack")
 
 	// 19. Create VPN Tunnel (self-wait included).
-	resources.VPNTunnel = createVPNTunnel(ctx, arubaClient, resources.Project, resources.VPC, resources.SubnetBasic, resources.VPNTunnelEIP)
+	resources.VPNTunnel = createVPNTunnel(ctx, arubaClient, resources.Project, resources.VPC, resources.VPNTunnelEIP)
 
 	if resources.VPNTunnel != nil {
 		// 20. Create VPN Route under the tunnel (self-wait + GET inspection for #308 included).

@@ -92,6 +92,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   never wired in the example; also `"vpn"` tag violated the server's ≥4-char minimum. Fixed by
   wiring `NewVPNIPConfig()` and renaming tags to `"vpn-tunnel"` / `"vpn-route"`.
 
+- **`examples/all-resources` VPN tunnel CIDR** — VPN tunnel `ipConfigurations.subnet.cidr` was
+  reusing the basic subnet's `192.168.0.0/24`, causing the platform to reject the Create with
+  `subnet.cidr overlaps with an existing subnet`. Tunnel now uses `192.168.10.0/24`.
+
+- **`examples/all-resources` DBaaS Grant reporting** — create banner and final summary both gated
+  on `Grant.ID() != ""`, but grants are composite-keyed and `ID()` is intentionally empty after
+  Create. Both helpers now print/check the composite `{user, database, role}` identifier so
+  successful grants are no longer reported as `<not created>`.
+
 - **`examples/all-resources` resource summary** — unified `summaryRow` helper; every
   `ResourceCollection` field is now printed (four entries were previously omitted);
   nil/failed entries show `<not created>` instead of being silently skipped.
