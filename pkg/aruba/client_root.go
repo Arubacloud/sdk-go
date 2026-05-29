@@ -1,4 +1,3 @@
-// Package sdkgo provides the main entry point for the Aruba Cloud SDK
 package aruba
 
 type Client interface {
