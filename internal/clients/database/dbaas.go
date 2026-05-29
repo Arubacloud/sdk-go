@@ -24,7 +24,7 @@ func NewDBaaSClientImpl(client *restclient.Client) *dbaasClientImpl {
 }
 
 // List retrieves all DBaaS instances for a project
-func (c *dbaasClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.DBaaSList], error) {
+func (c *dbaasClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.DBaaSListResponse], error) {
 	c.client.Logger().Debugf("Listing DBaaS instances for project: %s", projectID)
 
 	if err := types.ValidateProject(projectID); err != nil {
@@ -49,7 +49,7 @@ func (c *dbaasClientImpl) List(ctx context.Context, projectID string, params *ty
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.DBaaSList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.DBaaSListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific DBaaS instance by ID

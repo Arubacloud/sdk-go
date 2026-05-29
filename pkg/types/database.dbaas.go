@@ -40,8 +40,8 @@ const (
 	DBaaSFlavorDBO32A64 DBaaSFlavor = "DBO32A64"
 )
 
-// DBaaSEngine contains the database engine configuration
-type DBaaSEngine struct {
+// DBaaSEngineRequest contains the database engine configuration
+type DBaaSEngineRequest struct {
 	// ID Type of DB engine to activate (nullable)
 	// For more information, check the documentation.
 	ID *DatabaseEngine `json:"id,omitempty"`
@@ -73,8 +73,8 @@ type DBaaSEngineResponse struct {
 	PrivateIPAddress *string `json:"privateIpAddress,omitempty"`
 }
 
-// DBaaSFlavorSpec contains the flavor configuration for a DBaaS request.
-type DBaaSFlavorSpec struct {
+// DBaaSFlavorRequest contains the flavor configuration for a DBaaS request.
+type DBaaSFlavorRequest struct {
 	// Name Type of flavor to use (nullable)
 	// For more information, check the documentation.
 	Name *DBaaSFlavor `json:"name,omitempty"`
@@ -95,8 +95,8 @@ type DBaaSFlavorResponse struct {
 	RAM *int32 `json:"ram,omitempty"`
 }
 
-// DBaaSStorage contains the storage configuration
-type DBaaSStorage struct {
+// DBaaSStorageRequest contains the storage configuration
+type DBaaSStorageRequest struct {
 	// SizeGB Size in GB to use (nullable)
 	SizeGB *int32 `json:"sizeGb,omitempty"`
 }
@@ -107,8 +107,8 @@ type DBaaSStorageResponse struct {
 	SizeGB *int32 `json:"sizeGb,omitempty"`
 }
 
-// DBaaSNetworking contains the network information to use when creating the new DBaaS
-type DBaaSNetworking struct {
+// DBaaSNetworkingRequest contains the network information to use when creating the new DBaaS
+type DBaaSNetworkingRequest struct {
 	// VPCURI The URI of the VPC resource to bind to this DBaaS instance (nullable)
 	// Required when user has at least one VPC (with at least one subnet and a security group).
 	VPCURI *string `json:"vpcUri,omitempty"`
@@ -142,8 +142,8 @@ type DBaaSNetworkingResponse struct {
 	ElasticIP *ReferenceResource `json:"elasticIp,omitempty"`
 }
 
-// DBaaSAutoscaling contains the autoscaling configuration
-type DBaaSAutoscaling struct {
+// DBaaSAutoscalingRequest contains the autoscaling configuration
+type DBaaSAutoscalingRequest struct {
 	// Enabled Indicates if autoscaling is enabled (nullable)
 	Enabled *bool `json:"enabled,omitempty"`
 
@@ -176,22 +176,22 @@ type DBaaSPropertiesRequest struct {
 	Zone *Zone `json:"dataCenter,omitempty"`
 
 	// Engine Database engine configuration
-	Engine *DBaaSEngine `json:"engine,omitempty"`
+	Engine *DBaaSEngineRequest `json:"engine,omitempty"`
 
 	// Flavor Flavor configuration
-	Flavor *DBaaSFlavorSpec `json:"flavor,omitempty"`
+	Flavor *DBaaSFlavorRequest `json:"flavor,omitempty"`
 
 	// Storage Storage configuration
-	Storage *DBaaSStorage `json:"storage,omitempty"`
+	Storage *DBaaSStorageRequest `json:"storage,omitempty"`
 
 	// BillingPlan Billing plan (wraps billingPeriod)
 	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
 
 	// Networking Network information for the DBaaS instance
-	Networking *DBaaSNetworking `json:"networking,omitempty"`
+	Networking *DBaaSNetworkingRequest `json:"networking,omitempty"`
 
 	// Autoscaling Autoscaling configuration
-	Autoscaling *DBaaSAutoscaling `json:"autoscaling,omitempty"`
+	Autoscaling *DBaaSAutoscalingRequest `json:"autoscaling,omitempty"`
 }
 
 // DBaaSPropertiesResponse contains the response properties of a DBaaS instance
@@ -236,7 +236,7 @@ type DBaaSResponse struct {
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type DBaaSList struct {
+type DBaaSListResponse struct {
 	ListResponse
 	Values []DBaaSResponse `json:"values"`
 }
