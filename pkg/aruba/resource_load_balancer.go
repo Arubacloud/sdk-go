@@ -112,7 +112,7 @@ func loadBalancerDerefString(p *string) string {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type loadBalancerLowLevelClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.LoadBalancerList], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.LoadBalancerListResponse], error)
 	Get(ctx context.Context, projectID, loadBalancerID string, params *types.RequestParameters) (*types.Response[types.LoadBalancerResponse], error)
 }
 
@@ -209,7 +209,7 @@ func (a *loadBalancersClientAdapter) List(ctx context.Context, project Ref, opts
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*LoadBalancer], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*LoadBalancer], error) {
-		fetch := listPageFetch[types.LoadBalancerList](a.rest, opts)
+		fetch := listPageFetch[types.LoadBalancerListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr
