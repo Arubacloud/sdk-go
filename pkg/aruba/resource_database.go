@@ -136,7 +136,7 @@ func dbDerefString(p *string) string {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type databasesLowLevelClient interface {
-	List(ctx context.Context, projectID, dbaasID string, params *types.RequestParameters) (*types.Response[types.DatabaseList], error)
+	List(ctx context.Context, projectID, dbaasID string, params *types.RequestParameters) (*types.Response[types.DatabaseListResponse], error)
 	Get(ctx context.Context, projectID, dbaasID, databaseID string, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error)
 	Create(ctx context.Context, projectID, dbaasID string, body types.DatabaseRequest, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error)
 	Update(ctx context.Context, projectID, dbaasID, databaseID string, body types.DatabaseRequest, params *types.RequestParameters) (*types.Response[types.DatabaseResponse], error)
@@ -334,7 +334,7 @@ func (a *databasesClientAdapter) List(ctx context.Context, dbaas Ref, opts ...Ca
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*Database], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*Database], error) {
-		fetch := listPageFetch[types.DatabaseList](a.rest, opts)
+		fetch := listPageFetch[types.DatabaseListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr

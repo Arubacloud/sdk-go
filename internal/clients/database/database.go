@@ -24,7 +24,7 @@ func NewDatabasesClientImpl(client *restclient.Client) *databasesClientImpl {
 }
 
 // List retrieves all databases for a DBaaS instance
-func (c *databasesClientImpl) List(ctx context.Context, projectID string, dbaasID string, params *types.RequestParameters) (*types.Response[types.DatabaseList], error) {
+func (c *databasesClientImpl) List(ctx context.Context, projectID string, dbaasID string, params *types.RequestParameters) (*types.Response[types.DatabaseListResponse], error) {
 	c.client.Logger().Debugf("Listing databases for DBaaS: %s in project: %s", dbaasID, projectID)
 
 	if err := types.ValidateProjectAndResource(projectID, dbaasID, "DBaaS ID"); err != nil {
@@ -50,7 +50,7 @@ func (c *databasesClientImpl) List(ctx context.Context, projectID string, dbaasI
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.DatabaseList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.DatabaseListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific database by ID

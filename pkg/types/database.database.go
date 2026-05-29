@@ -12,7 +12,7 @@ type DatabaseResponse struct {
 	CreatedBy    *string    `json:"createdBy,omitempty"`
 }
 
-type DatabaseList struct {
+type DatabaseListResponse struct {
 	ListResponse
 	Values []DatabaseResponse `json:"values"`
 }
