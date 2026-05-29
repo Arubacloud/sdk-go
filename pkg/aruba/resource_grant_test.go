@@ -196,8 +196,8 @@ func grantTestResponse(userName, roleName, dbName string) *types.GrantResponse {
 	ts := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	creator := "admin@example.com"
 	return &types.GrantResponse{
-		User:         types.GrantUser{Username: userName},
-		Role:         types.GrantRole{Name: roleName},
+		User:         types.GrantUserCommon{Username: userName},
+		Role:         types.GrantRoleCommon{Name: roleName},
 		Database:     types.GrantDatabaseResponse{Name: dbName},
 		CreationDate: &ts,
 		CreatedBy:    &creator,

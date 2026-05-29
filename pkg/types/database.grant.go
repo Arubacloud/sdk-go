@@ -2,11 +2,11 @@ package types
 
 import "time"
 
-type GrantUser struct {
+type GrantUserCommon struct {
 	Username string `json:"username"`
 }
 
-type GrantRole struct {
+type GrantRoleCommon struct {
 	Name string `json:"name"`
 }
 
@@ -14,19 +14,19 @@ type GrantDatabaseResponse struct {
 	Name string `json:"name"`
 }
 type GrantRequest struct {
-	User GrantUser `json:"user"`
-	Role GrantRole `json:"role"`
+	User GrantUserCommon `json:"user"`
+	Role GrantRoleCommon `json:"role"`
 }
 
 type GrantResponse struct {
-	User         GrantUser             `json:"user"`
-	Role         GrantRole             `json:"role"`
+	User         GrantUserCommon       `json:"user"`
+	Role         GrantRoleCommon       `json:"role"`
 	Database     GrantDatabaseResponse `json:"database"`
 	CreationDate *time.Time            `json:"creationDate,omitempty"`
 	CreatedBy    *string               `json:"createdBy,omitempty"`
 }
 
-type GrantList struct {
+type GrantListResponse struct {
 	ListResponse
 	Values []GrantResponse `json:"values"`
 }
