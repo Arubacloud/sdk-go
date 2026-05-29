@@ -23,8 +23,8 @@ import (
 //   - "nodePools" (request) vs. "nodesPool" (response)
 //   - "nodeCidr" (request) vs. "nodecidr" (response)
 //   - "podCidr" (request) vs. "podcidr" (response)
-//   - NodePoolProperties.Instance string (request) vs. InstanceResponse{ID,Name} (response)
-//   - NodePoolProperties.Zone string (request JSON "dataCenter") vs. DataCenterResponse{Code,Name} (response)
+//   - NodePoolPropertiesRequest.Instance string (request) vs. KaaSNodePoolInstanceResponse{ID,Name} (response)
+//   - NodePoolPropertiesRequest.Zone string (request JSON "dataCenter") vs. KaaSNodePoolDataCenterResponse{Code,Name} (response)
 //
 // Path: /projects/{projectID}/providers/Aruba.Container/kaas[/{kaasID}]
 type KaaS struct {
@@ -52,7 +52,7 @@ type KaaS struct {
 	billingPeriod        *BillingPeriod
 	identityClientID     *string
 	identityClientSecret *string
-	apiServerProfile     *types.APIServerAccessProfileProperties // structural pass-through
+	apiServerProfile     *types.KaaSAPIServerAccessProfilePropertiesRequest // structural pass-through
 
 	// Sub-builders.
 	nodePools []*NodePool
@@ -155,7 +155,7 @@ func (k *KaaS) WithSecurityGroupName(name string) *KaaS {
 }
 
 // WithNodeCIDR sets the node CIDR block (address and name).
-// The wire type is NodeCIDRProperties{Address, Name}.
+// The wire type is NodeCIDRPropertiesRequest{Address, Name}.
 func (k *KaaS) WithNodeCIDR(address, name string) *KaaS {
 	k.nodeCIDRAddress = &address
 	k.nodeCIDRName = &name
@@ -177,7 +177,7 @@ func (k *KaaS) WithIdentity(clientID, clientSecret string) *KaaS {
 }
 
 // WithAPIServerAccessProfile sets the API server access profile.
-func (k *KaaS) WithAPIServerAccessProfile(p *types.APIServerAccessProfileProperties) *KaaS {
+func (k *KaaS) WithAPIServerAccessProfile(p *types.KaaSAPIServerAccessProfilePropertiesRequest) *KaaS {
 	k.apiServerProfile = p
 	return k
 }
@@ -371,15 +371,15 @@ func (k *KaaS) toRequest() types.KaaSRequest {
 	props := types.KaaSPropertiesRequest{
 		VPC:    types.ReferenceResource{URI: kaasDeref(k.vpcRef)},
 		Subnet: types.ReferenceResource{URI: kaasDeref(k.subnetRef)},
-		SecurityGroup: types.SecurityGroupProperties{
+		SecurityGroup: types.KaaSSecurityGroupPropertiesRequest{
 			Name: kaasDeref(k.securityGroupName),
 		},
-		NodeCIDR: types.NodeCIDRProperties{
+		NodeCIDR: types.NodeCIDRPropertiesRequest{
 			Address: kaasDeref(k.nodeCIDRAddress),
 			Name:    kaasDeref(k.nodeCIDRName),
 		},
 		PodCIDR: k.podCIDR,
-		KubernetesVersion: types.KubernetesVersionInfo{Value: func() KubernetesVersion {
+		KubernetesVersion: types.KubernetesVersionInfoRequest{Value: func() KubernetesVersion {
 			if k.kubernetesVersion != nil {
 				return *k.kubernetesVersion
 			}
@@ -389,10 +389,10 @@ func (k *KaaS) toRequest() types.KaaSRequest {
 		BillingPlan: &types.BillingPlan{BillingPeriod: defaultBillingPeriod(k.billingPeriod)},
 	}
 	if k.storageMaxCumulative != nil {
-		props.Storage = types.StorageKubernetes{MaxCumulativeVolumeSize: k.storageMaxCumulative}
+		props.Storage = types.StorageKubernetesCommon{MaxCumulativeVolumeSize: k.storageMaxCumulative}
 	}
 	if k.identityClientID != nil || k.identityClientSecret != nil {
-		props.Identity = &types.IdentityProperties{
+		props.Identity = &types.KaaSIdentityPropertiesRequest{
 			ClientID:     k.identityClientID,
 			ClientSecret: k.identityClientSecret,
 		}
@@ -401,7 +401,7 @@ func (k *KaaS) toRequest() types.KaaSRequest {
 		props.APIServerAccessProfile = k.apiServerProfile
 	}
 	if len(k.nodePools) > 0 {
-		props.NodePools = make([]types.NodePoolProperties, 0, len(k.nodePools))
+		props.NodePools = make([]types.NodePoolPropertiesRequest, 0, len(k.nodePools))
 		for _, np := range k.nodePools {
 			props.NodePools = append(props.NodePools, np.build())
 		}
@@ -420,7 +420,7 @@ func (k *KaaS) toRequest() types.KaaSRequest {
 // VPC, Subnet, SecurityGroup, and CIDRs are immutable after creation.
 func (k *KaaS) toUpdateRequest() types.KaaSUpdateRequest {
 	props := types.KaaSPropertiesUpdateRequest{
-		KubernetesVersion: types.KubernetesVersionInfoUpdate{
+		KubernetesVersion: types.KubernetesVersionInfoUpdateRequest{
 			Value: func() KubernetesVersion {
 				if k.kubernetesVersion != nil {
 					return *k.kubernetesVersion
@@ -431,13 +431,13 @@ func (k *KaaS) toUpdateRequest() types.KaaSUpdateRequest {
 		HA: k.ha,
 	}
 	if len(k.nodePools) > 0 {
-		props.NodePools = make([]types.NodePoolProperties, 0, len(k.nodePools))
+		props.NodePools = make([]types.NodePoolPropertiesRequest, 0, len(k.nodePools))
 		for _, np := range k.nodePools {
 			props.NodePools = append(props.NodePools, np.build())
 		}
 	}
 	if k.storageMaxCumulative != nil {
-		props.Storage = &types.StorageKubernetes{MaxCumulativeVolumeSize: k.storageMaxCumulative}
+		props.Storage = &types.StorageKubernetesCommon{MaxCumulativeVolumeSize: k.storageMaxCumulative}
 	}
 	if k.billingPeriod != nil {
 		props.BillingPlan = &types.BillingPlan{BillingPeriod: k.billingPeriod}
@@ -524,8 +524,8 @@ func (k *KaaS) kaasHydrateCacheFromProps(props types.KaaSPropertiesResponse) {
 	}
 }
 
-// kaasRebuildNodePools flattens response-side object types (InstanceResponse,
-// DataCenterResponse) back to plain strings so toUpdateRequest() round-trips correctly.
+// kaasRebuildNodePools flattens response-side object types (KaaSNodePoolInstanceResponse,
+// KaaSNodePoolDataCenterResponse) back to plain strings so toUpdateRequest() round-trips correctly.
 func kaasRebuildNodePools(pools *[]types.NodePoolPropertiesResponse) []*NodePool {
 	if pools == nil {
 		return nil
@@ -604,7 +604,7 @@ type kaasActions interface {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type kaasLowLevelClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KaaSList], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KaaSListResponse], error)
 	Get(ctx context.Context, projectID, kaasID string, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
 	Create(ctx context.Context, projectID string, body types.KaaSRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
 	Update(ctx context.Context, projectID, kaasID string, body types.KaaSUpdateRequest, params *types.RequestParameters) (*types.Response[types.KaaSResponse], error)
@@ -802,7 +802,7 @@ func (a *kaasClientAdapter) List(ctx context.Context, parent Ref, opts ...CallOp
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*KaaS], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*KaaS], error) {
-		fetch := listPageFetch[types.KaaSList](a.rest, opts)
+		fetch := listPageFetch[types.KaaSListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr

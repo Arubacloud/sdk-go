@@ -25,7 +25,7 @@ func NewKaaSClientImpl(client *restclient.Client) *kaasClientImpl {
 }
 
 // List retrieves all KaaS clusters for a project
-func (c *kaasClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KaaSList], error) {
+func (c *kaasClientImpl) List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.KaaSListResponse], error) {
 	c.client.Logger().Debugf("Listing KaaS clusters for project: %s", projectID)
 
 	if err := types.ValidateProject(projectID); err != nil {
@@ -51,7 +51,7 @@ func (c *kaasClientImpl) List(ctx context.Context, projectID string, params *typ
 	}
 	defer httpResp.Body.Close()
 
-	return types.ParseResponseBody[types.KaaSList](httpResp, c.client.Logger())
+	return types.ParseResponseBody[types.KaaSListResponse](httpResp, c.client.Logger())
 }
 
 // Get retrieves a specific KaaS cluster by ID
