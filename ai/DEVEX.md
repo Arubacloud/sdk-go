@@ -35,4 +35,13 @@ The CI pipeline uses golangci-lint v2.11.4 (timeout 5 min). Active linters: `err
 
 ## Docs site
 
-The Docusaurus site lives in `docs/website/`. Use `make docs-serve` (local dev) and `make docs-build` (production build). See `docs/README.md` for the full versioning and Italian-translation workflow.
+The Docusaurus site lives in `docs/website/`. Key doc targets:
+
+```bash
+make docs-serve       # local dev server (English locale)
+make docs-serve-it    # local dev server with Italian locale
+make docs-build       # production build (both locales)
+make docs-test        # build + validate (runs in CI)
+```
+
+See `docs/README.md` for the full versioning and Italian-translation workflow.
