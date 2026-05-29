@@ -226,7 +226,7 @@ The mixins were split into three files by responsibility:
 | `regionalMixin` | `mixin_common.go` | Holds `Region`; `toLocation()` emits `types.LocationRequest`. Embedded by `zonalMixin`. |
 | `zonalMixin` | `mixin_common.go` | Extends `regionalMixin` with an availability-zone pointer (wire field `dataCenter`). |
 | `responseMetadataMixin` | `mixin_common.go` | Holds the post-server `*types.ResourceMetadataResponse`; exposes `ID()`, `RespURI()`, `CreatedAt()`, `Version()`, etc. |
-| `linkedMixin` | `mixin_common.go` | Stores `[]types.LinkedResource` returned by the API. |
+| `linkedMixin` | `mixin_common.go` | Stores `[]types.LinkedResourceCommon` returned by the API. |
 | `httpEnvelopeMixin` | `mixin_common.go` | Captures StatusCode / Headers / RawBody / `*http.Response` / parsed ErrorResponse after every adapter call. Embedded by every single-resource wrapper and by `List[T]`. |
 | `projectScopedMixin` | `mixin_scoped.go` | Direct child of a Project; `intoProject(Ref)` extracts `projectID` via `extractID`. |
 | `vpcScopedMixin` | `mixin_scoped.go` | Direct child of a VPC; inherits `projectID` from parent. |
@@ -238,7 +238,7 @@ The mixins were split into three files by responsibility:
 | `vpnTunnelScopedMixin` | `mixin_scoped.go` | Direct child of a VPN tunnel; tolerates both `vpn-tunnels` and `vpnTunnels` URI forms. |
 | `vpcPeeringScopedMixin` | `mixin_scoped.go` | Direct child of a VPC peering; inherits `vpcID` + `projectID`. |
 | `refreshMixin` | `mixin_refresh.go` | Holds the `refresh func(ctx) error` callback (a `Get` closure installed by adapters) and `WaitUntilGone` — polls `refresh`, treats HTTP 404 as success, any other error as transient. Embedded by `statusMixin` and by Family-B pollable resources (`Kmip`, `Grant`, `Database`, `User`, `Key`). |
-| `statusMixin` | `mixin_status.go` | Embeds `refreshMixin`; holds `*types.ResourceStatus`; powers `WaitUntilActive`, `WaitUntilReady`, `WaitUntilStates` against typed `[]types.State` targets, plus `WaitUntilGone` promoted from `refreshMixin`. |
+| `statusMixin` | `mixin_status.go` | Embeds `refreshMixin`; holds `*types.ResourceStatusResponse`; powers `WaitUntilActive`, `WaitUntilReady`, `WaitUntilStates` against typed `[]types.State` targets, plus `WaitUntilGone` promoted from `refreshMixin`. |
 
 `populateHTTPEnvelope[T]` is a package-level generic function in `mixin_common.go` (Go does not allow generic methods on structs).
 
