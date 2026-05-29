@@ -187,7 +187,7 @@ func (b *BlockStorage) toCreateRequest() types.BlockStorageRequest {
 		Image:         b.image,
 	}
 	if b.snapshotRef != nil {
-		props.Snapshot = &types.ReferenceResource{URI: *b.snapshotRef}
+		props.Snapshot = &types.ReferenceResourceCommon{URI: *b.snapshotRef}
 	}
 	return types.BlockStorageRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
@@ -218,7 +218,7 @@ func (b *BlockStorage) toUpdateRequest() types.BlockStorageRequest {
 		Image:         b.image,
 	}
 	if b.snapshotRef != nil {
-		props.Snapshot = &types.ReferenceResource{URI: *b.snapshotRef}
+		props.Snapshot = &types.ReferenceResourceCommon{URI: *b.snapshotRef}
 	}
 	return types.BlockStorageRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
@@ -276,8 +276,8 @@ func (b *BlockStorage) fromResponse(resp *types.BlockStorageResponse) {
 		b.snapshotRef = &v
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		b.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		b.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if b.projectID == "" && b.RespURI() != "" {
 		if pid := parseURIIDs(b.RespURI())["projects"]; pid != "" {

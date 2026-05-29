@@ -279,8 +279,8 @@ func (r *ContainerRegistry) SizeFlavor() types.ContainerRegistrySizeFlavor {
 
 // BillingPeriod returns the billing period for the registry, or "" if unset.
 func (r *ContainerRegistry) BillingPeriod() BillingPeriod {
-	if r.response != nil && r.response.Properties.BillingPlan != nil && r.response.Properties.BillingPlan.BillingPeriod != nil {
-		return *r.response.Properties.BillingPlan.BillingPeriod
+	if r.response != nil && r.response.Properties.BillingPlanCommon != nil && r.response.Properties.BillingPlanCommon.BillingPeriod != nil {
+		return *r.response.Properties.BillingPlanCommon.BillingPeriod
 	}
 	if r.billingPeriod == nil {
 		return ""
@@ -294,19 +294,19 @@ func (r *ContainerRegistry) BillingPeriod() BillingPeriod {
 func (r *ContainerRegistry) toRequest() types.ContainerRegistryRequest {
 	props := types.ContainerRegistryPropertiesRequest{}
 	if r.elasticIPRef != nil {
-		props.PublicIp = types.ReferenceResource{URI: *r.elasticIPRef}
+		props.PublicIp = types.ReferenceResourceCommon{URI: *r.elasticIPRef}
 	}
 	if r.vpcRef != nil {
-		props.VPC = types.ReferenceResource{URI: *r.vpcRef}
+		props.VPC = types.ReferenceResourceCommon{URI: *r.vpcRef}
 	}
 	if r.subnetRef != nil {
-		props.Subnet = types.ReferenceResource{URI: *r.subnetRef}
+		props.Subnet = types.ReferenceResourceCommon{URI: *r.subnetRef}
 	}
 	if r.securityGroupRef != nil {
-		props.SecurityGroup = types.ReferenceResource{URI: *r.securityGroupRef}
+		props.SecurityGroup = types.ReferenceResourceCommon{URI: *r.securityGroupRef}
 	}
 	if r.blockStorageRef != nil {
-		props.BlockStorage = types.ReferenceResource{URI: *r.blockStorageRef}
+		props.BlockStorage = types.ReferenceResourceCommon{URI: *r.blockStorageRef}
 	}
 	if r.adminUsername != nil {
 		props.AdminUser = &types.UserCredentialCommon{Username: *r.adminUsername}
@@ -314,7 +314,7 @@ func (r *ContainerRegistry) toRequest() types.ContainerRegistryRequest {
 	if r.concurrentUsers != nil {
 		props.ConcurrentUsers = r.concurrentUsers
 	}
-	props.BillingPlan = &types.BillingPlan{BillingPeriod: defaultBillingPeriod(r.billingPeriod)}
+	props.BillingPlanCommon = &types.BillingPlanCommon{BillingPeriod: defaultBillingPeriod(r.billingPeriod)}
 	return types.ContainerRegistryRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: r.toMetadata(),
@@ -368,12 +368,12 @@ func (r *ContainerRegistry) fromResponse(resp *types.ContainerRegistryResponse) 
 		v := *resp.Properties.ConcurrentUsers
 		r.concurrentUsers = &v
 	}
-	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
-		r.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
+	if resp.Properties.BillingPlanCommon != nil && resp.Properties.BillingPlanCommon.BillingPeriod != nil {
+		r.billingPeriod = resp.Properties.BillingPlanCommon.BillingPeriod
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		r.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		r.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if r.projectID == "" && r.RespURI() != "" {
 		if pid := parseURIIDs(r.RespURI())["projects"]; pid != "" {

@@ -394,8 +394,8 @@ func TestContainerRegistry_ToRequest(t *testing.T) {
 	if req.Properties.ConcurrentUsers == nil || *req.Properties.ConcurrentUsers != "HighPerf" {
 		t.Errorf("Properties.ConcurrentUsers = %v", req.Properties.ConcurrentUsers)
 	}
-	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("Properties.BillingPlan.BillingPeriod = %v", req.Properties.BillingPlan)
+	if req.Properties.BillingPlanCommon == nil || req.Properties.BillingPlanCommon.BillingPeriod == nil || *req.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("Properties.BillingPlanCommon.BillingPeriod = %v", req.Properties.BillingPlanCommon)
 	}
 }
 
@@ -410,10 +410,10 @@ func TestContainerRegistry_ToRequest_Empty(t *testing.T) {
 	if req.Properties.ConcurrentUsers != nil {
 		t.Errorf("ConcurrentUsers should be nil, got %v", req.Properties.ConcurrentUsers)
 	}
-	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("BillingPlan.BillingPeriod should default to Hour, got %v", req.Properties.BillingPlan)
+	if req.Properties.BillingPlanCommon == nil || req.Properties.BillingPlanCommon.BillingPeriod == nil || *req.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPlanCommon.BillingPeriod should default to Hour, got %v", req.Properties.BillingPlanCommon)
 	}
-	// Body-ref ReferenceResource fields should have empty URIs.
+	// Body-ref ReferenceResourceCommon fields should have empty URIs.
 	if req.Properties.VPC.URI != "" {
 		t.Errorf("VPC.URI should be empty, got %q", req.Properties.VPC.URI)
 	}
@@ -467,24 +467,24 @@ func containerRegistryTestResponse(name string) *types.ContainerRegistryResponse
 			Name:             func() *string { s := name; return &s }(),
 			Tags:             []string{"tag1"},
 			LocationResponse: &types.LocationResponse{Value: RegionITBGBergamo},
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: "p",
 			},
 		},
 		Properties: types.ContainerRegistryPropertiesResponse{
-			VPC:             types.ReferenceResource{URI: vpcURI},
-			Subnet:          types.ReferenceResource{URI: subnetURI},
-			SecurityGroup:   types.ReferenceResource{URI: sgURI},
-			PublicIp:        types.ReferenceResource{URI: eipURI},
-			BlockStorage:    types.ReferenceResource{URI: bsURI},
+			VPC:             types.ReferenceResourceCommon{URI: vpcURI},
+			Subnet:          types.ReferenceResourceCommon{URI: subnetURI},
+			SecurityGroup:   types.ReferenceResourceCommon{URI: sgURI},
+			PublicIp:        types.ReferenceResourceCommon{URI: eipURI},
+			BlockStorage:    types.ReferenceResourceCommon{URI: bsURI},
 			AdminUser:       &types.UserCredentialCommon{Username: "admin"},
 			ConcurrentUsers: &size,
-			BillingPlan: func() *types.BillingPlan {
+			BillingPlanCommon: func() *types.BillingPlanCommon {
 				v := BillingPeriodHour
-				return &types.BillingPlan{BillingPeriod: &v}
+				return &types.BillingPlanCommon{BillingPeriod: &v}
 			}(),
 		},
-		Status: types.ResourceStatus{
+		Status: types.ResourceStatusResponse{
 			State: &state,
 		},
 	}
@@ -576,7 +576,7 @@ func TestContainerRegistry_FromResponse_BackfillsProjectID_FromURI(t *testing.T)
 		Metadata: types.ResourceMetadataResponse{
 			ID:  &id,
 			URI: &uri,
-			// No ProjectResponseMetadata — should backfill from URI.
+			// No ProjectMetadataResponse — should backfill from URI.
 		},
 	}
 	cr := &ContainerRegistry{}
@@ -1358,7 +1358,7 @@ func TestContainerRegistry_FromResponse_SetsStatus(t *testing.T) {
 	r := &ContainerRegistry{}
 	state := types.State("Active")
 	r.fromResponse(&types.ContainerRegistryResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if r.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", r.State())

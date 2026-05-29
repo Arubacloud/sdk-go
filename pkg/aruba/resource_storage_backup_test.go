@@ -235,19 +235,19 @@ func storageBackupTestResponse(id, name, uri, projectID string) *types.StorageBa
 			Name:             &name,
 			Tags:             []string{"tag1"},
 			LocationResponse: loc,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: projectID,
 			},
 		},
 		Properties: types.StorageBackupPropertiesResponse{
 			Type:          StorageBackupTypeFull,
-			Origin:        types.ReferenceResource{URI: originURI},
+			Origin:        types.ReferenceResourceCommon{URI: originURI},
 			RetentionDays: &retentionDays,
 			BillingPeriod: &billingPeriod,
 		},
-		Status: types.ResourceStatus{
+		Status: types.ResourceStatusResponse{
 			State: &state,
-			DisableStatusInfo: &types.DisableStatusInfo{
+			DisableStatusInfoResponse: &types.DisableStatusInfoResponse{
 				IsDisabled: false,
 			},
 		},
@@ -329,12 +329,12 @@ func TestStorageBackup_FromResponseURIBackfill(t *testing.T) {
 			ID:  &id,
 			URI: &uri,
 		},
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	}
 	bkp := &StorageBackup{}
 	bkp.fromResponse(resp)
 
-	// ProjectResponseMetadata is nil → should backfill from URI.
+	// ProjectMetadataResponse is nil → should backfill from URI.
 	if bkp.ProjectID() != "p-uri" {
 		t.Errorf("ProjectID() via URI backfill = %q", bkp.ProjectID())
 	}
@@ -697,7 +697,7 @@ func TestStorageBackupsClientAdapter_Update_NoProject(t *testing.T) {
 		Metadata: types.ResourceMetadataResponse{
 			ID: strPtr("bkp-1"),
 		},
-		Status: types.ResourceStatus{},
+		Status: types.ResourceStatusResponse{},
 	})
 
 	_, err := adapter.Update(context.Background(), bkp)
@@ -920,7 +920,7 @@ func TestStorageBackup_FromResponse_SetsStatus(t *testing.T) {
 	b := &StorageBackup{}
 	state := types.State("Active")
 	b.fromResponse(&types.StorageBackupResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if b.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", b.State())

@@ -130,16 +130,16 @@ type DBaaSNetworkingRequest struct {
 // DBaaSNetworkingResponse contains the network response information
 type DBaaSNetworkingResponse struct {
 	// VPC VPC resource reference (nullable)
-	VPC *ReferenceResource `json:"vpc,omitempty"`
+	VPC *ReferenceResourceCommon `json:"vpc,omitempty"`
 
 	// Subnet Subnet resource reference (nullable)
-	Subnet *ReferenceResource `json:"subnet,omitempty"`
+	Subnet *ReferenceResourceCommon `json:"subnet,omitempty"`
 
 	// SecurityGroup Security group resource reference (nullable)
-	SecurityGroup *ReferenceResource `json:"securityGroup,omitempty"`
+	SecurityGroup *ReferenceResourceCommon `json:"securityGroup,omitempty"`
 
 	// ElasticIP Elastic IP resource reference (nullable)
-	ElasticIP *ReferenceResource `json:"elasticIp,omitempty"`
+	ElasticIP *ReferenceResourceCommon `json:"elasticIp,omitempty"`
 }
 
 // DBaaSAutoscalingRequest contains the autoscaling configuration
@@ -184,8 +184,8 @@ type DBaaSPropertiesRequest struct {
 	// Storage Storage configuration
 	Storage *DBaaSStorageRequest `json:"storage,omitempty"`
 
-	// BillingPlan Billing plan (wraps billingPeriod)
-	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
+	// BillingPlanCommon Billing plan (wraps billingPeriod)
+	BillingPlanCommon *BillingPlanCommon `json:"billingPlan,omitempty"`
 
 	// Networking Network information for the DBaaS instance
 	Networking *DBaaSNetworkingRequest `json:"networking,omitempty"`
@@ -197,7 +197,7 @@ type DBaaSPropertiesRequest struct {
 // DBaaSPropertiesResponse contains the response properties of a DBaaS instance
 type DBaaSPropertiesResponse struct {
 	// LinkedResources Array of resources linked to the DBaaS instance (nullable)
-	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
+	LinkedResources []LinkedResourceCommon `json:"linkedResources,omitempty"`
 
 	// Engine Database engine response configuration
 	Engine *DBaaSEngineResponse `json:"engine,omitempty"`
@@ -211,8 +211,8 @@ type DBaaSPropertiesResponse struct {
 	// Storage Storage response configuration
 	Storage *DBaaSStorageResponse `json:"storage,omitempty"`
 
-	// BillingPlan Billing plan (wraps billingPeriod)
-	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
+	// BillingPlanCommon Billing plan (wraps billingPeriod)
+	BillingPlanCommon *BillingPlanCommon `json:"billingPlan,omitempty"`
 
 	// Autoscaling Autoscaling response configuration
 	Autoscaling *DBaaSAutoscalingResponse `json:"autoscaling,omitempty"`
@@ -233,7 +233,7 @@ type DBaaSResponse struct {
 	// Spec contains the DBaaS instance specification
 	Properties DBaaSPropertiesResponse `json:"properties"`
 
-	Status ResourceStatus `json:"status,omitempty"`
+	Status ResourceStatusResponse `json:"status,omitempty"`
 }
 
 type DBaaSListResponse struct {

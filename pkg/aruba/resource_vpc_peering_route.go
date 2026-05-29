@@ -138,7 +138,7 @@ func (r *VPCPeeringRoute) BillingPeriod() BillingPeriod {
 // toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (r *VPCPeeringRoute) toRequest() types.VPCPeeringRouteRequest {
 	props := types.VPCPeeringRoutePropertiesRequest{
-		BillingPlan: &types.BillingPlan{BillingPeriod: defaultBillingPeriod(r.billingPeriod)},
+		BillingPlanCommon: &types.BillingPlanCommon{BillingPeriod: defaultBillingPeriod(r.billingPeriod)},
 	}
 	if r.localCIDR != nil {
 		props.LocalNetworkAddress = *r.localCIDR
@@ -179,12 +179,12 @@ func (r *VPCPeeringRoute) fromResponse(resp *types.VPCPeeringRouteResponse) {
 		v := resp.Properties.RemoteNetworkAddress
 		r.remoteCIDR = &v
 	}
-	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
-		r.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
+	if resp.Properties.BillingPlanCommon != nil && resp.Properties.BillingPlanCommon.BillingPeriod != nil {
+		r.billingPeriod = resp.Properties.BillingPlanCommon.BillingPeriod
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		r.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		r.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if (r.vpcID == "" || r.projectID == "" || r.vpcPeeringID == "") && r.RespURI() != "" {
 		ids := parseURIIDs(r.RespURI())

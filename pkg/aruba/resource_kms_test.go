@@ -141,14 +141,14 @@ func kmsTestResponse(name string) *types.KmsResponse {
 			Name:             func() *string { s := name; return &s }(),
 			Tags:             []string{"tag1"},
 			LocationResponse: &types.LocationResponse{Value: RegionITBGBergamo},
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: "p",
 			},
 		},
 		Properties: types.KmsPropertiesResponse{
 			BillingPeriod: func() *BillingPeriod { v := BillingPeriodHour; return &v }(),
 		},
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	}
 }
 
@@ -768,7 +768,7 @@ func TestKMS_FromResponse_SetsStatus(t *testing.T) {
 	k := &KMS{}
 	state := types.State("Active")
 	k.fromResponse(&types.KmsResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if k.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", k.State())

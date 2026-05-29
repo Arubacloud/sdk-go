@@ -1,6 +1,6 @@
 package types
 
-// State is the lifecycle state of an Aruba Cloud resource (ResourceStatus.State).
+// State is the lifecycle state of an Aruba Cloud resource (ResourceStatusResponse.State).
 type State string
 
 const (

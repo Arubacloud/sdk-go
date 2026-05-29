@@ -18,7 +18,7 @@ type KmsRequest struct {
 type KmsResponse struct {
 	Metadata   ResourceMetadataResponse `json:"metadata"`
 	Properties KmsPropertiesResponse    `json:"properties"`
-	Status     ResourceStatus           `json:"status,omitempty"`
+	Status     ResourceStatusResponse   `json:"status,omitempty"`
 }
 
 type KmsListResponse struct {

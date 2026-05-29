@@ -306,8 +306,8 @@ func TestDBaaS_ToRequestRoundTrip(t *testing.T) {
 	if req.Properties.Storage == nil || req.Properties.Storage.SizeGB == nil || *req.Properties.Storage.SizeGB != 20 {
 		t.Errorf("Storage.SizeGB = %v", req.Properties.Storage)
 	}
-	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("BillingPlan.BillingPeriod = %v", req.Properties.BillingPlan)
+	if req.Properties.BillingPlanCommon == nil || req.Properties.BillingPlanCommon.BillingPeriod == nil || *req.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPlanCommon.BillingPeriod = %v", req.Properties.BillingPlanCommon)
 	}
 	if req.Properties.Autoscaling == nil || req.Properties.Autoscaling.Enabled == nil || !*req.Properties.Autoscaling.Enabled {
 		t.Errorf("Autoscaling.Enabled = %v", req.Properties.Autoscaling)
@@ -376,18 +376,18 @@ func dbaasTestResponse(id, name, uri string) *types.DBaaSResponse {
 			LocationResponse: loc,
 		},
 		Properties: types.DBaaSPropertiesResponse{
-			Engine:      &types.DBaaSEngineResponse{Type: &engineType},
-			Flavor:      &types.DBaaSFlavorResponse{Name: &flavorName},
-			Storage:     &types.DBaaSStorageResponse{SizeGB: &sizeGB},
-			BillingPlan: &types.BillingPlan{BillingPeriod: &billingPeriod},
+			Engine:            &types.DBaaSEngineResponse{Type: &engineType},
+			Flavor:            &types.DBaaSFlavorResponse{Name: &flavorName},
+			Storage:           &types.DBaaSStorageResponse{SizeGB: &sizeGB},
+			BillingPlanCommon: &types.BillingPlanCommon{BillingPeriod: &billingPeriod},
 			Networking: &types.DBaaSNetworkingResponse{
-				VPC:           &types.ReferenceResource{URI: vpcURI},
-				Subnet:        &types.ReferenceResource{URI: subnetURI},
-				SecurityGroup: &types.ReferenceResource{URI: sgURI},
-				ElasticIP:     &types.ReferenceResource{URI: eipURI},
+				VPC:           &types.ReferenceResourceCommon{URI: vpcURI},
+				Subnet:        &types.ReferenceResourceCommon{URI: subnetURI},
+				SecurityGroup: &types.ReferenceResourceCommon{URI: sgURI},
+				ElasticIP:     &types.ReferenceResourceCommon{URI: eipURI},
 			},
 		},
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	}
 }
 
@@ -1179,7 +1179,7 @@ func TestDBaaS_FromResponse_SetsStatus(t *testing.T) {
 	d := &DBaaS{}
 	state := types.State("Active")
 	d.fromResponse(&types.DBaaSResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if d.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", d.State())

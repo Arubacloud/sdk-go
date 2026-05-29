@@ -198,7 +198,7 @@ func TestKeyPair_FromResponseHydration(t *testing.T) {
 	if kp.Raw() != resp {
 		t.Error("Raw() should return the hydrated response pointer")
 	}
-	// ProjectID backfilled from URI when ProjectResponseMetadata is nil
+	// ProjectID backfilled from URI when ProjectMetadataResponse is nil
 	if kp.ProjectID() != "p" {
 		t.Errorf("ProjectID() = %q", kp.ProjectID())
 	}
@@ -636,7 +636,7 @@ func TestKeyPair_FromResponse_SetsStatus(t *testing.T) {
 	k := &KeyPair{}
 	state := types.State("Active")
 	k.fromResponse(&types.KeyPairResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if k.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", k.State())
@@ -653,7 +653,7 @@ func TestKeyPair_WaitUntilActive_HappyPath(t *testing.T) {
 			state = "Active"
 		}
 		s := state
-		k.setStatus(&types.ResourceStatus{State: &s})
+		k.setStatus(&types.ResourceStatusResponse{State: &s})
 		return nil
 	})
 	if err := k.WaitUntilActive(context.Background(), fastOpts()...); err != nil {

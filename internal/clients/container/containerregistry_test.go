@@ -26,31 +26,31 @@ func TestListContainerRegistry(t *testing.T) {
 								Name: ptr.To("test-registry"),
 							},
 							Properties: types.ContainerRegistryPropertiesResponse{
-								VPC: types.ReferenceResource{
+								VPC: types.ReferenceResourceCommon{
 									URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"),
 								},
-								Subnet: types.ReferenceResource{
+								Subnet: types.ReferenceResourceCommon{
 									URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"),
 								},
-								SecurityGroup: types.ReferenceResource{
+								SecurityGroup: types.ReferenceResourceCommon{
 									URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890"),
 								},
-								PublicIp: types.ReferenceResource{
+								PublicIp: types.ReferenceResourceCommon{
 									URI: *ptr.To("/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"),
 								},
-								BlockStorage: types.ReferenceResource{
+								BlockStorage: types.ReferenceResourceCommon{
 									URI: *ptr.To("/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321"),
 								},
-								BillingPlan: func() *types.BillingPlan {
+								BillingPlanCommon: func() *types.BillingPlanCommon {
 									v := types.BillingPeriodHour
-									return &types.BillingPlan{BillingPeriod: &v}
+									return &types.BillingPlanCommon{BillingPeriod: &v}
 								}(),
 								AdminUser: &types.UserCredentialCommon{
 									Username: "admin",
 								},
 								ConcurrentUsers: ptr.To("100"),
 							},
-							Status: types.ResourceStatus{
+							Status: types.ResourceStatusResponse{
 								State: ptr.To(types.State("active")),
 							},
 						},
@@ -98,8 +98,8 @@ func TestListContainerRegistry(t *testing.T) {
 		if resp.Data.Values[0].Properties.BlockStorage.URI != "/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321" {
 			t.Errorf("expected BlockStorage URI")
 		}
-		if resp.Data.Values[0].Properties.BillingPlan == nil || resp.Data.Values[0].Properties.BillingPlan.BillingPeriod == nil || *resp.Data.Values[0].Properties.BillingPlan.BillingPeriod != "Hour" {
-			t.Errorf("expected BillingPlan.BillingPeriod Hour")
+		if resp.Data.Values[0].Properties.BillingPlanCommon == nil || resp.Data.Values[0].Properties.BillingPlanCommon.BillingPeriod == nil || *resp.Data.Values[0].Properties.BillingPlanCommon.BillingPeriod != "Hour" {
+			t.Errorf("expected BillingPlanCommon.BillingPeriod Hour")
 		}
 		if resp.Data.Values[0].Properties.AdminUser == nil || resp.Data.Values[0].Properties.AdminUser.Username != "admin" {
 			t.Errorf("expected AdminUser username")
@@ -194,31 +194,31 @@ func TestGetContainerRegistry(t *testing.T) {
 						ID:   ptr.To("registry-123"),
 					},
 					Properties: types.ContainerRegistryPropertiesResponse{
-						VPC: types.ReferenceResource{
+						VPC: types.ReferenceResourceCommon{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"),
 						},
-						Subnet: types.ReferenceResource{
+						Subnet: types.ReferenceResourceCommon{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"),
 						},
-						SecurityGroup: types.ReferenceResource{
+						SecurityGroup: types.ReferenceResourceCommon{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890"),
 						},
-						PublicIp: types.ReferenceResource{
+						PublicIp: types.ReferenceResourceCommon{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"),
 						},
-						BlockStorage: types.ReferenceResource{
+						BlockStorage: types.ReferenceResourceCommon{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321"),
 						},
-						BillingPlan: func() *types.BillingPlan {
+						BillingPlanCommon: func() *types.BillingPlanCommon {
 							v := types.BillingPeriodHour
-							return &types.BillingPlan{BillingPeriod: &v}
+							return &types.BillingPlanCommon{BillingPeriod: &v}
 						}(),
 						AdminUser: &types.UserCredentialCommon{
 							Username: "admin",
 						},
 						ConcurrentUsers: ptr.To("100"),
 					},
-					Status: types.ResourceStatus{
+					Status: types.ResourceStatusResponse{
 						State: ptr.To(types.State("active")),
 					},
 				}
@@ -255,8 +255,8 @@ func TestGetContainerRegistry(t *testing.T) {
 		if resp.Data.Properties.BlockStorage.URI != "/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321" {
 			t.Errorf("expected BlockStorage URI")
 		}
-		if resp.Data.Properties.BillingPlan == nil || resp.Data.Properties.BillingPlan.BillingPeriod == nil || *resp.Data.Properties.BillingPlan.BillingPeriod != "Hour" {
-			t.Errorf("expected BillingPlan.BillingPeriod Hour")
+		if resp.Data.Properties.BillingPlanCommon == nil || resp.Data.Properties.BillingPlanCommon.BillingPeriod == nil || *resp.Data.Properties.BillingPlanCommon.BillingPeriod != "Hour" {
+			t.Errorf("expected BillingPlanCommon.BillingPeriod Hour")
 		}
 		if resp.Data.Properties.AdminUser == nil || resp.Data.Properties.AdminUser.Username != "admin" {
 			t.Errorf("expected AdminUser username")
@@ -353,31 +353,31 @@ func TestCreateContainerRegistry(t *testing.T) {
 						URI:  ptr.To("/projects/test-project/providers/Aruba.Container/registries/registry-456"),
 					},
 					Properties: types.ContainerRegistryPropertiesResponse{
-						VPC: types.ReferenceResource{
+						VPC: types.ReferenceResourceCommon{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"),
 						},
-						Subnet: types.ReferenceResource{
+						Subnet: types.ReferenceResourceCommon{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"),
 						},
-						SecurityGroup: types.ReferenceResource{
+						SecurityGroup: types.ReferenceResourceCommon{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890"),
 						},
-						PublicIp: types.ReferenceResource{
+						PublicIp: types.ReferenceResourceCommon{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"),
 						},
-						BlockStorage: types.ReferenceResource{
+						BlockStorage: types.ReferenceResourceCommon{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321"),
 						},
-						BillingPlan: func() *types.BillingPlan {
+						BillingPlanCommon: func() *types.BillingPlanCommon {
 							v := types.BillingPeriodHour
-							return &types.BillingPlan{BillingPeriod: &v}
+							return &types.BillingPlanCommon{BillingPeriod: &v}
 						}(),
 						AdminUser: &types.UserCredentialCommon{
 							Username: "admin",
 						},
 						ConcurrentUsers: ptr.To("100"),
 					},
-					Status: types.ResourceStatus{
+					Status: types.ResourceStatusResponse{
 						State: ptr.To(types.State("creating")),
 					},
 				}
@@ -396,14 +396,14 @@ func TestCreateContainerRegistry(t *testing.T) {
 				},
 			},
 			Properties: types.ContainerRegistryPropertiesRequest{
-				PublicIp:      types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"},
-				VPC:           types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"},
-				Subnet:        types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"},
-				SecurityGroup: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890"},
-				BlockStorage:  types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321"},
-				BillingPlan: func() *types.BillingPlan {
+				PublicIp:      types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"},
+				VPC:           types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"},
+				Subnet:        types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"},
+				SecurityGroup: types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890"},
+				BlockStorage:  types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321"},
+				BillingPlanCommon: func() *types.BillingPlanCommon {
 					v := types.BillingPeriod("Hour")
-					return &types.BillingPlan{BillingPeriod: &v}
+					return &types.BillingPlanCommon{BillingPeriod: &v}
 				}(),
 				AdminUser:       &types.UserCredentialCommon{Username: "admin"},
 				ConcurrentUsers: ptr.To("100"),
@@ -435,8 +435,8 @@ func TestCreateContainerRegistry(t *testing.T) {
 		if resp.Data.Properties.BlockStorage.URI != "/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321" {
 			t.Errorf("expected BlockStorage URI")
 		}
-		if resp.Data.Properties.BillingPlan == nil || resp.Data.Properties.BillingPlan.BillingPeriod == nil || *resp.Data.Properties.BillingPlan.BillingPeriod != "Hour" {
-			t.Errorf("expected BillingPlan.BillingPeriod Hour")
+		if resp.Data.Properties.BillingPlanCommon == nil || resp.Data.Properties.BillingPlanCommon.BillingPeriod == nil || *resp.Data.Properties.BillingPlanCommon.BillingPeriod != "Hour" {
+			t.Errorf("expected BillingPlanCommon.BillingPeriod Hour")
 		}
 		if resp.Data.Properties.AdminUser == nil || resp.Data.Properties.AdminUser.Username != "admin" {
 			t.Errorf("expected AdminUser username")
@@ -594,31 +594,31 @@ func TestUpdateContainerRegistry(t *testing.T) {
 						ID:   ptr.To("registry-123"),
 					},
 					Properties: types.ContainerRegistryPropertiesResponse{
-						VPC: types.ReferenceResource{
+						VPC: types.ReferenceResourceCommon{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"),
 						},
-						Subnet: types.ReferenceResource{
+						Subnet: types.ReferenceResourceCommon{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"),
 						},
-						SecurityGroup: types.ReferenceResource{
+						SecurityGroup: types.ReferenceResourceCommon{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890"),
 						},
-						PublicIp: types.ReferenceResource{
+						PublicIp: types.ReferenceResourceCommon{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"),
 						},
-						BlockStorage: types.ReferenceResource{
+						BlockStorage: types.ReferenceResourceCommon{
 							URI: *ptr.To("/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321"),
 						},
-						BillingPlan: func() *types.BillingPlan {
+						BillingPlanCommon: func() *types.BillingPlanCommon {
 							v := types.BillingPeriodHour
-							return &types.BillingPlan{BillingPeriod: &v}
+							return &types.BillingPlanCommon{BillingPeriod: &v}
 						}(),
 						AdminUser: &types.UserCredentialCommon{
 							Username: "admin",
 						},
 						ConcurrentUsers: ptr.To("100"),
 					},
-					Status: types.ResourceStatus{
+					Status: types.ResourceStatusResponse{
 						State: ptr.To(types.State("updating")),
 					},
 				}
@@ -637,14 +637,14 @@ func TestUpdateContainerRegistry(t *testing.T) {
 				},
 			},
 			Properties: types.ContainerRegistryPropertiesRequest{
-				PublicIp:      types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"},
-				VPC:           types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"},
-				Subnet:        types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"},
-				SecurityGroup: types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890"},
-				BlockStorage:  types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321"},
-				BillingPlan: func() *types.BillingPlan {
+				PublicIp:      types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Network/elasticips/eip-12345"},
+				VPC:           types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1"},
+				Subnet:        types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/subnets/subnet-124"},
+				SecurityGroup: types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Network/vpcs/vpc-1/securityGroups/sg-67890"},
+				BlockStorage:  types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321"},
+				BillingPlanCommon: func() *types.BillingPlanCommon {
 					v := types.BillingPeriod("Hour")
-					return &types.BillingPlan{BillingPeriod: &v}
+					return &types.BillingPlanCommon{BillingPeriod: &v}
 				}(),
 				AdminUser:       &types.UserCredentialCommon{Username: "admin"},
 				ConcurrentUsers: ptr.To("100"),
@@ -676,8 +676,8 @@ func TestUpdateContainerRegistry(t *testing.T) {
 		if resp.Data.Properties.BlockStorage.URI != "/projects/test-project/providers/Aruba.Storage/blockStorages/bs-54321" {
 			t.Errorf("expected BlockStorage URI")
 		}
-		if resp.Data.Properties.BillingPlan == nil || resp.Data.Properties.BillingPlan.BillingPeriod == nil || *resp.Data.Properties.BillingPlan.BillingPeriod != "Hour" {
-			t.Errorf("expected BillingPlan.BillingPeriod Hour")
+		if resp.Data.Properties.BillingPlanCommon == nil || resp.Data.Properties.BillingPlanCommon.BillingPeriod == nil || *resp.Data.Properties.BillingPlanCommon.BillingPeriod != "Hour" {
+			t.Errorf("expected BillingPlanCommon.BillingPeriod Hour")
 		}
 		if resp.Data.Properties.AdminUser == nil || resp.Data.Properties.AdminUser.Username != "admin" {
 			t.Errorf("expected AdminUser username")

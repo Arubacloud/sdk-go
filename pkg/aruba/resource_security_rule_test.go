@@ -256,7 +256,7 @@ func securityRuleTestResponse(id, name, uri, projectID string) *types.SecurityRu
 			URI:  &uri,
 			Name: &name,
 			Tags: []string{"rule-tag"},
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: projectID,
 			},
 			LocationResponse: &types.LocationResponse{
@@ -269,7 +269,7 @@ func securityRuleTestResponse(id, name, uri, projectID string) *types.SecurityRu
 			Port:      port,
 			Target:    &types.RuleTargetCommon{Kind: EndpointTypeIP, Value: "1.2.3.4/32"},
 		},
-		Status: types.ResourceStatus{
+		Status: types.ResourceStatusResponse{
 			State: &state,
 		},
 	}
@@ -1122,7 +1122,7 @@ func TestSecurityRule_FromResponse_SetsStatus(t *testing.T) {
 	r := &SecurityRule{}
 	state := types.State("Active")
 	r.fromResponse(&types.SecurityRuleResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if r.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", r.State())

@@ -20,7 +20,7 @@ type VPCPropertiesRequest struct {
 // VPCPropertiesResponse contains the specification returned for a VPC
 type VPCPropertiesResponse struct {
 	// LinkedResources array of resources linked to the VPC (nullable)
-	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
+	LinkedResources []LinkedResourceCommon `json:"linkedResources,omitempty"`
 
 	// Default indicates if the vpc is the default one within the region
 	Default bool `json:"default,omitempty"`
@@ -40,7 +40,7 @@ type VPCResponse struct {
 	// Spec contains the VPC specification
 	Properties VPCPropertiesResponse `json:"properties"`
 
-	Status ResourceStatus `json:"status,omitempty"`
+	Status ResourceStatusResponse `json:"status,omitempty"`
 }
 
 type VPCListResponse struct {

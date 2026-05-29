@@ -23,7 +23,7 @@ import (
 //   - Flavor: request emits Flavor.Name; response returns the full
 //     DBaaSFlavorResponse struct.
 //   - Networking: request emits 4 raw URI strings (VPCURI/SubnetURI/
-//     SecurityGroupURI/ElasticIPURI); response returns 4 *ReferenceResource
+//     SecurityGroupURI/ElasticIPURI); response returns 4 *ReferenceResourceCommon
 //     objects. Read-back getters (VPC/Subnet/SecurityGroup/ElasticIP)
 //     prefer the response side, falling back to the locally-set URI.
 //   - Zone: Go field is "Zone" but the wire JSON tag is "dataCenter".
@@ -53,7 +53,7 @@ type DBaaS struct {
 	autoscalingEnabled        *bool           // wire: Autoscaling.Enabled
 	autoscalingAvailableSpace *int32          // wire: Autoscaling.AvailableSpace
 	autoscalingStepSize       *int32          // wire: Autoscaling.StepSize
-	billingPeriod             *BillingPeriod  // wire: BillingPlan.BillingPeriod
+	billingPeriod             *BillingPeriod  // wire: BillingPlanCommon.BillingPeriod
 
 	// Networking refs.
 	vpcRef           *string
@@ -238,11 +238,11 @@ func (d *DBaaS) SizeGB() int {
 }
 
 // BillingPeriod returns the billing period. On a hydrated response the value comes
-// from BillingPlan.BillingPeriod; before hydration it returns what was passed to
+// from BillingPlanCommon.BillingPeriod; before hydration it returns what was passed to
 // WithBillingPeriod.
 func (d *DBaaS) BillingPeriod() BillingPeriod {
-	if d.response != nil && d.response.Properties.BillingPlan != nil && d.response.Properties.BillingPlan.BillingPeriod != nil {
-		return *d.response.Properties.BillingPlan.BillingPeriod
+	if d.response != nil && d.response.Properties.BillingPlanCommon != nil && d.response.Properties.BillingPlanCommon.BillingPeriod != nil {
+		return *d.response.Properties.BillingPlanCommon.BillingPeriod
 	}
 	if d.billingPeriod == nil {
 		return ""
@@ -354,22 +354,22 @@ func (d *DBaaS) FlavorRAMMB() int32 {
 
 // VPC returns the VPC URI for this DBaaS instance, or "" if unset.
 func (d *DBaaS) VPC() string {
-	return dbaasNetworkingURI(d.response, func(n *types.DBaaSNetworkingResponse) *types.ReferenceResource { return n.VPC }, d.vpcRef)
+	return dbaasNetworkingURI(d.response, func(n *types.DBaaSNetworkingResponse) *types.ReferenceResourceCommon { return n.VPC }, d.vpcRef)
 }
 
 // Subnet returns the subnet URI for this DBaaS instance, or "" if unset.
 func (d *DBaaS) Subnet() string {
-	return dbaasNetworkingURI(d.response, func(n *types.DBaaSNetworkingResponse) *types.ReferenceResource { return n.Subnet }, d.subnetRef)
+	return dbaasNetworkingURI(d.response, func(n *types.DBaaSNetworkingResponse) *types.ReferenceResourceCommon { return n.Subnet }, d.subnetRef)
 }
 
 // SecurityGroup returns the security group URI for this DBaaS instance, or "" if unset.
 func (d *DBaaS) SecurityGroup() string {
-	return dbaasNetworkingURI(d.response, func(n *types.DBaaSNetworkingResponse) *types.ReferenceResource { return n.SecurityGroup }, d.securityGroupRef)
+	return dbaasNetworkingURI(d.response, func(n *types.DBaaSNetworkingResponse) *types.ReferenceResourceCommon { return n.SecurityGroup }, d.securityGroupRef)
 }
 
 // ElasticIP returns the elastic IP URI for this DBaaS instance, or "" if unset.
 func (d *DBaaS) ElasticIP() string {
-	return dbaasNetworkingURI(d.response, func(n *types.DBaaSNetworkingResponse) *types.ReferenceResource { return n.ElasticIP }, d.elasticIPRef)
+	return dbaasNetworkingURI(d.response, func(n *types.DBaaSNetworkingResponse) *types.ReferenceResourceCommon { return n.ElasticIP }, d.elasticIPRef)
 }
 
 // Wire converters
@@ -404,7 +404,7 @@ func (d *DBaaS) toRequest() types.DBaaSRequest {
 		}
 		props.Autoscaling = a
 	}
-	props.BillingPlan = &types.BillingPlan{BillingPeriod: defaultBillingPeriod(d.billingPeriod)}
+	props.BillingPlanCommon = &types.BillingPlanCommon{BillingPeriod: defaultBillingPeriod(d.billingPeriod)}
 	if d.vpcRef != nil || d.subnetRef != nil || d.securityGroupRef != nil || d.elasticIPRef != nil {
 		net := &types.DBaaSNetworkingRequest{}
 		if d.vpcRef != nil {
@@ -468,8 +468,8 @@ func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 		v := *resp.Properties.Storage.SizeGB
 		d.sizeGB = &v
 	}
-	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
-		d.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
+	if resp.Properties.BillingPlanCommon != nil && resp.Properties.BillingPlanCommon.BillingPeriod != nil {
+		d.billingPeriod = resp.Properties.BillingPlanCommon.BillingPeriod
 	}
 	if resp.Properties.Networking != nil {
 		if resp.Properties.Networking.VPC != nil && resp.Properties.Networking.VPC.URI != "" {
@@ -509,8 +509,8 @@ func (d *DBaaS) fromResponse(resp *types.DBaaSResponse) {
 		}
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		d.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		d.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if d.projectID == "" && d.RespURI() != "" {
 		ids := parseURIIDs(d.RespURI())
@@ -525,7 +525,7 @@ func dbaasDerefString(p *string) string {
 	return *p
 }
 
-func dbaasNetworkingURI(resp *types.DBaaSResponse, pick func(*types.DBaaSNetworkingResponse) *types.ReferenceResource, fallback *string) string {
+func dbaasNetworkingURI(resp *types.DBaaSResponse, pick func(*types.DBaaSNetworkingResponse) *types.ReferenceResourceCommon, fallback *string) string {
 	if resp != nil && resp.Properties.Networking != nil {
 		if r := pick(resp.Properties.Networking); r != nil && r.URI != "" {
 			return r.URI

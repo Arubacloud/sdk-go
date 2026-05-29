@@ -223,7 +223,7 @@ func subnetTestResponse(id, name, uri, projectID string) *types.SubnetResponse {
 			Name:             &name,
 			Tags:             []string{"tag1"},
 			LocationResponse: loc,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: projectID,
 			},
 		},
@@ -236,13 +236,13 @@ func subnetTestResponse(id, name, uri, projectID string) *types.SubnetResponse {
 				Range:   &types.SubnetDHCPRangeCommon{Start: "10.0.0.10", Count: 50},
 				DNS:     []string{"8.8.8.8"},
 			},
-			LinkedResources: []types.LinkedResource{
+			LinkedResources: []types.LinkedResourceCommon{
 				{URI: uri + "/linked-res", StrictCorrelation: false},
 			},
 		},
-		Status: types.ResourceStatus{
+		Status: types.ResourceStatusResponse{
 			State: &state,
-			DisableStatusInfo: &types.DisableStatusInfo{
+			DisableStatusInfoResponse: &types.DisableStatusInfoResponse{
 				IsDisabled: false,
 			},
 		},
@@ -1006,7 +1006,7 @@ func TestSubnet_FromResponse_SetsStatus(t *testing.T) {
 	s := &Subnet{}
 	state := types.State("Active")
 	s.fromResponse(&types.SubnetResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if s.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", s.State())

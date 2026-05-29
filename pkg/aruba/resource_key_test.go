@@ -28,7 +28,7 @@ func keyMakeKMSParent(projectID, kmsID string) *KMS {
 			ID:                      &id,
 			Name:                    &name,
 			URI:                     &u,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: projectID},
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{ID: projectID},
 		},
 	}
 	k := &KMS{}

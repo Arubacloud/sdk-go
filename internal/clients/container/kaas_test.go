@@ -33,7 +33,7 @@ func TestListKaaS(t *testing.T) {
 									Recommended: true,
 								},
 							},
-							Status: types.ResourceStatus{
+							Status: types.ResourceStatusResponse{
 								State: ptr.To(types.State("active")),
 							},
 						},
@@ -167,7 +167,7 @@ func TestGetKaaS(t *testing.T) {
 						}(),
 						ManagementIP: ptr.To("10.0.0.100"),
 					},
-					Status: types.ResourceStatus{
+					Status: types.ResourceStatusResponse{
 						State: ptr.To(types.State("active")),
 					},
 				}
@@ -297,7 +297,7 @@ func TestCreateKaaS(t *testing.T) {
 							Value: ptr.To("1.28.0"),
 						},
 					},
-					Status: types.ResourceStatus{
+					Status: types.ResourceStatusResponse{
 						State: ptr.To(types.State("creating")),
 					},
 				}
@@ -490,7 +490,7 @@ func TestUpdateKaaS(t *testing.T) {
 							Value: ptr.To("1.29.0"),
 						},
 					},
-					Status: types.ResourceStatus{
+					Status: types.ResourceStatusResponse{
 						State: ptr.To(types.State("updating")),
 					},
 				}

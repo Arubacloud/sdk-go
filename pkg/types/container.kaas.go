@@ -122,13 +122,13 @@ type OpenstackProjectResponse struct {
 type KaaSPropertiesRequest struct {
 
 	//LinkedResources linked resources to the KaaS cluster
-	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
+	LinkedResources []LinkedResourceCommon `json:"linkedResources,omitempty"`
 
 	Preset *bool `json:"preset,omitempty"`
 
-	VPC ReferenceResource `json:"vpc"`
+	VPC ReferenceResourceCommon `json:"vpc"`
 
-	Subnet ReferenceResource `json:"subnet"`
+	Subnet ReferenceResourceCommon `json:"subnet"`
 
 	NodeCIDR NodeCIDRPropertiesRequest `json:"nodeCidr"`
 
@@ -144,7 +144,7 @@ type KaaSPropertiesRequest struct {
 
 	Storage StorageKubernetesCommon `json:"storage,omitempty"`
 
-	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
+	BillingPlanCommon *BillingPlanCommon `json:"billingPlan,omitempty"`
 
 	Identity *KaaSIdentityPropertiesRequest `json:"identity,omitempty"`
 
@@ -246,7 +246,7 @@ type KaasSecurityGroupPropertiesResponse struct {
 type KaaSPropertiesResponse struct {
 
 	//LinkedResources linked resources to the KaaS cluster
-	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
+	LinkedResources []LinkedResourceCommon `json:"linkedResources,omitempty"`
 
 	Preset bool `json:"preset"`
 
@@ -268,7 +268,7 @@ type KaaSPropertiesResponse struct {
 
 	Storage *StorageKubernetesCommon `json:"storage,omitempty"`
 
-	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
+	BillingPlanCommon *BillingPlanCommon `json:"billingPlan,omitempty"`
 
 	ManagementIP *string `json:"managementIp,omitempty"`
 
@@ -288,7 +288,7 @@ type KaaSPropertiesUpdateRequest struct {
 
 	Storage *StorageKubernetesCommon `json:"storage,omitempty"`
 
-	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
+	BillingPlanCommon *BillingPlanCommon `json:"billingPlan,omitempty"`
 }
 
 type KaaSRequest struct {
@@ -305,7 +305,7 @@ type KaaSResponse struct {
 	Metadata   ResourceMetadataResponse `json:"metadata"`
 	Properties KaaSPropertiesResponse   `json:"properties"`
 
-	Status ResourceStatus `json:"status,omitempty"`
+	Status ResourceStatusResponse `json:"status,omitempty"`
 }
 
 type KaaSListResponse struct {

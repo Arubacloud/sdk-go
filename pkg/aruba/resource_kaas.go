@@ -17,7 +17,7 @@ import (
 //
 // Family A: regional, Metadata/Properties envelope, location-aware.
 // Supports full CRUD. Update emits KaaSUpdateRequest (narrower than KaaSRequest):
-// only KubernetesVersion, NodePools, HA, Storage, and BillingPlan are mutable.
+// only KubernetesVersion, NodePools, HA, Storage, and BillingPlanCommon are mutable.
 //
 // Schema asymmetry (request vs. response):
 //   - "nodePools" (request) vs. "nodesPool" (response)
@@ -319,8 +319,8 @@ func (k *KaaS) KubernetesVersion() KubernetesVersion {
 
 // BillingPeriod returns the billing period for this cluster, or "" if unset.
 func (k *KaaS) BillingPeriod() BillingPeriod {
-	if k.response != nil && k.response.Properties.BillingPlan != nil && k.response.Properties.BillingPlan.BillingPeriod != nil {
-		return *k.response.Properties.BillingPlan.BillingPeriod
+	if k.response != nil && k.response.Properties.BillingPlanCommon != nil && k.response.Properties.BillingPlanCommon.BillingPeriod != nil {
+		return *k.response.Properties.BillingPlanCommon.BillingPeriod
 	}
 	if k.billingPeriod == nil {
 		return ""
@@ -369,8 +369,8 @@ func (k *KaaS) NodePools() []*NodePool {
 // toRequest assembles the Create/Update body from current setter state. Defaults are applied at the wire boundary.
 func (k *KaaS) toRequest() types.KaaSRequest {
 	props := types.KaaSPropertiesRequest{
-		VPC:    types.ReferenceResource{URI: kaasDeref(k.vpcRef)},
-		Subnet: types.ReferenceResource{URI: kaasDeref(k.subnetRef)},
+		VPC:    types.ReferenceResourceCommon{URI: kaasDeref(k.vpcRef)},
+		Subnet: types.ReferenceResourceCommon{URI: kaasDeref(k.subnetRef)},
 		SecurityGroup: types.KaaSSecurityGroupPropertiesRequest{
 			Name: kaasDeref(k.securityGroupName),
 		},
@@ -385,8 +385,8 @@ func (k *KaaS) toRequest() types.KaaSRequest {
 			}
 			return ""
 		}()},
-		HA:          k.ha,
-		BillingPlan: &types.BillingPlan{BillingPeriod: defaultBillingPeriod(k.billingPeriod)},
+		HA:                k.ha,
+		BillingPlanCommon: &types.BillingPlanCommon{BillingPeriod: defaultBillingPeriod(k.billingPeriod)},
 	}
 	if k.storageMaxCumulative != nil {
 		props.Storage = types.StorageKubernetesCommon{MaxCumulativeVolumeSize: k.storageMaxCumulative}
@@ -416,7 +416,7 @@ func (k *KaaS) toRequest() types.KaaSRequest {
 }
 
 // toUpdateRequest emits KaaSUpdateRequest, which exposes only the mutable
-// fields (KubernetesVersion, NodePools, HA, Storage, BillingPlan).
+// fields (KubernetesVersion, NodePools, HA, Storage, BillingPlanCommon).
 // VPC, Subnet, SecurityGroup, and CIDRs are immutable after creation.
 func (k *KaaS) toUpdateRequest() types.KaaSUpdateRequest {
 	props := types.KaaSPropertiesUpdateRequest{
@@ -440,7 +440,7 @@ func (k *KaaS) toUpdateRequest() types.KaaSUpdateRequest {
 		props.Storage = &types.StorageKubernetesCommon{MaxCumulativeVolumeSize: k.storageMaxCumulative}
 	}
 	if k.billingPeriod != nil {
-		props.BillingPlan = &types.BillingPlan{BillingPeriod: k.billingPeriod}
+		props.BillingPlanCommon = &types.BillingPlanCommon{BillingPeriod: k.billingPeriod}
 	}
 	return types.KaaSUpdateRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
@@ -470,8 +470,8 @@ func (k *KaaS) fromResponse(resp *types.KaaSResponse) {
 	k.setLinked(resp.Properties.LinkedResources)
 	k.kaasHydrateCacheFromProps(resp.Properties)
 	k.nodePools = kaasRebuildNodePools(resp.Properties.NodePools)
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		k.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		k.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if k.projectID == "" && k.RespURI() != "" {
 		if pid := parseURIIDs(k.RespURI())["projects"]; pid != "" {
@@ -514,8 +514,8 @@ func (k *KaaS) kaasHydrateCacheFromProps(props types.KaaSPropertiesResponse) {
 		v := *props.Storage.MaxCumulativeVolumeSize
 		k.storageMaxCumulative = &v
 	}
-	if props.BillingPlan != nil && props.BillingPlan.BillingPeriod != nil {
-		k.billingPeriod = props.BillingPlan.BillingPeriod
+	if props.BillingPlanCommon != nil && props.BillingPlanCommon.BillingPeriod != nil {
+		k.billingPeriod = props.BillingPlanCommon.BillingPeriod
 	}
 	if props.Identity != nil && props.Identity.ClientID != nil {
 		v := *props.Identity.ClientID

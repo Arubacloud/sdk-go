@@ -162,10 +162,10 @@ func (m *responseMetadataMixin) RespURI() string {
 
 // Project returns the owning project's ID from the response metadata, or "".
 func (m *responseMetadataMixin) Project() string {
-	if m.meta == nil || m.meta.ProjectResponseMetadata == nil {
+	if m.meta == nil || m.meta.ProjectMetadataResponse == nil {
 		return ""
 	}
-	return m.meta.ProjectResponseMetadata.ID
+	return m.meta.ProjectMetadataResponse.ID
 }
 
 // CreatedAt returns the resource creation time, or zero time.
@@ -202,13 +202,13 @@ func (m *responseMetadataMixin) Raw() *types.ResourceMetadataResponse {
 // --------------------------------------------------------------------------
 
 type linkedMixin struct {
-	linked []types.LinkedResource
+	linked []types.LinkedResourceCommon
 }
 
-func (m *linkedMixin) setLinked(l []types.LinkedResource) { m.linked = l }
+func (m *linkedMixin) setLinked(l []types.LinkedResourceCommon) { m.linked = l }
 
 // LinkedResources returns the slice of linked resources.
-func (m *linkedMixin) LinkedResources() []types.LinkedResource { return m.linked }
+func (m *linkedMixin) LinkedResources() []types.LinkedResourceCommon { return m.linked }
 
 // --------------------------------------------------------------------------
 // httpEnvelopeMixin — HTTP response metadata

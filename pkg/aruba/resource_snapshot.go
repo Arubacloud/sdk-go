@@ -154,7 +154,7 @@ func (s *Snapshot) toRequest() types.SnapshotRequest {
 		BillingPeriod: defaultBillingPeriod(s.billingPeriod),
 	}
 	if s.volumeRef != nil {
-		props.Volume = types.ReferenceResource{URI: *s.volumeRef}
+		props.Volume = types.ReferenceResourceCommon{URI: *s.volumeRef}
 	}
 	return types.SnapshotRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
@@ -206,8 +206,8 @@ func (s *Snapshot) fromResponse(resp *types.SnapshotResponse) {
 		s.volumeRef = &v
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		s.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		s.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if s.projectID == "" && s.RespURI() != "" {
 		if pid := parseURIIDs(s.RespURI())["projects"]; pid != "" {

@@ -59,7 +59,7 @@ type SubnetPropertiesRequest struct {
 // SubnetPropertiesResponse contains the specification returned for a Subnet
 type SubnetPropertiesResponse struct {
 	// LinkedResources array of resources linked to the Subnet (nullable)
-	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
+	LinkedResources []LinkedResourceCommon `json:"linkedResources,omitempty"`
 
 	// Type of subnet
 	Type SubnetType `json:"type,omitempty"`
@@ -88,7 +88,7 @@ type SubnetResponse struct {
 	// Spec contains the Subnet specification
 	Properties SubnetPropertiesResponse `json:"properties"`
 
-	Status ResourceStatus `json:"status,omitempty"`
+	Status ResourceStatusResponse `json:"status,omitempty"`
 }
 
 type SubnetListResponse struct {

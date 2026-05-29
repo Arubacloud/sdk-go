@@ -140,8 +140,8 @@ func (k *KMS) fromResponse(resp *types.KmsResponse) {
 		k.billingPeriod = resp.Properties.BillingPeriod
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		k.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		k.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if k.projectID == "" && k.RespURI() != "" {
 		if pid := parseURIIDs(k.RespURI())["projects"]; pid != "" {

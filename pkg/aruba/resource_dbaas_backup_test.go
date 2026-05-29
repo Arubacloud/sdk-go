@@ -224,8 +224,8 @@ func TestDBaaSBackup_ToRequest(t *testing.T) {
 	if req.Properties.Database.URI != dbURI {
 		t.Errorf("Properties.Database.URI = %q", req.Properties.Database.URI)
 	}
-	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("Properties.BillingPlan.BillingPeriod = %v", req.Properties.BillingPlan)
+	if req.Properties.BillingPlanCommon == nil || req.Properties.BillingPlanCommon.BillingPeriod == nil || *req.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("Properties.BillingPlanCommon.BillingPeriod = %v", req.Properties.BillingPlanCommon)
 	}
 }
 
@@ -268,21 +268,21 @@ func dbaasBackupTestResponse(name string) *types.BackupResponse {
 			Name:             func() *string { s := name; return &s }(),
 			Tags:             []string{"tag1"},
 			LocationResponse: &types.LocationResponse{Value: RegionITBGBergamo},
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: "p",
 			},
 		},
 		Properties: types.BackupPropertiesResponse{
 			Zone:     ZoneITBG1,
-			DBaaS:    types.ReferenceResource{URI: dbaasURI},
-			Database: types.ReferenceResource{URI: dbURI},
-			BillingPlan: func() *types.BillingPlan {
+			DBaaS:    types.ReferenceResourceCommon{URI: dbaasURI},
+			Database: types.ReferenceResourceCommon{URI: dbURI},
+			BillingPlanCommon: func() *types.BillingPlanCommon {
 				v := BillingPeriodHour
-				return &types.BillingPlan{BillingPeriod: &v}
+				return &types.BillingPlanCommon{BillingPeriod: &v}
 			}(),
 			Storage: types.BackupStorageResponse{Size: 50},
 		},
-		Status: types.ResourceStatus{
+		Status: types.ResourceStatusResponse{
 			State: &state,
 		},
 	}
@@ -351,7 +351,7 @@ func TestDBaaSBackup_FromResponse_NilSafe(t *testing.T) {
 
 func TestDBaaSBackup_FromResponse_BackfillsProjectID_FromMetadata(t *testing.T) {
 	resp := dbaasBackupTestResponse("n")
-	// ProjectResponseMetadata.ID is "p" — should be backfilled directly.
+	// ProjectMetadataResponse.ID is "p" — should be backfilled directly.
 	bkp := &DBaaSBackup{}
 	bkp.fromResponse(resp)
 	if bkp.ProjectID() != "p" {
@@ -366,7 +366,7 @@ func TestDBaaSBackup_FromResponse_BackfillsProjectID_FromURI(t *testing.T) {
 		Metadata: types.ResourceMetadataResponse{
 			ID:  &id,
 			URI: &uri,
-			// No ProjectResponseMetadata — should backfill from URI.
+			// No ProjectMetadataResponse — should backfill from URI.
 		},
 	}
 	bkp := &DBaaSBackup{}
@@ -507,8 +507,8 @@ func TestDBaaSBackupsClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Properties.Database.URI != "/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb" {
 		t.Errorf("request Properties.Database.URI = %q", gotBody.Properties.Database.URI)
 	}
-	if gotBody.Properties.BillingPlan == nil || gotBody.Properties.BillingPlan.BillingPeriod == nil || *gotBody.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("request Properties.BillingPlan.BillingPeriod = %v", gotBody.Properties.BillingPlan)
+	if gotBody.Properties.BillingPlanCommon == nil || gotBody.Properties.BillingPlanCommon.BillingPeriod == nil || *gotBody.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("request Properties.BillingPlanCommon.BillingPeriod = %v", gotBody.Properties.BillingPlanCommon)
 	}
 }
 
@@ -613,8 +613,8 @@ func TestDBaaSBackupsClientAdapter_Create_WithBodyRefs_ViaFake(t *testing.T) {
 	if captured.Properties.Zone != Zone(RegionITBGBergamo) {
 		t.Errorf("captured Zone = %q", captured.Properties.Zone)
 	}
-	if captured.Properties.BillingPlan == nil || captured.Properties.BillingPlan.BillingPeriod == nil || *captured.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("captured BillingPlan.BillingPeriod = %v", captured.Properties.BillingPlan)
+	if captured.Properties.BillingPlanCommon == nil || captured.Properties.BillingPlanCommon.BillingPeriod == nil || *captured.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("captured BillingPlanCommon.BillingPeriod = %v", captured.Properties.BillingPlanCommon)
 	}
 }
 
@@ -883,7 +883,7 @@ func TestDBaaSBackup_FromResponse_SetsStatus(t *testing.T) {
 	b := &DBaaSBackup{}
 	state := types.State("Active")
 	b.fromResponse(&types.BackupResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if b.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", b.State())

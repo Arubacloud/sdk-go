@@ -159,7 +159,7 @@ func (b *StorageBackup) toRequest() types.StorageBackupRequest {
 		props.StorageBackupType = *b.backupType
 	}
 	if b.originRef != nil {
-		props.Origin = types.ReferenceResource{URI: *b.originRef}
+		props.Origin = types.ReferenceResourceCommon{URI: *b.originRef}
 	}
 	return types.StorageBackupRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
@@ -202,8 +202,8 @@ func (b *StorageBackup) fromResponse(resp *types.StorageBackupResponse) {
 		b.billingPeriod = storageBackupBillingPeriodWire().In(resp.Properties.BillingPeriod)
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		b.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		b.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if b.projectID == "" && b.RespURI() != "" {
 		if pid := parseURIIDs(b.RespURI())["projects"]; pid != "" {

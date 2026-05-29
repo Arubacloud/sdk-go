@@ -21,21 +21,21 @@ type UserCredentialCommon struct {
 type ContainerRegistryPropertiesRequest struct {
 
 	// PublicIp is the public IP associated with the container registry
-	PublicIp ReferenceResource `json:"publicIp"`
+	PublicIp ReferenceResourceCommon `json:"publicIp"`
 
-	VPC ReferenceResource `json:"vpc"`
+	VPC ReferenceResourceCommon `json:"vpc"`
 
 	// Subnet is the subnet associated with the container registry
-	Subnet ReferenceResource `json:"subnet"`
+	Subnet ReferenceResourceCommon `json:"subnet"`
 
 	// SecurityGroup is the security group associated with the container registry
-	SecurityGroup ReferenceResource `json:"securityGroup"`
+	SecurityGroup ReferenceResourceCommon `json:"securityGroup"`
 
 	// BlockStorage is the block storage associated with the container registry
-	BlockStorage ReferenceResource `json:"blockStorage"`
+	BlockStorage ReferenceResourceCommon `json:"blockStorage"`
 
-	// BillingPlan is the billing plan for the container registry
-	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
+	// BillingPlanCommon is the billing plan for the container registry
+	BillingPlanCommon *BillingPlanCommon `json:"billingPlan,omitempty"`
 
 	// AdminUser is the administrator user for the container registry
 	AdminUser *UserCredentialCommon `json:"adminUser,omitempty"`
@@ -47,22 +47,22 @@ type ContainerRegistryPropertiesRequest struct {
 type ContainerRegistryPropertiesResponse struct {
 
 	// PublicIp is the public IP associated with the container registry
-	PublicIp ReferenceResource `json:"publicIp"`
+	PublicIp ReferenceResourceCommon `json:"publicIp"`
 
 	// VPC is the VPC associated with the container registry
-	VPC ReferenceResource `json:"vpc"`
+	VPC ReferenceResourceCommon `json:"vpc"`
 
 	// Subnet is the subnet associated with the container registry
-	Subnet ReferenceResource `json:"subnet"`
+	Subnet ReferenceResourceCommon `json:"subnet"`
 
 	// SecurityGroup is the security group associated with the container registry
-	SecurityGroup ReferenceResource `json:"securityGroup"`
+	SecurityGroup ReferenceResourceCommon `json:"securityGroup"`
 
 	// BlockStorage is the block storage associated with the container registry
-	BlockStorage ReferenceResource `json:"blockStorage"`
+	BlockStorage ReferenceResourceCommon `json:"blockStorage"`
 
-	// BillingPlan is the billing plan for the container registry
-	BillingPlan *BillingPlan `json:"billingPlan,omitempty"`
+	// BillingPlanCommon is the billing plan for the container registry
+	BillingPlanCommon *BillingPlanCommon `json:"billingPlan,omitempty"`
 
 	// AdminUser is the administrator user for the container registry
 	AdminUser *UserCredentialCommon `json:"adminUser,omitempty"`
@@ -106,7 +106,7 @@ type ContainerRegistryResponse struct {
 	Metadata   ResourceMetadataResponse            `json:"metadata"`
 	Properties ContainerRegistryPropertiesResponse `json:"properties"`
 	Data       *ContainerRegistryDataResponse      `json:"data,omitempty"`
-	Status     ResourceStatus                      `json:"status,omitempty"`
+	Status     ResourceStatusResponse              `json:"status,omitempty"`
 }
 
 type ContainerRegistryListResponse struct {

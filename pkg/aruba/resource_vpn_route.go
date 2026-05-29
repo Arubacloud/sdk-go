@@ -162,8 +162,8 @@ func (r *VPNRoute) fromResponse(resp *types.VPNRouteResponse) {
 		v := resp.Properties.OnPremSubnet
 		r.onPremSubnet = &v
 	}
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		r.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		r.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if (r.projectID == "" || r.vpnTunnelID == "") && r.RespURI() != "" {
 		ids := parseURIIDs(r.RespURI())

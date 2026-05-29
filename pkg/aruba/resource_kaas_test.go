@@ -392,8 +392,8 @@ func TestKaaS_ToRequest(t *testing.T) {
 	if req.Properties.Storage.MaxCumulativeVolumeSize == nil || *req.Properties.Storage.MaxCumulativeVolumeSize != 100 {
 		t.Errorf("Storage = %+v", req.Properties.Storage)
 	}
-	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("BillingPlan.BillingPeriod = %v", req.Properties.BillingPlan)
+	if req.Properties.BillingPlanCommon == nil || req.Properties.BillingPlanCommon.BillingPeriod == nil || *req.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPlanCommon.BillingPeriod = %v", req.Properties.BillingPlanCommon)
 	}
 	if req.Properties.Identity == nil {
 		t.Fatal("Identity is nil")
@@ -440,8 +440,8 @@ func TestKaaS_ToUpdateRequest_MutableOnly(t *testing.T) {
 	if upd.Properties.Storage == nil || upd.Properties.Storage.MaxCumulativeVolumeSize == nil || *upd.Properties.Storage.MaxCumulativeVolumeSize != 200 {
 		t.Errorf("Storage = %v", upd.Properties.Storage)
 	}
-	if upd.Properties.BillingPlan == nil || upd.Properties.BillingPlan.BillingPeriod == nil || *upd.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("BillingPlan.BillingPeriod = %v", upd.Properties.BillingPlan)
+	if upd.Properties.BillingPlanCommon == nil || upd.Properties.BillingPlanCommon.BillingPeriod == nil || *upd.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPlanCommon.BillingPeriod = %v", upd.Properties.BillingPlanCommon)
 	}
 	if len(upd.Properties.NodePools) != 1 || upd.Properties.NodePools[0].Nodes != 5 {
 		t.Errorf("NodePools = %+v", upd.Properties.NodePools)
@@ -456,8 +456,8 @@ func TestKaaS_ToUpdateRequest_Empty(t *testing.T) {
 	if upd.Properties.Storage != nil {
 		t.Errorf("Storage should be nil when not set, got %v", upd.Properties.Storage)
 	}
-	if upd.Properties.BillingPlan != nil {
-		t.Errorf("BillingPlan should be nil when not set, got %v", upd.Properties.BillingPlan)
+	if upd.Properties.BillingPlanCommon != nil {
+		t.Errorf("BillingPlanCommon should be nil when not set, got %v", upd.Properties.BillingPlanCommon)
 	}
 }
 
@@ -492,7 +492,7 @@ func kaasTestResponse(name string) *types.KaaSResponse {
 			Name:             func() *string { s := name; return &s }(),
 			Tags:             []string{"tag1"},
 			LocationResponse: &types.LocationResponse{Value: RegionITBGBergamo},
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: "p",
 			},
 		},
@@ -517,7 +517,7 @@ func kaasTestResponse(name string) *types.KaaSResponse {
 			Storage: &types.StorageKubernetesCommon{
 				MaxCumulativeVolumeSize: &maxVol,
 			},
-			BillingPlan: &types.BillingPlan{BillingPeriod: &billingPeriod},
+			BillingPlanCommon: &types.BillingPlanCommon{BillingPeriod: &billingPeriod},
 			NodePools: &[]types.NodePoolPropertiesResponse{
 				{
 					Name:        &poolName,
@@ -528,7 +528,7 @@ func kaasTestResponse(name string) *types.KaaSResponse {
 				},
 			},
 		},
-		Status: types.ResourceStatus{
+		Status: types.ResourceStatusResponse{
 			State: &state,
 		},
 	}
@@ -635,7 +635,7 @@ func TestKaaSIDsFromRef_TypedRef(t *testing.T) {
 		Metadata: types.ResourceMetadataResponse{
 			ID:                      &id,
 			URI:                     &uri,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p2"},
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{ID: "p2"},
 		},
 	}
 	k.fromResponse(resp)
@@ -853,7 +853,7 @@ func TestKaaSClientAdapter_Create_WithBodyRefs_ViaFake(t *testing.T) {
 					Metadata: types.ResourceMetadataResponse{
 						ID:                      &id,
 						URI:                     &uri,
-						ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+						ProjectMetadataResponse: &types.ProjectMetadataResponse{ID: "p"},
 					},
 				},
 			}, nil
@@ -906,7 +906,7 @@ func TestKaaSClientAdapter_Update_Success(t *testing.T) {
 		Metadata: types.ResourceMetadataResponse{
 			ID:                      &id,
 			URI:                     &uri,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{ID: "p"},
 		},
 	})
 	k.WithKubernetesVersion("1.33.0").
@@ -967,7 +967,7 @@ func TestKaaSClientAdapter_Update_NonTwoXX(t *testing.T) {
 		Metadata: types.ResourceMetadataResponse{
 			ID:                      &id,
 			URI:                     &uri,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{ID: "p"},
 		},
 	})
 	_, err := adapter.Update(context.Background(), k)
@@ -1021,7 +1021,7 @@ func TestKaaSClientAdapter_Get_TypedRef(t *testing.T) {
 		Metadata: types.ResourceMetadataResponse{
 			ID:                      &id,
 			URI:                     &uri,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{ID: "p"},
 		},
 	})
 
@@ -1140,7 +1140,7 @@ func TestKaaS_DownloadKubeconfig_Success(t *testing.T) {
 		Metadata: types.ResourceMetadataResponse{
 			ID:                      &id,
 			URI:                     &uri,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{ID: "p"},
 		},
 	})
 	k.actions = adapter
@@ -1162,7 +1162,7 @@ func TestKaaS_DownloadKubeconfig_NoActionExecutor(t *testing.T) {
 		Metadata: types.ResourceMetadataResponse{
 			ID:                      &id,
 			URI:                     &uri,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{ID: "p"},
 		},
 	})
 	// k.actions is nil — locally-built wrapper
@@ -1193,7 +1193,7 @@ func TestKaaS_DownloadKubeconfig_NonTwoXX(t *testing.T) {
 		Metadata: types.ResourceMetadataResponse{
 			ID:                      &id,
 			URI:                     &uri,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{ID: "p"},
 		},
 	})
 	k.actions = adapter
@@ -1415,7 +1415,7 @@ func TestKaaS_DownloadKubeconfig_NilData(t *testing.T) {
 		Metadata: types.ResourceMetadataResponse{
 			ID:                      &id,
 			URI:                     &uri,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{ID: "p"},
 		},
 	})
 	k.actions = adapter
@@ -1575,7 +1575,7 @@ func TestKaaS_DownloadKubeconfig_LowLevelError(t *testing.T) {
 		Metadata: types.ResourceMetadataResponse{
 			ID:                      &id,
 			URI:                     &uri,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{ID: "p"},
 		},
 	})
 	k.actions = adapter
@@ -1613,7 +1613,7 @@ func TestKaaSClientAdapter_Update_WithErr(t *testing.T) {
 		Metadata: types.ResourceMetadataResponse{
 			ID:                      &id,
 			URI:                     &uri,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{ID: "p"},
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{ID: "p"},
 		},
 	})
 	k.addErr(fmt.Errorf("pre-existing error after hydration"))
@@ -1649,7 +1649,7 @@ func TestKaaS_FromResponse_SetsStatus(t *testing.T) {
 	k := &KaaS{}
 	state := types.State("Active")
 	k.fromResponse(&types.KaaSResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if k.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", k.State())

@@ -239,8 +239,8 @@ func (r *SecurityRule) fromResponse(resp *types.SecurityRuleResponse) {
 		r.target = &t
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		r.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		r.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if (r.vpcID == "" || r.projectID == "" || r.securityGroupID == "") && r.RespURI() != "" {
 		ids := parseURIIDs(r.RespURI())

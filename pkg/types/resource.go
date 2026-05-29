@@ -32,7 +32,7 @@ type LocationResponse struct {
 	Value   Region `json:"value,omitempty"`
 }
 
-type ProjectResponseMetadata struct {
+type ProjectMetadataResponse struct {
 	ID string `json:"id,omitempty"`
 }
 
@@ -40,15 +40,15 @@ type ResourceRequest struct {
 	Metadata *ResourceMetadataRequest `json:"metadata"`
 }
 
-type TypologyResponseMetadata struct {
+type TypologyMetadataResponse struct {
 	ID   string `json:"id,omitempty"`
 	Name string `json:"name,omitempty"`
 }
 
-type CategoryResponseMetadata struct {
+type CategoryMetadataResponse struct {
 	Name     string                   `json:"name,omitempty"`
 	Provider string                   `json:"provider,omitempty"`
-	Typology TypologyResponseMetadata `json:"typology,omitempty"`
+	Typology TypologyMetadataResponse `json:"typology,omitempty"`
 }
 
 type ResourceMetadataResponse struct {
@@ -56,9 +56,9 @@ type ResourceMetadataResponse struct {
 	URI                     *string                   `json:"uri,omitempty"`
 	Name                    *string                   `json:"name,omitempty"`
 	LocationResponse        *LocationResponse         `json:"location,omitempty"`
-	ProjectResponseMetadata *ProjectResponseMetadata  `json:"project,omitempty"`
+	ProjectMetadataResponse *ProjectMetadataResponse  `json:"project,omitempty"`
 	Tags                    []string                  `json:"tags,omitempty"`
-	Category                *CategoryResponseMetadata `json:"category,omitempty"`
+	Category                *CategoryMetadataResponse `json:"category,omitempty"`
 	CreationDate            *time.Time                `json:"creationDate,omitempty"`
 	CreatedBy               *string                   `json:"createdBy,omitempty"`
 	UpdateDate              *time.Time                `json:"updateDate,omitempty"`
@@ -69,26 +69,26 @@ type ResourceMetadataResponse struct {
 }
 
 // Status
-type PreviousStatus struct {
+type PreviousStatusResponse struct {
 	State        *State     `json:"state,omitempty"`
 	CreationDate *time.Time `json:"creationDate,omitempty"`
 }
 
-type DisableStatusInfo struct {
+type DisableStatusInfoResponse struct {
 	IsDisabled bool     `json:"isDisabled,omitempty"`
 	Reasons    []string `json:"reasons,omitempty"`
 }
 
-type ResourceStatus struct {
-	State             *State             `json:"state,omitempty"`
-	CreationDate      *time.Time         `json:"creationDate,omitempty"`
-	DisableStatusInfo *DisableStatusInfo `json:"disableStatusInfo,omitempty"`
-	PreviousStatus    *PreviousStatus    `json:"previousStatus,omitempty"`
-	FailureReason     *string            `json:"failureReason,omitempty"`
+type ResourceStatusResponse struct {
+	State                     *State                     `json:"state,omitempty"`
+	CreationDate              *time.Time                 `json:"creationDate,omitempty"`
+	DisableStatusInfoResponse *DisableStatusInfoResponse `json:"disableStatusInfo,omitempty"`
+	PreviousStatusResponse    *PreviousStatusResponse    `json:"previousStatus,omitempty"`
+	FailureReason             *string                    `json:"failureReason,omitempty"`
 }
 
-// LinkedResource represents a resource linked
-type LinkedResource struct {
+// LinkedResourceCommon represents a resource linked
+type LinkedResourceCommon struct {
 	// URI of the linked resource
 	URI string `json:"uri"`
 
@@ -109,13 +109,13 @@ const (
 	BillingPeriodYear  BillingPeriod = "Year"
 )
 
-// BillingPlan is the nested wire wrapper used by resources whose API encodes
+// BillingPlanCommon is the nested wire wrapper used by resources whose API encodes
 // billing inside a billingPlan object rather than as a flat billingPeriod field.
-type BillingPlan struct {
+type BillingPlanCommon struct {
 	BillingPeriod *BillingPeriod `json:"billingPeriod,omitempty"`
 }
 
-type ReferenceResource struct {
+type ReferenceResourceCommon struct {
 	URI string `json:"uri"`
 }
 

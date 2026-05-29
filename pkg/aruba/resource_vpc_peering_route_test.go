@@ -174,8 +174,8 @@ func TestVPCPeeringRoute_ToRequestRoundTrip(t *testing.T) {
 	if req.Properties.RemoteNetworkAddress != "192.168.0.0/24" {
 		t.Errorf("Properties.RemoteNetworkAddress = %q", req.Properties.RemoteNetworkAddress)
 	}
-	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("Properties.BillingPlan.BillingPeriod = %v", req.Properties.BillingPlan)
+	if req.Properties.BillingPlanCommon == nil || req.Properties.BillingPlanCommon.BillingPeriod == nil || *req.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("Properties.BillingPlanCommon.BillingPeriod = %v", req.Properties.BillingPlanCommon)
 	}
 
 	// Unset CIDRs must produce empty strings.
@@ -191,16 +191,16 @@ func TestVPCPeeringRoute_ToRequestRoundTrip(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------
-// BillingPlan always emitted (value type, no omitempty)
+// BillingPlanCommon always emitted (value type, no omitempty)
 // --------------------------------------------------------------------------
 
 func TestVPCPeeringRoute_ToRequest_BillingPeriodAlwaysEmitted(t *testing.T) {
 	r := NewVPCPeeringRoute().
 		Named("bare")
 	req := r.RawRequest()
-	// BillingPlan is always emitted — defaults to Hour when not explicitly set.
-	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("BillingPlan.BillingPeriod should default to Hour when not set, got %v", req.Properties.BillingPlan)
+	// BillingPlanCommon is always emitted — defaults to Hour when not explicitly set.
+	if req.Properties.BillingPlanCommon == nil || req.Properties.BillingPlanCommon.BillingPeriod == nil || *req.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPlanCommon.BillingPeriod should default to Hour when not set, got %v", req.Properties.BillingPlanCommon)
 	}
 }
 
@@ -218,19 +218,19 @@ func vpcPeeringRouteTestResponse(id, name, uri, projectID string) *types.VPCPeer
 			Name:             &name,
 			Tags:             []string{"route-tag"},
 			LocationResponse: loc,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: projectID,
 			},
 		},
 		Properties: types.VPCPeeringRoutePropertiesResponse{
 			LocalNetworkAddress:  "10.0.0.0/24",
 			RemoteNetworkAddress: "192.168.0.0/24",
-			BillingPlan: func() *types.BillingPlan {
+			BillingPlanCommon: func() *types.BillingPlanCommon {
 				v := BillingPeriodHour
-				return &types.BillingPlan{BillingPeriod: &v}
+				return &types.BillingPlanCommon{BillingPeriod: &v}
 			}(),
 		},
-		Status: types.ResourceStatus{
+		Status: types.ResourceStatusResponse{
 			State: &state,
 		},
 	}
@@ -317,7 +317,7 @@ func TestVPCPeeringRoute_FromResponseURIBackfill_HyphenForm(t *testing.T) {
 			ID:   &id,
 			URI:  &uri,
 			Name: &name,
-			// ProjectResponseMetadata intentionally nil
+			// ProjectMetadataResponse intentionally nil
 		},
 	}
 	r := &VPCPeeringRoute{}
@@ -499,8 +499,8 @@ func TestVPCPeeringRoutesClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Properties.LocalNetworkAddress != "10.0.0.0/24" {
 		t.Errorf("request LocalNetworkAddress = %q", gotBody.Properties.LocalNetworkAddress)
 	}
-	if gotBody.Properties.BillingPlan == nil || gotBody.Properties.BillingPlan.BillingPeriod == nil || *gotBody.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("request BillingPlan.BillingPeriod = %v", gotBody.Properties.BillingPlan)
+	if gotBody.Properties.BillingPlanCommon == nil || gotBody.Properties.BillingPlanCommon.BillingPeriod == nil || *gotBody.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("request BillingPlanCommon.BillingPeriod = %v", gotBody.Properties.BillingPlanCommon)
 	}
 }
 
@@ -1053,7 +1053,7 @@ func TestVPCPeeringRoute_FromResponse_SetsStatus(t *testing.T) {
 	r := &VPCPeeringRoute{}
 	state := types.State("Active")
 	r.fromResponse(&types.VPCPeeringRouteResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if r.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", r.State())

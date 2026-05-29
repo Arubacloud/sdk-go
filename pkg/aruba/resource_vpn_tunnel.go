@@ -235,7 +235,7 @@ func (t *VPNTunnel) toRequest() types.VPNTunnelRequest {
 		}
 		props.VPNClientSettingsCommon = cs
 	}
-	props.BillingPlan = &types.BillingPlan{BillingPeriod: defaultBillingPeriod(t.billingPeriod)}
+	props.BillingPlanCommon = &types.BillingPlanCommon{BillingPeriod: defaultBillingPeriod(t.billingPeriod)}
 	return types.VPNTunnelRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: t.toMetadata(),
@@ -269,8 +269,8 @@ func (t *VPNTunnel) fromResponse(resp *types.VPNTunnelResponse) {
 		p := *resp.Properties.VPNClientProtocol
 		t.vpnClientProtocol = &p
 	}
-	if resp.Properties.BillingPlan != nil && resp.Properties.BillingPlan.BillingPeriod != nil {
-		t.billingPeriod = resp.Properties.BillingPlan.BillingPeriod
+	if resp.Properties.BillingPlanCommon != nil && resp.Properties.BillingPlanCommon.BillingPeriod != nil {
+		t.billingPeriod = resp.Properties.BillingPlanCommon.BillingPeriod
 	}
 	if cs := resp.Properties.VPNClientSettingsCommon; cs != nil {
 		if cs.PeerClientPublicIP != nil {
@@ -317,8 +317,8 @@ func (t *VPNTunnel) fromResponse(resp *types.VPNTunnelResponse) {
 		t.ipConfig = c
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		t.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		t.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if t.projectID == "" && t.RespURI() != "" {
 		if id := parseURIIDs(t.RespURI())["projects"]; id != "" {

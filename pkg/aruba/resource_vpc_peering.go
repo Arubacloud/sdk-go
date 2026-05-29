@@ -32,7 +32,7 @@ type VPCPeering struct {
 	linkedMixin
 	httpEnvelopeMixin
 
-	remoteVPC *types.ReferenceResource
+	remoteVPC *types.ReferenceResourceCommon
 	response  *types.VPCPeeringResponse
 }
 
@@ -82,7 +82,7 @@ func (p *VPCPeering) PeeredWith(v Ref) *VPCPeering {
 		p.addErr(fmt.Errorf("PeeredWith: remote VPC Ref has empty URI"))
 		return p
 	}
-	p.remoteVPC = &types.ReferenceResource{URI: uri}
+	p.remoteVPC = &types.ReferenceResourceCommon{URI: uri}
 	return p
 }
 
@@ -151,8 +151,8 @@ func (p *VPCPeering) fromResponse(resp *types.VPCPeeringResponse) {
 		p.remoteVPC = &rv
 	}
 
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		p.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		p.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if (p.vpcID == "" || p.projectID == "") && p.RespURI() != "" {
 		ids := parseURIIDs(p.RespURI())

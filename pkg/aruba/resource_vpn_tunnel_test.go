@@ -394,8 +394,8 @@ func TestVPNTunnel_ToRequestRoundTrip(t *testing.T) {
 	if req.Properties.VPNClientProtocol == nil || *req.Properties.VPNClientProtocol != VPNClientProtocolIKEv2 {
 		t.Errorf("Properties.VPNClientProtocol = %v", req.Properties.VPNClientProtocol)
 	}
-	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("BillingPlan.BillingPeriod = %v", req.Properties.BillingPlan)
+	if req.Properties.BillingPlanCommon == nil || req.Properties.BillingPlanCommon.BillingPeriod == nil || *req.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPlanCommon.BillingPeriod = %v", req.Properties.BillingPlanCommon)
 	}
 	if cs := req.Properties.VPNClientSettingsCommon; cs == nil {
 		t.Fatal("VPNClientSettingsCommon must be set")
@@ -437,8 +437,8 @@ func TestVPNTunnel_ToRequest_NoBillingPeriod_DefaultsToHour(t *testing.T) {
 	tun := NewVPNTunnel().
 		Named("bare")
 	req := tun.RawRequest()
-	if req.Properties.BillingPlan == nil || req.Properties.BillingPlan.BillingPeriod == nil || *req.Properties.BillingPlan.BillingPeriod != BillingPeriodHour {
-		t.Errorf("BillingPlan.BillingPeriod should default to Hour when not set, got %+v", req.Properties.BillingPlan)
+	if req.Properties.BillingPlanCommon == nil || req.Properties.BillingPlanCommon.BillingPeriod == nil || *req.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
+		t.Errorf("BillingPlanCommon.BillingPeriod should default to Hour when not set, got %+v", req.Properties.BillingPlanCommon)
 	}
 }
 
@@ -499,19 +499,19 @@ func vpnTunnelTestResponse(id, name, uri, projectID string) *types.VPNTunnelResp
 			Name:             &name,
 			Tags:             []string{"vpn-tag"},
 			LocationResponse: loc,
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: projectID,
 			},
 		},
 		Properties: types.VPNTunnelPropertiesResponse{
 			VPNType:           &vpnType,
 			VPNClientProtocol: &proto,
-			BillingPlan:       &types.BillingPlan{BillingPeriod: &bp},
+			BillingPlanCommon: &types.BillingPlanCommon{BillingPeriod: &bp},
 			VPNClientSettingsCommon: &types.VPNClientSettingsCommon{
 				PeerClientPublicIP: &peerIP,
 			},
 		},
-		Status: types.ResourceStatus{
+		Status: types.ResourceStatusResponse{
 			State: &state,
 		},
 	}
@@ -593,7 +593,7 @@ func TestVPNTunnel_FromResponseURIBackfill(t *testing.T) {
 			ID:   &id,
 			URI:  &uri,
 			Name: &name,
-			// ProjectResponseMetadata intentionally nil
+			// ProjectMetadataResponse intentionally nil
 		},
 	}
 	tun := &VPNTunnel{}
@@ -1312,7 +1312,7 @@ func TestVPNTunnel_FromResponse_SetsStatus(t *testing.T) {
 	tun := &VPNTunnel{}
 	state := types.State("Active")
 	tun.fromResponse(&types.VPNTunnelResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if tun.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", tun.State())
@@ -1393,8 +1393,8 @@ func TestVPNTunnel_FromResponse_RehydratesSubBuilders(t *testing.T) {
 				},
 			},
 			IPConfigurationsCommon: &types.IPConfigurationsCommon{
-				VPC:      &types.ReferenceResource{URI: vpcURI},
-				PublicIP: &types.ReferenceResource{URI: pubIPURI},
+				VPC:      &types.ReferenceResourceCommon{URI: vpcURI},
+				PublicIP: &types.ReferenceResourceCommon{URI: pubIPURI},
 				Subnet:   &types.SubnetInfoCommon{Name: "sn-1", CIDR: "10.0.0.0/24"},
 			},
 		},

@@ -102,10 +102,10 @@ func (sg *SecurityGroup) IsDefault() bool {
 	return *sg.defaultSG
 }
 
-// Rules returns the linked security group rules as a slice of LinkedResource.
+// Rules returns the linked security group rules as a slice of LinkedResourceCommon.
 // This is an alias for LinkedResources(), exposing the rules under a domain-specific name.
 // Returns nil when no rules are linked.
-func (sg *SecurityGroup) Rules() []types.LinkedResource {
+func (sg *SecurityGroup) Rules() []types.LinkedResourceCommon {
 	return sg.LinkedResources()
 }
 
@@ -140,9 +140,9 @@ func (sg *SecurityGroup) fromResponse(resp *types.SecurityGroupResponse) {
 	d := resp.Properties.Default
 	sg.defaultSG = &d
 
-	// Backfill ancestor IDs: prefer ProjectResponseMetadata, then URI parse.
-	if resp.Metadata.ProjectResponseMetadata != nil && resp.Metadata.ProjectResponseMetadata.ID != "" {
-		sg.projectID = resp.Metadata.ProjectResponseMetadata.ID
+	// Backfill ancestor IDs: prefer ProjectMetadataResponse, then URI parse.
+	if resp.Metadata.ProjectMetadataResponse != nil && resp.Metadata.ProjectMetadataResponse.ID != "" {
+		sg.projectID = resp.Metadata.ProjectMetadataResponse.ID
 	}
 	if (sg.vpcID == "" || sg.projectID == "") && sg.RespURI() != "" {
 		ids := parseURIIDs(sg.RespURI())

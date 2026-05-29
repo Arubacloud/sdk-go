@@ -2,9 +2,9 @@ package types
 
 type LoadBalancerPropertiesResponse struct {
 	// LinkedResources array of resources linked to the Load Balancer (nullable)
-	LinkedResources []LinkedResource   `json:"linkedResources,omitempty"`
-	Address         *string            `json:"address,omitempty"`
-	VPC             *ReferenceResource `json:"vpc,omitempty"`
+	LinkedResources []LinkedResourceCommon   `json:"linkedResources,omitempty"`
+	Address         *string                  `json:"address,omitempty"`
+	VPC             *ReferenceResourceCommon `json:"vpc,omitempty"`
 }
 
 type LoadBalancerResponse struct {
@@ -13,7 +13,7 @@ type LoadBalancerResponse struct {
 	// Spec contains the Load Balancer specification
 	Properties LoadBalancerPropertiesResponse `json:"properties"`
 
-	Status ResourceStatus `json:"status,omitempty"`
+	Status ResourceStatusResponse `json:"status,omitempty"`
 }
 
 type LoadBalancerListResponse struct {

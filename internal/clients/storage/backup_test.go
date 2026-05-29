@@ -246,7 +246,7 @@ func TestCreateBackup(t *testing.T) {
 			},
 			Properties: types.StorageBackupPropertiesRequest{
 				StorageBackupType: types.StorageBackupTypeFull,
-				Origin:            types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockStorages/volume-456"},
+				Origin:            types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Storage/blockStorages/volume-456"},
 				RetentionDays:     ptr.To(20),
 				BillingPeriod:     (*types.BillingPeriod)(ptr.To("Yearly")),
 			},
@@ -412,7 +412,7 @@ func TestUpdateBackup(t *testing.T) {
 			},
 			Properties: types.StorageBackupPropertiesRequest{
 				StorageBackupType: types.StorageBackupTypeIncremental,
-				Origin:            types.ReferenceResource{URI: "/projects/test-project/providers/Aruba.Storage/blockStorages/volume-123"},
+				Origin:            types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Storage/blockStorages/volume-123"},
 				RetentionDays:     ptr.To(30),
 				BillingPeriod:     (*types.BillingPeriod)(ptr.To("Monthly")),
 			},

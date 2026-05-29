@@ -5,7 +5,7 @@ type KeyPairPropertiesRequest struct {
 }
 
 type KeyPairPropertiesResponse struct {
-	LinkedResources []LinkedResource `json:"linkedResources,omitempty"`
+	LinkedResources []LinkedResourceCommon `json:"linkedResources,omitempty"`
 
 	Value string `json:"value"`
 }
@@ -19,7 +19,7 @@ type KeyPairRequest struct {
 type KeyPairResponse struct {
 	Metadata   ResourceMetadataResponse  `json:"metadata"`
 	Properties KeyPairPropertiesResponse `json:"properties"`
-	Status     ResourceStatus            `json:"status"`
+	Status     ResourceStatusResponse    `json:"status"`
 }
 
 type KeyPairListResponse struct {

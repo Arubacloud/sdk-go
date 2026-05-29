@@ -52,10 +52,10 @@ func applyWaitOptions(opts []WaitOption) waitOptions {
 
 type statusMixin struct {
 	refreshMixin
-	status *types.ResourceStatus
+	status *types.ResourceStatusResponse
 }
 
-func (m *statusMixin) setStatus(s *types.ResourceStatus) { m.status = s }
+func (m *statusMixin) setStatus(s *types.ResourceStatusResponse) { m.status = s }
 
 // State returns the current lifecycle state, or the zero State ("").
 func (m *statusMixin) State() types.State {
@@ -67,18 +67,18 @@ func (m *statusMixin) State() types.State {
 
 // IsDisabled returns true when the server has disabled this resource.
 func (m *statusMixin) IsDisabled() bool {
-	if m.status == nil || m.status.DisableStatusInfo == nil {
+	if m.status == nil || m.status.DisableStatusInfoResponse == nil {
 		return false
 	}
-	return m.status.DisableStatusInfo.IsDisabled
+	return m.status.DisableStatusInfoResponse.IsDisabled
 }
 
 // DisableReasons returns the reasons for disabling, or nil.
 func (m *statusMixin) DisableReasons() []string {
-	if m.status == nil || m.status.DisableStatusInfo == nil {
+	if m.status == nil || m.status.DisableStatusInfoResponse == nil {
 		return nil
 	}
-	return m.status.DisableStatusInfo.Reasons
+	return m.status.DisableStatusInfoResponse.Reasons
 }
 
 // FailureReason returns the failure reason string, or "".
@@ -91,10 +91,10 @@ func (m *statusMixin) FailureReason() string {
 
 // PreviousState returns the previous lifecycle state, or the zero State ("").
 func (m *statusMixin) PreviousState() types.State {
-	if m.status == nil || m.status.PreviousStatus == nil || m.status.PreviousStatus.State == nil {
+	if m.status == nil || m.status.PreviousStatusResponse == nil || m.status.PreviousStatusResponse.State == nil {
 		return ""
 	}
-	return *m.status.PreviousStatus.State
+	return *m.status.PreviousStatusResponse.State
 }
 
 // WaitUntilActive blocks until the resource reaches the "Active" state.

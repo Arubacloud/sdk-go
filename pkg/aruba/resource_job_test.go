@@ -429,7 +429,7 @@ func jobTestResponse(name string) *types.JobResponse {
 			Name:             func() *string { s := name; return &s }(),
 			Tags:             []string{"tag1"},
 			LocationResponse: &types.LocationResponse{Value: RegionITBGBergamo},
-			ProjectResponseMetadata: &types.ProjectResponseMetadata{
+			ProjectMetadataResponse: &types.ProjectMetadataResponse{
 				ID: "p",
 			},
 		},
@@ -448,7 +448,7 @@ func jobTestResponse(name string) *types.JobResponse {
 				},
 			},
 		},
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	}
 }
 
@@ -1137,7 +1137,7 @@ func TestJob_FromResponse_SetsStatus(t *testing.T) {
 	j := &Job{}
 	state := types.State("Active")
 	j.fromResponse(&types.JobResponse{
-		Status: types.ResourceStatus{State: &state},
+		Status: types.ResourceStatusResponse{State: &state},
 	})
 	if j.State() != types.StateActive {
 		t.Errorf("State() = %q after fromResponse, want Active", j.State())
