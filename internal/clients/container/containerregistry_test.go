@@ -18,7 +18,7 @@ func TestListContainerRegistry(t *testing.T) {
 		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == "GET" && r.URL.Path == "/projects/test-project/providers/Aruba.Container/registries" {
 				w.WriteHeader(http.StatusOK)
-				resp := types.ContainerRegistryList{
+				resp := types.ContainerRegistryListResponse{
 					ListResponse: types.ListResponse{Total: 1},
 					Values: []types.ContainerRegistryResponse{
 						{
@@ -45,7 +45,7 @@ func TestListContainerRegistry(t *testing.T) {
 									v := types.BillingPeriodHour
 									return &types.BillingPlan{BillingPeriod: &v}
 								}(),
-								AdminUser: &types.UserCredential{
+								AdminUser: &types.UserCredentialCommon{
 									Username: "admin",
 								},
 								ConcurrentUsers: ptr.To("100"),
@@ -213,7 +213,7 @@ func TestGetContainerRegistry(t *testing.T) {
 							v := types.BillingPeriodHour
 							return &types.BillingPlan{BillingPeriod: &v}
 						}(),
-						AdminUser: &types.UserCredential{
+						AdminUser: &types.UserCredentialCommon{
 							Username: "admin",
 						},
 						ConcurrentUsers: ptr.To("100"),
@@ -372,7 +372,7 @@ func TestCreateContainerRegistry(t *testing.T) {
 							v := types.BillingPeriodHour
 							return &types.BillingPlan{BillingPeriod: &v}
 						}(),
-						AdminUser: &types.UserCredential{
+						AdminUser: &types.UserCredentialCommon{
 							Username: "admin",
 						},
 						ConcurrentUsers: ptr.To("100"),
@@ -405,7 +405,7 @@ func TestCreateContainerRegistry(t *testing.T) {
 					v := types.BillingPeriod("Hour")
 					return &types.BillingPlan{BillingPeriod: &v}
 				}(),
-				AdminUser:       &types.UserCredential{Username: "admin"},
+				AdminUser:       &types.UserCredentialCommon{Username: "admin"},
 				ConcurrentUsers: ptr.To("100"),
 			},
 		}
@@ -613,7 +613,7 @@ func TestUpdateContainerRegistry(t *testing.T) {
 							v := types.BillingPeriodHour
 							return &types.BillingPlan{BillingPeriod: &v}
 						}(),
-						AdminUser: &types.UserCredential{
+						AdminUser: &types.UserCredentialCommon{
 							Username: "admin",
 						},
 						ConcurrentUsers: ptr.To("100"),
@@ -646,7 +646,7 @@ func TestUpdateContainerRegistry(t *testing.T) {
 					v := types.BillingPeriod("Hour")
 					return &types.BillingPlan{BillingPeriod: &v}
 				}(),
-				AdminUser:       &types.UserCredential{Username: "admin"},
+				AdminUser:       &types.UserCredentialCommon{Username: "admin"},
 				ConcurrentUsers: ptr.To("100"),
 			},
 		}

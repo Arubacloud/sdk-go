@@ -309,7 +309,7 @@ func (r *ContainerRegistry) toRequest() types.ContainerRegistryRequest {
 		props.BlockStorage = types.ReferenceResource{URI: *r.blockStorageRef}
 	}
 	if r.adminUsername != nil {
-		props.AdminUser = &types.UserCredential{Username: *r.adminUsername}
+		props.AdminUser = &types.UserCredentialCommon{Username: *r.adminUsername}
 	}
 	if r.concurrentUsers != nil {
 		props.ConcurrentUsers = r.concurrentUsers
@@ -417,7 +417,7 @@ func containerRegistryIDsFromRef(ref Ref) (projectID, registryID string, err err
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type containerRegistriesLowLevelClient interface {
-	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ContainerRegistryList], error)
+	List(ctx context.Context, projectID string, params *types.RequestParameters) (*types.Response[types.ContainerRegistryListResponse], error)
 	Get(ctx context.Context, projectID, registryID string, params *types.RequestParameters) (*types.Response[types.ContainerRegistryResponse], error)
 	Create(ctx context.Context, projectID string, body types.ContainerRegistryRequest, params *types.RequestParameters) (*types.Response[types.ContainerRegistryResponse], error)
 	Update(ctx context.Context, projectID, registryID string, body types.ContainerRegistryRequest, params *types.RequestParameters) (*types.Response[types.ContainerRegistryResponse], error)
@@ -608,7 +608,7 @@ func (a *containerRegistriesClientAdapter) List(ctx context.Context, parent Ref,
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*ContainerRegistry], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*ContainerRegistry], error) {
-		fetch := listPageFetch[types.ContainerRegistryList](a.rest, opts)
+		fetch := listPageFetch[types.ContainerRegistryListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr
