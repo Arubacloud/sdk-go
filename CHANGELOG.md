@@ -101,6 +101,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   Create. Both helpers now print/check the composite `{user, database, role}` identifier so
   successful grants are no longer reported as `<not created>`.
 
+- **`examples/all-resources` VPN Route `cloudSubnet`** — the route was hardcoded to `10.0.0.0/24`,
+  which did not match the example's actual VPC topology and was rejected by the API. The example now
+  reads the CIDR from the Basic Subnet (`subnet.CIDR()`) and waits for that subnet to reach `Active`
+  before creating the route.
+
 - **`examples/all-resources` resource summary** — unified `summaryRow` helper; every
   `ResourceCollection` field is now printed (four entries were previously omitted);
   nil/failed entries show `<not created>` instead of being silently skipped.
