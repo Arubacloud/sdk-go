@@ -18,97 +18,20 @@ Issues are grouped by severity. Address Critical items before new features ship;
 | [TD-015](#td-015) | `DefaultWaitFor` timeout too short | Medium | XS | Medium |
 | [TD-016](#td-016) | No structured logging | Medium | L | Medium |
 | [TD-017](#td-017) | `WARN` writes to stdout | Medium | XS | Low |
+| [TD-023](#td-023) | `KaasSecurityGroupPropertiesResponse` mixed casing | Low | XS | Low |
+| [TD-024](#td-024) | Stale TODO comments in `pkg/aruba/aruba.go` | Low | XS | Low |
+| [TD-025](#td-025) | `pkg/util/middleware` package name is `restclient` | Low | S | Low |
+| [TD-026](#td-026) | No lint rule enforces Request/Response/Common naming | Low | S | Medium |
+| [TD-027](#td-027) | `Dto` suffix on enum-string constants | Low | XS | Low |
 | [TD-020](#td-020) | Test coverage gaps | Low | XL | High |
-| [TD-021](#td-021) | Create responses validate metadata ID/URI/Name | Low | M | Medium |
 
 ### Recommended execution order
 
-**Wave 1 — Quick Wins** (XS effort, ship same PR): TD-009, TD-014, TD-015, TD-017
+**Wave 1 — Quick Wins** (XS effort, ship same PR): TD-009, TD-014, TD-015, TD-017, TD-023, TD-024, TD-027
 
-**Wave 2 — High-value focused fixes** (S effort, High+ impact): TD-003, TD-012
+**Wave 2 — High-value focused fixes** (S effort, High+ impact): TD-003, TD-012, TD-025, TD-026
 
-**Wave 3 — Medium fixes** (S effort, Medium/Low impact): *(all resolved)*
-
-**Wave 4 — Large refactors** (L/XL, plan separately): TD-010, TD-016, TD-020, TD-021
-
----
-
-## Resolved
-
-### TD-006 · Goroutine leak in `WaitFor` on context cancellation — [#116](https://github.com/Arubacloud/sdk-go/issues/116) · **Closed as invalid**
-The original claim was that the goroutine writes to `resultCh` unconditionally without guarding on `ctx.Done()`. Investigation of `pkg/async/async_client.go` shows:
-1. The goroutine checks `ctxTimeout.Done()` via `select` before each retry attempt (lines 115-120) and after each failed attempt before sleeping (lines 146-152).
-2. The result channel is buffered (`make(chan Result[T], 1)`), so the single channel send the goroutine performs can never block.
-
-No goroutine leak exists. Issue #116 closed as invalid.
-
----
-
-### TD-004 · Interceptor `Bind()` and `Intercept()` are not thread-safe — [#114](https://github.com/Arubacloud/sdk-go/issues/114) · **Closed as working as intended**
-The original claim was that concurrent calls to `Bind()` and `Intercept()` produce an unsynchronized read/write on the `interceptFuncs` slice. The proposed fix was a `sync.RWMutex` guarding both methods.
-
-Investigation shows that `Bind` is a construction/setup method — it is only ever called from `tokenmanager.NewStandard` (`internal/impl/auth/tokenmanager/standard/standard.go:54`) during client bootstrap, before the interceptor enters the hot request path. A sibling constructor `NewInterceptorWithFuncs` exists for fully-initialized construction. The race only materialises if a caller mutates the interceptor after bootstrap, which is not the intended usage.
-
-The root cause was the absence of a documented contract. Resolved by adding godoc to `Interceptable.Bind` (`internal/ports/interceptor/interceptor.go`) and the standard impl (`internal/impl/interceptor/standard/standard.go`) stating that `Bind` is construction-only and not safe for concurrent use with `Intercept`. Adding a mutex to the hot path to defend against an unsupported usage pattern was rejected as an unnecessary tradeoff. Issue #114 closed as working as intended.
-
----
-
-### TD-008 · Polling loop always sleeps before the first attempt, discards final state — [#118](https://github.com/Arubacloud/sdk-go/issues/118) · **Resolved**
-`internal/restclient/polling.go` — two bugs in `WaitForResourceState`: (1) `time.Sleep(config.Interval)` was called at the top of the loop, wasting a full interval before the first status check; (2) when the last attempt's getter returned an error, the `continue` skipped the timeout-with-state branch, causing the final timeout error to be generic rather than including the last known state.
-
-Resolved by restructuring the loop: the sleep moved to the bottom, guarded by `if attempt < config.MaxAttempts`; a `lastState` / `lastErr` pair is tracked across iterations so the post-loop timeout error always carries the last observed state (or wraps the last getter error when no state was ever retrieved). `slices.Contains` replaces the manual success/failure loops. First polling tests added in `internal/restclient/polling_test.go`. Issue #118 closed.
-
----
-
-### TD-013 · Memory proxy `SaveToken` increments ticket before confirming persistent write — [#123](https://github.com/Arubacloud/sdk-go/issues/123) · **Resolved**
-`internal/impl/auth/tokenrepository/memory/memory.go` — `saveTicket++` ran before `r.persistentRepository.SaveToken(...)`, violating the double-checked-locking invariant that "a changed ticket means the cache was successfully refreshed". On a failed persistent write the ticket was already bumped, causing concurrent `FetchToken` calls to skip the persistent re-fetch and serve a stale (or nil) in-memory token.
-
-Resolved by reordering: persistent write first; on success, increment ticket and update cache; on error, return immediately leaving both unchanged. Two regression tests added to `memory_test.go`: a unit assertion on the `saveTicket` counter after a failed save, and a behavioural subtest that verifies a subsequent `FetchToken` still reaches the persistent store. Issue #123 closed.
-
----
-
-### TD-019 · Missing compile-time interface satisfaction checks — [#129](https://github.com/Arubacloud/sdk-go/issues/129) · **Resolved**
-Guards were missing for all ~24 resource-level client impls under `internal/clients/`. Adding them directly inside those packages would create an import cycle (`pkg/aruba/builder.go` already imports every internal client package). The guards are in `pkg/aruba/assertions_test.go` as a `TestCompileTimeInterfaceGuards` function that declares typed local variables via `:=` — a compile-time-only check that runs no code in production binaries.
-
-The security domain is intentionally excluded: `KMSClient`, `KeyClient`, and `KmipClient` in `pkg/aruba/security.go` are type aliases to concrete pointer types, not interfaces, so satisfaction guards would be degenerate.
-
-The issue description incorrectly identified both logger implementations as missing guards; both already had them (`internal/impl/logger/native/logger.go:11`, `internal/impl/logger/noop/logger.go:6`). Three `for i := 0; i < N; i++` loops in test files were also modernized to `for range N` while in the area. Issue #129 closed.
-
-When TD-018 was subsequently resolved (#146), the multi-arg constructor calls in `assertions.go` were updated to use real (non-nil-dep) sentinel instances to avoid init-time panics.
-
----
-
-### TD-018 · Injected concrete dependencies not nil-checked in constructors — [#128](https://github.com/Arubacloud/sdk-go/issues/128) · **Resolved**
-The issue named two constructors (`NewSecurityGroupsClientImpl`, `NewSecurityGroupRulesClientImpl`). A repo-wide grep (`^func New\w+ClientImpl\(.*,.*\)` against `internal/clients/`) found five constructors in total that accept injected `*xxxClientImpl` dependencies beyond the standard `*restclient.Client`: the two network ones named in the issue, `NewSubnetsClientImpl` (also network), `NewSnapshotsClientImpl`, and `NewRestoreClientImpl` (storage).
-
-All five now `panic("... is required and cannot be nil")` when the injected dep is nil. Corresponding panic-on-nil tests added to the paired test files. `pkg/aruba/assertions_test.go` updated to wire real sentinel instances for the affected constructors (avoiding init-time panics). Issue #128 closed.
-
----
-
-### TD-001 · Parameter order swap in file token repository constructor — [#111](https://github.com/Arubacloud/sdk-go/issues/111) · **Resolved**
-`pkg/aruba/builder.go` now calls `NewFileTokenRepository(clientID, options.baseDir)` (correct order). Verified in the current code.
-
----
-
-### TD-002 · Static token is never stored — access token parameter silently ignored — [#112](https://github.com/Arubacloud/sdk-go/issues/112) · **Resolved**
-`internal/impl/auth/tokenrepository/memory/memory.go` — `NewTokenRepositoryWithAccessToken` now returns `&TokenRepository{token: &auth.Token{AccessToken: accessToken}}`. Verified in the current code.
-
----
-
-### TD-005 · Typo in builder function name: `buildDetebaseClient` — [#115](https://github.com/Arubacloud/sdk-go/issues/115) · **Resolved**
-The function is now correctly named `buildDatabaseClient` in `pkg/aruba/builder.go`. Verified in the current code.
-
----
-
-### TD-007 · Variable shadowing creates unreachable `AsyncClient` in `WaitFor` nil-call path — [#117](https://github.com/Arubacloud/sdk-go/issues/117) · **Resolved**
-`pkg/async/async_client.go` — the nil-check on `callFunc` was moved before the outer `asyncClient` variable is created, eliminating the shadowing. Both early-return paths return their own `AsyncClient` directly with no outer variable to shadow. Verified in the current code.
-
----
-
-### TD-011 · Silent failure when parsing error response body — [#121](https://github.com/Arubacloud/sdk-go/issues/121) · **Resolved**
-`pkg/types/utils.go` — when a 4xx/5xx response body could not be unmarshalled as JSON, the error was silently discarded and `response.Error` remained `nil`.
-
-Resolved by adding a `DebugLogger` interface to `pkg/types` (one method: `Debugf`) and making `ParseResponseBody` accept it as a required parameter. On JSON-unmarshal failure the function now calls `logger.Debugf(...)` naming the HTTP status code, rather than WARN as the issue proposed — non-JSON error bodies are expected behaviour from this API (proxy HTML pages, plain-text 502s). Using a local interface keeps `pkg/types` independent of `internal/ports/logger`. All 31 call-site files across `internal/clients/` were updated to pass `c.client.Logger()`. Four unit tests added in `pkg/types/utils_test.go`. Issue #121 closed.
+**Wave 3 — Large refactors** (L/XL, plan separately): TD-010, TD-016, TD-020
 
 ---
 
@@ -182,13 +105,15 @@ Replace all manual implementations with calls to this helper.
 ---
 
 ### TD-015 · `DefaultWaitFor` timeout of 60 s is too short for cloud operations — [#125](https://github.com/Arubacloud/sdk-go/issues/125)
-`pkg/async/async_client.go` — cloud resource provisioning (VMs, databases, VPCs) routinely takes several minutes. The defaults (`retries=10`, `baseDelay=10s`, `timeout=60s`) mean callers must always pass custom values or operations will time out spuriously.
+`pkg/async/async_client.go` — constants are `DefaultRetries=60`, `DefaultBaseDelay=10s`, `DefaultTimeout=600s`. The original issue filed against a 60 s default has been resolved in code (timeout is now 600 s). However, the constant names (`DefaultRetries=60`) could be confused with a 60 s timeout. The documentation should explicitly state that timeout is 600 s (10 minutes) and retries is the poll-attempt count.
 
-**Fix:** Raise defaults to at least `retries=36`, `baseDelay=10s`, `timeout=600s`, or expose a named constant set (e.g., `LongOperationDefaults`) for callers to use.
+**Status:** Resolved in code; remaining work is documentation clarity.
 
-**Effort:** XS — change 3 constants; add a release note as defaults are a breaking change for callers relying on them.
+**Fix:** Add inline godoc to the three constants in `pkg/async/async_client.go` clarifying units.
 
-**Impact:** Medium — prevents spurious timeouts for any caller using `DefaultWaitFor` on real cloud resources.
+**Effort:** XS — add 3 short doc comments.
+
+**Impact:** Medium — prevents callers from misreading `DefaultRetries=60` as "60 second timeout".
 
 ---
 
@@ -216,46 +141,64 @@ Replace all manual implementations with calls to this helper.
 
 ## Low
 
-### TD-021 · Create responses do not contract-test resource ID exposure (Metadata.ID / URI) — [#175](https://github.com/Arubacloud/sdk-go/issues/175)
+### TD-023 · `KaasSecurityGroupPropertiesResponse` uses mixed PascalCase (`Kaas` vs `KaaS`) — (new)
+`pkg/types/container.kaas.go:240` — the response-side struct is named `KaasSecurityGroupPropertiesResponse` while the symmetrical request-side struct at line 91 is named `KaaSSecurityGroupPropertiesRequest` (correct). The Go type name `Kaas` (lowercase second 'a') differs from the acronym's canonical casing `KaaS`. The wire JSON tag is unaffected, but the API surface is inconsistent.
 
-All `*.Create` methods returned success even when the API response omitted required identity fields (`metadata.id`, `metadata.uri`, `metadata.name`). Downstream consumers (e.g., acloud-cli) silently received `nil` pointers and fell back to broken workarounds.
+**Fix:** Rename `KaasSecurityGroupPropertiesResponse` → `KaaSSecurityGroupPropertiesResponse` in `pkg/types/container.kaas.go` and its one usage in `resource_kaas_test.go`.
 
-**Fix:** Added `ResourceMetadataResponse.Validate()` and called it in every Create method. URI was initially included but later removed: the Aruba Cloud API does not consistently populate `metadata.uri` on Create responses, causing false-positive failures in production (acloud-cli `project create` error). The validator now only requires `id` and `name`. Added `pkg/types/resource_test.go` unit tests and "missing id/name" subtests in each Create test file.
+**Effort:** XS — rename 1 type and update 1 test reference.
 
-**Effort:** M — 21 impl files + 21 test files; mechanical but thorough.
-
-**Impact:** Medium — eliminates a class of silent nil-pointer bugs at the API boundary.
+**Impact:** Low — cosmetic inconsistency; does not affect serialisation.
 
 ---
 
-### TD-022 · Schedule Job creation failure `"Not found configuration for typology ' '"` — root cause under investigation
+### TD-024 · Stale TODO comments in `pkg/aruba/aruba.go` — (new)
+`pkg/aruba/aruba.go` contains four TODO comments describing planned variations of `NewClient` and options loading from file/URL that have not been implemented and are not on any active roadmap:
+- `// TODO: Two variations of NewClient`
+- `// TODO: DefaultOptions() function`
+- `// TODO: LoadOptionsFromPath(path path.Path)`
+- `// TODO: LoadOptionsFromURL(url net.URL)`
 
-In the v0.3.1 live run (`examples/all-resources/ create.log`), `Create Job` returned HTTP 400 with
-`Steps: Not found configuration for typology " "` (empty/space typology). The initial diagnosis
-was that `typology` is a required request field absent from the public schema. **This hypothesis
-is incorrect.** The Terraform provider `Arubacloud/terraform-provider-arubacloud` uses the same
-SDK types without a `typology` field and the example at
-`examples/test/schedule/03-schedule.tf` was confirmed live-tested and works (2026-05-28).
+`DefaultOptions` already exists (in `options.go`). The other two (file/URL loading) may or may not be planned. These comments add noise to the public package entrypoint file.
 
-**True root cause (hypothesis):** the server derives the step typology from `resourceUri`. If
-`resourceUri` arrives as empty string (which happens when `Targeting(ref)` is called on a `Ref`
-whose `URI()` returns `""`, e.g. a CloudServer that was queried before `metadata.uri` is
-populated), the server cannot determine the typology and returns the `" "` (empty-typology) error.
+**Fix:** Remove stale TODOs; if file/URL loading is genuinely planned, open a GitHub issue and remove the in-code notes.
 
-**v0.3.1 change:** `JobStep` renamed to `JobStepRequest` for symmetry with `JobStepResponse`.
-`Typology` was added to `JobStepRequest` and then removed after confirmation that the Terraform
-provider example works without it. The request DTO contains no `typology` field.
+**Effort:** XS — delete 4 comment blocks.
 
-**Next step:** a live `-mode=create` run is needed to identify the true root cause. If Jobs fail
-again, investigate whether `resources.CloudServer.URI()` is empty at job-creation time (after
-`WaitUntilReady` the URI should be populated from the GET response, but verify in the run log).
-The Terraform provider confirms that a non-empty `resourceUri` + bare `action_uri` + HTTP verb
-is the complete and sufficient request shape.
+**Impact:** Low — cosmetic; improves readability of the package entrypoint.
 
-**Effort:** XS per new typology constant.
+---
 
-**Impact:** Medium — empty resourceUri (or a server bug in typology derivation) causes an
-unconditional HTTP 400 on job creation.
+### TD-025 · `pkg/util/middleware` package is named `restclient`, not `middleware` — (new)
+`pkg/util/middleware/middleware.go` declares `package restclient`. The directory path is `pkg/util/middleware/` but the Go package name is `restclient`. Callers import it as `github.com/Arubacloud/sdk-go/pkg/util/middleware` but refer to it as `restclient.WithCustomHeaders(...)`. This diverges from Go's convention that the directory name and package name match and is flagged by `golangci-lint` (gopkg convention linters). The package itself also has an internal TODO: "review the placement of this file".
+
+**Fix:** Either (a) rename the package declaration to `middleware`, or (b) move the file to `internal/` since it wraps an internal interceptor type and has no external callers yet.
+
+**Effort:** S — rename + update any callers.
+
+**Impact:** Low — cosmetic confusion; the package has no known external callers in the repo.
+
+---
+
+### TD-026 · No lint rule enforces the `Request`/`Response`/`Common` naming convention — (new)
+The `forbidigo` linter slot exists in `.golangci.yml` but is not configured. Without a lint rule, a new struct added to `pkg/types/` with an old-style suffix (`*Result`, `*List`) will silently violate the convention until caught in code review.
+
+**Fix:** Add a `forbidigo` rule (or a custom `revive` rule) that fails on exported struct names in `pkg/types/` matching `[A-Z][A-Za-z]+List$` or `[A-Z][A-Za-z]+Result$`.
+
+**Effort:** S — configure linter, adjust any existing violations first.
+
+**Impact:** Medium — prevents naming-convention regression; ensures the refactor done in the Unreleased block is durable.
+
+---
+
+### TD-027 · `Dto` suffix on endpoint-type enum strings — (new)
+`pkg/types/network.load-balancer.go` (and possibly related files) contain constants like `EndpointTypeDto` and `DeactiveReasonDto` — suffixes inherited from generated code. These are wire-string enum values; the `Dto` suffix is inconsistent with the rest of the enum naming in `pkg/types/` and leaks an internal detail into the public API surface.
+
+**Fix:** Rename affected constants (confirm full list via `git grep -n 'Dto'`). These are enum-string values, not struct types, so they are out of scope for the Request/Response/Common rename but should be cleaned up separately.
+
+**Effort:** XS per constant — alias old names during a deprecation window or do a hard rename.
+
+**Impact:** Low — cosmetic; no functional impact.
 
 ---
 
@@ -269,3 +212,21 @@ All `internal/clients/*/_test.go` files — existing tests cover successful resp
 **Impact:** High — major regression safety net; issues like TD-011 and TD-014 would have been caught by these tests.
 
 ---
+
+## Resolved (historical summary)
+
+| ID | Summary | Version |
+|---|---|---|
+| TD-001 | Parameter order swap in file token repository constructor | v0.2.x |
+| TD-002 | Static token silently ignored in memory repository | v0.2.x |
+| TD-004 | `Bind()`/`Intercept()` concurrency — closed as working-as-intended | — |
+| TD-005 | Typo `buildDetebaseClient` | v0.2.x |
+| TD-006 | Goroutine leak in `WaitFor` — closed as invalid | — |
+| TD-007 | Variable shadowing in `WaitFor` nil-call path | v0.2.x |
+| TD-008 | Polling loop: sleep before first attempt, discard final state | v0.2.x |
+| TD-011 | Silent failure parsing error response body | v0.2.x |
+| TD-013 | `SaveToken` increments ticket before confirming persistent write | v0.2.x |
+| TD-018 | Injected concrete dependencies not nil-checked in constructors | v0.3.0 |
+| TD-019 | Missing compile-time interface satisfaction checks | v0.3.0 |
+| TD-021 | Create responses do not validate metadata ID/URI/Name | v0.3.1 |
+| TD-022 | Schedule Job `typology` field root cause — `typology` field removed; Terraform confirms shape is correct | v0.3.1 |
