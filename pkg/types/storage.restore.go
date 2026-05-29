@@ -4,7 +4,7 @@ type StorageRestorePropertiesRequest struct {
 	Target ReferenceResource `json:"destinationVolume"`
 }
 
-type StorageRestorePropertiesResult struct {
+type StorageRestorePropertiesResponse struct {
 	Destination ReferenceResource `json:"destinationVolume"`
 }
 
@@ -17,12 +17,12 @@ type StorageRestoreRequest struct {
 type StorageRestoreResponse struct {
 	Metadata ResourceMetadataResponse `json:"metadata"`
 
-	Properties StorageRestorePropertiesResult `json:"properties"`
+	Properties StorageRestorePropertiesResponse `json:"properties"`
 
 	Status ResourceStatus `json:"status,omitempty"`
 }
 
-type StorageRestoreList struct {
+type StorageRestoreListResponse struct {
 	ListResponse
 	Values []StorageRestoreResponse `json:"values"`
 }

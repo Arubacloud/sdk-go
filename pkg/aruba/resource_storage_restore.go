@@ -166,7 +166,7 @@ func storageRestoreDerefString(p *string) string {
 // *types.Response[T] preserves HTTP envelope details (status code, headers,
 // raw body) for the wrapper's diagnostics.
 type storageRestoreLowLevelClient interface {
-	List(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[types.StorageRestoreList], error)
+	List(ctx context.Context, projectID, backupID string, params *types.RequestParameters) (*types.Response[types.StorageRestoreListResponse], error)
 	Get(ctx context.Context, projectID, backupID, restoreID string, params *types.RequestParameters) (*types.Response[types.StorageRestoreResponse], error)
 	Create(ctx context.Context, projectID, backupID string, body types.StorageRestoreRequest, params *types.RequestParameters) (*types.Response[types.StorageRestoreResponse], error)
 	Update(ctx context.Context, projectID, backupID, restoreID string, body types.StorageRestoreRequest, params *types.RequestParameters) (*types.Response[types.StorageRestoreResponse], error)
@@ -373,7 +373,7 @@ func (a *storageRestoresClientAdapter) List(ctx context.Context, backup Ref, opt
 	}
 	var refetch func(ctx context.Context, pageURL string) (*List[*StorageRestore], error)
 	refetch = func(ctx context.Context, pageURL string) (*List[*StorageRestore], error) {
-		fetch := listPageFetch[types.StorageRestoreList](a.rest, opts)
+		fetch := listPageFetch[types.StorageRestoreListResponse](a.rest, opts)
 		pageResp, fetchErr := fetch(ctx, pageURL)
 		if fetchErr != nil {
 			return nil, fetchErr
