@@ -6,7 +6,7 @@ sidebar_position: 2
 
 The Aruba Cloud Go SDK gives you a single import — `github.com/Arubacloud/sdk-go/pkg/aruba` — that exposes a fluent builder API for every cloud resource. You construct a resource description with a `aruba.NewX()` builder chain, pass it to the appropriate client method (`Create`, `Get`, `Update`, `Delete`, or `List`), and work with the typed wrapper that comes back.
 
-Resources are scoped to a **Project**, and child resources reference their parents via the `aruba.Ref` interface. You never have to extract or thread raw ID strings by hand: pass the hydrated wrapper (returned by `Create` or `Get`) directly as a `Ref` parameter to builder methods like `IntoProject(proj)`, `IntoVPC(vpc)`, or `IntoSecurityGroup(sg)`.
+Resources are scoped to a **Project**, and child resources reference their parents via the `aruba.Ref` interface. You never have to extract or thread raw ID strings by hand: pass the hydrated wrapper (returned by `Create` or `Get`) directly as a `Ref` parameter to builder methods like `InProject(proj)`, `InVPC(vpc)`, or `InSecurityGroup(sg)`.
 
 This page walks through the core CRUD lifecycle on a minimal example — Project + VPC + Subnet. Every other resource follows the exact same shape. See [Resources](./resources) for copy-paste-ready snippets for all supported resources.
 
@@ -56,8 +56,8 @@ proj, err := arubaClient.FromProject().Create(
     ctx,
     aruba.NewProject().
         Named("my-project").
-        WithDescription("Created via the Aruba Cloud Go SDK").
-        AddTag("go-sdk").
+        Tagged("go-sdk").
+        DescribedAs("Created via the Aruba Cloud Go SDK").
         NotDefault())
 if err != nil {
     log.Fatalf("Create project: %v", err)
@@ -71,12 +71,12 @@ fmt.Printf("✓ Project created: %s (ID: %s)\n", proj.Name(), proj.ID())
 vpc, err := arubaClient.FromNetwork().VPCs().Create(
     ctx,
     aruba.NewVPC().
-        IntoProject(proj).
         Named("my-vpc").
-        AddTag("network").
+        Tagged("network").
+        InProject(proj).
         InRegion(aruba.RegionITBGBergamo).
         NotDefault().
-        WithPreset(false))
+        WithoutPreset())
 if err != nil {
     log.Fatalf("Create VPC: %v", err)
 }
@@ -89,7 +89,7 @@ if err := vpc.WaitUntilReady(ctx); err != nil {
 }
 ```
 
-`IntoProject(proj)` accepts any `aruba.Ref` — it binds the project scope without requiring you to extract a raw ID string.
+`InProject(proj)` accepts any `aruba.Ref` — it binds the project scope without requiring you to extract a raw ID string.
 
 ### Subnet
 
@@ -97,19 +97,18 @@ if err := vpc.WaitUntilReady(ctx); err != nil {
 subnet, err := arubaClient.FromNetwork().Subnets().Create(
     ctx,
     aruba.NewSubnet().
-        IntoVPC(vpc).
-        Named("my-subnet").
-        AddTag("network").
-        InRegion(aruba.RegionITBGBergamo).
         OfType(aruba.SubnetTypeAdvanced).
-        NotDefault().
+        Named("my-subnet").
+        Tagged("network").
+        InVPC(vpc).
+        InRegion(aruba.RegionITBGBergamo).
         WithCIDR("192.168.1.0/25").
         WithDHCP(aruba.NewSubnetDHCP().
             Enabled().
             WithRange("192.168.1.10", 50).
-            AddRoute("10.0.0.0/8", "192.168.1.1").
-            AddDNS("8.8.8.8").
-            AddDNS("8.8.4.4")))
+            WithRoutes(aruba.SubnetDHCPRouteCommon{Address: "10.0.0.0/8", Gateway: "192.168.1.1"}).
+            WithDNSServers("8.8.8.8", "8.8.4.4")).
+        NotDefault())
 if err != nil {
     log.Fatalf("Create subnet: %v", err)
 }
@@ -141,7 +140,7 @@ if err != nil {
 
 // Mutate
 vpc.Named("my-vpc-updated").
-    ReplaceTags("network", "updated")
+    RetaggedAs("network", "updated")
 
 // Update
 updated, err := arubaClient.FromNetwork().VPCs().Update(ctx, vpc)
@@ -217,64 +216,22 @@ vpcs, err := arubaClient.FromNetwork().VPCs().List(ctx, proj)
 
 ## 6. Tear Down (Reverse Order)
 
-Delete children before parents. The Aruba Cloud API returns **HTTP 400** when you try to delete a parent that still has live or still-deleting children — not 409/422. The safe pattern is to issue each child delete, then poll until the resource is fully gone (HTTP 404) before moving up the dependency chain.
+Delete children before parents. The Aruba Cloud API returns **HTTP 400** when you try to delete a parent that still has live or still-deleting children — not 409/422. The safe pattern is to issue each child delete, then wait until the resource is fully gone before moving up the dependency chain.
 
-Use `pkg/async.WaitFor` to poll for 404 — it centralises the retry/timeout/cadence logic:
-
-```go
-import (
-    "errors"
-    "net/http"
-
-    "github.com/Arubacloud/sdk-go/pkg/aruba"
-    "github.com/Arubacloud/sdk-go/pkg/async"
-    "github.com/Arubacloud/sdk-go/pkg/types"
-)
-
-// waitUntilGone blocks until the resource's Get returns HTTP 404.
-func waitUntilGone(ctx context.Context, poll func(context.Context) error) error {
-    const gone = "gone"
-    fut := async.DefaultWaitFor(ctx,
-        func(ctx context.Context) (*types.Response[string], error) {
-            err := poll(ctx)
-            if err == nil {
-                return &types.Response[string]{}, nil // still exists
-            }
-            var httpErr *aruba.HTTPError
-            if errors.As(err, &httpErr) && httpErr.StatusCode == http.StatusNotFound {
-                return &types.Response[string]{Data: &[]string{gone}[0]}, nil // gone
-            }
-            return nil, err // transient — retry
-        },
-        func(resp *types.Response[string]) (bool, error) {
-            return resp != nil && resp.Data != nil, nil
-        },
-    )
-    _, err := fut.Await(ctx)
-    return err
-}
-```
-
-Then delete in reverse dependency order, waiting for each child to fully disappear before deleting its parent:
+`WaitUntilGone` blocks until the resource no longer exists — that is, until its `Get` returns HTTP 404. Call it on the hydrated wrapper you already hold (`Delete` itself returns only an `error`, no wrapper):
 
 ```go
 // subnet → VPC → project
 if err := arubaClient.FromNetwork().Subnets().Delete(ctx, subnet); err != nil {
     log.Printf("Delete subnet: %v", err)
-} else {
-    waitUntilGone(ctx, func(ctx context.Context) error {
-        _, err := arubaClient.FromNetwork().Subnets().Get(ctx, subnet)
-        return err
-    })
+} else if err := subnet.WaitUntilGone(ctx); err != nil {
+    log.Printf("Subnet not gone: %v", err)
 }
 
 if err := arubaClient.FromNetwork().VPCs().Delete(ctx, vpc); err != nil {
     log.Printf("Delete VPC: %v", err)
-} else {
-    waitUntilGone(ctx, func(ctx context.Context) error {
-        _, err := arubaClient.FromNetwork().VPCs().Get(ctx, vpc)
-        return err
-    })
+} else if err := vpc.WaitUntilGone(ctx); err != nil {
+    log.Printf("VPC not gone: %v", err)
 }
 
 if err := arubaClient.FromProject().Delete(ctx, proj); err != nil {
@@ -282,7 +239,9 @@ if err := arubaClient.FromProject().Delete(ctx, proj); err != nil {
 }
 ```
 
-`Delete` accepts any `aruba.Ref` — you can pass the hydrated wrapper directly or `aruba.URI(…)` if you only have the path.
+`WaitUntilGone` accepts the same `WaitOption`s as `WaitUntilReady` (`WithRetries`, `WithBaseDelay`, `WithTimeout`) and is available on every resource wrapper that supports polling. `Project` has no polling — it is deleted last, with no child left to wait on.
+
+`Delete` accepts any `aruba.Ref` — pass the hydrated wrapper directly or `aruba.URI(…)` if you only have the path.
 
 For a full stack teardown sequence (Security Rules → Security Groups → Subnets → VPC → Cloud Server → Block Storage → Project) see the [Full Example](#full-example) below.
 
@@ -312,7 +271,7 @@ if err := vpc.WaitUntilReady(ctx,
 }
 ```
 
-For `WaitUntilStates(ctx, []string{...}, opts...)` (any target states, not just `"Active"`), status accessors (`State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`), and the low-level `pkg/async.WaitFor` future for concurrent polling, see the [Async / Await](./async) guide.
+For `WaitUntilStates(ctx, []types.State{...}, opts...)` (any target states, not just `"Active"`), status accessors (`State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`), and the low-level `pkg/async.WaitFor` future for concurrent polling, see the [Async / Await](./async) guide.
 
 ---
 
@@ -324,16 +283,16 @@ Builder setters never return an error — they record it in the wrapper. The err
 
 ```go
 rule := aruba.NewSecurityRule().
-    IntoSecurityGroup(sg).
-    WithTargetCIDR("0.0.0.0/0").
-    WithTargetSecurityGroup(otherSG) // conflicting — recorded as error
+    InSecurityGroup(sg).
+    TargetingCIDR("0.0.0.0/0").
+    TargetingSecurityGroup(otherSG) // conflicting — recorded as error
 
 if err := rule.Err(); err != nil {
     log.Fatalf("Bad rule config: %v", err)
 }
 ```
 
-> **Caveat**: `WithTargetCIDR` and `WithTargetSecurityGroup` are mutually exclusive. Setting both records a setter-time error that surfaces on `Create`.
+> **Caveat**: `TargetingCIDR` and `TargetingSecurityGroup` are mutually exclusive. Setting both records a setter-time error that surfaces on `Create`.
 
 ### `WaitUntilReady` requires a hydrated wrapper
 
