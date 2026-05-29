@@ -9,22 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 | Branch | Version series | Status |
 |--------|----------------|--------|
-| `main` | **v0.2.x** | Active development — new features, ongoing releases |
+| `main` | **v0.3.x** | Active development — new features, ongoing releases |
 | `legacy` | **v0.1.x** | Maintenance — bug fixes and security patches only |
 
-- **`main` — v0.2.x (current)**: Introduces the `pkg/aruba/` wrapper
-  layer — a major, breaking redesign of the public API surface. Adopters
-  upgrading from v0.1.x should expect compile-time breakage; see the
-  [v0.2.0](#020--2026-05-13) section below for a full
-  migration summary.
+- **`main` — v0.3.x (current)**: Builds on the `pkg/aruba/` wrapper
+  layer introduced in v0.2.0. v0.3.0 formalised the getter/setter taxonomy;
+  v0.3.1 added async polling helpers, User-Agent injection, and a series of
+  round-trip and example fixes. See [v0.3.0](#030--2026-05-21) and
+  [v0.3.1](#031--2026-05-28) below for migration details.
 - **`legacy` — v0.1.x (maintenance)**: Supported for **6 months** after
-  the v0.2.0 release date with bug-fix and security-patch releases only
-  (tagged `v0.1.29`, `v0.1.30`, …). No new features will be backported.
-  Once the support window closes the `legacy` branch will be archived.
+  the v0.2.0 release date with bug-fix and security-patch releases only.
+  No new features will be backported. Once the support window closes the
+  `legacy` branch will be archived.
 
 ---
 
 ## [Unreleased]
+
+### Documentation
+
+- Alpha-stage warning banners removed from `docs/website/docs/intro.md`, `docs/website/i18n/it/…/intro.md`, and `README.md`.
+- `ai/CONVENTIONS.md`, `ai/ARCHITECTURE.md`, `ai/REPO.md`, `ai/DEVEX.md` aligned with post-naming-refactor implementation.
+- `ai/TECH_DEBT.md` reset: resolved items archived, new debt items (TD-023 through TD-027) catalogued.
+- `pkg/aruba/doc.go`, `pkg/async/doc.go`, `pkg/multitenant/doc.go`, `pkg/util/middleware/doc.go` added — package-level in-source documentation for every major public package.
+- `docs/website/docs/resources.md` (EN) and Italian mirror: every resource section now lists its setter vocabulary grouped by canonical chain order and links to the corresponding `examples/all-resources/resource_<name>.go` file.
+- `docs/website/docs/working-at-low-level.md` (EN + IT): stale `types.LinkedResource` → `types.LinkedResourceCommon` after the naming refactor.
+- `README.md`: fixed stale `httpErr.Message` field reference (→ `httpErr.Error()`), corrected `WaitUntilReady` settled-state list (7 states, not 4), fixed `WaitUntilStates` signature to use `[]types.State`, and corrected the quick-start snippet to capture the `Create` return value.
 
 ### Changed (Breaking)
 
