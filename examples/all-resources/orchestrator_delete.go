@@ -277,55 +277,142 @@ func fetchAllResources(ctx context.Context, arubaClient aruba.Client, proj *arub
 	return resources
 }
 
-// printDeletionInventory prints a concise summary of everything fetchAllResources found.
+// printDeletionInventory lists every resource found by fetchAllResources, with
+// CreatedBy and CreatedAt where the resource carries audit metadata.
 func printDeletionInventory(r *ResourceCollection) {
 	fmt.Println("\n=== Inventory ===")
 
-	count := func(b bool) int {
-		if b {
-			return 1
-		}
-		return 0
+	// Project
+	if r.Project != nil {
+		fmt.Println(summaryRow("Project", r.Project.Name(), r.Project.ID(),
+			auditExtras(r.Project.CreatedBy(), r.Project.CreatedAt())...))
+	} else {
+		fmt.Println(summaryRow("Project", "", ""))
 	}
 
-	fmt.Printf("  Project: %d\n", count(r.Project != nil))
+	// VPC & network
+	if r.VPC != nil {
+		fmt.Println(summaryRow("VPC", r.VPC.Name(), r.VPC.ID(),
+			auditExtras(r.VPC.CreatedBy(), r.VPC.CreatedAt())...))
+	}
+	if r.SubnetAdvanced != nil {
+		fmt.Println(summaryRow("Subnet (Advanced)", r.SubnetAdvanced.Name(), r.SubnetAdvanced.ID(),
+			auditExtras(r.SubnetAdvanced.CreatedBy(), r.SubnetAdvanced.CreatedAt())...))
+	}
+	if r.SubnetBasic != nil {
+		fmt.Println(summaryRow("Subnet (Basic)", r.SubnetBasic.Name(), r.SubnetBasic.ID(),
+			auditExtras(r.SubnetBasic.CreatedBy(), r.SubnetBasic.CreatedAt())...))
+	}
+	if r.SecurityGroup != nil {
+		fmt.Println(summaryRow("Security Group", r.SecurityGroup.Name(), r.SecurityGroup.ID(),
+			auditExtras(r.SecurityGroup.CreatedBy(), r.SecurityGroup.CreatedAt())...))
+	}
+	for _, rule := range r.SecurityRulesIngress {
+		if rule != nil {
+			fmt.Println(summaryRow("Security Rule (Ingress/"+rule.Name()+")", rule.Name(), rule.ID(),
+				auditExtras(rule.CreatedBy(), rule.CreatedAt())...))
+		}
+	}
+	if r.SecurityRuleEgress != nil {
+		fmt.Println(summaryRow("Security Rule (Egress)", r.SecurityRuleEgress.Name(), r.SecurityRuleEgress.ID(),
+			auditExtras(r.SecurityRuleEgress.CreatedBy(), r.SecurityRuleEgress.CreatedAt())...))
+	}
+	if r.KeyPair != nil {
+		fmt.Println(summaryRow("SSH Key Pair", r.KeyPair.Name(), r.KeyPair.KeyPairID(),
+			auditExtras(r.KeyPair.CreatedBy(), r.KeyPair.CreatedAt())...))
+	}
+	for _, eip := range r.ElasticIPs {
+		if eip != nil {
+			fmt.Println(summaryRow("Elastic IP", eip.Name(), eip.ID(),
+				auditExtras(eip.CreatedBy(), eip.CreatedAt())...))
+		}
+	}
+	for _, bs := range r.BlockStorages {
+		if bs != nil {
+			fmt.Println(summaryRow("Block Storage", bs.Name(), bs.ID(),
+				auditExtras(bs.CreatedBy(), bs.CreatedAt())...))
+		}
+	}
 
-	fmt.Printf("  KMS: %d  KMS Key: %d  KMIP: %d\n",
-		count(r.KMS != nil), count(r.KMSKey != nil), count(r.Kmip != nil))
+	// VPN stack
+	if r.VPNTunnel != nil {
+		fmt.Println(summaryRow("VPN Tunnel", r.VPNTunnel.Name(), r.VPNTunnel.VPNTunnelID(),
+			auditExtras(r.VPNTunnel.CreatedBy(), r.VPNTunnel.CreatedAt())...))
+	}
+	if r.VPNRoute != nil {
+		extras := append([]string{"cloudSubnet=" + r.VPNRoute.CloudSubnetCIDR()},
+			auditExtras(r.VPNRoute.CreatedBy(), r.VPNRoute.CreatedAt())...)
+		fmt.Println(summaryRow("VPN Route", r.VPNRoute.Name(), r.VPNRoute.VPNRouteID(), extras...))
+	}
 
-	fmt.Printf("  Backup: %d  Restore: %d  Snapshot: %d\n",
-		count(r.Backup != nil), count(r.Restore != nil), count(r.Snapshot != nil))
+	// KMS stack
+	if r.KMS != nil {
+		fmt.Println(summaryRow("KMS Instance", r.KMS.Name(), r.KMS.KMSID(),
+			auditExtras(r.KMS.CreatedBy(), r.KMS.CreatedAt())...))
+	}
+	if r.KMSKey != nil {
+		fmt.Println(summaryRow("KMS Key", r.KMSKey.Name(), r.KMSKey.KeyID()))
+	}
+	if r.Kmip != nil {
+		fmt.Println(summaryRow("KMIP Service", r.Kmip.Name(), r.Kmip.KmipID()))
+	}
 
-	fmt.Printf("  Container Registry: %d\n", count(r.ContainerRegistry != nil))
+	// Backup & restore
+	if r.Backup != nil {
+		fmt.Println(summaryRow("Storage Backup", r.Backup.Name(), r.Backup.BackupID(),
+			auditExtras(r.Backup.CreatedBy(), r.Backup.CreatedAt())...))
+	}
+	if r.Restore != nil {
+		fmt.Println(summaryRow("Storage Restore", r.Restore.Name(), r.Restore.RestoreID(),
+			auditExtras(r.Restore.CreatedBy(), r.Restore.CreatedAt())...))
+	}
+	if r.Snapshot != nil {
+		fmt.Println(summaryRow("Snapshot", r.Snapshot.Name(), r.Snapshot.ID(),
+			auditExtras(r.Snapshot.CreatedBy(), r.Snapshot.CreatedAt())...))
+	}
 
-	jobs := 0
+	// Container Registry
+	if r.ContainerRegistry != nil {
+		fmt.Println(summaryRow("Container Registry", r.ContainerRegistry.Name(), r.ContainerRegistry.ContainerRegistryID(),
+			auditExtras(r.ContainerRegistry.CreatedBy(), r.ContainerRegistry.CreatedAt())...))
+	}
+
+	// Compute & schedule
+	if r.CloudServer != nil {
+		fmt.Println(summaryRow("Cloud Server", r.CloudServer.Name(), r.CloudServer.CloudServerID(),
+			auditExtras(r.CloudServer.CreatedBy(), r.CloudServer.CreatedAt())...))
+	}
+	if r.KaaS != nil {
+		fmt.Println(summaryRow("KaaS Cluster", r.KaaS.Name(), r.KaaS.KaaSID(),
+			auditExtras(r.KaaS.CreatedBy(), r.KaaS.CreatedAt())...))
+	}
 	if r.JobRecurring != nil {
-		jobs++
+		fmt.Println(summaryRow("Job (Recurring)", r.JobRecurring.Name(), r.JobRecurring.JobID(),
+			auditExtras(r.JobRecurring.CreatedBy(), r.JobRecurring.CreatedAt())...))
 	}
 	if r.JobOneShot != nil {
-		jobs++
+		fmt.Println(summaryRow("Job (One-Shot)", r.JobOneShot.Name(), r.JobOneShot.JobID(),
+			auditExtras(r.JobOneShot.CreatedBy(), r.JobOneShot.CreatedAt())...))
 	}
-	fmt.Printf("  Cloud Server: %d  KaaS: %d  Jobs: %d\n",
-		count(r.CloudServer != nil), count(r.KaaS != nil), jobs)
 
-	grants := count(r.Grant != nil)
-	users := count(r.DBaaSUser != nil)
-	dbs := count(r.Database != nil)
-	fmt.Printf("  DBaaS: %d (Database: %d  User: %d  Grant: %d)\n",
-		count(r.DBaaS != nil), dbs, users, grants)
-
-	fmt.Printf("  VPC: %d  Subnets: %d  Security Group: %d  Rules: %d  Key Pair: %d\n",
-		count(r.VPC != nil),
-		count(r.SubnetAdvanced != nil)+count(r.SubnetBasic != nil),
-		count(r.SecurityGroup != nil),
-		len(r.SecurityRulesIngress)+count(r.SecurityRuleEgress != nil),
-		count(r.KeyPair != nil))
-
-	fmt.Printf("  Block Storages: %d  Elastic IPs: %d\n",
-		len(r.BlockStorages), len(r.ElasticIPs))
-
-	fmt.Printf("  VPN Tunnel: %d  VPN Route: %d\n",
-		count(r.VPNTunnel != nil), count(r.VPNRoute != nil))
+	// Database stack
+	if r.DBaaS != nil {
+		fmt.Println(summaryRow("DBaaS", r.DBaaS.Name(), r.DBaaS.DBaaSID(),
+			auditExtras(r.DBaaS.CreatedBy(), r.DBaaS.CreatedAt())...))
+	}
+	if r.Database != nil && r.Database.ID() != "" {
+		fmt.Println(summaryRow("DBaaS Database", r.Database.Name(), r.Database.ID(),
+			auditExtras(r.Database.CreatedBy(), r.Database.CreatedAt())...))
+	}
+	if r.DBaaSUser != nil && r.DBaaSUser.ID() != "" {
+		fmt.Println(summaryRow("DBaaS User", r.DBaaSUser.Username(), r.DBaaSUser.ID(),
+			auditExtras(r.DBaaSUser.CreatedBy(), r.DBaaSUser.CreatedAt())...))
+	}
+	if r.Grant != nil && r.Grant.Username() != "" {
+		grantDesc := r.Grant.Username() + " on " + r.Grant.DatabaseName() + " (" + r.Grant.RoleName() + ")"
+		fmt.Println(summaryRow("DBaaS Grant", grantDesc, r.Grant.ID(),
+			auditExtras(r.Grant.CreatedBy(), r.Grant.CreatedAt())...))
+	}
 }
 
 // deleteAllResources deletes all resources in strict inverse of the creation order
