@@ -194,6 +194,8 @@ Setter signatures take the alias type, not `string`.
 
 Every Family-A wrapper exposes a standard set of read accessors. Callers should always use these instead of reaching into `wrapper.Raw().Properties.X`.
 
+**Audit actor getters** — `CreatedBy()`, `UpdatedBy()`, `CreatedUser()`, `UpdatedUser()` are promoted from `responseMetadataMixin` onto all Family-A wrappers. They return `""` when the server does not populate the field (e.g. after a `Create` whose response omits `updatedBy`). Family-B wrappers whose wire types carry `createdBy` directly (Database, User, Grant) define their own `CreatedBy()` which shadows the mixin.
+
 **Naming rules:**
 - Simple scalar field from `Properties`: use the field name directly — `Name()`, `State()`, `Region()`.
 - URI of a linked resource: `<LinkedResource>URI()` (e.g. `VPNTunnelURI()`, `AssociatedResourceURI()`).

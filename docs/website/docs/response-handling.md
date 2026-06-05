@@ -190,7 +190,7 @@ fmt.Println(raw.Properties.SomeUnpromotedField)
 | Identity | `ID()`, `URI()`, `CloudServerID()` |
 | Naming | `Name()`, `Tags()` |
 | Geography | `Region()`, `Zone()` |
-| Lineage | `Project()`, `CreatedAt()`, `UpdatedAt()`, `Version()` |
+| Lineage | `Project()`, `CreatedAt()`, `UpdatedAt()`, `Version()`, `CreatedBy()`, `UpdatedBy()`, `CreatedUser()`, `UpdatedUser()` |
 | Lifecycle | `State()`, `IsDisabled()`, `DisableReasons()`, `FailureReason()` |
 | Linked resources | `LinkedResources()` |
 | Raw envelope | `Raw()`, `RawJSON()`, `RawYAML()`, `RawRequest()`, `StatusCode()`, `Headers()`, `RawError()` |
