@@ -11,7 +11,7 @@ Welcome to the official Go SDK for the Aruba Cloud API. This SDK provides a conv
 Add the SDK to your Go project:
 
 ```bash
-go get github.com/Arubacloud/sdk-go
+go get github.com/Arubacloud/sdk-go@latest
 ```
 
 ## Getting Started
