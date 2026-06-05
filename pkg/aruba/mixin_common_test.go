@@ -148,6 +148,18 @@ func TestResponseMetadataMixin_Nil(t *testing.T) {
 	if m.Version() != "" {
 		t.Errorf("Version() on nil meta = %q", m.Version())
 	}
+	if m.CreatedBy() != "" {
+		t.Errorf("CreatedBy() on nil meta = %q", m.CreatedBy())
+	}
+	if m.UpdatedBy() != "" {
+		t.Errorf("UpdatedBy() on nil meta = %q", m.UpdatedBy())
+	}
+	if m.CreatedUser() != "" {
+		t.Errorf("CreatedUser() on nil meta = %q", m.CreatedUser())
+	}
+	if m.UpdatedUser() != "" {
+		t.Errorf("UpdatedUser() on nil meta = %q", m.UpdatedUser())
+	}
 }
 
 func TestResponseMetadataMixin_Populated(t *testing.T) {
@@ -155,6 +167,10 @@ func TestResponseMetadataMixin_Populated(t *testing.T) {
 	uri := "/projects/p/vpcs/v"
 	ver := "1"
 	proj := "proj-1"
+	createdBy := "aru-297647"
+	updatedBy := "aru-111111"
+	createdUser := "alice"
+	updatedUser := "bob"
 	now := time.Now().UTC().Truncate(time.Second)
 	later := now.Add(time.Hour)
 
@@ -168,6 +184,10 @@ func TestResponseMetadataMixin_Populated(t *testing.T) {
 			},
 			CreationDate: &now,
 			UpdateDate:   &later,
+			CreatedBy:    &createdBy,
+			UpdatedBy:    &updatedBy,
+			CreatedUser:  &createdUser,
+			UpdatedUser:  &updatedUser,
 		},
 	}
 
@@ -188,6 +208,18 @@ func TestResponseMetadataMixin_Populated(t *testing.T) {
 	}
 	if !m.UpdatedAt().Equal(later) {
 		t.Errorf("UpdatedAt() = %v, want %v", m.UpdatedAt(), later)
+	}
+	if m.CreatedBy() != createdBy {
+		t.Errorf("CreatedBy() = %q, want %q", m.CreatedBy(), createdBy)
+	}
+	if m.UpdatedBy() != updatedBy {
+		t.Errorf("UpdatedBy() = %q, want %q", m.UpdatedBy(), updatedBy)
+	}
+	if m.CreatedUser() != createdUser {
+		t.Errorf("CreatedUser() = %q, want %q", m.CreatedUser(), createdUser)
+	}
+	if m.UpdatedUser() != updatedUser {
+		t.Errorf("UpdatedUser() = %q, want %q", m.UpdatedUser(), updatedUser)
 	}
 }
 
