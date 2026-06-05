@@ -13,7 +13,7 @@ L'SDK espone tre livelli per gestire questa situazione:
 | `WaitUntilReady(ctx)` | 95% dei casi — blocca finché la risorsa è pronta (accetta `Active`, `Running`, `Stopped`, `NotUsed`, `Reserved`, `InUse`, `Used`) |
 | `WaitUntilActive(ctx)` | Quando hai specificamente bisogno solo dello stato `Active` |
 | `WaitUntilStates(ctx, []types.State{...}, opts...)` | Attendi uno o più stati specifici (es. `[]types.State{types.StateStopped}`) |
-| `WaitUntilGone(ctx)` | Dopo `Delete` — blocca finché il `Get` della risorsa restituisce HTTP 404 (rimossa definitivamente) |
+| `WaitUntilGone(ctx)` | Dopo `Delete` — blocca finché il `Get` della risorsa restituisce HTTP 404 (completamente rimossa) |
 | `pkg/async.WaitFor` + `AsyncClient.Await` | Avanzato — avvia il polling in una goroutine in background, fai altro lavoro, raccogli il risultato in seguito |
 
 ---
@@ -29,7 +29,7 @@ if err != nil {
 }
 
 if err := vpc.WaitUntilReady(ctx); err != nil {
-    log.Fatalf("VPC did not become Ready: %v", err)
+    log.Fatalf("VPC did not become ready: %v", err)
 }
 ```
 
@@ -49,7 +49,7 @@ if err := vpc.WaitUntilReady(ctx,
     aruba.WithBaseDelay(5*time.Second), // ritardo fisso tra i poll (default: 10s)
     aruba.WithTimeout(3*time.Minute),   // scadenza rigida (default: 600s)
 ); err != nil {
-    log.Fatalf("VPC did not become Ready: %v", err)
+    log.Fatalf("VPC did not become ready: %v", err)
 }
 ```
 
@@ -63,7 +63,7 @@ longWait := []aruba.WaitOption{
     aruba.WithRetries(240),
 }
 if err := reg.WaitUntilReady(ctx, longWait...); err != nil {
-    log.Fatalf("ContainerRegistry did not become Ready: %v", err)
+    log.Fatalf("ContainerRegistry did not become ready: %v", err)
 }
 ```
 
@@ -110,9 +110,9 @@ if err := arubaClient.FromNetwork().Subnets().Delete(ctx, subnet); err != nil {
 }
 ```
 
-`WaitUntilGone` è disponibile su ogni wrapper di risorsa che supporta il polling (vedi [Risorse che Supportano il Polling](#risorse-che-supportano-il-polling) di seguito). Accetta le stesse `WaitOption` di `WaitUntilReady`. Qualsiasi errore da `Get` diverso da HTTP 404 viene trattato come transitorio e ritentato; un 404 segnala il successo.
+`WaitUntilGone` è disponibile su ogni wrapper di risorsa che supporta il polling (vedi [Risorse che Supportano il Polling](#risorse-che-supportano-il-polling) in basso). Accetta le stesse `WaitOption` di `WaitUntilReady`. Qualsiasi errore da `Get` diverso da HTTP 404 viene trattato come transitorio e riprovato; un 404 segnala il successo.
 
-`Project` non supporta il polling e quindi non ha `WaitUntilGone`. Viene eliminato per ultimo, senza figli rimasti su cui attendere.
+`Project` non ha supporto al polling e quindi nessun `WaitUntilGone`. Viene eliminato per ultimo, senza figli da attendere.
 
 ---
 
@@ -169,7 +169,7 @@ I seguenti wrapper di risorse supportano `WaitUntilReady`, `WaitUntilActive`, `W
 | `VPNTunnel` | — | |
 | `VPNRoute` | — | |
 | `KMS` | — | |
-| `Kmip` | `WaitUntilCertificateAvailable` | Waiter personalizzato (Family B — nessun `statusMixin`); fa il polling di `KmipResponse.Status` direttamente rispetto a una mappa esplicita degli stati terminali |
+| `Kmip` | `WaitUntilCertificateAvailable` | Waiter personalizzato (Family B — nessun `statusMixin`); fa il polling di `KmipResponse.Status` direttamente |
 
 > **Il Progetto non supporta il polling.** È pronto in modo sincrono immediatamente dopo che `Create` ritorna — non è necessaria né disponibile alcuna chiamata `WaitUntilActive`.
 
@@ -209,7 +209,7 @@ Tutto il polling rispetta la scadenza e la cancellazione del `ctx`. Se il contex
 
 ## Avanzato: polling concorrente e personalizzato
 
-`WaitUntilReady`, `WaitUntilActive` e `WaitUntilStates` bloccano la goroutine chiamante. Se devi **avviare più attese in modo concorrente**, o **fare il polling di una condizione arbitraria** (non solo uno stato di risorsa), usa direttamente il pacchetto `pkg/async` di livello inferiore. Quel livello lavora direttamente con `*types.Response[T]` ed è documentato separatamente — vedi [Lavorare a Basso Livello](./working-at-low-level#background-polling-with-pkgasync).
+`WaitUntilReady`, `WaitUntilActive` e `WaitUntilStates` bloccano la goroutine chiamante. Quando devi **avviare più attese in modo concorrente**, o **fare il polling di una condizione arbitraria** (non solo uno stato di risorsa), scendi al livello di `pkg/async`. Quel layer lavora direttamente con `*types.Response[T]` ed è documentato separatamente — consulta [Lavorare a Basso Livello](./working-at-low-level#background-polling-with-pkgasync).
 
 ---
 

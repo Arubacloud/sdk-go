@@ -29,7 +29,7 @@ if err != nil {
 }
 
 if err := vpc.WaitUntilReady(ctx); err != nil {
-    log.Fatalf("VPC did not become Ready: %v", err)
+    log.Fatalf("VPC did not become ready: %v", err)
 }
 ```
 
@@ -49,7 +49,7 @@ if err := vpc.WaitUntilReady(ctx,
     aruba.WithBaseDelay(5*time.Second), // ritardo fisso tra i poll (default: 10s)
     aruba.WithTimeout(3*time.Minute),   // scadenza rigida (default: 600s)
 ); err != nil {
-    log.Fatalf("VPC did not become Ready: %v", err)
+    log.Fatalf("VPC did not become ready: %v", err)
 }
 ```
 
@@ -63,7 +63,7 @@ longWait := []aruba.WaitOption{
     aruba.WithRetries(240),
 }
 if err := reg.WaitUntilReady(ctx, longWait...); err != nil {
-    log.Fatalf("ContainerRegistry did not become Ready: %v", err)
+    log.Fatalf("ContainerRegistry did not become ready: %v", err)
 }
 ```
 
@@ -112,7 +112,7 @@ if err := arubaClient.FromNetwork().Subnets().Delete(ctx, subnet); err != nil {
 
 `WaitUntilGone` è disponibile su ogni wrapper di risorsa che supporta il polling (vedi [Risorse che Supportano il Polling](#risorse-che-supportano-il-polling) in basso). Accetta le stesse `WaitOption` di `WaitUntilReady`. Qualsiasi errore da `Get` diverso da HTTP 404 viene trattato come transitorio e riprovato; un 404 segnala il successo.
 
-`Project` non supporta il polling e quindi non ha `WaitUntilGone`. Viene eliminato per ultimo, senza figli rimasti su cui attendere.
+`Project` non ha supporto al polling e quindi nessun `WaitUntilGone`. Viene eliminato per ultimo, senza figli da attendere.
 
 ---
 
@@ -169,7 +169,7 @@ I seguenti wrapper di risorse supportano `WaitUntilReady`, `WaitUntilActive`, `W
 | `VPNTunnel` | — | |
 | `VPNRoute` | — | |
 | `KMS` | — | |
-| `Kmip` | `WaitUntilCertificateAvailable` | Waiter personalizzato (Family B — nessun `statusMixin`); fa il polling di `KmipResponse.Status` direttamente rispetto a una mappa di stati terminali esplicita |
+| `Kmip` | `WaitUntilCertificateAvailable` | Waiter personalizzato (Family B — nessun `statusMixin`); fa il polling di `KmipResponse.Status` direttamente |
 
 > **Il Progetto non supporta il polling.** È pronto in modo sincrono immediatamente dopo che `Create` ritorna — non è necessaria né disponibile alcuna chiamata `WaitUntilActive`.
 
@@ -207,78 +207,9 @@ Tutto il polling rispetta la scadenza e la cancellazione del `ctx`. Se il contex
 
 ---
 
-## Avanzato: Polling in Background con `pkg/async`
+## Avanzato: polling concorrente e personalizzato
 
-`WaitUntilReady`, `WaitUntilActive` e `WaitUntilStates` bloccano la goroutine chiamante. Se devi **avviare più attese in modo concorrente**, o **fare il polling di una condizione arbitraria** (non solo uno stato di risorsa), usa direttamente il pacchetto `pkg/async` di livello inferiore.
-
-`pkg/async` è un pacchetto pubblico — importalo insieme a `pkg/aruba`:
-
-```go
-import (
-    "github.com/Arubacloud/sdk-go/pkg/aruba"
-    "github.com/Arubacloud/sdk-go/pkg/async"
-    "github.com/Arubacloud/sdk-go/pkg/types"
-)
-```
-
-### `WaitFor` — avvia un future in background
-
-`async.WaitFor` avvia immediatamente una goroutine di polling e restituisce un `*async.AsyncClient[T]` (un future). Chiami `.Await(ctx)` in seguito per bloccare e ottenere il risultato:
-
-```go
-// Avvia il polling di VPC1 e VPC2 in modo concorrente
-futureVPC1 := async.DefaultWaitFor(ctx,
-    func(ctx context.Context) (*types.Response[types.VPCResponse], error) {
-        return arubaClient.FromNetwork().VPCs().Get(ctx, vpc1)
-    },
-    func(resp *types.Response[types.VPCResponse]) (bool, error) {
-        if resp == nil || resp.Data == nil {
-            return false, nil
-        }
-        var state types.State
-        if resp.Data.Properties != nil && resp.Data.Properties.Status != nil &&
-            resp.Data.Properties.Status.State != nil {
-            state = *resp.Data.Properties.Status.State
-        }
-        return state == types.StateActive, nil
-    },
-)
-
-futureVPC2 := async.DefaultWaitFor(ctx, /* stesso pattern per vpc2 */)
-
-// Blocca e attendi entrambi i risultati
-resp1, err1 := futureVPC1.Await(ctx)
-resp2, err2 := futureVPC2.Await(ctx)
-```
-
-`DefaultWaitFor` usa i valori predefiniti del pacchetto: `DefaultRetries=60`, `DefaultBaseDelay=10s`, `DefaultTimeout=600s`. Usa `async.WaitFor(ctx, retries, baseDelay, timeout, call, check)` per sovrascriverli.
-
-### Firma di `WaitFor`
-
-```go
-func WaitFor[T any](
-    ctx         context.Context,
-    retries     int,
-    baseDelay   time.Duration,
-    timeout     time.Duration,
-    call        func(ctx context.Context) (*types.Response[T], error),
-    check       func(*types.Response[T]) (bool, error),
-) *AsyncClient[T]
-```
-
-- `call` — la funzione di polling, chiamata una volta per ogni iterazione.
-- `check` — restituisce `(true, nil)` per segnalare il successo, `(true, error)` per segnalare un fallimento terminale, `(false, nil)` per continuare il polling.
-- Se `check` è `nil`, qualsiasi `response.Data` non-nil viene trattato come successo.
-
-### `AsyncClient.Await`
-
-```go
-func (f *AsyncClient[T]) Await(ctx context.Context) (*types.Response[T], error)
-```
-
-Blocca finché la goroutine in background invia il suo risultato oppure il `ctx` viene cancellato. Chiamate successive restituiscono il risultato **in cache** immediatamente — sicuro da chiamare più volte.
-
-> `pkg/async` lavora direttamente con le struct wire di `pkg/types`. Questo è l'unico livello dell'SDK dove interagirai direttamente con `types.Response[T]` e i tipi `types.*Response`.
+`WaitUntilReady`, `WaitUntilActive` e `WaitUntilStates` bloccano la goroutine chiamante. Quando devi **avviare più attese in modo concorrente**, o **fare il polling di una condizione arbitraria** (non solo uno stato di risorsa), scendi al livello di `pkg/async`. Quel layer lavora direttamente con `*types.Response[T]` ed è documentato separatamente — consulta [Lavorare a Basso Livello](./working-at-low-level#background-polling-with-pkgasync).
 
 ---
 
@@ -286,3 +217,4 @@ Blocca finché la goroutine in background invia il suo risultato oppure il `ctx`
 
 - [Guida al Walkthrough API](./walkthrough) — esempio completo del ciclo di vita Create + `WaitUntilReady` + Update + Delete
 - [Gestione delle Risposte](./response-handling) — come `*aruba.HTTPError` si propaga attraverso `WaitUntilReady` quando l'API restituisce 4xx/5xx
+- [Lavorare a Basso Livello](./working-at-low-level) — polling in background con `pkg/async`, accesso ai campi wire non promossi
