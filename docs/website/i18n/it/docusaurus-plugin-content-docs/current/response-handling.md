@@ -186,7 +186,7 @@ fmt.Println(raw.Properties.SomeUnpromotedField)
 | Identità | `ID()`, `URI()`, `CloudServerID()` |
 | Denominazione | `Name()`, `Tags()` |
 | Geografia | `Region()`, `Zone()` |
-| Derivazione | `Project()`, `CreatedAt()`, `UpdatedAt()`, `Version()` |
+| Derivazione | `Project()`, `CreatedAt()`, `UpdatedAt()`, `Version()`, `CreatedBy()`, `UpdatedBy()`, `CreatedUser()`, `UpdatedUser()` |
 | Ciclo di vita | `State()`, `IsDisabled()`, `DisableReasons()`, `FailureReason()` |
 | Risorse collegate | `LinkedResources()` |
 | Envelope grezzo | `Raw()`, `RawJSON()`, `RawYAML()`, `RawRequest()`, `StatusCode()`, `Headers()`, `RawError()` |

@@ -357,7 +357,7 @@ Every Family-A wrapper exposes a standard set of read accessors so callers never
 | **Identity** | `ID()`, `URI()`, `<Resource>ID()` | `responseMetadataMixin` + wrapper |
 | **Naming** | `Name()`, `Tags()` | `metadataMixin` |
 | **Geography** | `Region()`, `Zone()` (zonal only) | `regionalMixin` / `zonalMixin` |
-| **Lineage** | `Project()`, `CreatedAt()`, `UpdatedAt()`, `Version()` | `responseMetadataMixin` |
+| **Lineage** | `Project()`, `CreatedAt()`, `UpdatedAt()`, `Version()`, `CreatedBy()`, `UpdatedBy()`, `CreatedUser()`, `UpdatedUser()` | `responseMetadataMixin` |
 | **Lifecycle** | `State()`, `IsDisabled()`, `DisableReasons()`, `FailureReason()`, `PreviousState()` | `statusMixin` |
 | **Linked** | `LinkedResources()` | `linkedMixin` |
 | **Raw envelope** | `Raw()`, `RawJSON()`, `RawYAML()`, `RawRequest()`, `RawHTTP()`, `StatusCode()`, `Headers()`, `RawError()` | wrapper + `httpEnvelopeMixin` |

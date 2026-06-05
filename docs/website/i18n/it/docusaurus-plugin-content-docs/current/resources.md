@@ -98,6 +98,8 @@ fmt.Printf("✓ Progetto: %s (ID: %s)\n", proj.Name(), proj.ID())
 - `IsDefault()` — se questo è il progetto predefinito
 - `Tags()` — lista di tag `[]string`
 - `CreatedAt()`, `UpdatedAt()` — timestamp
+- `CreatedBy()`, `UpdatedBy()` — identificatore dell'attore che ha creato/aggiornato la risorsa (es. `aru-297647`)
+- `CreatedUser()`, `UpdatedUser()` — nome visualizzato dell'utente che ha creato/aggiornato la risorsa
 - `Raw()` — struct wire sottostante `*types.ProjectResponse`
 - `RawJSON()` / `RawYAML()` — payload serializzato per i flag `--output json/yaml`
 - `RawRequest()` — `types.ProjectRequest` per i flussi round-trip `Get → Update`

@@ -98,6 +98,8 @@ fmt.Printf("✓ Project: %s (ID: %s)\n", proj.Name(), proj.ID())
 - `IsDefault()` — whether this is the default project
 - `Tags()` — `[]string` tag list
 - `CreatedAt()`, `UpdatedAt()` — timestamps
+- `CreatedBy()`, `UpdatedBy()` — actor identifier (e.g. `aru-297647`) of the creator/last updater
+- `CreatedUser()`, `UpdatedUser()` — display name of the creator/last updater
 - `Raw()` — underlying `*types.ProjectResponse` wire struct
 - `RawJSON()` / `RawYAML()` — serialized payload for `--output json/yaml` flags
 - `RawRequest()` — `types.ProjectRequest` for round-trip `Get → Update` flows
