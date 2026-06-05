@@ -13,6 +13,7 @@ L'SDK espone tre livelli per gestire questa situazione:
 | `WaitUntilReady(ctx)` | 95% dei casi — blocca finché la risorsa è pronta (accetta `Active`, `Running`, `Stopped`, `NotUsed`, `Reserved`, `InUse`, `Used`) |
 | `WaitUntilActive(ctx)` | Quando hai specificamente bisogno solo dello stato `Active` |
 | `WaitUntilStates(ctx, []types.State{...}, opts...)` | Attendi uno o più stati specifici (es. `[]types.State{types.StateStopped}`) |
+| `WaitUntilGone(ctx)` | Dopo `Delete` — blocca finché il `Get` della risorsa restituisce HTTP 404 (completamente rimossa) |
 | `pkg/async.WaitFor` + `AsyncClient.Await` | Avanzato — avvia il polling in una goroutine in background, fai altro lavoro, raccogli il risultato in seguito |
 
 ---
@@ -81,7 +82,7 @@ if err := cs.WaitUntilStates(ctx, []types.State{types.StateStopped}); err != nil
 
 ```go
 // Attendi che un'istanza DBaaS finisca un aggiornamento in corso
-if err := db.WaitUntilStates(ctx, []types.State{types.StateActive},
+if err := db.WaitUntilActive(ctx,
     aruba.WithRetries(120),
     aruba.WithBaseDelay(15*time.Second),
 ); err != nil {
@@ -94,6 +95,24 @@ Si applica lo stesso comportamento di uscita anticipata per gli stati di errore 
 `WaitUntilActive` e `WaitUntilReady` sono wrapper di convenienza attorno a `WaitUntilStates`:
 - `WaitUntilActive(ctx, opts...)` — equivalente a `WaitUntilStates(ctx, []types.State{types.StateActive}, opts...)`
 - `WaitUntilReady(ctx, opts...)` — equivalente a `WaitUntilStates(ctx, []types.State{types.StateActive, types.StateRunning, types.StateStopped, types.StateNotUsed, types.StateReserved, types.StateInUse, types.StateUsed}, opts...)`
+
+---
+
+## `WaitUntilGone`
+
+Usa `WaitUntilGone` dopo una chiamata `Delete` per bloccare finché la risorsa è completamente rimossa — ovvero finché il suo `Get` restituisce HTTP 404:
+
+```go
+if err := arubaClient.FromNetwork().Subnets().Delete(ctx, subnet); err != nil {
+    log.Printf("Delete subnet: %v", err)
+} else if err := subnet.WaitUntilGone(ctx); err != nil {
+    log.Printf("Subnet not gone: %v", err)
+}
+```
+
+`WaitUntilGone` è disponibile su ogni wrapper di risorsa che supporta il polling (vedi [Risorse che Supportano il Polling](#risorse-che-supportano-il-polling) in basso). Accetta le stesse `WaitOption` di `WaitUntilReady`. Qualsiasi errore da `Get` diverso da HTTP 404 viene trattato come transitorio e riprovato; un 404 segnala il successo.
+
+`Project` non ha supporto al polling e quindi nessun `WaitUntilGone`. Viene eliminato per ultimo, senza figli da attendere.
 
 ---
 
@@ -125,7 +144,7 @@ if err := vpc.WaitUntilReady(ctx); err != nil {
 
 ## Risorse che Supportano il Polling
 
-I seguenti wrapper di risorse supportano `WaitUntilReady`, `WaitUntilActive`, `WaitUntilStates` e gli accessor di stato. Le risorse contrassegnate con un metodo wait speciale espongono un'ulteriore forma nominata.
+I seguenti wrapper di risorse supportano `WaitUntilReady`, `WaitUntilActive`, `WaitUntilStates`, `WaitUntilGone` e gli accessor di stato. Le risorse contrassegnate con un metodo wait speciale espongono un'ulteriore forma nominata.
 
 | Risorsa | Wait speciale | Note |
 |---------|---------------|------|
@@ -160,7 +179,7 @@ I seguenti wrapper di risorse supportano `WaitUntilReady`, `WaitUntilActive`, `W
 
 ### Wrapper idratato obbligatorio
 
-`WaitUntilReady`, `WaitUntilActive` e `WaitUntilStates` funzionano solo su wrapper che sono stati **restituiti da una chiamata adapter** (`Create`, `Get`, `Update` o `List`). Chiamare uno qualsiasi di questi metodi su un builder di richiesta appena costruito restituisce:
+`WaitUntilReady`, `WaitUntilActive`, `WaitUntilStates` e `WaitUntilGone` funzionano solo su wrapper che sono stati **restituiti da una chiamata adapter** (`Create`, `Get`, `Update` o `List`). Chiamare uno qualsiasi di questi metodi su un builder di richiesta appena costruito restituisce:
 
 ```
 WaitUntilStates: refresh callback not set; resource must be produced by an adapter (Create/Get/Update/List) to support polling
@@ -188,78 +207,9 @@ Tutto il polling rispetta la scadenza e la cancellazione del `ctx`. Se il contex
 
 ---
 
-## Avanzato: Polling in Background con `pkg/async`
+## Avanzato: polling concorrente e personalizzato
 
-`WaitUntilReady`, `WaitUntilActive` e `WaitUntilStates` bloccano la goroutine chiamante. Se devi **avviare più attese in modo concorrente**, o **fare il polling di una condizione arbitraria** (non solo uno stato di risorsa), usa direttamente il pacchetto `pkg/async` di livello inferiore.
-
-`pkg/async` è un pacchetto pubblico — importalo insieme a `pkg/aruba`:
-
-```go
-import (
-    "github.com/Arubacloud/sdk-go/pkg/aruba"
-    "github.com/Arubacloud/sdk-go/pkg/async"
-    "github.com/Arubacloud/sdk-go/pkg/types"
-)
-```
-
-### `WaitFor` — avvia un future in background
-
-`async.WaitFor` avvia immediatamente una goroutine di polling e restituisce un `*async.AsyncClient[T]` (un future). Chiami `.Await(ctx)` in seguito per bloccare e ottenere il risultato:
-
-```go
-// Avvia il polling di VPC1 e VPC2 in modo concorrente
-futureVPC1 := async.DefaultWaitFor(ctx,
-    func(ctx context.Context) (*types.Response[types.VPCResponse], error) {
-        return arubaClient.FromNetwork().VPCs().Get(ctx, vpc1)
-    },
-    func(resp *types.Response[types.VPCResponse]) (bool, error) {
-        if resp == nil || resp.Data == nil {
-            return false, nil
-        }
-        var state types.State
-        if resp.Data.Properties != nil && resp.Data.Properties.Status != nil &&
-            resp.Data.Properties.Status.State != nil {
-            state = *resp.Data.Properties.Status.State
-        }
-        return state == types.StateActive, nil
-    },
-)
-
-futureVPC2 := async.DefaultWaitFor(ctx, /* stesso pattern per vpc2 */)
-
-// Blocca e attendi entrambi i risultati
-resp1, err1 := futureVPC1.Await(ctx)
-resp2, err2 := futureVPC2.Await(ctx)
-```
-
-`DefaultWaitFor` usa i valori predefiniti del pacchetto: `DefaultRetries=60`, `DefaultBaseDelay=10s`, `DefaultTimeout=600s`. Usa `async.WaitFor(ctx, retries, baseDelay, timeout, call, check)` per sovrascriverli.
-
-### Firma di `WaitFor`
-
-```go
-func WaitFor[T any](
-    ctx         context.Context,
-    retries     int,
-    baseDelay   time.Duration,
-    timeout     time.Duration,
-    call        func(ctx context.Context) (*types.Response[T], error),
-    check       func(*types.Response[T]) (bool, error),
-) *AsyncClient[T]
-```
-
-- `call` — la funzione di polling, chiamata una volta per ogni iterazione.
-- `check` — restituisce `(true, nil)` per segnalare il successo, `(true, error)` per segnalare un fallimento terminale, `(false, nil)` per continuare il polling.
-- Se `check` è `nil`, qualsiasi `response.Data` non-nil viene trattato come successo.
-
-### `AsyncClient.Await`
-
-```go
-func (f *AsyncClient[T]) Await(ctx context.Context) (*types.Response[T], error)
-```
-
-Blocca finché la goroutine in background invia il suo risultato oppure il `ctx` viene cancellato. Chiamate successive restituiscono il risultato **in cache** immediatamente — sicuro da chiamare più volte.
-
-> `pkg/async` lavora direttamente con le struct wire di `pkg/types`. Questo è l'unico livello dell'SDK dove interagirai direttamente con `types.Response[T]` e i tipi `types.*Response`.
+`WaitUntilReady`, `WaitUntilActive` e `WaitUntilStates` bloccano la goroutine chiamante. Quando devi **avviare più attese in modo concorrente**, o **fare il polling di una condizione arbitraria** (non solo uno stato di risorsa), scendi al livello di `pkg/async`. Quel layer lavora direttamente con `*types.Response[T]` ed è documentato separatamente — consulta [Lavorare a Basso Livello](./working-at-low-level#background-polling-with-pkgasync).
 
 ---
 
@@ -267,3 +217,4 @@ Blocca finché la goroutine in background invia il suo risultato oppure il `ctx`
 
 - [Guida al Walkthrough API](./walkthrough) — esempio completo del ciclo di vita Create + `WaitUntilReady` + Update + Delete
 - [Gestione delle Risposte](./response-handling) — come `*aruba.HTTPError` si propaga attraverso `WaitUntilReady` quando l'API restituisce 4xx/5xx
+- [Lavorare a Basso Livello](./working-at-low-level) — polling in background con `pkg/async`, accesso ai campi wire non promossi

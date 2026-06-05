@@ -50,13 +50,13 @@ func main() {
 	defer cancel()
 
 	// 2. Crea il Progetto — costruisci inline e passa a Create
-	fmt.Println("Creazione di un nuovo progetto...")
+	fmt.Println("Creating a new project...")
 	proj, err := arubaClient.FromProject().Create(
 		ctx,
 		aruba.NewProject().
 			Named("my-first-project").
 			Tagged("go-sdk", "quick-start").
-			DescribedAs("A project with the Go SDK"))
+			DescribedAs("Un progetto creato con l'SDK Go"))
 	if err != nil {
 		log.Fatalf("Error creating project: %v", err)
 	}
@@ -73,4 +73,4 @@ func main() {
 - Comprendi la [Gestione delle Risposte](./response-handling) per una gestione robusta degli errori
 - Scopri il [Filtraggio](./filters) per interrogare le risorse in modo efficiente
 - Leggi [Multitenancy](./multitenancy) per gestire client specifici per tenant
-- Approfondisci [Lavorare a Basso Livello](./working-at-low-level) per accedere ai campi wire e al polling avanzato
+- Vedi [Utilizzo a Basso Livello](./working-at-low-level) per funzionalità avanzate (`pkg/types`, `pkg/async`)

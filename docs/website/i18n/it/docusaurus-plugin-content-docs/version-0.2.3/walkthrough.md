@@ -6,7 +6,7 @@ sidebar_position: 2
 
 L'SDK Go di Aruba Cloud fornisce un singolo import — `github.com/Arubacloud/sdk-go/pkg/aruba` — che espone un'API fluente con pattern builder per ogni risorsa cloud. Si costruisce la descrizione della risorsa con una catena `aruba.NewX()`, la si passa al metodo del client appropriato (`Create`, `Get`, `Update`, `Delete` o `List`), e si lavora con il wrapper tipizzato restituito.
 
-Le risorse sono organizzate in un **Progetto**, e le risorse figlio referenziano i propri genitori tramite l'interfaccia `aruba.Ref`. Non è mai necessario estrarre o passare manualmente stringhe di ID grezzi: si passa direttamente il wrapper idratato (restituito da `Create` o `Get`) come parametro `Ref` ai metodi builder come `IntoProject(proj)`, `IntoVPC(vpc)` o `IntoSecurityGroup(sg)`.
+Le risorse sono organizzate in un **Progetto**, e le risorse figlio referenziano i propri genitori tramite l'interfaccia `aruba.Ref`. Non è mai necessario estrarre o passare manualmente stringhe di ID grezzi: si passa direttamente il wrapper idratato (restituito da `Create` o `Get`) come parametro `Ref` ai metodi builder come `InProject(proj)`, `InVPC(vpc)` o `InSecurityGroup(sg)`.
 
 Questa pagina illustra il ciclo CRUD completo su un esempio minimale — Project + VPC + Subnet. Ogni altra risorsa segue esattamente la stessa struttura. Vedi [Risorse](./resources) per snippet pronti all'uso per tutte le risorse supportate.
 
@@ -56,8 +56,8 @@ proj, err := arubaClient.FromProject().Create(
     ctx,
     aruba.NewProject().
         Named("my-project").
-        WithDescription("Creato tramite l'SDK Go di Aruba Cloud").
-        AddTag("go-sdk").
+        Tagged("go-sdk").
+        DescribedAs("Creato tramite l'SDK Go di Aruba Cloud").
         NotDefault())
 if err != nil {
     log.Fatalf("Create project: %v", err)
@@ -71,12 +71,12 @@ fmt.Printf("✓ Progetto creato: %s (ID: %s)\n", proj.Name(), proj.ID())
 vpc, err := arubaClient.FromNetwork().VPCs().Create(
     ctx,
     aruba.NewVPC().
-        IntoProject(proj).
         Named("my-vpc").
-        AddTag("network").
+        Tagged("network").
+        InProject(proj).
         InRegion(aruba.RegionITBGBergamo).
         NotDefault().
-        WithPreset(false))
+        WithoutPreset())
 if err != nil {
     log.Fatalf("Create VPC: %v", err)
 }
@@ -85,11 +85,11 @@ fmt.Printf("✓ VPC creata: %s\n", vpc.Name())
 // La maggior parte delle risorse è asincrona — attendi che raggiungano uno stato stabile.
 // Vedi "7. Attendere la Disponibilità" per le opzioni e i dettagli.
 if err := vpc.WaitUntilReady(ctx); err != nil {
-    log.Fatalf("VPC did not become Active: %v", err)
+    log.Fatalf("VPC did not become ready: %v", err)
 }
 ```
 
-`IntoProject(proj)` accetta qualsiasi `aruba.Ref` — lega lo scope del progetto senza richiedere l'estrazione di un ID stringa grezzo.
+`InProject(proj)` accetta qualsiasi `aruba.Ref` — lega lo scope del progetto senza richiedere l'estrazione di un ID stringa grezzo.
 
 ### Subnet
 
@@ -97,32 +97,31 @@ if err := vpc.WaitUntilReady(ctx); err != nil {
 subnet, err := arubaClient.FromNetwork().Subnets().Create(
     ctx,
     aruba.NewSubnet().
-        IntoVPC(vpc).
-        Named("my-subnet").
-        AddTag("network").
-        InRegion(aruba.RegionITBGBergamo).
         OfType(aruba.SubnetTypeAdvanced).
-        NotDefault().
+        Named("my-subnet").
+        Tagged("network").
+        InVPC(vpc).
+        InRegion(aruba.RegionITBGBergamo).
         WithCIDR("192.168.1.0/25").
         WithDHCP(aruba.NewSubnetDHCP().
             Enabled().
             WithRange("192.168.1.10", 50).
-            AddRoute("10.0.0.0/8", "192.168.1.1").
-            AddDNS("8.8.8.8").
-            AddDNS("8.8.4.4")))
+            WithRoutes(aruba.SubnetDHCPRouteCommon{Address: "10.0.0.0/8", Gateway: "192.168.1.1"}).
+            WithDNSServers("8.8.8.8", "8.8.4.4")).
+        NotDefault())
 if err != nil {
     log.Fatalf("Create subnet: %v", err)
 }
 fmt.Printf("✓ Subnet creata: %s (CIDR: %s)\n", subnet.Name(), subnet.CIDR())
 
 if err := subnet.WaitUntilReady(ctx); err != nil {
-    log.Fatalf("Subnet did not become Active: %v", err)
+    log.Fatalf("Subnet did not become ready: %v", err)
 }
 ```
 
 `aruba.NewSubnetDHCP()` è un sub-builder per la configurazione DHCP. Si allega alla subnet con `WithDHCP(...)`.
 
-`OfType` accetta `aruba.SubnetTypeBasic` o `aruba.SubnetTypeAdvanced` (costanti tipizzate — nessun cast a stringa necessario).
+`OfType` accetta `aruba.SubnetTypeBasic` o `aruba.SubnetTypeAdvanced`.
 
 > Ogni altra risorsa — Security Group, Elastic IP, Block Storage, Cloud Server, cluster KaaS, istanze DBaaS e altro — segue esattamente la stessa struttura `NewX()` → `IntoParent(ref)` → `Create(ctx, ...)` → `WaitUntilReady(ctx)`. Vedi [Risorse](./resources) per l'elenco completo con snippet pronti all'uso.
 
@@ -141,7 +140,7 @@ if err != nil {
 
 // Muta
 vpc.Named("my-vpc-updated").
-    ReplaceTags("network", "updated")
+    RetaggedAs("network", "updated")
 
 // Aggiorna
 updated, err := arubaClient.FromNetwork().VPCs().Update(ctx, vpc)
@@ -219,7 +218,7 @@ vpcs, err := arubaClient.FromNetwork().VPCs().List(ctx, proj)
 
 Elimina i figli prima dei genitori. L'API Aruba Cloud restituisce **HTTP 400** quando si tenta di eliminare un genitore che ha ancora risorse figlio attive o in fase di eliminazione — non 409/422. Il pattern sicuro è emettere ogni delete sul figlio, poi attendere che la risorsa sia completamente sparita prima di salire nella catena delle dipendenze.
 
-`WaitUntilGone` blocca finché la risorsa non esiste più — ovvero finché il suo `Get` restituisce HTTP 404. Chiamalo sul wrapper idratato che già possiedi (`Delete` di per sé restituisce solo un `error`, non un wrapper):
+`WaitUntilGone` blocca finché la risorsa non esiste più — ovvero finché il suo `Get` restituisce HTTP 404. Chiamalo sul wrapper idratato che già possiedi (`Delete` restituisce solo un `error`, nessun wrapper):
 
 ```go
 // subnet → VPC → progetto
@@ -240,7 +239,7 @@ if err := arubaClient.FromProject().Delete(ctx, proj); err != nil {
 }
 ```
 
-`WaitUntilGone` accetta le stesse `WaitOption` di `WaitUntilReady` (`WithRetries`, `WithBaseDelay`, `WithTimeout`) ed è disponibile su ogni wrapper di risorsa che supporta il polling. `Project` non ha polling — viene eliminato per ultimo, senza figli rimasti su cui attendere.
+`WaitUntilGone` accetta le stesse `WaitOption` di `WaitUntilReady` (`WithRetries`, `WithBaseDelay`, `WithTimeout`) ed è disponibile su ogni wrapper di risorsa che supporta il polling. `Project` non ha polling — viene eliminato per ultimo, senza figli da attendere.
 
 `Delete` accetta qualsiasi `aruba.Ref` — puoi passare il wrapper idratato direttamente o `aruba.URI(…)` se hai solo il percorso.
 
@@ -252,13 +251,15 @@ Per una sequenza completa di teardown (Security Rule → Security Group → Subn
 
 La maggior parte delle operazioni cloud — Create, Update, operazioni di scaling — sono **asincrone**: la chiamata HTTP ritorna rapidamente, ma la risorsa continua a transitare tra stati (`Creating` → `Active`, `Updating` → `Active`) per secondi o minuti in background.
 
-Il metodo `WaitUntilReady` su qualsiasi wrapper di risorsa che incorpora `statusMixin` blocca finché la risorsa raggiunge lo stato `"Active"` (o restituisce un errore in caso di fallimento terminale):
+Il metodo `WaitUntilReady` su qualsiasi wrapper che incorpora `statusMixin` blocca finché la risorsa raggiunge uno qualsiasi dei 7 stati stabili (`Active`, `Running`, `Stopped`, `NotUsed`, `Reserved`, `InUse`, `Used`) o restituisce un errore in caso di fallimento terminale:
 
 ```go
 if err := vpc.WaitUntilReady(ctx); err != nil {
-    log.Fatalf("VPC did not become Active: %v", err)
+    log.Fatalf("VPC did not become ready: %v", err)
 }
 ```
+
+Usa `WaitUntilActive` quando hai specificamente bisogno solo dello stato `"Active"` — ad esempio dopo un'operazione di power-on.
 
 Tre `WaitOption` permettono di sovrascrivere i valori predefiniti (60 tentativi × 10 s di ritardo base × 600 s di scadenza rigida):
 
@@ -268,11 +269,11 @@ if err := vpc.WaitUntilReady(ctx,
     aruba.WithBaseDelay(5*time.Second), // ritardo fisso tra i poll (default: 10s)
     aruba.WithTimeout(3*time.Minute),   // scadenza rigida (default: 600s)
 ); err != nil {
-    log.Fatalf("VPC did not become Active: %v", err)
+    log.Fatalf("VPC did not become ready: %v", err)
 }
 ```
 
-Per `WaitUntilStates(ctx, []types.State{...}, opts...)` (qualsiasi insieme di stati target, non solo `"Active"`), gli accessor di stato (`State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`), e il primitivo di basso livello `pkg/async.WaitFor` per il polling concorrente, vedi la guida [Async / Await](./async).
+Per `WaitUntilStates` (qualsiasi insieme di stati target), gli accessor di stato (`State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`), e il primitivo di basso livello `pkg/async.WaitFor` per il polling concorrente, vedi la guida [Async / Await](./async).
 
 ---
 
@@ -284,20 +285,20 @@ I setter del builder non restituiscono mai un errore — lo registrano nel wrapp
 
 ```go
 rule := aruba.NewSecurityRule().
-    IntoSecurityGroup(sg).
-    WithTargetCIDR("0.0.0.0/0").
-    WithTargetSecurityGroup(otherSG) // in conflitto — registrato come errore
+    InSecurityGroup(sg).
+    TargetingCIDR("0.0.0.0/0").
+    TargetingSecurityGroup(otherSG) // in conflitto — registrato come errore
 
 if err := rule.Err(); err != nil {
     log.Fatalf("Bad rule config: %v", err)
 }
 ```
 
-> **Avvertenza**: `WithTargetCIDR` e `WithTargetSecurityGroup` si escludono a vicenda. Impostarli entrambi registra un errore al momento del setter che emerge su `Create`.
+> **Avvertenza**: `TargetingCIDR` e `TargetingSecurityGroup` si escludono a vicenda. Impostarli entrambi registra un errore al momento del setter che emerge su `Create`.
 
-### `WaitUntilReady` richiede un wrapper idratato
+### `WaitUntilReady` / `WaitUntilActive` richiedono un wrapper idratato
 
-Chiamare `WaitUntilReady` su un wrapper costruito manualmente (senza `Create`/`Get`/`Update`/`List`) restituisce:
+Chiamare `WaitUntilReady` o `WaitUntilActive` su un wrapper costruito manualmente (senza `Create`/`Get`/`Update`/`List`) restituisce:
 
 ```
 WaitUntilStates: refresh callback not set; resource must be produced by an adapter (Create/Get/Update/List) to support polling
