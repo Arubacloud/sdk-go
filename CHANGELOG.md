@@ -28,6 +28,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.1] — 2026-06-05
+
+### Added
+
+- **Audit/lineage getters** (`pkg/aruba`) — every Family-A wrapper now exposes the actor
+  behind a resource's creation/update via `responseMetadataMixin`: `CreatedBy()`,
+  `UpdatedBy()`, `CreatedUser()`, `UpdatedUser()`. Each is nil-safe and returns `""` when the
+  server did not populate the field. Complements the existing `CreatedAt()` / `UpdatedAt()` /
+  `Version()` lineage getters. (#316)
+
+### Changed
+
+- Examples (`examples/all-resources`) now print `CreatedBy` / `CreatedAt` in the creation
+  summary and the deletion inventory, demonstrating the new audit getters.
+
+### Documentation
+
+- Documented the new lineage getters in the getter-taxonomy tables (English + Italian) and
+  in the AI architecture/conventions artifacts.
+
+---
+
 ## [1.0.0] — 2026-05-29
 
 ### Added
@@ -893,7 +915,8 @@ Initial Alpha release of the Aruba Cloud SDK for Go.
 ---
 
 <!-- compare links -->
-[Unreleased]: https://github.com/Arubacloud/sdk-go/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Arubacloud/sdk-go/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/Arubacloud/sdk-go/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Arubacloud/sdk-go/compare/v0.3.0...v1.0.0
 [0.3.0]: https://github.com/Arubacloud/sdk-go/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/Arubacloud/sdk-go/compare/v0.2.2...v0.2.3
