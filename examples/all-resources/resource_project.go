@@ -22,7 +22,8 @@ func createProject(ctx context.Context, arubaClient aruba.Client) *aruba.Project
 	if err != nil {
 		log.Fatalf("✗ Failed to create Project: %s", formatErr(err))
 	}
-	printCreated("Project", created.Name(), created.ID())
+	printCreated("Project", created.Name(), created.ID(),
+		"createdBy="+created.CreatedBy())
 
 	return created
 }
