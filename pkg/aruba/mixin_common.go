@@ -192,6 +192,38 @@ func (m *responseMetadataMixin) Version() string {
 	return *m.meta.Version
 }
 
+// CreatedBy returns the identifier of the actor that created the resource, or "".
+func (m *responseMetadataMixin) CreatedBy() string {
+	if m.meta == nil || m.meta.CreatedBy == nil {
+		return ""
+	}
+	return *m.meta.CreatedBy
+}
+
+// UpdatedBy returns the identifier of the actor that last updated the resource, or "".
+func (m *responseMetadataMixin) UpdatedBy() string {
+	if m.meta == nil || m.meta.UpdatedBy == nil {
+		return ""
+	}
+	return *m.meta.UpdatedBy
+}
+
+// CreatedUser returns the user display name that created the resource, or "".
+func (m *responseMetadataMixin) CreatedUser() string {
+	if m.meta == nil || m.meta.CreatedUser == nil {
+		return ""
+	}
+	return *m.meta.CreatedUser
+}
+
+// UpdatedUser returns the user display name that last updated the resource, or "".
+func (m *responseMetadataMixin) UpdatedUser() string {
+	if m.meta == nil || m.meta.UpdatedUser == nil {
+		return ""
+	}
+	return *m.meta.UpdatedUser
+}
+
 // Raw returns the underlying *types.ResourceMetadataResponse, or nil.
 func (m *responseMetadataMixin) Raw() *types.ResourceMetadataResponse {
 	return m.meta
