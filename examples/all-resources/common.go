@@ -469,20 +469,17 @@ func summaryRow(label, name, id string, extras ...string) string {
 	return fmt.Sprintf("- %s: %s (ID: %s)", label, name, tail)
 }
 
-// eipRow returns a summary line for an ElasticIP (which may be nil).
-func eipRow(label string, eip *aruba.ElasticIP) string {
-	if eip != nil {
-		return summaryRow(label, eip.Name(), eip.ID())
+// auditExtras returns a slice of "key=value" strings for CreatedBy and CreatedAt.
+// Empty or zero values are omitted so summaryRow output stays clean.
+func auditExtras(createdBy string, createdAt time.Time) []string {
+	var extras []string
+	if createdBy != "" {
+		extras = append(extras, "createdBy="+createdBy)
 	}
-	return summaryRow(label, "", "")
-}
-
-// bsRow returns a summary line for a BlockStorage (which may be nil).
-func bsRow(label string, bs *aruba.BlockStorage) string {
-	if bs != nil {
-		return summaryRow(label, bs.Name(), bs.ID())
+	if !createdAt.IsZero() {
+		extras = append(extras, "createdAt="+createdAt.UTC().Format(time.RFC3339))
 	}
-	return summaryRow(label, "", "")
+	return extras
 }
 
 // printResourceSummary prints a summary of all created resources.
@@ -492,148 +489,195 @@ func printResourceSummary(resources *ResourceCollection) {
 
 	// Project
 	if resources.Project != nil {
-		fmt.Println(summaryRow("Project", resources.Project.Name(), resources.Project.ID()))
+		fmt.Println(summaryRow("Project", resources.Project.Name(), resources.Project.ID(),
+			auditExtras(resources.Project.CreatedBy(), resources.Project.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("Project", "", ""))
 	}
 
 	// Elastic IPs
-	fmt.Println(eipRow("ElasticIP (Cloud Server)", resources.CloudServerEIP))
-	fmt.Println(eipRow("ElasticIP (DBaaS)", resources.DBaaSEIP))
-	fmt.Println(eipRow("ElasticIP (Container Registry)", resources.ContainerRegistryEIP))
-	fmt.Println(eipRow("ElasticIP (VPN Tunnel)", resources.VPNTunnelEIP))
+	for _, pair := range []struct {
+		label string
+		eip   *aruba.ElasticIP
+	}{
+		{"ElasticIP (Cloud Server)", resources.CloudServerEIP},
+		{"ElasticIP (DBaaS)", resources.DBaaSEIP},
+		{"ElasticIP (Container Registry)", resources.ContainerRegistryEIP},
+		{"ElasticIP (VPN Tunnel)", resources.VPNTunnelEIP},
+	} {
+		if pair.eip != nil {
+			fmt.Println(summaryRow(pair.label, pair.eip.Name(), pair.eip.ID(),
+				auditExtras(pair.eip.CreatedBy(), pair.eip.CreatedAt())...))
+		} else {
+			fmt.Println(summaryRow(pair.label, "", ""))
+		}
+	}
 
 	// Block Storages
-	fmt.Println(bsRow("BlockStorage (Cloud Server)", resources.CloudServerBlockStorage))
-	fmt.Println(bsRow("BlockStorage (Container Registry)", resources.ContainerRegistryStorage))
-	fmt.Println(bsRow("BlockStorage (Restore Target)", resources.RestoreTargetStorage))
+	for _, pair := range []struct {
+		label string
+		bs    *aruba.BlockStorage
+	}{
+		{"BlockStorage (Cloud Server)", resources.CloudServerBlockStorage},
+		{"BlockStorage (Container Registry)", resources.ContainerRegistryStorage},
+		{"BlockStorage (Restore Target)", resources.RestoreTargetStorage},
+	} {
+		if pair.bs != nil {
+			fmt.Println(summaryRow(pair.label, pair.bs.Name(), pair.bs.ID(),
+				auditExtras(pair.bs.CreatedBy(), pair.bs.CreatedAt())...))
+		} else {
+			fmt.Println(summaryRow(pair.label, "", ""))
+		}
+	}
 
 	// Snapshot / Backup / Restore
 	if resources.Snapshot != nil {
-		fmt.Println(summaryRow("Snapshot", resources.Snapshot.Name(), resources.Snapshot.ID()))
+		fmt.Println(summaryRow("Snapshot", resources.Snapshot.Name(), resources.Snapshot.ID(),
+			auditExtras(resources.Snapshot.CreatedBy(), resources.Snapshot.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("Snapshot", "", ""))
 	}
 	if resources.Backup != nil {
-		fmt.Println(summaryRow("Storage Backup", resources.Backup.Name(), resources.Backup.BackupID()))
+		fmt.Println(summaryRow("Storage Backup", resources.Backup.Name(), resources.Backup.BackupID(),
+			auditExtras(resources.Backup.CreatedBy(), resources.Backup.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("Storage Backup", "", ""))
 	}
 	if resources.Restore != nil {
-		fmt.Println(summaryRow("Storage Restore", resources.Restore.Name(), resources.Restore.RestoreID()))
+		fmt.Println(summaryRow("Storage Restore", resources.Restore.Name(), resources.Restore.RestoreID(),
+			auditExtras(resources.Restore.CreatedBy(), resources.Restore.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("Storage Restore", "", ""))
 	}
 
 	// Network
 	if resources.VPC != nil {
-		fmt.Println(summaryRow("VPC", resources.VPC.Name(), resources.VPC.ID()))
+		fmt.Println(summaryRow("VPC", resources.VPC.Name(), resources.VPC.ID(),
+			auditExtras(resources.VPC.CreatedBy(), resources.VPC.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("VPC", "", ""))
 	}
 	if resources.SubnetAdvanced != nil {
-		fmt.Println(summaryRow("Subnet (Advanced)", resources.SubnetAdvanced.Name(), resources.SubnetAdvanced.ID()))
+		fmt.Println(summaryRow("Subnet (Advanced)", resources.SubnetAdvanced.Name(), resources.SubnetAdvanced.ID(),
+			auditExtras(resources.SubnetAdvanced.CreatedBy(), resources.SubnetAdvanced.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("Subnet (Advanced)", "", ""))
 	}
 	if resources.SubnetBasic != nil {
-		fmt.Println(summaryRow("Subnet (Basic)", resources.SubnetBasic.Name(), resources.SubnetBasic.ID()))
+		fmt.Println(summaryRow("Subnet (Basic)", resources.SubnetBasic.Name(), resources.SubnetBasic.ID(),
+			auditExtras(resources.SubnetBasic.CreatedBy(), resources.SubnetBasic.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("Subnet (Basic)", "", ""))
 	}
 
 	// Security
 	if resources.SecurityGroup != nil {
-		fmt.Println(summaryRow("Security Group", resources.SecurityGroup.Name(), resources.SecurityGroup.ID()))
+		fmt.Println(summaryRow("Security Group", resources.SecurityGroup.Name(), resources.SecurityGroup.ID(),
+			auditExtras(resources.SecurityGroup.CreatedBy(), resources.SecurityGroup.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("Security Group", "", ""))
 	}
 	for _, r := range resources.SecurityRulesIngress {
 		if r != nil {
-			fmt.Println(summaryRow("Security Rule (Ingress/"+r.Name()+")", r.Name(), r.ID()))
+			fmt.Println(summaryRow("Security Rule (Ingress/"+r.Name()+")", r.Name(), r.ID(),
+				auditExtras(r.CreatedBy(), r.CreatedAt())...))
 		}
 	}
 	if resources.SecurityRuleEgress != nil {
-		fmt.Println(summaryRow("Security Rule (Egress)", resources.SecurityRuleEgress.Name(), resources.SecurityRuleEgress.ID()))
+		fmt.Println(summaryRow("Security Rule (Egress)", resources.SecurityRuleEgress.Name(), resources.SecurityRuleEgress.ID(),
+			auditExtras(resources.SecurityRuleEgress.CreatedBy(), resources.SecurityRuleEgress.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("Security Rule (Egress)", "", ""))
 	}
 
 	// SSH Key Pair
 	if resources.KeyPair != nil {
-		fmt.Println(summaryRow("SSH Key Pair", resources.KeyPair.Name(), resources.KeyPair.KeyPairID()))
+		fmt.Println(summaryRow("SSH Key Pair", resources.KeyPair.Name(), resources.KeyPair.KeyPairID(),
+			auditExtras(resources.KeyPair.CreatedBy(), resources.KeyPair.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("SSH Key Pair", "", ""))
 	}
 
 	// Database stack
 	if resources.DBaaS != nil {
-		fmt.Println(summaryRow("DBaaS", resources.DBaaS.Name(), resources.DBaaS.DBaaSID()))
+		fmt.Println(summaryRow("DBaaS", resources.DBaaS.Name(), resources.DBaaS.DBaaSID(),
+			auditExtras(resources.DBaaS.CreatedBy(), resources.DBaaS.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("DBaaS", "", ""))
 	}
 	if resources.Database != nil && resources.Database.ID() != "" {
-		fmt.Printf("- DBaaS Database: %s\n", resources.Database.Name())
+		fmt.Println(summaryRow("DBaaS Database", resources.Database.Name(), resources.Database.ID(),
+			auditExtras(resources.Database.CreatedBy(), resources.Database.CreatedAt())...))
 	} else {
 		fmt.Println("- DBaaS Database: <not created>")
 	}
 	if resources.DBaaSUser != nil && resources.DBaaSUser.ID() != "" {
-		fmt.Printf("- DBaaS User: %s\n", resources.DBaaSUser.Username())
+		fmt.Println(summaryRow("DBaaS User", resources.DBaaSUser.Username(), resources.DBaaSUser.ID(),
+			auditExtras(resources.DBaaSUser.CreatedBy(), resources.DBaaSUser.CreatedAt())...))
 	} else {
 		fmt.Println("- DBaaS User: <not created>")
 	}
 	if resources.Grant != nil && resources.Grant.Username() != "" {
-		fmt.Printf("- DBaaS Grant: %s on %s (%s)\n",
-			resources.Grant.Username(), resources.Grant.DatabaseName(), resources.Grant.RoleName())
+		grantDesc := resources.Grant.Username() + " on " + resources.Grant.DatabaseName() + " (" + resources.Grant.RoleName() + ")"
+		fmt.Println(summaryRow("DBaaS Grant", grantDesc, resources.Grant.ID(),
+			auditExtras(resources.Grant.CreatedBy(), resources.Grant.CreatedAt())...))
 	} else {
 		fmt.Println("- DBaaS Grant: <not created>")
 	}
 
 	// Compute & container platforms
 	if resources.KaaS != nil {
-		fmt.Println(summaryRow("KaaS Cluster", resources.KaaS.Name(), resources.KaaS.KaaSID()))
+		fmt.Println(summaryRow("KaaS Cluster", resources.KaaS.Name(), resources.KaaS.KaaSID(),
+			auditExtras(resources.KaaS.CreatedBy(), resources.KaaS.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("KaaS Cluster", "", ""))
 	}
 	if resources.CloudServer != nil {
-		fmt.Println(summaryRow("Cloud Server", resources.CloudServer.Name(), resources.CloudServer.CloudServerID()))
+		fmt.Println(summaryRow("Cloud Server", resources.CloudServer.Name(), resources.CloudServer.CloudServerID(),
+			auditExtras(resources.CloudServer.CreatedBy(), resources.CloudServer.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("Cloud Server", "", ""))
 	}
 	if resources.ContainerRegistry != nil {
-		fmt.Println(summaryRow("Container Registry", resources.ContainerRegistry.Name(), resources.ContainerRegistry.ContainerRegistryID()))
+		fmt.Println(summaryRow("Container Registry", resources.ContainerRegistry.Name(), resources.ContainerRegistry.ContainerRegistryID(),
+			auditExtras(resources.ContainerRegistry.CreatedBy(), resources.ContainerRegistry.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("Container Registry", "", ""))
 	}
 
 	// Schedule jobs
 	if resources.JobRecurring != nil {
-		fmt.Println(summaryRow("Job (Recurring)", resources.JobRecurring.Name(), resources.JobRecurring.JobID()))
+		fmt.Println(summaryRow("Job (Recurring)", resources.JobRecurring.Name(), resources.JobRecurring.JobID(),
+			auditExtras(resources.JobRecurring.CreatedBy(), resources.JobRecurring.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("Job (Recurring)", "", ""))
 	}
 	if resources.JobOneShot != nil {
-		fmt.Println(summaryRow("Job (One-Shot)", resources.JobOneShot.Name(), resources.JobOneShot.JobID()))
+		fmt.Println(summaryRow("Job (One-Shot)", resources.JobOneShot.Name(), resources.JobOneShot.JobID(),
+			auditExtras(resources.JobOneShot.CreatedBy(), resources.JobOneShot.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("Job (One-Shot)", "", ""))
 	}
 
 	// VPN stack
 	if resources.VPNTunnel != nil {
-		fmt.Println(summaryRow("VPN Tunnel", resources.VPNTunnel.Name(), resources.VPNTunnel.VPNTunnelID()))
+		fmt.Println(summaryRow("VPN Tunnel", resources.VPNTunnel.Name(), resources.VPNTunnel.VPNTunnelID(),
+			auditExtras(resources.VPNTunnel.CreatedBy(), resources.VPNTunnel.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("VPN Tunnel", "", ""))
 	}
 	if resources.VPNRoute != nil {
-		fmt.Println(summaryRow("VPN Route", resources.VPNRoute.Name(), resources.VPNRoute.VPNRouteID(),
-			"cloudSubnet="+resources.VPNRoute.CloudSubnetCIDR()))
+		extras := append([]string{"cloudSubnet=" + resources.VPNRoute.CloudSubnetCIDR()},
+			auditExtras(resources.VPNRoute.CreatedBy(), resources.VPNRoute.CreatedAt())...)
+		fmt.Println(summaryRow("VPN Route", resources.VPNRoute.Name(), resources.VPNRoute.VPNRouteID(), extras...))
 	} else {
 		fmt.Println(summaryRow("VPN Route", "", ""))
 	}
 
 	// KMS stack
 	if resources.KMS != nil {
-		fmt.Println(summaryRow("KMS Instance", resources.KMS.Name(), resources.KMS.KMSID()))
+		fmt.Println(summaryRow("KMS Instance", resources.KMS.Name(), resources.KMS.KMSID(),
+			auditExtras(resources.KMS.CreatedBy(), resources.KMS.CreatedAt())...))
 	} else {
 		fmt.Println(summaryRow("KMS Instance", "", ""))
 	}
