@@ -1,7 +1,7 @@
 package aruba
 
 // Version is the current SDK release version.
-const Version = "1.0.0"
+const Version = "1.0.1"
 
 // defaultUserAgent is injected as the User-Agent header on every request
 // unless overridden via Options.WithUserAgent.
