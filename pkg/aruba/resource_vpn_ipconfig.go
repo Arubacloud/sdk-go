@@ -42,7 +42,10 @@ func (c *VPNIPConfig) WithElasticIP(v Ref) *VPNIPConfig {
 	return c
 }
 
-// WithSubnet sets the subnet name and CIDR block for this IP configuration.
+// WithSubnet sets the name and CIDR of the existing cloud-side subnet to associate
+// with this VPN tunnel. The CIDR identifies which cloud subnet routes traffic to/from
+// the remote peer; it must not already be used by another VPN tunnel configuration —
+// doing so returns a 400 "ipConfigurations.subnet.cidr overlaps" error.
 func (c *VPNIPConfig) WithSubnet(name, cidr string) *VPNIPConfig {
 	c.subnetName, c.subnetCIDR, c.hasSubnet = name, cidr, true
 	return c

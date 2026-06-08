@@ -243,7 +243,10 @@ const (
 	VPNClientProtocolIKEv2 VPNClientProtocol = "ikev2"
 )
 
-// SubnetInfoCommon contains subnet CIDR and name for VPN tunnel IP configuration
+// SubnetInfoCommon identifies an existing cloud-side subnet by name and CIDR for use
+// in VPN tunnel IP configuration. The CIDR is a routing reference, not a provisioning
+// spec — the subnet must already exist. The 400 "overlaps" error means the same CIDR
+// is already associated with another VPN tunnel configuration.
 type SubnetInfoCommon struct {
 	CIDR string `json:"cidr,omitempty"`
 	Name string `json:"name,omitempty"`
