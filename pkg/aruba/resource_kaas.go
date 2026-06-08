@@ -52,7 +52,10 @@ type KaaS struct {
 	billingPeriod        *BillingPeriod
 	identityClientID     *string
 	identityClientSecret *string
-	apiServerProfile     *types.KaaSAPIServerAccessProfilePropertiesRequest // structural pass-through
+
+	// API server access profile — stored as scalars so callers need not import pkg/types.
+	apiServerPrivateCluster     *bool
+	apiServerAuthorizedIPRanges *[]string
 
 	// Sub-builders.
 	nodePools []*NodePool
@@ -176,9 +179,37 @@ func (k *KaaS) WithIdentity(clientID, clientSecret string) *KaaS {
 	return k
 }
 
-// WithAPIServerAccessProfile sets the API server access profile.
+// WithPrivateCluster enables private cluster mode for the API server, restricting
+// access to the control plane to the cluster's internal network only.
+func (k *KaaS) WithPrivateCluster() *KaaS {
+	v := true
+	k.apiServerPrivateCluster = &v
+	return k
+}
+
+// WithAuthorizedIPRanges restricts API server access to the given CIDR ranges.
+// Pass zero arguments to clear any previously-set ranges.
+func (k *KaaS) WithAuthorizedIPRanges(ranges ...string) *KaaS {
+	if len(ranges) == 0 {
+		k.apiServerAuthorizedIPRanges = nil
+		return k
+	}
+	cp := make([]string, len(ranges))
+	copy(cp, ranges)
+	k.apiServerAuthorizedIPRanges = &cp
+	return k
+}
+
+// WithAPIServerAccessProfile sets the API server access profile from a pre-built struct.
+// Callers who prefer not to import pkg/types can use WithPrivateCluster and
+// WithAuthorizedIPRanges instead.
 func (k *KaaS) WithAPIServerAccessProfile(p *types.KaaSAPIServerAccessProfilePropertiesRequest) *KaaS {
-	k.apiServerProfile = p
+	if p == nil {
+		return k
+	}
+	v := p.EnablePrivateCluster
+	k.apiServerPrivateCluster = &v
+	k.apiServerAuthorizedIPRanges = p.AuthorizedIPRanges
 	return k
 }
 
@@ -358,6 +389,28 @@ func (k *KaaS) IdentityClientID() string {
 	return kaasDeref(k.identityClientID)
 }
 
+// APIServerPrivateCluster reports whether private cluster mode is enabled for the API server.
+func (k *KaaS) APIServerPrivateCluster() bool {
+	if k.response != nil && k.response.Properties.APIServerAccessProfile != nil {
+		return k.response.Properties.APIServerAccessProfile.EnablePrivateCluster
+	}
+	if k.apiServerPrivateCluster != nil {
+		return *k.apiServerPrivateCluster
+	}
+	return false
+}
+
+// APIServerAuthorizedIPRanges returns the authorized CIDR ranges for the API server, or nil if unset.
+func (k *KaaS) APIServerAuthorizedIPRanges() []string {
+	if k.response != nil && k.response.Properties.APIServerAccessProfile != nil && k.response.Properties.APIServerAccessProfile.AuthorizedIPRanges != nil {
+		return *k.response.Properties.APIServerAccessProfile.AuthorizedIPRanges
+	}
+	if k.apiServerAuthorizedIPRanges != nil {
+		return *k.apiServerAuthorizedIPRanges
+	}
+	return nil
+}
+
 // NodePools returns the node pools attached to this cluster.
 // Returns nil if no node pools have been configured.
 func (k *KaaS) NodePools() []*NodePool {
@@ -397,8 +450,15 @@ func (k *KaaS) toRequest() types.KaaSRequest {
 			ClientSecret: k.identityClientSecret,
 		}
 	}
-	if k.apiServerProfile != nil {
-		props.APIServerAccessProfile = k.apiServerProfile
+	if k.apiServerPrivateCluster != nil || k.apiServerAuthorizedIPRanges != nil {
+		privateCluster := false
+		if k.apiServerPrivateCluster != nil {
+			privateCluster = *k.apiServerPrivateCluster
+		}
+		props.APIServerAccessProfile = &types.KaaSAPIServerAccessProfilePropertiesRequest{
+			EnablePrivateCluster: privateCluster,
+			AuthorizedIPRanges:   k.apiServerAuthorizedIPRanges,
+		}
 	}
 	if len(k.nodePools) > 0 {
 		props.NodePools = make([]types.NodePoolPropertiesRequest, 0, len(k.nodePools))
@@ -521,6 +581,11 @@ func (k *KaaS) kaasHydrateCacheFromProps(props types.KaaSPropertiesResponse) {
 		v := *props.Identity.ClientID
 		k.identityClientID = &v
 		// ClientSecret is not returned in the response — caller must re-set on Update.
+	}
+	if props.APIServerAccessProfile != nil {
+		v := props.APIServerAccessProfile.EnablePrivateCluster
+		k.apiServerPrivateCluster = &v
+		k.apiServerAuthorizedIPRanges = props.APIServerAccessProfile.AuthorizedIPRanges
 	}
 }
 

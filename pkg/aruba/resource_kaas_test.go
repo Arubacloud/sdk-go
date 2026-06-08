@@ -1289,6 +1289,46 @@ func TestKaaS_WithAPIServerAccessProfile_RoundTrip(t *testing.T) {
 	}
 }
 
+func TestKaaS_WithPrivateCluster_RoundTrip(t *testing.T) {
+	k := NewKaaS().WithPrivateCluster()
+	req := k.RawRequest()
+
+	if req.Properties.APIServerAccessProfile == nil {
+		t.Fatal("APIServerAccessProfile should be non-nil in request")
+	}
+	if !req.Properties.APIServerAccessProfile.EnablePrivateCluster {
+		t.Error("EnablePrivateCluster should be true")
+	}
+	if !k.APIServerPrivateCluster() {
+		t.Error("APIServerPrivateCluster() getter should return true")
+	}
+}
+
+func TestKaaS_WithAuthorizedIPRanges_RoundTrip(t *testing.T) {
+	k := NewKaaS().WithAuthorizedIPRanges("10.0.0.0/8", "192.168.0.0/16")
+	req := k.RawRequest()
+
+	if req.Properties.APIServerAccessProfile == nil {
+		t.Fatal("APIServerAccessProfile should be non-nil in request")
+	}
+	if req.Properties.APIServerAccessProfile.AuthorizedIPRanges == nil ||
+		len(*req.Properties.APIServerAccessProfile.AuthorizedIPRanges) != 2 {
+		t.Errorf("AuthorizedIPRanges = %v", req.Properties.APIServerAccessProfile.AuthorizedIPRanges)
+	}
+	got := k.APIServerAuthorizedIPRanges()
+	if len(got) != 2 || got[0] != "10.0.0.0/8" {
+		t.Errorf("APIServerAuthorizedIPRanges() = %v", got)
+	}
+}
+
+func TestKaaS_WithAuthorizedIPRanges_Clear(t *testing.T) {
+	k := NewKaaS().WithAuthorizedIPRanges("10.0.0.0/8").WithAuthorizedIPRanges()
+	req := k.RawRequest()
+	if req.Properties.APIServerAccessProfile != nil {
+		t.Error("clearing ranges should leave no APIServerAccessProfile in request")
+	}
+}
+
 // --------------------------------------------------------------------------
 // Shape E — KaaS adapter error paths
 // --------------------------------------------------------------------------
