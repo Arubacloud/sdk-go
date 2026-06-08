@@ -207,78 +207,9 @@ All polling respects the `ctx` deadline and cancellation. If the context expires
 
 ---
 
-## Advanced: Background Polling with `pkg/async`
+## Advanced: concurrent and custom polling
 
-`WaitUntilReady`, `WaitUntilActive`, and `WaitUntilStates` block the calling goroutine. If you need to **start multiple waits concurrently**, or **poll an arbitrary condition** (not just a resource state), use the lower-level `pkg/async` package directly.
-
-`pkg/async` is a public package — import it alongside `pkg/aruba`:
-
-```go
-import (
-    "github.com/Arubacloud/sdk-go/pkg/aruba"
-    "github.com/Arubacloud/sdk-go/pkg/async"
-    "github.com/Arubacloud/sdk-go/pkg/types"
-)
-```
-
-### `WaitFor` — start a background future
-
-`async.WaitFor` launches a polling goroutine immediately and returns an `*async.AsyncClient[T]` (a future). You call `.Await(ctx)` later to block for the result:
-
-```go
-// Start polling VPC1 and VPC2 concurrently
-futureVPC1 := async.DefaultWaitFor(ctx,
-    func(ctx context.Context) (*types.Response[types.VPCResponse], error) {
-        return arubaClient.FromNetwork().VPCs().Get(ctx, vpc1)
-    },
-    func(resp *types.Response[types.VPCResponse]) (bool, error) {
-        if resp == nil || resp.Data == nil {
-            return false, nil
-        }
-        var state types.State
-        if resp.Data.Properties != nil && resp.Data.Properties.Status != nil &&
-            resp.Data.Properties.Status.State != nil {
-            state = *resp.Data.Properties.Status.State
-        }
-        return state == types.StateActive, nil
-    },
-)
-
-futureVPC2 := async.DefaultWaitFor(ctx, /* same pattern for vpc2 */)
-
-// Block for both results
-resp1, err1 := futureVPC1.Await(ctx)
-resp2, err2 := futureVPC2.Await(ctx)
-```
-
-`DefaultWaitFor` uses the package defaults: `DefaultRetries=60`, `DefaultBaseDelay=10s`, `DefaultTimeout=600s`. Use `async.WaitFor(ctx, retries, baseDelay, timeout, call, check)` to override.
-
-### `WaitFor` signature
-
-```go
-func WaitFor[T any](
-    ctx         context.Context,
-    retries     int,
-    baseDelay   time.Duration,
-    timeout     time.Duration,
-    call        func(ctx context.Context) (*types.Response[T], error),
-    check       func(*types.Response[T]) (bool, error),
-) *AsyncClient[T]
-```
-
-- `call` — the polling function, called once per iteration.
-- `check` — returns `(true, nil)` to signal success, `(true, error)` to signal terminal failure, `(false, nil)` to keep polling.
-- If `check` is `nil`, any non-nil `response.Data` is treated as success.
-
-### `AsyncClient.Await`
-
-```go
-func (f *AsyncClient[T]) Await(ctx context.Context) (*types.Response[T], error)
-```
-
-Blocks until the background goroutine sends its result or `ctx` is cancelled. Subsequent calls return the **cached** result immediately — safe to call multiple times.
-
-> `pkg/async` works directly with the `pkg/types` wire structs. This is the only layer of the SDK where you'll interact with `types.Response[T]` and `types.*Response` types directly.
+`WaitUntilReady`, `WaitUntilActive`, and `WaitUntilStates` block the calling goroutine. When you need to **start multiple waits concurrently**, or **poll an arbitrary condition** (not just a resource state), drop down to `pkg/async`. That layer works directly with `*types.Response[T]` and is documented separately — see [Working at Low Level](./working-at-low-level#background-polling-with-pkgasync).
 
 ---
 
@@ -286,3 +217,4 @@ Blocks until the background goroutine sends its result or `ctx` is cancelled. Su
 
 - [API Walkthrough](./walkthrough) — full Create + `WaitUntilReady` + Update + Delete lifecycle example
 - [Response Handling](./response-handling) — how `*aruba.HTTPError` propagates through `WaitUntilReady` when the API returns 4xx/5xx
+- [Working at Low Level](./working-at-low-level) — background polling with `pkg/async`, accessing non-promoted wire fields

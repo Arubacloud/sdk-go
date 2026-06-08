@@ -226,6 +226,32 @@ recommended for production applications to avoid fetching a new token on every s
   </tbody>
 </table>
 
+## HTTP Client Identity
+
+<p>The SDK automatically sets a <code>User-Agent</code> header on every outbound request so that API access logs
+can be attributed to the SDK version. By default the header value is <code>sdk-go@&lt;version&gt;</code>
+(e.g. <code>sdk-go@1.0.0</code>), derived from the <code>aruba.Version</code> constant defined in
+<code>pkg/aruba/version.go</code>.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Option Setter</th>
+      <th>Description</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>WithUserAgent(ua)</code></td>
+      <td>Overrides the default <code>User-Agent</code> header value sent with every request.</td>
+      <td>Use this when building a tool on top of the SDK and you want the API logs to show your tool's
+      identity instead of (or in addition to) the raw SDK version. Example:
+      <code>WithUserAgent("acloud-cli@1.0.0")</code>.</td>
+    </tr>
+  </tbody>
+</table>
+
 ## Advanced / Custom Dependencies
 
 <p>These options are for advanced use cases where you need to inject your own custom components into the SDK's
