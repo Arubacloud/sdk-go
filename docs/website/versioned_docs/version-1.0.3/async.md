@@ -10,16 +10,17 @@ The SDK exposes three layers for dealing with this:
 
 | Layer | When to use |
 |-------|-------------|
-| `WaitUntilReady(ctx)` | 95% of cases — block until the resource is ready (accepts `Active`, `NotUsed`, `InUse`, `Used`) |
+| `WaitUntilReady(ctx)` | 95% of cases — block until the resource is ready (accepts `Active`, `Running`, `Stopped`, `NotUsed`, `Reserved`, `InUse`, `Used`) |
 | `WaitUntilActive(ctx)` | When you specifically need the `Active` state only |
-| `WaitUntilStates(ctx, []string{...}, opts...)` | Wait for any named states (e.g. `[]string{"Stopped"}`) |
+| `WaitUntilStates(ctx, []types.State{...}, opts...)` | Wait for any named states (e.g. `[]types.State{types.StateStopped}`) |
+| `WaitUntilGone(ctx)` | After `Delete` — block until the resource's `Get` returns HTTP 404 (fully removed) |
 | `pkg/async.WaitFor` + `AsyncClient.Await` | Advanced — start polling in a background goroutine, do other work, collect the result later |
 
 ---
 
 ## `WaitUntilReady`
 
-After any `Create`, `Update`, or `Get`, call `WaitUntilReady` on the returned wrapper to block until the resource reaches any of the positive terminal states: `"Active"`, `"NotUsed"`, `"InUse"`, or `"Used"`.
+After any `Create`, `Update`, or `Get`, call `WaitUntilReady` on the returned wrapper to block until the resource reaches any of the 7 healthy settled states: `Active`, `Running`, `Stopped`, `NotUsed`, `Reserved`, `InUse`, or `Used`.
 
 ```go
 vpc, err := arubaClient.FromNetwork().VPCs().Create(ctx, vpc)
@@ -74,14 +75,14 @@ Use `WaitUntilStates` when you need to wait for one or more specific states — 
 
 ```go
 // Wait for a Cloud Server to fully stop after PowerOff
-if err := cs.WaitUntilStates(ctx, []string{"Stopped"}); err != nil {
+if err := cs.WaitUntilStates(ctx, []types.State{types.StateStopped}); err != nil {
     log.Fatalf("Cloud Server did not stop: %v", err)
 }
 ```
 
 ```go
 // Wait until a DBaaS instance finishes an in-progress update
-if err := db.WaitUntilStates(ctx, []string{"Active"},
+if err := db.WaitUntilActive(ctx,
     aruba.WithRetries(120),
     aruba.WithBaseDelay(15*time.Second),
 ); err != nil {
@@ -92,8 +93,26 @@ if err := db.WaitUntilStates(ctx, []string{"Active"},
 The same error-terminal-state early exit applies: if the resource reaches `"Error"` or `"Failed"` while you are waiting for `"Stopped"`, the call returns immediately with an error that names both the actual state and the target states.
 
 `WaitUntilActive` and `WaitUntilReady` are convenience wrappers around `WaitUntilStates`:
-- `WaitUntilActive(ctx, opts...)` — equivalent to `WaitUntilStates(ctx, []string{"Active"}, opts...)`
-- `WaitUntilReady(ctx, opts...)` — equivalent to `WaitUntilStates(ctx, []string{"Active", "NotUsed", "InUse", "Used"}, opts...)`
+- `WaitUntilActive(ctx, opts...)` — equivalent to `WaitUntilStates(ctx, []types.State{types.StateActive}, opts...)`
+- `WaitUntilReady(ctx, opts...)` — equivalent to `WaitUntilStates(ctx, []types.State{types.StateActive, types.StateRunning, types.StateStopped, types.StateNotUsed, types.StateReserved, types.StateInUse, types.StateUsed}, opts...)`
+
+---
+
+## `WaitUntilGone`
+
+Use `WaitUntilGone` after a `Delete` call to block until the resource is fully removed — that is, until its `Get` returns HTTP 404:
+
+```go
+if err := arubaClient.FromNetwork().Subnets().Delete(ctx, subnet); err != nil {
+    log.Printf("Delete subnet: %v", err)
+} else if err := subnet.WaitUntilGone(ctx); err != nil {
+    log.Printf("Subnet not gone: %v", err)
+}
+```
+
+`WaitUntilGone` is available on every resource wrapper that supports polling (see [Resources That Support Polling](#resources-that-support-polling) below). It accepts the same `WaitOption`s as `WaitUntilReady`. Any error from `Get` other than HTTP 404 is treated as transient and retried; a 404 signals success.
+
+`Project` has no polling support and therefore no `WaitUntilGone`. It is deleted last, with no child left to wait on.
 
 ---
 
@@ -103,8 +122,8 @@ Every wrapper that supports polling also exposes fine-grained status accessors. 
 
 | Method | Returns | Typical use |
 |--------|---------|-------------|
-| `State()` | `string` — current state | Logging, conditional branching |
-| `PreviousState()` | `string` — state before the last transition | Post-mortem after a failed wait |
+| `State()` | `types.State` — current state | Logging, conditional branching |
+| `PreviousState()` | `types.State` — state before the last transition | Post-mortem after a failed wait |
 | `FailureReason()` | `string` — server-supplied error text | Surface to end user / log alert |
 | `IsDisabled()` | `bool` | Gate operations when server disables a resource |
 | `DisableReasons()` | `[]string` | Explain why a resource is disabled |
@@ -125,7 +144,7 @@ if err := vpc.WaitUntilReady(ctx); err != nil {
 
 ## Resources That Support Polling
 
-The following resource wrappers support `WaitUntilReady`, `WaitUntilActive`, `WaitUntilStates`, and the status accessors. Resources marked with a special wait method expose an additional named form.
+The following resource wrappers support `WaitUntilReady`, `WaitUntilActive`, `WaitUntilStates`, `WaitUntilGone`, and the status accessors. Resources marked with a special wait method expose an additional named form.
 
 | Resource | Special wait | Notes |
 |---|---|---|
@@ -150,7 +169,7 @@ The following resource wrappers support `WaitUntilReady`, `WaitUntilActive`, `Wa
 | `VPNTunnel` | — | |
 | `VPNRoute` | — | |
 | `KMS` | — | |
-| `Kmip` | `WaitUntilCertificateAvailable` (alias of `WaitUntilReady`) | Succeeds on `CertificateAvailable` **or** `Active` |
+| `Kmip` | `WaitUntilCertificateAvailable` | Custom waiter (Family B — no `statusMixin`); polls `KmipResponse.Status` directly against an explicit terminal-state map |
 
 > **Project does not support polling.** It is synchronously ready immediately after `Create` returns — no `WaitUntilActive` call is needed or available.
 
@@ -160,7 +179,7 @@ The following resource wrappers support `WaitUntilReady`, `WaitUntilActive`, `Wa
 
 ### Hydrated wrapper required
 
-`WaitUntilReady`, `WaitUntilActive`, and `WaitUntilStates` only work on wrappers that were **returned by an adapter call** (`Create`, `Get`, `Update`, or `List`). Calling either method on a freshly-built request builder returns:
+`WaitUntilReady`, `WaitUntilActive`, `WaitUntilStates`, and `WaitUntilGone` only work on wrappers that were **returned by an adapter call** (`Create`, `Get`, `Update`, or `List`). Calling any of these methods on a freshly-built request builder returns:
 
 ```
 WaitUntilStates: refresh callback not set; resource must be produced by an adapter (Create/Get/Update/List) to support polling
@@ -188,78 +207,9 @@ All polling respects the `ctx` deadline and cancellation. If the context expires
 
 ---
 
-## Advanced: Background Polling with `pkg/async`
+## Advanced: concurrent and custom polling
 
-`WaitUntilReady`, `WaitUntilActive`, and `WaitUntilStates` block the calling goroutine. If you need to **start multiple waits concurrently**, or **poll an arbitrary condition** (not just a resource state), use the lower-level `pkg/async` package directly.
-
-`pkg/async` is a public package — import it alongside `pkg/aruba`:
-
-```go
-import (
-    "github.com/Arubacloud/sdk-go/pkg/aruba"
-    "github.com/Arubacloud/sdk-go/pkg/async"
-    "github.com/Arubacloud/sdk-go/pkg/types"
-)
-```
-
-### `WaitFor` — start a background future
-
-`async.WaitFor` launches a polling goroutine immediately and returns an `*async.AsyncClient[T]` (a future). You call `.Await(ctx)` later to block for the result:
-
-```go
-// Start polling VPC1 and VPC2 concurrently
-futureVPC1 := async.DefaultWaitFor(ctx,
-    func(ctx context.Context) (*types.Response[types.VPCResponse], error) {
-        return arubaClient.FromNetwork().VPCs().Get(ctx, vpc1)
-    },
-    func(resp *types.Response[types.VPCResponse]) (bool, error) {
-        if resp == nil || resp.Data == nil {
-            return false, nil
-        }
-        state := ""
-        if resp.Data.Properties != nil && resp.Data.Properties.Status != nil &&
-            resp.Data.Properties.Status.State != nil {
-            state = *resp.Data.Properties.Status.State
-        }
-        return state == "Active", nil
-    },
-)
-
-futureVPC2 := async.DefaultWaitFor(ctx, /* same pattern for vpc2 */)
-
-// Block for both results
-resp1, err1 := futureVPC1.Await(ctx)
-resp2, err2 := futureVPC2.Await(ctx)
-```
-
-`DefaultWaitFor` uses the same defaults as `WaitUntilActive`: 60 retries, 10s delay, 600s timeout. Use `async.WaitFor(ctx, retries, baseDelay, timeout, call, check)` to override.
-
-### `WaitFor` signature
-
-```go
-func WaitFor[T any](
-    ctx         context.Context,
-    retries     int,
-    baseDelay   time.Duration,
-    timeout     time.Duration,
-    call        func(ctx context.Context) (*types.Response[T], error),
-    check       func(*types.Response[T]) (bool, error),
-) *AsyncClient[T]
-```
-
-- `call` — the polling function, called once per iteration.
-- `check` — returns `(true, nil)` to signal success, `(true, error)` to signal terminal failure, `(false, nil)` to keep polling.
-- If `check` is `nil`, any non-nil `response.Data` is treated as success.
-
-### `AsyncClient.Await`
-
-```go
-func (f *AsyncClient[T]) Await(ctx context.Context) (*types.Response[T], error)
-```
-
-Blocks until the background goroutine sends its result or `ctx` is cancelled. Subsequent calls return the **cached** result immediately — safe to call multiple times.
-
-> `pkg/async` works directly with the `pkg/types` wire structs. This is the only layer of the SDK where you'll interact with `types.Response[T]` and `types.*Response` types directly.
+`WaitUntilReady`, `WaitUntilActive`, and `WaitUntilStates` block the calling goroutine. When you need to **start multiple waits concurrently**, or **poll an arbitrary condition** (not just a resource state), drop down to `pkg/async`. That layer works directly with `*types.Response[T]` and is documented separately — see [Working at Low Level](./working-at-low-level#background-polling-with-pkgasync).
 
 ---
 
@@ -267,3 +217,4 @@ Blocks until the background goroutine sends its result or `ctx` is cancelled. Su
 
 - [API Walkthrough](./walkthrough) — full Create + `WaitUntilReady` + Update + Delete lifecycle example
 - [Response Handling](./response-handling) — how `*aruba.HTTPError` propagates through `WaitUntilReady` when the API returns 4xx/5xx
+- [Working at Low Level](./working-at-low-level) — background polling with `pkg/async`, accessing non-promoted wire fields
