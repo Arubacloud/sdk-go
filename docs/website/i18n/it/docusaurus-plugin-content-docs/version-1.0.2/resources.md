@@ -2,79 +2,79 @@
 sidebar_position: 3
 ---
 
-# Resources
+# Risorse
 
-This page is the exhaustive reference for every resource wrapper in the `pkg/aruba` package. For each wrapper you will find:
+Questa pagina è il riferimento esaustivo per ogni wrapper di risorsa nel pacchetto `pkg/aruba`. Per ogni wrapper troverai:
 
-1. The accessor chain to reach it from `arubaClient`
-2. A copy-paste-ready `Create` snippet
-3. The response accessor methods available on the returned wrapper
+1. La catena di accessor per raggiungerlo da `arubaClient`
+2. Uno snippet `Create` pronto all'uso
+3. I metodi accessor di risposta disponibili sul wrapper restituito
 
-For the end-to-end lifecycle walkthrough (how `Create`, `Get`, `Update`, `List`, `Delete`, and polling fit together) see the [API Walkthrough](./walkthrough).
+Per il walkthrough end-to-end del ciclo di vita (come `Create`, `Get`, `Update`, `List`, `Delete` e il polling si integrano) vedi la [Guida al Walkthrough API](./walkthrough).
 
 ---
 
-## Conventions
+## Convenzioni
 
-Every resource follows the same shape:
+Ogni risorsa segue la stessa struttura:
 
 ```go
-// 1. Reach the sub-client
+// 1. Raggiungi il sub-client
 client := arubaClient.FromX().Y()
 
-// 2. Build the request inline and create
+// 2. Costruisci la richiesta inline e crea
 result, err := client.Create(ctx,
     aruba.NewX().
-        IntoParent(parentRef).   // scope to project / VPC / etc.
+        IntoParent(parentRef).   // scope al progetto / VPC / ecc.
         Named("my-resource").
         Tagged("env-prod").
         WithFoo(...))
 
-// 3. Wait for async resources to become ready
+// 3. Attendi che le risorse asincrone diventino pronte
 if err := result.WaitUntilReady(ctx); err != nil { … }
 
-// 4. Read response accessors
+// 4. Leggi gli accessor di risposta
 fmt.Println(result.ID(), result.Name(), result.State())
 ```
 
-- `aruba.NewX()` — factory constructor for every resource builder
-- `IntoFoo(ref)` — binds the parent scope; accepts any `aruba.Ref` (hydrated wrapper or `aruba.URI("…")`)
-- `WithFoo(...)` — fluent setters; errors are deferred until `Create`/`Update`
-- `WaitUntilReady(ctx, opts...)` — available on resources marked **async** below; see [Async / Await](./async) for full options
-- `aruba.URI(s)` — wraps a raw string path into a `Ref` (see [API Walkthrough](./walkthrough#5-get-a-specific-resource))
+- `aruba.NewX()` — factory constructor per ogni builder di risorsa
+- `IntoFoo(ref)` — lega lo scope del genitore; accetta qualsiasi `aruba.Ref` (wrapper idratato o `aruba.URI("…")`)
+- `WithFoo(...)` — setter fluenti; gli errori sono differiti fino a `Create`/`Update`
+- `WaitUntilReady(ctx, opts...)` — disponibile sulle risorse marcate **async** qui sotto; vedi [Async / Await](./async) per le opzioni complete
+- `aruba.URI(s)` — avvolge un percorso stringa grezzo in un `Ref` (vedi [Guida al Walkthrough API](./walkthrough#5-ottenere-una-risorsa-specifica))
 
-:::info Tag format
-The Aruba API validates tag values against `^[A-Za-z0-9-]{4,30}$`: **alphanumerics and hyphens only, length 4 to 30**. Colons, dots, underscores, spaces, and other punctuation are rejected with `400 — One or more validation error occurred`. The SDK does not validate tag values client-side, so an invalid tag only fails when the request reaches the server.
+:::info Formato dei tag
+L'API di Aruba valida i valori dei tag contro `^[A-Za-z0-9-]{4,30}$`: **solo caratteri alfanumerici e trattini, lunghezza da 4 a 30**. Due punti, punti, underscore, spazi e altra punteggiatura vengono rifiutati con `400 — One or more validation error occurred`. L'SDK non valida i tag lato client, quindi un tag non valido fallisce solo quando la richiesta raggiunge il server.
 :::
 
-### Reading wrapper state
+### Lettura dello stato del wrapper
 
-Every wrapper promotes the most-used response fields to flat accessors. Prefer these over `wrapper.Raw().Properties.X`:
+Ogni wrapper promuove i campi di risposta più usati a accessor piatti. Preferiscili rispetto a `wrapper.Raw().Properties.X`:
 
 ```go
 fmt.Println(result.ID())        // UUID
-fmt.Println(result.Name())      // resource name
-fmt.Println(result.State())     // lifecycle state
-fmt.Println(result.Region())    // region slug
-fmt.Println(result.RawJSON())   // full JSON wire payload (for --output json)
-fmt.Println(result.RawYAML())   // full YAML wire payload (for --output yaml)
+fmt.Println(result.Name())      // nome della risorsa
+fmt.Println(result.State())     // stato del ciclo di vita
+fmt.Println(result.Region())    // slug della regione
+fmt.Println(result.RawJSON())   // payload JSON wire completo (per --output json)
+fmt.Println(result.RawYAML())   // payload YAML wire completo (per --output yaml)
 ```
 
-Resource-specific scalars (e.g. `cs.Subnets()`, `vpnRoute.CloudSubnetCIDR()`, `kaas.PodCIDR()`) are documented in each resource's **Response accessors** section below. See [Response Handling](./response-handling#reading-wrapper-state) for the complete accessor taxonomy.
+Gli scalari specifici della risorsa (es. `cs.Subnets()`, `vpnRoute.CloudSubnetCIDR()`, `kaas.PodCIDR()`) sono documentati nella sezione **Accessor di risposta** di ogni risorsa qui sotto. Vedi [Gestione delle risposte](./response-handling#lettura-dello-stato-del-wrapper) per la tassonomia completa degli accessor.
 
-Each resource section also lists its **Setters** (chainable builder methods grouped by the canonical chain order from `ai/CONVENTIONS.md`) and a link to the runnable example in `examples/all-resources/`.
+Ogni sezione di risorsa elenca anche i suoi **Setter** (metodi builder concatenabili raggruppati per l'ordine canonico della catena da `ai/CONVENTIONS.md`) e un collegamento all'esempio eseguibile in `examples/all-resources/`.
 
 ---
 
-## Project
+## Progetto
 
 ```go
 arubaClient.FromProject()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
 
-> Project is **not** async — it is synchronously ready after `Create` returns. No `WaitUntilReady` call is needed.
+> Il Progetto **non** è asincrono — è pronto in modo sincrono dopo che `Create` ritorna. Non è necessaria alcuna chiamata `WaitUntilReady`.
 
 ```go
 proj, err := arubaClient.FromProject().Create(
@@ -82,36 +82,36 @@ proj, err := arubaClient.FromProject().Create(
     aruba.NewProject().
         Named("my-project").
         Tagged("env-prod").
-        DescribedAs("Production project").
+        DescribedAs("Progetto di produzione").
         NotDefault())
 if err != nil {
     log.Fatalf("Create project: %v", err)
 }
-fmt.Printf("✓ Project: %s (ID: %s)\n", proj.Name(), proj.ID())
+fmt.Printf("✓ Progetto: %s (ID: %s)\n", proj.Name(), proj.ID())
 ```
 
-**Response accessors**:
-- `ID()` — resource UUID
-- `URI()` — full resource path (e.g. `/projects/abc-123`)
-- `Name()` — project name
-- `Description()` — project description
-- `IsDefault()` — whether this is the default project
-- `Tags()` — `[]string` tag list
-- `CreatedAt()`, `UpdatedAt()` — timestamps
-- `CreatedBy()`, `UpdatedBy()` — actor identifier (e.g. `aru-297647`) of the creator/last updater
-- `CreatedUser()`, `UpdatedUser()` — display name of the creator/last updater
-- `Raw()` — underlying `*types.ProjectResponse` wire struct
-- `RawJSON()` / `RawYAML()` — serialized payload for `--output json/yaml` flags
-- `RawRequest()` — `types.ProjectRequest` for round-trip `Get → Update` flows
+**Accessor di risposta**:
+- `ID()` — UUID della risorsa
+- `URI()` — percorso completo della risorsa (es. `/projects/abc-123`)
+- `Name()` — nome del progetto
+- `Description()` — descrizione del progetto
+- `IsDefault()` — se questo è il progetto predefinito
+- `Tags()` — lista di tag `[]string`
+- `CreatedAt()`, `UpdatedAt()` — timestamp
+- `CreatedBy()`, `UpdatedBy()` — identificatore dell'attore che ha creato/aggiornato la risorsa (es. `aru-297647`)
+- `CreatedUser()`, `UpdatedUser()` — nome visualizzato dell'utente che ha creato/aggiornato la risorsa
+- `Raw()` — struct wire sottostante `*types.ProjectResponse`
+- `RawJSON()` / `RawYAML()` — payload serializzato per i flag `--output json/yaml`
+- `RawRequest()` — `types.ProjectRequest` per i flussi round-trip `Get → Update`
 
-**Setters**:
+**Setter**:
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Descriptive scalars*: `DescribedAs(string)`
 - *Boolean state*: `AsDefault()`, `NotDefault()`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_project.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_project.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_project.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_project.go)
 :::
 
 ---
@@ -122,9 +122,9 @@ Full end-to-end example: [`examples/all-resources/resource_project.go`](https://
 arubaClient.FromAudit().Events()
 ```
 
-**Supported operations**: `List`
+**Operazioni supportate**: `List`
 
-Audit Events are read-only. There is no `Create` constructor — use `List` with a project `Ref` and optional `aruba.WithFilter(…)` to query the audit trail.
+Gli Audit Event sono in sola lettura. Non esiste un costruttore `Create` — usa `List` con un `Ref` di progetto e opzionalmente `aruba.WithFilter(…)` per interrogare l'audit trail.
 
 ```go
 list, err := arubaClient.FromAudit().Events().List(ctx, proj,
@@ -138,17 +138,17 @@ for _, e := range list.Items() {
 }
 ```
 
-**Response accessors**:
-- `ID()` — event UUID
-- `URI()` — resource path
-- `ResourceURI()` — URI of the resource the event relates to
-- `Action()` — action string (e.g. `"Create"`, `"Delete"`)
-- `Timestamp()` — event time
-- `User()` — user identifier who triggered the event
-- `Raw()` — underlying wire struct
+**Accessor di risposta**:
+- `ID()` — UUID dell'evento
+- `URI()` — percorso della risorsa
+- `ResourceURI()` — URI della risorsa a cui l'evento si riferisce
+- `Action()` — stringa dell'azione (es. `"Create"`, `"Delete"`)
+- `Timestamp()` — ora dell'evento
+- `User()` — identificatore utente che ha scatenato l'evento
+- `Raw()` — struct wire sottostante
 
-:::tip Runnable example
-Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
 :::
 
 ---
@@ -161,10 +161,10 @@ Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_cre
 arubaClient.FromCompute().CloudServers()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`, `PowerOn`, `PowerOff`, `SetPassword`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`, `PowerOn`, `PowerOff`, `SetPassword`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
-A Cloud Server depends on network resources (VPC, Subnet, Security Group), an Elastic IP, a Boot Volume (Block Storage), and a Key Pair. Create those first and pass the hydrated wrappers as `Ref` parameters.
+Un Cloud Server dipende da risorse di rete (VPC, Subnet, Security Group), un Elastic IP, un Boot Volume (Block Storage) e un Key Pair. Crea prima queste risorse e passa i wrapper idratati come parametri `Ref`.
 
 ```go
 cs, err := arubaClient.FromCompute().CloudServers().Create(
@@ -189,10 +189,10 @@ if err != nil {
 if err := cs.WaitUntilReady(ctx); err != nil {
     log.Fatalf("Cloud Server did not become Ready: %v", err)
 }
-fmt.Printf("✓ Cloud Server: %s (zone: %s, flavor: %s)\n", cs.Name(), cs.Zone(), cs.Flavor())
+fmt.Printf("✓ Cloud Server: %s (zona: %s, flavor: %s)\n", cs.Name(), cs.Zone(), cs.Flavor())
 ```
 
-**Power and password actions** (require a hydrated wrapper from `Create`/`Get`):
+**Azioni di alimentazione e password** (richiedono un wrapper idratato da `Create`/`Get`):
 
 ```go
 if err := cs.PowerOff(ctx); err != nil { log.Fatalf("PowerOff: %v", err) }
@@ -200,22 +200,22 @@ if err := cs.PowerOn(ctx);  err != nil { log.Fatalf("PowerOn: %v", err) }
 if err := cs.SetPassword(ctx, "NewStr0ngP@ss!"); err != nil { log.Fatalf("SetPassword: %v", err) }
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `CloudServerID()` — provider-assigned server ID
-- `Zone()` — availability zone
-- `Flavor()` — compute flavor slug
-- `FlavorRaw()` — full flavor struct
-- `VPC()` — `aruba.Ref` of the attached VPC
-- `BootVolume()` — `aruba.Ref` of the boot volume
-- `KeyPair()` — `aruba.Ref` of the key pair
-- `NetworkInterfaces()` — slice of network interface descriptors
-- `Template()` — image/template used at boot
-- `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()` — from `statusMixin`
+- `CloudServerID()` — ID server assegnato dal provider
+- `Zone()` — zona di disponibilità
+- `Flavor()` — slug del flavor di calcolo
+- `FlavorRaw()` — struct flavor completa
+- `VPC()` — `aruba.Ref` della VPC collegata
+- `BootVolume()` — `aruba.Ref` del volume di boot
+- `KeyPair()` — `aruba.Ref` della key pair
+- `NetworkInterfaces()` — slice di descrittori di interfacce di rete
+- `Template()` — immagine/template usata al boot
+- `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()` — da `statusMixin`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Classifier*: `OfFlavor(CloudServerFlavor)`
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
@@ -229,8 +229,8 @@ if err := cs.SetPassword(ctx, "NewStr0ngP@ss!"); err != nil { log.Fatalf("SetPas
 - *Boolean state*: `WithVPCPreset()`, `WithoutVPCPreset()`
 - *Billing*: `BilledBy(BillingPeriod)`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_cloud_server.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_cloud_server.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_cloud_server.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_cloud_server.go)
 :::
 
 ---
@@ -241,8 +241,8 @@ Full end-to-end example: [`examples/all-resources/resource_cloud_server.go`](htt
 arubaClient.FromCompute().KeyPairs()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: no.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
+**Asincrono**: no.
 
 ```go
 kp, err := arubaClient.FromCompute().KeyPairs().Create(
@@ -258,22 +258,22 @@ if err != nil {
 fmt.Printf("✓ KeyPair: %s (ID: %s)\n", kp.Name(), kp.ID())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `KeyPairID()` — provider-assigned key ID
-- `PublicKey()` — public key string
-- `Region()` — region slug
-- `Raw()` — underlying wire struct
+- `KeyPairID()` — ID chiave assegnato dal provider
+- `PublicKey()` — stringa della chiave pubblica
+- `Region()` — slug della regione
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Containment*: `InProject(Ref)`
 - *Geography*: `InRegion(Region)`
 - *Descriptive scalars*: `WithPublicKey(string)`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_key_pair.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_key_pair.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_key_pair.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_key_pair.go)
 :::
 
 ---
@@ -286,8 +286,8 @@ Full end-to-end example: [`examples/all-resources/resource_key_pair.go`](https:/
 arubaClient.FromContainer().KaaS()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`, `DownloadKubeconfig`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`, `DownloadKubeconfig`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 ```go
 k, err := arubaClient.FromContainer().KaaS().Create(
@@ -317,52 +317,49 @@ if err != nil {
 if err := k.WaitUntilReady(ctx); err != nil {
     log.Fatalf("KaaS did not become Ready: %v", err)
 }
-fmt.Printf("✓ KaaS cluster: %s (k8s: %s)\n", k.Name(), k.KubernetesVersion())
+fmt.Printf("✓ Cluster KaaS: %s (k8s: %s)\n", k.Name(), k.KubernetesVersion())
 ```
 
-**Download kubeconfig** (requires a hydrated wrapper):
+**Download del kubeconfig** (richiede un wrapper idratato):
 
 ```go
 kubeconfig, err := k.DownloadKubeconfig(ctx)
 if err != nil {
     log.Fatalf("DownloadKubeconfig: %v", err)
 }
-// kubeconfig is a []byte YAML kubeconfig
+// kubeconfig è un []byte YAML kubeconfig
 ```
 
-**Node pool builder** — `aruba.NewNodePool()`:
-- `Named(name)` — pool name
-- `WithCount(n)` — number of nodes
-- `OfInstance(flavor)` — node instance flavor
-- `InZone(zone)` — availability zone
-- `WithAutoscaling(min, max)` — enable autoscaling
+**Builder del node pool** — `aruba.NewNodePool()`:
+- `Named(name)` — nome del pool
+- `WithCount(n)` — numero di nodi
+- `OfInstance(flavor)` — flavor dell'istanza nodo
+- `InZone(zone)` — zona di disponibilità
+- `WithAutoscaling(min, max)` — abilita l'autoscaling
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `KaaSID()` — provider-assigned cluster ID
-- `VPC()`, `Subnet()` — `aruba.Ref` to attached network resources
-- `SecurityGroupName()` — name of the applied security group
-- `KubernetesVersion()` — Kubernetes version string
-- `BillingPeriod()` — billing cadence
-- `APIServerPrivateCluster()` — `bool`; `true` if the cluster's API server is in private mode
-- `APIServerAuthorizedIPRanges()` — authorized CIDR ranges for the API server, or `nil` if unset
+- `KaaSID()` — ID cluster assegnato dal provider
+- `VPC()`, `Subnet()` — `aruba.Ref` alle risorse di rete collegate
+- `SecurityGroupName()` — nome del security group applicato
+- `KubernetesVersion()` — stringa della versione Kubernetes
+- `BillingPeriod()` — cadenza di fatturazione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Containment*: `InProject(Ref)`
 - *Geography*: `InRegion(Region)`
 - *Descriptive scalars*: `WithKubernetesVersion(KubernetesVersion)`, `WithPodCIDR(string)`, `WithMaxStorageQuotaGB(int)`, `WithIdentity(string, string)`
-- *API server access profile*: `WithPrivateCluster()`, `WithAuthorizedIPRanges(...string)`
 - *Attached config*: `WithVPC(Ref)`, `WithSubnet(Ref)`, `WithSecurityGroup(Ref)`, `WithNodeCIDR(string, string)`, `WithNodePools(...*NodePool)`, `WithoutNodePools()`, `ReplaceNodePools(...*NodePool)`
 - *Boolean state*: `HighlyAvailable()`
 - *Billing*: `BilledBy(BillingPeriod)`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_kaas.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kaas.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_kaas.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kaas.go)
 :::
 
 ---
@@ -373,8 +370,8 @@ Full end-to-end example: [`examples/all-resources/resource_kaas.go`](https://git
 arubaClient.FromContainer().ContainerRegistry()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`. This resource can take 20–40 minutes to converge — use a generous wait budget.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`. Questa risorsa può impiegare 20–40 minuti per convergere — utilizza un budget di attesa generoso.
 
 ```go
 reg, err := arubaClient.FromContainer().ContainerRegistry().Create(
@@ -398,21 +395,21 @@ if err != nil {
 if err := reg.WaitUntilReady(ctx); err != nil {
     log.Fatalf("ContainerRegistry did not become Ready: %v", err)
 }
-fmt.Printf("✓ Registry: %s (public IP: %s)\n", reg.Name(), reg.PublicIP())
+fmt.Printf("✓ Registry: %s (IP pubblico: %s)\n", reg.Name(), reg.PublicIP())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `ContainerRegistryID()` — provider-assigned registry ID
-- `ElasticIP()` — public endpoint URI
-- `VPC()`, `Subnet()`, `SecurityGroup()`, `BlockStorage()` — `aruba.Ref` to attached resources
-- `AdminUsername()` — registry admin user
-- `BillingPeriod()` — billing cadence
+- `ContainerRegistryID()` — ID registry assegnato dal provider
+- `ElasticIP()` — URI dell'endpoint pubblico
+- `VPC()`, `Subnet()`, `SecurityGroup()`, `BlockStorage()` — `aruba.Ref` alle risorse collegate
+- `AdminUsername()` — utente amministratore del registry
+- `BillingPeriod()` — cadenza di fatturazione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Classifier*: `OfSize(ContainerRegistrySizeFlavor)`
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
@@ -422,8 +419,8 @@ fmt.Printf("✓ Registry: %s (public IP: %s)\n", reg.Name(), reg.PublicIP())
 - *Attached config*: `WithElasticIP(Ref)`, `WithVPC(Ref)`, `WithSubnet(Ref)`, `WithSecurityGroup(Ref)`, `WithBlockStorage(Ref)`
 - *Billing*: `BilledBy(BillingPeriod)`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_container_registry.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_container_registry.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_container_registry.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_container_registry.go)
 :::
 
 ---
@@ -436,8 +433,8 @@ Full end-to-end example: [`examples/all-resources/resource_container_registry.go
 arubaClient.FromDatabase().DBaaS()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 ```go
 db, err := arubaClient.FromDatabase().DBaaS().Create(
@@ -466,22 +463,22 @@ if err := db.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ DBaaS: %s (engine: %s)\n", db.Name(), db.Engine())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `DBaaSID()` — provider-assigned instance ID
-- `Engine()` — engine identifier (`DatabaseEngine` constant)
-- `EngineRaw()` — full engine struct
-- `Flavor()` — flavor identifier (`DBaaSFlavor` constant)
-- `FlavorRaw()` — full flavor struct
-- `SizeGB()` — storage size in GB
+- `DBaaSID()` — ID istanza assegnato dal provider
+- `Engine()` — identificatore dell'engine (costante `DatabaseEngine`)
+- `EngineRaw()` — struct engine completa
+- `Flavor()` — identificatore del flavor (costante `DBaaSFlavor`)
+- `FlavorRaw()` — struct flavor completa
+- `SizeGB()` — dimensione dello storage in GB
 - `AutoscalingEnabled()` — bool
-- `VPC()`, `Subnet()`, `SecurityGroup()`, `ElasticIP()` — `aruba.Ref` to networking resources
-- `BillingPeriod()` — billing cadence
+- `VPC()`, `Subnet()`, `SecurityGroup()`, `ElasticIP()` — `aruba.Ref` alle risorse di rete
+- `BillingPeriod()` — cadenza di fatturazione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Classifier*: `OfEngine(DatabaseEngine)`, `OfFlavor(DBaaSFlavor)`
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
@@ -491,8 +488,8 @@ fmt.Printf("✓ DBaaS: %s (engine: %s)\n", db.Name(), db.Engine())
 - *Attached config*: `WithVPC(Ref)`, `WithSubnet(Ref)`, `WithSecurityGroup(Ref)`, `WithElasticIP(Ref)`
 - *Billing*: `BilledBy(BillingPeriod)`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_dbaas.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_dbaas.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_dbaas.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_dbaas.go)
 :::
 
 ---
@@ -503,8 +500,8 @@ Full end-to-end example: [`examples/all-resources/resource_dbaas.go`](https://gi
 arubaClient.FromDatabase().Databases()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 ```go
 database, err := arubaClient.FromDatabase().Databases().Create(
@@ -523,20 +520,20 @@ if err := database.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ Database: %s\n", database.Name())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `DatabaseID()` — provider-assigned database ID
-- `DBaaSID()` — parent DBaaS ID
+- `DatabaseID()` — ID database assegnato dal provider
+- `DBaaSID()` — ID DBaaS padre
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Name*: `Named(string)`
 - *Containment*: `InDBaaS(Ref)`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_database.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_database.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_database.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_database.go)
 :::
 
 ---
@@ -547,8 +544,8 @@ Full end-to-end example: [`examples/all-resources/resource_database.go`](https:/
 arubaClient.FromDatabase().Users()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 ```go
 user, err := arubaClient.FromDatabase().Users().Create(
@@ -565,25 +562,25 @@ if err != nil {
 if err := user.WaitUntilReady(ctx); err != nil {
     log.Fatalf("User did not become Ready: %v", err)
 }
-fmt.Printf("✓ User: %s\n", user.Name())
+fmt.Printf("✓ Utente: %s\n", user.Name())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `UserID()` — provider-assigned user ID
-- `Username()` — database username
-- `DBaaSID()` — parent DBaaS ID
+- `UserID()` — ID utente assegnato dal provider
+- `Username()` — nome utente del database
+- `DBaaSID()` — ID DBaaS padre
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Name*: `WithUsername(string)`
 - *Containment*: `InDBaaS(Ref)`
 - *Descriptive scalars*: `WithPassword(string)`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_dbaas_user.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_dbaas_user.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_dbaas_user.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_dbaas_user.go)
 :::
 
 ---
@@ -594,8 +591,8 @@ Full end-to-end example: [`examples/all-resources/resource_dbaas_user.go`](https
 arubaClient.FromDatabase().Grants()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 ```go
 grant, err := arubaClient.FromDatabase().Grants().Create(
@@ -611,24 +608,24 @@ if err != nil {
 if err := grant.WaitUntilReady(ctx); err != nil {
     log.Fatalf("Grant did not become Ready: %v", err)
 }
-fmt.Printf("✓ Grant: %s (privileges: %s)\n", grant.Name(), grant.Privileges())
+fmt.Printf("✓ Grant: %s (privilegi: %s)\n", grant.Name(), grant.Privileges())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `GrantID()` — provider-assigned grant ID
-- `DatabaseID()` — parent Database ID
-- `Privileges()` — privilege string
+- `GrantID()` — ID grant assegnato dal provider
+- `DatabaseID()` — ID Database padre
+- `Privileges()` — stringa dei privilegi
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Containment*: `InDatabase(Ref)`
 - *Active relationship*: `ForUser(string)`, `OfRole(string)`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_grant.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_grant.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_grant.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_grant.go)
 :::
 
 ---
@@ -639,8 +636,8 @@ Full end-to-end example: [`examples/all-resources/resource_grant.go`](https://gi
 arubaClient.FromDatabase().DBaaSBackups()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 ```go
 backup, err := arubaClient.FromDatabase().DBaaSBackups().Create(
@@ -661,27 +658,27 @@ if err := backup.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ DBaaS Backup: %s\n", backup.Name())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `DBaaSBackupID()` — provider-assigned backup ID
-- `DBaaSURI()` — source DBaaS URI
-- `DatabaseURI()` — source Database URI (if applicable)
-- `SizeGB()` — backup size in GB
-- `Zone()` — availability zone
-- `BillingPeriod()` — billing cadence
+- `DBaaSBackupID()` — ID backup assegnato dal provider
+- `DBaaSURI()` — URI del DBaaS sorgente
+- `DatabaseURI()` — URI del Database sorgente (se applicabile)
+- `SizeGB()` — dimensione del backup in GB
+- `Zone()` — zona di disponibilità
+- `BillingPeriod()` — cadenza di fatturazione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Containment*: `InProject(Ref)`, `FromDBaaS(Ref)`, `FromDatabase(Ref)`
 - *Geography*: `InRegion(Region)`, `InZone(Zone)`
 - *Billing*: `BilledBy(BillingPeriod)`
 
-:::tip Runnable example
-DBaaS Backup operations are covered in the DBaaS example: [`examples/all-resources/resource_dbaas.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_dbaas.go)
+:::tip Esempio eseguibile
+Le operazioni di DBaaS Backup sono trattate nell'esempio DBaaS: [`examples/all-resources/resource_dbaas.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_dbaas.go)
 :::
 
 ---
@@ -694,9 +691,9 @@ DBaaS Backup operations are covered in the DBaaS example: [`examples/all-resourc
 arubaClient.FromMetric().Alerts()
 ```
 
-**Supported operations**: `List`
+**Operazioni supportate**: `List`
 
-Alerts are read-only. Use `List` with a project `Ref` to query active alerts.
+Gli Alert sono in sola lettura. Usa `List` con un `Ref` di progetto per interrogare gli alert attivi.
 
 ```go
 list, err := arubaClient.FromMetric().Alerts().List(ctx, proj)
@@ -708,15 +705,15 @@ for _, a := range list.Items() {
 }
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`
-- `Threshold()` — alert threshold value
-- `Action()` — action triggered on alert
+- `Threshold()` — valore soglia dell'alert
+- `Action()` — azione scatenata all'alert
 - `IsActive()` — bool
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-:::tip Runnable example
-Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
 :::
 
 ---
@@ -727,9 +724,9 @@ Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_cre
 arubaClient.FromMetric().Metrics()
 ```
 
-**Supported operations**: `List`
+**Operazioni supportate**: `List`
 
-Metrics are read-only time-series query results.
+Le Metric sono risultati di query di serie temporali in sola lettura.
 
 ```go
 list, err := arubaClient.FromMetric().Metrics().List(ctx, proj,
@@ -742,12 +739,12 @@ for _, m := range list.Items() {
 }
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-:::tip Runnable example
-Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
 :::
 
 ---
@@ -760,8 +757,8 @@ Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_cre
 arubaClient.FromNetwork().VPCs()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 ```go
 vpc, err := arubaClient.FromNetwork().VPCs().Create(
@@ -783,24 +780,24 @@ if err := vpc.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ VPC: %s\n", vpc.Name())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `VPCID()` — provider-assigned VPC ID
-- `Region()` — region slug
-- `IsDefault()`, `IsPreset()` — flags
+- `VPCID()` — ID VPC assegnato dal provider
+- `Region()` — slug della regione
+- `IsDefault()`, `IsPreset()` — flag
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Containment*: `InProject(Ref)`
 - *Geography*: `InRegion(Region)`
 - *Boolean state*: `AsDefault()`, `NotDefault()`, `WithPreset()`, `WithoutPreset()`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_vpc.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_vpc.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_vpc.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_vpc.go)
 :::
 
 ---
@@ -811,12 +808,12 @@ Full end-to-end example: [`examples/all-resources/resource_vpc.go`](https://gith
 arubaClient.FromNetwork().Subnets()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
-`OfType` accepts `aruba.SubnetTypeBasic` or `aruba.SubnetTypeAdvanced` (typed constants — no string cast needed).
+`OfType` accetta `aruba.SubnetTypeBasic` o `aruba.SubnetTypeAdvanced` (costanti tipizzate — nessun cast a stringa necessario).
 
-`aruba.NewSubnetDHCP()` is a sub-builder for DHCP configuration. Attach it with `WithDHCP(...)`.
+`aruba.NewSubnetDHCP()` è un sub-builder per la configurazione DHCP. Collegalo con `WithDHCP(...)`.
 
 ```go
 subnet, err := arubaClient.FromNetwork().Subnets().Create(
@@ -844,19 +841,19 @@ if err := subnet.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ Subnet: %s (CIDR: %s)\n", subnet.Name(), subnet.CIDR())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `SubnetID()` — provider-assigned subnet ID
-- `Type()` — subnet type (`SubnetType` constant)
-- `CIDR()` — CIDR block
-- `DHCP()` — DHCP configuration
+- `SubnetID()` — ID subnet assegnato dal provider
+- `Type()` — tipo di subnet (costante `SubnetType`)
+- `CIDR()` — blocco CIDR
+- `DHCP()` — configurazione DHCP
 - `IsDefault()` — bool
-- `Region()` — region slug
+- `Region()` — slug della regione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Classifier*: `OfType(SubnetType)`
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
@@ -866,8 +863,8 @@ fmt.Printf("✓ Subnet: %s (CIDR: %s)\n", subnet.Name(), subnet.CIDR())
 - *Attached config*: `WithDHCP(*SubnetDHCPCommon)`
 - *Boolean state*: `AsDefault()`, `NotDefault()`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_subnet.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_subnet.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_subnet.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_subnet.go)
 :::
 
 ---
@@ -878,8 +875,8 @@ Full end-to-end example: [`examples/all-resources/resource_subnet.go`](https://g
 arubaClient.FromNetwork().ElasticIPs()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 ```go
 eip, err := arubaClient.FromNetwork().ElasticIPs().Create(
@@ -900,25 +897,25 @@ if err := eip.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ Elastic IP: %s (%s)\n", eip.Name(), eip.Address())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `ElasticIPID()` — provider-assigned IP ID
-- `Address()` — the allocated public IP address
-- `BillingPeriod()` — billing cadence
-- `Region()` — region slug
+- `ElasticIPID()` — ID IP assegnato dal provider
+- `Address()` — indirizzo IP pubblico allocato
+- `BillingPeriod()` — cadenza di fatturazione
+- `Region()` — slug della regione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilNotUsed(ctx, opts...)`, `WaitUntilUsed(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Containment*: `InProject(Ref)`
 - *Geography*: `InRegion(Region)`
 - *Billing*: `BilledBy(BillingPeriod)`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_elastic_ip.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_elastic_ip.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_elastic_ip.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_elastic_ip.go)
 :::
 
 ---
@@ -929,8 +926,8 @@ Full end-to-end example: [`examples/all-resources/resource_elastic_ip.go`](https
 arubaClient.FromNetwork().SecurityGroups()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 ```go
 sg, err := arubaClient.FromNetwork().SecurityGroups().Create(
@@ -950,22 +947,22 @@ if err := sg.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ Security Group: %s (ID: %s)\n", sg.Name(), sg.ID())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `SecurityGroupID()` — provider-assigned group ID
+- `SecurityGroupID()` — ID gruppo assegnato dal provider
 - `IsDefault()` — bool
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Containment*: `InVPC(Ref)`
 - *Boolean state*: `AsDefault()`, `NotDefault()`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_security_group.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_security_group.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_security_group.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_security_group.go)
 :::
 
 ---
@@ -976,12 +973,12 @@ Full end-to-end example: [`examples/all-resources/resource_security_group.go`](h
 arubaClient.FromNetwork().SecurityGroupRules()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: yes — `State()` and `FailureReason()` are available.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
+**Asincrono**: sì — `State()` e `FailureReason()` sono disponibili.
 
-`WithDirection` accepts `aruba.RuleDirectionIngress` or `aruba.RuleDirectionEgress`. `WithProtocol` accepts `aruba.RuleProtocolTCP`, `aruba.RuleProtocolUDP`, `aruba.RuleProtocolICMP`, or `aruba.RuleProtocolANY`.
+`WithDirection` accetta `aruba.RuleDirectionIngress` o `aruba.RuleDirectionEgress`. `WithProtocol` accetta `aruba.RuleProtocolTCP`, `aruba.RuleProtocolUDP`, `aruba.RuleProtocolICMP` o `aruba.RuleProtocolANY`.
 
-> **Caveat**: `TargetingCIDR` and `TargetingSecurityGroup` are mutually exclusive. Setting both records a setter-time error that surfaces on `Create`.
+> **Avvertenza**: `TargetingCIDR` e `TargetingSecurityGroup` sono mutuamente esclusivi. Impostare entrambi registra un errore al momento del setter, che emerge al momento di `Create`.
 
 ```go
 rule, err := arubaClient.FromNetwork().SecurityGroupRules().Create(
@@ -1001,20 +998,20 @@ if err != nil {
 fmt.Printf("✓ Security Rule: %s\n", rule.Name())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `SecurityRuleID()` — provider-assigned rule ID
-- `Direction()` — `"Ingress"` or `"Egress"`
-- `Protocol()` — e.g. `"TCP"`, `"UDP"`, `"ICMP"`
-- `Port()` — port number or range
-- `TargetKind()` — `"Ip"` or `"SecurityGroup"`
-- `TargetValue()` — CIDR string or Security Group URI
-- `Region()` — region slug
+- `SecurityRuleID()` — ID regola assegnato dal provider
+- `Direction()` — `"Ingress"` o `"Egress"`
+- `Protocol()` — es. `"TCP"`, `"UDP"`, `"ICMP"`
+- `Port()` — numero di porta o intervallo
+- `TargetKind()` — `"Ip"` o `"SecurityGroup"`
+- `TargetValue()` — stringa CIDR o URI del Security Group
+- `Region()` — slug della regione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Containment*: `InSecurityGroup(Ref)`
@@ -1022,8 +1019,8 @@ fmt.Printf("✓ Security Rule: %s\n", rule.Name())
 - *Descriptive scalars*: `WithDirection(RuleDirection)`, `WithProtocol(RuleProtocol)`, `WithPort(string)`
 - *Active relationship*: `TargetingCIDR(string)`, `TargetingSecurityGroup(Ref)`
 
-:::tip Runnable example
-Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
 :::
 
 ---
@@ -1034,9 +1031,9 @@ Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_cre
 arubaClient.FromNetwork().LoadBalancers()
 ```
 
-**Supported operations**: `List`, `Get`
+**Operazioni supportate**: `List`, `Get`
 
-Load Balancers are read-only through this SDK — they are created and managed by the Aruba Cloud platform automatically.
+I Load Balancer sono in sola lettura tramite questo SDK — vengono creati e gestiti automaticamente dalla piattaforma Aruba Cloud.
 
 ```go
 list, err := arubaClient.FromNetwork().LoadBalancers().List(ctx, proj)
@@ -1048,17 +1045,17 @@ for _, lb := range list.Items() {
 }
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `LoadBalancerID()` — provider-assigned LB ID
-- `Address()` — public address
-- `VPC()` — `aruba.Ref` to the attached VPC
-- `Region()` — region slug
+- `LoadBalancerID()` — ID LB assegnato dal provider
+- `Address()` — indirizzo pubblico
+- `VPC()` — `aruba.Ref` alla VPC collegata
+- `Region()` — slug della regione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-:::tip Runnable example
-Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
 :::
 
 ---
@@ -1069,8 +1066,8 @@ Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_cre
 arubaClient.FromNetwork().VPCPeerings()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 ```go
 peering, err := arubaClient.FromNetwork().VPCPeerings().Create(
@@ -1091,24 +1088,24 @@ if err := peering.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ VPC Peering: %s\n", peering.Name())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `VPCPeeringID()` — provider-assigned peering ID
-- `VPCID()` — source VPC ID
-- `PeerVPC()` — `aruba.Ref` to the peer VPC
+- `VPCPeeringID()` — ID peering assegnato dal provider
+- `VPCID()` — ID VPC sorgente
+- `PeerVPC()` — `aruba.Ref` alla VPC peer
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Containment*: `InVPC(Ref)`
 - *Geography*: `InRegion(Region)`
 - *Active relationship*: `PeeredWith(Ref)`
 
-:::tip Runnable example
-Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
 :::
 
 ---
@@ -1119,8 +1116,8 @@ Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_cre
 arubaClient.FromNetwork().VPCPeeringRoutes()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 ```go
 route, err := arubaClient.FromNetwork().VPCPeeringRoutes().Create(
@@ -1142,16 +1139,16 @@ if err := route.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ Peering Route: %s (CIDR: %s)\n", route.Name(), route.CIDR())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `CIDR()` — route CIDR block
-- `Target()` — `aruba.Ref` to the route target
-- `VPCPeeringID()` — parent peering ID
+- `CIDR()` — blocco CIDR della route
+- `Target()` — `aruba.Ref` al target della route
+- `VPCPeeringID()` — ID peering padre
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Containment*: `InVPCPeering(Ref)`
@@ -1159,8 +1156,8 @@ fmt.Printf("✓ Peering Route: %s (CIDR: %s)\n", route.Name(), route.CIDR())
 - *Descriptive scalars*: `WithLocalCIDR(string)`, `WithRemoteCIDR(string)`
 - *Billing*: `BilledBy(BillingPeriod)`
 
-:::tip Runnable example
-Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
 :::
 
 ---
@@ -1171,13 +1168,13 @@ Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_cre
 arubaClient.FromNetwork().VPNTunnels()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
-VPN Tunnel sub-builders:
-- `aruba.NewVPNIKE()` — IKE phase 1 parameters (`WithEncryption(IKEEncryption)`, `WithHash(IKEHash)`, `WithDHGroup(IKEDHGroup)`, `WithDPDAction(IKEDPDAction)`)
-- `aruba.NewVPNESP()` — ESP phase 2 parameters (`WithEncryption(ESPEncryption)`, `WithHash(ESPHash)`, `WithPFS(ESPPFSGroup)`)
-- `aruba.NewVPNPSK()` — pre-shared key configuration (`WithKey(string)`, `WithCloudSite(string)`, `WithOnPremSite(string)`)
+Sub-builder del VPN Tunnel:
+- `aruba.NewVPNIKE()` — parametri fase 1 IKE (`WithEncryption(IKEEncryption)`, `WithHash(IKEHash)`, `WithDHGroup(IKEDHGroup)`, `WithDPDAction(IKEDPDAction)`)
+- `aruba.NewVPNESP()` — parametri fase 2 ESP (`WithEncryption(ESPEncryption)`, `WithHash(ESPHash)`, `WithPFS(ESPPFSGroup)`)
+- `aruba.NewVPNPSK()` — configurazione pre-shared key (`WithKey(string)`, `WithCloudSite(string)`, `WithOnPremSite(string)`)
 
 ```go
 tunnel, err := arubaClient.FromNetwork().VPNTunnels().Create(
@@ -1207,18 +1204,18 @@ if err := tunnel.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ VPN Tunnel: %s (gateway: %s)\n", tunnel.Name(), tunnel.PeerClientPublicIP())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `VPNTunnelID()` — provider-assigned tunnel ID
-- `PeerClientPublicIP()` — remote peer gateway IP
-- `IKE()` — `*aruba.VPNIKE` IKE settings
-- `ESP()` — `*aruba.VPNESP` ESP settings
-- `PSK()` — `*aruba.VPNPSK` PSK settings
+- `VPNTunnelID()` — ID tunnel assegnato dal provider
+- `PeerClientPublicIP()` — IP gateway del peer remoto
+- `IKE()` — impostazioni IKE `*aruba.VPNIKE`
+- `ESP()` — impostazioni ESP `*aruba.VPNESP`
+- `PSK()` — impostazioni PSK `*aruba.VPNPSK`
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Classifier*: `OfType(VPNType)`
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
@@ -1228,8 +1225,8 @@ fmt.Printf("✓ VPN Tunnel: %s (gateway: %s)\n", tunnel.Name(), tunnel.PeerClien
 - *Attached config*: `WithIPConfig(*VPNIPConfig)`, `WithIKESettings(*VPNIKE)`, `WithESPSettings(*VPNESP)`, `WithPSKSettings(*VPNPSK)`
 - *Billing*: `BilledBy(BillingPeriod)`
 
-:::tip Runnable example
-Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
 :::
 
 ---
@@ -1240,8 +1237,8 @@ Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_cre
 arubaClient.FromNetwork().VPNRoutes()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 ```go
 vpnRoute, err := arubaClient.FromNetwork().VPNRoutes().Create(
@@ -1263,24 +1260,24 @@ if err := vpnRoute.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ VPN Route: %s (CIDR: %s)\n", vpnRoute.Name(), vpnRoute.CIDR())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `CIDR()` — route CIDR block
-- `Target()` — `aruba.Ref` to the route target
-- `VPNTunnelID()` — parent VPN Tunnel ID
+- `CIDR()` — blocco CIDR della route
+- `Target()` — `aruba.Ref` al target della route
+- `VPNTunnelID()` — ID VPN Tunnel padre
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Containment*: `InVPNTunnel(Ref)`
 - *Geography*: `InRegion(Region)`
 - *Descriptive scalars*: `WithCloudSubnet(string)`, `WithOnPremSubnet(string)`
 
-:::tip Runnable example
-Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
+:::tip Esempio eseguibile
+Eseguito come parte dell'orchestratore: [`examples/all-resources/orchestrator_create.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/orchestrator_create.go)
 :::
 
 ---
@@ -1293,13 +1290,13 @@ Exercised as part of the orchestrator: [`examples/all-resources/orchestrator_cre
 arubaClient.FromSchedule().Jobs()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — `State()` and `FailureReason()` are available.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
+**Asincrono**: sì — `State()` e `FailureReason()` sono disponibili.
 
-Use `OneShotAt(t time.Time)` to schedule a one-shot job, or `WithCron(expr string)` for a recurring job on a cron schedule. Use `RecurringUntil(t time.Time)` to set an end date for a recurring job.
+Usa `OneShotAt(t time.Time)` per pianificare un job one-shot, oppure `WithCron(expr string)` per un job ricorrente con una pianificazione cron. Usa `RecurringUntil(t time.Time)` per impostare una data di fine per un job ricorrente.
 
 ```go
-// One-shot job — fires once at a specific time
+// Job one-shot — eseguito una sola volta a un orario specifico
 job, err := arubaClient.FromSchedule().Jobs().Create(
     ctx,
     aruba.NewJob().
@@ -1310,9 +1307,9 @@ job, err := arubaClient.FromSchedule().Jobs().Create(
 if err != nil {
     log.Fatalf("Create Job: %v", err)
 }
-fmt.Printf("✓ Job: %s (type: %s)\n", job.Name(), job.JobType())
+fmt.Printf("✓ Job: %s (tipo: %s)\n", job.Name(), job.JobType())
 
-// Recurring job — fires on a cron schedule
+// Job ricorrente — eseguito secondo una pianificazione cron
 cronJob, err := arubaClient.FromSchedule().Jobs().Create(
     ctx,
     aruba.NewJob().
@@ -1323,19 +1320,19 @@ cronJob, err := arubaClient.FromSchedule().Jobs().Create(
 if err != nil {
     log.Fatalf("Create recurring Job: %v", err)
 }
-fmt.Printf("✓ Recurring Job: %s (cron: %s)\n", cronJob.Name(), cronJob.Cron())
+fmt.Printf("✓ Job ricorrente: %s (cron: %s)\n", cronJob.Name(), cronJob.Cron())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `JobID()` — provider-assigned job ID
-- `JobType()` — job type (`types.JobTypeOneShot` or `types.JobTypeRecurring`)
-- `Cron()` — cron expression (recurring jobs)
+- `JobID()` — ID job assegnato dal provider
+- `JobType()` — tipo di job (`types.JobTypeOneShot` o `types.JobTypeRecurring`)
+- `Cron()` — espressione cron (job ricorrenti)
 - `IsEnabled()` — bool
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Classifier*: `OfType(JobType)`
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
@@ -1344,8 +1341,8 @@ fmt.Printf("✓ Recurring Job: %s (cron: %s)\n", cronJob.Name(), cronJob.Cron())
 - *Descriptive scalars*: `OneShotAt(time.Time)`, `StartingAt(time.Time)`, `WithCron(string)`, `RecurringUntil(time.Time)`, `WithSteps(...*JobStep)`
 - *Boolean state*: `Enabled()`, `Disabled()`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_job.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_job.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_job.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_job.go)
 :::
 
 ---
@@ -1358,8 +1355,8 @@ Full end-to-end example: [`examples/all-resources/resource_job.go`](https://gith
 arubaClient.FromSecurity().KMS()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 ```go
 kms, err := arubaClient.FromSecurity().KMS().Create(
@@ -1380,23 +1377,23 @@ if err := kms.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ KMS: %s (ID: %s)\n", kms.Name(), kms.ID())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `KMSID()` — provider-assigned KMS instance ID
-- `BillingPeriod()` — billing cadence
+- `KMSID()` — ID istanza KMS assegnato dal provider
+- `BillingPeriod()` — cadenza di fatturazione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Containment*: `InProject(Ref)`
 - *Geography*: `InRegion(Region)`
 - *Billing*: `BilledBy(BillingPeriod)`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_kms.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kms.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_kms.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kms.go)
 :::
 
 ---
@@ -1407,10 +1404,10 @@ Full end-to-end example: [`examples/all-resources/resource_kms.go`](https://gith
 arubaClient.FromSecurity().Keys()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: yes — `State()` and `FailureReason()` are available.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
+**Asincrono**: sì — `State()` e `FailureReason()` sono disponibili.
 
-`OfAlgorithm` accepts `aruba.KeyAlgorithmAes` or `aruba.KeyAlgorithmRsa` (typed constants — no string cast needed).
+`OfAlgorithm` accetta `aruba.KeyAlgorithmAes` o `aruba.KeyAlgorithmRsa` (costanti tipizzate — nessun cast a stringa necessario).
 
 ```go
 key, err := arubaClient.FromSecurity().Keys().Create(
@@ -1423,27 +1420,27 @@ key, err := arubaClient.FromSecurity().Keys().Create(
 if err != nil {
     log.Fatalf("Create Key: %v", err)
 }
-fmt.Printf("✓ Key: %s (algorithm: %s)\n", key.Name(), key.Algorithm())
+fmt.Printf("✓ Chiave: %s (algoritmo: %s)\n", key.Name(), key.Algorithm())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `KeyID()` — provider-assigned key ID
-- `Algorithm()` — algorithm string
-- `Type()` — `"Symmetric"` or `"Asymmetric"`
-- `Status()` — key lifecycle status
-- `CreationSource()` — how the key was created
+- `KeyID()` — ID chiave assegnato dal provider
+- `Algorithm()` — stringa dell'algoritmo
+- `Type()` — `"Symmetric"` o `"Asymmetric"`
+- `Status()` — stato del ciclo di vita della chiave
+- `CreationSource()` — come è stata creata la chiave
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Classifier*: `OfAlgorithm(KeyAlgorithm)`
 - *Name*: `Named(string)`
 - *Containment*: `InKMS(Ref)`
 
-:::tip Runnable example
-Key operations are covered in the KMS example: [`examples/all-resources/resource_kms.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kms.go)
+:::tip Esempio eseguibile
+Le operazioni sulle chiavi sono trattate nell'esempio KMS: [`examples/all-resources/resource_kms.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kms.go)
 :::
 
 ---
@@ -1454,8 +1451,8 @@ Key operations are covered in the KMS example: [`examples/all-resources/resource
 arubaClient.FromSecurity().Kmips()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`. KMIP's `WaitUntilReady` succeeds on either `"CertificateAvailable"` or `"Active"`. `WaitUntilCertificateAvailable` is an alias for `WaitUntilReady`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`. `WaitUntilReady` del KMIP ha successo su `"CertificateAvailable"` o `"Active"`. `WaitUntilCertificateAvailable` è un alias per `WaitUntilReady`.
 
 ```go
 km, err := arubaClient.FromSecurity().Kmips().Create(
@@ -1474,7 +1471,7 @@ if err := km.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ Kmip: %s\n", km.Name())
 ```
 
-**Download the KMIP certificate** (requires a hydrated wrapper):
+**Download del certificato KMIP** (richiede un wrapper idratato):
 
 ```go
 cert, err := km.Download(ctx)
@@ -1485,20 +1482,20 @@ fmt.Println("Cert:", cert.Cert())
 fmt.Println("Key:",  cert.Key())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `KmipID()` — provider-assigned KMIP ID
-- `KmipStatus()` — KMIP-specific status
+- `KmipID()` — ID KMIP assegnato dal provider
+- `KmipStatus()` — stato specifico del KMIP
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilCertificateAvailable(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Name*: `Named(string)`
 - *Containment*: `InKMS(Ref)`
 
-:::tip Runnable example
-KMIP operations are covered in the KMS example: [`examples/all-resources/resource_kms.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kms.go)
+:::tip Esempio eseguibile
+Le operazioni KMIP sono trattate nell'esempio KMS: [`examples/all-resources/resource_kms.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_kms.go)
 :::
 
 ---
@@ -1511,10 +1508,10 @@ KMIP operations are covered in the KMS example: [`examples/all-resources/resourc
 arubaClient.FromStorage().Volumes()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
-`OfType` accepts `aruba.BlockStorageTypeStandard` or `aruba.BlockStorageTypePerformance`. Use `AsBootable()` to mark a volume as bootable; `NotBootable()` to unset. Use `FromImage(imageID)` to specify a base image.
+`OfType` accetta `aruba.BlockStorageTypeStandard` o `aruba.BlockStorageTypePerformance`. Usa `AsBootable()` per contrassegnare un volume come avviabile; `NotBootable()` per annullare l'impostazione. Usa `FromImage(imageID)` per specificare un'immagine di base.
 
 ```go
 bs, err := arubaClient.FromStorage().Volumes().Create(
@@ -1540,7 +1537,7 @@ if err := bs.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ Volume: %s (%d GB)\n", bs.Name(), bs.SizeGB())
 ```
 
-To create a volume **from a snapshot**, use `FromSnapshot(snapshot)` instead of `FromImage`:
+Per creare un volume **da uno snapshot**, usa `FromSnapshot(snapshot)` invece di `FromImage`:
 
 ```go
 bs, err := arubaClient.FromStorage().Volumes().Create(
@@ -1557,21 +1554,21 @@ bs, err := arubaClient.FromStorage().Volumes().Create(
         BilledBy(aruba.BillingPeriodHour))
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `BlockStorageID()` — provider-assigned volume ID
-- `SizeGB()` — size in GB
-- `Type()` — storage type
-- `Zone()` — availability zone
-- `BillingPeriod()` — billing cadence
+- `BlockStorageID()` — ID volume assegnato dal provider
+- `SizeGB()` — dimensione in GB
+- `Type()` — tipo di storage
+- `Zone()` — zona di disponibilità
+- `BillingPeriod()` — cadenza di fatturazione
 - `IsBootable()` — bool
-- `Image()` — image reference
-- `SnapshotURI()` — source snapshot URI (if created from snapshot)
+- `Image()` — riferimento all'immagine
+- `SnapshotURI()` — URI dello snapshot sorgente (se creato da snapshot)
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilNotUsed(ctx, opts...)`, `WaitUntilUsed(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Classifier*: `OfType(BlockStorageType)`
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
@@ -1582,8 +1579,8 @@ bs, err := arubaClient.FromStorage().Volumes().Create(
 - *Boolean state*: `AsBootable()`, `NotBootable()`
 - *Billing*: `BilledBy(BillingPeriod)`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_block_storage.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_block_storage.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_block_storage.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_block_storage.go)
 :::
 
 ---
@@ -1594,8 +1591,8 @@ Full end-to-end example: [`examples/all-resources/resource_block_storage.go`](ht
 arubaClient.FromStorage().Snapshots()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Update`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Update`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 ```go
 snap, err := arubaClient.FromStorage().Snapshots().Create(
@@ -1617,20 +1614,20 @@ if err := snap.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ Snapshot: %s\n", snap.Name())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `SnapshotID()` — provider-assigned snapshot ID
-- `SizeGB()` — snapshot size in GB
-- `Type()` — storage type
-- `Zone()` — availability zone
-- `BillingPeriod()` — billing cadence
+- `SnapshotID()` — ID snapshot assegnato dal provider
+- `SizeGB()` — dimensione dello snapshot in GB
+- `Type()` — tipo di storage
+- `Zone()` — zona di disponibilità
+- `BillingPeriod()` — cadenza di fatturazione
 - `Bootable()` — bool
-- `VolumeURI()` — source volume URI
+- `VolumeURI()` — URI del volume sorgente
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Containment*: `InProject(Ref)`
@@ -1638,8 +1635,8 @@ fmt.Printf("✓ Snapshot: %s\n", snap.Name())
 - *Origin*: `FromVolume(Ref)`
 - *Billing*: `BilledBy(BillingPeriod)`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_snapshot.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_snapshot.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_snapshot.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_snapshot.go)
 :::
 
 ---
@@ -1650,10 +1647,10 @@ Full end-to-end example: [`examples/all-resources/resource_snapshot.go`](https:/
 arubaClient.FromStorage().Backups()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
-`OfType` accepts `aruba.StorageBackupTypeFull` or `aruba.StorageBackupTypeIncremental`. Use `FromVolume(vol)` to specify the source volume.
+`OfType` accetta `aruba.StorageBackupTypeFull` o `aruba.StorageBackupTypeIncremental`. Usa `FromVolume(vol)` per specificare il volume sorgente.
 
 ```go
 backup, err := arubaClient.FromStorage().Backups().Create(
@@ -1676,18 +1673,18 @@ if err := backup.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ Storage Backup: %s\n", backup.Name())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `BackupID()` — provider-assigned backup ID
-- `Type()` — backup type
-- `RetentionDays()` — retention period in days
-- `OriginURI()` — source volume URI
-- `BillingPeriod()` — billing cadence
+- `BackupID()` — ID backup assegnato dal provider
+- `Type()` — tipo di backup
+- `RetentionDays()` — periodo di conservazione in giorni
+- `OriginURI()` — URI del volume sorgente
+- `BillingPeriod()` — cadenza di fatturazione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Classifier*: `OfType(StorageBackupType)`
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
@@ -1697,8 +1694,8 @@ fmt.Printf("✓ Storage Backup: %s\n", backup.Name())
 - *Origin*: `FromVolume(Ref)`
 - *Billing*: `BilledBy(BillingPeriod)`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_storage_backup.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_storage_backup.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_storage_backup.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_storage_backup.go)
 :::
 
 ---
@@ -1709,8 +1706,8 @@ Full end-to-end example: [`examples/all-resources/resource_storage_backup.go`](h
 arubaClient.FromStorage().Restores()
 ```
 
-**Supported operations**: `Create`, `List`, `Get`, `Delete`
-**Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
+**Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
+**Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
 ```go
 restore, err := arubaClient.FromStorage().Restores().Create(
@@ -1730,90 +1727,90 @@ if err := restore.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ Storage Restore: %s\n", restore.Name())
 ```
 
-**Response accessors**:
+**Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
-- `RestoreID()` — provider-assigned restore ID
-- `TargetURI()` — target volume URI
+- `RestoreID()` — ID restore assegnato dal provider
+- `TargetURI()` — URI del volume di destinazione
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
-- `Raw()` — underlying wire struct
+- `Raw()` — struct wire sottostante
 
-**Setters**:
+**Setter**:
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Containment*: `FromBackup(Ref)`
 - *Geography*: `InRegion(Region)`
 - *Origin*: `ToVolume(Ref)`
 
-:::tip Runnable example
-Full end-to-end example: [`examples/all-resources/resource_storage_restore.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_storage_restore.go)
+:::tip Esempio eseguibile
+Esempio end-to-end completo: [`examples/all-resources/resource_storage_restore.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_storage_restore.go)
 :::
 
 ---
 
-## Call Options
+## Opzioni di chiamata
 
-Pass call options as variadic arguments to any `List`, `Get`, `Create`, `Update`, or `Delete` call:
+Passa le opzioni di chiamata come argomenti variadic a qualsiasi chiamata `List`, `Get`, `Create`, `Update` o `Delete`:
 
-| Option | Purpose |
+| Opzione | Scopo |
 |--------|---------|
-| `aruba.WithFilter(expr)` | Server-side filter expression |
-| `aruba.WithSort(expr)` | Sort expression |
-| `aruba.WithLimit(n)` | Page size |
-| `aruba.WithOffset(n)` | Pagination offset |
-| `aruba.WithProjection(expr)` | Field projection |
-| `aruba.WithAPIVersion(v)` | Override API version for this call |
+| `aruba.WithFilter(expr)` | Espressione filtro lato server |
+| `aruba.WithSort(expr)` | Espressione di ordinamento |
+| `aruba.WithLimit(n)` | Dimensione della pagina |
+| `aruba.WithOffset(n)` | Offset di paginazione |
+| `aruba.WithProjection(expr)` | Proiezione dei campi |
+| `aruba.WithAPIVersion(v)` | Sovrascrive la versione API per questa chiamata |
 
-See [Filters](./filters) for filter and sort syntax.
+Vedi [Filtri](./filters) per la sintassi dei filtri e degli ordinamenti.
 
 ---
 
-## Enum Constants
+## Costanti enum
 
-All enum types are re-exported from `pkg/aruba` — no extra import needed. The canonical list is in `pkg/aruba/aliases.go`.
+Tutti i tipi enum sono ri-esportati da `pkg/aruba` — nessun import aggiuntivo necessario. L'elenco canonico si trova in `pkg/aruba/aliases.go`.
 
-### Region and Zone
+### Regione e Zona
 
-| Constant | Description |
+| Costante | Descrizione |
 |----------|-------------|
-| `aruba.RegionITBGBergamo` | Bergamo (Italy) datacenter |
-| `aruba.ZoneITBG1` | Bergamo availability zone 1 |
-| `aruba.ZoneITBG2` | Bergamo availability zone 2 |
-| `aruba.ZoneITBG3` | Bergamo availability zone 3 |
+| `aruba.RegionITBGBergamo` | Datacenter di Bergamo (Italia) |
+| `aruba.ZoneITBG1` | Zona di disponibilità Bergamo 1 |
+| `aruba.ZoneITBG2` | Zona di disponibilità Bergamo 2 |
+| `aruba.ZoneITBG3` | Zona di disponibilità Bergamo 3 |
 
-### Billing
+### Fatturazione
 
-| Constant | Description |
+| Costante | Descrizione |
 |----------|-------------|
-| `aruba.BillingPeriodHour` | Hourly billing |
-| `aruba.BillingPeriodMonth` | Monthly billing |
+| `aruba.BillingPeriodHour` | Fatturazione oraria |
+| `aruba.BillingPeriodMonth` | Fatturazione mensile |
 
 ### Network
 
-| Constant | Value |
+| Costante | Valore |
 |----------|-------|
 | `aruba.RuleDirectionIngress` | `"Ingress"` |
 | `aruba.RuleDirectionEgress` | `"Egress"` |
 | `aruba.RuleProtocolTCP` | `"TCP"` |
 | `aruba.RuleProtocolUDP` | `"UDP"` |
 | `aruba.RuleProtocolICMP` | `"ICMP"` |
-| `aruba.RuleProtocolANY` | (wildcard — any protocol) |
+| `aruba.RuleProtocolANY` | (wildcard — qualsiasi protocollo) |
 | `aruba.SubnetTypeBasic` | `"Basic"` |
 | `aruba.SubnetTypeAdvanced` | `"Advanced"` |
 
 ### Compute
 
-| Constant | Description |
+| Costante | Descrizione |
 |----------|-------------|
 | `aruba.CloudServerFlavorCSO1A2` | 1 vCPU, 2 GB RAM |
 | `aruba.CloudServerFlavorCSO2A4` | 2 vCPU, 4 GB RAM |
 | `aruba.CloudServerFlavorCSO4A8` | 4 vCPU, 8 GB RAM |
 | `aruba.CloudServerFlavorCSO8A16` | 8 vCPU, 16 GB RAM |
-| … (see `aliases.go` for full list) | |
+| … (vedi `aliases.go` per l'elenco completo) | |
 
 ### Container
 
-| Constant | Description |
+| Costante | Descrizione |
 |----------|-------------|
 | `aruba.KubernetesVersion1323` | Kubernetes 1.32.3 |
 | `aruba.KubernetesVersion1332` | Kubernetes 1.33.2 |
@@ -1821,14 +1818,14 @@ All enum types are re-exported from `pkg/aruba` — no extra import needed. The 
 | `aruba.NodePoolInstanceK2A4` | 2 vCPU, 4 GB RAM |
 | `aruba.NodePoolInstanceK4A8` | 4 vCPU, 8 GB RAM |
 | `aruba.NodePoolInstanceK8A16` | 8 vCPU, 16 GB RAM |
-| … (see `aliases.go` for full list) | |
-| `aruba.ContainerRegistrySizeFlavorSmall` | Small concurrent-users tier |
-| `aruba.ContainerRegistrySizeFlavorMedium` | Medium concurrent-users tier |
-| `aruba.ContainerRegistrySizeFlavorHighPerf` | High-performance tier |
+| … (vedi `aliases.go` per l'elenco completo) | |
+| `aruba.ContainerRegistrySizeFlavorSmall` | Livello small di utenti concorrenti |
+| `aruba.ContainerRegistrySizeFlavorMedium` | Livello medium di utenti concorrenti |
+| `aruba.ContainerRegistrySizeFlavorHighPerf` | Livello ad alte prestazioni |
 
 ### Database
 
-| Constant | Description |
+| Costante | Descrizione |
 |----------|-------------|
 | `aruba.DatabaseEngineMySQL80` | MySQL 8.0 |
 | `aruba.DatabaseEngineMSSQL2022Web` | SQL Server 2022 Web |
@@ -1837,11 +1834,11 @@ All enum types are re-exported from `pkg/aruba` — no extra import needed. The 
 | `aruba.DBaaSFlavorDBO1A2` | 1 vCPU, 2 GB RAM |
 | `aruba.DBaaSFlavorDBO2A4` | 2 vCPU, 4 GB RAM |
 | `aruba.DBaaSFlavorDBO4A8` | 4 vCPU, 8 GB RAM |
-| … (see `aliases.go` for full list) | |
+| … (vedi `aliases.go` per l'elenco completo) | |
 
 ### Storage
 
-| Constant | Value |
+| Costante | Valore |
 |----------|-------|
 | `aruba.BlockStorageTypeStandard` | `"Standard"` |
 | `aruba.BlockStorageTypePerformance` | `"Performance"` |
@@ -1850,7 +1847,7 @@ All enum types are re-exported from `pkg/aruba` — no extra import needed. The 
 
 ### Security
 
-| Constant | Value |
+| Costante | Valore |
 |----------|-------|
 | `aruba.KeyAlgorithmAes` | `"Aes"` |
 | `aruba.KeyAlgorithmRsa` | `"Rsa"` |
@@ -1858,43 +1855,43 @@ All enum types are re-exported from `pkg/aruba` — no extra import needed. The 
 | `aruba.KeyTypeAsymmetric` | `"Asymmetric"` |
 | `aruba.ServiceStatusCertificateAvailable` | `"CertificateAvailable"` |
 
-### VPN Crypto
+### Crittografia VPN
 
-| Constant | Description |
+| Costante | Descrizione |
 |----------|-------------|
-| `aruba.IKEEncryptionAES256` | AES-256 CBC (IKE phase 1) |
-| `aruba.IKEHashSHA256` | HMAC-SHA-256 (IKE phase 1) |
-| `aruba.IKEDHGroup14` | MODP-2048 Diffie-Hellman group |
-| `aruba.ESPEncryptionAES256` | AES-256 CBC (ESP phase 2) |
-| `aruba.ESPHashSHA256` | HMAC-SHA-256 (ESP phase 2) |
-| `aruba.ESPPFSGroupEnable` | PFS enabled (DH group negotiated) |
-| `aruba.ESPPFSGroupDisable` | PFS disabled |
-| … (see `aliases.go` for full lists) | |
+| `aruba.IKEEncryptionAES256` | AES-256 CBC (IKE fase 1) |
+| `aruba.IKEHashSHA256` | HMAC-SHA-256 (IKE fase 1) |
+| `aruba.IKEDHGroup14` | Gruppo Diffie-Hellman MODP-2048 |
+| `aruba.ESPEncryptionAES256` | AES-256 CBC (ESP fase 2) |
+| `aruba.ESPHashSHA256` | HMAC-SHA-256 (ESP fase 2) |
+| `aruba.ESPPFSGroupEnable` | PFS abilitato (gruppo DH negoziato) |
+| `aruba.ESPPFSGroupDisable` | PFS disabilitato |
+| … (vedi `aliases.go` per gli elenchi completi) | |
 
 ### Schedule
 
-| Constant | Value |
+| Costante | Valore |
 |----------|-------|
 | `aruba.JobTypeOneShot` | `"OneShot"` |
 | `aruba.JobTypeRecurring` | `"Recurring"` |
 
 ---
 
-## Appendix: Raw Wire Types (`pkg/types`)
+## Appendice: Tipi wire grezzi (`pkg/types`)
 
-The following types are the underlying wire-level structs. You normally access them only via `.Raw()` or `.RawRequest()` on a wrapper, or when building advanced integrations with `pkg/async`. They are also re-exported as `aruba.XxxRequest` / `aruba.XxxResponse` type aliases so you can reference them without an extra import.
+I seguenti tipi sono le struct wire di basso livello sottostanti. Normalmente vi si accede solo tramite `.Raw()` o `.RawRequest()` su un wrapper, oppure quando si costruiscono integrazioni avanzate con `pkg/async`. Sono anche ri-esportati come alias di tipo `aruba.XxxRequest` / `aruba.XxxResponse` in modo da poterli referenziare senza un import aggiuntivo.
 
-| Type | File | Notes |
+| Tipo | File | Note |
 |------|------|-------|
-| `Response[T]` | `resource.go` | Generic HTTP envelope returned by low-level adapters |
-| `ErrorResponse` | `error.go` | RFC 7807 structured error |
-| `ListResponse` | `resource.go` | Pagination links and total count |
-| `ResourceMetadataRequest` | `resource.go` | Name + tags for Create |
-| `RegionalResourceMetadataRequest` | `resource.go` | Extends metadata with Location |
-| `ResourceMetadataResponse` | `resource.go` | ID, URI, Name, timestamps |
-| `ResourceStatusResponse` | `resource.go` | State field |
-| `ReferenceResourceCommon` | `resource.go` | `{uri: "…"}` link to another resource |
-| `RequestParameters` | `parameters.go` | Low-level filter/sort/limit/offset struct (prefer `CallOption` helpers) |
+| `Response[T]` | `resource.go` | Envelope HTTP generico restituito dagli adapter di basso livello |
+| `ErrorResponse` | `error.go` | Errore strutturato RFC 7807 |
+| `ListResponse` | `resource.go` | Link di paginazione e conteggio totale |
+| `ResourceMetadataRequest` | `resource.go` | Nome + tag per Create |
+| `RegionalResourceMetadataRequest` | `resource.go` | Estende i metadati con Location |
+| `ResourceMetadataResponse` | `resource.go` | ID, URI, Name, timestamp |
+| `ResourceStatusResponse` | `resource.go` | Campo State |
+| `ReferenceResourceCommon` | `resource.go` | `{uri: "…"}` link a un'altra risorsa |
+| `RequestParameters` | `parameters.go` | Struct filtro/ordinamento/limit/offset di basso livello (preferire gli helper `CallOption`) |
 | `ProjectRequest` / `ProjectResponse` / `ProjectListResponse` | `project.project.go` | |
 | `VPCRequest` / `VPCResponse` / `VPCListResponse` | `network.vpc.go` | |
 | `SubnetRequest` / `SubnetResponse` / `SubnetListResponse` | `network.subnet.go` | |

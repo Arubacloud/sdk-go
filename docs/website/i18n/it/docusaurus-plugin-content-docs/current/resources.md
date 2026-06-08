@@ -344,6 +344,8 @@ if err != nil {
 - `SecurityGroupName()` — nome del security group applicato
 - `KubernetesVersion()` — stringa della versione Kubernetes
 - `BillingPeriod()` — cadenza di fatturazione
+- `APIServerPrivateCluster()` — `bool`; `true` se il cluster è configurato in modalità privata
+- `APIServerAuthorizedIPRanges()` — intervalli CIDR autorizzati ad accedere all'API server, o `nil` se non configurati
 - `State()`, `FailureReason()`, `PreviousState()`, `IsDisabled()`, `DisableReasons()`
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — struct wire sottostante
@@ -354,6 +356,7 @@ if err != nil {
 - *Containment*: `InProject(Ref)`
 - *Geography*: `InRegion(Region)`
 - *Descriptive scalars*: `WithKubernetesVersion(KubernetesVersion)`, `WithPodCIDR(string)`, `WithMaxStorageQuotaGB(int)`, `WithIdentity(string, string)`
+- *Profilo accesso API server*: `WithPrivateCluster()`, `WithAuthorizedIPRanges(...string)`
 - *Attached config*: `WithVPC(Ref)`, `WithSubnet(Ref)`, `WithSecurityGroup(Ref)`, `WithNodeCIDR(string, string)`, `WithNodePools(...*NodePool)`, `WithoutNodePools()`, `ReplaceNodePools(...*NodePool)`
 - *Boolean state*: `HighlyAvailable()`
 - *Billing*: `BilledBy(BillingPeriod)`
