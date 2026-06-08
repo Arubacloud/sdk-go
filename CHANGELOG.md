@@ -26,6 +26,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **`EnablePrivateCluster()` on KaaS** (`pkg/aruba`) — preferred boolean-flag setter for private
+  cluster mode, following the `HighlyAvailable()` naming convention. Thin alias for the existing
+  `WithPrivateCluster()`. Closes the naming gap requested in #323; no import of `pkg/types` needed.
+  `WithAPIServerAccessProfile(*types.KaaSAPIServerAccessProfilePropertiesRequest)` is now marked
+  `Deprecated` — callers should migrate to `EnablePrivateCluster()` and `WithAuthorizedIPRanges()`.
+
+### Fixed
+
+- **`APIServerAuthorizedIPRanges()` returns a defensive copy** — the getter previously returned
+  the underlying slice directly, allowing callers to mutate internal wrapper state.
+
 ---
 
 ## [1.0.3] — 2026-06-08

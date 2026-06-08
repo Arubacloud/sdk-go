@@ -356,7 +356,7 @@ if err != nil {
 - *Containment*: `InProject(Ref)`
 - *Geography*: `InRegion(Region)`
 - *Descriptive scalars*: `WithKubernetesVersion(KubernetesVersion)`, `WithPodCIDR(string)`, `WithMaxStorageQuotaGB(int)`, `WithIdentity(string, string)`
-- *Profilo accesso API server*: `WithPrivateCluster()`, `WithAuthorizedIPRanges(...string)`
+- *Profilo accesso API server*: `EnablePrivateCluster()`, `WithAuthorizedIPRanges(...string)` (alias: `WithPrivateCluster()`)
 - *Attached config*: `WithVPC(Ref)`, `WithSubnet(Ref)`, `WithSecurityGroup(Ref)`, `WithNodeCIDR(string, string)`, `WithNodePools(...*NodePool)`, `WithoutNodePools()`, `ReplaceNodePools(...*NodePool)`
 - *Boolean state*: `HighlyAvailable()`
 - *Billing*: `BilledBy(BillingPeriod)`
