@@ -187,6 +187,10 @@ func (k *KaaS) WithPrivateCluster() *KaaS {
 	return k
 }
 
+// EnablePrivateCluster enables private cluster mode for the API server.
+// Preferred alias for WithPrivateCluster, matching the HighlyAvailable naming convention.
+func (k *KaaS) EnablePrivateCluster() *KaaS { return k.WithPrivateCluster() }
+
 // WithAuthorizedIPRanges restricts API server access to the given CIDR ranges.
 // Pass zero arguments to clear any previously-set ranges.
 func (k *KaaS) WithAuthorizedIPRanges(ranges ...string) *KaaS {
@@ -201,10 +205,12 @@ func (k *KaaS) WithAuthorizedIPRanges(ranges ...string) *KaaS {
 }
 
 // WithAPIServerAccessProfile sets the API server access profile from a pre-built struct.
-// Callers who prefer not to import pkg/types can use WithPrivateCluster and
-// WithAuthorizedIPRanges instead.
+// Deprecated: use EnablePrivateCluster and WithAuthorizedIPRanges instead to avoid
+// importing pkg/types. Passing nil clears any previously-set profile fields.
 func (k *KaaS) WithAPIServerAccessProfile(p *types.KaaSAPIServerAccessProfilePropertiesRequest) *KaaS {
 	if p == nil {
+		k.apiServerPrivateCluster = nil
+		k.apiServerAuthorizedIPRanges = nil
 		return k
 	}
 	v := p.EnablePrivateCluster
@@ -400,15 +406,21 @@ func (k *KaaS) APIServerPrivateCluster() bool {
 	return false
 }
 
-// APIServerAuthorizedIPRanges returns the authorized CIDR ranges for the API server, or nil if unset.
+// APIServerAuthorizedIPRanges returns a copy of the authorized CIDR ranges for the API server,
+// or nil if unset. Returns a copy to prevent callers from mutating internal state.
 func (k *KaaS) APIServerAuthorizedIPRanges() []string {
+	var src *[]string
 	if k.response != nil && k.response.Properties.APIServerAccessProfile != nil && k.response.Properties.APIServerAccessProfile.AuthorizedIPRanges != nil {
-		return *k.response.Properties.APIServerAccessProfile.AuthorizedIPRanges
+		src = k.response.Properties.APIServerAccessProfile.AuthorizedIPRanges
+	} else if k.apiServerAuthorizedIPRanges != nil {
+		src = k.apiServerAuthorizedIPRanges
 	}
-	if k.apiServerAuthorizedIPRanges != nil {
-		return *k.apiServerAuthorizedIPRanges
+	if src == nil {
+		return nil
 	}
-	return nil
+	cp := make([]string, len(*src))
+	copy(cp, *src)
+	return cp
 }
 
 // NodePools returns the node pools attached to this cluster.

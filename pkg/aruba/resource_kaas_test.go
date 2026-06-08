@@ -1329,6 +1329,36 @@ func TestKaaS_WithAuthorizedIPRanges_Clear(t *testing.T) {
 	}
 }
 
+func TestKaaS_EnablePrivateCluster_RoundTrip(t *testing.T) {
+	k := NewKaaS().EnablePrivateCluster()
+	req := k.RawRequest()
+	if req.Properties.APIServerAccessProfile == nil {
+		t.Fatal("APIServerAccessProfile should be non-nil in request")
+	}
+	if !req.Properties.APIServerAccessProfile.EnablePrivateCluster {
+		t.Error("EnablePrivateCluster should be true")
+	}
+	if !k.APIServerPrivateCluster() {
+		t.Error("APIServerPrivateCluster() getter should return true")
+	}
+}
+
+func TestKaaS_WithAPIServerAccessProfile_NilClears(t *testing.T) {
+	k := NewKaaS().EnablePrivateCluster().WithAPIServerAccessProfile(nil)
+	if k.RawRequest().Properties.APIServerAccessProfile != nil {
+		t.Error("passing nil should clear the profile")
+	}
+}
+
+func TestKaaS_APIServerAuthorizedIPRanges_ReturnsCopy(t *testing.T) {
+	k := NewKaaS().WithAuthorizedIPRanges("10.0.0.0/8")
+	got := k.APIServerAuthorizedIPRanges()
+	got[0] = "mutated"
+	if k.APIServerAuthorizedIPRanges()[0] != "10.0.0.0/8" {
+		t.Error("APIServerAuthorizedIPRanges() must return a copy, not the internal slice")
+	}
+}
+
 // --------------------------------------------------------------------------
 // Shape E — KaaS adapter error paths
 // --------------------------------------------------------------------------
