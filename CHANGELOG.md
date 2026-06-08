@@ -28,6 +28,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.3] — 2026-06-08
+
+### Added
+
+- **KaaS fluent API server access profile setters** (`pkg/aruba`) — `WithPrivateCluster()` and
+  `WithAuthorizedIPRanges(ranges ...string)` let callers configure the API server access profile
+  without importing `pkg/types`, honouring the single-import design contract. The existing
+  `WithAPIServerAccessProfile(*types.KaaSAPIServerAccessProfilePropertiesRequest)` is retained
+  for backward compatibility. (#323)
+- **KaaS API server access profile getters** — `APIServerPrivateCluster() bool` and
+  `APIServerAuthorizedIPRanges() []string` expose the response-side values using the standard
+  response-preferring pattern.
+
+---
+
 ## [1.0.2] — 2026-06-06
 
 ### Added
