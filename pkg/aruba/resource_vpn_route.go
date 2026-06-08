@@ -98,8 +98,14 @@ func (r *VPNRoute) RawYAML() []byte              { return marshalRawYAML(r.respo
 // RawRequest returns what toRequest() would emit right now.
 func (r *VPNRoute) RawRequest() types.VPNRouteRequest { return r.toRequest() }
 
-// CloudSubnet returns the configured cloud subnet CIDR ("" if unset).
-func (r *VPNRoute) CloudSubnet() string { return vpnRouteDerefString(r.cloudSubnet) }
+// CloudSubnet returns the cloud-side subnet CIDR ("" if unset).
+// Prefers the server response value; falls back to the locally-cached setter value.
+func (r *VPNRoute) CloudSubnet() string {
+	if r.response != nil && r.response.Properties.CloudSubnet.CIDR != "" {
+		return r.response.Properties.CloudSubnet.CIDR
+	}
+	return vpnRouteDerefString(r.cloudSubnet)
+}
 
 // CloudSubnetCIDR is an alias for CloudSubnet — returns the cloud-side subnet CIDR ("" if unset).
 func (r *VPNRoute) CloudSubnetCIDR() string { return r.CloudSubnet() }
