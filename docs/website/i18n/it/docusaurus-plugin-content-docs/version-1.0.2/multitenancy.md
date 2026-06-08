@@ -1,6 +1,6 @@
-# Multitenancy
+﻿# Multitenancy
 
-Il package `pkg/multitenant` fornisce un registro in-memory tenant-to-client per l'SDK Aruba Cloud. E utile quando la tua applicazione gestisce piu tenant e ogni tenant richiede un proprio `aruba.Client`.
+Il package `pkg/multitenant` fornisce un registro in-memory tenant-to-client per l'SDK Aruba Cloud. È utile quando la tua applicazione gestisce più tenant e ogni tenant richiede un proprio `aruba.Client`.
 
 ## Panoramica
 
@@ -21,7 +21,7 @@ L'interfaccia `Multitenant` supporta queste operazioni:
 
 - `New(tenant string) error`: crea client usando opzioni template
 - `NewFromOptions(tenant string, options *aruba.Options) error`: crea client da opzioni esplicite
-- `Add(tenant string, client aruba.Client)`: aggiunge un client gia inizializzato
+- `Add(tenant string, client aruba.Client)`: aggiunge un client già inizializzato
 - `Get(tenant string) (aruba.Client, bool)`: recupera client con flag di esistenza
 - `MustGet(tenant string) aruba.Client`: recupera o termina il processo se assente
 - `GetOrNil(tenant string) aruba.Client`: recupera o restituisce `nil`
