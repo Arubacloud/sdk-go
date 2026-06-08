@@ -243,7 +243,9 @@ const (
 	VPNClientProtocolIKEv2 VPNClientProtocol = "ikev2"
 )
 
-// SubnetInfoCommon contains subnet CIDR and name for VPN tunnel IP configuration
+// SubnetInfoCommon contains the name and CIDR of the subnet the API will provision
+// for a VPN tunnel. The API creates a new subnet using these values at tunnel-creation
+// time; supplying the CIDR of an existing subnet causes a 400 overlap error.
 type SubnetInfoCommon struct {
 	CIDR string `json:"cidr,omitempty"`
 	Name string `json:"name,omitempty"`
