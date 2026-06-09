@@ -4,8 +4,6 @@ sidebar_position: 1
 
 # Quick Start
 
-> **Note**: This SDK is currently in its **Alpha** stage. The API is not yet stable, and breaking changes may be introduced in future releases without prior notice. Please use with caution and be prepared for updates.
-
 Welcome to the official Go SDK for the Aruba Cloud API. This SDK provides a convenient and powerful way for Go developers to interact with the Aruba Cloud API. The primary goal is to simplify the management of cloud resources, allowing you to programmatically create, read, update, and delete resources such as compute instances, virtual private clouds (VPCs), block storage, and more.
 
 ## Installation
@@ -13,7 +11,7 @@ Welcome to the official Go SDK for the Aruba Cloud API. This SDK provides a conv
 Add the SDK to your Go project:
 
 ```bash
-go get github.com/Arubacloud/sdk-go@v0.2.3
+go get github.com/Arubacloud/sdk-go@latest
 ```
 
 ## Getting Started
@@ -57,9 +55,8 @@ func main() {
 		ctx,
 		aruba.NewProject().
 			Named("my-first-project").
-			WithDescription("A project with the Go SDK").
-			AddTag("go-sdk").
-			AddTag("quick-start"))
+			Tagged("go-sdk", "quick-start").
+			DescribedAs("A project with the Go SDK"))
 	if err != nil {
 		log.Fatalf("Error creating project: %v", err)
 	}
@@ -76,3 +73,4 @@ func main() {
 - Understand [Response Handling](./response-handling) for robust error handling
 - Learn about [Filtering](./filters) to query resources efficiently
 - Read about [Multitenancy](./multitenancy) to manage tenant-specific clients
+- See [Working at Low Level](./working-at-low-level) for advanced escape hatches (`pkg/types`, `pkg/async`)
