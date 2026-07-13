@@ -29,7 +29,7 @@ func TestListBackups(t *testing.T) {
 							Properties: types.BackupPropertiesResponse{
 								Zone:     "ITBG-1",
 								DBaaS:    types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
-								Database: types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
+								Database: types.DatabaseNameRef{Name: "db-1"},
 								BillingPlanCommon: func() *types.BillingPlanCommon {
 									v := types.BillingPeriod("Hour")
 									return &types.BillingPlanCommon{BillingPeriod: &v}
@@ -157,7 +157,7 @@ func TestGetBackup(t *testing.T) {
 					Properties: types.BackupPropertiesResponse{
 						Zone:     "ITBG-1",
 						DBaaS:    types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
-						Database: types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
+						Database: types.DatabaseNameRef{Name: "db-1"},
 						BillingPlanCommon: func() *types.BillingPlanCommon {
 							v := types.BillingPeriod("Hour")
 							return &types.BillingPlanCommon{BillingPeriod: &v}
@@ -294,7 +294,7 @@ func TestCreateBackup(t *testing.T) {
 					Properties: types.BackupPropertiesResponse{
 						Zone:     "ITBG-1",
 						DBaaS:    types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
-						Database: types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
+						Database: types.DatabaseNameRef{Name: "db-1"},
 						BillingPlanCommon: func() *types.BillingPlanCommon {
 							v := types.BillingPeriod("Hour")
 							return &types.BillingPlanCommon{BillingPeriod: &v}
@@ -317,7 +317,7 @@ func TestCreateBackup(t *testing.T) {
 			Properties: types.BackupPropertiesRequest{
 				Zone:     "ITBG-1",
 				DBaaS:    types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1"},
-				Database: types.ReferenceResourceCommon{URI: "/projects/test-project/providers/Aruba.Database/dbaas/dbaas-1/databases/db-1"},
+				Database: types.DatabaseNameRef{Name: "db-1"},
 				BillingPlanCommon: func() *types.BillingPlanCommon {
 					v := types.BillingPeriod("Hour")
 					return &types.BillingPlanCommon{BillingPeriod: &v}
