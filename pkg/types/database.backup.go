@@ -1,11 +1,18 @@
 package types
 
+// DatabaseNameRef holds the name of a logical database for backup operations.
+// The backup API identifies databases by name (not by URI).
+type DatabaseNameRef struct {
+	Name string `json:"name"`
+}
+
 type BackupPropertiesRequest struct {
 	Zone Zone `json:"datacenter"`
 
 	DBaaS ReferenceResourceCommon `json:"dbaas"`
 
-	Database ReferenceResourceCommon `json:"database"`
+	// Database identifies the logical database to back up by name.
+	Database DatabaseNameRef `json:"database"`
 
 	BillingPlanCommon *BillingPlanCommon `json:"billingPlan,omitempty"`
 }
@@ -21,7 +28,8 @@ type BackupPropertiesResponse struct {
 
 	DBaaS ReferenceResourceCommon `json:"dbaas"`
 
-	Database ReferenceResourceCommon `json:"database"`
+	// Database holds the name of the logical database that was backed up.
+	Database DatabaseNameRef `json:"database"`
 
 	BillingPlanCommon *BillingPlanCommon `json:"billingPlan,omitempty"`
 

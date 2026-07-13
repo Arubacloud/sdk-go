@@ -28,6 +28,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.5] — 2026-07-13
+
+### Fixed
+
+- **DBaaS Backup wire format** (`pkg/types`, `pkg/aruba`) — `BackupPropertiesRequest.Database` and
+  `BackupPropertiesResponse.Database` were typed as `ReferenceResourceCommon{URI string}`, causing
+  the SDK to send `"database":{"uri":"..."}` on the wire. The backup API requires
+  `"database":{"name":"<db-name>"}` ([OpenAPI spec](https://arubacloud.github.io/api/docs/documents/database/create-database-backup)).
+  Sending the wrong format produced a `400 semantic` error: *Specified Database name is not found.*
+  The new `DatabaseNameRef{Name string}` type is now used for both request and response. The
+  `toRequest()` helper extracts the plain name from a URI path (last segment after `/databases/`)
+  so existing callers using `FromDatabase(aruba.URI("…"))` continue to work without change.
+
+### Added
+
+- **`DatabaseName()` accessor on `DBaaSBackup`** (`pkg/aruba`) — dedicated getter that always
+  returns the bare database name. `DatabaseURI()` is preserved for backward compatibility but its
+  return value is now the raw stored reference (a full URI when set via `FromDatabase`, or the bare
+  name after response hydration). Prefer `DatabaseName()` when you only need the name.
+
+---
+
 ## [1.0.4] — 2026-06-08
 
 ### Added

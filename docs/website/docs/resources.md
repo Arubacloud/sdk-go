@@ -642,14 +642,20 @@ arubaClient.FromDatabase().DBaaSBackups()
 **Supported operations**: `Create`, `List`, `Get`, `Delete`
 **Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
+:::note Auto-generated name
+The backup API ignores the value passed to `Named()` and always generates its own name (e.g. `mysql_wordpress_20260713140736`). Read the actual name back via `backup.Name()` after `Create`.
+:::
+
 ```go
 backup, err := arubaClient.FromDatabase().DBaaSBackups().Create(
     ctx,
     aruba.NewDBaaSBackup().
-        Named("my-db-backup").
         Tagged("backup").
         InProject(proj).
+        InRegion(aruba.RegionITBGBergamo).
+        InZone(aruba.ZoneITBG1).
         FromDBaaS(db).
+        FromDatabase(aruba.URI(db.URI()+"/databases/mydb")).
         BilledBy(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create DBaaSBackup: %v", err)
@@ -658,14 +664,15 @@ if err != nil {
 if err := backup.WaitUntilReady(ctx); err != nil {
     log.Fatalf("DBaaS Backup did not become Ready: %v", err)
 }
-fmt.Printf("✓ DBaaS Backup: %s\n", backup.Name())
+fmt.Printf("✓ DBaaS Backup: %s (database: %s)\n", backup.Name(), backup.DatabaseName())
 ```
 
 **Response accessors**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `DBaaSBackupID()` — provider-assigned backup ID
 - `DBaaSURI()` — source DBaaS URI
-- `DatabaseURI()` — source Database URI (if applicable)
+- `DatabaseName()` — name of the source database (preferred over `DatabaseURI()` for name-only access)
+- `DatabaseURI()` — raw stored reference: full URI when set via `FromDatabase`, bare name after response hydration
 - `SizeGB()` — backup size in GB
 - `Zone()` — availability zone
 - `BillingPeriod()` — billing cadence
@@ -674,7 +681,7 @@ fmt.Printf("✓ DBaaS Backup: %s\n", backup.Name())
 - `Raw()` — underlying wire struct
 
 **Setters**:
-- *Name*: `Named(string)`
+- *Name*: `Named(string)` *(ignored by the API — name is auto-generated)*
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Containment*: `InProject(Ref)`, `FromDBaaS(Ref)`, `FromDatabase(Ref)`
 - *Geography*: `InRegion(Region)`, `InZone(Zone)`

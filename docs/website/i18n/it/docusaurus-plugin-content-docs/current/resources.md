@@ -642,14 +642,20 @@ arubaClient.FromDatabase().DBaaSBackups()
 **Operazioni supportate**: `Create`, `List`, `Get`, `Delete`
 **Asincrono**: sì — chiama `WaitUntilReady(ctx)` dopo `Create`.
 
+:::note Nome generato automaticamente
+L'API di backup ignora il valore passato a `Named()` e genera sempre un proprio nome (es. `mysql_wordpress_20260713140736`). Leggi il nome effettivo tramite `backup.Name()` dopo `Create`.
+:::
+
 ```go
 backup, err := arubaClient.FromDatabase().DBaaSBackups().Create(
     ctx,
     aruba.NewDBaaSBackup().
-        Named("my-db-backup").
         Tagged("backup").
         InProject(proj).
+        InRegion(aruba.RegionITBGBergamo).
+        InZone(aruba.ZoneITBG1).
         FromDBaaS(db).
+        FromDatabase(aruba.URI(db.URI()+"/databases/mydb")).
         BilledBy(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create DBaaSBackup: %v", err)
@@ -658,14 +664,15 @@ if err != nil {
 if err := backup.WaitUntilReady(ctx); err != nil {
     log.Fatalf("DBaaS Backup did not become Ready: %v", err)
 }
-fmt.Printf("✓ DBaaS Backup: %s\n", backup.Name())
+fmt.Printf("✓ DBaaS Backup: %s (database: %s)\n", backup.Name(), backup.DatabaseName())
 ```
 
 **Accessor di risposta**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `DBaaSBackupID()` — ID backup assegnato dal provider
 - `DBaaSURI()` — URI del DBaaS sorgente
-- `DatabaseURI()` — URI del Database sorgente (se applicabile)
+- `DatabaseName()` — nome del database sorgente (preferito rispetto a `DatabaseURI()` per accedere solo al nome)
+- `DatabaseURI()` — riferimento grezzo memorizzato: URI completo se impostato tramite `FromDatabase`, nome semplice dopo l'idratazione dalla risposta
 - `SizeGB()` — dimensione del backup in GB
 - `Zone()` — zona di disponibilità
 - `BillingPeriod()` — cadenza di fatturazione
@@ -674,7 +681,7 @@ fmt.Printf("✓ DBaaS Backup: %s\n", backup.Name())
 - `Raw()` — struct wire sottostante
 
 **Setter**:
-- *Name*: `Named(string)`
+- *Name*: `Named(string)` *(ignorato dall'API — il nome viene generato automaticamente)*
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Containment*: `InProject(Ref)`, `FromDBaaS(Ref)`, `FromDatabase(Ref)`
 - *Geography*: `InRegion(Region)`, `InZone(Zone)`
