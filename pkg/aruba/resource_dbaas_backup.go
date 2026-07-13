@@ -3,6 +3,7 @@ package aruba
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/Arubacloud/sdk-go/internal/clients/database"
 	"github.com/Arubacloud/sdk-go/internal/restclient"
@@ -171,7 +172,14 @@ func (b *DBaaSBackup) toRequest() types.BackupRequest {
 		props.DBaaS = types.ReferenceResourceCommon{URI: *b.dbaasRef}
 	}
 	if b.databaseRef != nil {
-		props.Database = types.ReferenceResourceCommon{URI: *b.databaseRef}
+		// The backup API identifies databases by name, not by URI.
+		// Extract the name from the last path segment after "/databases/" if the
+		// caller passed a full URI; otherwise use the value as-is (already a name).
+		name := *b.databaseRef
+		if idx := strings.LastIndex(name, "/databases/"); idx >= 0 {
+			name = name[idx+len("/databases/"):]
+		}
+		props.Database = types.DatabaseNameRef{Name: name}
 	}
 	props.BillingPlanCommon = &types.BillingPlanCommon{BillingPeriod: defaultBillingPeriod(b.billingPeriod)}
 	return types.BackupRequest{
@@ -203,8 +211,8 @@ func (b *DBaaSBackup) fromResponse(resp *types.BackupResponse) {
 		v := resp.Properties.DBaaS.URI
 		b.dbaasRef = &v
 	}
-	if resp.Properties.Database.URI != "" {
-		v := resp.Properties.Database.URI
+	if resp.Properties.Database.Name != "" {
+		v := resp.Properties.Database.Name
 		b.databaseRef = &v
 	}
 	if resp.Properties.BillingPlanCommon != nil && resp.Properties.BillingPlanCommon.BillingPeriod != nil {

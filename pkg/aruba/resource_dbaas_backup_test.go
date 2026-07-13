@@ -221,8 +221,8 @@ func TestDBaaSBackup_ToRequest(t *testing.T) {
 	if req.Properties.DBaaS.URI != dbaasURI {
 		t.Errorf("Properties.DBaaS.URI = %q", req.Properties.DBaaS.URI)
 	}
-	if req.Properties.Database.URI != dbURI {
-		t.Errorf("Properties.Database.URI = %q", req.Properties.Database.URI)
+	if req.Properties.Database.Name != "mydb" {
+		t.Errorf("Properties.Database.Name = %q, want %q", req.Properties.Database.Name, "mydb")
 	}
 	if req.Properties.BillingPlanCommon == nil || req.Properties.BillingPlanCommon.BillingPeriod == nil || *req.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
 		t.Errorf("Properties.BillingPlanCommon.BillingPeriod = %v", req.Properties.BillingPlanCommon)
@@ -246,8 +246,8 @@ func TestDBaaSBackup_ToRequest_Empty(t *testing.T) {
 	if req.Properties.DBaaS.URI != "" {
 		t.Errorf("DBaaS.URI should be empty, got %q", req.Properties.DBaaS.URI)
 	}
-	if req.Properties.Database.URI != "" {
-		t.Errorf("Database.URI should be empty, got %q", req.Properties.Database.URI)
+	if req.Properties.Database.Name != "" {
+		t.Errorf("Database.Name should be empty for bare wrapper, got %q", req.Properties.Database.Name)
 	}
 }
 
@@ -260,7 +260,6 @@ func dbaasBackupTestResponse(name string) *types.BackupResponse {
 	uri := "/projects/p/providers/Aruba.Database/backups/bkp-1"
 	state := types.State("Active")
 	dbaasURI := "/projects/p/providers/Aruba.Database/dbaas/d-1"
-	dbURI := "/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb"
 	return &types.BackupResponse{
 		Metadata: types.ResourceMetadataResponse{
 			ID:               &id,
@@ -275,7 +274,7 @@ func dbaasBackupTestResponse(name string) *types.BackupResponse {
 		Properties: types.BackupPropertiesResponse{
 			Zone:     ZoneITBG1,
 			DBaaS:    types.ReferenceResourceCommon{URI: dbaasURI},
-			Database: types.ReferenceResourceCommon{URI: dbURI},
+			Database: types.DatabaseNameRef{Name: "mydb"},
 			BillingPlanCommon: func() *types.BillingPlanCommon {
 				v := BillingPeriodHour
 				return &types.BillingPlanCommon{BillingPeriod: &v}
@@ -321,8 +320,8 @@ func TestDBaaSBackup_FromResponseHydration(t *testing.T) {
 	if bkp.DBaaSURI() != "/projects/p/providers/Aruba.Database/dbaas/d-1" {
 		t.Errorf("DBaaSURI() = %q", bkp.DBaaSURI())
 	}
-	if bkp.DatabaseURI() != "/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb" {
-		t.Errorf("DatabaseURI() = %q", bkp.DatabaseURI())
+	if bkp.DatabaseURI() != "mydb" {
+		t.Errorf("DatabaseURI() = %q, want bare name %q", bkp.DatabaseURI(), "mydb")
 	}
 	if bkp.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", bkp.BillingPeriod())
@@ -449,7 +448,7 @@ func buildDBaaSBackupsTestAdapter(t *testing.T, handler http.HandlerFunc) *dbaas
 
 const dbaasBackupSuccessBody = `{` +
 	`"metadata":{"id":"bkp-1","name":"my-backup","uri":"/projects/p/providers/Aruba.Database/backups/bkp-1","project":{"id":"p"}},` +
-	`"properties":{"datacenter":"ITBG-1","dbaas":{"uri":"/projects/p/providers/Aruba.Database/dbaas/d-1"},"database":{"uri":"/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb"},"billingPlan":{"billingPeriod":"Hour"}},` +
+	`"properties":{"datacenter":"ITBG-1","dbaas":{"uri":"/projects/p/providers/Aruba.Database/dbaas/d-1"},"database":{"name":"mydb"},"billingPlan":{"billingPeriod":"Hour"}},` +
 	`"status":{"state":"Active"}}`
 
 // --------------------------------------------------------------------------
@@ -504,8 +503,8 @@ func TestDBaaSBackupsClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Properties.DBaaS.URI != "/projects/p/providers/Aruba.Database/dbaas/d-1" {
 		t.Errorf("request Properties.DBaaS.URI = %q", gotBody.Properties.DBaaS.URI)
 	}
-	if gotBody.Properties.Database.URI != "/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb" {
-		t.Errorf("request Properties.Database.URI = %q", gotBody.Properties.Database.URI)
+	if gotBody.Properties.Database.Name != "mydb" {
+		t.Errorf("request Properties.Database.Name = %q, want %q", gotBody.Properties.Database.Name, "mydb")
 	}
 	if gotBody.Properties.BillingPlanCommon == nil || gotBody.Properties.BillingPlanCommon.BillingPeriod == nil || *gotBody.Properties.BillingPlanCommon.BillingPeriod != BillingPeriodHour {
 		t.Errorf("request Properties.BillingPlanCommon.BillingPeriod = %v", gotBody.Properties.BillingPlanCommon)
@@ -607,8 +606,8 @@ func TestDBaaSBackupsClientAdapter_Create_WithBodyRefs_ViaFake(t *testing.T) {
 	if captured.Properties.DBaaS.URI != dbaasURI {
 		t.Errorf("captured DBaaS.URI = %q", captured.Properties.DBaaS.URI)
 	}
-	if captured.Properties.Database.URI != dbURI {
-		t.Errorf("captured Database.URI = %q", captured.Properties.Database.URI)
+	if captured.Properties.Database.Name != "mydb" {
+		t.Errorf("captured Database.Name = %q, want %q", captured.Properties.Database.Name, "mydb")
 	}
 	if captured.Properties.Zone != Zone(RegionITBGBergamo) {
 		t.Errorf("captured Zone = %q", captured.Properties.Zone)
@@ -836,8 +835,8 @@ func TestDBaaSBackupsClientAdapter_List_TwoItems(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"total":2,"self":"","prev":"","next":"","first":"","last":"","values":[`+
-			`{"metadata":{"id":"bkp-1","name":"n1","uri":"/projects/p/providers/Aruba.Database/backups/bkp-1","project":{"id":"p"}},"properties":{"datacenter":"ITBG-1","dbaas":{"uri":"/projects/p/providers/Aruba.Database/dbaas/d-1"},"database":{"uri":"/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb"},"billingPlan":{"billingPeriod":"Hour"}},"status":{}},`+
-			`{"metadata":{"id":"bkp-2","name":"n2","uri":"/projects/p/providers/Aruba.Database/backups/bkp-2","project":{"id":"p"}},"properties":{"datacenter":"ITBG-1","dbaas":{"uri":"/projects/p/providers/Aruba.Database/dbaas/d-1"},"database":{"uri":"/projects/p/providers/Aruba.Database/dbaas/d-1/databases/mydb"},"billingPlan":{"billingPeriod":"Hour"}},"status":{}}`+
+			`{"metadata":{"id":"bkp-1","name":"n1","uri":"/projects/p/providers/Aruba.Database/backups/bkp-1","project":{"id":"p"}},"properties":{"datacenter":"ITBG-1","dbaas":{"uri":"/projects/p/providers/Aruba.Database/dbaas/d-1"},"database":{"name":"mydb"},"billingPlan":{"billingPeriod":"Hour"}},"status":{}},`+
+			`{"metadata":{"id":"bkp-2","name":"n2","uri":"/projects/p/providers/Aruba.Database/backups/bkp-2","project":{"id":"p"}},"properties":{"datacenter":"ITBG-1","dbaas":{"uri":"/projects/p/providers/Aruba.Database/dbaas/d-1"},"database":{"name":"mydb"},"billingPlan":{"billingPeriod":"Hour"}},"status":{}}`+
 			`]}`)
 	})
 
