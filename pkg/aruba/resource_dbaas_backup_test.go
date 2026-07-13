@@ -320,8 +320,13 @@ func TestDBaaSBackup_FromResponseHydration(t *testing.T) {
 	if bkp.DBaaSURI() != "/projects/p/providers/Aruba.Database/dbaas/d-1" {
 		t.Errorf("DBaaSURI() = %q", bkp.DBaaSURI())
 	}
+	// After hydration from an API response, databaseRef holds the bare name
+	// returned by the API, so DatabaseURI() and DatabaseName() both return it.
 	if bkp.DatabaseURI() != "mydb" {
-		t.Errorf("DatabaseURI() = %q, want bare name %q", bkp.DatabaseURI(), "mydb")
+		t.Errorf("DatabaseURI() after hydration = %q, want %q", bkp.DatabaseURI(), "mydb")
+	}
+	if bkp.DatabaseName() != "mydb" {
+		t.Errorf("DatabaseName() after hydration = %q, want %q", bkp.DatabaseName(), "mydb")
 	}
 	if bkp.BillingPeriod() != BillingPeriodHour {
 		t.Errorf("BillingPeriod() = %q", bkp.BillingPeriod())

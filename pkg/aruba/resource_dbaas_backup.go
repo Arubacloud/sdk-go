@@ -138,8 +138,35 @@ func (b *DBaaSBackup) BillingPeriod() BillingPeriod {
 // DBaaSURI returns the source DBaaS URI bound via FromDBaaS, or "" if unset.
 func (b *DBaaSBackup) DBaaSURI() string { return dbaasBackupDerefString(b.dbaasRef) }
 
-// DatabaseURI returns the source database URI bound via FromDatabase, or "" if unset.
+// DatabaseURI returns the raw value stored in the database reference field.
+// When set via FromDatabase it holds the full URI; after fromResponse hydration
+// it holds the bare database name returned by the API. Prefer DatabaseName()
+// when you only need the database name for display or comparison.
 func (b *DBaaSBackup) DatabaseURI() string { return dbaasBackupDerefString(b.databaseRef) }
+
+// DatabaseName returns the database name. If the stored reference is a full URI
+// (set via FromDatabase), the name is extracted as the path segment after
+// "/databases/". If it is already a bare name (set from a response), it is
+// returned as-is.
+func (b *DBaaSBackup) DatabaseName() string { return b.databaseName() }
+
+// databaseName is the shared implementation used by both DatabaseName() and toRequest().
+func (b *DBaaSBackup) databaseName() string {
+	if b.databaseRef == nil {
+		return ""
+	}
+	ref := *b.databaseRef
+	if idx := strings.LastIndex(ref, "/databases/"); idx >= 0 {
+		// Take only the first path segment after "/databases/" so that trailing
+		// slashes or extra segments (e.g. "/databases/mydb/") do not leak through.
+		seg := ref[idx+len("/databases/"):]
+		if end := strings.IndexByte(seg, '/'); end >= 0 {
+			seg = seg[:end]
+		}
+		return seg
+	}
+	return ref
+}
 
 // SizeGB returns the backup storage size in GB from the response, or 0 before hydration.
 func (b *DBaaSBackup) SizeGB() int {
@@ -172,14 +199,7 @@ func (b *DBaaSBackup) toRequest() types.BackupRequest {
 		props.DBaaS = types.ReferenceResourceCommon{URI: *b.dbaasRef}
 	}
 	if b.databaseRef != nil {
-		// The backup API identifies databases by name, not by URI.
-		// Extract the name from the last path segment after "/databases/" if the
-		// caller passed a full URI; otherwise use the value as-is (already a name).
-		name := *b.databaseRef
-		if idx := strings.LastIndex(name, "/databases/"); idx >= 0 {
-			name = name[idx+len("/databases/"):]
-		}
-		props.Database = types.DatabaseNameRef{Name: name}
+		props.Database = types.DatabaseNameRef{Name: b.databaseName()}
 	}
 	props.BillingPlanCommon = &types.BillingPlanCommon{BillingPeriod: defaultBillingPeriod(b.billingPeriod)}
 	return types.BackupRequest{
