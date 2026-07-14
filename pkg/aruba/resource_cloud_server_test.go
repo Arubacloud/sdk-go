@@ -1401,8 +1401,8 @@ func TestCloudServersClientAdapter_Update_MultipleDispatches(t *testing.T) {
 	if len(capturedPaths) != 3 {
 		t.Fatalf("expected 3 API calls, got %d: %v", len(capturedPaths), capturedPaths)
 	}
-	if !containsSubstring(capturedPaths[0], "cloudServers/cs-1") || containsSubstring(capturedPaths[0], "/") && containsSubstring(capturedPaths[1], "associateDisassociateSubnets") {
-		// path[0] is the PUT, path[1] is subnets, path[2] is volumes
+	if !containsSubstring(capturedPaths[0], "cloudServers/cs-1") {
+		t.Errorf("first call path %q should target cloudServers/cs-1", capturedPaths[0])
 	}
 	if !containsSubstring(capturedPaths[1], "associateDisassociateSubnets") {
 		t.Errorf("second call should be subnet association, got %s", capturedPaths[1])

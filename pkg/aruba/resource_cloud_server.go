@@ -738,16 +738,8 @@ func (a *cloudServersClientAdapter) Update(ctx context.Context, cs *CloudServer,
 	// 1. Metadata (name / tags) via PUT — only when something actually changed.
 	if cs.hasMetadataChanges() {
 		resp, err := a.low.Update(ctx, cs.ProjectID(), cs.CloudServerID(), cs.toRequest(), rp)
-		populateHTTPEnvelope(&cs.httpEnvelopeMixin, resp)
-		if resp != nil && resp.Data != nil {
-			cs.fromResponse(resp.Data)
-		}
-		cs.actions = a
-		if err != nil {
-			return cs, err
-		}
-		if resp != nil && !resp.IsSuccess() {
-			return cs, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+		if applyErr := a.applyUpdateResponse(cs, resp, err); applyErr != nil {
+			return cs, applyErr
 		}
 	}
 
@@ -758,16 +750,8 @@ func (a *cloudServersClientAdapter) Update(ctx context.Context, cs *CloudServer,
 			SubnetsToDisassociate: cloudServerStringsToCommon(cs.subnetsToDisassociate),
 		}
 		resp, err := a.low.AssociateSubnets(ctx, cs.ProjectID(), cs.CloudServerID(), body, rp)
-		populateHTTPEnvelope(&cs.httpEnvelopeMixin, resp)
-		if resp != nil && resp.Data != nil {
-			cs.fromResponse(resp.Data)
-		}
-		cs.actions = a
-		if err != nil {
-			return cs, err
-		}
-		if resp != nil && !resp.IsSuccess() {
-			return cs, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+		if applyErr := a.applyUpdateResponse(cs, resp, err); applyErr != nil {
+			return cs, applyErr
 		}
 		cs.subnetsToAssociate = nil
 		cs.subnetsToDisassociate = nil
@@ -780,16 +764,8 @@ func (a *cloudServersClientAdapter) Update(ctx context.Context, cs *CloudServer,
 			SecurityGroupsToDisassociate: cloudServerStringsToCommon(cs.sgsToDisassociate),
 		}
 		resp, err := a.low.AssociateSecurityGroups(ctx, cs.ProjectID(), cs.CloudServerID(), body, rp)
-		populateHTTPEnvelope(&cs.httpEnvelopeMixin, resp)
-		if resp != nil && resp.Data != nil {
-			cs.fromResponse(resp.Data)
-		}
-		cs.actions = a
-		if err != nil {
-			return cs, err
-		}
-		if resp != nil && !resp.IsSuccess() {
-			return cs, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+		if applyErr := a.applyUpdateResponse(cs, resp, err); applyErr != nil {
+			return cs, applyErr
 		}
 		cs.sgsToAssociate = nil
 		cs.sgsToDisassociate = nil
@@ -802,16 +778,8 @@ func (a *cloudServersClientAdapter) Update(ctx context.Context, cs *CloudServer,
 			ElasticIPsToDisassociate: cloudServerStringsToCommon(cs.eipsToDisassociate),
 		}
 		resp, err := a.low.AssociateElasticIPs(ctx, cs.ProjectID(), cs.CloudServerID(), body, rp)
-		populateHTTPEnvelope(&cs.httpEnvelopeMixin, resp)
-		if resp != nil && resp.Data != nil {
-			cs.fromResponse(resp.Data)
-		}
-		cs.actions = a
-		if err != nil {
-			return cs, err
-		}
-		if resp != nil && !resp.IsSuccess() {
-			return cs, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+		if applyErr := a.applyUpdateResponse(cs, resp, err); applyErr != nil {
+			return cs, applyErr
 		}
 		cs.eipsToAssociate = nil
 		cs.eipsToDisassociate = nil
@@ -824,16 +792,8 @@ func (a *cloudServersClientAdapter) Update(ctx context.Context, cs *CloudServer,
 			VolumesToDetach: cloudServerStringsToCommon(cs.dataVolumesToDetach),
 		}
 		resp, err := a.low.AttachDetachDataVolumes(ctx, cs.ProjectID(), cs.CloudServerID(), body, rp)
-		populateHTTPEnvelope(&cs.httpEnvelopeMixin, resp)
-		if resp != nil && resp.Data != nil {
-			cs.fromResponse(resp.Data)
-		}
-		cs.actions = a
-		if err != nil {
-			return cs, err
-		}
-		if resp != nil && !resp.IsSuccess() {
-			return cs, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+		if applyErr := a.applyUpdateResponse(cs, resp, err); applyErr != nil {
+			return cs, applyErr
 		}
 		cs.dataVolumesToAttach = nil
 		cs.dataVolumesToDetach = nil
@@ -853,6 +813,23 @@ func (a *cloudServersClientAdapter) Update(ctx context.Context, cs *CloudServer,
 		})
 	}
 	return cs, nil
+}
+
+// applyUpdateResponse populates the HTTP envelope, hydrates the wrapper from a non-nil
+// response payload, sets the action executor, and surfaces any transport or HTTP error.
+func (a *cloudServersClientAdapter) applyUpdateResponse(cs *CloudServer, resp *types.Response[types.CloudServerResponse], err error) error {
+	populateHTTPEnvelope(&cs.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		cs.fromResponse(resp.Data)
+	}
+	cs.actions = a
+	if err != nil {
+		return err
+	}
+	if resp != nil && !resp.IsSuccess() {
+		return &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+	}
+	return nil
 }
 
 // Get fetches a CloudServer by Ref and returns a freshly hydrated wrapper.
@@ -1002,7 +979,6 @@ func (a *cloudServersClientAdapter) powerOff(ctx context.Context, projectID, clo
 func (a *cloudServersClientAdapter) setPassword(ctx context.Context, projectID, cloudServerID, password string, rp *types.RequestParameters) (*types.Response[any], error) {
 	return a.low.SetPassword(ctx, projectID, cloudServerID, types.CloudServerPasswordRequest{Password: password}, rp)
 }
-
 
 // cloudServerIDsFromRef extracts (projectID, cloudServerID) from a Ref.
 func cloudServerIDsFromRef(ref Ref) (projectID, cloudServerID string, err error) {
