@@ -111,3 +111,23 @@ type CloudServerListResponse struct {
 type CloudServerPasswordRequest struct {
 	Password string `json:"password"`
 }
+
+type CloudServerAssociateSubnetsRequest struct {
+	SubnetsToAssociate    []ReferenceResourceCommon `json:"subnetsToAssociate,omitempty"`
+	SubnetsToDisassociate []ReferenceResourceCommon `json:"subnetsToDisassociate,omitempty"`
+}
+
+type CloudServerAssociateSecurityGroupsRequest struct {
+	SecurityGroupsToAssociate    []ReferenceResourceCommon `json:"securityGroupsToAssociate,omitempty"`
+	SecurityGroupsToDisassociate []ReferenceResourceCommon `json:"securityGroupsToDisassociate,omitempty"`
+}
+
+type CloudServerAssociateElasticIPsRequest struct {
+	ElasticIPsToAssociate    []ReferenceResourceCommon `json:"elasticIPsToAssociate,omitempty"`
+	ElasticIPsToDisassociate []ReferenceResourceCommon `json:"elasticIPsToDisassociate,omitempty"`
+}
+
+type CloudServerAttachDetachDataVolumesRequest struct {
+	VolumesToAttach []ReferenceResourceCommon `json:"volumesToAttach,omitempty"`
+	VolumesToDetach []ReferenceResourceCommon `json:"volumesToDetach,omitempty"`
+}

@@ -10,7 +10,11 @@ var (
 	ComputeCloudServerList     = "1.0"
 	ComputeCloudServerPowerOn  = "1.0"
 	ComputeCloudServerPowerOff = "1.0"
-	ComputeCloudServerPassword = "1.0"
+	ComputeCloudServerPassword               = "1.0"
+	ComputeCloudServerAssociateSubnets        = "1.0"
+	ComputeCloudServerAssociateSecurityGroups = "1.0"
+	ComputeCloudServerAssociateElasticIPs     = "1.0"
+	ComputeCloudServerAttachDetachDataVolumes  = "1.0"
 
 	// KeyPair Service
 	ComputeKeyPairCreate = "1.0"

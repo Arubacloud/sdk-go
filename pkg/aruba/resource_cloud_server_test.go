@@ -787,6 +787,7 @@ func TestCloudServersClientAdapter_Update_Success(t *testing.T) {
 	cs := &CloudServer{}
 	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
 	cs.projectID = "p"
+	cs.Named("renamed-server") // trigger metadata PUT
 
 	result, err := adapter.Update(context.Background(), cs)
 	if err != nil {
@@ -1182,6 +1183,356 @@ func TestCloudServer_PowerOff_MissingProjectID(t *testing.T) {
 	}
 }
 
+// --------------------------------------------------------------------------
+// Delta setters — AssociateSubnets / DisassociateSubnets / etc.
+// --------------------------------------------------------------------------
+
+func TestCloudServer_AssociateSubnets_Appends(t *testing.T) {
+	cs := NewCloudServer().
+		AssociateSubnets(URI("/subnets/s-1"), URI("/subnets/s-2")).
+		DisassociateSubnets(URI("/subnets/s-3"))
+	if cs.Err() != nil {
+		t.Fatalf("Err() = %v", cs.Err())
+	}
+	if len(cs.subnetsToAssociate) != 2 || cs.subnetsToAssociate[0] != "/subnets/s-1" {
+		t.Errorf("subnetsToAssociate = %v", cs.subnetsToAssociate)
+	}
+	if len(cs.subnetsToDisassociate) != 1 || cs.subnetsToDisassociate[0] != "/subnets/s-3" {
+		t.Errorf("subnetsToDisassociate = %v", cs.subnetsToDisassociate)
+	}
+}
+
+func TestCloudServer_AssociateSubnets_EmptyURIError(t *testing.T) {
+	cs := NewCloudServer().AssociateSubnets(URI(""))
+	if cs.Err() == nil {
+		t.Error("expected Err() for empty URI in AssociateSubnets")
+	}
+}
+
+func TestCloudServer_AssociateSecurityGroups_Appends(t *testing.T) {
+	cs := NewCloudServer().
+		AssociateSecurityGroups(URI("/sgs/sg-1")).
+		DisassociateSecurityGroups(URI("/sgs/sg-2"))
+	if cs.Err() != nil {
+		t.Fatalf("Err() = %v", cs.Err())
+	}
+	if len(cs.sgsToAssociate) != 1 || cs.sgsToAssociate[0] != "/sgs/sg-1" {
+		t.Errorf("sgsToAssociate = %v", cs.sgsToAssociate)
+	}
+	if len(cs.sgsToDisassociate) != 1 || cs.sgsToDisassociate[0] != "/sgs/sg-2" {
+		t.Errorf("sgsToDisassociate = %v", cs.sgsToDisassociate)
+	}
+}
+
+func TestCloudServer_AssociateElasticIPs_Appends(t *testing.T) {
+	cs := NewCloudServer().
+		AssociateElasticIPs(URI("/eips/e-1")).
+		DisassociateElasticIPs(URI("/eips/e-2"))
+	if cs.Err() != nil {
+		t.Fatalf("Err() = %v", cs.Err())
+	}
+	if len(cs.eipsToAssociate) != 1 || cs.eipsToAssociate[0] != "/eips/e-1" {
+		t.Errorf("eipsToAssociate = %v", cs.eipsToAssociate)
+	}
+}
+
+func TestCloudServer_AttachDataVolumes_Appends(t *testing.T) {
+	cs := NewCloudServer().
+		AttachDataVolumes(URI("/vols/v-1")).
+		DetachDataVolumes(URI("/vols/v-2"))
+	if cs.Err() != nil {
+		t.Fatalf("Err() = %v", cs.Err())
+	}
+	if len(cs.dataVolumesToAttach) != 1 || cs.dataVolumesToAttach[0] != "/vols/v-1" {
+		t.Errorf("dataVolumesToAttach = %v", cs.dataVolumesToAttach)
+	}
+	if len(cs.dataVolumesToDetach) != 1 || cs.dataVolumesToDetach[0] != "/vols/v-2" {
+		t.Errorf("dataVolumesToDetach = %v", cs.dataVolumesToDetach)
+	}
+}
+
+// --------------------------------------------------------------------------
+// hasMetadataChanges
+// --------------------------------------------------------------------------
+
+func TestCloudServer_HasMetadataChanges_NilResponse(t *testing.T) {
+	cs := NewCloudServer().Named("srv")
+	if !cs.hasMetadataChanges() {
+		t.Error("expected true when response is nil")
+	}
+}
+
+func TestCloudServer_HasMetadataChanges_SameName(t *testing.T) {
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	if cs.hasMetadataChanges() {
+		t.Error("expected false when name and tags match the hydrated response")
+	}
+}
+
+func TestCloudServer_HasMetadataChanges_RenamedServer(t *testing.T) {
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.Named("new-name")
+	if !cs.hasMetadataChanges() {
+		t.Error("expected true after Named() changes the name")
+	}
+}
+
+func TestCloudServer_HasMetadataChanges_TagsChanged(t *testing.T) {
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.Tagged("new-tag")
+	if !cs.hasMetadataChanges() {
+		t.Error("expected true after Tagged() changes the tag set")
+	}
+}
+
+// --------------------------------------------------------------------------
+// cloudServerStringsToCommon helper
+// --------------------------------------------------------------------------
+
+func TestCloudServerStringsToCommon_NilInput(t *testing.T) {
+	if got := cloudServerStringsToCommon(nil); got != nil {
+		t.Errorf("expected nil for nil input, got %v", got)
+	}
+}
+
+func TestCloudServerStringsToCommon_FiltersEmpty(t *testing.T) {
+	got := cloudServerStringsToCommon([]string{"", "/valid/uri"})
+	if len(got) != 1 || got[0].URI != "/valid/uri" {
+		t.Errorf("expected one entry with /valid/uri, got %v", got)
+	}
+}
+
+// --------------------------------------------------------------------------
+// Smart Update dispatch
+// --------------------------------------------------------------------------
+
+func TestCloudServersClientAdapter_Update_MetadataOnly(t *testing.T) {
+	var capturedMethod, capturedPath string
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		capturedMethod = r.Method
+		capturedPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, cloudServerSuccessBody)
+	})
+
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.projectID = "p"
+	cs.Named("renamed-server")
+
+	result, err := adapter.Update(context.Background(), cs)
+	if err != nil {
+		t.Fatalf("Update error: %v", err)
+	}
+	if capturedMethod != http.MethodPut {
+		t.Errorf("expected PUT, got %s", capturedMethod)
+	}
+	if !containsSubstring(capturedPath, "cloudServers") {
+		t.Errorf("path %q should contain 'cloudServers'", capturedPath)
+	}
+	if result.actions == nil {
+		t.Error("actions should be set after Update")
+	}
+}
+
+func TestCloudServersClientAdapter_Update_SubnetsOnly(t *testing.T) {
+	var capturedPaths []string
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		capturedPaths = append(capturedPaths, r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		fmt.Fprint(w, cloudServerSuccessBody)
+	})
+
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.projectID = "p"
+	cs.AssociateSubnets(URI("/subnets/s-new")).DisassociateSubnets(URI("/subnets/s-old"))
+
+	if _, err := adapter.Update(context.Background(), cs); err != nil {
+		t.Fatalf("Update error: %v", err)
+	}
+	if len(capturedPaths) != 1 {
+		t.Fatalf("expected 1 API call, got %d: %v", len(capturedPaths), capturedPaths)
+	}
+	if !containsSubstring(capturedPaths[0], "associateDisassociateSubnets") {
+		t.Errorf("path %q should contain 'associateDisassociateSubnets'", capturedPaths[0])
+	}
+	// Deltas cleared after success.
+	if len(cs.subnetsToAssociate) != 0 || len(cs.subnetsToDisassociate) != 0 {
+		t.Error("delta slices should be cleared after successful Update")
+	}
+}
+
+func TestCloudServersClientAdapter_Update_MultipleDispatches(t *testing.T) {
+	var capturedPaths []string
+	callIdx := 0
+	responses := []struct {
+		code int
+		body string
+	}{
+		{http.StatusOK, cloudServerSuccessBody},       // PUT
+		{http.StatusAccepted, cloudServerSuccessBody}, // subnets
+		{http.StatusAccepted, cloudServerSuccessBody}, // volumes
+	}
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		capturedPaths = append(capturedPaths, r.URL.Path)
+		resp := responses[callIdx]
+		callIdx++
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(resp.code)
+		fmt.Fprint(w, resp.body)
+	})
+
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.projectID = "p"
+	cs.Named("renamed").
+		AssociateSubnets(URI("/subnets/s-new")).
+		AttachDataVolumes(URI("/vols/v-new"))
+
+	if _, err := adapter.Update(context.Background(), cs); err != nil {
+		t.Fatalf("Update error: %v", err)
+	}
+	if len(capturedPaths) != 3 {
+		t.Fatalf("expected 3 API calls, got %d: %v", len(capturedPaths), capturedPaths)
+	}
+	if !containsSubstring(capturedPaths[0], "cloudServers/cs-1") || containsSubstring(capturedPaths[0], "/") && containsSubstring(capturedPaths[1], "associateDisassociateSubnets") {
+		// path[0] is the PUT, path[1] is subnets, path[2] is volumes
+	}
+	if !containsSubstring(capturedPaths[1], "associateDisassociateSubnets") {
+		t.Errorf("second call should be subnet association, got %s", capturedPaths[1])
+	}
+	if !containsSubstring(capturedPaths[2], "attachDetachDataVolumes") {
+		t.Errorf("third call should be volume attachment, got %s", capturedPaths[2])
+	}
+}
+
+func TestCloudServersClientAdapter_Update_NoOpWhenNothingChanged(t *testing.T) {
+	callCount := 0
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		w.WriteHeader(http.StatusOK)
+	})
+
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.projectID = "p"
+	// name and tags unchanged, no deltas queued → Update should be a no-op
+
+	if _, err := adapter.Update(context.Background(), cs); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if callCount != 0 {
+		t.Errorf("expected 0 API calls for no-op Update, got %d", callCount)
+	}
+}
+
+func TestCloudServersClientAdapter_Update_SubnetNonTwoXX(t *testing.T) {
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, testutil.ErrorBodyJSON("Bad Request", "invalid subnet", 400))
+	})
+
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.projectID = "p"
+	cs.AssociateSubnets(URI("/subnets/bad"))
+
+	_, err := adapter.Update(context.Background(), cs)
+	if err == nil {
+		t.Fatal("expected error on 400")
+	}
+	var httpErr *HTTPError
+	if !errors.As(err, &httpErr) || httpErr.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected *HTTPError with 400, got %T: %v", err, err)
+	}
+}
+
+func TestCloudServersClientAdapter_Update_SecurityGroupsDispatch(t *testing.T) {
+	var capturedPath string
+	var gotBody types.CloudServerAssociateSecurityGroupsRequest
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		fmt.Fprint(w, cloudServerSuccessBody)
+	})
+
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.projectID = "p"
+	cs.AssociateSecurityGroups(URI("/sgs/sg-new")).DisassociateSecurityGroups(URI("/sgs/sg-old"))
+
+	if _, err := adapter.Update(context.Background(), cs); err != nil {
+		t.Fatalf("Update error: %v", err)
+	}
+	if !containsSubstring(capturedPath, "associateDisassociateSecurityGroups") {
+		t.Errorf("path %q should contain 'associateDisassociateSecurityGroups'", capturedPath)
+	}
+	if len(gotBody.SecurityGroupsToAssociate) != 1 || gotBody.SecurityGroupsToAssociate[0].URI != "/sgs/sg-new" {
+		t.Errorf("SecurityGroupsToAssociate = %v", gotBody.SecurityGroupsToAssociate)
+	}
+}
+
+func TestCloudServersClientAdapter_Update_ElasticIPsDispatch(t *testing.T) {
+	var capturedPath string
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		fmt.Fprint(w, cloudServerSuccessBody)
+	})
+
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.projectID = "p"
+	cs.DisassociateElasticIPs(URI("/eips/eip-old"))
+
+	if _, err := adapter.Update(context.Background(), cs); err != nil {
+		t.Fatalf("Update error: %v", err)
+	}
+	if !containsSubstring(capturedPath, "associateDisassociateElasticIPs") {
+		t.Errorf("path %q should contain 'associateDisassociateElasticIPs'", capturedPath)
+	}
+}
+
+func TestCloudServersClientAdapter_Update_DataVolumesDispatch(t *testing.T) {
+	var capturedPath string
+	var gotBody types.CloudServerAttachDetachDataVolumesRequest
+	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		capturedPath = r.URL.Path
+		json.NewDecoder(r.Body).Decode(&gotBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		fmt.Fprint(w, cloudServerSuccessBody)
+	})
+
+	cs := &CloudServer{}
+	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
+	cs.projectID = "p"
+	cs.AttachDataVolumes(URI("/vols/v-new")).DetachDataVolumes(URI("/vols/v-old"))
+
+	if _, err := adapter.Update(context.Background(), cs); err != nil {
+		t.Fatalf("Update error: %v", err)
+	}
+	if !containsSubstring(capturedPath, "attachDetachDataVolumes") {
+		t.Errorf("path %q should contain 'attachDetachDataVolumes'", capturedPath)
+	}
+	if len(gotBody.VolumesToAttach) != 1 || gotBody.VolumesToAttach[0].URI != "/vols/v-new" {
+		t.Errorf("VolumesToAttach = %v", gotBody.VolumesToAttach)
+	}
+	if len(gotBody.VolumesToDetach) != 1 || gotBody.VolumesToDetach[0].URI != "/vols/v-old" {
+		t.Errorf("VolumesToDetach = %v", gotBody.VolumesToDetach)
+	}
+}
+
 func TestCloudServer_SetPassword_MissingProjectID(t *testing.T) {
 	callCount := 0
 	adapter := buildCloudServersTestAdapter(t, func(w http.ResponseWriter, _ *http.Request) {
@@ -1293,6 +1644,7 @@ func TestCloudServersClientAdapter_Update_NonTwoXX(t *testing.T) {
 	cs := &CloudServer{}
 	cs.fromResponse(cloudServerTestResponse("cs-1", "my-server", "/projects/p/providers/Aruba.Compute/cloudServers/cs-1"))
 	cs.projectID = "p"
+	cs.Named("trigger-put") // ensure PUT is dispatched so the 422 is surfaced
 
 	result, err := adapter.Update(context.Background(), cs)
 	if err == nil {

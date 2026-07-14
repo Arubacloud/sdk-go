@@ -28,6 +28,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.6] — 2026-07-14
+
+### Added
+
+- **Cloud Server update delta setters** (`pkg/aruba`) — eight new fluent setters record
+  association/attachment intent on a `*CloudServer` wrapper for use in `Update` calls:
+  `AssociateSubnets`, `DisassociateSubnets`, `AssociateSecurityGroups`,
+  `DisassociateSecurityGroups`, `AssociateElasticIPs`, `DisassociateElasticIPs`,
+  `AttachDataVolumes`, `DetachDataVolumes`. Repeated calls on the same setter append;
+  queues are cleared after a successful `Update`.
+
+- **Four new low-level API endpoints** (`internal/clients/compute`) — `AssociateSubnets`,
+  `AssociateSecurityGroups`, `AssociateElasticIPs`, `AttachDetachDataVolumes` map to the
+  dedicated Aruba Cloud REST actions (`associateDisassociateSubnets`,
+  `associateDisassociateSecurityGroups`, `associateDisassociateElasticIPs`,
+  `attachDetachDataVolumes`), replacing the previous practice of bundling all changes into a
+  single PUT that only honoured name/tag fields.
+
+- **Four new `pkg/types` request structs** — `CloudServerAssociateSubnetsRequest`,
+  `CloudServerAssociateSecurityGroupsRequest`, `CloudServerAssociateElasticIPsRequest`,
+  `CloudServerAttachDetachDataVolumesRequest`.
+
+### Changed
+
+- **`CloudServersClient.Update` is now a smart dispatcher** (`pkg/aruba`) — a single
+  `Update(ctx, server)` call inspects the wrapper's pending state and fans out to the
+  correct API endpoint(s) in sequence:
+  - name/tags differ from the last hydrated response → `PUT /cloudServers/:id`
+  - subnet delta queues non-empty → `POST …/associateDisassociateSubnets`
+  - security-group delta queues non-empty → `POST …/associateDisassociateSecurityGroups`
+  - elastic-IP delta queues non-empty → `POST …/associateDisassociateElasticIPs`
+  - data-volume delta queues non-empty → `POST …/attachDetachDataVolumes`
+
+  If nothing changed, `Update` is a no-op (zero API calls). Sub-calls are sequential; if
+  one fails, the wrapper reflects the state after the last successful call.
+
+  The `CloudServersClient.Update` **signature is unchanged** — this is a behaviour
+  improvement only. The previous `Update` silently sent all fields via PUT, which the
+  platform ignored for everything except name and tags.
+
+### Removed
+
+- **`ManageSubnets`, `ManageSecurityGroups`, `ManageElasticIPs`, `ManageDataVolumes`** — the
+  four action methods added as part of the in-progress v1.0.6 work are not included in the
+  final design. The smart `Update` dispatcher supersedes them; client code (Terraform,
+  acloud-cli) should use the delta setters + `Update` instead.
+
+---
+
 ## [1.0.5] — 2026-07-13
 
 ### Fixed

@@ -838,3 +838,213 @@ func TestSetPasswordCloudServer(t *testing.T) {
 		}
 	})
 }
+
+func TestAssociateSubnetsCloudServer(t *testing.T) {
+	body := types.CloudServerAssociateSubnetsRequest{
+		SubnetsToAssociate:    []types.ReferenceResourceCommon{{URI: "/subnets/s-1"}},
+		SubnetsToDisassociate: []types.ReferenceResourceCommon{{URI: "/subnets/s-2"}},
+	}
+
+	t.Run("successful associate/disassociate", func(t *testing.T) {
+		var gotBody types.CloudServerAssociateSubnetsRequest
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				t.Errorf("expected POST, got %s", r.Method)
+			}
+			if r.URL.Path != "/projects/test-project/providers/Aruba.Compute/cloudServers/server-123/associateDisassociateSubnets" {
+				t.Errorf("unexpected path: %s", r.URL.Path)
+			}
+			if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+				t.Errorf("decode body: %v", err)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusAccepted)
+			fmt.Fprint(w, `{"metadata":{"id":"cs-1","name":"srv","uri":"/projects/test-project/providers/Aruba.Compute/cloudServers/cs-1"},"properties":{}}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewCloudServersClientImpl(c)
+
+		resp, err := svc.AssociateSubnets(context.Background(), "test-project", "server-123", body, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusAccepted {
+			t.Errorf("expected 202, got %d", resp.StatusCode)
+		}
+		if len(gotBody.SubnetsToAssociate) != 1 || gotBody.SubnetsToAssociate[0].URI != "/subnets/s-1" {
+			t.Errorf("SubnetsToAssociate = %v", gotBody.SubnetsToAssociate)
+		}
+		if len(gotBody.SubnetsToDisassociate) != 1 || gotBody.SubnetsToDisassociate[0].URI != "/subnets/s-2" {
+			t.Errorf("SubnetsToDisassociate = %v", gotBody.SubnetsToDisassociate)
+		}
+	})
+
+	t.Run("empty project ID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewCloudServersClientImpl(c)
+		_, err := svc.AssociateSubnets(context.Background(), "", "server-123", body, nil)
+		if err == nil {
+			t.Error("expected error for empty project ID")
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, testutil.ErrorBodyJSON("Not Found", "resource not found", 404))
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewCloudServersClientImpl(c)
+		resp, err := svc.AssociateSubnets(context.Background(), "test-project", "server-123", body, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp == nil || resp.StatusCode != http.StatusNotFound {
+			t.Fatalf("expected 404 response")
+		}
+	})
+
+	t.Run("nil params injects default api-version", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if got := r.URL.Query().Get("api-version"); got != "1.0" {
+				t.Errorf("expected api-version=1.0, got %q", got)
+			}
+			w.WriteHeader(http.StatusAccepted)
+			fmt.Fprint(w, `{}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewCloudServersClientImpl(c)
+		if _, err := svc.AssociateSubnets(context.Background(), "test-project", "server-123", body, nil); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+}
+
+func TestAssociateSecurityGroupsCloudServer(t *testing.T) {
+	body := types.CloudServerAssociateSecurityGroupsRequest{
+		SecurityGroupsToAssociate: []types.ReferenceResourceCommon{{URI: "/sgs/sg-1"}},
+	}
+
+	t.Run("successful associate", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/projects/test-project/providers/Aruba.Compute/cloudServers/server-123/associateDisassociateSecurityGroups" {
+				t.Errorf("unexpected path: %s", r.URL.Path)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusAccepted)
+			fmt.Fprint(w, `{}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewCloudServersClientImpl(c)
+
+		resp, err := svc.AssociateSecurityGroups(context.Background(), "test-project", "server-123", body, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusAccepted {
+			t.Errorf("expected 202, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("empty server ID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewCloudServersClientImpl(c)
+		_, err := svc.AssociateSecurityGroups(context.Background(), "test-project", "", body, nil)
+		if err == nil {
+			t.Error("expected error for empty server ID")
+		}
+	})
+}
+
+func TestAssociateElasticIPsCloudServer(t *testing.T) {
+	body := types.CloudServerAssociateElasticIPsRequest{
+		ElasticIPsToDisassociate: []types.ReferenceResourceCommon{{URI: "/eips/eip-1"}},
+	}
+
+	t.Run("successful disassociate", func(t *testing.T) {
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/projects/test-project/providers/Aruba.Compute/cloudServers/server-123/associateDisassociateElasticIPs" {
+				t.Errorf("unexpected path: %s", r.URL.Path)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusAccepted)
+			fmt.Fprint(w, `{}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewCloudServersClientImpl(c)
+
+		resp, err := svc.AssociateElasticIPs(context.Background(), "test-project", "server-123", body, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusAccepted {
+			t.Errorf("expected 202, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("empty project ID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewCloudServersClientImpl(c)
+		_, err := svc.AssociateElasticIPs(context.Background(), "", "server-123", body, nil)
+		if err == nil {
+			t.Error("expected error for empty project ID")
+		}
+	})
+}
+
+func TestAttachDetachDataVolumesCloudServer(t *testing.T) {
+	body := types.CloudServerAttachDetachDataVolumesRequest{
+		VolumesToAttach: []types.ReferenceResourceCommon{{URI: "/vols/v-1"}},
+		VolumesToDetach: []types.ReferenceResourceCommon{{URI: "/vols/v-2"}},
+	}
+
+	t.Run("successful attach/detach", func(t *testing.T) {
+		var gotBody types.CloudServerAttachDetachDataVolumesRequest
+		server := testutil.NewMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/projects/test-project/providers/Aruba.Compute/cloudServers/server-123/attachDetachDataVolumes" {
+				t.Errorf("unexpected path: %s", r.URL.Path)
+			}
+			if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+				t.Errorf("decode body: %v", err)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusAccepted)
+			fmt.Fprint(w, `{}`)
+		})
+		c := testutil.NewClient(t, server.URL)
+		svc := NewCloudServersClientImpl(c)
+
+		resp, err := svc.AttachDetachDataVolumes(context.Background(), "test-project", "server-123", body, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.StatusCode != http.StatusAccepted {
+			t.Errorf("expected 202, got %d", resp.StatusCode)
+		}
+		if len(gotBody.VolumesToAttach) != 1 || gotBody.VolumesToAttach[0].URI != "/vols/v-1" {
+			t.Errorf("VolumesToAttach = %v", gotBody.VolumesToAttach)
+		}
+		if len(gotBody.VolumesToDetach) != 1 || gotBody.VolumesToDetach[0].URI != "/vols/v-2" {
+			t.Errorf("VolumesToDetach = %v", gotBody.VolumesToDetach)
+		}
+	})
+
+	t.Run("empty project ID", func(t *testing.T) {
+		c := testutil.NewClient(t, "http://unused.invalid")
+		svc := NewCloudServersClientImpl(c)
+		_, err := svc.AttachDetachDataVolumes(context.Background(), "", "server-123", body, nil)
+		if err == nil {
+			t.Error("expected error for empty project ID")
+		}
+	})
+
+	t.Run("network error", func(t *testing.T) {
+		c := testutil.NewBrokenClient(t, "http://unused.invalid")
+		svc := NewCloudServersClientImpl(c)
+		_, err := svc.AttachDetachDataVolumes(context.Background(), "test-project", "server-123", body, nil)
+		if err == nil {
+			t.Fatal("expected a network error, got nil")
+		}
+	})
+}
