@@ -1,0 +1,49 @@
+{
+  "tutorialSidebar": [
+    {
+      "type": "doc",
+      "id": "intro",
+      "label": "Quick Start"
+    },
+    {
+      "type": "doc",
+      "id": "walkthrough",
+      "label": "API Walkthrough"
+    },
+    {
+      "type": "doc",
+      "id": "resources",
+      "label": "Resources"
+    },
+    {
+      "type": "doc",
+      "id": "filters",
+      "label": "Filters"
+    },
+    {
+      "type": "doc",
+      "id": "response-handling",
+      "label": "Response Handling"
+    },
+    {
+      "type": "doc",
+      "id": "async",
+      "label": "Async / Await"
+    },
+    {
+      "type": "doc",
+      "id": "working-at-low-level",
+      "label": "Working at Low Level"
+    },
+    {
+      "type": "doc",
+      "id": "multitenancy",
+      "label": "Multitenancy"
+    },
+    {
+      "type": "doc",
+      "id": "options",
+      "label": "Options"
+    }
+  ]
+}

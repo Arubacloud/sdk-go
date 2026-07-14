@@ -44,9 +44,19 @@ type CloudServer struct {
 	keyPairRef    *string
 	elasticIPRef  *string
 
-	// Body-refs (multi-slice).
+	// Body-refs (multi-slice, Create-time).
 	subnetRefs        []string
 	securityGroupRefs []string
+
+	// Update-time association/attachment deltas (cleared after a successful Update call).
+	subnetsToAssociate    []string
+	subnetsToDisassociate []string
+	sgsToAssociate        []string
+	sgsToDisassociate     []string
+	eipsToAssociate       []string
+	eipsToDisassociate    []string
+	dataVolumesToAttach   []string
+	dataVolumesToDetach   []string
 
 	// Action executor — set by the adapter when this wrapper is produced by a real client
 	// call. Locally-constructed wrappers (NewCloudServer()) have actions == nil and will
@@ -156,6 +166,74 @@ func (cs *CloudServer) OnSubnets(s ...Ref) *CloudServer {
 func (cs *CloudServer) WithSecurityGroups(sg ...Ref) *CloudServer {
 	for _, ref := range sg {
 		cs.appendRef("WithSecurityGroups", ref, &cs.securityGroupRefs)
+	}
+	return cs
+}
+
+// Update-time delta setters — these queue association/attachment changes that
+// are dispatched by the adapter's Update call. They must NOT be used during Create;
+// for Create-time subnet/SG configuration use OnSubnets/WithSecurityGroups instead.
+
+// AssociateSubnets queues subnets to associate on the next Update call. Repeated calls append.
+func (cs *CloudServer) AssociateSubnets(refs ...Ref) *CloudServer {
+	for _, r := range refs {
+		cs.appendRef("AssociateSubnets", r, &cs.subnetsToAssociate)
+	}
+	return cs
+}
+
+// DisassociateSubnets queues subnets to disassociate on the next Update call. Repeated calls append.
+func (cs *CloudServer) DisassociateSubnets(refs ...Ref) *CloudServer {
+	for _, r := range refs {
+		cs.appendRef("DisassociateSubnets", r, &cs.subnetsToDisassociate)
+	}
+	return cs
+}
+
+// AssociateSecurityGroups queues security groups to associate on the next Update call. Repeated calls append.
+func (cs *CloudServer) AssociateSecurityGroups(refs ...Ref) *CloudServer {
+	for _, r := range refs {
+		cs.appendRef("AssociateSecurityGroups", r, &cs.sgsToAssociate)
+	}
+	return cs
+}
+
+// DisassociateSecurityGroups queues security groups to disassociate on the next Update call. Repeated calls append.
+func (cs *CloudServer) DisassociateSecurityGroups(refs ...Ref) *CloudServer {
+	for _, r := range refs {
+		cs.appendRef("DisassociateSecurityGroups", r, &cs.sgsToDisassociate)
+	}
+	return cs
+}
+
+// AssociateElasticIPs queues elastic IPs to associate on the next Update call. Repeated calls append.
+func (cs *CloudServer) AssociateElasticIPs(refs ...Ref) *CloudServer {
+	for _, r := range refs {
+		cs.appendRef("AssociateElasticIPs", r, &cs.eipsToAssociate)
+	}
+	return cs
+}
+
+// DisassociateElasticIPs queues elastic IPs to disassociate on the next Update call. Repeated calls append.
+func (cs *CloudServer) DisassociateElasticIPs(refs ...Ref) *CloudServer {
+	for _, r := range refs {
+		cs.appendRef("DisassociateElasticIPs", r, &cs.eipsToDisassociate)
+	}
+	return cs
+}
+
+// AttachDataVolumes queues data volumes to attach on the next Update call. Repeated calls append.
+func (cs *CloudServer) AttachDataVolumes(refs ...Ref) *CloudServer {
+	for _, r := range refs {
+		cs.appendRef("AttachDataVolumes", r, &cs.dataVolumesToAttach)
+	}
+	return cs
+}
+
+// DetachDataVolumes queues data volumes to detach on the next Update call. Repeated calls append.
+func (cs *CloudServer) DetachDataVolumes(refs ...Ref) *CloudServer {
+	for _, r := range refs {
+		cs.appendRef("DetachDataVolumes", r, &cs.dataVolumesToDetach)
 	}
 	return cs
 }
@@ -385,6 +463,42 @@ func (cs *CloudServer) SetPassword(ctx context.Context, password string, opts ..
 	return nil
 }
 
+// hasMetadataChanges reports whether name or tags differ from the last hydrated response,
+// meaning a PUT to /cloudServers/:id is required in Update.
+func (cs *CloudServer) hasMetadataChanges() bool {
+	if cs.response == nil {
+		return true // not yet hydrated — always send
+	}
+	if cs.name != cloudServerDerefString(cs.response.Metadata.Name) {
+		return true
+	}
+	rt := cs.response.Metadata.Tags
+	ct := cs.tags
+	if len(ct) != len(rt) {
+		return true
+	}
+	for i := range ct {
+		if ct[i] != rt[i] {
+			return true
+		}
+	}
+	return false
+}
+
+// cloudServerStringsToCommon converts URI strings to ReferenceResourceCommon, skipping empty strings.
+func cloudServerStringsToCommon(uris []string) []types.ReferenceResourceCommon {
+	if len(uris) == 0 {
+		return nil
+	}
+	out := make([]types.ReferenceResourceCommon, 0, len(uris))
+	for _, u := range uris {
+		if u != "" {
+			out = append(out, types.ReferenceResourceCommon{URI: u})
+		}
+	}
+	return out
+}
+
 func (cs *CloudServer) preActionCheck(label string) error {
 	if cs.actions == nil {
 		return fmt.Errorf("%s: this *CloudServer was not obtained via a client call (no action executor) — fetch via Get/Create/Update/List first", label)
@@ -536,6 +650,10 @@ type cloudServerLowLevelClient interface {
 	PowerOn(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
 	PowerOff(ctx context.Context, projectID, cloudServerID string, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
 	SetPassword(ctx context.Context, projectID, cloudServerID string, body types.CloudServerPasswordRequest, params *types.RequestParameters) (*types.Response[any], error)
+	AssociateSubnets(ctx context.Context, projectID, cloudServerID string, body types.CloudServerAssociateSubnetsRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
+	AssociateSecurityGroups(ctx context.Context, projectID, cloudServerID string, body types.CloudServerAssociateSecurityGroupsRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
+	AssociateElasticIPs(ctx context.Context, projectID, cloudServerID string, body types.CloudServerAssociateElasticIPsRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
+	AttachDetachDataVolumes(ctx context.Context, projectID, cloudServerID string, body types.CloudServerAttachDetachDataVolumesRequest, params *types.RequestParameters) (*types.Response[types.CloudServerResponse], error)
 }
 
 // ---- Adapter ----
@@ -594,7 +712,15 @@ func (a *cloudServersClientAdapter) Create(ctx context.Context, cs *CloudServer,
 	return cs, nil
 }
 
-// Update sends a PUT for the current wrapper state. Requires ID and parent.
+// Update dispatches to one or more API endpoints depending on what changed on the wrapper:
+//   - name/tags differ from the hydrated response → PUT /cloudServers/:id
+//   - AssociateSubnets/DisassociateSubnets called   → POST …/associateDisassociateSubnets
+//   - AssociateSecurityGroups/Disassociate…         → POST …/associateDisassociateSecurityGroups
+//   - AssociateElasticIPs/Disassociate…             → POST …/associateDisassociateElasticIPs
+//   - AttachDataVolumes/DetachDataVolumes called     → POST …/attachDetachDataVolumes
+//
+// Calls are sequential. If a sub-call fails, the wrapper reflects the state after the last
+// successful call. Delta queues are cleared on success.
 func (a *cloudServersClientAdapter) Update(ctx context.Context, cs *CloudServer, opts ...CallOption) (*CloudServer, error) {
 	if err := cs.Err(); err != nil {
 		return cs, err
@@ -605,12 +731,76 @@ func (a *cloudServersClientAdapter) Update(ctx context.Context, cs *CloudServer,
 	if cs.ProjectID() == "" {
 		return cs, fmt.Errorf("Update: CloudServer has no parent project — call InProject first")
 	}
+
 	co := applyCallOptions(opts)
 	rp := co.toRequestParameters()
-	resp, err := a.low.Update(ctx, cs.ProjectID(), cs.CloudServerID(), cs.toRequest(), rp)
-	populateHTTPEnvelope(&cs.httpEnvelopeMixin, resp)
-	if resp != nil && resp.Data != nil {
-		cs.fromResponse(resp.Data)
+
+	// 1. Metadata (name / tags) via PUT — only when something actually changed.
+	if cs.hasMetadataChanges() {
+		resp, err := a.low.Update(ctx, cs.ProjectID(), cs.CloudServerID(), cs.toRequest(), rp)
+		if applyErr := a.applyUpdateResponse(cs, resp, err); applyErr != nil {
+			return cs, applyErr
+		}
+	}
+
+	// 2. Subnet associations.
+	if len(cs.subnetsToAssociate) > 0 || len(cs.subnetsToDisassociate) > 0 {
+		body := types.CloudServerAssociateSubnetsRequest{
+			SubnetsToAssociate:    cloudServerStringsToCommon(cs.subnetsToAssociate),
+			SubnetsToDisassociate: cloudServerStringsToCommon(cs.subnetsToDisassociate),
+		}
+		resp, err := a.low.AssociateSubnets(ctx, cs.ProjectID(), cs.CloudServerID(), body, rp)
+		if applyErr := a.applyUpdateResponse(cs, resp, err); applyErr != nil {
+			return cs, applyErr
+		}
+		cs.subnetsToAssociate = nil
+		cs.subnetsToDisassociate = nil
+	}
+
+	// 3. Security group associations.
+	if len(cs.sgsToAssociate) > 0 || len(cs.sgsToDisassociate) > 0 {
+		body := types.CloudServerAssociateSecurityGroupsRequest{
+			SecurityGroupsToAssociate:    cloudServerStringsToCommon(cs.sgsToAssociate),
+			SecurityGroupsToDisassociate: cloudServerStringsToCommon(cs.sgsToDisassociate),
+		}
+		resp, err := a.low.AssociateSecurityGroups(ctx, cs.ProjectID(), cs.CloudServerID(), body, rp)
+		if applyErr := a.applyUpdateResponse(cs, resp, err); applyErr != nil {
+			return cs, applyErr
+		}
+		cs.sgsToAssociate = nil
+		cs.sgsToDisassociate = nil
+	}
+
+	// 4. Elastic IP associations.
+	if len(cs.eipsToAssociate) > 0 || len(cs.eipsToDisassociate) > 0 {
+		body := types.CloudServerAssociateElasticIPsRequest{
+			ElasticIPsToAssociate:    cloudServerStringsToCommon(cs.eipsToAssociate),
+			ElasticIPsToDisassociate: cloudServerStringsToCommon(cs.eipsToDisassociate),
+		}
+		resp, err := a.low.AssociateElasticIPs(ctx, cs.ProjectID(), cs.CloudServerID(), body, rp)
+		if applyErr := a.applyUpdateResponse(cs, resp, err); applyErr != nil {
+			return cs, applyErr
+		}
+		cs.eipsToAssociate = nil
+		cs.eipsToDisassociate = nil
+	}
+
+	// 5. Data volume attachments.
+	if len(cs.dataVolumesToAttach) > 0 || len(cs.dataVolumesToDetach) > 0 {
+		body := types.CloudServerAttachDetachDataVolumesRequest{
+			VolumesToAttach: cloudServerStringsToCommon(cs.dataVolumesToAttach),
+			VolumesToDetach: cloudServerStringsToCommon(cs.dataVolumesToDetach),
+		}
+		resp, err := a.low.AttachDetachDataVolumes(ctx, cs.ProjectID(), cs.CloudServerID(), body, rp)
+		if applyErr := a.applyUpdateResponse(cs, resp, err); applyErr != nil {
+			return cs, applyErr
+		}
+		cs.dataVolumesToAttach = nil
+		cs.dataVolumesToDetach = nil
+	}
+
+	cs.actions = a
+	if cs.response != nil {
 		cs.setRefresh(func(ctx context.Context) error {
 			fresh, err := a.Get(ctx, cs)
 			if err != nil {
@@ -622,14 +812,24 @@ func (a *cloudServersClientAdapter) Update(ctx context.Context, cs *CloudServer,
 			return nil
 		})
 	}
+	return cs, nil
+}
+
+// applyUpdateResponse populates the HTTP envelope, hydrates the wrapper from a non-nil
+// response payload, sets the action executor, and surfaces any transport or HTTP error.
+func (a *cloudServersClientAdapter) applyUpdateResponse(cs *CloudServer, resp *types.Response[types.CloudServerResponse], err error) error {
+	populateHTTPEnvelope(&cs.httpEnvelopeMixin, resp)
+	if resp != nil && resp.Data != nil {
+		cs.fromResponse(resp.Data)
+	}
 	cs.actions = a
 	if err != nil {
-		return cs, err
+		return err
 	}
 	if resp != nil && !resp.IsSuccess() {
-		return cs, &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
+		return &HTTPError{StatusCode: resp.StatusCode, Body: resp.RawBody, ErrResp: resp.Error}
 	}
-	return cs, nil
+	return nil
 }
 
 // Get fetches a CloudServer by Ref and returns a freshly hydrated wrapper.

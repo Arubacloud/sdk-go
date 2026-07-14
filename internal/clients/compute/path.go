@@ -8,11 +8,15 @@ package compute
 // Verified via examples/all-resources/ create.log (2026-05-28, commit f548a4f alignment).
 const (
 	// CloudServer paths
-	CloudServersPath        = "/projects/%s/providers/Aruba.Compute/cloudServers"
-	CloudServerPath         = "/projects/%s/providers/Aruba.Compute/cloudServers/%s"
-	CloudServerPowerOnPath  = "/projects/%s/providers/Aruba.Compute/cloudServers/%s/poweron"
-	CloudServerPowerOffPath = "/projects/%s/providers/Aruba.Compute/cloudServers/%s/poweroff"
-	CloudServerPasswordPath = "/projects/%s/providers/Aruba.Compute/cloudServers/%s/password"
+	CloudServersPath                       = "/projects/%s/providers/Aruba.Compute/cloudServers"
+	CloudServerPath                        = "/projects/%s/providers/Aruba.Compute/cloudServers/%s"
+	CloudServerPowerOnPath                 = "/projects/%s/providers/Aruba.Compute/cloudServers/%s/poweron"
+	CloudServerPowerOffPath                = "/projects/%s/providers/Aruba.Compute/cloudServers/%s/poweroff"
+	CloudServerPasswordPath                = "/projects/%s/providers/Aruba.Compute/cloudServers/%s/password"
+	CloudServerAssociateSubnetsPath        = "/projects/%s/providers/Aruba.Compute/cloudServers/%s/associateDisassociateSubnets"
+	CloudServerAssociateSecurityGroupsPath = "/projects/%s/providers/Aruba.Compute/cloudServers/%s/associateDisassociateSecurityGroups"
+	CloudServerAssociateElasticIPsPath     = "/projects/%s/providers/Aruba.Compute/cloudServers/%s/associateDisassociateElasticIPs"
+	CloudServerAttachDetachDataVolumesPath = "/projects/%s/providers/Aruba.Compute/cloudServers/%s/attachDetachDataVolumes"
 
 	// KeyPair paths
 	KeyPairsPath = "/projects/%s/providers/Aruba.Compute/keyPairs"

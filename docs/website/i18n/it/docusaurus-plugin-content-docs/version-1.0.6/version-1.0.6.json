@@ -1,0 +1,10 @@
+{
+  "version.label": {
+    "message": "1.0.6",
+    "description": "The label for version 1.0.6"
+  },
+  "version.badge": {
+    "message": "1.0.6",
+    "description": "The badge for version 1.0.6"
+  }
+}
