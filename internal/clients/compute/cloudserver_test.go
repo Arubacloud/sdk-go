@@ -230,7 +230,7 @@ func TestCloudServerRequestOmitsOptionalFields(t *testing.T) {
 		req := types.CloudServerRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "test-server"},
-				Location: &types.LocationRequest{Value: "ITBG-Bergamo"},
+				Location:                &types.LocationRequest{Value: "ITBG-Bergamo"},
 			},
 			Properties: types.CloudServerPropertiesRequest{
 				Zone: "ITBG-1",
@@ -266,7 +266,7 @@ func TestCreateCloudServer(t *testing.T) {
 	req := types.CloudServerRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-server"},
-			Location: &types.LocationRequest{Value: "ITBG-Bergamo"},
+			Location:                &types.LocationRequest{Value: "ITBG-Bergamo"},
 		},
 		Properties: types.CloudServerPropertiesRequest{
 			Zone:     "ITBG-1",

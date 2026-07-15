@@ -260,7 +260,7 @@ func TestCreateScheduleJob(t *testing.T) {
 		body := types.JobRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "weekly-cleanup"},
-				Location: &types.LocationRequest{Value: "it-eur"},
+				Location:                &types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.JobPropertiesRequest{
 				Enabled:      ptr.To(true),
@@ -306,7 +306,7 @@ func TestCreateScheduleJob(t *testing.T) {
 		body := types.JobRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "maintenance-window"},
-				Location: &types.LocationRequest{Value: "it-eur"},
+				Location:                &types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.JobPropertiesRequest{
 				Enabled:    ptr.To(true),
@@ -486,7 +486,7 @@ func TestUpdateScheduleJob(t *testing.T) {
 		body := types.JobRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "updated-backup"},
-				Location: &types.LocationRequest{Value: "it-eur"},
+				Location:                &types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.JobPropertiesRequest{
 				Enabled:      ptr.To(false),
