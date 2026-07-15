@@ -28,6 +28,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.7] — 2026-07-15
+
+### Fixed
+
+- **`RegionalResourceMetadataRequest.Location` omitted from Update requests when region is unset** (`pkg/types`, `pkg/aruba`) —
+  `Location` was typed as `LocationRequest` (value, no `omitempty`), so the SDK always serialised
+  `"location":{"value":"..."}` in every Create and Update request body. The SecurityRule Update
+  endpoint (and potentially others) reject this field with `400 Validation: Location Invalid` when
+  a location is included in an Update. Sending `{"value":""}` also fails — the field must be
+  absent entirely.
+  Fix: `Location` is now `*LocationRequest` with `json:"location,omitempty"`, and `toLocation()`
+  returns `nil` when the region is empty (e.g. after `InRegion("")`) so the field is omitted from
+  the serialised JSON. Create behaviour is unchanged — a region is always set before Create so
+  `toLocation()` still returns a non-nil pointer and the location is included as before.
+
+- **`SecurityRulePropertiesResponse.Port` deserialisation from object form** (`pkg/types`, `pkg/aruba`) —
+  The SecurityRule Get endpoint returns `port` as a plain JSON string (`"80"`), but the Update
+  endpoint returns it as a JSON object (`{"value":"80"}`). The field was typed `string`, causing
+  unmarshalling the Update response to fail with:
+  `json: cannot unmarshal object into Go struct field SecurityRulePropertiesResponse.properties.port of type string`.
+  Fix: `Port` in `SecurityRulePropertiesResponse` is now `FlexPort`, a custom type whose
+  `UnmarshalJSON` accepts both the string and object forms and normalises to a plain string.
+  `MarshalJSON` still emits a plain string so request bodies are unaffected.
+
+---
+
 ## [1.0.6] — 2026-07-14
 
 ### Added

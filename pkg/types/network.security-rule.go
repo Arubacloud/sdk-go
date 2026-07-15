@@ -1,5 +1,33 @@
 package types
 
+import "encoding/json"
+
+// FlexPort unmarshals the security-rule port field from either a plain JSON
+// string ("80") or an object ({"value":"80"}).  The SecurityRule Update
+// endpoint returns the object form while Get returns a plain string.
+type FlexPort string
+
+func (fp *FlexPort) UnmarshalJSON(data []byte) error {
+	var s string
+	if json.Unmarshal(data, &s) == nil {
+		*fp = FlexPort(s)
+		return nil
+	}
+	var obj struct {
+		Value string `json:"value"`
+	}
+	if json.Unmarshal(data, &obj) == nil {
+		*fp = FlexPort(obj.Value)
+		return nil
+	}
+	return nil // best-effort: ignore unrecognised formats
+}
+
+func (fp FlexPort) MarshalJSON() ([]byte, error) { return json.Marshal(string(fp)) }
+
+// String returns the underlying port string value.
+func (fp FlexPort) String() string { return string(fp) }
+
 // RuleProtocol identifies the L4 protocol for a security rule.
 //
 // Authoritative list: ANY, TCP, UDP, ICMP (fully enumerated in the API docs).
@@ -74,7 +102,8 @@ type SecurityRulePropertiesResponse struct {
 	//   - a single numeric port. For instance "80", "443" etc.
 	//   - a port range. For instance "80-100"
 	//   - the "*" value indicating any ports
-	Port string `json:"port,omitempty"`
+	// FlexPort handles both the plain-string (Get) and object (Update) response formats.
+	Port FlexPort `json:"port,omitempty"`
 
 	// Target The target of the rule (source or destination according to the direction)
 	Target *RuleTargetCommon `json:"target,omitempty"`

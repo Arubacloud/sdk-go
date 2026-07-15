@@ -237,7 +237,7 @@ func TestCreateKMSKey(t *testing.T) {
 		body := types.KmsRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-encryption-key"},
-				Location:                types.LocationRequest{Value: "it-eur"},
+				Location: &types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.KmsPropertiesRequest{BillingPeriod: (*types.BillingPeriod)(ptr.To("Month"))},
 		}
@@ -399,7 +399,7 @@ func TestUpdateKMSKey(t *testing.T) {
 		body := types.KmsRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "updated-encryption-key"},
-				Location:                types.LocationRequest{Value: "it-eur"},
+				Location: &types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.KmsPropertiesRequest{BillingPeriod: (*types.BillingPeriod)(ptr.To("Year"))},
 		}

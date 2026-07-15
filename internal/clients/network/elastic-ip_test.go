@@ -230,7 +230,7 @@ func TestCreateElasticIP(t *testing.T) {
 		req := types.ElasticIPRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-eip"},
-				Location:                types.LocationRequest{Value: "ITBG-Bergamo"},
+				Location: &types.LocationRequest{Value: "ITBG-Bergamo"},
 			},
 			Properties: types.ElasticIPPropertiesRequest{
 				BillingPlanCommon: func() *types.BillingPlanCommon {

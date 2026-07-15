@@ -249,7 +249,7 @@ func TestCreateBlockStorageVolume(t *testing.T) {
 		body := types.BlockStorageRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-volume"},
-				Location:                types.LocationRequest{Value: "it-eur"},
+				Location: &types.LocationRequest{Value: "it-eur"},
 			},
 			Properties: types.BlockStoragePropertiesRequest{
 				SizeGB:        50,
