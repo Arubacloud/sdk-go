@@ -16,7 +16,7 @@ type ResourceMetadataRequest struct {
 // Regional Resource Metadata Request
 type RegionalResourceMetadataRequest struct {
 	ResourceMetadataRequest
-	Location LocationRequest `json:"location"`
+	Location *LocationRequest `json:"location,omitempty"`
 }
 
 type LocationRequest struct {

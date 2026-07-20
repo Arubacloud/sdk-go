@@ -93,8 +93,11 @@ func (m *regionalMixin) inRegion(region Region) { m.region = region }
 // Region returns the region value.
 func (m *regionalMixin) Region() Region { return m.region }
 
-func (m *regionalMixin) toLocation() types.LocationRequest {
-	return types.LocationRequest{Value: m.region}
+func (m *regionalMixin) toLocation() *types.LocationRequest {
+	if m.region == "" {
+		return nil
+	}
+	return &types.LocationRequest{Value: m.region}
 }
 
 // --------------------------------------------------------------------------

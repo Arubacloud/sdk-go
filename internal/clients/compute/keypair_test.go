@@ -223,7 +223,7 @@ func TestCreateKeyPair(t *testing.T) {
 	req := types.KeyPairRequest{
 		Metadata: types.RegionalResourceMetadataRequest{
 			ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-keypair"},
-			Location:                types.LocationRequest{Value: "ITBG-Bergamo"},
+			Location:                &types.LocationRequest{Value: "ITBG-Bergamo"},
 		},
 		Properties: types.KeyPairPropertiesRequest{Value: "ssh-rsa AAAAB3Nza..."},
 	}

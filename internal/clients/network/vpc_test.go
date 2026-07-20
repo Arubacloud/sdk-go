@@ -233,7 +233,7 @@ func TestCreateVPC(t *testing.T) {
 		req := types.VPCRequest{
 			Metadata: types.RegionalResourceMetadataRequest{
 				ResourceMetadataRequest: types.ResourceMetadataRequest{Name: "new-vpc"},
-				Location:                types.LocationRequest{Value: "ITBG-Bergamo"},
+				Location:                &types.LocationRequest{Value: "ITBG-Bergamo"},
 			},
 		}
 		resp, err := svc.Create(context.Background(), "test-project", req, nil)

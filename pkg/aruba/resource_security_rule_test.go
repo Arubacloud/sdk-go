@@ -266,7 +266,7 @@ func securityRuleTestResponse(id, name, uri, projectID string) *types.SecurityRu
 		Properties: types.SecurityRulePropertiesResponse{
 			Direction: dir,
 			Protocol:  proto,
-			Port:      port,
+			Port:      types.FlexPort(port),
 			Target:    &types.RuleTargetCommon{Kind: EndpointTypeIP, Value: "1.2.3.4/32"},
 		},
 		Status: types.ResourceStatusResponse{

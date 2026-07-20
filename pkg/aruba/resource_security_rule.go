@@ -230,8 +230,7 @@ func (r *SecurityRule) fromResponse(resp *types.SecurityRuleResponse) {
 		p := resp.Properties.Protocol
 		r.protocol = &p
 	}
-	if resp.Properties.Port != "" {
-		p := resp.Properties.Port
+	if p := resp.Properties.Port.String(); p != "" {
 		r.port = &p
 	}
 	if resp.Properties.Target != nil {
