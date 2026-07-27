@@ -22,6 +22,7 @@ type CredentialsRepository struct {
 	// Implementation details would go here
 	client    VaultClient
 	kvMount   string
+	kvPrefix  string
 	kvPath    string
 	namespace string
 	rolePath  string
@@ -87,6 +88,7 @@ func NewVaultClientAdapter(c *vaultapi.Client) *VaultClientAdapter {
 func NewCredentialsRepository(
 	client VaultClient,
 	kvMount string,
+	kvPrefix string,
 	kvPath string,
 	namespace string,
 	rolePath string,
@@ -96,6 +98,7 @@ func NewCredentialsRepository(
 	return &CredentialsRepository{
 		client:     client,
 		kvMount:    kvMount,
+		kvPrefix:   kvPrefix,
 		kvPath:     kvPath,
 		namespace:  namespace,
 		rolePath:   rolePath,
@@ -129,7 +132,11 @@ func (r *CredentialsRepository) FetchCredentials(ctx context.Context) (*auth.Cre
 	}
 
 	// Read from KV v2
-	secret, err := r.client.KVv2(r.kvMount).Get(ctx, r.kvPath)
+	kvPath := r.kvPath
+	if r.kvPrefix != "" {
+		kvPath = r.kvPrefix + "/" + r.kvPath
+	}
+	secret, err := r.client.KVv2(r.kvMount).Get(ctx, kvPath)
 	if err != nil {
 		return nil, auth.ErrCredentialsNotFound
 	}

@@ -269,6 +269,7 @@ func buildVaultCredentialsRepository(options *vaultCredentialsRepositoryOptions)
 	return vault_creds_repo.NewCredentialsRepository(
 		vault_creds_repo.NewVaultClientAdapter(client),
 		options.kvMount,
+		options.kvPrefix,
 		options.kvPath,
 		options.namespace,
 		options.rolePath,
