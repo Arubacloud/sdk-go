@@ -77,9 +77,9 @@ func runMultitenancyVaultExample() {
 	// Tenant-specific Vault endpoints/paths.
 	// If you use a single Vault instance, keep vaultURI the same and change only kvPath.
 	tenant1Vault := baseOptions.DeepCopy().
-		WithVaultCredentialsRepository("http://vault0.default.svc.cluster.local:8200", kvMount, "ARU-000000", namespace, rolePath, roleID, secretID)
+		WithVaultCredentialsRepository("http://vault0.default.svc.cluster.local:8200", kvMount, "", "ARU-000000", namespace, rolePath, roleID, secretID)
 	tenant2Vault := baseOptions.DeepCopy().
-		WithVaultCredentialsRepository("http://vault0.default.svc.cluster.local:8200", kvMount, "ARU-123456", namespace, rolePath, roleID, secretID)
+		WithVaultCredentialsRepository("http://vault0.default.svc.cluster.local:8200", kvMount, "", "ARU-123456", namespace, rolePath, roleID, secretID)
 
 	mt := multitenant.New()
 
@@ -148,6 +148,7 @@ func (r *multitenancyExampleReconciler) ArubaClient(tenant string) (aruba.Client
 	options = options.WithVaultCredentialsRepository(
 		r.config.VaultAddress,
 		r.config.KVMount,
+		"",     // kvPrefix
 		tenant, // tenant maps to kvPath (e.g. ARU-000000)
 		r.config.Namespace,
 		r.config.RolePath,

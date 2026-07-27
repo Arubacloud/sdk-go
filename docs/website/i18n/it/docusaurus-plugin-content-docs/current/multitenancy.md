@@ -136,6 +136,7 @@ options := aruba.NewOptions().
 	WithVaultCredentialsRepository(
 		r.config.VaultAddress,
 		r.config.KVMount,
+		"",     // kvPrefix (vuoto se i segreti si trovano direttamente sotto kvMount)
 		tenant, // tenant -> kvPath (es. ARU-297647)
 		r.config.Namespace,
 		r.config.RolePath,

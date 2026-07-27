@@ -203,7 +203,7 @@ mt.NewFromOptions("tenant-1",
 // Vault-backed credentials sharing a base options template
 base := aruba.NewOptions().WithDefaultBaseURL().WithDefaultTokenIssuerURL()
 mt.NewFromOptions("tenant-2",
-    base.DeepCopy().WithVaultCredentialsRepository(vaultURI, kvMount, "tenant-2", ns, rolePath, roleID, secretID))
+    base.DeepCopy().WithVaultCredentialsRepository(vaultURI, kvMount, "", "tenant-2", ns, rolePath, roleID, secretID))
 
 client, ok := mt.Get("tenant-1")
 ```

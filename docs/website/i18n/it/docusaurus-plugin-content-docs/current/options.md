@@ -85,7 +85,7 @@ L'SDK Aruba Cloud per Go è configurato mediante un'API fluente che consente di 
       <td><code>WithVaultCredentialsRepository(...)</code></td>
       <td>Configura l'SDK per recuperare <code>clientID</code> e <code>clientSecret</code> da un'istanza HashiCorp Vault. L'SDK utilizzerà poi queste credenziali per gestire il token di accesso.</td>
       <td><b>Esclusione reciproca</b>: non può essere usato con <code>WithClientCredentials()</code> o <code>WithToken()</code>.<br/>
-      <b>Parametri</b>: <code>vaultURI</code>, <code>kvMount</code>, <code>kvPath</code>, <code>namespace</code>,
+      <b>Parametri</b>: <code>vaultURI</code>, <code>kvMount</code>, <code>kvPrefix</code>, <code>kvPath</code>, <code>namespace</code>,
       <code>rolePath</code>, <code>roleID</code>, <code>secretID</code>.</td>
     </tr>
     <tr>

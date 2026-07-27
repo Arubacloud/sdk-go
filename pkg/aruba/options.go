@@ -262,6 +262,7 @@ type vaultCredentialsRepositoryOptions struct {
 	// vaultURI is the address of the Vault server (e.g., "https://vault.example.com:8200").
 	vaultURI  string
 	kvMount   string
+	kvPrefix  string
 	kvPath    string
 	namespace string
 	rolePath  string
@@ -585,6 +586,7 @@ func (o *Options) WithAdditionalSecurityScopes(scopes ...string) *Options {
 func (o *Options) WithVaultCredentialsRepository(
 	vaultURI string,
 	kvMount string,
+	kvPrefix string,
 	kvPath string,
 	namespace string,
 	rolePath string,
@@ -598,6 +600,7 @@ func (o *Options) WithVaultCredentialsRepository(
 	o.tokenManager.tokenIssuerOptions.vaultCredentialsRepositoryOptions = &vaultCredentialsRepositoryOptions{
 		vaultURI:  vaultURI,
 		kvMount:   kvMount,
+		kvPrefix:  kvPrefix,
 		kvPath:    kvPath,
 		namespace: namespace,
 		rolePath:  rolePath,

@@ -28,6 +28,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.8] — 2026-07-27
+
+### Added
+
+- **`kvPrefix` support in Vault credentials repository** (`internal/impl/auth/credentialsrepository/vault`, `pkg/aruba`) —
+  `WithVaultCredentialsRepository` now accepts a `kvPrefix string` parameter (inserted between
+  `kvMount` and `kvPath`). The prefix is prepended to the secret path when calling the Vault KV v2
+  `Get` API (`<kvMount>/<kvPrefix>/<kvPath>`), enabling secrets stored under a shared path prefix
+  within a single KV mount. Passing an empty string preserves the previous behaviour — the path
+  is constructed as `<kvMount>/<kvPath>` with no prefix segment.
+
+---
+
 ## [1.0.7] — 2026-07-20
 
 ### Fixed
