@@ -192,6 +192,33 @@ if err := cs.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ Cloud Server: %s (zone: %s, flavor: %s)\n", cs.Name(), cs.Zone(), cs.Flavor())
 ```
 
+**Updating a Cloud Server**
+
+`Update` is a smart dispatcher: it inspects the wrapper's pending state and fans out to the
+correct API endpoint(s). You only ever call `Update` once regardless of what changed.
+
+```go
+// Rename only → PUT /cloudServers/:id
+cs.Named("new-name")
+cs, err = arubaClient.FromCompute().CloudServers().Update(ctx, cs)
+
+// Subnet changes only → POST …/associateDisassociateSubnets
+cs.AssociateSubnets(newSubnet).DisassociateSubnets(oldSubnet)
+cs, err = arubaClient.FromCompute().CloudServers().Update(ctx, cs)
+
+// Multiple changes in one call → PUT + subnet + volume endpoints sequenced internally
+cs.Named("new-name").
+    AssociateSubnets(newSubnet).
+    AssociateSecurityGroups(newSG).
+    DisassociateSecurityGroups(oldSG).
+    AttachDataVolumes(newVol).
+    DetachDataVolumes(oldVol)
+cs, err = arubaClient.FromCompute().CloudServers().Update(ctx, cs)
+```
+
+If nothing changed (name/tags unchanged, no delta queues set), `Update` is a zero-API-call no-op.
+Sub-calls are sequential; if one fails the wrapper reflects the state after the last successful call.
+
 **Power and password actions** (require a hydrated wrapper from `Create`/`Get`):
 
 ```go
@@ -215,7 +242,7 @@ if err := cs.SetPassword(ctx, "NewStr0ngP@ss!"); err != nil { log.Fatalf("SetPas
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
 
-**Setters**:
+**Setters (Create-time)**:
 - *Classifier*: `OfFlavor(CloudServerFlavor)`
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
@@ -228,6 +255,12 @@ if err := cs.SetPassword(ctx, "NewStr0ngP@ss!"); err != nil { log.Fatalf("SetPas
 - *Active relationship*: `UsingKeyPair(Ref)`
 - *Boolean state*: `WithVPCPreset()`, `WithoutVPCPreset()`
 - *Billing*: `BilledBy(BillingPeriod)`
+
+**Update-time delta setters** (queue changes dispatched by `Update`):
+- *Subnets*: `AssociateSubnets(...Ref)`, `DisassociateSubnets(...Ref)`
+- *Security groups*: `AssociateSecurityGroups(...Ref)`, `DisassociateSecurityGroups(...Ref)`
+- *Elastic IPs*: `AssociateElasticIPs(...Ref)`, `DisassociateElasticIPs(...Ref)`
+- *Data volumes*: `AttachDataVolumes(...Ref)`, `DetachDataVolumes(...Ref)`
 
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_cloud_server.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_cloud_server.go)
@@ -642,14 +675,20 @@ arubaClient.FromDatabase().DBaaSBackups()
 **Supported operations**: `Create`, `List`, `Get`, `Delete`
 **Async**: yes — call `WaitUntilReady(ctx)` after `Create`.
 
+:::note Auto-generated name
+The backup API ignores the value passed to `Named()` and always generates its own name (e.g. `mysql_wordpress_20260713140736`). Read the actual name back via `backup.Name()` after `Create`.
+:::
+
 ```go
 backup, err := arubaClient.FromDatabase().DBaaSBackups().Create(
     ctx,
     aruba.NewDBaaSBackup().
-        Named("my-db-backup").
         Tagged("backup").
         InProject(proj).
+        InRegion(aruba.RegionITBGBergamo).
+        InZone(aruba.ZoneITBG1).
         FromDBaaS(db).
+        FromDatabase(aruba.URI(db.URI()+"/databases/mydb")).
         BilledBy(aruba.BillingPeriodHour))
 if err != nil {
     log.Fatalf("Create DBaaSBackup: %v", err)
@@ -658,14 +697,15 @@ if err != nil {
 if err := backup.WaitUntilReady(ctx); err != nil {
     log.Fatalf("DBaaS Backup did not become Ready: %v", err)
 }
-fmt.Printf("✓ DBaaS Backup: %s\n", backup.Name())
+fmt.Printf("✓ DBaaS Backup: %s (database: %s)\n", backup.Name(), backup.DatabaseName())
 ```
 
 **Response accessors**:
 - `ID()`, `URI()`, `Name()`, `Tags()`
 - `DBaaSBackupID()` — provider-assigned backup ID
 - `DBaaSURI()` — source DBaaS URI
-- `DatabaseURI()` — source Database URI (if applicable)
+- `DatabaseName()` — name of the source database (preferred over `DatabaseURI()` for name-only access)
+- `DatabaseURI()` — raw stored reference: full URI when set via `FromDatabase`, bare name after response hydration
 - `SizeGB()` — backup size in GB
 - `Zone()` — availability zone
 - `BillingPeriod()` — billing cadence
@@ -674,7 +714,7 @@ fmt.Printf("✓ DBaaS Backup: %s\n", backup.Name())
 - `Raw()` — underlying wire struct
 
 **Setters**:
-- *Name*: `Named(string)`
+- *Name*: `Named(string)` *(ignored by the API — name is auto-generated)*
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
 - *Containment*: `InProject(Ref)`, `FromDBaaS(Ref)`, `FromDatabase(Ref)`
 - *Geography*: `InRegion(Region)`, `InZone(Zone)`
