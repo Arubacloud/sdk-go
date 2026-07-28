@@ -2,7 +2,6 @@ package aruba
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -63,9 +62,8 @@ func TestUser_FluentSetters(t *testing.T) {
 		t.Errorf("Err() = %v", u.Err())
 	}
 	// Password should not be readable through Username/ID/etc., only through RawRequest.
-	wantPw := base64.StdEncoding.EncodeToString([]byte(testPassword))
-	if u.RawRequest().Password != wantPw {
-		t.Errorf("RawRequest().Password = %q, want %q", u.RawRequest().Password, wantPw)
+	if u.RawRequest().Password != testPassword {
+		t.Errorf("RawRequest().Password = %q, want %q", u.RawRequest().Password, testPassword)
 	}
 }
 
@@ -162,21 +160,15 @@ func TestUser_ToRequest(t *testing.T) {
 	if req.Username != "alice" {
 		t.Errorf("toRequest().Username = %q", req.Username)
 	}
-	wantPw := base64.StdEncoding.EncodeToString([]byte(testPassword))
-	if req.Password != wantPw {
-		t.Errorf("toRequest().Password = %q, want %q", req.Password, wantPw)
+	if req.Password != testPassword {
+		t.Errorf("toRequest().Password = %q, want plaintext %q", req.Password, testPassword)
 	}
 }
 
-func TestUser_ToRequest_EncodesPassword(t *testing.T) {
+func TestUser_ToRequest_PlaintextPassword(t *testing.T) {
 	u := NewUser().WithPassword(testPassword)
-	encoded := u.toRequest().Password
-	decoded, err := base64.StdEncoding.DecodeString(encoded)
-	if err != nil {
-		t.Fatalf("toRequest().Password is not valid base64: %v", err)
-	}
-	if string(decoded) != testPassword {
-		t.Errorf("decoded password = %q, want %q", string(decoded), testPassword)
+	if u.toRequest().Password != testPassword {
+		t.Errorf("toRequest().Password = %q, want plaintext %q", u.toRequest().Password, testPassword)
 	}
 }
 
@@ -245,8 +237,7 @@ func TestUser_FromResponse_PreservesPassword(t *testing.T) {
 	u := NewUser().WithPassword(testPassword)
 	u.fromResponse(userTestResponse("alice"))
 	// The locally-set password must survive hydration.
-	wantPw := base64.StdEncoding.EncodeToString([]byte(testPassword))
-	if u.RawRequest().Password != wantPw {
+	if u.RawRequest().Password != testPassword {
 		t.Errorf("fromResponse clobbered the locally-set password; got %q", u.RawRequest().Password)
 	}
 }
@@ -352,9 +343,8 @@ func TestUsersClientAdapter_Create_Success(t *testing.T) {
 	if gotBody.Username != "my-user" {
 		t.Errorf("wire body Username = %q", gotBody.Username)
 	}
-	wantPw := base64.StdEncoding.EncodeToString([]byte(testPassword))
-	if gotBody.Password != wantPw {
-		t.Errorf("wire body Password = %q, want %q", gotBody.Password, wantPw)
+	if gotBody.Password != testPassword {
+		t.Errorf("wire body Password = %q, want plaintext %q", gotBody.Password, testPassword)
 	}
 }
 
@@ -457,9 +447,8 @@ func TestUsersClientAdapter_Update_Success(t *testing.T) {
 	if gotBody.Username != "my-user" {
 		t.Errorf("wire body Username = %q", gotBody.Username)
 	}
-	wantPw := base64.StdEncoding.EncodeToString([]byte(testPassword))
-	if gotBody.Password != wantPw {
-		t.Errorf("wire body Password = %q, want %q", gotBody.Password, wantPw)
+	if gotBody.Password != testPassword {
+		t.Errorf("wire body Password = %q, want plaintext %q", gotBody.Password, testPassword)
 	}
 }
 

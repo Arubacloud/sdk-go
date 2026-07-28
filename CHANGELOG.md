@@ -28,6 +28,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.9] — 2026-07-28
+
+### Fixed
+
+- **DBaaS user create/update sends base64-encoded password instead of plaintext** (`pkg/aruba`, `pkg/types`) —
+  `toRequest()` was wrapping the caller-supplied password in `base64.StdEncoding.EncodeToString`
+  before placing it in the JSON body. The Aruba Cloud DBaaS API expects a plaintext password; sending
+  an encoded value caused every user creation and password-update request to fail with HTTP 400
+  `"Password does not match the minimum requirements"` because the base64 output contains only
+  alphanumeric characters and no special characters required by the API password policy.
+  Removed the encoding call and dropped the now-unused `encoding/base64` import.
+
+---
+
 ## [1.0.8] — 2026-07-27
 
 ### Added

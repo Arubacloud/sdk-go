@@ -2,7 +2,6 @@ package aruba
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -55,8 +54,7 @@ func (u *User) InDBaaS(parent Ref) *User { u.intoDBaaS(parent); return u }
 // WithUsername sets the username. Used as the path identifier; required before Create.
 func (u *User) WithUsername(name string) *User { u.username = &name; return u }
 
-// WithPassword sets the clear-text password for Create/Update. The wrapper base64-encodes it
-// at the wire boundary; callers always pass plain text. Write-only: no Password() getter is exposed.
+// WithPassword sets the clear-text password for Create/Update. Write-only: no Password() getter is exposed.
 func (u *User) WithPassword(pw string) *User { u.password = &pw; return u }
 
 // Getters — general → specific
@@ -107,9 +105,7 @@ func (u *User) Raw() *types.UserResponse { return u.response }
 func (u *User) RawJSON() []byte          { return marshalRawJSON(u.response) }
 func (u *User) RawYAML() []byte          { return marshalRawYAML(u.response) }
 
-// RawRequest returns the wire body that would be sent on Create/Update. It
-// includes the base64-encoded password if WithPassword was called — by design,
-// for parity with other wrappers' RawRequest debugging surface. There is no
+// RawRequest returns the wire body that would be sent on Create/Update. There is no
 // Password() accessor on *User; the password is intentionally not exposed
 // through any read-only path other than this wire mirror.
 func (u *User) RawRequest() types.UserRequest { return u.toRequest() }
@@ -117,11 +113,11 @@ func (u *User) RawRequest() types.UserRequest { return u.toRequest() }
 // Wire converters
 
 // toRequest assembles the Create/Update body from current setter state.
-// The API expects the password base64-encoded, so the clear-text value is encoded here at the wire boundary.
+// The API expects the password as plain text.
 func (u *User) toRequest() types.UserRequest {
 	return types.UserRequest{
 		Username: userDerefString(u.username),
-		Password: base64.StdEncoding.EncodeToString([]byte(userDerefString(u.password))),
+		Password: userDerefString(u.password),
 	}
 }
 
