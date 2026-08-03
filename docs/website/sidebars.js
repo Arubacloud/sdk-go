@@ -59,6 +59,11 @@ const sidebars = {
       id: 'options',
       label: 'Options',
     },
+    {
+      type: 'doc',
+      id: 'changelog',
+      label: 'Changelog',
+    },
   ],
 };
 
