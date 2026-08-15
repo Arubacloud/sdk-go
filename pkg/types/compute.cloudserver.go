@@ -87,6 +87,8 @@ type CloudServerPropertiesResponse struct {
 
 	NetworkInterfaces []CloudServerNetworkInterfaceResponse `json:"networkInterfaces,omitempty"`
 
+	PrivateIP *string `json:"privateIp,omitempty"`
+
 	BillingPlanCommon *BillingPlanCommon `json:"billingPlan,omitempty"`
 }
 
