@@ -192,6 +192,33 @@ if err := cs.WaitUntilReady(ctx); err != nil {
 fmt.Printf("✓ Cloud Server: %s (zone: %s, flavor: %s)\n", cs.Name(), cs.Zone(), cs.Flavor())
 ```
 
+**Updating a Cloud Server**
+
+`Update` is a smart dispatcher: it inspects the wrapper's pending state and fans out to the
+correct API endpoint(s). You only ever call `Update` once regardless of what changed.
+
+```go
+// Rename only → PUT /cloudServers/:id
+cs.Named("new-name")
+cs, err = arubaClient.FromCompute().CloudServers().Update(ctx, cs)
+
+// Subnet changes only → POST …/associateDisassociateSubnets
+cs.AssociateSubnets(newSubnet).DisassociateSubnets(oldSubnet)
+cs, err = arubaClient.FromCompute().CloudServers().Update(ctx, cs)
+
+// Multiple changes in one call → PUT + subnet + volume endpoints sequenced internally
+cs.Named("new-name").
+    AssociateSubnets(newSubnet).
+    AssociateSecurityGroups(newSG).
+    DisassociateSecurityGroups(oldSG).
+    AttachDataVolumes(newVol).
+    DetachDataVolumes(oldVol)
+cs, err = arubaClient.FromCompute().CloudServers().Update(ctx, cs)
+```
+
+If nothing changed (name/tags unchanged, no delta queues set), `Update` is a zero-API-call no-op.
+Sub-calls are sequential; if one fails the wrapper reflects the state after the last successful call.
+
 **Power and password actions** (require a hydrated wrapper from `Create`/`Get`):
 
 ```go
@@ -215,7 +242,7 @@ if err := cs.SetPassword(ctx, "NewStr0ngP@ss!"); err != nil { log.Fatalf("SetPas
 - `WaitUntilReady(ctx, opts...)`, `WaitUntilActive(ctx, opts...)`, `WaitUntilStates(ctx, []types.State{...}, opts...)`, `WaitUntilGone(ctx, opts...)`
 - `Raw()` — underlying wire struct
 
-**Setters**:
+**Setters (Create-time)**:
 - *Classifier*: `OfFlavor(CloudServerFlavor)`
 - *Name*: `Named(string)`
 - *Labels*: `Tagged(...string)`, `Untagged(...string)`, `RetaggedAs(...string)`
@@ -228,6 +255,12 @@ if err := cs.SetPassword(ctx, "NewStr0ngP@ss!"); err != nil { log.Fatalf("SetPas
 - *Active relationship*: `UsingKeyPair(Ref)`
 - *Boolean state*: `WithVPCPreset()`, `WithoutVPCPreset()`
 - *Billing*: `BilledBy(BillingPeriod)`
+
+**Update-time delta setters** (queue changes dispatched by `Update`):
+- *Subnets*: `AssociateSubnets(...Ref)`, `DisassociateSubnets(...Ref)`
+- *Security groups*: `AssociateSecurityGroups(...Ref)`, `DisassociateSecurityGroups(...Ref)`
+- *Elastic IPs*: `AssociateElasticIPs(...Ref)`, `DisassociateElasticIPs(...Ref)`
+- *Data volumes*: `AttachDataVolumes(...Ref)`, `DetachDataVolumes(...Ref)`
 
 :::tip Runnable example
 Full end-to-end example: [`examples/all-resources/resource_cloud_server.go`](https://github.com/Arubacloud/sdk-go/blob/main/examples/all-resources/resource_cloud_server.go)

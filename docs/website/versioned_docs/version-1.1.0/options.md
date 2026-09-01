@@ -97,7 +97,7 @@ production-ready setup for the most common use case (Client Credentials authenti
       <td>Configures the SDK to fetch the <code>clientID</code> and <code>clientSecret</code> from a HashiCorp
       Vault instance. The SDK will then use these credentials to manage the access token.</td>
       <td><b>Mutual Exclusion</b>: Cannot be used with <code>WithClientCredentials()</code> or <code>WithToken()</code>.<br/>
-      <b>Parameters</b>: <code>vaultURI</code>, <code>kvMount</code>, <code>kvPath</code>, <code>namespace</code>,
+      <b>Parameters</b>: <code>vaultURI</code>, <code>kvMount</code>, <code>kvPrefix</code>, <code>kvPath</code>, <code>namespace</code>,
       <code>rolePath</code>, <code>roleID</code>, <code>secretID</code>.</td>
     </tr>
     <tr>
