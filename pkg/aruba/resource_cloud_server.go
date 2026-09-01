@@ -359,6 +359,16 @@ func (cs *CloudServer) Subnets() []string {
 	return out
 }
 
+// PrivateIP returns the DHCP-assigned private IPv4 of the server as reported
+// by the API (properties.privateIp on the Get/detail response), or "" when the
+// response has not been hydrated yet or the field is absent.
+func (cs *CloudServer) PrivateIP() string {
+	if cs.response != nil && cs.response.Properties.PrivateIP != nil {
+		return *cs.response.Properties.PrivateIP
+	}
+	return ""
+}
+
 // SecurityGroups returns the security group URIs set via WithSecurityGroups.
 // The API does not return security groups in a distinguishable form in the
 // response body; this getter returns the locally-cached setter values only.
