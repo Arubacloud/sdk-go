@@ -28,6 +28,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.1.0] — 2026-09-01
+
+### Added
+
+- **`CloudServer.PrivateIP()` getter** (`pkg/aruba`) — exposes the DHCP-assigned private IPv4
+  address returned by the API in `properties.privateIp`. The field was previously silently
+  discarded during unmarshalling, blocking Terraform consumers from reading server private
+  addresses. Returns `""` before hydration or when the field is absent. (#355)
+
+---
+
 ## [1.0.9] — 2026-07-28
 
 ### Fixed
@@ -1071,7 +1082,16 @@ Initial Alpha release of the Aruba Cloud SDK for Go.
 ---
 
 <!-- compare links -->
-[Unreleased]: https://github.com/Arubacloud/sdk-go/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/Arubacloud/sdk-go/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Arubacloud/sdk-go/compare/v1.0.9...v1.1.0
+[1.0.9]: https://github.com/Arubacloud/sdk-go/compare/v1.0.8...v1.0.9
+[1.0.8]: https://github.com/Arubacloud/sdk-go/compare/v1.0.7...v1.0.8
+[1.0.7]: https://github.com/Arubacloud/sdk-go/compare/v1.0.6...v1.0.7
+[1.0.6]: https://github.com/Arubacloud/sdk-go/compare/v1.0.5...v1.0.6
+[1.0.5]: https://github.com/Arubacloud/sdk-go/compare/v1.0.4...v1.0.5
+[1.0.4]: https://github.com/Arubacloud/sdk-go/compare/v1.0.3...v1.0.4
+[1.0.3]: https://github.com/Arubacloud/sdk-go/compare/v1.0.2...v1.0.3
+[1.0.2]: https://github.com/Arubacloud/sdk-go/compare/v1.0.0...v1.0.2
 [1.0.1]: https://github.com/Arubacloud/sdk-go/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Arubacloud/sdk-go/compare/v0.3.0...v1.0.0
 [0.3.0]: https://github.com/Arubacloud/sdk-go/compare/v0.2.3...v0.3.0
