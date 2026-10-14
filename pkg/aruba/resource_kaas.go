@@ -113,8 +113,14 @@ func (k *KaaS) WithKubernetesVersion(v KubernetesVersion) *KaaS {
 // WithPodCIDR sets the pod CIDR block for the cluster network.
 func (k *KaaS) WithPodCIDR(cidr string) *KaaS { k.podCIDR = &cidr; return k }
 
+// WithHA explicitly sets the high-availability mode for the control plane.
+// Pass true to enable HA, false to explicitly disable it.
+// Omitting this call leaves the field unset, letting the server apply its default.
+func (k *KaaS) WithHA(enabled bool) *KaaS { k.ha = &enabled; return k }
+
 // HighlyAvailable enables high-availability mode for the control plane.
-func (k *KaaS) HighlyAvailable() *KaaS { v := true; k.ha = &v; return k }
+// Equivalent to WithHA(true).
+func (k *KaaS) HighlyAvailable() *KaaS { return k.WithHA(true) }
 
 // BilledBy sets the billing cadence. Accepted periods are resource-specific; check the API reference.
 func (k *KaaS) BilledBy(period BillingPeriod) *KaaS { k.billingPeriod = &period; return k }

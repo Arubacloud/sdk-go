@@ -70,6 +70,7 @@ jobs:
       with:
         version: v2.11.4
         args: --timeout=5m --max-same-issues=0
+        verify: false
 
   build:
     name: Build

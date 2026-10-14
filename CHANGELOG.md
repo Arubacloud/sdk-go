@@ -26,6 +26,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **`KaaS.WithHA(bool)` setter** (`pkg/aruba`) — allows explicit control over the HA flag for
+  KaaS clusters. Previously only `HighlyAvailable()` existed, which hard-coded `true`. Because the
+  wire field is `*bool` with `omitempty`, sending `false` is semantically distinct from omitting the
+  field: `nil` lets the server apply its default, while `&false` explicitly disables HA. Users
+  provisioning dev or cost-sensitive clusters now have a direct SDK path.
+  `HighlyAvailable()` is kept as an alias for `WithHA(true)` — no change to existing call sites. (#358)
+
 ---
 
 ## [1.1.0] — 2026-09-01
