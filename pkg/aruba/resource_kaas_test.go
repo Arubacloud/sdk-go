@@ -236,6 +236,22 @@ func TestKaaS_WithHA(t *testing.T) {
 	}
 }
 
+func TestKaaS_WithHA_ExplicitFalse(t *testing.T) {
+	k := NewKaaS().WithHA(false)
+	req := k.RawRequest()
+	if req.Properties.HA == nil || *req.Properties.HA {
+		t.Errorf("HA = %v, want &false", req.Properties.HA)
+	}
+}
+
+func TestKaaS_WithHA_Unset_OmitsField(t *testing.T) {
+	k := NewKaaS()
+	req := k.RawRequest()
+	if req.Properties.HA != nil {
+		t.Errorf("HA = %v, want nil when not set", req.Properties.HA)
+	}
+}
+
 func TestKaaS_WithStorage(t *testing.T) {
 	k := NewKaaS().WithMaxStorageQuotaGB(200)
 	req := k.RawRequest()
